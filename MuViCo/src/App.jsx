@@ -1,6 +1,8 @@
+import Login from "./components/Login"
+
 const App = () => (
   <div>
-    <p>Hello world</p>
+    <Login></Login>
   </div>
 )
 
