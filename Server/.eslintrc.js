@@ -2,15 +2,16 @@ module.exports = {
   env: {
     browser: true,
     commonjs: true,
-    es2021: true
+    es2021: true,
   },
-  extends: 'standard',
-  overrides: [
-  ],
+  extends: "standard",
+  overrides: [],
   parserOptions: {
-    ecmaVersion: 'latest'
+    ecmaVersion: "latest",
   },
   rules: {
-    semi: ['error', 'always']
-  }
+    semi: ["error", "always"],
+    quotes: ["error", "double"],
+    "comma-dangle": "off",
+  },
 };
