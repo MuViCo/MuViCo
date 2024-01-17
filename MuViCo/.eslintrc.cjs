@@ -6,7 +6,7 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
-    'airbnb',
+    'airbnb-base',
     'airbnb/hooks',
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
@@ -14,6 +14,7 @@ module.exports = {
   settings: { react: { version: '18.2' } },
   plugins: ['react-refresh'],
   rules: {
+    'prefer-arrow-callback': 'error',
     'react-refresh/only-export-components': [
       'warn',
       { allowConstantExport: true },
