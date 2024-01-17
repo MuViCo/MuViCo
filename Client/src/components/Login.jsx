@@ -15,7 +15,6 @@ const LoginForm = () => (
 
 const Login = ({ handleLogin }) => {
   const onSubmit = (values) => {
-    console.log(values.username, values.password);
     handleLogin(values.username, values.password);
   };
   return (

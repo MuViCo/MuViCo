@@ -2,8 +2,7 @@ import Login from "./components/Login";
 import loginService from "./services/login";
 
 const App = () => {
-  const handleLogin = async (username, password, event) => {
-    event.preventDefault();
+  const handleLogin = async (username, password) => {
     try {
       const user = await loginService.login({ username, password });
       console.log(user);
