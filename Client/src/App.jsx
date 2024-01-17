@@ -1,9 +1,22 @@
-import Login from './components/Login.jsx';
+import Login from "./components/Login";
+import loginService from "./services/login";
 
-const App = () => (
-  <div>
-    <Login></Login>
-  </div>
-);
+const App = () => {
+  const handleLogin = async (username, password, event) => {
+    event.preventDefault();
+    try {
+      const user = await loginService.login({ username, password });
+      console.log(user);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  return (
+    <div>
+      <Login handleLogin={handleLogin} />
+    </div>
+  );
+};
 
 export default App;

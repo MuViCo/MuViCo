@@ -1,21 +1,22 @@
-import { Form, Formik, Field } from 'formik';
+import { Form, Formik, Field } from "formik";
 
 const initialValues = {
-  username: '',
-  password: '',
+  username: "",
+  password: "",
 };
 
 const LoginForm = () => (
-    <Form>
-      <Field type="text" name="username" placeholder="Username" />
-      <Field type="password" name="password" placeholder="Password" />
-      <button type="submit">Login</button>
-    </Form>
+  <Form>
+    <Field type="text" name="username" placeholder="Username" />
+    <Field type="password" name="password" placeholder="Password" />
+    <button type="submit">Login</button>
+  </Form>
 );
 
-const Login = () => {
+const Login = ({ handleLogin }) => {
   const onSubmit = (values) => {
     console.log(values.username, values.password);
+    handleLogin(values.username, values.password);
   };
   return (
     <div>
