@@ -12,3 +12,5 @@ esitykset ovat etukäteen suunnitettavissa tai ohjattavissa realiaikaisesti.
 ## Käytetty teknologia
  
 - Ohjelman luonnissa on käytetty Javascriptia, html. 
+
+
