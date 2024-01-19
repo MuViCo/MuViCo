@@ -23,6 +23,7 @@ module.exports = {
   },
   plugins: ["react-refresh"],
   rules: {
+    "react/prop-types": "off",
     "prefer-arrow-callback": "error",
     "react-refresh/only-export-components": [
       "warn",
