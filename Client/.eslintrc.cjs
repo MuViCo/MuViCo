@@ -9,7 +9,7 @@ module.exports = {
     "airbnb-base",
     "airbnb/hooks",
   ],
-  ignorePatterns: ["dist", ".eslintrc.cjs"],
+  ignorePatterns: ["dist", ".eslintrc.cjs", "vite.config.js"],
   parserOptions: { ecmaVersion: "latest", sourceType: "module" },
   settings: {
     react: {
