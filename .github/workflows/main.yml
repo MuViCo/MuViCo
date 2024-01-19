@@ -2,10 +2,13 @@ name: CI Client
 
 on:
   push:
-    branches: [main]
-    branches: [dev]
+    branches:
+      - main
+      - dev
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - dev
 jobs:
   build:
     runs-on: ubuntu-latest
