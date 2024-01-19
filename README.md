@@ -1,5 +1,5 @@
 # MuViCo
-
+![CI Badge](https://github.com/MuViCo/MuViCo/workflows/CI/badge.svg)
 ## Kuvaus
 
 - MuviCo on multimodaalinen sovellus, joka on suunniteltu tarjoamaan monipuolisia visuaalisia elementtejä ja tukitoimintoja live-musiikkiesityksiin. Sovelluksen tarkoituksena on tuoda lisäulottuvuus musiikilliseen kokemukseen tarjoamalla erilaisia visuaalisia esitystapoja, 
