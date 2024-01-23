@@ -1,14 +1,11 @@
 # MuViCo
 ![CI Badge](https://github.com/MuViCo/MuViCo/workflows/CI/badge.svg)
-## Kuvaus
+## Description
 
-- MuviCo on multimodaalinen sovellus, joka on suunniteltu tarjoamaan monipuolisia visuaalisia elementtejä ja tukitoimintoja live-musiikkiesityksiin. Sovelluksen tarkoituksena on tuoda lisäulottuvuus musiikilliseen kokemukseen tarjoamalla erilaisia visuaalisia esitystapoja, 
-jotka voivat täydentää ja rikastuttaa kuulijoiden ja esiintyjien kokemusta.Ohjelma on selainpohjainen ja on tarkoitus toimia koneella. 
+- MuviCo is a multimodal application designed to provide versatile visual elements and support functions for live music performances. The purpose of the application is to bring an additional dimension to music experiences that can complement and enrich the experience for both listeners and performers. The program is browser-based and intended to operate on computers.
 
-Ohjelma heijastaa sanat tai kuvia tai tekoälyn tuottamia visuaalia musiikin tueksi.
-Sen lisäksi ohjelma myös heijastaa laulujen sanoja laulajan tukemiseksi. Kaikki 
-esitykset ovat etukäteen suunnitettavissa tai ohjattavissa realiaikaisesti. 
+The application displays lyrics, images, or AI-generated visuals to enhance the musical experience. Additionally, it reflects the lyrics to support the singer. All performances can be pre-planned or guided in real-time."
 
-## Käytetty teknologia
+## Teknology
 
-- Ohjelman luonnissa on käytetty Javascriptia, html. 
+- Program is created by using javascript and html. 
