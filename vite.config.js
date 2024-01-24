@@ -6,7 +6,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
- // base: BASE_PATH,
+  // base: BASE_PATH,
   server: {
     proxy: {
       '/api/': {
@@ -29,5 +29,5 @@ export default defineConfig({
     alias: {
       '/src/client/main': path.resolve(__dirname, 'src/client/main'),
     },
-  }
+  },
 })
