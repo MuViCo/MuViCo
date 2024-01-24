@@ -24,6 +24,7 @@ module.exports = {
   plugins: ["react-refresh"],
   rules: {
     "no-console": "off",
+    "no-unused-vars": "off",
     "react/prop-types": "off",
     "prefer-arrow-callback": "error",
     "react-refresh/only-export-components": [
