@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: ./
-      dockerfile: dev.Containerfile
+      dockerfile: Containerfile
     image: dev
     environment:
       - DATABASE_URL=mongodb://root:root@db/admin
