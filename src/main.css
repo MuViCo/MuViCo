@@ -1,0 +1,49 @@
+body {
+    margin: auto;
+    max-width: 45em;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    background: blue;
+}
+
+.header {
+    background: sandybrown;
+    font-weight: bold;
+    padding: 2em 1em;
+    font-size: 2em;
+}
+
+nav li {
+    display: inline-block;
+    padding:  .5em;
+    background: white;
+    margin: .2em;
+}
+
+.content {
+   background: white;
+   padding: 1.5em 2em;
+}
+
+form {
+    background: blanchedalmond;
+}
+
+label {
+  margin-right: 5px;
+}
+
+label2 {
+  margin-right: 10px;
+}
+
+
+nav ul {
+    padding: 0;
+    margin: .5em;
+    text-align: center;
+}
+
+
+textarea {
+    word-break: break-all;
+}
