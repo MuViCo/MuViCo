@@ -18,41 +18,6 @@
     "type": "git",
     "url": "https://github.com/MuViCo/MuViCo"
   },
-  "eslintConfig": {
-    "extends": [
-      "airbnb",
-      "airbnb-javascript",
-      "prettier",
-      "plugin:cypress/recommended"
-    ],
-    "plugins": [
-      "prettier",
-      "cypress"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser",
-      "project": "./jsconfig.json"
-    },
-    "rules": {
-      "react/function-component-definition": [
-        2,
-        {
-          "namedComponents": "arrow-function",
-          "unnamedComponents": "arrow-function"
-        }
-      ],
-      "import/prefer-default-export": "off"
-    }
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "semi": false,
-    "singleQuote": true
-  },
-  "lint-staged": {
-    "src/**/*.{js,jsx}": "eslint",
-    "*.{js,jsx,json,md}": "prettier --write"
-  },
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -61,7 +26,11 @@
     "@tanstack/react-query": "^4.33.0",
     "@vitejs/plugin-react": "^4.0.4",
     "axios": "^1.6.5",
+<<<<<<< HEAD
     "bcrypt": "^5.1.1",
+=======
+    "bootstrap": "^5.3.2",
+>>>>>>> 493d4ad (added react-router and react-bootstrap)
     "connect-redis": "^7.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -80,9 +49,10 @@
     "openid-client": "^5.4.3",
     "passport": "^0.6.0",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.10.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^13.2.0",
-    "react-router-dom": "^6.15.0",
+    "react-router-dom": "^6.21.3",
     "vite": "^4.4.9",
     "winston": "^3.10.0"
   },
