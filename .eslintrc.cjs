@@ -32,5 +32,6 @@ module.exports = {
       { allowConstantExport: true },
     ],
     quotes: ["error", "double"],
+    semi: ["error", "never"],
   },
 };

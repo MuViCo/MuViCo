@@ -1,21 +1,11 @@
-import Login from "./components/Login";
-import loginService from "./services/login";
+import FrontPage from './components/frontpage'
 
 const App = () => {
-  const handleLogin = async (username, password) => {
-    try {
-      const user = await loginService.login({ username, password });
-      console.log(user);
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   return (
     <div>
-      <Login handleLogin={handleLogin} />
+      <FrontPage />
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App

@@ -1,10 +1,13 @@
-const express = require("express");
+const express = require('express')
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
+const mongoose = require('mongoose')
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", (req, res) => {
-  const testUsers = ["user1", "user2", "user3"];
-  res.send(testUsers);
-});
+router.get('/', async (req, res) => {
+  const users = await User.find({})
+  res.send(users.map((u) => u.toJSON()))
+})
 
-module.exports = router;
+module.exports = router
