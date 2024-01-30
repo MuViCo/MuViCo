@@ -6,7 +6,6 @@ import NavBar from "./NavBar"
 const FrontPage = () => {
   return (
     <>
-      <NavBar />
       <Body />
     </>
   )
