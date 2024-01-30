@@ -6,7 +6,7 @@ COPY package.json package-lock.json* ./
 
 # Install app dependencies
 RUN \
-  npm i -g concurrently
+  npm i
 
 # Copy the dependencies into a Slim Node docker image
 FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
