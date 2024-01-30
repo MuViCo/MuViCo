@@ -1,12 +1,23 @@
-FROM docker.io/node:18-alpine
+# Install the app dependencies in a full Node docker image
+FROM registry.access.redhat.com/ubi8/nodejs-18:latest
 
-ENV TZ="Europe/Helsinki"
+# Copy package.json, and optionally package-lock.json if it exists
+COPY package.json package-lock.json* ./
 
-WORKDIR /opt/app-root/src
+# Install app dependencies
+RUN \
+  if [ -f package-lock.json ]; then npm ci; \
+  else npm install; \
+  fi
 
-COPY package* ./
-RUN npm install -g npm@latest
+# Copy the dependencies into a Slim Node docker image
+FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
 
-EXPOSE 3000
+# Install app dependencies
+COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
+COPY . /opt/app-root/src
+
+ENV NODE_ENV production
+ENV PORT 3000
 
 CMD ["npm", "run", "dev"]
