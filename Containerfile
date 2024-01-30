@@ -5,7 +5,7 @@ ENV TZ="Europe/Helsinki"
 WORKDIR /opt/app-root/src
 
 COPY package* ./
-RUN npm i
+RUN npm install -g npm@latest
 
 EXPOSE 3000
 
