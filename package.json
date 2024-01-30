@@ -5,8 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "docker compose up",
-    "prod": "NODE_ENV=production node --loader ts-node/esm src/server/index.ts",
-    "dev": "NODE_ENV=development concurrently \"nodemon --exec node --loader esm src/server/index.js\" \"vite\"",
+    "dev": "nodemon src/server/index.js vite",
     "lint": "eslint 'src/**/*.js'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test": "npm run test:setup && npm run test:e2e",
