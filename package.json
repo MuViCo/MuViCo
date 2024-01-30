@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "docker compose up",
-    "dev": "NODE_ENV=development nodemon src/server/index.js vite",
+    "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite\"",
     "lint": "eslint 'src/**/*.js'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test": "npm run test:setup && npm run test:e2e",
