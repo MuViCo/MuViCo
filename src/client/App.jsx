@@ -1,16 +1,19 @@
-import { ChakraProvider, Box, Container } from '@chakra-ui/react'
-import NavBar from './components/frontpage/NavBar'
-import FrontPage from './components/frontpage'
-import theme from './lib/theme'
+import { ChakraProvider, Box, Container } from "@chakra-ui/react"
+import { Routes, Route } from "react-router-dom"
+import NavBar from "./components/frontpage/NavBar"
+import FrontPage from "./components/frontpage"
+import theme from "./lib/theme"
 
 const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <Box>
-      <NavBar />
+        <NavBar />
         <Container maxW="container.md" pt={20}>
-      <FrontPage />
-      </Container>
+          <Routes>
+            <Route path="/" element={<FrontPage />} />
+          </Routes>
+        </Container>
       </Box>
     </ChakraProvider>
   )
