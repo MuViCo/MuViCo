@@ -1,5 +1,5 @@
 import { Dropdown } from "react-bootstrap"
-import ThemeToggleButton from './theme-toggle-button'
+import ThemeToggleButton from "./theme-toggle-button"
 import {
   Container,
   Box,
@@ -11,9 +11,11 @@ import {
   MenuList,
   MenuButton,
   IconButton,
-  useColorModeValue
-} from '@chakra-ui/react'
+  useColorModeValue,
+} from "@chakra-ui/react"
 import Login from "./Login"
+import SignUp from "./SignUp"
+import signupService from "../../services/signup"
 import loginService from "../../services/login"
 
 const ColorSchemesExample = () => {
@@ -25,40 +27,66 @@ const ColorSchemesExample = () => {
       console.log(e)
     }
   }
+
+  const handleSignup = async (username, password) => {
+    try {
+      const user = await signupService.signup({ username, password })
+      console.log(user)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
   return (
-    <Box position="fixed"
-    as="nav"
-    w="101%"
-    bg={useColorModeValue('#ffffff42', '#20202380')}
-    style={{backdropFilter: 'blur(12px)', zIndex: 1000, top: 0}}>
-    <Container 
-        display="flex" 
-        p={4} 
-        maxW="container.md" 
-        wrap="wrap" 
+    <Box
+      position="fixed"
+      as="nav"
+      w="101%"
+      bg={useColorModeValue("#ffffff42", "#20202380")}
+      style={{ backdropFilter: "blur(12px)", zIndex: 1000, top: 0 }}
+    >
+      <Container
+        display="flex"
+        p={4}
+        maxW="container.md"
+        wrap="wrap"
         align="center"
-        justify="space-between">
+        justify="space-between"
+      >
         <Flex align="center" mr={7}>
-          <Heading as="h3" size="lg" letterSpacing={'tighter'}>
+          <Heading as="h3" size="lg" letterSpacing={"tighter"}>
             MuViCo
           </Heading>
         </Flex>
         <Box flex={3} align="right">
           <ThemeToggleButton />
-          <Box ml={4} display={{base: 'inline-block'}}>
-          <Dropdown>
-            <Dropdown.Toggle
-              variant="success"
-              style={{ backgroundColor: "red" }}
-            >
-              Login
-            </Dropdown.Toggle>
-            <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-              <Login handleLogin={handleLogin} />
-            </Dropdown.Menu>
-          </Dropdown>
+          <Box ml={4} display={{ base: "inline-block" }}>
+            <Dropdown>
+              <Dropdown.Toggle
+                variant="success"
+                style={{ backgroundColor: "red" }}
+              >
+                Login
+              </Dropdown.Toggle>
+              <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
+                <Login handleLogin={handleLogin} />
+              </Dropdown.Menu>
+            </Dropdown>
           </Box>
+          <Box ml={4} display={{ base: "inline-block" }}>
+            <Dropdown>
+              <Dropdown.Toggle
+                variant="success"
+                style={{ backgroundColor: "red" }}
+              >
+                SignUp
+              </Dropdown.Toggle>
+              <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
+                <SignUp handleSignup={handleSignup} />
+              </Dropdown.Menu>
+            </Dropdown>
           </Box>
+        </Box>
       </Container>
     </Box>
   )
