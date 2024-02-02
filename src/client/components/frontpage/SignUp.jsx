@@ -38,7 +38,7 @@ const SignUpForm = () => (
       <Field
         type="password"
         name="password"
-        placeholder="Username"
+        placeholder="Password"
         as={BootstrapForm.Control}
       />
     </BootstrapForm.Group>
