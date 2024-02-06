@@ -1,17 +1,12 @@
 import { Dropdown } from "react-bootstrap"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import ThemeToggleButton from "./theme-toggle-button"
 import {
   Container,
   Box,
-  Stack,
   Heading,
   Flex,
-  Menu,
-  MenuItem,
-  MenuList,
-  MenuButton,
-  IconButton,
   useColorModeValue,
   Button,
 } from "@chakra-ui/react"
@@ -20,27 +15,43 @@ import SignUp from "./SignUp"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
 
-const ColorSchemesExample = () => {
+const NavBar = () => {
   const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem("user")
+    if (loggedUserJSON) {
+      const user = JSON.parse(loggedUserJSON)
+      setUser(user)
+    }
+  }, [])
 
   const handleLogin = async (username, password) => {
     try {
       const user = await loginService.login({ username, password })
+      window.localStorage.setItem("user", JSON.stringify(user))
       setUser(user)
+      navigate("/home")
     } catch (e) {
       console.log(e)
     }
   }
 
-  console.log(user)
-
   const handleSignup = async (username, password) => {
     try {
       const user = await signupService.signup({ username, password })
       setUser(user)
+      navigate("/home")
     } catch (e) {
       console.log(e)
     }
+  }
+
+  const handleLogout = () => {
+    window.localStorage.removeItem("user")
+    setUser(null)
+    navigate("/")
   }
 
   return (
@@ -68,7 +79,7 @@ const ColorSchemesExample = () => {
           <ThemeToggleButton />
           {user && (
             <Box ml={4} display={{ base: "inline-block" }}>
-              <Button colorScheme="red" onClick={() => setUser(null)}>
+              <Button colorScheme="red" onClick={handleLogout}>
                 Logout
               </Button>
             </Box>
@@ -109,4 +120,4 @@ const ColorSchemesExample = () => {
   )
 }
 
-export default ColorSchemesExample
+export default NavBar
