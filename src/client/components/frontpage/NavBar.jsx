@@ -1,4 +1,5 @@
 import { Dropdown } from "react-bootstrap"
+import { useState } from "react"
 import ThemeToggleButton from "./theme-toggle-button"
 import {
   Container,
@@ -12,6 +13,7 @@ import {
   MenuButton,
   IconButton,
   useColorModeValue,
+  Button,
 } from "@chakra-ui/react"
 import Login from "./Login"
 import SignUp from "./SignUp"
@@ -19,19 +21,23 @@ import signupService from "../../services/signup"
 import loginService from "../../services/login"
 
 const ColorSchemesExample = () => {
+  const [user, setUser] = useState(null)
+
   const handleLogin = async (username, password) => {
     try {
       const user = await loginService.login({ username, password })
-      console.log(user)
+      setUser(user)
     } catch (e) {
       console.log(e)
     }
   }
 
+  console.log(user)
+
   const handleSignup = async (username, password) => {
     try {
       const user = await signupService.signup({ username, password })
-      console.log(user)
+      setUser(user)
     } catch (e) {
       console.log(e)
     }
@@ -60,32 +66,43 @@ const ColorSchemesExample = () => {
         </Flex>
         <Box flex={3} align="right">
           <ThemeToggleButton />
-          <Box ml={4} display={{ base: "inline-block" }}>
-            <Dropdown>
-              <Dropdown.Toggle
-                variant="success"
-                style={{ backgroundColor: "red" }}
-              >
-                Login
-              </Dropdown.Toggle>
-              <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                <Login handleLogin={handleLogin} />
-              </Dropdown.Menu>
-            </Dropdown>
-          </Box>
-          <Box ml={4} display={{ base: "inline-block" }}>
-            <Dropdown>
-              <Dropdown.Toggle
-                variant="success"
-                style={{ backgroundColor: "red" }}
-              >
-                SignUp
-              </Dropdown.Toggle>
-              <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                <SignUp handleSignup={handleSignup} />
-              </Dropdown.Menu>
-            </Dropdown>
-          </Box>
+          {user && (
+            <Box ml={4} display={{ base: "inline-block" }}>
+              <Button colorScheme="red" onClick={() => setUser(null)}>
+                Logout
+              </Button>
+            </Box>
+          )}
+          {!user && (
+            <>
+              <Box ml={4} display={{ base: "inline-block" }}>
+                <Dropdown>
+                  <Dropdown.Toggle
+                    variant="success"
+                    style={{ backgroundColor: "red" }}
+                  >
+                    Login
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
+                    <Login handleLogin={handleLogin} />
+                  </Dropdown.Menu>
+                </Dropdown>
+              </Box>
+              <Box ml={4} display={{ base: "inline-block" }}>
+                <Dropdown>
+                  <Dropdown.Toggle
+                    variant="success"
+                    style={{ backgroundColor: "red" }}
+                  >
+                    SignUp
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
+                    <SignUp handleSignup={handleSignup} />
+                  </Dropdown.Menu>
+                </Dropdown>
+              </Box>
+            </>
+          )}
         </Box>
       </Container>
     </Box>
