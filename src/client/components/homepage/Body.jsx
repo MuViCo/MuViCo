@@ -1,9 +1,10 @@
 import { Container } from '@chakra-ui/react'
+import { Button } from "react-bootstrap"
 
 const Body = () => {
     return(
         <Container>
-            <p>moi</p>
+            <Button type="submit" onClick={() => console.log("click")}>Create template</Button>
         </Container>
         
     )
