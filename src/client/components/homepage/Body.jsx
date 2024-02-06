@@ -1,10 +1,16 @@
 import { Container } from '@chakra-ui/react'
 import { Button } from "react-bootstrap"
+import { useNavigate } from 'react-router-dom'
 
 const Body = () => {
-    return(
+  const navigate = useNavigate()
+  const handleClick = () => {
+    navigate("/presentation")
+    
+  }
+  return(
         <Container>
-            <Button type="submit" onClick={() => console.log("click")}>Create template</Button>
+            <Button type="submit" onClick={handleClick}>Create template</Button>
         </Container>
         
     )

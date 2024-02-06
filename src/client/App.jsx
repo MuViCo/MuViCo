@@ -1,6 +1,6 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
 import { Routes, Route } from "react-router-dom"
-import NavBar from "./components/frontpage/NavBar"
+import NavBar from "./components/navbar/"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
 import theme from "./lib/theme"
