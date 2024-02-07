@@ -40,9 +40,8 @@ const NavBar = () => {
 
   const handleSignup = async (username, password) => {
     try {
-      const user = await signupService.signup({ username, password })
-      setUser(user)
-      navigate("/home")
+      await signupService.signup({ username, password })
+      handleLogin(username, password)
     } catch (e) {
       console.log(e)
     }
