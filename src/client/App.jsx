@@ -11,7 +11,9 @@ import PresentationPage from "./components/presentation/"
 const App = () => {
   const [user, setUser] = useState(null)
 
-  console.log(user)
+  console.log("user", user)
+
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
@@ -19,7 +21,12 @@ const App = () => {
       const user = JSON.parse(loggedUserJSON)
       setUser(user)
     }
+    setIsInitialized(true)
   }, [])
+
+  if (!isInitialized) {
+    return <div>Loading...</div>
+  }
 
   return (
     <ChakraProvider theme={theme}>
