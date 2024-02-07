@@ -15,17 +15,8 @@ import SignUp from "./SignUp"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
 
-const NavBar = () => {
-  const [user, setUser] = useState(null)
+const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("user")
-    if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON)
-      setUser(user)
-    }
-  }, [])
 
   const handleLogin = async (username, password) => {
     try {
