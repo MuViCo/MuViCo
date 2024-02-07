@@ -1,6 +1,11 @@
 import { Form, Formik, Field, ErrorMessage } from "formik"
 import { Form as BootstrapForm, Button } from "react-bootstrap"
+import { useState } from "react"
 import * as yup from "yup"
+
+import signupService from "../../services/signup"
+import loginService from "../../services/login"
+import Error from "./Error"
 
 const initialValues = {
   username: "",
@@ -70,19 +75,33 @@ const SignUpForm = () => (
   </Form>
 )
 
-const SignUp = ({ handleSignup }) => {
-  const onSubmit = (values) => {
-    handleSignup(values.username, values.password)
+const SignUp = ({ onSignup }) => {
+  const [error, setError] = useState(null)
+
+  const onSubmit = async ({ username, password }) => {
+    try {
+      await signupService.signup({ username, password })
+      const user = await loginService.login({ username, password })
+      const userJSON = JSON.stringify(user)
+      window.localStorage.setItem("user", userJSON)
+      onSignup(userJSON)
+    } catch (e) {
+      console.log(e)
+      setError(e.response.data.error)
+    }
   }
 
   return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={onSubmit}
-      validationSchema={validationSchema}
-    >
-      {() => <SignUpForm />}
-    </Formik>
+    <>
+      <Formik
+        initialValues={initialValues}
+        onSubmit={onSubmit}
+        validationSchema={validationSchema}
+      >
+        {() => <SignUpForm />}
+      </Formik>
+      <Error error={error} />
+    </>
   )
 }
 

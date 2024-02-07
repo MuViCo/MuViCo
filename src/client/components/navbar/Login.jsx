@@ -1,5 +1,9 @@
 import { Form, Formik, Field } from "formik"
 import { Form as BootstrapForm, Button } from "react-bootstrap"
+import { useState } from "react"
+
+import loginService from "../../services/login"
+import Error from "./Error"
 
 const initialValues = {
   username: "",
@@ -33,15 +37,28 @@ const LoginForm = () => (
   </Form>
 )
 
-const Login = ({ handleLogin }) => {
-  const onSubmit = (values) => {
-    handleLogin(values.username, values.password)
+const Login = ({ onLogin }) => {
+  const [error, setError] = useState(null)
+
+  const onSubmit = async ({ username, password }) => {
+    try {
+      const user = await loginService.login({ username, password })
+      const userJSON = JSON.stringify(user)
+      window.localStorage.setItem("user", userJSON)
+      onLogin(userJSON)
+    } catch (e) {
+      console.log(e)
+      setError(e.response.data.error)
+    }
   }
 
   return (
-    <Formik initialValues={initialValues} onSubmit={onSubmit}>
-      {() => <LoginForm />}
-    </Formik>
+    <>
+      <Formik initialValues={initialValues} onSubmit={onSubmit}>
+        {() => <LoginForm />}
+      </Formik>
+      <Error error={error} />
+    </>
   )
 }
 

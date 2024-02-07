@@ -11,6 +11,8 @@ import PresentationPage from "./components/presentation/"
 const App = () => {
   const [user, setUser] = useState(null)
 
+  console.log(user)
+
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
     if (loggedUserJSON) {

@@ -18,15 +18,14 @@ import loginService from "../../services/login"
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
 
-  const handleLogin = async (username, password) => {
-    try {
-      const user = await loginService.login({ username, password })
-      window.localStorage.setItem("user", JSON.stringify(user))
-      setUser(user)
-      navigate("/home")
-    } catch (e) {
-      console.log(e)
-    }
+  const onLogin = (userJSON) => {
+    setUser(userJSON)
+    navigate("/home")
+  }
+
+  const onSignup = (userJSON) => {
+    setUser(userJSON)
+    navigate("/home")
   }
 
   const handleSignup = async (username, password) => {
@@ -85,7 +84,7 @@ const NavBar = ({ user, setUser }) => {
                     Login
                   </Dropdown.Toggle>
                   <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                    <Login handleLogin={handleLogin} />
+                    <Login onLogin={onLogin} />
                   </Dropdown.Menu>
                 </Dropdown>
               </Box>
@@ -98,7 +97,7 @@ const NavBar = ({ user, setUser }) => {
                     SignUp
                   </Dropdown.Toggle>
                   <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                    <SignUp handleSignup={handleSignup} />
+                    <SignUp onSignup={onSignup} />
                   </Dropdown.Menu>
                 </Dropdown>
               </Box>
