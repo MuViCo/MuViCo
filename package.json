@@ -8,11 +8,13 @@
     "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite\"",
     "lint": "eslint 'src/**/*.js'",
     "format": "prettier --write '*.{js,json,css,md}'",
-    "test": "npm run test:setup && npm run test:e2e",
-    "test:setup": "docker compose down && docker compose -f compose.ci.yaml up -d --build",
     "test:e2e": "cypress run",
     "build": "vite build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
   },
   "repository": {
     "type": "git",
@@ -66,8 +68,12 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.22.11",
-    "@babel/preset-typescript": "^7.22.11",
+    "@babel/preset-env": "^7.23.9",
+    "@babel/preset-react": "^7.23.3",
     "@esbuild/linux-x64": "^0.20.0",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
     "concurrently": "^8.2.1",
     "cypress": "^12.17.4",
     "eslint": "^8.47.0",
@@ -77,6 +83,8 @@
     "eslint-plugin-cypress": "^2.14.0",
     "eslint-plugin-prettier": "^5.0.0",
     "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "^14.0.1",
     "nodemon": "^3.0.3",
     "prettier": "^3.0.2"
