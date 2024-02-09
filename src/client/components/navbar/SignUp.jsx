@@ -15,65 +15,91 @@ const initialValues = {
 }
 
 const validationSchema = yup.object().shape({
-  username: yup.string().required("Username is required"),
-  password: yup.string().required("Password is required"),
+  username: yup
+    .string()
+    .required("Username is required")
+    .min(3, "Username must be at least 3 characters"),
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(3, "Password must be at least 3 characters"),
   password_confirmation: yup
     .string()
     .oneOf([yup.ref("password"), null], "Passwords must match")
     .required("Password confirmation is required"),
 })
 
-const SignUpForm = () => (
-  <Form>
-    <BootstrapForm.Group>
-      <BootstrapForm.Label>Username</BootstrapForm.Label>
-      <Field
-        type="text"
-        name="username"
-        placeholder="Username"
-        as={BootstrapForm.Control}
-      />
-    </BootstrapForm.Group>
-    <ErrorMessage
-      name="username"
-      component="div"
-      className="alert alert-danger"
-    />
-    <BootstrapForm.Group>
-      <BootstrapForm.Label>Password</BootstrapForm.Label>
-      <Field
-        type="password"
-        name="password"
-        placeholder="Password"
-        as={BootstrapForm.Control}
-      />
-    </BootstrapForm.Group>
-    <ErrorMessage
-      name="password"
-      component="div"
-      className="alert alert-danger"
-    />
+export const SignUpForm = ({ onSubmit, error }) => (
+  <>
+    <Formik
+      initialValues={initialValues}
+      onSubmit={onSubmit}
+      validationSchema={validationSchema}
+    >
+      {({ handleSubmit }) => (
+        <Form>
+          <BootstrapForm.Group>
+            <BootstrapForm.Label htmlFor="username">
+              Username
+            </BootstrapForm.Label>
+            <Field
+              id="username"
+              type="text"
+              name="username"
+              placeholder="Username"
+              as={BootstrapForm.Control}
+            />
+          </BootstrapForm.Group>
+          <ErrorMessage
+            name="username"
+            component="div"
+            className="alert alert-danger"
+          />
+          <BootstrapForm.Group>
+            <BootstrapForm.Label htmlFor="password">
+              Password
+            </BootstrapForm.Label>
+            <Field
+              id="password"
+              type="password"
+              name="password"
+              placeholder="Password"
+              as={BootstrapForm.Control}
+            />
+          </BootstrapForm.Group>
+          <ErrorMessage
+            name="password"
+            component="div"
+            className="alert alert-danger"
+          />
 
-    <BootstrapForm.Group>
-      <BootstrapForm.Label>Confirm Password</BootstrapForm.Label>
-      <Field
-        type="password"
-        name="password_confirmation"
-        placeholder="Password"
-        as={BootstrapForm.Control}
-      />
-    </BootstrapForm.Group>
-    <ErrorMessage
-      name="password_confirmation"
-      component="div"
-      className="alert alert-danger"
-    />
+          <BootstrapForm.Group>
+            <BootstrapForm.Label htmlFor="password_confirmation">
+              Confirm Password
+            </BootstrapForm.Label>
+            <Field
+              id="password_confirmation"
+              type="password"
+              name="password_confirmation"
+              placeholder="Password"
+              as={BootstrapForm.Control}
+            />
+          </BootstrapForm.Group>
+          <ErrorMessage
+            name="password_confirmation"
+            component="div"
+            className="alert alert-danger"
+          />
 
-    <br />
-    <Button variant="primary" type="submit">
-      Submit
-    </Button>
-  </Form>
+          <br />
+          <Button variant="primary" type="submit">
+            Submit
+          </Button>
+        </Form>
+      )}
+    </Formik>
+    <Error error={error} />
+  </>
 )
 
 const SignUp = ({ onSignup }) => {
@@ -93,18 +119,7 @@ const SignUp = ({ onSignup }) => {
     }
   }
 
-  return (
-    <>
-      <Formik
-        initialValues={initialValues}
-        onSubmit={onSubmit}
-        validationSchema={validationSchema}
-      >
-        {() => <SignUpForm />}
-      </Formik>
-      <Error error={error} />
-    </>
-  )
+  return <SignUpForm onSubmit={onSubmit} error={error} />
 }
 
 export default SignUp

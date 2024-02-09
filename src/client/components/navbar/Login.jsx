@@ -11,31 +11,44 @@ const initialValues = {
   password: "",
 }
 
-const LoginForm = () => (
-  <Form>
-    <BootstrapForm.Group>
-      <BootstrapForm.Label>Username</BootstrapForm.Label>
-      <Field
-        type="text"
-        name="username"
-        placeholder="Username"
-        as={BootstrapForm.Control}
-      />
-    </BootstrapForm.Group>
-    <BootstrapForm.Group>
-      <BootstrapForm.Label>Password</BootstrapForm.Label>
-      <Field
-        type="password"
-        name="password"
-        placeholder="Username"
-        as={BootstrapForm.Control}
-      />
-    </BootstrapForm.Group>
-    <br />
-    <Button variant="primary" type="submit">
-      Submit
-    </Button>
-  </Form>
+export const LoginForm = ({ onSubmit, error }) => (
+  <>
+    <Formik initialValues={initialValues} onSubmit={onSubmit}>
+      {({ handleSubmit }) => (
+        <Form>
+          <BootstrapForm.Group>
+            <BootstrapForm.Label htmlFor="username">
+              Username
+            </BootstrapForm.Label>
+            <Field
+              id="username"
+              type="text"
+              name="username"
+              placeholder="Username"
+              as={BootstrapForm.Control}
+            />
+          </BootstrapForm.Group>
+          <BootstrapForm.Group>
+            <BootstrapForm.Label htmlFor="password">
+              Password
+            </BootstrapForm.Label>
+            <Field
+              id="password"
+              type="password"
+              name="password"
+              placeholder="Password"
+              as={BootstrapForm.Control}
+            />
+          </BootstrapForm.Group>
+          <br />
+          <Button variant="primary" type="submit">
+            Submit
+          </Button>
+        </Form>
+      )}
+    </Formik>
+    <Error error={error} />
+  </>
 )
 
 const Login = ({ onLogin }) => {
@@ -55,14 +68,7 @@ const Login = ({ onLogin }) => {
     }
   }
 
-  return (
-    <>
-      <Formik initialValues={initialValues} onSubmit={onSubmit}>
-        {() => <LoginForm />}
-      </Formik>
-      <Error error={error} />
-    </>
-  )
+  return <LoginForm onSubmit={onSubmit} error={error} />
 }
 
 export default Login
