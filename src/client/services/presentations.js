@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { normalizeUnicode } from 'pdfjs-dist'
-const baseUrl = 'localhost:8000/api/home'
+const baseUrl = 'localhost:8000/api/home/'
 
 let token = null
 
@@ -10,7 +10,10 @@ const getAll = () => {
 }
 
 const create = async newObject => {
-    const response = await axios.post(baseUrl, newObject)
+    const config = {
+    headers: { Authorization: token }
+  }
+    const response = await axios.post(baseUrl, newObject, config)
     return response.data
 }
 

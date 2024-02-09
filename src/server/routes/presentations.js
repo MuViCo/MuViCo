@@ -9,30 +9,32 @@ const router = express.Router()
 
 router.get('/', async (req, res) => {
     const presentations = await Presentation
-            .find({}).populate('user', { username: 1, name: 1 })
+            .find({}).populate('user', { username: 1 })
 
     res.json(presentations.map((presentation) => presentation.toJSON()))
 })
 
 router.post('/', userExtractor, async (req, res) => {
-    const body = req.body
-    const decodedToken = jwt.verify(getTokenFrom(request), process.env.SERCRET)
-    if (!decodedToken.id) {
-        return res.status(401).json({ error: 'invalid token' })
-    }
+    const { name } = req.body  
 
-    const user = await User.findById(decodedToken.id)
+    const user = request.user
+
+    if (!user) {
+     return res.status(401).json({ error: "operation not permitted" })
+  }
 
     const presentation = new Presentation({
-        presentationName: body.presentationName,
-        user: user._id
-    })
+    name
+  })
 
-    const savedPresentation = await presentation.save()
-    user.presentations = user.presentations.concat(savedPresentation._id)
+    presentation.user = user._id
+
+    const createdPresentation = await presentation.save()
+    
+    user.presentations = user.presentations.concat(createdPresentation._id)
     await user.save()
 
-    res.json(savedPresentation.toJSON())
+    res.status(201).json()
 })
 
 
