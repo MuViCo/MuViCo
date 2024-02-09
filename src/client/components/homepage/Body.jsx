@@ -1,50 +1,41 @@
 import { Container } from '@chakra-ui/react'
-import { Button } from "react-bootstrap"
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import presentationService from '../../services/presentations'
-import PresentationForm from '../../components/presentation/presentationform'
-import presentations from '../../services/presentations'
+import PresentationForm from './presentationform'
 import Togglable from './Togglable'
+ 
+import Presentation from './Presentation'
 
 
 const Body = () => {
-  const navigate = useNavigate()
-  const handleClick = () => {
-    navigate("/presentation")
-    }
+  const [presentations, setPresentations] = useState([])
 
-  const presentationFormRef = useRef()
-
-  const addPresentation = (presentationObject) => {
-    presentationService
-        .create(presentationObject)
-        .then(returnedPresentation => {
-          setPresentations(presentations.concat(returnedPresentation))
-          presentationFormRef.current.toggleVisibility()
-          setErrorMessage('Created new presentation')
-        })
-  }
-
-  const handleRemove = async (id) => {
-    const presentation = presentations.find(p => p.id === id)
-    if (window.confirm('Remove presentation?')) {
-      presentationService
-        .remove(id)
-        .then(() => {
-          setPresentations(presentations.filter(blog => blog.id !== id))
-          setErrorMessage('Removed presentation ${presentation.name}')
-        })
-    }
-  }
-
-  return(
-        <Container>
-            <Togglable buttonLabel="New presentation" ref={presentationFormRef}>
-              <PresentationForm createPresentation={addPresentation} />
-              </Togglable>
-        </Container>
-        
+  useEffect(() => {
+    presentationService.getAll().then(presentations =>
+      setPresentations(presentations)
     )
+  }, [])
+
+  const createPresentation = (presentationObject) => {
+    presentationService.create(presentationObject).then(returnedPresentation => {
+      setPresentations(presentations.concat(returnedPresentation))
+    })
+  }
+
+  return (
+    <Container>
+      <div>
+      <Togglable buttonLabel='new presentation'>
+        <PresentationForm createPresentation={createPresentation} />
+      </Togglable>
+      
+      <h2>Presentations</h2>
+      {presentations.map(presentation =>
+        <Presentation presentation={presentation} />
+      )}
+    </div>
+    </Container>  
+  )
 }
 export default Body

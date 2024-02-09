@@ -6,6 +6,7 @@ import * as yup from "yup"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
 import Error from "./Error"
+import presentationService from "../../services/presentations"
 
 const initialValues = {
   username: "",
@@ -84,6 +85,7 @@ const SignUp = ({ onSignup }) => {
       const user = await loginService.login({ username, password })
       const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", userJSON)
+      presentationService.setToken(user.token)
       onSignup(userJSON)
     } catch (e) {
       console.log(e)

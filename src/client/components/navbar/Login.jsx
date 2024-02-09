@@ -1,6 +1,7 @@
 import { Form, Formik, Field } from "formik"
 import { Form as BootstrapForm, Button } from "react-bootstrap"
 import { useState } from "react"
+import presentationService from "../../services/presentations"
 
 import loginService from "../../services/login"
 import Error from "./Error"
@@ -43,9 +44,11 @@ const Login = ({ onLogin }) => {
   const onSubmit = async ({ username, password }) => {
     try {
       const user = await loginService.login({ username, password })
-      const userJSON = JSON.stringify(user)
-      window.localStorage.setItem("user", userJSON)
-      onLogin(userJSON)
+      //const userJSON = JSON.stringify(user)
+      window.localStorage.setItem("user", JSON.stringify(user))
+      console.log(user)
+      presentationService.setToken(user.token)
+      onLogin(JSON.stringify(user))
     } catch (e) {
       console.log(e)
       setError(e.response.data.error)

@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 const { userExtractor } = require("../utils/middleware");
 const User = require("../models/user");
 const Presentation = require("../models/presentation");
-const logger = require("../utils/logger");
 
 const router = express.Router();
 

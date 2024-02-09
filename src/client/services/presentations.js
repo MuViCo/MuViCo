@@ -1,8 +1,11 @@
 import axios from 'axios'
-import { normalizeUnicode } from 'pdfjs-dist'
-const baseUrl = 'localhost:8000/api/home/'
+const baseUrl = 'http://localhost:8000/api/home/'
 
 let token = null
+
+const setToken = newToken => {
+  token = `Bearer ${newToken}`
+}
 
 const getAll = () => {
     const request = axios.get(baseUrl)
@@ -13,6 +16,9 @@ const create = async newObject => {
     const config = {
     headers: { Authorization: token }
   }
+
+    console.log('config', config)
+    
     const response = await axios.post(baseUrl, newObject, config)
     return response.data
 }
@@ -22,4 +28,4 @@ const remove = (id) => {
     return request.then(response => response.data)
 }
 
-export default { getAll, create }
+export default { setToken, getAll, create }

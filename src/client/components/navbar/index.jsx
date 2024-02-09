@@ -28,15 +28,6 @@ const NavBar = ({ user, setUser }) => {
     navigate("/home")
   }
 
-  const handleSignup = async (username, password) => {
-    try {
-      await signupService.signup({ username, password })
-      handleLogin(username, password)
-    } catch (e) {
-      console.log(e)
-    }
-  }
-
   const handleLogout = () => {
     window.localStorage.removeItem("user")
     setUser(null)

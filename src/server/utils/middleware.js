@@ -16,7 +16,6 @@ const getTokenFrom = (request) => {
   const auth = request.headers.authorization;
   if (auth && auth.toLowerCase().startsWith("bearer ")) {
     request.token = auth.substring(7);
-    logger.info("token", request.token);
   }
   return null;
 };
