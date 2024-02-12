@@ -25,4 +25,4 @@ USER 1001
 
 EXPOSE 8000
 
-CMD ["npm", "run", "prod"]
+CMD ["npm", "run", "dev"]
