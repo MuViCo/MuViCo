@@ -6,6 +6,7 @@
   "scripts": {
     "start": "docker compose up",
     "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite\"",
+    "prod": "node src/server/index.js",
     "lint": "eslint 'src/**/*.js'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test:e2e": "cypress run",
