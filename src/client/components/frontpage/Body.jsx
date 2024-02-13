@@ -1,24 +1,15 @@
+import { Container, Box, Heading, useColorModeValue, Spacer } from '@chakra-ui/react'
+
 const Body = () => {
-  const pageStyle = {
-    textAlign: "center",
-    backgroundColor: "blue",
-    maxWidth: "50em",
-  }
-  const bodystyle = {
-    margin: "auto",
-    maxWidth: "100em",
-    fontFamily: "'Helvetica','Arial','sans-serif'",
-    backgroundColor: "green",
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-  }
   return (
-    <div style={bodystyle}>
-      <div style={pageStyle}>
-        <h1>MuViCo</h1>
+    <Container>
+      <Box
+        borderRadius="lg"
+        mb={6}
+        p={3}
+        textAlign="center"
+        bg={useColorModeValue('whiteAlpha.500', 'whiteAlpha.200')}
+        css={{ backdropFilter: 'blur(10px)' }}>
         <p>
           MuviCo is a multimodal application designed to provide versatile
           visual elements and support functions for live music performances.The
@@ -28,10 +19,10 @@ const Body = () => {
           intended to operate on computers. The application displays lyrics,
           images, or AI-generated visuals to enhance the musical experience.
           Additionally, it reflects the lyrics to support the singer. All
-          performances can be pre-planned or guided in real-time."
+          performances can be pre-planned or guided in real-time.
         </p>
-      </div>
-    </div>
+        </Box>
+    </Container>
   )
 }
 

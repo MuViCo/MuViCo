@@ -2,11 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-//import { BASE_PATH } from './src/config'
-
 export default defineConfig({
   plugins: [react()],
-  // base: BASE_PATH,
+  base: '/',
   server: {
     proxy: {
       '/api/': {
@@ -21,9 +19,6 @@ export default defineConfig({
     host: true,
     strictPort: true,
     port: 3000,
-  },
-  define: {
-    'process.env': process.env,
   },
   resolve: {
     alias: {

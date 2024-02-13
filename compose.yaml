@@ -5,7 +5,7 @@ services:
       dockerfile: Containerfile
     image: dev
     environment:
-      - DATABASE_URL=mongodb://root:root@db/admin
+      - DATABASE_URL=DATABASE_URI
     volumes:
       - ./:/opt/app-root/src
     ports:
