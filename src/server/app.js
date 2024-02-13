@@ -10,7 +10,6 @@ const logger = require("./utils/logger");
 const indexRouter = require("./routes/index");
 const signupRouter = require("./routes/signup");
 const loginRouter = require("./routes/login");
-const usersRouter = require("./routes/users");
 const presentationsRouter = require("./routes/presentations");
 
 const middleware = require("./utils/middleware");
@@ -46,7 +45,6 @@ app.use(middleware.requestLogger);
 app.use("/", indexRouter);
 app.use("/api/login", loginRouter);
 app.use("/api/signup", signupRouter);
-app.use("/api/users", usersRouter);
 app.use("/api/home", presentationsRouter);
 
 app.use(middleware.unknownEndpoint);

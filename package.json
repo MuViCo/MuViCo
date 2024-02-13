@@ -12,7 +12,7 @@
     "test:e2e": "cypress run",
     "build": "vite build",
     "prepare": "husky install",
-    "test": "jest"
+    "test": "NODE_ENV=test jest --verbose --runInBand"
   },
   "jest": {
     "testEnvironment": "jsdom"
