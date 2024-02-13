@@ -11,6 +11,7 @@ const indexRouter = require("./routes/index");
 const signupRouter = require("./routes/signup");
 const loginRouter = require("./routes/login");
 const presentationsRouter = require("./routes/presentations");
+const presentationRouter = require("./routes/presentation");
 
 const middleware = require("./utils/middleware");
 
@@ -46,6 +47,7 @@ app.use("/", indexRouter);
 app.use("/api/login", loginRouter);
 app.use("/api/signup", signupRouter);
 app.use("/api/home", presentationsRouter);
+app.use("/api/presentation", presentationRouter);
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);

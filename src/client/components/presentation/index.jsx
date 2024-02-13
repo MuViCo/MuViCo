@@ -1,14 +1,26 @@
-import { Heading, Container } from '@chakra-ui/react'
-import PDFViewer from './pdfviewer'
-
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Heading, Container } from '@chakra-ui/react';
+import presentationService from '../../services/presentation';
 
 export const PresentationPage = () => {
-  return (
-  <Container>
-      <Heading as="h2">New Presentation</Heading>
-      <PDFViewer src="./notes.pdf" />
-    </Container>
-  )
-}
+  const { id } = useParams();
+  const [presentationInfo, setPresentationInfo] = useState(null);
 
-export default PresentationPage
+  useEffect(() => {
+    presentationService.get(id).then((info) => setPresentationInfo(info));
+  }, [id]);
+
+  return (
+    <Container>
+      {presentationInfo && (
+        <div>
+          <p>Name: {presentationInfo.name}</p>
+          <p>Ques: {presentationInfo.ques}</p>
+        </div>
+      )}
+    </Container>
+  );
+};
+
+export default PresentationPage;
