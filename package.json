@@ -5,17 +5,17 @@
   "main": "src/index.js",
   "scripts": {
     "start": "docker compose up",
-    "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite\"",
+    "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite --host\"",
     "prod": "node src/server/index.js",
     "lint": "eslint 'src/**/*.js'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test:e2e": "cypress run",
+    "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom",
     "build": "vite build",
     "prepare": "husky install",
-    "test": "NODE_ENV=test jest --verbose --runInBand"
-  },
-  "jest": {
-    "testEnvironment": "jsdom"
+    "test-backend": "NODE_ENV=test jest --testPathPattern=src/server/tests/ --verbose --runInBand --env=node",
+    "test:cypress-open": "cypress open",
+    "test-all": "npm run test-frontend && npm run test-backend"
   },
   "repository": {
     "type": "git",
