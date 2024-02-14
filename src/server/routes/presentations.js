@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   const presentations = await Presentation.find({}).populate("user", {
-    username: 1,
+    username: 1
   });
 
   res.json(presentations.map((presentation) => presentation.toJSON()));

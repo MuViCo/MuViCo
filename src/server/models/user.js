@@ -9,10 +9,12 @@ const userSchema = mongoose.Schema({
     minlength: 3,
   },
   passwordHash: String,
-  presentations: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Presentation' 
-  }]
+  presentations: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Presentation' 
+    }
+  ]
 })
 
 userSchema.set("toJSON", {
