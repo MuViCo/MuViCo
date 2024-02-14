@@ -1,5 +1,3 @@
-import { Dropdown } from "react-bootstrap"
-import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import ThemeToggleButton from "./theme-toggle-button"
 import {
@@ -9,11 +7,13 @@ import {
   Flex,
   useColorModeValue,
   Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from "@chakra-ui/react"
 import Login from "./Login"
 import SignUp from "./SignUp"
-import signupService from "../../services/signup"
-import loginService from "../../services/login"
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
@@ -38,9 +38,8 @@ const NavBar = ({ user, setUser }) => {
     <Box
       position="fixed"
       as="nav"
-      w="101%"
-      bg={useColorModeValue("#ffffff42", "#20202380")}
-      style={{ backdropFilter: "blur(12px)", zIndex: 1000, top: 0 }}
+      w="100%"
+      style={{ backdropFilter: "blur(10px)", zIndex: 1000, top: 0 }}
     >
       <Container
         display="flex"
@@ -59,39 +58,33 @@ const NavBar = ({ user, setUser }) => {
           <ThemeToggleButton />
           {user && (
             <Box ml={4} display={{ base: "inline-block" }}>
-              <Button colorScheme="red" onClick={handleLogout}>
+              <Button colorScheme="teal" variant="ghost" onClick={handleLogout}>
                 Logout
               </Button>
             </Box>
           )}
           {!user && (
             <>
-              <Box ml={4} display={{ base: "inline-block" }}>
-                <Dropdown>
-                  <Dropdown.Toggle
-                    variant="success"
-                    style={{ backgroundColor: "red" }}
-                  >
-                    Login
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                    <Login onLogin={onLogin} />
-                  </Dropdown.Menu>
-                </Dropdown>
-              </Box>
-              <Box ml={4} display={{ base: "inline-block" }}>
-                <Dropdown>
-                  <Dropdown.Toggle
-                    variant="success"
-                    style={{ backgroundColor: "red" }}
-                  >
-                    SignUp
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu style={{ padding: ".76rem", width: "300px" }}>
-                    <SignUp onSignup={onSignup} />
-                  </Dropdown.Menu>
-                </Dropdown>
-              </Box>
+             <Box ml={4} display={{base: 'inline-block'}}>
+              <Menu>
+                <MenuButton as={Button} colorScheme="teal" variant="outline">Login</MenuButton>
+                <MenuList>
+                  <Box p={2}>
+                  <Login onLogin={onLogin} />
+                  </Box>
+                </MenuList>
+              </Menu>
+             </Box>
+             <Box ml={4} display={{base: 'inline-block'}}>
+              <Menu>
+                <MenuButton as={Button} colorScheme="teal">Sign Up</MenuButton>
+                <MenuList>
+                  <Box p={2}>
+                  <SignUp onSignup={onSignup} />
+                  </Box>
+                </MenuList>
+              </Menu>
+             </Box>
             </>
           )}
         </Box>

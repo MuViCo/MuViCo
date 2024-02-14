@@ -7,6 +7,8 @@ import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
 import theme from "./lib/theme"
 import PresentationPage from "./components/presentation/"
+import presentationService from "./services/presentations"
+import Fonts from "./lib/fonts"
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -20,6 +22,7 @@ const App = () => {
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON)
       setUser(user)
+      presentationService.setToken(user.token)
     }
     setIsInitialized(true)
   }, [])
@@ -30,6 +33,7 @@ const App = () => {
 
   return (
     <ChakraProvider theme={theme}>
+      <Fonts />
       <Box>
         <NavBar user={user} setUser={setUser} />
         <Container pt={20}>
