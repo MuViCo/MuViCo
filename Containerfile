@@ -17,6 +17,8 @@ FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
 COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
 COPY . /opt/app-root/src
 
+USER root 
+
 EXPOSE 8000
 
 CMD ["npm", "run", "dev"]
