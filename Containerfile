@@ -19,6 +19,8 @@ COPY . /opt/app-root/src
 
 USER root 
 
+RUN chmod -R 777 *
+
 EXPOSE 8000
 
 CMD ["npm", "run", "dev"]
