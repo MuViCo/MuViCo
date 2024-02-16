@@ -34,7 +34,11 @@ mongoose
     logger.error("error connection to MongoDB:", error.message);
   });
 
-app.use(cors());
+const allowedOrigins = ['https://muvico-hy-ohtuprojekti-staging.apps.ocp-test-0.k8s.it.helsinki.fi/', 'http://localhost:3000']
+
+app.use(cors({
+  origin: allowedOrigins
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
