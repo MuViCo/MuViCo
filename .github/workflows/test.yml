@@ -3,8 +3,7 @@ name: Tests
 on: [workflow_call]
 
 jobs:
-  test:
-    environment: test
+  CI:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,4 +16,4 @@ jobs:
       - name: Run unit tests
         run: npm run test-all & sleep 10
         env:
-          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI}}
