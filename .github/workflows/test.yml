@@ -4,6 +4,7 @@ on: [workflow_call]
 
 jobs:
   test:
+    environment: test
     runs-on: ubuntu-latest
 
     steps:
@@ -17,5 +18,3 @@ jobs:
         run: npm run test-all & sleep 10
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-          PORT: 8000
-          SECRET: test
