@@ -14,6 +14,8 @@ jobs:
       - name: Install dependencies
         run: npm i
       - name: Run unit tests
-        run: npm run test-all & sleep 10
+        run: |
+            npm run test-all
+            printenv
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI}}
