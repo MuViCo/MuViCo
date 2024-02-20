@@ -36,7 +36,7 @@ const App = () => {
       <Fonts />
       <Box>
         <NavBar user={user} setUser={setUser} />
-        <Container pt={20}>
+        <Container pt={20} maxW="container.md">
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route

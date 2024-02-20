@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FormControl, FormLabel, Input, Button, Box } from "@chakra-ui/react"
 
 const PresentationForm = ({ createPresentation }) => {
     const [name, setName] = useState('')
@@ -13,21 +14,21 @@ const PresentationForm = ({ createPresentation }) => {
     }
     
     return (
-        <div>
+        <Box>
         <h2>Create new</h2>
         <form onSubmit={addPresentation}>
-            <div>
-            name
-            <input
-                id='name'
-                value={name}
-                onChange={({ target }) => setName(target.value)}
-            />
-            </div>
-            <button id='create-button' type="submit">create</button>
+            <FormControl>
+                <FormLabel htmlFor='name'>name</FormLabel>
+                <Input
+                    id='name'
+                    value={name}
+                    onChange={({ target }) => setName(target.value)}
+                />
+            </FormControl>
+            <Button id='create-button' type="submit">create</Button>
         </form>
-        </div>
+        </Box>
     )
-    }
+}
 
 export default PresentationForm
