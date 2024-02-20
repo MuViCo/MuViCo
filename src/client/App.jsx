@@ -9,6 +9,8 @@ import theme from "./lib/theme"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
 import Fonts from "./lib/fonts"
+import PhotoPage from "./components/photopage"
+
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -47,7 +49,9 @@ const App = () => {
               path="/presentation/:id"
               element={user ? <PresentationPage /> : <Navigate to="/" />}
             />
+             <Route path="/photos" element={<PhotoPage />} />
           </Routes>
+          
         </Container>
       </Box>
     </ChakraProvider>
