@@ -3,8 +3,9 @@ name: Tests
 on: [workflow_call]
 
 jobs:
-  CI:
+  TESTING:
     runs-on: ubuntu-latest
+    environment: TESTING
 
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +17,5 @@ jobs:
       - name: Run unit tests
         run: |
             npm run test-all
-            printenv
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI}}
