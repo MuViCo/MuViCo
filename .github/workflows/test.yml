@@ -14,7 +14,8 @@ jobs:
       - name: Install dependencies
         run: npm i
       - name: Run unit tests
+        run: npm run test-all & sleep 10
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-        run: echo ${{ secrets.TEST_MONGODB_URI }}
-          
+          PORT: 8000
+          SECRET: test
