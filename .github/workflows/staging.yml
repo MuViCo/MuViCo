@@ -6,8 +6,12 @@ on:
       - dev
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +20,7 @@ jobs:
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: muvico 
+          image: muvico
           tags: staging ${{ github.sha }}
           containerfiles: |
             ./Containerfile
