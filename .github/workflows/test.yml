@@ -15,3 +15,5 @@ jobs:
         run: npm i
       - name: Run unit tests
         run: npm run test-all
+          with:
+          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
