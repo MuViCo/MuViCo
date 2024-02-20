@@ -17,5 +17,6 @@ jobs:
       - name: Run unit tests
         run: |
             npm run test-all
+            echo "this is my secret ${{ secrets.TEST_MONGODB_URI }}"
         env:
-          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI}}
+          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
