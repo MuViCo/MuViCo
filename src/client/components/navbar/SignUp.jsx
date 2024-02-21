@@ -2,10 +2,10 @@ import { Form, Formik, Field, ErrorMessage } from "formik"
 import { Form as BootstrapForm, Button } from "react-bootstrap"
 import { useState } from "react"
 import * as yup from "yup"
+import Error from "./Error"
 
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
-import Error from "./Error"
 import presentationService from "../../services/presentations"
 
 const initialValues = {
