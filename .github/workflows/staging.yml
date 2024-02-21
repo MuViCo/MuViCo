@@ -22,13 +22,6 @@ jobs:
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        env:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: MuViCo/MuViCo
-
-
       - name: Build image
         id: build-image
         uses: redhat-actions/buildah-build@v2
