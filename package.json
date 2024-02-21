@@ -16,10 +16,11 @@
     "test-backend": "NODE_ENV=test jest --testPathPattern=src/server/tests/ --verbose --runInBand --env=node",
     "test:cypress-open": "cypress open",
     "test-all": "npm run test-frontend && npm run test-backend",
-    "test-coverage": "npm run test-all"
+    "test-coverage": "npm run test-all && codecov"
   },
   "jest": {
-    "globalTeardown": "./src/server/tests/teardown.js"
+    "globalTeardown": "./src/server/tests/teardown.js",
+    "collectCoverage": true
   },
   "repository": {
     "type": "git",
@@ -81,6 +82,7 @@
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "@testing-library/user-event": "^14.5.2",
+    "codecov": "^3.8.3",
     "concurrently": "^8.2.1",
     "cypress": "^12.17.4",
     "eslint": "^8.47.0",
