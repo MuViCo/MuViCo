@@ -6,14 +6,19 @@
 
 The application displays lyrics, images, or AI-generated visuals to enhance the musical experience. Additionally, it reflects the lyrics to support the singer. All performances can be pre-planned or guided in real-time."
 
-## Technologies
+## Used technologies
 
 ### Backend
-
-- **Node.js:**
-- **Express.js:**
+- [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
+- [Express.js](https://expressjs.com/en/5x/api.html)
 
 ### Frontend
+- [React](https://react.dev/learn)
+- JavaScript (ES6+)
 
-- **React:**
-- **JavaScript (ES6+):**
+### Testing
+- [Jest](https://jestjs.io/docs/tutorial-react)
+- [Cypress](https://docs.cypress.io/guides/overview/why-cypress)
+
+### Database
+- [mongodb](https://www.mongodb.com/)
