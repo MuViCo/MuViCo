@@ -18,9 +18,12 @@ jobs:
         run: npm i
       - name: Run unit tests
         run: |
-            npm run test-all
+            npm run test-coverage
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
 
       - name: Build image
         id: build-image

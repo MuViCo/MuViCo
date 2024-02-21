@@ -15,7 +15,8 @@
     "prepare": "husky install",
     "test-backend": "NODE_ENV=test jest --testPathPattern=src/server/tests/ --verbose --runInBand --env=node",
     "test:cypress-open": "cypress open",
-    "test-all": "npm run test-frontend && npm run test-backend"
+    "test-all": "npm run test-frontend && npm run test-backend",
+    "test-coverage": "npm run test-all && codecov"
   },
   "jest": {
     "globalTeardown": "./src/server/tests/teardown.js"
