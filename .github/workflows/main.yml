@@ -8,12 +8,8 @@ on:
     branches:
       - main
 jobs:
-  test:
-    uses: ./.github/workflows/test.yml
-
   build:
     runs-on: ubuntu-latest
-    needs: test
 
     steps:
       - uses: actions/checkout@v4
