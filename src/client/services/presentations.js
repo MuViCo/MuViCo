@@ -28,4 +28,5 @@ const remove = (id) => {
   return request.then((response) => response.data);
 };
 
-export default { setToken, getAll, create };
+
+export default { setToken, getAll, create }

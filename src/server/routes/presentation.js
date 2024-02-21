@@ -12,4 +12,11 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  Presentation.findByIdAndDelete(req.params.id)
+    .then(() => {
+      res.status(204).end()
+    })
+});
+
 module.exports = router;
