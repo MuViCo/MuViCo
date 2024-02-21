@@ -16,7 +16,7 @@ export const PresentationPage = () => {
       {presentationInfo && (
         <div>
           <p>Name: {presentationInfo.name}</p>
-          <p>Ques: {presentationInfo.ques}</p>
+          <p>Cues: {presentationInfo.cues}</p>
         </div>
       )}
     </Container>
