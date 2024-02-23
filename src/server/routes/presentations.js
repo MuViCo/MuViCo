@@ -7,11 +7,10 @@ const Presentation = require("../models/presentation");
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  const presentations = await Presentation.find({}).populate("user", {
-    username: 1,
-  });
-
+router.get("/", userExtractor,async (req, res) => {
+  const user = req.user
+  const presentations = await Presentation.find({ user: user._id})
+  console.log("esitelmät: ", presentations)
   res.json(presentations.map((presentation) => presentation.toJSON()));
 });
 
