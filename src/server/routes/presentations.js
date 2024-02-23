@@ -10,7 +10,6 @@ const router = express.Router();
 router.get("/", userExtractor,async (req, res) => {
   const user = req.user
   const presentations = await Presentation.find({ user: user._id})
-  console.log("esitelmät: ", presentations)
   res.json(presentations.map((presentation) => presentation.toJSON()));
 });
 
