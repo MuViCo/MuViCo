@@ -7,8 +7,9 @@ COPY package.json package-lock.json* ./
 # Install app dependencies
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
-  else npm install; \
-  fi
+  else npm i; \
+  fi && \
+  ulimit -n 1024
 
 # Copy the dependencies into a Slim Node docker image
 FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
@@ -20,8 +21,6 @@ COPY . /opt/app-root/src
 USER root 
 
 RUN chmod -R 777 *
-
-USER 1001
 
 EXPOSE 8000
 

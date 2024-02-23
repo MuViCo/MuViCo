@@ -10,7 +10,8 @@ import {
   Menu,
   MenuButton,
   MenuList,
-  MenuItem
+  MenuItem,
+  Link
 } from "@chakra-ui/react"
 import Login from "./Login"
 import SignUp from "./SignUp"
@@ -44,14 +45,16 @@ const NavBar = ({ user, setUser }) => {
       <Container
         display="flex"
         p={4}
-        maxW="container.md"
+        maxW="container.lg"
         wrap="wrap"
         align="center"
         justify="space-between"
       >
         <Flex align="center" mr={7}>
           <Heading as="h3" size="lg" letterSpacing={"tighter"}>
+            <Link href="/home">
             MuViCo
+            </Link>
           </Heading>
         </Flex>
         <Box flex={3} align="right">

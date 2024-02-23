@@ -15,6 +15,9 @@ const presentationRouter = require("./routes/presentation");
 
 const middleware = require("./utils/middleware");
 
+const photoRouter = require("./routes/photos");
+
+
 const app = express();
 
 mongoose.set("strictQuery", false);
@@ -34,7 +37,11 @@ mongoose
     logger.error("error connection to MongoDB:", error.message);
   });
 
-app.use(cors());
+const allowedOrigins = ['https://muvico-hy-ohtuprojekti-staging.apps.ocp-test-0.k8s.it.helsinki.fi/', 'http://localhost:3000']
+
+app.use(cors({
+  origin: allowedOrigins
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -48,6 +55,7 @@ app.use("/api/login", loginRouter);
 app.use("/api/signup", signupRouter);
 app.use("/api/home", presentationsRouter);
 app.use("/api/presentation", presentationRouter);
+app.use("/api/photos", photoRouter); // Mount your photo router to /api/photos
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);

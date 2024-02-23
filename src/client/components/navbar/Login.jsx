@@ -1,10 +1,11 @@
 import { Form, Formik, Field } from "formik"
 import { Form as BootstrapForm, Button } from "react-bootstrap"
 import { useState } from "react"
-import presentationService from "../../services/presentations"
-
-import loginService from "../../services/login"
 import Error from "./Error"
+
+import presentationService from "../../services/presentations"
+import loginService from "../../services/login"
+
 
 const initialValues = {
   username: "",

@@ -2,13 +2,16 @@ import { ChakraProvider, Box, Container } from "@chakra-ui/react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 
+import theme from "./lib/theme"
+import Fonts from "./lib/fonts"
+
 import NavBar from "./components/navbar/"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
-import theme from "./lib/theme"
+import PhotoPage from "./components/photopage"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
-import Fonts from "./lib/fonts"
+
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -36,7 +39,7 @@ const App = () => {
       <Fonts />
       <Box>
         <NavBar user={user} setUser={setUser} />
-        <Container pt={20}>
+        <Container pt={20} maxW="container.md">
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route
@@ -47,7 +50,9 @@ const App = () => {
               path="/presentation/:id"
               element={user ? <PresentationPage /> : <Navigate to="/" />}
             />
+             <Route path="/photos" element={<PhotoPage />} />
           </Routes>
+          
         </Container>
       </Box>
     </ChakraProvider>

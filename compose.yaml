@@ -4,8 +4,6 @@ services:
       context: ./
       dockerfile: Containerfile
     image: dev
-    environment:
-      - DATABASE_URL=DATABASE_URI
     volumes:
       - ./:/opt/app-root/src
     ports:

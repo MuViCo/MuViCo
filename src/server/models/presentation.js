@@ -13,7 +13,7 @@ const presentationSchema = mongoose.Schema({
     ref: "User",
   },
 
-  ques: [
+  cues: [
     {
       index: Number,
       name: String,
