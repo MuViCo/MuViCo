@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Button } from '@chakra-ui/react';
 import presentationService from '../../services/presentation';
+import PhotoPage from '../photopage/index'; // Importing the PhotoPage components
 
 export const PresentationPage = () => {
   const { id } = useParams();
@@ -14,8 +15,9 @@ export const PresentationPage = () => {
 
   const removePresentationOnClick = (presentationId) => {
     presentationService.remove(presentationId);
-    navigate("/home")
-  }
+    navigate("/home");
+  };
+
   return (
     <Container>
       {presentationInfo && (
@@ -24,9 +26,10 @@ export const PresentationPage = () => {
           <p>Cues: {presentationInfo.cues}</p>
         </div>
       )}
-      <Button onClick={() => removePresentationOnClick(id)}>
-        Delete
-      </Button>
+      <Button onClick={() => removePresentationOnClick(id)}>Delete</Button>
+
+      {/* Integration of PhotoPage components */}
+      <PhotoPage />
     </Container>
   );
 };
