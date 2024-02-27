@@ -20,8 +20,13 @@ export const PresentationPage = () => {
     navigate("/home")
   }
 
-  const onAdd = ({ videoName, videoUrl }) => {
-    console.log(videoName, videoUrl)
+  const onAdd = async ({ videoName, videoUrl }) => {
+    const updatedPresentation = await presentationService.addVideo(
+      id,
+      videoName,
+      videoUrl
+    )
+    setPresentationInfo(updatedPresentation)
   }
 
   console.log(presentationInfo)

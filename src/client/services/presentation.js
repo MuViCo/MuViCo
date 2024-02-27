@@ -1,21 +1,26 @@
-import axios from "axios";
-const baseUrl = "/api/presentation/";
+import axios from "axios"
+const baseUrl = "/api/presentation/"
 
-let token = null;
+let token = null
 
 const setToken = (newToken) => {
-  token = `bearer ${newToken}`;
-};
-
-const get = (id) => {
-  const request = axios.get(`${baseUrl}${id}`);
-  console.log("request", request);
-  return request.then((response) => response.data);
-};
-
-const remove = (id) => {
-    const request = axios.delete(`${baseUrl}/${id}`)
-    return request.then(response => response.data)
+  token = `bearer ${newToken}`
 }
 
-export default { get, setToken, remove }
+const get = (id) => {
+  const request = axios.get(`${baseUrl}${id}`)
+  console.log("request", request)
+  return request.then((response) => response.data)
+}
+
+const remove = (id) => {
+  const request = axios.delete(`${baseUrl}/${id}`)
+  return request.then((response) => response.data)
+}
+
+const addVideo = async (id, videoName, videoUrl) => {
+  const response = await axios.put(`${baseUrl}/${id}`, { videoName, videoUrl })
+  return response.data
+}
+
+export default { get, setToken, remove, addVideo }
