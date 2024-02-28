@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Container, Button } from "@chakra-ui/react"
+import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
-import VideoEmbed from "../videoembed/index.jsx"
+import VideoEmbed from "./VideoEmbed.jsx"
 import InputField from "./InputField.jsx"
 import Body from "../photopage/Body.jsx"
 
@@ -21,7 +21,7 @@ export const PresentationPage = () => {
     navigate("/home")
   }
 
-  const onAdd = async ({ videoName, videoUrl }) => {
+  const onAddVideo = async ({ videoName, videoUrl }) => {
     const updatedPresentation = await presentationService.addVideo(
       id,
       videoName,
@@ -30,21 +30,37 @@ export const PresentationPage = () => {
     setPresentationInfo(updatedPresentation)
   }
 
-  console.log(presentationInfo)
+  const onRemoveVideo = async (videoId) => {
+    const updatedPresentation = await presentationService.removeVideo(
+      id,
+      videoId
+    )
+    setPresentationInfo(updatedPresentation)
+  }
+
   return (
     <Container>
       {presentationInfo && (
-        <div>
+        <Box>
           <p>Name: {presentationInfo.name}</p>
           <p>Cues: {presentationInfo.cues}</p>
-          <Body/>
-          <InputField onAdd={onAdd} />
-          {presentationInfo.files.map((file) => (
-            <VideoEmbed key={file._id} url={file.url} />
-          ))}
-        </div>
+          <InputField onAdd={onAddVideo} />
+          <SimpleGrid columns={[1]} gap={6}>
+            {presentationInfo.files.map((file) => (
+              <GridItem key={file._id}>
+                <VideoEmbed
+                  url={file.url}
+                  id={file._id}
+                  removeVideo={onRemoveVideo}
+                />
+              </GridItem>
+            ))}
+          </SimpleGrid>
+        </Box>
       )}
-      <Button onClick={() => removePresentationOnClick(id)}>Delete</Button>
+      <Button onClick={() => removePresentationOnClick(id)}>
+        Remove presentation
+      </Button>
     </Container>
   )
 }

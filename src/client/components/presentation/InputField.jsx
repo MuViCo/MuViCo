@@ -33,7 +33,7 @@ const InputField = ({ onAdd }) => {
             type="text"
           />
         </FormControl>
-        <Button type="submit" colorScheme="purple" width="full">
+        <Button type="submit" width="full">
           Add video
         </Button>
       </VStack>

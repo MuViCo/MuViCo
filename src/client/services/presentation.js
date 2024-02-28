@@ -23,4 +23,9 @@ const addVideo = async (id, videoName, videoUrl) => {
   return response.data
 }
 
-export default { get, setToken, remove, addVideo }
+const removeVideo = async (id, videoId) => {
+  const response = await axios.delete(`${baseUrl}/${id}/${videoId}`)
+  return response.data
+}
+
+export default { get, setToken, remove, addVideo, removeVideo }
