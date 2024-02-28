@@ -5,7 +5,7 @@ import { Container, Button } from "@chakra-ui/react"
 import presentationService from "../../services/presentation"
 import VideoEmbed from "../videoembed/index.jsx"
 import InputField from "./InputField.jsx"
-
+import PhotoPage from '../photopage/index'; 
 export const PresentationPage = () => {
   const { id } = useParams()
   const [presentationInfo, setPresentationInfo] = useState(null)
@@ -43,6 +43,7 @@ export const PresentationPage = () => {
         </div>
       )}
       <Button onClick={() => removePresentationOnClick(id)}>Delete</Button>
+      <PhotoPage />
     </Container>
   )
 }
