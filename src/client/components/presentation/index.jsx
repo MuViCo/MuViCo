@@ -5,6 +5,7 @@ import { Container, Button } from "@chakra-ui/react"
 import presentationService from "../../services/presentation"
 import VideoEmbed from "../videoembed/index.jsx"
 import InputField from "./InputField.jsx"
+import Body from "../photopage/Body.jsx"
 
 export const PresentationPage = () => {
   const { id } = useParams()
@@ -36,6 +37,7 @@ export const PresentationPage = () => {
         <div>
           <p>Name: {presentationInfo.name}</p>
           <p>Cues: {presentationInfo.cues}</p>
+          <Body/>
           <InputField onAdd={onAdd} />
           {presentationInfo.files.map((file) => (
             <VideoEmbed key={file._id} url={file.url} />
