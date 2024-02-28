@@ -44,6 +44,7 @@ export const PresentationPage = () => {
         <Box>
           <p>Name: {presentationInfo.name}</p>
           <p>Cues: {presentationInfo.cues}</p>
+          {/* <Body /> */}
           <InputField onAdd={onAddVideo} />
           <SimpleGrid columns={[1]} gap={6}>
             {presentationInfo.files.map((file) => (

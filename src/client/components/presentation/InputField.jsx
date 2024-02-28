@@ -37,7 +37,7 @@ const InputField = ({ onAdd }) => {
       return
     }
     toast({
-      position: "top",
+      position: "bottom",
       title: "Success!",
       status: "success",
       description: "Video added succesfully",
