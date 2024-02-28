@@ -2,7 +2,7 @@ import React from 'react';
 import Container from "../../services/photos"
 
 /**
- * Component for displaying imagesdoing.
+ * Component for displaying images.
  * @param {Object} props - Component props.
  * @param {string[]} props.images - Array of image filenames.
  * @returns {JSX.Element} Rendered component.

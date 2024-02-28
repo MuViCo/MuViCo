@@ -23,4 +23,9 @@ const addVideo = async (id, videoName, videoUrl) => {
   return response.data
 }
 
-export default { get, setToken, remove, addVideo }
+const addPhoto = async (id, PhotoName, PhotoUrl) => {
+  const response = await axios.put(`${baseUrl}/${id}`, { PhotoName, PhotoUrl })
+  return response.data
+}
+
+export default { get, setToken, remove, addVideo, addPhoto}
