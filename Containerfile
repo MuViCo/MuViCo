@@ -24,4 +24,4 @@ RUN chmod -R 777 *
 
 EXPOSE 8000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

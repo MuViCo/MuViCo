@@ -59,5 +59,6 @@ app.use("/api/photos", photoRouter); // Mount your photo router to /api/photos
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
+app.use(express.static('dist'))
 
 module.exports = app;
