@@ -24,6 +24,7 @@ const presentationSchema = mongoose.Schema({
 
   files: [
     {
+      _id: { type: String, required: true },
       name: String,
       url: String,
     },

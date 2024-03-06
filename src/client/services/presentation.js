@@ -23,9 +23,14 @@ const addVideo = async (id, videoName, videoUrl) => {
   return response.data
 }
 
+const addFile = async (id, formdata) => {
+  const response = await axios.put(`${baseUrl}/${id}`, formdata, { headers: { 'Content-Type': 'multipart/form-data' } })
+  return response
+}
+
 const removeVideo = async (id, videoId) => {
   const response = await axios.delete(`${baseUrl}/${id}/${videoId}`)
   return response.data
 }
 
-export default { get, setToken, remove, addVideo, removeVideo }
+export default { get, setToken, remove, addVideo, addFile, removeVideo }
