@@ -50,6 +50,8 @@ app.use(
 );
 app.use(middleware.requestLogger);
 
+app.use(express.static('dist'))
+
 app.use("/", indexRouter);
 app.use("/api/login", loginRouter);
 app.use("/api/signup", signupRouter);
@@ -59,6 +61,5 @@ app.use("/api/photos", photoRouter); // Mount your photo router to /api/photos
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
-app.use(express.static('dist'))
 
 module.exports = app;
