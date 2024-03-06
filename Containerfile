@@ -9,7 +9,7 @@ RUN \
   if [ -f package-lock.json ]; then npm ci; \
   else npm i; \
   fi && \
-  ulimit -n 1024
+  ulimit -n
 
 # Copy the dependencies into a Slim Node docker image
 FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
