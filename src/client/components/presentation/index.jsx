@@ -5,7 +5,7 @@ import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
 import presentationService from "../../services/presentation"
 import VideoEmbed from "./VideoEmbed.jsx"
 import InputField from "./InputField.jsx"
-import Body from "../photopage/Body.jsx"
+import NewFile from "./NewFile.jsx"
 
 export const PresentationPage = () => {
   const { id } = useParams()
@@ -62,6 +62,7 @@ export const PresentationPage = () => {
       <Button onClick={() => removePresentationOnClick(id)}>
         Remove presentation
       </Button>
+      <NewFile id={id} />
     </Container>
   )
 }
