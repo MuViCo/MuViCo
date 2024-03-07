@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading, Link } from "@chakra-ui/react"
 
+import VideoInformationTable from "./controlpanel.jsx"
 import presentationService from "../../services/presentation"
 
 export const PresentationPage = ({ userId }) => {
@@ -43,6 +44,7 @@ export const PresentationPage = ({ userId }) => {
     setPresentationInfo(updatedPresentation)
   }
 
+  
   return (
     <Container>
       {!presentationInfo && (
@@ -51,6 +53,7 @@ export const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
+          <VideoInformationTable />
           <Box>
             <form onSubmit={addImage}>
               <input onChange={fileSelected} type="file" />
