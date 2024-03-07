@@ -2,10 +2,12 @@ import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
 
+import VideoInformationTable from "./controlpanel.jsx"
 import presentationService from "../../services/presentation"
 import VideoEmbed from "./VideoEmbed.jsx"
 import InputField from "./InputField.jsx"
 import Body from "../photopage/Body.jsx"
+
 
 export const PresentationPage = () => {
   const { id } = useParams()
@@ -38,12 +40,13 @@ export const PresentationPage = () => {
     setPresentationInfo(updatedPresentation)
   }
 
+  
   return (
     <Container>
       {presentationInfo && (
         <Box>
           <p>Name: {presentationInfo.name}</p>
-          <p>Cues: {presentationInfo.cues}</p>
+          <VideoInformationTable />
           {/* <Body /> */}
           <InputField onAdd={onAddVideo} />
           <SimpleGrid columns={[1]} gap={6}>
