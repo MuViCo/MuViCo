@@ -15,10 +15,7 @@ FROM registry.access.redhat.com/ubi8/nodejs-18-minimal:latest
 # Install app dependencies
 COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
 COPY . /opt/app-root/src
-
-USER root 
-
-RUN chmod -R 777 *
+RUN rm -rf /opt/app-root/src/client/
 
 EXPOSE 8000
 
