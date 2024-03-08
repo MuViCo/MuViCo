@@ -41,10 +41,16 @@ export const PresentationPage = ({ userId }) => {
 
   const removeFile = async (fileId) => {
     const updatedPresentation = await presentationService.removeFile(id, fileId)
+  const onAddFile = async ({ formData }) => {
+    const updatedPresentation = await presentationService.addFile(
+      id,
+      formData,
+    )
     setPresentationInfo(updatedPresentation)
   }
 
-  
+
+  console.log(presentationInfo, "kk")
   return (
     <Container>
       {!presentationInfo && (
@@ -53,7 +59,7 @@ export const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
-          <VideoInformationTable />
+          <VideoInformationTable data={presentationInfo.files}/>
           <Box>
             <form onSubmit={addImage}>
               <input onChange={fileSelected} type="file" />
@@ -76,6 +82,7 @@ export const PresentationPage = ({ userId }) => {
       )}
     </Container>
   )
+}
 }
 
 export default PresentationPage
