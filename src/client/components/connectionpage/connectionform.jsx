@@ -1,38 +1,18 @@
 import { useState, useEffect } from 'react'
 import { FormControl, FormLabel, Input, Button, Box } from "@chakra-ui/react"
+import connectService from '../../services/connection'
 
 const ConnectionForm = () => {
     const [ipAddress, setIpAddress] = useState('');
-    const [ips, setIps] = useState([]);
-
-    useEffect(() => {
-        const storedIps = window.localStorage.getItem('ips');
-        if (storedIps) {
-            setIps(JSON.parse(storedIps));
-        }
-    }, []);
 
     const addConnection = (event) => {
         event.preventDefault();
-        console.log('Creating connection:', ipAddress);
-        const newIps = ips.concat(ipAddress);
-        console.log('New IPs:', newIps);
-        setIps(newIps);
-        console.log('IPs:', ips);
-        window.localStorage.setItem('ips', JSON.stringify(newIps));
-        setIpAddress('');
+        connectService.connect(ipAddress);
     };
-
-
 
     return (
         <Box>
-            <h2>Connections</h2>
-            <div>
-                {ips.map((ip, index) => (
-                    <p key={index}>{ip}</p>
-                ))}
-            </div>
+            <h2>Set Master IP</h2>
             <form onSubmit={addConnection}>
                 <FormControl>
                     <FormLabel htmlFor='ipAddress'>IP Address</FormLabel>
