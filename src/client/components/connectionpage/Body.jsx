@@ -5,19 +5,19 @@ import ConnectionForm from './connectionform'
 
 const Body = () => {
 
-  const [slaveMode, setSlaveMode] = useState(false)
+  const [masterMode, setMasterMode] = useState(true)
+  console.log('Master mode:', masterMode)
 
   const createConnection = () => {
     console.log('Creating connection:')
   }
   const handleSlaveModeClick = () => {
-    setSlaveMode(!slaveMode)
-    console.log('slaveMode:', slaveMode)
+    setMasterMode(!masterMode)
   }
 
   return (
     <Container maxW="container.lg">
-      {slaveMode ? (
+      {masterMode ? (
         <div>
           <Button onClick={() => handleSlaveModeClick()}>Switch to slave mode</Button><ConnectionForm createConnection={createConnection} />
         </div>
