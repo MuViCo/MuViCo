@@ -7,15 +7,14 @@ const setToken = (newToken) => {
   token = `bearer ${newToken}`
 }
 
-const get = (id) => {
-  const request = axios.get(`${baseUrl}${id}`)
-  console.log("request", request)
-  return request.then((response) => response.data)
+const get = async (id) => {
+  const response = await axios.get(`${baseUrl}${id}`)
+  return response.data
 }
 
-const remove = (id) => {
-  const request = axios.delete(`${baseUrl}/${id}`)
-  return request.then((response) => response.data)
+const remove = async (id) => {
+  const response = await axios.delete(`${baseUrl}/${id}`)
+  return response.data
 }
 
 const addVideo = async (id, videoName, videoUrl) => {
@@ -24,8 +23,9 @@ const addVideo = async (id, videoName, videoUrl) => {
 }
 
 const addFile = async (id, formdata) => {
+  console.log(id)
   const response = await axios.put(`${baseUrl}/${id}`, formdata, { headers: { 'Content-Type': 'multipart/form-data' } })
-  return response
+  return response.data
 }
 
 const removeVideo = async (id, videoId) => {

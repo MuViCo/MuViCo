@@ -5,7 +5,6 @@ import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
 import presentationService from "../../services/presentation"
 import VideoEmbed from "./VideoEmbed.jsx"
 import InputField from "./InputField.jsx"
-import NewFile from "./NewFile.jsx"
 
 export const PresentationPage = () => {
   const { id } = useParams()
@@ -21,19 +20,18 @@ export const PresentationPage = () => {
     navigate("/home")
   }
 
-  const onAddVideo = async ({ videoName, videoUrl }) => {
-    const updatedPresentation = await presentationService.addVideo(
+  const onAddFile = async ({ formData }) => {
+    const updatedPresentation = await presentationService.addFile(
       id,
-      videoName,
-      videoUrl
+      formData,
     )
     setPresentationInfo(updatedPresentation)
   }
 
-  const onRemoveVideo = async (videoId) => {
+  const onRemoveFile = async (fileId) => {
     const updatedPresentation = await presentationService.removeVideo(
       id,
-      videoId
+      fileId
     )
     setPresentationInfo(updatedPresentation)
   }
@@ -45,15 +43,11 @@ export const PresentationPage = () => {
           <p>Name: {presentationInfo.name}</p>
           <p>Cues: {presentationInfo.cues}</p>
           {/* <Body /> */}
-          <InputField onAdd={onAddVideo} />
+          <InputField onAdd={onAddFile} />
           <SimpleGrid columns={[1]} gap={6}>
             {presentationInfo.files.map((file) => (
               <GridItem key={file._id}>
-                <VideoEmbed
-                  url={file.url}
-                  id={file._id}
-                  removeVideo={onRemoveVideo}
-                />
+
               </GridItem>
             ))}
           </SimpleGrid>
@@ -62,7 +56,6 @@ export const PresentationPage = () => {
       <Button onClick={() => removePresentationOnClick(id)}>
         Remove presentation
       </Button>
-      <NewFile id={id} />
     </Container>
   )
 }

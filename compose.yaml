@@ -4,10 +4,14 @@ services:
       context: ./
       dockerfile: Containerfile
     image: dev
+    environment:
+      - BUCKET_NAME=value
+      - BUCKET_REGION=value
+      - ACCESS_KEY=value
+      - SECRET_ACCESS_KEY=value
     volumes:
       - ./:/opt/app-root/src
     ports:
-      - 3000:3000
       - 8000:8000
     container_name: dev
   

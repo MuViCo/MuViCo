@@ -41,20 +41,20 @@ router.delete("/:id", async (req, res) => {
 
 router.put("/:id", upload.single('image'), async (req, res) => {
   const fileId = randomImageName()
-  const bucketParams = {
+  /*const bucketParams = {
     Bucket: BUCKET_NAME,
     Key: fileId,
-    Body: req.file.buffer,
-    ContentType: req.file.mimetype,
+    Body: req.body.buffer,
+    ContentType: req.body.mimetype,
   }
 
   const command = new PutObjectCommand(bucketParams)
 
-  await s3.send(command)
+  await s3.send(command)*/
 
   const updatedPresentation = await Presentation.findByIdAndUpdate(
     req.params.id,
-    { $push: { files: { _id: fileId, name: req.body.caption, url: '' } } },
+    { $push: { files: { name: req.body.name, url: fileId } } },
     { new: true }
   )
 

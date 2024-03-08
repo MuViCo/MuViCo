@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - bucket
 
 jobs:
   build-and-push:
@@ -21,6 +22,9 @@ jobs:
             npm run test-coverage
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+
+      - name: Build frontend
+        run: npm run build 
 
       - name: Build image
         id: build-image
