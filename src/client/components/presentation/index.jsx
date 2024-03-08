@@ -31,7 +31,13 @@ export const PresentationPage = () => {
     )
     setPresentationInfo(updatedPresentation)
   }
-
+  const onAddFile = async ({ formData }) => {
+    const updatedPresentation = await presentationService.addFile(
+      id,
+      formData,
+    )
+    setPresentationInfo(updatedPresentation)
+  }
   const onRemoveVideo = async (videoId) => {
     const updatedPresentation = await presentationService.removeVideo(
       id,
@@ -40,13 +46,14 @@ export const PresentationPage = () => {
     setPresentationInfo(updatedPresentation)
   }
 
-  
+
+  console.log(presentationInfo, "kk")
   return (
     <Container>
       {presentationInfo && (
         <Box>
           <p>Name: {presentationInfo.name}</p>
-          <VideoInformationTable />
+          <VideoInformationTable data={presentationInfo.files}/>
           {/* <Body /> */}
           <InputField onAdd={onAddVideo} />
           <SimpleGrid columns={[1]} gap={6}>

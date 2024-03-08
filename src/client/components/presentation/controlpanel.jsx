@@ -1,7 +1,8 @@
 import { X } from "@mui/icons-material";
 import React from "react"
 
-const VideoInformationTable = () => {
+const VideoInformationTable = ({data}) => {
+    console.log(data)
     const styles = {
         table: {
           width: '800px',
@@ -18,11 +19,7 @@ const VideoInformationTable = () => {
         }
       };
 
-    const tableData = [
-        { id: 1, name: 'Tuote 1', link: "x" },
-        { id: 2, name: 'Tuote 2', link: "xx" },
-        { id: 3, name: 'Tuote 3', link: "xxx" },
-      ];
+    
     
       return (
         <table style={styles.table}>
@@ -34,13 +31,21 @@ const VideoInformationTable = () => {
             </tr>
           </thead>
           <tbody>
-            {tableData.map(item => (
-              <tr key={item.id}>
-                <td style={styles.td}>{item.id}</td>
-                <td style={styles.td}>{item.name}</td>
-                <td style={styles.td}>{item.link}</td>
+            {data.length === 0 ?( 
+             <tr>
+                <td style={styles.td}></td>
+                <td style={styles.td}></td>
+                <td style={styles.td}></td>
+             </tr>
+            ):(
+            
+            data.map(file => (
+              <tr key={file.id}>
+                <td style={styles.td}>{file.id}</td>
+                <td style={styles.td}>{file.name}</td>
+                <td style={styles.td}>{file.url}</td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
       );
