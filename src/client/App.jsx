@@ -11,6 +11,7 @@ import HomePage from "./components/homepage"
 import PhotoPage from "./components/photopage"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
+import TermsPage from "./components/termspage"
 
 
 const App = () => {
@@ -51,6 +52,7 @@ const App = () => {
               element={user ? <PresentationPage /> : <Navigate to="/" />}
             />
              <Route path="/photos" element={<PhotoPage />} />
+             <Route path="/terms" element={<TermsPage />} />
           </Routes>
           
         </Container>

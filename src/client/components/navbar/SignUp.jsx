@@ -1,18 +1,21 @@
-import { Form, Formik, Field, ErrorMessage } from "formik"
-import { Form as BootstrapForm, Button } from "react-bootstrap"
-import { useState } from "react"
-import * as yup from "yup"
-import Error from "./Error"
-
-import signupService from "../../services/signup"
-import loginService from "../../services/login"
-import presentationService from "../../services/presentations"
+import React from 'react';
+import { Form, Formik, Field, ErrorMessage } from "formik";
+import { Form as BootstrapForm, Button } from "react-bootstrap";
+import { useState } from "react";
+import * as yup from "yup";
+import { Container, Box, useColorModeValue } from "@chakra-ui/react";
+import Error from "./Error";
+import { Link } from '@chakra-ui/react'
+import { ExternalLinkIcon } from '@chakra-ui/icons'
+import signupService from "../../services/signup";
+import loginService from "../../services/login";
+import presentationService from "../../services/presentations";
 
 const initialValues = {
   username: "",
   password: "",
   password_confirmation: "",
-}
+};
 
 const validationSchema = yup.object().shape({
   username: yup
@@ -27,7 +30,7 @@ const validationSchema = yup.object().shape({
     .string()
     .oneOf([yup.ref("password"), null], "Passwords must match")
     .required("Password confirmation is required"),
-})
+});
 
 export const SignUpForm = ({ onSubmit, error }) => (
   <>
@@ -91,7 +94,17 @@ export const SignUpForm = ({ onSubmit, error }) => (
             className="alert alert-danger"
           />
 
-          <br />
+          <Container>
+            <Box textAlign="justify">
+              <p>
+              By clicking Submit, you agree to our {""}  
+              <Link color='teal.500' href='/terms' isExternal>
+                Terms of Service
+              </Link>
+              </p>
+            </Box>
+          </Container>
+
           <Button variant="primary" type="submit">
             Submit
           </Button>
@@ -100,26 +113,26 @@ export const SignUpForm = ({ onSubmit, error }) => (
     </Formik>
     <Error error={error} />
   </>
-)
+);
 
 const SignUp = ({ onSignup }) => {
-  const [error, setError] = useState(null)
+  const [error, setError] = useState(null);
 
   const onSubmit = async ({ username, password }) => {
     try {
-      await signupService.signup({ username, password })
-      const user = await loginService.login({ username, password })
-      const userJSON = JSON.stringify(user)
-      window.localStorage.setItem("user", userJSON)
-      presentationService.setToken(user.token)
-      onSignup(userJSON)
+      await signupService.signup({ username, password });
+      const user = await loginService.login({ username, password });
+      const userJSON = JSON.stringify(user);
+      window.localStorage.setItem("user", userJSON);
+      presentationService.setToken(user.token);
+      onSignup(userJSON);
     } catch (e) {
-      console.log(e)
-      setError(e.response.data.error)
+      console.log(e);
+      setError(e.response.data.error);
     }
-  }
+  };
 
-  return <SignUpForm onSubmit={onSubmit} error={error} />
-}
+  return <SignUpForm onSubmit={onSubmit} error={error} />;
+};
 
-export default SignUp
+export default SignUp;
