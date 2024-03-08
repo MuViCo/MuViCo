@@ -13,6 +13,7 @@ const NewFile = (id) => {
     const formData = new FormData();
     formData.append("image", file)
     formData.append("caption", caption)
+    console.log(formData, id)
     presentationService.addFile(id, formData)
 
   }
