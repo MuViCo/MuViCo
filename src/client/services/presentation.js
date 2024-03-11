@@ -17,20 +17,14 @@ const remove = async (id) => {
   return response.data
 }
 
-const addVideo = async (id, videoName, videoUrl) => {
-  const response = await axios.put(`${baseUrl}/${id}`, { videoName, videoUrl })
+const addFile = async (id, formData) => {
+  const response = await axios.put(`${baseUrl}/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
   return response.data
 }
 
-const addFile = async (id, formdata) => {
-  console.log(id)
-  const response = await axios.put(`${baseUrl}/${id}`, formdata, { headers: { 'Content-Type': 'multipart/form-data' } })
+const removeFile = async (id, fileId) => {
+  const response = await axios.delete(`${baseUrl}/${id}/${fileId}`)
   return response.data
 }
 
-const removeVideo = async (id, videoId) => {
-  const response = await axios.delete(`${baseUrl}/${id}/${videoId}`)
-  return response.data
-}
-
-export default { get, setToken, remove, addVideo, addFile, removeVideo }
+export default { get, setToken, remove, addFile, removeFile }

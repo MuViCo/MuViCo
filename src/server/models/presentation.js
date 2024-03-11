@@ -1,5 +1,3 @@
-const { mode } = require("@chakra-ui/theme-tools")
-const { IntegrationInstructionsRounded } = require("@mui/icons-material")
 const mongoose = require("mongoose")
 
 const presentationSchema = mongoose.Schema({
