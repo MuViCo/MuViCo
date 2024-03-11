@@ -1,35 +1,40 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
+import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
-import VideoEmbed from "./VideoEmbed.jsx"
-import InputField from "./InputField.jsx"
 
 export const PresentationPage = () => {
   const { id } = useParams()
+  const [name, setName] = useState("")
+  const [file, setFile] = useState(null)
   const [presentationInfo, setPresentationInfo] = useState(null)
+
   const navigate = useNavigate()
 
   useEffect(() => {
     presentationService.get(id).then((info) => setPresentationInfo(info))
   }, [id])
 
-  const removePresentationOnClick = (presentationId) => {
-    presentationService.remove(presentationId)
-    navigate("/home")
+  const addImage = async (event) => {
+    event.preventDefault()
+
+    const formData = new FormData()
+    formData.append("image", file)
+    formData.append("name", name)
+    await presentationService.addFile(id, formData)
+
+    setName("")
+    setFile("")
   }
 
-  const onAddFile = async ({ formData }) => {
-    const updatedPresentation = await presentationService.addFile(
-      id,
-      formData,
-    )
-    setPresentationInfo(updatedPresentation)
+  const fileSelected = (event) => {
+    const file = event.target.files[0]
+    setFile(file)
   }
 
-  const onRemoveFile = async (fileId) => {
-    const updatedPresentation = await presentationService.removeVideo(
+  const removeFile = async (fileId) => {
+    const updatedPresentation = await presentationService(
       id,
       fileId
     )
@@ -38,24 +43,25 @@ export const PresentationPage = () => {
 
   return (
     <Container>
+      <Heading>{presentationInfo.name}</Heading>
+      <form onSubmit={addImage}>
+        <input onChange={fileSelected} type="file"></input>
+        <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name"></input>
+        <button type="submit">Submit</button>
+      </form>
       {presentationInfo && (
         <Box>
-          <p>Name: {presentationInfo.name}</p>
           <p>Cues: {presentationInfo.cues}</p>
-          {/* <Body /> */}
-          <InputField onAdd={onAddFile} />
-          <SimpleGrid columns={[1]} gap={6}>
+          <SimpleGrid columns={1} gap={6}>
             {presentationInfo.files.map((file) => (
               <GridItem key={file._id}>
-
+                <Image src={file.url} alt={file.name}></Image>
+                <Button onClick={removeFile(file._id)}>Remove file</Button>
               </GridItem>
             ))}
           </SimpleGrid>
         </Box>
       )}
-      <Button onClick={() => removePresentationOnClick(id)}>
-        Remove presentation
-      </Button>
     </Container>
   )
 }
