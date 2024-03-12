@@ -17,8 +17,6 @@ import TermsPage from "./components/termspage"
 const App = () => {
   const [user, setUser] = useState(null)
 
-  console.log("user", user)
-
   const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
@@ -49,15 +47,15 @@ const App = () => {
             />
             <Route
               path="/presentation/:id"
-              element={user ? <PresentationPage /> : <Navigate to="/" />}
+              element={user ? <PresentationPage userId={user.id} /> : <Navigate to="/" />}
             />
             <Route
               path="/connections"
               element={user ? <ConnectionPage /> : <Navigate to="/" />}>
-              </Route>
-              <Route path="/terms" element={<TermsPage />} />
+            </Route>
+            <Route path="/terms" element={<TermsPage />} />
           </Routes>
-          
+
         </Container>
       </Box>
     </ChakraProvider>

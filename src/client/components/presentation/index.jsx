@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading } from "@chakra-ui/react"
+import { useParams } from "react-router-dom"
+import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading, Link } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
 
-export const PresentationPage = () => {
+export const PresentationPage = ({ userId }) => {
   const { id } = useParams()
   const [name, setName] = useState("")
   const [file, setFile] = useState(null)
   const [presentationInfo, setPresentationInfo] = useState(null)
 
-  const navigate = useNavigate()
+  console.log(userId, "uuseeerr")
 
   useEffect(() => {
-    presentationService.get(id).then((info) => setPresentationInfo(info))
+
+    presentationService.get(id).then((presentation) => {
+      if (presentation.user.toString() === userId) {
+        setPresentationInfo(presentation)
+      }
+    })
   }, [id])
 
   const addImage = async (event) => {
@@ -40,24 +45,31 @@ export const PresentationPage = () => {
 
   return (
     <Container>
-      <Heading>__</Heading>
-      <form onSubmit={addImage}>
-        <input onChange={fileSelected} type="file"></input>
-        <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name"></input>
-        <button type="submit">Submit</button>
-      </form>
+      {!presentationInfo && (
+        <Heading>Nice try, you don't have access to this page! :(</Heading>
+      )}
       {presentationInfo && (
-        <Box>
-          <p>Cues: {presentationInfo.cues}</p>
-          <SimpleGrid columns={1} gap={6}>
-            {presentationInfo.files.map((file) => (
-              <GridItem key={file._id}>
-                <Image src={file.url} alt={file.name}></Image>
-                <Button onClick={() => removeFile(file._id)}>Remove file</Button>
-              </GridItem>
-            ))}
-          </SimpleGrid>
-        </Box>
+        <>
+          <Heading>{presentationInfo.name}</Heading>
+          <Box>
+            <form onSubmit={addImage}>
+              <input onChange={fileSelected} type="file" />
+              <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name" />
+              <button type="submit">Submit</button>
+            </form>
+          </Box>
+          <Box>
+            <p>Cues: {presentationInfo.cues}</p>
+            <SimpleGrid columns={1} gap={6}>
+              {presentationInfo.files.map((file) => (
+                <GridItem key={file._id}>
+                  <Image src={file.url} alt={file.name} />
+                  <Button onClick={() => removeFile(file._id)}>Remove file</Button>
+                </GridItem>
+              ))}
+            </SimpleGrid>
+          </Box>
+        </>
       )}
     </Container>
   )
