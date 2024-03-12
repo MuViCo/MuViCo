@@ -16,8 +16,6 @@ const connectionsRouter = require("./routes/connections")
 
 const middleware = require("./utils/middleware")
 
-const photoRouter = require("./routes/photos")
-
 const app = express()
 
 mongoose.set("strictQuery", false)
@@ -60,7 +58,6 @@ app.use("/api/login", loginRouter)
 app.use("/api/signup", signupRouter)
 app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
-app.use("/api/photos", photoRouter) // Mount your photo router to /api/photos
 app.use("/api/connections", connectionsRouter)
 
 app.use(middleware.unknownEndpoint)

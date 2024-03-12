@@ -8,7 +8,6 @@ import Fonts from "./lib/fonts"
 import NavBar from "./components/navbar/"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
-import PhotoPage from "./components/photopage"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
 import ConnectionPage from "./components/connectionpage"
@@ -51,7 +50,6 @@ const App = () => {
               path="/presentation/:id"
               element={user ? <PresentationPage /> : <Navigate to="/" />}
             />
-             <Route path="/photos" element={<PhotoPage />} />
             <Route
               path="/connections"
               element={user ? <ConnectionPage /> : <Navigate to="/" />}>
