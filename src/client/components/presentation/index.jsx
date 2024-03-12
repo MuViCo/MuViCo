@@ -34,16 +34,13 @@ export const PresentationPage = () => {
   }
 
   const removeFile = async (fileId) => {
-    const updatedPresentation = await presentationService(
-      id,
-      fileId
-    )
+    const updatedPresentation = await presentationService.removeFile(id, fileId)
     setPresentationInfo(updatedPresentation)
   }
 
   return (
     <Container>
-      <Heading>{presentationInfo.name}</Heading>
+      <Heading>__</Heading>
       <form onSubmit={addImage}>
         <input onChange={fileSelected} type="file"></input>
         <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name"></input>
@@ -56,7 +53,7 @@ export const PresentationPage = () => {
             {presentationInfo.files.map((file) => (
               <GridItem key={file._id}>
                 <Image src={file.url} alt={file.name}></Image>
-                <Button onClick={removeFile(file._id)}>Remove file</Button>
+                <Button onClick={() => removeFile(file._id)}>Remove file</Button>
               </GridItem>
             ))}
           </SimpleGrid>

@@ -31,6 +31,7 @@ router.get("/:id", async (req, res) => {
       const command = new GetObjectCommand(params)
       const seconds = 60 * 60
       file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
+      logger.info(file.url)
     }
     res.json(presentation)
   } else {
