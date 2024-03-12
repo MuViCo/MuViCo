@@ -1,38 +1,38 @@
-const express = require("express");
-const net = require("net");
-const router = require("./login");
+const express = require("express")
+const net = require("net")
+const router = require("./login")
 
-const port = 8080;
+const port = 8080
 
 function sendDataToAllClients(data) {
   clients.forEach((socket) => {
-    socket.write(data);
-  });
+    socket.write(data)
+  })
 }
 
 router.post("/createserver", async (req, res) => {
   const server = net.createServer((socket) => {
-    socket.write("Hello World!\r\n");
-    socket.pipe(socket);
+    socket.write("Hello World!\r\n")
+    socket.pipe(socket)
 
     // Log data received from the client
     socket.on("data", (data) => {
-      console.log(`Received from client: ${data}`);
-    });
-  });
+      console.log(`Received from client: ${data}`)
+    })
+  })
   server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-  res.status(200).send({ message: "Server created" });
-});
+    console.log(`Server listening on port ${port}`)
+  })
+  res.status(200).send({ message: "Server created" })
+})
 router.post("/connect", async (req, res) => {
-  const { ip } = req.body;
-  const client = new net.Socket();
+  const { ip } = req.body
+  const client = new net.Socket()
   client.connect(port, ip, () => {
-    console.log("Connected to master");
-    client.write("Hello, I am a slave");
-  });
-  res.status(200).send({ message: "Connected to master" });
-});
+    console.log("Connected to master")
+    client.write("Hello, I am a slave")
+  })
+  res.status(200).send({ message: "Connected to master" })
+})
 
-module.exports = router;
+module.exports = router
