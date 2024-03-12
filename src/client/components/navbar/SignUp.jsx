@@ -3,7 +3,7 @@ import { Form as BootstrapForm, Button } from "react-bootstrap"
 import { useState } from "react"
 import * as yup from "yup"
 import Error from "./Error"
-
+import { Container, Box, Link } from "@chakra-ui/react";
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
 import presentationService from "../../services/presentations"
@@ -90,6 +90,16 @@ export const SignUpForm = ({ onSubmit, error }) => (
             component="div"
             className="alert alert-danger"
           />
+        <Container>
+            <Box textAlign="justify">
+              <p>
+              By clicking Submit, you agree to our {""}  
+              <Link color='teal.500' href='/terms' isExternal>
+                Terms of Service
+              </Link>
+              </p>
+            </Box>
+          </Container>
 
           <br />
           <Button variant="primary" type="submit">

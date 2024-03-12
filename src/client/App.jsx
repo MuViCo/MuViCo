@@ -11,6 +11,7 @@ import HomePage from "./components/homepage"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
 import ConnectionPage from "./components/connectionpage"
+import TermsPage from "./components/termspage"
 
 
 const App = () => {
@@ -54,6 +55,7 @@ const App = () => {
               path="/connections"
               element={user ? <ConnectionPage /> : <Navigate to="/" />}>
               </Route>
+              <Route path="/terms" element={<TermsPage />} />
           </Routes>
           
         </Container>

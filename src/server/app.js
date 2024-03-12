@@ -13,6 +13,7 @@ const loginRouter = require("./routes/login")
 const presentationsRouter = require("./routes/presentations")
 const presentationRouter = require("./routes/presentation")
 const connectionsRouter = require("./routes/connections")
+const termsRouter = require("./routes/terms");
 
 const middleware = require("./utils/middleware")
 
@@ -51,6 +52,7 @@ app.use("/api/signup", signupRouter)
 app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
 app.use("/api/connections", connectionsRouter)
+app.use("/api/terms", termsRouter);
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
