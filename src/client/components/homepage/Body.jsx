@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import presentationService from '../../services/presentations'
 import PresentationForm from './presentationform'
-import Togglable from './Togglable'
+import Togglable from '../utils/Togglable'
 
 
 const Body = () => {
@@ -37,12 +37,22 @@ const Body = () => {
     navigate(`/presentation/${presentationId}`);
   }
 
+  const handleConnectionsClick = () => {
+    navigate('/connections');
+  }
+
+
   return (
     <Container maxW="container.lg">
       <div>
-        <Togglable buttonLabel='new presentation'> 
+        <SimpleGrid columns={[1,2,3]} gap={1}>
+        <Togglable buttonLabel='new presentation' exitLabel='cancel'> 
           <PresentationForm createPresentation={createPresentation} />
         </Togglable>
+        <Button  onClick={() => handleConnectionsClick()}>
+          Connections
+        </Button>
+        </SimpleGrid>
         <span>&nbsp;</span>
         <h2>Presentations</h2>
         <SimpleGrid columns={[1, 2, 3]} gap={6}>

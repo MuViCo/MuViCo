@@ -1,24 +1,24 @@
 const express = require("express")
+const mongoose = require("mongoose")
+const jwt = require("jsonwebtoken")
 const { userExtractor } = require("../utils/middleware")
+const User = require("../models/user")
 const Presentation = require("../models/presentation")
 
 const router = express.Router()
 
 router.get("/", userExtractor, async (req, res) => {
   const user = req.user
-  if (user.isAdmin) {
-    const presentations = await Presentation.find()
-    res.json(presentations.map((presentation) => presentation.toJSON()))
-  } else {
-    const presentations = await Presentation.find({ user: user._id })
-    res.json(presentations.map((presentation) => presentation.toJSON()))
-  }
+  const presentations = await Presentation.find({ user: user._id })
+  console.log("esitelmät: ", presentations)
+  res.json(presentations.map((presentation) => presentation.toJSON()))
 })
 
 router.post("/", userExtractor, async (req, res) => {
   const { name } = req.body
 
   const user = req.user
+  console.log(user, "moi")
 
   if (!user) {
     return res.status(401).json({ error: "operation not permitted" })
