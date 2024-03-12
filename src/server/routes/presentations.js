@@ -7,6 +7,10 @@ const Presentation = require("../models/presentation")
 
 const router = express.Router()
 
+/**
+ * Retrieves presentations for a specific user.
+ * @var {Middleware} userExtractor - Extracts user from request.
+ */
 router.get("/", userExtractor, async (req, res) => {
   const user = req.user
   const presentations = await Presentation.find({ user: user._id })
@@ -14,11 +18,12 @@ router.get("/", userExtractor, async (req, res) => {
   res.json(presentations.map((presentation) => presentation.toJSON()))
 })
 
+/**
+ * Creates a new presentation for the user
+ */
 router.post("/", userExtractor, async (req, res) => {
   const { name } = req.body
-
   const user = req.user
-  console.log(user, "moi")
 
   if (!user) {
     return res.status(401).json({ error: "operation not permitted" })
@@ -36,15 +41,6 @@ router.post("/", userExtractor, async (req, res) => {
   await user.save()
 
   res.status(201).json()
-})
-
-router.get("/:id", async (req, res) => {
-  const presentation = await Presentation.findById(req.params.id)
-  if (presentation) {
-    res.json(presentation)
-  } else {
-    res.status(404).end()
-  }
 })
 
 module.exports = router

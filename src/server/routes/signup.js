@@ -13,7 +13,7 @@ router.post("/", async (req, res) => {
   const { username, password } = req.body
 
   try {
-    const saltRounds = 10
+    const saltRounds = 10 // Number of rounds to use when hashing the password
     const passwordHash = await bcrypt.hash(password, saltRounds)
     const user = new User({
       username,

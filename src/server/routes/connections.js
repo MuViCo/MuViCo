@@ -10,6 +10,11 @@ function sendDataToAllClients(data) {
   })
 }
 
+/**
+ * Creates a TCP server that listens for incoming connections.
+ *
+ * @param {net.Socket} socket - The socket object representing the connection.
+ */
 router.post("/createserver", async (req, res) => {
   const server = net.createServer((socket) => {
     socket.write("Hello World!\r\n")
@@ -25,6 +30,11 @@ router.post("/createserver", async (req, res) => {
   })
   res.status(200).send({ message: "Server created" })
 })
+
+/**
+ * Represents a TCP socket client.
+ * @type {net.Socket}
+ */
 router.post("/connect", async (req, res) => {
   const { ip } = req.body
   const client = new net.Socket()
