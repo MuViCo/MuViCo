@@ -12,6 +12,11 @@ const requestLogger = (request, response, next) => {
   next()
 }
 
+/**
+ * Extracts the token from the request headers.
+ * @param {Object} request - The request object.
+ * @returns {string|null} - The extracted token or null if not found.
+ */
 const getTokenFrom = (request) => {
   const auth = request.headers.authorization
   if (auth && auth.toLowerCase().startsWith("bearer ")) {
@@ -20,6 +25,9 @@ const getTokenFrom = (request) => {
   return null
 }
 
+/**
+ * Extracts the user from the request token and attaches it to the request object.
+ */
 const userExtractor = async (request, response, next) => {
   getTokenFrom(request)
   const token = request.token
