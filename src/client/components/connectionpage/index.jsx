@@ -1,6 +1,6 @@
 import Body from "./Body"
 
-const FrontPage = () => {
+const ConnectionPage = () => {
   return (
     <>
       <Body />
@@ -8,4 +8,4 @@ const FrontPage = () => {
   )
 }
 
-export default FrontPage
+export default ConnectionPage

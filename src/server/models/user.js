@@ -12,9 +12,10 @@ const userSchema = mongoose.Schema({
   presentations: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Presentation' 
-    }
-  ]
+      ref: "Presentation",
+    },
+  ],
+  isAdmin: { type: Boolean, default: false },
 })
 
 userSchema.set("toJSON", {

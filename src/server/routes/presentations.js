@@ -1,49 +1,50 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const { userExtractor } = require("../utils/middleware");
-const User = require("../models/user");
-const Presentation = require("../models/presentation");
+const express = require("express")
+const mongoose = require("mongoose")
+const jwt = require("jsonwebtoken")
+const { userExtractor } = require("../utils/middleware")
+const User = require("../models/user")
+const Presentation = require("../models/presentation")
 
-const router = express.Router();
+const router = express.Router()
 
-router.get("/", userExtractor,async (req, res) => {
+router.get("/", userExtractor, async (req, res) => {
   const user = req.user
-  const presentations = await Presentation.find({ user: user._id})
-  res.json(presentations.map((presentation) => presentation.toJSON()));
-});
+  const presentations = await Presentation.find({ user: user._id })
+  console.log("esitelmät: ", presentations)
+  res.json(presentations.map((presentation) => presentation.toJSON()))
+})
 
 router.post("/", userExtractor, async (req, res) => {
-  const { name } = req.body;
+  const { name } = req.body
 
-  const user = req.user;
-  console.log(user, "moi");
+  const user = req.user
+  console.log(user, "moi")
 
   if (!user) {
-    return res.status(401).json({ error: "operation not permitted" });
+    return res.status(401).json({ error: "operation not permitted" })
   }
 
   const presentation = new Presentation({
     name,
-  });
+  })
 
-  presentation.user = user._id;
+  presentation.user = user._id
 
-  const createdPresentation = await presentation.save();
+  const createdPresentation = await presentation.save()
 
-  user.presentations = user.presentations.concat(createdPresentation._id);
-  await user.save();
+  user.presentations = user.presentations.concat(createdPresentation._id)
+  await user.save()
 
-  res.status(201).json();
-});
+  res.status(201).json()
+})
 
 router.get("/:id", async (req, res) => {
-  const presentation = await Presentation.findById(req.params.id);
+  const presentation = await Presentation.findById(req.params.id)
   if (presentation) {
-    res.json(presentation);
+    res.json(presentation)
   } else {
-    res.status(404).end();
+    res.status(404).end()
   }
-});
+})
 
-module.exports = router;
+module.exports = router

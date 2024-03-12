@@ -11,6 +11,7 @@ import HomePage from "./components/homepage"
 import PhotoPage from "./components/photopage"
 import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
+import ConnectionPage from "./components/connectionpage"
 
 
 const App = () => {
@@ -51,6 +52,10 @@ const App = () => {
               element={user ? <PresentationPage /> : <Navigate to="/" />}
             />
              <Route path="/photos" element={<PhotoPage />} />
+            <Route
+              path="/connections"
+              element={user ? <ConnectionPage /> : <Navigate to="/" />}>
+              </Route>
           </Routes>
           
         </Container>
