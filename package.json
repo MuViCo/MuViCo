@@ -12,7 +12,6 @@
     "test:e2e": "cypress run",
     "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom",
     "build": "vite build",
-    "prepare": "husky install",
     "test-backend": "NODE_ENV=test jest --testPathPattern=src/server/tests/ --verbose --runInBand --env=node",
     "test:cypress-open": "cypress open",
     "test-all": "npm run test-frontend && npm run test-backend",
