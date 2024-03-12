@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Container, Button, SimpleGrid, Box, GridItem } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
-import VideoEmbed from "./VideoEmbed.jsx"
 import InputField from "./InputField.jsx"
 import Body from "../photopage/Body.jsx"
 
@@ -49,11 +48,6 @@ export const PresentationPage = () => {
           <SimpleGrid columns={[1]} gap={6}>
             {presentationInfo.files.map((file) => (
               <GridItem key={file._id}>
-                <VideoEmbed
-                  url={file.url}
-                  id={file._id}
-                  removeVideo={onRemoveVideo}
-                />
               </GridItem>
             ))}
           </SimpleGrid>
