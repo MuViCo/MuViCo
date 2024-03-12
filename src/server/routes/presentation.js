@@ -20,6 +20,10 @@ const s3 = new S3Client({
   }
 })
 
+/**
+ * Returns all files related to a presentation.
+ * Adds an expiring signed url to AWS Bucket for each file.
+ */
 router.get("/:id", async (req, res) => {
   const presentation = await Presentation.findById(req.params.id)
   if (presentation) {
@@ -27,7 +31,8 @@ router.get("/:id", async (req, res) => {
       const params = {
         Bucket: BUCKET_NAME,
         Key: file._id.toString()
-      }
+      };
+      
       const command = new GetObjectCommand(params)
       const seconds = 60 * 60
       file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
@@ -82,6 +87,9 @@ router.put("/:id", upload.single('image'), async (req, res) => {
   res.status(204).end()
 })
 
+/**
+ * Update the presentation by removing a file from the files array.
+ */
 router.delete("/:id/:fileId", async (req, res) => {
   const { id, fileId } = req.params
   const updatedPresentation = await Presentation.findByIdAndUpdate(
