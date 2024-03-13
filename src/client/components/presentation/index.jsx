@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom"
 import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading, Link } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
+import VideoInformationTable from "./controlpanel"
 
 export const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -51,6 +52,7 @@ export const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
+          <VideoInformationTable data={presentationInfo.files} />
           <Box>
             <form onSubmit={addImage}>
               <input onChange={fileSelected} type="file" />
