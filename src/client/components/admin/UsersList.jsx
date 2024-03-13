@@ -25,7 +25,6 @@ const UsersList = () => {
               p="6"
               textAlign="center"
               rounded="md"
-              bg="white"
               style={{ fontWeight: "bold" }}
               key={user.id}
             >
