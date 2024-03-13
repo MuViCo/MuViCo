@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
-import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading, Link } from "@chakra-ui/react"
+import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
-import VideoInformationTable from "./controlpanel"
+import VideoInformationTable from "./Controlpanel"
 
 export const PresentationPage = ({ userId }) => {
   const { id } = useParams()
   const [name, setName] = useState("")
   const [file, setFile] = useState(null)
   const [presentationInfo, setPresentationInfo] = useState(null)
-
-  console.log(userId, "uuseeerr")
 
   useEffect(() => {
 

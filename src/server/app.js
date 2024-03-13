@@ -45,6 +45,7 @@ app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
 //app.use(middleware.requestLogger);
+app.use(express.static('dist'))
 
 app.use("/", indexRouter)
 app.use("/api/login", loginRouter)
