@@ -46,7 +46,7 @@ const HomePage = ({ user }) => {
             <h2>Admin controls</h2>
             <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
               <Button onClick={() => navigate("/users")}>All users</Button>
-              <Button onClick={() => navigate("/media")}>All media</Button>
+              {/* <Button onClick={() => navigate("/media")}>All media</Button> */}
             </SimpleGrid>
           </>
         )}
