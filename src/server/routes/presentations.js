@@ -10,12 +10,14 @@ const router = express.Router()
  */
 router.get("/", userExtractor, async (req, res) => {
   const user = req.user
-  if (user.isAdmin) {
+  if (user && user.isAdmin) {
     const presentations = await Presentation.find()
     res.json(presentations.map((presentation) => presentation.toJSON()))
-  } else {
+  } else if (user) {
     const presentations = await Presentation.find({ user: user._id })
     res.json(presentations.map((presentation) => presentation.toJSON()))
+  } else {
+    res.status(401).json({ error: "operation not permitted" })
   }
 })
 

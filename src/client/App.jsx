@@ -12,7 +12,8 @@ import PresentationPage from "./components/presentation/"
 import presentationService from "./services/presentations"
 import ConnectionPage from "./components/connectionpage"
 import TermsPage from "./components/termspage"
-
+import UserMedia from "./components/admin/UserMedia"
+import UsersList from "./components/admin/UsersList"
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -43,19 +44,36 @@ const App = () => {
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"
-              element={user ? <HomePage /> : <Navigate to="/" />}
+              element={user ? <HomePage user={user} /> : <Navigate to="/" />}
             />
             <Route
               path="/presentation/:id"
-              element={user ? <PresentationPage userId={user.id} /> : <Navigate to="/" />}
+              element={
+                user ? (
+                  <PresentationPage userId={user.id} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               path="/connections"
-              element={user ? <ConnectionPage /> : <Navigate to="/" />}>
-            </Route>
+              element={user ? <ConnectionPage /> : <Navigate to="/" />}
+            ></Route>
+            <Route
+              path="/users"
+              element={
+                user && user.isAdmin ? <UsersList /> : <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/media"
+              element={
+                user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />
+              }
+            />
             <Route path="/terms" element={<TermsPage />} />
           </Routes>
-
         </Container>
       </Box>
     </ChakraProvider>

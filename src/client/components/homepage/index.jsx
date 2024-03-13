@@ -1,61 +1,65 @@
-import { 
-  Container,
-  SimpleGrid,
-  Button
-} from '@chakra-ui/react'
-import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import presentationService from '../../services/presentations'
-import PresentationForm from './presentationform'
-import Togglable from '../utils/Togglable'
+import { Container, SimpleGrid, Button } from "@chakra-ui/react"
+import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import presentationService from "../../services/presentations"
+import PresentationForm from "./presentationform"
+import Togglable from "../utils/Togglable"
 
-const HomePage = () => {
+const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate() // Add useNavigate hook
 
   useEffect(() => {
-    presentationService.getAll().then(presentations =>
-      setPresentations(presentations)
-    )
+    presentationService
+      .getAll()
+      .then((presentations) => setPresentations(presentations))
   }, [])
 
   const createPresentation = async (presentationObject) => {
     try {
-      const returnedPresentation = await presentationService.create(presentationObject);
-      setPresentations(presentations.concat(returnedPresentation));
-      const updatedPresentations = await presentationService.getAll();
-      setPresentations(updatedPresentations);
-      const presentationId = updatedPresentations[updatedPresentations.length - 1].id;
-      navigate(`/presentation/${presentationId}`);
+      const returnedPresentation =
+        await presentationService.create(presentationObject)
+      setPresentations(presentations.concat(returnedPresentation))
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+      const presentationId =
+        updatedPresentations[updatedPresentations.length - 1].id
+      navigate(`/presentation/${presentationId}`)
     } catch (error) {
-      console.error('Error creating presentation:', error);
+      console.error("Error creating presentation:", error)
     }
   }
 
   const handlePresentationClick = (presentationId) => {
-    navigate(`/presentation/${presentationId}`);
+    navigate(`/presentation/${presentationId}`)
   }
 
   const handleConnectionsClick = () => {
-    navigate('/connections');
+    navigate("/connections")
   }
-
 
   return (
     <Container maxW="container.lg">
       <div>
-        <SimpleGrid columns={[1,2,3]} gap={1}>
-        <Togglable buttonLabel='new presentation' exitLabel='cancel'> 
-          <PresentationForm createPresentation={createPresentation} />
-        </Togglable>
-        <Button  onClick={() => handleConnectionsClick()}>
-          Connections
-        </Button>
+        {user.isAdmin && (
+          <>
+            <h2>Admin controls</h2>
+            <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
+              <Button onClick={() => navigate("/users")}>All users</Button>
+              <Button onClick={() => navigate("/media")}>All media</Button>
+            </SimpleGrid>
+          </>
+        )}
+        <SimpleGrid columns={[1, 2, 3]} gap={1}>
+          <Togglable buttonLabel="new presentation" exitLabel="cancel">
+            <PresentationForm createPresentation={createPresentation} />
+          </Togglable>
+          <Button onClick={() => handleConnectionsClick()}>Connections</Button>
         </SimpleGrid>
         <span>&nbsp;</span>
         <h2>Presentations</h2>
         <SimpleGrid columns={[1, 2, 3]} gap={6}>
-          {presentations.map(presentation => (
+          {presentations.map((presentation) => (
             <Button
               key={presentation.id}
               onClick={() => handlePresentationClick(presentation.id)}
@@ -65,7 +69,7 @@ const HomePage = () => {
           ))}
         </SimpleGrid>
       </div>
-    </Container>  
+    </Container>
   )
 }
 
