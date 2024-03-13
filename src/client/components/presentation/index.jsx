@@ -2,8 +2,8 @@ import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading, Link } from "@chakra-ui/react"
 
-import VideoInformationTable from "./controlpanel.jsx"
 import presentationService from "../../services/presentation"
+import VideoInformationTable from "./controlpanel"
 
 export const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -41,16 +41,9 @@ export const PresentationPage = ({ userId }) => {
 
   const removeFile = async (fileId) => {
     const updatedPresentation = await presentationService.removeFile(id, fileId)
-  const onAddFile = async ({ formData }) => {
-    const updatedPresentation = await presentationService.addFile(
-      id,
-      formData,
-    )
     setPresentationInfo(updatedPresentation)
   }
 
-
-  console.log(presentationInfo, "kk")
   return (
     <Container>
       {!presentationInfo && (
@@ -59,7 +52,7 @@ export const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
-          <VideoInformationTable data={presentationInfo.files}/>
+          <VideoInformationTable data={presentationInfo.files} />
           <Box>
             <form onSubmit={addImage}>
               <input onChange={fileSelected} type="file" />
@@ -82,7 +75,6 @@ export const PresentationPage = ({ userId }) => {
       )}
     </Container>
   )
-}
 }
 
 export default PresentationPage
