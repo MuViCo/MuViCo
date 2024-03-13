@@ -18,22 +18,24 @@ const UsersList = () => {
   return (
     <Container maxW="container.lg">
       <SimpleGrid columns={[1, 2, 3]} gap={6}>
-        {users.map((user) => (
-          <Box
-            boxShadow="md"
-            p="6"
-            textAlign="center"
-            rounded="md"
-            bg="white"
-            style={{ fontWeight: "bold" }}
-            key={user.id}
-          >
-            <Text fontSize="lg">{user.username}</Text>
-            <Button w="full" onClick={() => onRemove(user.id)}>
-              Remove
-            </Button>
-          </Box>
-        ))}
+        {users.map((user) =>
+          user.isAdmin ? null : (
+            <Box
+              boxShadow="md"
+              p="6"
+              textAlign="center"
+              rounded="md"
+              bg="white"
+              style={{ fontWeight: "bold" }}
+              key={user.id}
+            >
+              <Text fontSize="lg">{user.username}</Text>
+              <Button w="full" onClick={() => onRemove(user.id)}>
+                Remove
+              </Button>
+            </Box>
+          )
+        )}
       </SimpleGrid>
     </Container>
   )
