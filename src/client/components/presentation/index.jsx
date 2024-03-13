@@ -44,9 +44,6 @@ export const PresentationPage = ({ userId }) => {
 
   return (
     <Container>
-      {!presentationInfo && (
-        <Heading>Nice try, you don't have access to this page! :(</Heading>
-      )}
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>

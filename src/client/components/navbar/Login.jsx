@@ -58,11 +58,10 @@ const Login = ({ onLogin }) => {
   const onSubmit = async ({ username, password }) => {
     try {
       const user = await loginService.login({ username, password })
-      //const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", JSON.stringify(user))
       console.log(user)
       presentationService.setToken(user.token)
-      onLogin(JSON.stringify(user))
+      onLogin(user)
     } catch (e) {
       console.log(e)
       setError(e.response.data.error)
