@@ -1,53 +1,44 @@
-import { X } from "@mui/icons-material";
 import React from "react"
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableCaption,
+  TableContainer,
+} from '@chakra-ui/react'
 
 const VideoInformationTable = ({data}) => {
     console.log(data)
-    const styles = {
-        table: {
-          width: '800px',
-          height: '200px',
-          borderCollapse: 'collapse',
-        },
-        th: {
-          borderBottom: '1px solid black',
-          border: '2px solid black',
-        },
-        td: {
-          textAlign: 'center',
-          border: '2px solid black',
-        }
-      };
-
-    
-    
       return (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>ID</th>
-              <th style={styles.th}>Name</th>
-              <th style={styles.th}>Link</th>
-            </tr>
-          </thead>
-          <tbody>
+        <TableContainer>
+          <Table variant='simple'>
+            <TableCaption>Controlpanel for media</TableCaption>
+            <Thead>
+              <Tr>
+                <Th>Name</Th>
+                <Th>Link</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
             {data.length === 0 ?( 
-             <tr>
-                <td style={styles.td}></td>
-                <td style={styles.td}></td>
-                <td style={styles.td}></td>
-             </tr>
+             <Tr>
+                <Td ></Td>
+                <Td ></Td>
+             </Tr>
             ):(
             
             data.map(file => (
-              <tr key={file.id}>
-                <td style={styles.td}>{file.id}</td>
-                <td style={styles.td}>{file.name}</td>
-                <td style={styles.td}>{file.url}</td>
-              </tr>
+              <Tr key={file._id}>
+                <Td >{file.name}</Td>
+                <Td >{file.url}</Td>
+              </Tr>
             )))}
-          </tbody>
-        </table>
+            </Tbody>
+          </Table>
+        </TableContainer>
       );
 }
 
