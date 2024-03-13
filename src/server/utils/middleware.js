@@ -65,4 +65,5 @@ module.exports = {
   unknownEndpoint,
   errorHandler,
   userExtractor,
+  getTokenFrom,
 }
