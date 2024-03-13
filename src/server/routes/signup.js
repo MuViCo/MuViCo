@@ -4,11 +4,6 @@ const User = require("../models/user")
 
 const router = express.Router()
 
-router.get("/", async (req, res) => {
-  const users = await User.find({})
-  res.send(users.map((u) => u.toJSON()))
-})
-
 router.post("/", async (req, res) => {
   const { username, password } = req.body
 

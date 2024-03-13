@@ -44,39 +44,39 @@ afterAll(async () => {
   await mongoose.connection.close()
 })
 
-describe("when there is initially one user in the db", () => {
-  beforeEach(async () => {
-    await User.deleteMany({})
-    await User.insertMany(user1)
-  })
+// describe("when there is initially one user in the db", () => {
+//   beforeEach(async () => {
+//     await User.deleteMany({})
+//     await User.insertMany(user1)
+//   })
 
-  test("users are returned as json", async () => {
-    await api
-      .get("/api/signup")
-      .expect(200)
-      .expect("Content-Type", /application\/json/)
-  })
+//   test("users are returned as json", async () => {
+//     await api
+//       .get("/api/signup")
+//       .expect(200)
+//       .expect("Content-Type", /application\/json/)
+//   })
 
-  test("all users are returned", async () => {
-    const response = await api.get("/api/signup")
+//   test("all users are returned", async () => {
+//     const response = await api.get("/api/signup")
 
-    expect(response.body).toHaveLength(1)
-  })
+//     expect(response.body).toHaveLength(1)
+//   })
 
-  test("a specific user has the correct username", async () => {
-    const response = await api.get("/api/signup")
-    const usernames = response.body.map((r) => r.username)
+//   test("a specific user has the correct username", async () => {
+//     const response = await api.get("/api/signup")
+//     const usernames = response.body.map((r) => r.username)
 
-    expect(usernames).toContain("testuser")
-  })
+//     expect(usernames).toContain("testuser")
+//   })
 
-  test("a specific user has correct presentations", async () => {
-    const response = await api.get("/api/signup")
-    const presentations = response.body.map((r) => r.presentations)
+//   test("a specific user has correct presentations", async () => {
+//     const response = await api.get("/api/signup")
+//     const presentations = response.body.map((r) => r.presentations)
 
-    expect(presentations).toContainEqual([presentation1.id, presentation2.id])
-  })
-})
+//     expect(presentations).toContainEqual([presentation1.id, presentation2.id])
+//   })
+// })
 
 describe("creation of a new user", () => {
   beforeEach(async () => {
