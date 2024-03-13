@@ -12,4 +12,12 @@ router.get("/", userExtractor, async (req, res) => {
   res.send(users.map((u) => u.toJSON()))
 })
 
+router.delete("/user/:id", userExtractor, async (req, res) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(401).json({ error: "operation not permitted" })
+  }
+  await User.findByIdAndDelete(req.params.id)
+  res.status(204).end()
+})
+
 module.exports = router

@@ -10,6 +10,11 @@ const UsersList = () => {
     adminServices.allUsers().then((users) => setUsers(users))
   }, [])
 
+  const onRemove = async (id) => {
+    await adminServices.deleteUser(id)
+    setUsers(users.filter((user) => user.id !== id))
+  }
+
   return (
     <Container maxW="container.lg">
       <SimpleGrid columns={[1, 2, 3]} gap={6}>
@@ -24,7 +29,7 @@ const UsersList = () => {
             key={user.id}
           >
             <Text fontSize="lg">{user.username}</Text>
-            <Button w="full" onClick={() => console.log(user.username)}>
+            <Button w="full" onClick={() => onRemove(user.id)}>
               Remove
             </Button>
           </Box>
