@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
-import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading } from "@chakra-ui/react"
+import {
+  Container, Button, SimpleGrid, Box, GridItem, Image, Heading,
+} from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
@@ -12,7 +14,6 @@ export const PresentationPage = ({ userId }) => {
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   useEffect(() => {
-
     presentationService.get(id).then((presentation) => {
       if (presentation.user.toString() === userId) {
         setPresentationInfo(presentation)
@@ -51,7 +52,7 @@ export const PresentationPage = ({ userId }) => {
           <Box>
             <form onSubmit={addImage}>
               <input onChange={fileSelected} type="file" />
-              <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name" />
+              <input value={name} onChange={(e) => setName(e.target.value)} type="text" placeholder="Name" />
               <button type="submit">Submit</button>
             </form>
           </Box>

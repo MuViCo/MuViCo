@@ -1,9 +1,9 @@
-const config = require("./utils/config")
 const express = require("express")
 const cookieParser = require("cookie-parser")
 const cors = require("cors")
 const morgan = require("morgan")
 const mongoose = require("mongoose")
+const config = require("./utils/config")
 
 const logger = require("./utils/logger")
 
@@ -42,10 +42,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :data")
+  morgan(":method :url :status :res[content-length] - :response-time ms :data"),
 )
-//app.use(middleware.requestLogger);
-app.use(express.static('dist'))
+// app.use(middleware.requestLogger);
+app.use(express.static("dist"))
 
 app.use("/", indexRouter)
 app.use("/api/login", loginRouter)

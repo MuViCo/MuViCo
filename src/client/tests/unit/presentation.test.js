@@ -1,8 +1,7 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { PresentationPage } from "../../components/presentation/index"
 import "@testing-library/jest-dom"
-import { waitFor } from "@testing-library/react"
 
 describe("PresentationPage", () => {
   test("renders content", async () => {
@@ -17,7 +16,7 @@ describe("PresentationPage", () => {
     // Wait for the presentation to be fetched and the component to render
     await waitFor(() => {
       expect(
-        screen.getByText("Nice try, you don't have access to this page! :(")
+        screen.getByText("Nice try, you don't have access to this page! :("),
       ).toBeDefined()
     })
 

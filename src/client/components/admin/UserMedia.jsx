@@ -1,5 +1,3 @@
-const UserMedia = () => {
-  return <div></div>
-}
+const UserMedia = () => <div></div>
 
 export default UserMedia

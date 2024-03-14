@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom"
-import ThemeToggleButton from "./theme-toggle-button"
 import {
   Container,
   Box,
@@ -11,8 +10,9 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Link
+  Link,
 } from "@chakra-ui/react"
+import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
 
@@ -68,7 +68,7 @@ const NavBar = ({ user, setUser }) => {
           )}
           {!user && (
             <>
-             <Box ml={4} display={{base: 'inline-block'}}>
+             <Box ml={4} display={{ base: "inline-block" }}>
               <Menu>
                 <MenuButton as={Button} colorScheme="teal" variant="outline">Login</MenuButton>
                 <MenuList>
@@ -78,7 +78,7 @@ const NavBar = ({ user, setUser }) => {
                 </MenuList>
               </Menu>
              </Box>
-             <Box ml={4} display={{base: 'inline-block'}}>
+             <Box ml={4} display={{ base: "inline-block" }}>
               <Menu>
                 <MenuButton as={Button} colorScheme="teal">Sign Up</MenuButton>
                 <MenuList>

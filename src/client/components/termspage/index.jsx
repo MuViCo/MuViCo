@@ -1,8 +1,7 @@
 // index.jsx
-import React from "react";
+import React from "react"
 
-const TermsPage = () => {
-  return (
+const TermsPage = () => (
     <div>
       <h1>Terms of Service</h1>
       <p>Welcome to MuViCo! These Terms and Conditions ("Terms") govern your access to and use of MuViCo website and services ("Services"), so please read them carefully before using the Services. By accessing or using the Services, you agree to be bound by these Terms. If you do not agree to these Terms, you may not access or use the Services.</p>
@@ -46,7 +45,6 @@ const TermsPage = () => {
 
       <p>By using the Services, you acknowledge that you have read, understood, and agree to be bound by these Terms and any other policies or guidelines incorporated by reference herein. If you do not agree to these Terms, please do not use the Services.</p>
     </div>
-  );
-};
+)
 
-export default TermsPage;
+export default TermsPage

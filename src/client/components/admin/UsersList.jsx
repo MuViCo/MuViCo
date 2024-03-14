@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react"
 
-import { Container, SimpleGrid, Button, Box, Text } from "@chakra-ui/react"
+import {
+  Container, SimpleGrid, Button, Box, Text,
+} from "@chakra-ui/react"
 import adminServices from "../../services/admin"
 
 const UsersList = () => {
@@ -18,8 +20,7 @@ const UsersList = () => {
   return (
     <Container maxW="container.lg">
       <SimpleGrid columns={[1, 2, 3]} gap={6}>
-        {users.map((user) =>
-          user.isAdmin ? null : (
+        {users.map((user) => (user.isAdmin ? null : (
             <Box
               boxShadow="md"
               p="6"
@@ -33,8 +34,7 @@ const UsersList = () => {
                 Remove
               </Button>
             </Box>
-          )
-        )}
+        )))}
       </SimpleGrid>
     </Container>
   )

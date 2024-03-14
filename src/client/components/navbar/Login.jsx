@@ -6,7 +6,6 @@ import Error from "./Error"
 import presentationService from "../../services/presentations"
 import loginService from "../../services/login"
 
-
 const initialValues = {
   username: "",
   password: "",

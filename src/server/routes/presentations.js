@@ -9,7 +9,7 @@ const router = express.Router()
  * @var {Middleware} userExtractor - Extracts user from request.
  */
 router.get("/", userExtractor, async (req, res) => {
-  const user = req.user
+  const { user } = req
   if (user && user.isAdmin) {
     const presentations = await Presentation.find()
     res.json(presentations.map((presentation) => presentation.toJSON()))
@@ -26,7 +26,7 @@ router.get("/", userExtractor, async (req, res) => {
  */
 router.post("/", userExtractor, async (req, res) => {
   const { name } = req.body
-  const user = req.user
+  const { user } = req
 
   if (!user) {
     return res.status(401).json({ error: "operation not permitted" })

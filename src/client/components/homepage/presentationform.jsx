@@ -1,19 +1,21 @@
-import { useState } from 'react'
-import { FormControl, FormLabel, Input, Button, Box } from "@chakra-ui/react"
+import { useState } from "react"
+import {
+  FormControl, FormLabel, Input, Button, Box,
+} from "@chakra-ui/react"
 
 const PresentationForm = ({ createPresentation }) => {
-    const [name, setName] = useState('')
-    
-    const addPresentation = (event) => {
-        event.preventDefault()
-        createPresentation({
-        name: name,
-        })
-    
-        setName('')
-    }
-    
-    return (
+  const [name, setName] = useState("")
+
+  const addPresentation = (event) => {
+    event.preventDefault()
+    createPresentation({
+      name,
+    })
+
+    setName("")
+  }
+
+  return (
         <Box>
         <h2>Create new</h2>
         <form onSubmit={addPresentation}>
@@ -28,7 +30,7 @@ const PresentationForm = ({ createPresentation }) => {
             <Button id='create-button' type="submit">create</Button>
         </form>
         </Box>
-    )
+  )
 }
 
 export default PresentationForm

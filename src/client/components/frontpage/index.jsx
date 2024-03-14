@@ -1,15 +1,16 @@
-import { Container, Box, Heading, useColorModeValue, Spacer } from '@chakra-ui/react'
+import {
+  Container, Box, Heading, useColorModeValue, Spacer,
+} from "@chakra-ui/react"
 
-const FrontPage = () => {
-  return (
+const FrontPage = () => (
     <Container>
       <Box
         borderRadius="lg"
         mb={6}
         p={3}
         textAlign="center"
-        bg={useColorModeValue('whiteAlpha.500', 'whiteAlpha.200')}
-        css={{ backdropFilter: 'blur(10px)' }}>
+        bg={useColorModeValue("whiteAlpha.500", "whiteAlpha.200")}
+        css={{ backdropFilter: "blur(10px)" }}>
         <p>
           MuviCo is a multimodal application designed to provide versatile
           visual elements and support functions for live music performances.The
@@ -23,7 +24,6 @@ const FrontPage = () => {
         </p>
         </Box>
     </Container>
-  )
-}
+)
 
 export default FrontPage

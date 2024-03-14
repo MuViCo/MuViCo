@@ -1,23 +1,21 @@
-import { Container, Button } from '@chakra-ui/react'
-import { useState } from 'react'
-import ConnectionForm from './connectionform'
-import connectService from '../../services/connection'
-
+import { Container, Button } from "@chakra-ui/react"
+import { useState } from "react"
+import ConnectionForm from "./connectionform"
+import connectService from "../../services/connection"
 
 const ConnectionPage = () => {
-  
   const [masterMode, setMasterMode] = useState(true)
-  console.log('Master mode:', masterMode)
+  console.log("Master mode:", masterMode)
 
   const createConnection = () => {
-    console.log('Creating connection:')
+    console.log("Creating connection:")
   }
   const handleSlaveModeClick = () => {
     setMasterMode(!masterMode)
   }
 
   const handleServerConnectionClick = () => {
-    console.log('Starting server connection:')
+    console.log("Starting server connection:")
     connectService.create()
   }
 
@@ -37,6 +35,5 @@ const ConnectionPage = () => {
     </Container>
   )
 }
-
 
 export default ConnectionPage

@@ -21,7 +21,7 @@ describe("SignUp", () => {
     await userEvent.type(screen.getByLabelText("Password"), "testpassword")
     await userEvent.type(
       screen.getByLabelText("Confirm Password"),
-      "testpassword"
+      "testpassword",
     )
     await userEvent.click(screen.getByText("Submit"))
     expect(onSubmit).toHaveBeenCalledWith(
@@ -30,7 +30,7 @@ describe("SignUp", () => {
         password: "testpassword",
         password_confirmation: "testpassword",
       },
-      expect.anything()
+      expect.anything(),
     )
   })
   test("shows error message when username is too short", async () => {
@@ -39,7 +39,7 @@ describe("SignUp", () => {
     await userEvent.type(screen.getByLabelText("Username"), "te")
     await userEvent.click(screen.getByText("Submit"))
     expect(
-      screen.getByText("Username must be at least 3 characters")
+      screen.getByText("Username must be at least 3 characters"),
     ).toBeDefined()
   })
   test("shows error message when password is too short", async () => {
@@ -48,7 +48,7 @@ describe("SignUp", () => {
     await userEvent.type(screen.getByLabelText("Password"), "te")
     await userEvent.click(screen.getByText("Submit"))
     expect(
-      screen.getByText("Password must be at least 3 characters")
+      screen.getByText("Password must be at least 3 characters"),
     ).toBeDefined()
   })
   test("shows error message when password confirmation does not match", async () => {
@@ -57,7 +57,7 @@ describe("SignUp", () => {
     await userEvent.type(screen.getByLabelText("Password"), "testpassword")
     await userEvent.type(
       screen.getByLabelText("Confirm Password"),
-      "testpassword2"
+      "testpassword2",
     )
     await userEvent.click(screen.getByText("Submit"))
     expect(screen.getByText("Passwords must match")).toBeDefined()

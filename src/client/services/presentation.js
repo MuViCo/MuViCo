@@ -1,4 +1,5 @@
 import axios from "axios"
+
 const baseUrl = "/api/presentation/"
 
 let token = null
@@ -24,11 +25,11 @@ const remove = async (id) => {
  * @param {FormData} formData - The form data containing the file to be added.
  * @var {Config} Config - This is an object where you can specify additional information like headers.
  *    Here, you’re setting the ‘Content-Type’ header to ‘multipart/form-data’,
- *    which is used when you’re sending form data that includes files. 
+ *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
 const addFile = async (id, formData) => {
-  const response = await axios.put(`${baseUrl}/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+  const response = await axios.put(`${baseUrl}/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } })
   return response.data
 }
 
@@ -37,4 +38,6 @@ const removeFile = async (id, fileId) => {
   return response.data
 }
 
-export default { get, setToken, remove, addFile, removeFile }
+export default {
+  get, setToken, remove, addFile, removeFile,
+}
