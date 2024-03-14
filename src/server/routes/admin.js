@@ -9,7 +9,7 @@ router.get("/", userExtractor, async (req, res) => {
     return res.status(401).json({ error: "operation not permitted" })
   }
   const users = await User.find({})
-  res.send(users.map((u) => u.toJSON()))
+  return res.send(users.map((u) => u.toJSON()))
 })
 
 router.delete("/user/:id", userExtractor, async (req, res) => {
@@ -17,7 +17,7 @@ router.delete("/user/:id", userExtractor, async (req, res) => {
     return res.status(401).json({ error: "operation not permitted" })
   }
   await User.findByIdAndDelete(req.params.id)
-  res.status(204).end()
+  return res.status(204).end()
 })
 
 module.exports = router

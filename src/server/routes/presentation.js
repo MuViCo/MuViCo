@@ -1,13 +1,19 @@
 const express = require("express")
 const multer = require("multer")
 const {
-  S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand,
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 const Presentation = require("../models/presentation")
 
 const {
-  BUCKET_REGION, BUCKET_NAME, ACCESS_KEY, SECRET_ACCESS_KEY,
+  BUCKET_REGION,
+  BUCKET_NAME,
+  ACCESS_KEY,
+  SECRET_ACCESS_KEY,
 } = require("../utils/config")
 const logger = require("../utils/logger")
 
@@ -31,16 +37,19 @@ const s3 = new S3Client({
 router.get("/:id", async (req, res) => {
   const presentation = await Presentation.findById(req.params.id)
   if (presentation) {
-    for (const file of presentation.files) {
-      const params = {
-        Bucket: BUCKET_NAME,
-        Key: file._id.toString(),
-      }
+    presentation.files = await Promise.all(
+      presentation.files.map(async (file) => {
+        const params = {
+          Bucket: BUCKET_NAME,
+          Key: file._id.toString(),
+        }
 
-      const command = new GetObjectCommand(params)
-      const seconds = 60 * 60
-      file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
-    }
+        const command = new GetObjectCommand(params)
+        const seconds = 60 * 60
+        file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
+        return file
+      }),
+    )
     res.json(presentation)
   } else {
     res.status(404).end()

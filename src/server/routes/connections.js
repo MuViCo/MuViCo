@@ -4,11 +4,13 @@ const router = require("./login")
 
 const port = 8080
 
+/*
 function sendDataToAllClients(data) {
   clients.forEach((socket) => {
     socket.write(data)
   })
 }
+*/
 
 /**
  * Creates a TCP server that listens for incoming connections.

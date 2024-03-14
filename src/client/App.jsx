@@ -23,9 +23,9 @@ const App = () => {
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
     if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON)
-      setUser(user)
-      presentationService.setToken(user.token)
+      const parsedUser = JSON.parse(loggedUserJSON)
+      setUser(parsedUser)
+      presentationService.setToken(parsedUser.token)
     }
     setIsInitialized(true)
   }, [])

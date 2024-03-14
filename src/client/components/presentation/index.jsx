@@ -7,7 +7,7 @@ import {
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
 
-export const PresentationPage = ({ userId }) => {
+const PresentationPage = ({ userId }) => {
   const { id } = useParams()
   const [name, setName] = useState("")
   const [file, setFile] = useState(null)
@@ -19,7 +19,7 @@ export const PresentationPage = ({ userId }) => {
         setPresentationInfo(presentation)
       }
     })
-  }, [id])
+  }, [id, userId])
 
   const addImage = async (event) => {
     event.preventDefault()
@@ -34,8 +34,8 @@ export const PresentationPage = ({ userId }) => {
   }
 
   const fileSelected = (event) => {
-    const file = event.target.files[0]
-    setFile(file)
+    const selected = event.target.files[0]
+    setFile(selected)
   }
 
   const removeFile = async (fileId) => {
@@ -59,10 +59,10 @@ export const PresentationPage = ({ userId }) => {
           <Box>
             <p>Cues: {presentationInfo.cues}</p>
             <SimpleGrid columns={1} gap={6}>
-              {presentationInfo.files.map((file) => (
-                <GridItem key={file._id}>
-                  <Image src={file.url} alt={file.name} />
-                  <Button onClick={() => removeFile(file._id)}>Remove file</Button>
+              {presentationInfo.files.map((mappedFile) => (
+                <GridItem key={mappedFile._id}>
+                  <Image src={mappedFile.url} alt={mappedFile.name} />
+                  <Button onClick={() => removeFile(mappedFile._id)}>Remove file</Button>
                 </GridItem>
               ))}
             </SimpleGrid>

@@ -43,7 +43,7 @@ router.post("/", userExtractor, async (req, res) => {
   user.presentations = user.presentations.concat(createdPresentation._id)
   await user.save()
 
-  res.status(201).json()
+  return res.status(201).json()
 })
 
 module.exports = router

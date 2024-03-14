@@ -9,7 +9,7 @@ const UsersList = () => {
   const [users, setUsers] = useState([])
 
   useEffect(() => {
-    adminServices.allUsers().then((users) => setUsers(users))
+    adminServices.allUsers().then((allUsers) => setUsers(allUsers))
   }, [])
 
   const onRemove = async (id) => {

@@ -12,7 +12,7 @@ const HomePage = ({ user }) => {
   useEffect(() => {
     presentationService
       .getAll()
-      .then((presentations) => setPresentations(presentations))
+      .then((usersPresentations) => setPresentations(usersPresentations))
   }, [])
 
   const createPresentation = async (presentationObject) => {
