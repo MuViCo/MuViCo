@@ -75,14 +75,18 @@ router.put("/:id", upload.single("image"), async (req, res) => {
           name: req.body.name,
           url: "",
         },
+        cues: {
+          index: req.body.index,
+          name: req.body.cuename,
+          screen: req.body.screen,
+          fileName: req.body.name,
+        },
       },
     },
     { new: true },
   )
   const { file } = req
   const fileId = updatedPresentation.files.map((f) => f._id.toString()).pop()
-
-  logger.info("updatedPresentation", updatedPresentation)
 
   const bucketParams = {
     Bucket: BUCKET_NAME,
