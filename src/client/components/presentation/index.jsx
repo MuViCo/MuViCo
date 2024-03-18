@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import {
-  Container, Button, SimpleGrid, Box, GridItem, Image, Heading,
+  Container,
+  Button,
+  SimpleGrid,
+  Box,
+  GridItem,
+  Image,
+  Heading,
 } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
@@ -10,8 +16,7 @@ import CuesForm from "./Cues"
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
-  const [name, setName] = useState("")
-  const [file, setFile] = useState(null)
+
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   useEffect(() => {
@@ -23,25 +28,15 @@ const PresentationPage = ({ userId }) => {
   }, [id, userId])
 
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, name } = cueData
+    const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
     formData.append("index", index)
-    formData.append("cuename", cueName)
+    formData.append("cueName", cueName)
     formData.append("screen", screen)
     formData.append("image", file)
-    formData.append("name", name)
+    formData.append("fileName", fileName)
     await presentationService.addFile(id, formData)
-
-    setName("")
-    setFile("")
   }
-
-  const fileSelected = (event) => {
-    const selected = event.target.files[0]
-    setFile(selected)
-  }
-
-
 
   const removeFile = async (fileId) => {
     const updatedPresentation = await presentationService.removeFile(id, fileId)
@@ -53,7 +48,7 @@ const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
-          <CuesForm addCue={addCue}/>
+          <CuesForm addCue={addCue} />
           <VideoInformationTable data={presentationInfo.files} />
           <Box>
             <p>Cues: {presentationInfo.cues}</p>
@@ -61,7 +56,9 @@ const PresentationPage = ({ userId }) => {
               {presentationInfo.files.map((mappedFile) => (
                 <GridItem key={mappedFile._id}>
                   <Image src={mappedFile.url} alt={mappedFile.name} />
-                  <Button onClick={() => removeFile(mappedFile._id)}>Remove file</Button>
+                  <Button onClick={() => removeFile(mappedFile._id)}>
+                    Remove file
+                  </Button>
                 </GridItem>
               ))}
             </SimpleGrid>
