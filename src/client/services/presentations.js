@@ -1,16 +1,12 @@
 import axios from "axios"
 
+import getToken from "../auth"
+
 const baseUrl = "/api/home/"
-
-let token = null
-
-const setToken = (newToken) => {
-  token = `Bearer ${newToken}`
-}
 
 const getAll = () => {
   const config = {
-    headers: { Authorization: token },
+    headers: { Authorization: `Bearer ${getToken()}` },
   }
 
   const request = axios.get(baseUrl, config)
@@ -19,7 +15,7 @@ const getAll = () => {
 
 const create = async (newObject) => {
   const config = {
-    headers: { Authorization: token },
+    headers: { Authorization: `Bearer ${getToken()}` },
   }
 
   console.log("config", config)
@@ -33,4 +29,4 @@ const remove = (id) => {
   return request.then((response) => response.data)
 }
 
-export default { setToken, getAll, create }
+export default { getAll, create }

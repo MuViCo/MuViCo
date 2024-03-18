@@ -2,12 +2,6 @@ import axios from "axios"
 
 const baseUrl = "/api/presentation/"
 
-let token = null
-
-const setToken = (newToken) => {
-  token = `bearer ${newToken}`
-}
-
 const get = async (id) => {
   const response = await axios.get(`${baseUrl}${id}`)
   return response.data
@@ -29,7 +23,9 @@ const remove = async (id) => {
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
 const addFile = async (id, formData) => {
-  const response = await axios.put(`${baseUrl}/${id}`, formData, { headers: { "Content-Type": "multipart/form-data" } })
+  const response = await axios.put(`${baseUrl}/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
   return response.data
 }
 
@@ -39,5 +35,8 @@ const removeFile = async (id, fileId) => {
 }
 
 export default {
-  get, setToken, remove, addFile, removeFile,
+  get,
+  remove,
+  addFile,
+  removeFile,
 }

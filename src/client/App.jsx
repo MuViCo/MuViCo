@@ -25,7 +25,6 @@ const App = () => {
     if (loggedUserJSON) {
       const parsedUser = JSON.parse(loggedUserJSON)
       setUser(parsedUser)
-      presentationService.setToken(parsedUser.token)
     }
     setIsInitialized(true)
   }, [])

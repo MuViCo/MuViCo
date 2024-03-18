@@ -58,8 +58,6 @@ const Login = ({ onLogin }) => {
     try {
       const user = await loginService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))
-      console.log(user)
-      presentationService.setToken(user.token)
       onLogin(user)
     } catch (e) {
       console.log(e)
