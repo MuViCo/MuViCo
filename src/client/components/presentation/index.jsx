@@ -55,10 +55,10 @@ const PresentationPage = ({ userId }) => {
               <SimpleGrid columns={2} gap={6}>
                 {presentationInfo.cues.map((cue) => (
                   <GridItem key={cue._id}>
-                    <p>{cue.index}</p>
-                    <p>{cue.name}</p>
-                    <p>{cue.screen}</p>
-                    <p>{cue.fileName}</p>
+                    <p>Index: {cue.index}</p>
+                    <p>Name: {cue.name}</p>
+                    <p>Screen: {cue.screen}</p>
+                    <p>File: {cue.fileName}</p>
                   </GridItem>
                 ))}
               </SimpleGrid>

@@ -1,8 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import dotenv from 'dotenv'
+
+dotenv.config()
+
+const devPort = process.env.NODE_ENV === "development"
+  ? process.env.VITE_DEV_PORT
+  : 8000
+
+
+
 
 export default defineConfig({
   plugins: [react()],
+  base: '/',
   server: {
     proxy: {
       '/api/': {
@@ -16,6 +27,6 @@ export default defineConfig({
     },
     host: true,
     strictPort: true,
-    port: 3000,
+    port: devPort || 8000,
   },
 })

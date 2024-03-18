@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import {
   Container,
   Box,
@@ -10,7 +10,6 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Link,
 } from "@chakra-ui/react"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
@@ -52,8 +51,8 @@ const NavBar = ({ user, setUser }) => {
       >
         <Flex align="center" mr={7}>
           <Heading as="h3" size="lg" letterSpacing={"tighter"}>
-            <Link href="/home">
-            MuViCo
+            <Link to={"/home"}>
+              MuViCo
             </Link>
           </Heading>
         </Flex>
@@ -68,26 +67,26 @@ const NavBar = ({ user, setUser }) => {
           )}
           {!user && (
             <>
-             <Box ml={4} display={{ base: "inline-block" }}>
-              <Menu>
-                <MenuButton as={Button} colorScheme="teal" variant="outline">Login</MenuButton>
-                <MenuList>
-                  <Box p={2}>
-                  <Login onLogin={onLogin} />
-                  </Box>
-                </MenuList>
-              </Menu>
-             </Box>
-             <Box ml={4} display={{ base: "inline-block" }}>
-              <Menu>
-                <MenuButton as={Button} colorScheme="teal">Sign Up</MenuButton>
-                <MenuList>
-                  <Box p={2}>
-                  <SignUp onSignup={onSignup} />
-                  </Box>
-                </MenuList>
-              </Menu>
-             </Box>
+              <Box ml={4} display={{ base: "inline-block" }}>
+                <Menu>
+                  <MenuButton as={Button} colorScheme="teal" variant="outline">Login</MenuButton>
+                  <MenuList>
+                    <Box p={2}>
+                      <Login onLogin={onLogin} />
+                    </Box>
+                  </MenuList>
+                </Menu>
+              </Box>
+              <Box ml={4} display={{ base: "inline-block" }}>
+                <Menu>
+                  <MenuButton as={Button} colorScheme="teal">Sign Up</MenuButton>
+                  <MenuList>
+                    <Box p={2}>
+                      <SignUp onSignup={onSignup} />
+                    </Box>
+                  </MenuList>
+                </Menu>
+              </Box>
             </>
           )}
         </Box>
