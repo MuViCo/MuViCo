@@ -1,55 +1,95 @@
-import { Form, Formik, Field } from "formik"
-import { Form as BootstrapForm, Button } from "react-bootstrap"
-import { useState } from "react"
-import Error from "./Error"
-
+import { useState, useRef } from "react"
+import {
+  Button, FormControl, FormLabel, Input, Container, Box,
+} from "@chakra-ui/react"
 import presentationService from "../../services/presentations"
 import loginService from "../../services/login"
+import Error from "./Error"
+import { SignUpForm } from "./SignUp"
 
 const initialValues = {
   username: "",
   password: "",
 }
 
-export const LoginForm = ({ onSubmit, error }) => (
-  <>
-    <Formik initialValues={initialValues} onSubmit={onSubmit}>
-      {({ handleSubmit }) => (
-        <Form>
-          <BootstrapForm.Group>
-            <BootstrapForm.Label htmlFor="username">
-              Username
-            </BootstrapForm.Label>
-            <Field
-              id="username"
-              type="text"
-              name="username"
-              placeholder="Username"
-              as={BootstrapForm.Control}
-            />
-          </BootstrapForm.Group>
-          <BootstrapForm.Group>
-            <BootstrapForm.Label htmlFor="password">
-              Password
-            </BootstrapForm.Label>
-            <Field
-              id="password"
-              type="password"
-              name="password"
-              placeholder="Password"
-              as={BootstrapForm.Control}
-            />
-          </BootstrapForm.Group>
-          <br />
-          <Button variant="primary" type="submit">
+export const LoginForm = ({ onSubmit, error }) => {
+  const [formData, setFormData] = useState(initialValues)
+  const [submissionError, setSubmissionError] = useState(null)
+  const usernameRef = useRef(null)
+  const passwordRef = useRef(null)
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await onSubmit(formData)
+    } catch (errorjoku) {
+      console.log(error)
+      setSubmissionError(error.response.data.error)
+    }
+  }
+
+  const handleUsernameKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault()
+      passwordRef.current.focus()
+    }
+  }
+
+  const handlePasswordKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <FormControl>
+          <FormLabel htmlFor="username">Username</FormLabel>
+          <Input
+            id="username"
+            type="text"
+            name="username"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            ref={usernameRef}
+            onKeyDown={handleUsernameKeyDown}
+          />
+        </FormControl>
+        <FormControl mt={4} mb={0}>
+          <FormLabel htmlFor="password">Password</FormLabel>
+          <Input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            ref={passwordRef}
+            onKeyDown={handlePasswordKeyDown}
+          />
+        </FormControl>
+        <Container mt={4}>
+          <Box textAlign="justify">
+          </Box>
+        </Container>
+        <Box mt={4} display="flex" justifyContent="flex-start">
+          <Button colorScheme="teal" type="submit">
             Submit
           </Button>
-        </Form>
-      )}
-    </Formik>
-    <Error error={error} />
-  </>
-)
+        </Box>
+      </form>
+      <Error error={submissionError || error} />
+    </>
+  )
+}
 
 const Login = ({ onLogin }) => {
   const [error, setError] = useState(null)
@@ -59,9 +99,10 @@ const Login = ({ onLogin }) => {
       const user = await loginService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))
       onLogin(user)
-    } catch (e) {
-      console.log(e)
-      setError(e.response.data.error)
+    } catch (errorjoku) {
+      console.log(error)
+      setError(error.response.data.error)
+      throw error
     }
   }
 

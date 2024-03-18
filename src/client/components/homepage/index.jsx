@@ -1,13 +1,14 @@
 import { Container, SimpleGrid, Button } from "@chakra-ui/react"
 import { useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react" // Add useRef
 import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
-  const navigate = useNavigate() // Add useNavigate hook
+  const navigate = useNavigate()
+  const togglableRef = useRef(null) // Create a ref for Togglable component
 
   useEffect(() => {
     presentationService
@@ -36,6 +37,10 @@ const HomePage = ({ user }) => {
     navigate("/connections")
   }
 
+  const handleCancel = () => {
+    togglableRef.current.toggleVisibility()
+  }
+
   return (
     <Container maxW="container.lg">
       <div>
@@ -44,13 +49,12 @@ const HomePage = ({ user }) => {
             <h2>Admin controls</h2>
             <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
               <Button onClick={() => navigate("/users")}>All users</Button>
-              {/* <Button onClick={() => navigate("/media")}>All media</Button> */}
             </SimpleGrid>
           </>
         )}
         <SimpleGrid columns={[1, 2, 3]} gap={1}>
-          <Togglable buttonLabel="new presentation" exitLabel="cancel">
-            <PresentationForm createPresentation={createPresentation} />
+          <Togglable buttonLabel="new presentation" exitLabel="cancel" ref={togglableRef}>
+            <PresentationForm createPresentation={createPresentation} onCancel={handleCancel} />
           </Togglable>
           <Button onClick={() => handleConnectionsClick()}>Connections</Button>
         </SimpleGrid>
