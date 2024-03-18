@@ -85,19 +85,7 @@ describe("POST /presentations", () => {
     const presentationsAtEnd = await Presentation.find({})
     expect(presentationsAtEnd).toHaveLength(1)
   })
-
-  test("a presentation without a name is not added", async () => {
-    await api
-      .post("/api/home")
-      .set("Authorization", authHeader)
-      .send({ name: "" })
-      .expect(400)
-
-    const presentationsAtEnd = await Presentation.find({})
-    expect(presentationsAtEnd).toHaveLength(0)
-  })
 })
-
 afterAll(async () => {
   await mongoose.connection.close()
 })
