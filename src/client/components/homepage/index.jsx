@@ -19,7 +19,6 @@ const HomePage = ({ user }) => {
     try {
       await presentationService.create(presentationObject)
       const updatedPresentations = await presentationService.getAll()
-      console.log("updatedPresentations", updatedPresentations)
       setPresentations(updatedPresentations)
       const presentationId =
         updatedPresentations[updatedPresentations.length - 1].id
