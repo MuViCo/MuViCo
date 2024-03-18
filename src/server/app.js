@@ -7,7 +7,6 @@ const config = require("./utils/config")
 
 const logger = require("./utils/logger")
 
-const indexRouter = require("./routes/index")
 const signupRouter = require("./routes/signup")
 const loginRouter = require("./routes/login")
 const presentationsRouter = require("./routes/presentations")
@@ -47,7 +46,6 @@ app.use(
 // app.use(middleware.requestLogger);
 app.use(express.static("dist"))
 
-app.use("/", indexRouter)
 app.use("/api/login", loginRouter)
 app.use("/api/signup", signupRouter)
 app.use("/api/home", presentationsRouter)
