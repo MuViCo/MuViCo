@@ -39,5 +39,7 @@ module.exports = {
     "no-param-reassign": 0,
     "react/display-name": 0,
     "react/no-unknown-property": 0,
+    "comma-dangle": 0,
+    "object-curly-newline": 0,
   },
 }

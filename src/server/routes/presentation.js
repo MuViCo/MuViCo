@@ -48,7 +48,7 @@ router.get("/:id", async (req, res) => {
         const seconds = 60 * 60
         file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
         return file
-      }),
+      })
     )
     res.json(presentation)
   } else {
@@ -77,13 +77,13 @@ router.put("/:id", upload.single("image"), async (req, res) => {
         },
         cues: {
           index: req.body.index,
-          name: req.body.cuename,
+          name: req.body.cueName,
           screen: req.body.screen,
-          fileName: req.body.name,
+          fileName: req.body.fileName,
         },
       },
     },
-    { new: true },
+    { new: true }
   )
   const { file } = req
   const fileId = updatedPresentation.files.map((f) => f._id.toString()).pop()
@@ -117,7 +117,7 @@ router.delete("/:id/:fileId", async (req, res) => {
         },
       },
     },
-    { new: true },
+    { new: true }
   )
 
   const deleteParams = {

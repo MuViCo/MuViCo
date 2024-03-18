@@ -49,9 +49,20 @@ const PresentationPage = ({ userId }) => {
         <>
           <Heading>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
-          <VideoInformationTable data={presentationInfo.files} />
           <Box>
-            <p>Cues: {presentationInfo.cues}</p>
+            <p>Cues:</p>
+            <Box>
+              <SimpleGrid columns={2} gap={6}>
+                {presentationInfo.cues.map((cue) => (
+                  <GridItem key={cue._id}>
+                    <p>{cue.index}</p>
+                    <p>{cue.name}</p>
+                    <p>{cue.screen}</p>
+                    <p>{cue.fileName}</p>
+                  </GridItem>
+                ))}
+              </SimpleGrid>
+            </Box>
             <SimpleGrid columns={1} gap={6}>
               {presentationInfo.files.map((mappedFile) => (
                 <GridItem key={mappedFile._id}>
