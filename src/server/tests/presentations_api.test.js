@@ -3,7 +3,6 @@ const mongoose = require("mongoose")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
 const app = require("../app")
-const { getTokenFrom } = require("../utils/middleware")
 
 const api = supertest(app)
 
@@ -12,6 +11,7 @@ let authHeader
 describe("GET /presentations", () => {
   beforeEach(async () => {
     await User.deleteMany({})
+    await Presentation.deleteMany({})
     await api
       .post("/api/signup")
       .send({ username: "testuser", password: "testpassword" })
@@ -41,7 +41,7 @@ describe("GET /presentations", () => {
   test("presentations are returned as json", async () => {
     await api
       .get("/api/home")
-      .set("Authorization", authHeader) // Include the token in the request headers
+      .set("Authorization", authHeader)
       .expect(200)
       .expect("Content-Type", /application\/json/)
   })
@@ -55,6 +55,46 @@ describe("GET /presentations", () => {
     const response = await api.get("/api/home").set("Authorization", authHeader)
     const contents = response.body.map((r) => r.name)
     expect(contents).toContain("Test presentation")
+  })
+})
+
+describe("POST /presentations", () => {
+  beforeEach(async () => {
+    await Presentation.deleteMany({})
+    await User.deleteMany({})
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+    // Login and get the token
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    // Set the token in the authHeader
+    authHeader = `Bearer ${response.body.token}`
+  })
+
+  test("a valid presentation can be added", async () => {
+    await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Test presentation" })
+      .expect(201)
+      .expect("Content-Type", /application\/json/)
+
+    const presentationsAtEnd = await Presentation.find({})
+    expect(presentationsAtEnd).toHaveLength(1)
+  })
+
+  test("a presentation without a name is not added", async () => {
+    await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "" })
+      .expect(400)
+
+    const presentationsAtEnd = await Presentation.find({})
+    expect(presentationsAtEnd).toHaveLength(0)
   })
 })
 

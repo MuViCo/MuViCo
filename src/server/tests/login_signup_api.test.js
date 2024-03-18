@@ -5,7 +5,7 @@ const app = require("../app")
 const api = supertest(app)
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
-const { presentationsInDb, usersInDb } = require("./test_helper")
+const { usersInDb } = require("./test_helper")
 
 let authHeader
 
