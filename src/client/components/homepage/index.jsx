@@ -17,11 +17,12 @@ const HomePage = ({ user }) => {
 
   const createPresentation = async (presentationObject) => {
     try {
-      const returnedPresentation = await presentationService.create(presentationObject)
-      setPresentations(presentations.concat(returnedPresentation))
+      await presentationService.create(presentationObject)
       const updatedPresentations = await presentationService.getAll()
+      console.log("updatedPresentations", updatedPresentations)
       setPresentations(updatedPresentations)
-      const presentationId = updatedPresentations[updatedPresentations.length - 1].id
+      const presentationId =
+        updatedPresentations[updatedPresentations.length - 1].id
       navigate(`/presentation/${presentationId}`)
     } catch (error) {
       console.error("Error creating presentation:", error)

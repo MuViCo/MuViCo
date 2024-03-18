@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import {
   Container,
   Button,
@@ -19,13 +19,18 @@ const PresentationPage = ({ userId }) => {
 
   const [presentationInfo, setPresentationInfo] = useState(null)
 
+  const navigate = useNavigate()
+
   useEffect(() => {
-    presentationService.get(id).then((presentation) => {
-      if (presentation.user.toString() === userId) {
+    presentationService
+      .get(id)
+      .then((presentation) => {
         setPresentationInfo(presentation)
-      }
-    })
-  }, [id, userId])
+      })
+      .catch((error) => {
+        navigate("/home")
+      })
+  }, [id, userId, navigate])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData

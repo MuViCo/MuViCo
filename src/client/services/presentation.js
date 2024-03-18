@@ -1,9 +1,15 @@
 import axios from "axios"
+import getToken from "../auth"
 
 const baseUrl = "/api/presentation/"
 
 const get = async (id) => {
-  const response = await axios.get(`${baseUrl}${id}`)
+  const config = {
+    headers: {
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.get(`${baseUrl}${id}`, config)
   return response.data
 }
 

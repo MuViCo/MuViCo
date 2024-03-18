@@ -8,6 +8,7 @@ const {
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 const Presentation = require("../models/presentation")
+const { userExtractor } = require("../utils/middleware")
 
 const {
   BUCKET_REGION,
@@ -34,9 +35,16 @@ const s3 = new S3Client({
  * Returns all files related to a presentation.
  * Adds an expiring signed url to AWS Bucket for each file.
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", userExtractor, async (req, res) => {
+  const { user } = req
+  if (!user) {
+    return res.status(401).json({ error: "operation not permitted" })
+  }
   const presentation = await Presentation.findById(req.params.id)
-  if (presentation) {
+  if (
+    presentation &&
+    (presentation.user.toString() === user._id.toString() || user.isAdmin)
+  ) {
     presentation.files = await Promise.all(
       presentation.files.map(async (file) => {
         const params = {
@@ -54,6 +62,7 @@ router.get("/:id", async (req, res) => {
   } else {
     res.status(404).end()
   }
+  return null
 })
 
 router.delete("/:id", async (req, res) => {
