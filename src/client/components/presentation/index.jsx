@@ -6,6 +6,7 @@ import {
 
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
+import CuesForm from "./Cues"
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -21,10 +22,12 @@ const PresentationPage = ({ userId }) => {
     })
   }, [id, userId])
 
-  const addImage = async (event) => {
-    event.preventDefault()
-
+  const addCue = async (cueData) => {
+    const { index, cueName, screen, file, name } = cueData
     const formData = new FormData()
+    formData.append("index", index)
+    formData.append("cuename", cueName)
+    formData.append("screen", screen)
     formData.append("image", file)
     formData.append("name", name)
     await presentationService.addFile(id, formData)
@@ -38,6 +41,8 @@ const PresentationPage = ({ userId }) => {
     setFile(selected)
   }
 
+
+
   const removeFile = async (fileId) => {
     const updatedPresentation = await presentationService.removeFile(id, fileId)
     setPresentationInfo(updatedPresentation)
@@ -48,14 +53,8 @@ const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
+          <CuesForm addCue={addCue}/>
           <VideoInformationTable data={presentationInfo.files} />
-          <Box>
-            <form onSubmit={addImage}>
-              <input onChange={fileSelected} type="file" />
-              <input value={name} onChange={(e) => setName(e.target.value)} type="text" placeholder="Name" />
-              <button type="submit">Submit</button>
-            </form>
-          </Box>
           <Box>
             <p>Cues: {presentationInfo.cues}</p>
             <SimpleGrid columns={1} gap={6}>
