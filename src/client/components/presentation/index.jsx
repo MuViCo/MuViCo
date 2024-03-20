@@ -13,6 +13,7 @@ import {
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
 import CuesForm from "./Cues"
+import FullScreen from "./FullScreen"
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -81,6 +82,7 @@ const PresentationPage = ({ userId }) => {
           </Box>
         </>
       )}
+      <FullScreen buttonLabel="go fs" exitLabel="exit fs" />
     </Container>
   )
 }
