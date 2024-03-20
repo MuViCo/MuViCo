@@ -19,7 +19,7 @@ const remove = async (id) => {
 }
 
 /**
- * Adds a file to the server.
+ * Adds a cue with file to the server.
  *
  * @param {string} id - The ID of the file.
  * @param {FormData} formData - The form data containing the file to be added.
@@ -28,27 +28,21 @@ const remove = async (id) => {
  *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
-const addFile = async (id, formData) => {
+const addCue = async (id, formData) => {
   const response = await axios.put(`${baseUrl}/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   })
   return response.data
 }
 
-const removeFile = async (id, fileId) => {
-  const response = await axios.delete(`${baseUrl}/${id}/${fileId}`)
-  return response.data
-}
-
 const removeCue = async (id, cueId) => {
-  const response = await axios.delete(`${baseUrl}/${id}/cue/${cueId}`)
+  const response = await axios.delete(`${baseUrl}/${id}/${cueId}`)
   return response.data
 }
 
 export default {
   get,
   remove,
-  addFile,
-  removeFile,
-  removeCue
+  addCue,
+  removeCue,
 }
