@@ -5,6 +5,60 @@ import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 
+export const PresentationsGrid = ({
+  presentations,
+  handlePresentationClick,
+}) => (
+  <>
+    <h2>Presentations</h2>
+    <SimpleGrid columns={[1, 2, 3]} gap={6}>
+      {presentations.map((presentation) => (
+        <Button
+          key={presentation.id}
+          onClick={() => handlePresentationClick(presentation.id)}
+        >
+          {presentation.name}
+        </Button>
+      ))}
+    </SimpleGrid>
+  </>
+)
+
+export const AdminControls = ({ isAdmin, navigate }) => (
+  <>
+    {" "}
+    {isAdmin && (
+      <>
+        <h2>Admin controls</h2>
+        <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
+          <Button onClick={() => navigate("/users")}>All users</Button>
+        </SimpleGrid>
+      </>
+    )}
+  </>
+)
+
+export const CreatePresentation = ({
+  createPresentation,
+  togglableRef,
+  handleCancel,
+  handleConnectionsClick,
+}) => (
+  <SimpleGrid columns={[1, 2, 3]} gap={1}>
+    <Togglable
+      buttonLabel="new presentation"
+      exitLabel="cancel"
+      ref={togglableRef}
+    >
+      <PresentationForm
+        createPresentation={createPresentation}
+        onCancel={handleCancel}
+      />
+    </Togglable>
+    <Button onClick={() => handleConnectionsClick()}>Connections</Button>
+  </SimpleGrid>
+)
+
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
@@ -44,32 +98,17 @@ const HomePage = ({ user }) => {
   return (
     <Container maxW="container.lg">
       <div>
-        {user.isAdmin && (
-          <>
-            <h2>Admin controls</h2>
-            <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
-              <Button onClick={() => navigate("/users")}>All users</Button>
-            </SimpleGrid>
-          </>
-        )}
-        <SimpleGrid columns={[1, 2, 3]} gap={1}>
-          <Togglable buttonLabel="new presentation" exitLabel="cancel" ref={togglableRef}>
-            <PresentationForm createPresentation={createPresentation} onCancel={handleCancel} />
-          </Togglable>
-          <Button onClick={() => handleConnectionsClick()}>Connections</Button>
-        </SimpleGrid>
-        <span>&nbsp;</span>
-        <h2>Presentations</h2>
-        <SimpleGrid columns={[1, 2, 3]} gap={6}>
-          {presentations.map((presentation) => (
-            <Button
-              key={presentation.id}
-              onClick={() => handlePresentationClick(presentation.id)}
-            >
-              {presentation.name}
-            </Button>
-          ))}
-        </SimpleGrid>
+        <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
+        <CreatePresentation
+          createPresentation={createPresentation}
+          togglableRef={togglableRef}
+          handleCancel={handleCancel}
+          handleConnectionsClick={handleConnectionsClick}
+        />
+        <PresentationsGrid
+          presentations={presentations}
+          handlePresentationClick={handlePresentationClick}
+        />
       </div>
     </Container>
   )
