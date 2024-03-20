@@ -141,4 +141,21 @@ router.delete("/:id/:fileId", async (req, res) => {
   res.status(204).end()
 })
 
+router.delete("/:id/cue/:cueId", async (req, res) => {
+  const { id, cueId } = req.params
+  const updatedPresentation = await Presentation.findByIdAndUpdate(
+    id,
+    {
+      $pull: {
+        cues: {
+          _id: cueId,
+        },
+      },
+    },
+    { new: true }
+  )
+  res.json(updatedPresentation)
+  res.status(204).end()
+})
+
 module.exports = router

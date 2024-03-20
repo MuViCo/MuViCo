@@ -40,9 +40,15 @@ const removeFile = async (id, fileId) => {
   return response.data
 }
 
+const removeCue = async (id, cueId) => {
+  const response = await axios.delete(`${baseUrl}/${id}/cue/${cueId}`)
+  return response.data
+}
+
 export default {
   get,
   remove,
   addFile,
   removeFile,
+  removeCue
 }

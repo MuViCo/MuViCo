@@ -11,11 +11,10 @@ import {
 } from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
-import VideoInformationTable from "./Controlpanel"
 import CuesForm from "./Cues"
 import FullScreen from "./FullScreen"
 
-export const PresentationCues = ({ presentation }) => (
+export const PresentationCues = ({ presentation, removeCue }) => (
   <>
     <p>Cues:</p>
     <Box>
@@ -26,6 +25,9 @@ export const PresentationCues = ({ presentation }) => (
             <p>Name: {cue.name}</p>
             <p>Screen: {cue.screen}</p>
             <p>File: {cue.fileName}</p>
+            <Button onClick={() => removeCue(cue._id)}>
+              Remove cue
+            </Button>
           </GridItem>
         ))}
       </SimpleGrid>
@@ -84,20 +86,25 @@ const PresentationPage = ({ userId }) => {
     setPresentationInfo(updatedPresentation)
   }
 
+  const removeCue = async (cueId) => {
+    const updatedPresentation = await presentationService.removeCue(id, cueId)
+    setPresentationInfo(updatedPresentation)
+  }
+
   return (
     <Container>
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
-          <PresentationCues presentation={presentationInfo} />
+          <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
           <PresentationFiles
             presentation={presentationInfo}
             removeFile={removeFile}
           />
         </>
       )}
-    </Container>
+    </Container >
   )
 }
 
