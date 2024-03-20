@@ -12,7 +12,6 @@ import {
 
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
-import FullScreen from "./FullScreen"
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
@@ -24,26 +23,9 @@ export const PresentationCues = ({ presentation, removeCue }) => (
             <p>Index: {cue.index}</p>
             <p>Name: {cue.name}</p>
             <p>Screen: {cue.screen}</p>
-            <p>File: {cue.fileName}</p>
+            <p>File: {cue.file.name}</p>
             <Button onClick={() => removeCue(cue._id)}>
               Remove cue
-            </Button>
-          </GridItem>
-        ))}
-      </SimpleGrid>
-    </Box>
-  </>
-)
-
-export const PresentationFiles = ({ presentation, removeFile }) => (
-  <>
-    <Box>
-      <SimpleGrid columns={1} gap={6}>
-        {presentation.files.map((mappedFile) => (
-          <GridItem key={mappedFile._id}>
-            <Image src={mappedFile.url} alt={mappedFile.name} />
-            <Button onClick={() => removeFile(mappedFile._id)}>
-              Remove file
             </Button>
           </GridItem>
         ))}
@@ -78,17 +60,17 @@ const PresentationPage = ({ userId }) => {
     formData.append("screen", screen)
     formData.append("image", file)
     formData.append("fileName", fileName)
-    await presentationService.addFile(id, formData)
-  }
-
-  const removeFile = async (fileId) => {
-    const updatedPresentation = await presentationService.removeFile(id, fileId)
-    setPresentationInfo(updatedPresentation)
+    await presentationService.addCue(id, formData)
   }
 
   const removeCue = async (cueId) => {
     const updatedPresentation = await presentationService.removeCue(id, cueId)
     setPresentationInfo(updatedPresentation)
+  }
+
+  const deletePresentation = async () => {
+    await presentationService.remove(id)
+    navigate("/home")
   }
 
   return (
@@ -98,10 +80,7 @@ const PresentationPage = ({ userId }) => {
           <Heading>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
           <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
-          <PresentationFiles
-            presentation={presentationInfo}
-            removeFile={removeFile}
-          />
+          <Button onClick={() => deletePresentation()}>Delete presentation</Button>
         </>
       )}
     </Container >

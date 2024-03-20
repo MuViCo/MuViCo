@@ -7,6 +7,7 @@ const {
   GetObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
+const crypto = require("crypto")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
@@ -31,12 +32,42 @@ const s3 = new S3Client({
   },
 })
 
+const generateFileId = () => crypto.randomBytes(8).toString("hex")
+
+const deletObject = async (id, cueId) => {
+  const cue = await Presentation.findOne({ _id: id, "cues._id": cueId }, { "cues.$": 1 })
+  const updatedPresentation = await Presentation.findByIdAndUpdate(
+    id,
+    {
+      $pull: {
+        cues: {
+          _id: cueId,
+        },
+      },
+    },
+    { new: true }
+  )
+
+  const fileId = cue.cues[0].file.id
+
+  const deleteParams = {
+    Bucket: BUCKET_NAME,
+    Key: `${id}/${fileId}`,
+  }
+
+  const command = new DeleteObjectCommand(deleteParams)
+  await s3.send(command)
+
+  return updatedPresentation
+}
+
 /**
  * Returns all files related to a presentation.
  * Adds an expiring signed url to AWS Bucket for each file.
  */
 router.get("/:id", userExtractor, async (req, res) => {
   const { user } = req
+  const { id } = req.params
   if (!user) {
     return res.status(401).json({ error: "operation not permitted" })
   }
@@ -46,16 +77,16 @@ router.get("/:id", userExtractor, async (req, res) => {
     (presentation.user.toString() === user._id.toString() || user.isAdmin)
   ) {
     presentation.files = await Promise.all(
-      presentation.files.map(async (file) => {
+      presentation.cues.map(async (cue) => {
         const params = {
           Bucket: BUCKET_NAME,
-          Key: file._id.toString(),
+          Key: `${id}/${cue.file.id.toString()}`,
         }
 
         const command = new GetObjectCommand(params)
         const seconds = 60 * 60
-        file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
-        return file
+        cue.file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
+        return cue
       })
     )
     res.json(presentation)
@@ -66,7 +97,17 @@ router.get("/:id", userExtractor, async (req, res) => {
 })
 
 router.delete("/:id", async (req, res) => {
-  await Presentation.findByIdAndDelete(req.params.id)
+  const { id } = req.params
+
+  const presentation = await Presentation.findById(id)
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const cue of presentation.cues) {
+    // eslint-disable-next-line no-await-in-loop
+    await deletObject(id, cue._id)
+  }
+
+  await Presentation.findByIdAndDelete(id)
   res.status(204).end()
 })
 
@@ -76,30 +117,34 @@ router.delete("/:id", async (req, res) => {
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
 router.put("/:id", upload.single("image"), async (req, res) => {
+  const { id } = req.params
+  const fileId = generateFileId()
+  const { file } = req
+
   const updatedPresentation = await Presentation.findByIdAndUpdate(
-    req.params.id,
+    id,
     {
       $push: {
-        files: {
-          name: req.body.name,
-          url: "",
-        },
         cues: {
           index: req.body.index,
           name: req.body.cueName,
           screen: req.body.screen,
-          fileName: req.body.fileName,
+          file: {
+            id: fileId,
+            name: req.body.fileName,
+            url: "",
+          },
         },
       },
     },
     { new: true }
   )
-  const { file } = req
-  const fileId = updatedPresentation.files.map((f) => f._id.toString()).pop()
+
+  const filePath = `${id}/${fileId}`
 
   const bucketParams = {
     Bucket: BUCKET_NAME,
-    Key: fileId,
+    Key: filePath,
     Body: file.buffer,
     ContentType: file.mimetype,
   }
@@ -115,45 +160,9 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 /**
  * Update the presentation by removing a file from the files array.
  */
-router.delete("/:id/:fileId", async (req, res) => {
-  const { id, fileId } = req.params
-  const updatedPresentation = await Presentation.findByIdAndUpdate(
-    id,
-    {
-      $pull: {
-        files: {
-          _id: fileId,
-        },
-      },
-    },
-    { new: true }
-  )
-
-  const deleteParams = {
-    Bucket: BUCKET_NAME,
-    Key: fileId,
-  }
-
-  const command = new DeleteObjectCommand(deleteParams)
-  await s3.send(command)
-
-  res.json(updatedPresentation)
-  res.status(204).end()
-})
-
-router.delete("/:id/cue/:cueId", async (req, res) => {
+router.delete("/:id/:cueId", async (req, res) => {
   const { id, cueId } = req.params
-  const updatedPresentation = await Presentation.findByIdAndUpdate(
-    id,
-    {
-      $pull: {
-        cues: {
-          _id: cueId,
-        },
-      },
-    },
-    { new: true }
-  )
+  const updatedPresentation = await deletObject(id, cueId)
   res.json(updatedPresentation)
   res.status(204).end()
 })
