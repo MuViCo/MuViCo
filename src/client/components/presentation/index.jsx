@@ -97,7 +97,6 @@ const PresentationPage = ({ userId }) => {
           />
         </>
       )}
-      <FullScreen buttonLabel="go fs" exitLabel="exit fs" />
     </Container>
   )
 }

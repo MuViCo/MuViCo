@@ -1,27 +1,29 @@
-import React, { useState, useEffect, forwardRef } from "react"
+import React, { useState } from "react"
+import screenfull from "screenfull"
 import { Button, Box } from "@chakra-ui/react"
 
-const FullScreen = forwardRef(({ buttonLabel, exitLabel, children }, ref) => {
-  const [isFullScreen, setIsFullScreen] = useState(false)
+const FullscreenToggle = () => {
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const toggleFullScreen = () => {
-    if (!isFullScreen) {
-      const e = document.getElementById("my-fullscreen")
-      e?.requestFullscreen()
-    } else {
-      document.exitFullscreen()
+  const handleToggleFullscreen = () => {
+    if (screenfull.isEnabled) {
+      // Toggle fullscreen
+      if (screenfull.isFullscreen) {
+        screenfull.exit()
+      } else {
+        screenfull.request()
+      }
+      setIsFullscreen(!isFullscreen)
     }
-    setIsFullScreen(!isFullScreen)
   }
 
   return (
     <Box>
-      <Button onClick={toggleFullScreen}>
-        {isFullScreen ? exitLabel : buttonLabel}
+      <Button onClick={handleToggleFullscreen}>
+        {isFullscreen ? "Exit Fullscreen" : "Go Fullscreen"}
       </Button>
-      {isFullScreen && <Box id="my-fullscreen">{children}</Box>}
     </Box>
   )
-})
+}
 
-export default FullScreen
+export default FullscreenToggle
