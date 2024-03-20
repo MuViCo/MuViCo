@@ -14,6 +14,41 @@ import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
 import CuesForm from "./Cues"
 
+export const PresentationCues = ({ presentation }) => (
+  <>
+    <p>Cues:</p>
+    <Box>
+      <SimpleGrid columns={2} gap={6}>
+        {presentation.cues.map((cue) => (
+          <GridItem key={cue._id}>
+            <p>Index: {cue.index}</p>
+            <p>Name: {cue.name}</p>
+            <p>Screen: {cue.screen}</p>
+            <p>File: {cue.fileName}</p>
+          </GridItem>
+        ))}
+      </SimpleGrid>
+    </Box>
+  </>
+)
+
+export const PresentationFiles = ({ presentation, removeFile }) => (
+  <>
+    <Box>
+      <SimpleGrid columns={1} gap={6}>
+        {presentation.files.map((mappedFile) => (
+          <GridItem key={mappedFile._id}>
+            <Image src={mappedFile.url} alt={mappedFile.name} />
+            <Button onClick={() => removeFile(mappedFile._id)}>
+              Remove file
+            </Button>
+          </GridItem>
+        ))}
+      </SimpleGrid>
+    </Box>
+  </>
+)
+
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
 
@@ -54,31 +89,11 @@ const PresentationPage = ({ userId }) => {
         <>
           <Heading>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
-          <Box>
-            <p>Cues:</p>
-            <Box>
-              <SimpleGrid columns={2} gap={6}>
-                {presentationInfo.cues.map((cue) => (
-                  <GridItem key={cue._id}>
-                    <p>Index: {cue.index}</p>
-                    <p>Name: {cue.name}</p>
-                    <p>Screen: {cue.screen}</p>
-                    <p>File: {cue.fileName}</p>
-                  </GridItem>
-                ))}
-              </SimpleGrid>
-            </Box>
-            <SimpleGrid columns={1} gap={6}>
-              {presentationInfo.files.map((mappedFile) => (
-                <GridItem key={mappedFile._id}>
-                  <Image src={mappedFile.url} alt={mappedFile.name} />
-                  <Button onClick={() => removeFile(mappedFile._id)}>
-                    Remove file
-                  </Button>
-                </GridItem>
-              ))}
-            </SimpleGrid>
-          </Box>
+          <PresentationCues presentation={presentationInfo} />
+          <PresentationFiles
+            presentation={presentationInfo}
+            removeFile={removeFile}
+          />
         </>
       )}
     </Container>
