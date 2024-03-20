@@ -16,19 +16,14 @@ const presentationSchema = mongoose.Schema({
       index: Number,
       name: String,
       screen: Number,
-      fileName: String,
-      fileId: {
-        type: mongoose.Schema.Types.ObjectId,
+      file: {
+        id: String,
+        name: String,
+        url: String,
       },
     },
   ],
 
-  files: [
-    {
-      name: String,
-      url: String,
-    },
-  ],
 })
 
 presentationSchema.set("toJSON", {
