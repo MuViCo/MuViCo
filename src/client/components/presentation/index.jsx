@@ -13,6 +13,7 @@ import {
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
 import CuesForm from "./Cues"
+import FullScreen from "./FullScreen"
 
 export const PresentationCues = ({ presentation }) => (
   <>
@@ -96,6 +97,7 @@ const PresentationPage = ({ userId }) => {
           />
         </>
       )}
+      <FullScreen buttonLabel="go fs" exitLabel="exit fs" />
     </Container>
   )
 }
