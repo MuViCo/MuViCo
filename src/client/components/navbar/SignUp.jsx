@@ -50,8 +50,8 @@ export const SignUpForm = ({ onSubmit, error }) => {
       await onSubmit(formData)
     } catch (validationErrors) {
       const errors = {}
-      validationErrors.inner.forEach((problemosss) => {
-        errors[error.path] = error.message
+      validationErrors.inner.forEach((validationError) => {
+        errors[validationError.path] = validationError.message
       })
       setFormErrors(errors)
     }
