@@ -1,7 +1,5 @@
 import React from "react"
-import {
-  render, screen, fireEvent, waitFor,
-} from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { LoginForm } from "../../components/navbar/Login"
 
@@ -17,7 +15,7 @@ describe("Login", () => {
   it("submits the form with provided values", async () => {
     const onSubmit = jest.fn()
     const { getByLabelText, getByText } = render(
-      <LoginForm onSubmit={onSubmit} />,
+      <LoginForm onSubmit={onSubmit} />
     )
 
     fireEvent.change(getByLabelText("Username"), {
@@ -32,7 +30,7 @@ describe("Login", () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(
         { username: "testuser", password: "testpassword" },
-        expect.anything(),
+        expect.anything()
       )
     })
   })
