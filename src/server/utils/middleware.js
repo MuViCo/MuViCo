@@ -1,8 +1,8 @@
-const logger = require("./logger")
-const User = require("../models/user")
 const jwt = require("jsonwebtoken")
 const { log } = require("console")
 const { get } = require("http")
+const User = require("../models/user")
+const logger = require("./logger")
 
 const requestLogger = (request, response, next) => {
   logger.info("Method:", request.method)
@@ -30,8 +30,7 @@ const getTokenFrom = (request) => {
  */
 const userExtractor = async (request, response, next) => {
   getTokenFrom(request)
-  const token = request.token
-  logger.info("token", token)
+  const { token } = request
   if (token) {
     const decodedToken = jwt.verify(token, process.env.SECRET)
     if (!decodedToken.id) {
@@ -42,6 +41,8 @@ const userExtractor = async (request, response, next) => {
   }
 
   next()
+
+  return null
 }
 
 const unknownEndpoint = (request, response) => {
@@ -53,11 +54,14 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" })
-  } else if (error.name === "ValidationError") {
+  }
+  if (error.name === "ValidationError") {
     return response.status(400).json({ error: error.message })
   }
 
   next(error)
+
+  return null
 }
 
 module.exports = {
@@ -65,4 +69,5 @@ module.exports = {
   unknownEndpoint,
   errorHandler,
   userExtractor,
+  getTokenFrom,
 }

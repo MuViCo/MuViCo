@@ -5,27 +5,26 @@ import { useState, useEffect } from "react"
 import theme from "./lib/theme"
 import Fonts from "./lib/fonts"
 
-import NavBar from "./components/navbar/"
+import NavBar from "./components/navbar"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
-import PresentationPage from "./components/presentation/"
+import PresentationPage from "./components/presentation"
 import presentationService from "./services/presentations"
 import ConnectionPage from "./components/connectionpage"
-
+import TermsPage from "./components/termspage"
+import UserMedia from "./components/admin/UserMedia"
+import UsersList from "./components/admin/UsersList"
 
 const App = () => {
   const [user, setUser] = useState(null)
-
-  console.log("user", user)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
     if (loggedUserJSON) {
-      const user = JSON.parse(loggedUserJSON)
-      setUser(user)
-      presentationService.setToken(user.token)
+      const parsedUser = JSON.parse(loggedUserJSON)
+      setUser(parsedUser)
     }
     setIsInitialized(true)
   }, [])
@@ -44,18 +43,36 @@ const App = () => {
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"
-              element={user ? <HomePage /> : <Navigate to="/" />}
+              element={user ? <HomePage user={user} /> : <Navigate to="/" />}
             />
             <Route
               path="/presentation/:id"
-              element={user ? <PresentationPage /> : <Navigate to="/" />}
+              element={
+                user ? (
+                  <PresentationPage userId={user.id} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               path="/connections"
-              element={user ? <ConnectionPage /> : <Navigate to="/" />}>
-              </Route>
+              element={user ? <ConnectionPage /> : <Navigate to="/" />}
+            ></Route>
+            <Route
+              path="/users"
+              element={
+                user && user.isAdmin ? <UsersList /> : <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/media"
+              element={
+                user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />
+              }
+            />
+            <Route path="/terms" element={<TermsPage />} />
           </Routes>
-          
         </Container>
       </Box>
     </ChakraProvider>

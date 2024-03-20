@@ -17,14 +17,16 @@ jobs:
           node-version: "20"
       - name: Install dependencies
         run: npm i
+      - name: Run linter
+        run: npm run lint
       - name: Run unit tests
         run: |
-            npm run test-coverage
+          npm run test-coverage
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
 
       - name: Build frontend
-        run: npm run build 
+        run: npm run build
 
       - name: Build image
         id: build-image

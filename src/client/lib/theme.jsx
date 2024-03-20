@@ -1,38 +1,40 @@
-import { extendTheme } from '@chakra-ui/react'
-import { mode } from '@chakra-ui/theme-tools'
+import { extendTheme } from "@chakra-ui/react"
+import { mode } from "@chakra-ui/theme-tools"
 
 const styles = {
-  global: props => ({
+  global: (props) => ({
     body: {
-      bg: mode('#ffffff', '#000000')(props)
-    }
-  })
+      bg: mode("#ffffff", "#000000")(props),
+    },
+  }),
 }
 
 const components = {
   Heading: {
     variants: {
-      'section-title': {
-        textDecoration: 'underline',
+      "section-title": {
+        textDecoration: "underline",
         fontSize: 20,
         textUnderlineOffset: 6,
-        textDecorationColor: '#525252',
+        textDecorationColor: "#525252",
         textDecorationThickness: 4,
         marginTop: 3,
-        marginBottom: 4
-      }
-    }
-  }
+        marginBottom: 4,
+      },
+    },
+  },
 }
 
 const fonts = {
-  heading: "'Roboto Mono'"
+  heading: "'Roboto Mono'",
 }
 
 const config = {
-  initialColorMode: 'dark',
-  useSystemColorMode: true
+  initialColorMode: "dark",
+  useSystemColorMode: true,
 }
 
-const theme = extendTheme({ config, styles, components, fonts })
+const theme = extendTheme({
+  config, styles, components, fonts,
+})
 export default theme

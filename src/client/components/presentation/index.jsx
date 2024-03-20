@@ -1,36 +1,84 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Container, Button, SimpleGrid, Box, GridItem, Image, Heading } from "@chakra-ui/react"
+import {
+  Container,
+  Button,
+  SimpleGrid,
+  Box,
+  GridItem,
+  Image,
+  Heading,
+} from "@chakra-ui/react"
 
 import presentationService from "../../services/presentation"
+import CuesForm from "./Cues"
+import FullScreen from "./FullScreen"
 
-export const PresentationPage = () => {
+export const PresentationCues = ({ presentation, removeCue }) => (
+  <>
+    <p>Cues:</p>
+    <Box>
+      <SimpleGrid columns={2} gap={6}>
+        {presentation.cues.map((cue) => (
+          <GridItem key={cue._id}>
+            <p>Index: {cue.index}</p>
+            <p>Name: {cue.name}</p>
+            <p>Screen: {cue.screen}</p>
+            <p>File: {cue.fileName}</p>
+            <Button onClick={() => removeCue(cue._id)}>
+              Remove cue
+            </Button>
+          </GridItem>
+        ))}
+      </SimpleGrid>
+    </Box>
+  </>
+)
+
+export const PresentationFiles = ({ presentation, removeFile }) => (
+  <>
+    <Box>
+      <SimpleGrid columns={1} gap={6}>
+        {presentation.files.map((mappedFile) => (
+          <GridItem key={mappedFile._id}>
+            <Image src={mappedFile.url} alt={mappedFile.name} />
+            <Button onClick={() => removeFile(mappedFile._id)}>
+              Remove file
+            </Button>
+          </GridItem>
+        ))}
+      </SimpleGrid>
+    </Box>
+  </>
+)
+
+const PresentationPage = ({ userId }) => {
   const { id } = useParams()
-  const [name, setName] = useState("")
-  const [file, setFile] = useState(null)
+
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const navigate = useNavigate()
 
   useEffect(() => {
-    presentationService.get(id).then((info) => setPresentationInfo(info))
-  }, [id])
+    presentationService
+      .get(id)
+      .then((presentation) => {
+        setPresentationInfo(presentation)
+      })
+      .catch((error) => {
+        navigate("/home")
+      })
+  }, [id, userId, navigate])
 
-  const addImage = async (event) => {
-    event.preventDefault()
-
+  const addCue = async (cueData) => {
+    const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
+    formData.append("index", index)
+    formData.append("cueName", cueName)
+    formData.append("screen", screen)
     formData.append("image", file)
-    formData.append("name", name)
+    formData.append("fileName", fileName)
     await presentationService.addFile(id, formData)
-
-    setName("")
-    setFile("")
-  }
-
-  const fileSelected = (event) => {
-    const file = event.target.files[0]
-    setFile(file)
   }
 
   const removeFile = async (fileId) => {
@@ -38,28 +86,25 @@ export const PresentationPage = () => {
     setPresentationInfo(updatedPresentation)
   }
 
+  const removeCue = async (cueId) => {
+    const updatedPresentation = await presentationService.removeCue(id, cueId)
+    setPresentationInfo(updatedPresentation)
+  }
+
   return (
     <Container>
-      <Heading>__</Heading>
-      <form onSubmit={addImage}>
-        <input onChange={fileSelected} type="file"></input>
-        <input value={name} onChange={e => setName(e.target.value)} type="text" placeholder="Name"></input>
-        <button type="submit">Submit</button>
-      </form>
       {presentationInfo && (
-        <Box>
-          <p>Cues: {presentationInfo.cues}</p>
-          <SimpleGrid columns={1} gap={6}>
-            {presentationInfo.files.map((file) => (
-              <GridItem key={file._id}>
-                <Image src={file.url} alt={file.name}></Image>
-                <Button onClick={() => removeFile(file._id)}>Remove file</Button>
-              </GridItem>
-            ))}
-          </SimpleGrid>
-        </Box>
+        <>
+          <Heading>{presentationInfo.name}</Heading>
+          <CuesForm addCue={addCue} />
+          <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
+          <PresentationFiles
+            presentation={presentationInfo}
+            removeFile={removeFile}
+          />
+        </>
       )}
-    </Container>
+    </Container >
   )
 }
 

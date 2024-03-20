@@ -17,6 +17,9 @@ const presentationSchema = mongoose.Schema({
       name: String,
       screen: Number,
       fileName: String,
+      fileId: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
     },
   ],
 

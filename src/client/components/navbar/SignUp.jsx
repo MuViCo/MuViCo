@@ -1,12 +1,17 @@
-import { Form, Formik, Field, ErrorMessage } from "formik"
-import { Form as BootstrapForm, Button } from "react-bootstrap"
 import { useState } from "react"
 import * as yup from "yup"
+import {
+  Container,
+  Box,
+  Link,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+} from "@chakra-ui/react"
 import Error from "./Error"
-
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
-import presentationService from "../../services/presentations"
 
 const initialValues = {
   username: "",
@@ -29,78 +34,102 @@ const validationSchema = yup.object().shape({
     .required("Password confirmation is required"),
 })
 
-export const SignUpForm = ({ onSubmit, error }) => (
-  <>
-    <Formik
-      initialValues={initialValues}
-      onSubmit={onSubmit}
-      validationSchema={validationSchema}
-    >
-      {({ handleSubmit }) => (
-        <Form>
-          <BootstrapForm.Group>
-            <BootstrapForm.Label htmlFor="username">
-              Username
-            </BootstrapForm.Label>
-            <Field
-              id="username"
-              type="text"
-              name="username"
-              placeholder="Username"
-              as={BootstrapForm.Control}
-            />
-          </BootstrapForm.Group>
-          <ErrorMessage
+export const SignUpForm = ({ onSubmit, error }) => {
+  const [formData, setFormData] = useState(initialValues)
+  const [formErrors, setFormErrors] = useState({})
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData({ ...formData, [name]: value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await validationSchema.validate(formData, { abortEarly: false })
+      await onSubmit(formData)
+    } catch (validationErrors) {
+      const errors = {}
+      validationErrors.inner.forEach((validationError) => {
+        errors[validationError.path] = validationError.message
+      })
+      setFormErrors(errors)
+    }
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit}>
+        <FormControl>
+          <FormLabel htmlFor="username">Username</FormLabel>
+          <Input
+            id="username"
+            type="text"
             name="username"
-            component="div"
-            className="alert alert-danger"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
           />
-          <BootstrapForm.Group>
-            <BootstrapForm.Label htmlFor="password">
-              Password
-            </BootstrapForm.Label>
-            <Field
-              id="password"
-              type="password"
-              name="password"
-              placeholder="Password"
-              as={BootstrapForm.Control}
-            />
-          </BootstrapForm.Group>
-          <ErrorMessage
+          {formErrors.username && (
+            <div className="alert alert-danger">{formErrors.username}</div>
+          )}
+        </FormControl>
+
+        <FormControl mt={4}>
+          <FormLabel htmlFor="password">Password</FormLabel>
+          <Input
+            id="password"
+            type="password"
             name="password"
-            component="div"
-            className="alert alert-danger"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
           />
+          {formErrors.password && (
+            <div className="alert alert-danger">{formErrors.password}</div>
+          )}
+        </FormControl>
 
-          <BootstrapForm.Group>
-            <BootstrapForm.Label htmlFor="password_confirmation">
-              Confirm Password
-            </BootstrapForm.Label>
-            <Field
-              id="password_confirmation"
-              type="password"
-              name="password_confirmation"
-              placeholder="Password"
-              as={BootstrapForm.Control}
-            />
-          </BootstrapForm.Group>
-          <ErrorMessage
+        <FormControl mt={4}>
+          <FormLabel htmlFor="password_confirmation">
+            Confirm Password
+          </FormLabel>
+          <Input
+            id="password_confirmation"
+            type="password"
             name="password_confirmation"
-            component="div"
-            className="alert alert-danger"
+            placeholder="Password"
+            value={formData.password_confirmation}
+            onChange={handleChange}
           />
+          {formErrors.password_confirmation && (
+            <div className="alert alert-danger">
+              {formErrors.password_confirmation}
+            </div>
+          )}
+        </FormControl>
 
-          <br />
-          <Button variant="primary" type="submit">
+        <Container mt={4}>
+          <Box textAlign="justify">
+            <p>
+              By clicking Submit, you agree to our{" "}
+              <Link color="teal.500" href="/terms" isExternal>
+                Terms of Service
+              </Link>
+            </p>
+          </Box>
+        </Container>
+
+        <Box mt={0} display="flex" justifyContent="flex-start">
+          <Button colorScheme="teal" type="submit">
             Submit
           </Button>
-        </Form>
-      )}
-    </Formik>
-    <Error error={error} />
-  </>
-)
+        </Box>
+      </form>
+      <Error error={error} />
+    </>
+  )
+}
 
 const SignUp = ({ onSignup }) => {
   const [error, setError] = useState(null)
@@ -111,7 +140,6 @@ const SignUp = ({ onSignup }) => {
       const user = await loginService.login({ username, password })
       const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", userJSON)
-      presentationService.setToken(user.token)
       onSignup(userJSON)
     } catch (e) {
       console.log(e)

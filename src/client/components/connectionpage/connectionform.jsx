@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react'
-import { FormControl, FormLabel, Input, Button, Box } from "@chakra-ui/react"
-import connectService from '../../services/connection'
+import { useState, useEffect } from "react"
+import {
+  FormControl, FormLabel, Input, Button, Box,
+} from "@chakra-ui/react"
+import connectService from "../../services/connection"
 
 const ConnectionForm = () => {
-    const [ipAddress, setIpAddress] = useState('');
+  const [ipAddress, setIpAddress] = useState("")
 
-    const addConnection = (event) => {
-        event.preventDefault();
-        connectService.connect(ipAddress);
-    };
+  const addConnection = (event) => {
+    event.preventDefault()
+    connectService.connect(ipAddress)
+  }
 
-    return (
+  return (
         <Box>
             <h2>Set Master IP</h2>
             <form onSubmit={addConnection}>
@@ -25,7 +27,7 @@ const ConnectionForm = () => {
                 <Button id='create-button' type="submit">Create Connection</Button>
             </form>
         </Box>
-    );
-};
+  )
+}
 
 export default ConnectionForm

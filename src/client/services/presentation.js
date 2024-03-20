@@ -1,14 +1,15 @@
 import axios from "axios"
+import getToken from "../auth"
+
 const baseUrl = "/api/presentation/"
 
-let token = null
-
-const setToken = (newToken) => {
-  token = `bearer ${newToken}`
-}
-
 const get = async (id) => {
-  const response = await axios.get(`${baseUrl}${id}`)
+  const config = {
+    headers: {
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.get(`${baseUrl}${id}`, config)
   return response.data
 }
 
@@ -24,11 +25,13 @@ const remove = async (id) => {
  * @param {FormData} formData - The form data containing the file to be added.
  * @var {Config} Config - This is an object where you can specify additional information like headers.
  *    Here, you’re setting the ‘Content-Type’ header to ‘multipart/form-data’,
- *    which is used when you’re sending form data that includes files. 
+ *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
 const addFile = async (id, formData) => {
-  const response = await axios.put(`${baseUrl}/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+  const response = await axios.put(`${baseUrl}/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })
   return response.data
 }
 
@@ -37,4 +40,15 @@ const removeFile = async (id, fileId) => {
   return response.data
 }
 
-export default { get, setToken, remove, addFile, removeFile }
+const removeCue = async (id, cueId) => {
+  const response = await axios.delete(`${baseUrl}/${id}/cue/${cueId}`)
+  return response.data
+}
+
+export default {
+  get,
+  remove,
+  addFile,
+  removeFile,
+  removeCue
+}

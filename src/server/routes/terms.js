@@ -2,9 +2,8 @@ const express = require("express")
 
 const router = express.Router()
 
-/* GET home page. */
 router.get("/", (req, res) => {
-  res.send("Hello World!")
+  res.send("Your terms and conditions content goes here")
 })
 
 module.exports = router

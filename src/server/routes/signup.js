@@ -4,11 +4,6 @@ const User = require("../models/user")
 
 const router = express.Router()
 
-router.get("/", async (req, res) => {
-  const users = await User.find({})
-  res.send(users.map((u) => u.toJSON()))
-})
-
 router.post("/", async (req, res) => {
   const { username, password } = req.body
 
@@ -22,7 +17,7 @@ router.post("/", async (req, res) => {
 
     const savedUser = await user.save({})
 
-    res.status(201).json(savedUser)
+    return res.status(201).json(savedUser)
   } catch {
     return res.status(401).json({ error: "Username already exists" })
   }
