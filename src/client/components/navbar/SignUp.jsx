@@ -1,12 +1,17 @@
 import { useState } from "react"
 import * as yup from "yup"
 import {
-  Container, Box, Link, Button, FormControl, FormLabel, Input,
+  Container,
+  Box,
+  Link,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
 } from "@chakra-ui/react"
 import Error from "./Error"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
-import presentationService from "../../services/presentations"
 
 const initialValues = {
   username: "",
@@ -86,7 +91,9 @@ export const SignUpForm = ({ onSubmit, error }) => {
         </FormControl>
 
         <FormControl mt={4}>
-          <FormLabel htmlFor="password_confirmation">Confirm Password</FormLabel>
+          <FormLabel htmlFor="password_confirmation">
+            Confirm Password
+          </FormLabel>
           <Input
             id="password_confirmation"
             type="password"
@@ -105,8 +112,8 @@ export const SignUpForm = ({ onSubmit, error }) => {
         <Container mt={4}>
           <Box textAlign="justify">
             <p>
-              By clicking Submit, you agree to our {" "}
-              <Link color='teal.500' href='/terms' isExternal>
+              By clicking Submit, you agree to our{" "}
+              <Link color="teal.500" href="/terms" isExternal>
                 Terms of Service
               </Link>
             </p>
@@ -133,7 +140,6 @@ const SignUp = ({ onSignup }) => {
       const user = await loginService.login({ username, password })
       const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", userJSON)
-      presentationService.setToken(user.token)
       onSignup(userJSON)
     } catch (e) {
       console.log(e)
