@@ -55,12 +55,12 @@ const CuesForm = ({ addCue }) => {
           onChange={(e) => setCueName(e.target.value)}
           required
         />
-        <FormHelperText>Screen 1-4*</FormHelperText>
+        <FormHelperText>Screen 0-3*</FormHelperText>
         <NumberInput
           value={screen}
           mb={4}
-          min={1}
-          max={4}
+          min={0}
+          max={3}
           onChange={setScreen}
           required
         >

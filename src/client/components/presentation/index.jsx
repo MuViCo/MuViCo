@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   Container,
@@ -9,10 +9,27 @@ import {
   Image,
   Link,
   Heading,
+  Flex
 } from "@chakra-ui/react"
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Position,
+} from "reactflow"
+
+import "reactflow/dist/style.css"
 
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
+
+const initialNodes = [
+  { id: "1", position: { x: 0, y: 0 }, data: { label: "Screen 1" } },
+  { id: "2", position: { x: 200, y: 0 }, data: { label: "Screen 2" } },
+]
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
@@ -78,6 +95,9 @@ const PresentationPage = ({ userId }) => {
     setShowMode(!showMode)
   }
 
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState()
+
   useEffect(() => {
     presentationService
       .get(id)
@@ -88,6 +108,17 @@ const PresentationPage = ({ userId }) => {
         navigate("/home")
       })
   }, [id, userId, navigate])
+
+  useEffect(() => {
+    if (presentationInfo) {
+      const newNodes = presentationInfo.cues.map((cue) => ({
+        id: cue._id,
+        position: { x: cue.screen * 150, y: cue.index * 25 },
+        data: { label: cue.name }
+      }))
+      setNodes(newNodes)
+    }
+  }, [presentationInfo])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
@@ -109,6 +140,11 @@ const PresentationPage = ({ userId }) => {
     await presentationService.remove(id)
     navigate("/home")
   }
+
+  const onConnect = useCallback(
+    (params) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges],
+  )
 
   const openWindow = (fileUrl, name, screen) => {
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
@@ -176,6 +212,18 @@ const PresentationPage = ({ userId }) => {
             cues={presentationInfo.cues}
             updateScreen={updateScreens}
           />
+          <div style={{ width: "50vw", height: "50vh" }}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}>
+              <Controls />
+              <MiniMap />
+              <Background gap={10} size={1} />
+            </ReactFlow>
+          </div>
         </>
       )}
     </Container>
