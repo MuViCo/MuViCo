@@ -28,10 +28,11 @@ describe("Login", () => {
     fireEvent.submit(getByText("Submit"))
 
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith(
-        { username: "testuser", password: "testpassword" },
-        expect.anything()
-      )
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(onSubmit).toHaveBeenCalledWith({
+        username: "testuser",
+        password: "testpassword",
+      })
     })
   })
 })

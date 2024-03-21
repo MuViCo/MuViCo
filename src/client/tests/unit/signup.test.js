@@ -24,14 +24,12 @@ describe("SignUp", () => {
       "testpassword"
     )
     await userEvent.click(screen.getByText("Submit"))
-    expect(onSubmit).toHaveBeenCalledWith(
-      {
-        username: "testuser",
-        password: "testpassword",
-        password_confirmation: "testpassword",
-      },
-      expect.anything()
-    )
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(onSubmit).toHaveBeenCalledWith({
+      username: "testuser",
+      password: "testpassword",
+      password_confirmation: "testpassword",
+    })
   })
   test("shows error message when username is too short", async () => {
     const onSubmit = jest.fn()
