@@ -58,7 +58,8 @@ const PresentationPage = ({ userId }) => {
     formData.append("screen", screen)
     formData.append("image", file)
     formData.append("fileName", fileName)
-    await presentationService.addCue(id, formData)
+    const response = await presentationService.addCue(id, formData)
+    setPresentationInfo(response)
   }
 
   const removeCue = async (cueId) => {
