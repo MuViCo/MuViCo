@@ -13,9 +13,9 @@ const presentationSchema = mongoose.Schema({
 
   cues: [
     {
-      index: Number,
-      name: String,
-      screen: Number,
+      index: { type: Number, required: true, },
+      name: { type: String, required: true, },
+      screen: { type: Number, required: true, },
       file: {
         id: String,
         name: String,

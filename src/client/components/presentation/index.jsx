@@ -15,18 +15,16 @@ import CuesForm from "./Cues"
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
-    <p>Cues:</p>
-    <Box>
-      <SimpleGrid columns={2} gap={6}>
+    <Box py={4}>
+      <Heading size="md">Cues:</Heading>
+      <SimpleGrid columns={3} gap={6}>
         {presentation.cues.map((cue) => (
           <GridItem key={cue._id}>
             <p>Index: {cue.index}</p>
             <p>Name: {cue.name}</p>
             <p>Screen: {cue.screen}</p>
             <p>File: {cue.file.name}</p>
-            <Button onClick={() => removeCue(cue._id)}>
-              Remove cue
-            </Button>
+            <Button onClick={() => removeCue(cue._id)}>Remove cue</Button>
           </GridItem>
         ))}
       </SimpleGrid>
@@ -60,7 +58,8 @@ const PresentationPage = ({ userId }) => {
     formData.append("screen", screen)
     formData.append("image", file)
     formData.append("fileName", fileName)
-    await presentationService.addCue(id, formData)
+    const response = await presentationService.addCue(id, formData)
+    setPresentationInfo(response)
   }
 
   const removeCue = async (cueId) => {
@@ -74,16 +73,21 @@ const PresentationPage = ({ userId }) => {
   }
 
   return (
-    <Container>
+    <Container maxW="container.xl">
       {presentationInfo && (
         <>
-          <Heading>{presentationInfo.name}</Heading>
+          <Heading mb={8}>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
-          <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
-          <Button onClick={() => deletePresentation()}>Delete presentation</Button>
+          <PresentationCues
+            presentation={presentationInfo}
+            removeCue={removeCue}
+          />
+          <Button onClick={() => deletePresentation()}>
+            Delete presentation
+          </Button>
         </>
       )}
-    </Container >
+    </Container>
   )
 }
 

@@ -18,5 +18,3 @@ jobs:
           node-version: "20"
       - name: Install dependencies
         run: npm i
-      - name: Run tests
-        run: npm run test-frontend

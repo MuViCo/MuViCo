@@ -1,4 +1,4 @@
-import { Container, SimpleGrid, Button } from "@chakra-ui/react"
+import { Container, SimpleGrid, Button, Heading } from "@chakra-ui/react"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react" // Add useRef
 import presentationService from "../../services/presentations"
@@ -10,7 +10,7 @@ export const PresentationsGrid = ({
   handlePresentationClick,
 }) => (
   <>
-    <h2>Presentations</h2>
+    <Heading>Presentations</Heading>
     <SimpleGrid columns={[1, 2, 3]} gap={6}>
       {presentations.map((presentation) => (
         <Button
@@ -65,9 +65,11 @@ const HomePage = ({ user }) => {
   const togglableRef = useRef(null) // Create a ref for Togglable component
 
   useEffect(() => {
-    presentationService
-      .getAll()
-      .then((usersPresentations) => setPresentations(usersPresentations))
+    const getPresentationData = async () => {
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+    }
+    getPresentationData()
   }, [])
 
   const createPresentation = async (presentationObject) => {

@@ -66,49 +66,59 @@ const deletObject = async (id, cueId) => {
  * Adds an expiring signed url to AWS Bucket for each file.
  */
 router.get("/:id", userExtractor, async (req, res) => {
-  const { user } = req
-  const { id } = req.params
-  if (!user) {
-    return res.status(401).json({ error: "operation not permitted" })
-  }
-  const presentation = await Presentation.findById(req.params.id)
-  if (
-    presentation &&
-    (presentation.user.toString() === user._id.toString() || user.isAdmin)
-  ) {
-    presentation.files = await Promise.all(
-      presentation.cues.map(async (cue) => {
-        const params = {
-          Bucket: BUCKET_NAME,
-          Key: `${id}/${cue.file.id.toString()}`,
-        }
+  try {
+    const { user } = req
+    const { id } = req.params
+    if (!user) {
+      return res.status(401).json({ error: "operation not permitted" })
+    }
+    const presentation = await Presentation.findById(req.params.id)
+    if (
+      presentation &&
+      (presentation.user.toString() === user._id.toString() || user.isAdmin)
+    ) {
+      presentation.files = await Promise.all(
+        presentation.cues.map(async (cue) => {
+          const params = {
+            Bucket: BUCKET_NAME,
+            Key: `${id}/${cue.file.id.toString()}`,
+          }
 
-        const command = new GetObjectCommand(params)
-        const seconds = 60 * 60
-        cue.file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
-        return cue
-      })
-    )
-    res.json(presentation)
-  } else {
-    res.status(404).end()
+          const command = new GetObjectCommand(params)
+          const seconds = 60 * 60
+          cue.file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
+          return cue
+        })
+      )
+      res.json(presentation)
+    } else {
+      res.status(404).end()
+    }
+    return null
+  } catch (error) {
+    logger.info("Error: ", error)
+    return res.status(500).json({ error: "Internal server error" })
   }
-  return null
 })
 
 router.delete("/:id", async (req, res) => {
-  const { id } = req.params
+  try {
+    const { id } = req.params
 
-  const presentation = await Presentation.findById(id)
+    const presentation = await Presentation.findById(id)
 
-  // eslint-disable-next-line no-restricted-syntax
-  for (const cue of presentation.cues) {
-    // eslint-disable-next-line no-await-in-loop
-    await deletObject(id, cue._id)
+    // eslint-disable-next-line no-restricted-syntax
+    for (const cue of presentation.cues) {
+      // eslint-disable-next-line no-await-in-loop
+      await deletObject(id, cue._id)
+    }
+
+    await Presentation.findByIdAndDelete(id)
+    return res.status(204).end()
+  } catch (error) {
+    logger.info("Error:", error)
+    return res.status(500).json({ error: "Internal server error" }).end()
   }
-
-  await Presentation.findByIdAndDelete(id)
-  res.status(204).end()
 })
 
 /**
@@ -117,54 +127,70 @@ router.delete("/:id", async (req, res) => {
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
 router.put("/:id", upload.single("image"), async (req, res) => {
-  const { id } = req.params
-  const fileId = generateFileId()
-  const { file } = req
+  try {
+    const { id } = req.params
+    const fileId = generateFileId()
+    const { file } = req
 
-  const updatedPresentation = await Presentation.findByIdAndUpdate(
-    id,
-    {
-      $push: {
-        cues: {
-          index: req.body.index,
-          name: req.body.cueName,
-          screen: req.body.screen,
-          file: {
-            id: fileId,
-            name: req.body.fileName,
-            url: "",
+    if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
+      return res.status(400).json({ error: "Missing required fields" })
+    }
+
+    const updatedPresentation = await Presentation.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          cues: {
+            index: req.body.index,
+            name: req.body.cueName,
+            screen: req.body.screen,
+            file: {
+              id: fileId,
+              name: req.body.fileName,
+              url: "",
+            },
           },
         },
       },
-    },
-    { new: true }
-  )
+      { new: true }
+    )
 
-  const filePath = `${id}/${fileId}`
+    if (file) {
+      const filePath = `${id}/${fileId}`
 
-  const bucketParams = {
-    Bucket: BUCKET_NAME,
-    Key: filePath,
-    Body: file.buffer,
-    ContentType: file.mimetype,
+      const bucketParams = {
+        Bucket: BUCKET_NAME,
+        Key: filePath,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }
+
+      const command = new PutObjectCommand(bucketParams)
+      await s3.send(command)
+    }
+
+    res.json(updatedPresentation)
+
+    return res.status(204).end()
+  } catch (error) {
+    logger.info("Error:", error)
+    return res.status(500).json({ error: "Internal server error" })
   }
-
-  const command = new PutObjectCommand(bucketParams)
-  await s3.send(command)
-
-  res.json(updatedPresentation)
-
-  res.status(204).end()
 })
 
 /**
  * Update the presentation by removing a file from the files array.
  */
 router.delete("/:id/:cueId", async (req, res) => {
-  const { id, cueId } = req.params
-  const updatedPresentation = await deletObject(id, cueId)
-  res.json(updatedPresentation)
-  res.status(204).end()
+  try {
+    const { id, cueId } = req.params
+    const updatedPresentation = await deletObject(id, cueId)
+    res.json(updatedPresentation)
+    res.status(204).end()
+  } catch (error) {
+    logger.info("Error: ", error)
+    res.status(500).json({ error: "Internal server error" })
+  }
 })
 
 module.exports = router
