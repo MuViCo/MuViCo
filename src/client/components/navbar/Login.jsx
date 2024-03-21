@@ -1,11 +1,14 @@
 import { useState, useRef } from "react"
 import {
-  Button, FormControl, FormLabel, Input, Container, Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Container,
+  Box,
 } from "@chakra-ui/react"
-import presentationService from "../../services/presentations"
 import loginService from "../../services/login"
 import Error from "./Error"
-import { SignUpForm } from "./SignUp"
 
 const initialValues = {
   username: "",
@@ -17,6 +20,7 @@ export const LoginForm = ({ onSubmit, error }) => {
   const [submissionError, setSubmissionError] = useState(null)
   const usernameRef = useRef(null)
   const passwordRef = useRef(null)
+  const submitButtonRef = useRef(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -25,25 +29,48 @@ export const LoginForm = ({ onSubmit, error }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!formData.username && !FormData.password) {
+      setSubmissionError("Username and password required")
+      return
+    }
+
+    if (!formData.username) {
+      setSubmissionError("Username is required")
+      return
+    }
+
+    if (!formData.password) {
+      setSubmissionError("Password is required")
+      return
+    }
+
     try {
       await onSubmit(formData)
-    } catch (errorjoku) {
-      console.log(error)
-      setSubmissionError(error.response.data.error)
+    } catch (err) {
+      console.log(err)
+      setSubmissionError(err.response.data.error)
     }
   }
 
-  const handleUsernameKeyDown = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault()
-      passwordRef.current.focus()
-    }
-  }
-
-  const handlePasswordKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      handleSubmit(e)
+      if (e.target === usernameRef.current) {
+        passwordRef.current.focus()
+      } else if (e.target === passwordRef.current) {
+        if (e.key === "Tab") {
+          submitButtonRef.current.focus()
+        } else if (e.key === "Enter") {
+          handleSubmit(e)
+        }
+      } else if (e.target === submitButtonRef.current) {
+        if (e.key === "Tab") {
+          usernameRef.current.focus()
+        } else {
+          handleSubmit(e)
+        }
+      }
     }
   }
 
@@ -60,7 +87,7 @@ export const LoginForm = ({ onSubmit, error }) => {
             value={formData.username}
             onChange={handleChange}
             ref={usernameRef}
-            onKeyDown={handleUsernameKeyDown}
+            onKeyDown={handleKeyDown}
           />
         </FormControl>
         <FormControl mt={4} mb={0}>
@@ -73,16 +100,20 @@ export const LoginForm = ({ onSubmit, error }) => {
             value={formData.password}
             onChange={handleChange}
             ref={passwordRef}
-            onKeyDown={handlePasswordKeyDown}
+            onKeyDown={handleKeyDown}
           />
         </FormControl>
         <Container mt={4}>
-          <Box textAlign="justify">
-          </Box>
+          <Box textAlign="justify"></Box>
         </Container>
         <Box mt={4} display="flex" justifyContent="flex-start">
-          <Button colorScheme="teal" type="submit">
-            Submit
+          <Button
+            colorScheme="teal"
+            type="submit"
+            ref={submitButtonRef}
+            onKeyDown={handleKeyDown}
+          >
+            Log in
           </Button>
         </Box>
       </form>
@@ -99,10 +130,10 @@ const Login = ({ onLogin }) => {
       const user = await loginService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))
       onLogin(user)
-    } catch (errorjoku) {
-      console.log(error)
-      setError(error.response.data.error)
-      throw error
+    } catch (err) {
+      console.log(err)
+      setError(err.response.data.error)
+      throw err
     }
   }
 

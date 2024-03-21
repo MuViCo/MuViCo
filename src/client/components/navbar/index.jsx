@@ -51,9 +51,7 @@ const NavBar = ({ user, setUser }) => {
       >
         <Flex align="center" mr={7}>
           <Heading as="h3" size="lg" letterSpacing={"tighter"}>
-            <Link to={"/home"}>
-              MuViCo
-            </Link>
+            <Link to={"/home"}>MuViCo</Link>
           </Heading>
         </Flex>
         <Box flex={3} align="right">
@@ -69,7 +67,9 @@ const NavBar = ({ user, setUser }) => {
             <>
               <Box ml={4} display={{ base: "inline-block" }}>
                 <Menu>
-                  <MenuButton as={Button} colorScheme="teal" variant="outline">Login</MenuButton>
+                  <MenuButton as={Button} colorScheme="teal" variant="outline">
+                    Login
+                  </MenuButton>
                   <MenuList>
                     <Box p={2}>
                       <Login onLogin={onLogin} />
@@ -79,7 +79,9 @@ const NavBar = ({ user, setUser }) => {
               </Box>
               <Box ml={4} display={{ base: "inline-block" }}>
                 <Menu>
-                  <MenuButton as={Button} colorScheme="teal">Sign Up</MenuButton>
+                  <MenuButton as={Button} colorScheme="teal">
+                    Sign Up
+                  </MenuButton>
                   <MenuList>
                     <Box p={2}>
                       <SignUp onSignup={onSignup} />
