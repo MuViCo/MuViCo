@@ -17,7 +17,7 @@ export const PresentationCues = ({ presentation, removeCue }) => (
   <>
     <Box py={4}>
       <Heading size="md">Cues:</Heading>
-      <SimpleGrid columns={2} gap={6}>
+      <SimpleGrid columns={3} gap={6}>
         {presentation.cues.map((cue) => (
           <GridItem key={cue._id}>
             <p>Index: {cue.index}</p>
@@ -73,7 +73,7 @@ const PresentationPage = ({ userId }) => {
   }
 
   return (
-    <Container>
+    <Container maxW="container.xl">
       {presentationInfo && (
         <>
           <Heading mb={8}>{presentationInfo.name}</Heading>
