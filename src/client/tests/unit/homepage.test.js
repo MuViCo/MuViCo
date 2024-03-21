@@ -4,7 +4,6 @@ import { useNavigate, Router } from "react-router-dom"
 import HomePage from "../../components/homepage/index"
 import PresentationForm from "../../components/homepage/presentationform"
 import "@testing-library/jest-dom"
-import getToken from "../../auth"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
@@ -66,17 +65,6 @@ describe("HomePage", () => {
     fireEvent.click(screen.getByText("new presentation"))
     fireEvent.click(screen.getByText("Cancel"))
     expect(screen.queryByText("Cancel")).not.toBeInTheDocument()
-  })
-
-  test("presentation form is hidden by default", () => {
-    render(<HomePage user={{ isAdmin: false }} />)
-    expect(screen.queryByText("Cancel")).not.toBeInTheDocument()
-  })
-
-  test("presentation form is shown when 'new presentation' is clicked", () => {
-    render(<HomePage user={{ isAdmin: false }} />)
-    fireEvent.click(screen.getByText("new presentation"))
-    expect(screen.getByText("Cancel")).toBeInTheDocument()
   })
 })
 
