@@ -15,8 +15,8 @@ import CuesForm from "./Cues"
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
-    <p>Cues:</p>
-    <Box>
+    <Box py={4}>
+      <Heading size="md">Cues:</Heading>
       <SimpleGrid columns={2} gap={6}>
         {presentation.cues.map((cue) => (
           <GridItem key={cue._id}>
@@ -24,9 +24,7 @@ export const PresentationCues = ({ presentation, removeCue }) => (
             <p>Name: {cue.name}</p>
             <p>Screen: {cue.screen}</p>
             <p>File: {cue.file.name}</p>
-            <Button onClick={() => removeCue(cue._id)}>
-              Remove cue
-            </Button>
+            <Button onClick={() => removeCue(cue._id)}>Remove cue</Button>
           </GridItem>
         ))}
       </SimpleGrid>
@@ -77,13 +75,18 @@ const PresentationPage = ({ userId }) => {
     <Container>
       {presentationInfo && (
         <>
-          <Heading>{presentationInfo.name}</Heading>
+          <Heading mb={8}>{presentationInfo.name}</Heading>
           <CuesForm addCue={addCue} />
-          <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
-          <Button onClick={() => deletePresentation()}>Delete presentation</Button>
+          <PresentationCues
+            presentation={presentationInfo}
+            removeCue={removeCue}
+          />
+          <Button onClick={() => deletePresentation()}>
+            Delete presentation
+          </Button>
         </>
       )}
-    </Container >
+    </Container>
   )
 }
 
