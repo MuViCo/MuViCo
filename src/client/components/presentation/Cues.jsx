@@ -1,6 +1,5 @@
 import {
   FormControl,
-  FormLabel,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -8,8 +7,8 @@ import {
   FormHelperText,
   NumberDecrementStepper,
   Input,
-  Box,
   Button,
+  Heading,
 } from "@chakra-ui/react"
 import { useState } from "react"
 
@@ -39,32 +38,43 @@ const CuesForm = ({ addCue }) => {
   return (
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
-        <FormLabel as="legend">Add cue</FormLabel>
-        <FormHelperText>Index</FormHelperText>
-        <NumberInput value={index} min={1} max={350} onChange={setIndex}>
+        <Heading size="md">Add cue</Heading>
+        <FormHelperText>Index 0-350</FormHelperText>
+        <NumberInput value={index} mb={4} min={0} max={350} onChange={setIndex}>
           <NumberInputField />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <FormHelperText>Name</FormHelperText>
+        <FormHelperText>Name*</FormHelperText>
         <Input
           value={cueName}
           placeholder="Cue name"
+          mb={4}
           onChange={(e) => setCueName(e.target.value)}
+          required
         />
-        <FormHelperText>Screen</FormHelperText>
-        <NumberInput value={screen} min={1} max={4} onChange={setScreen}>
+        <FormHelperText>Screen 1-4*</FormHelperText>
+        <NumberInput
+          value={screen}
+          mb={4}
+          min={1}
+          max={4}
+          onChange={setScreen}
+          required
+        >
           <NumberInputField />
           <NumberInputStepper>
             <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <Input type="file" onChange={fileSelected} />
+        <Input type="file" mb={4} onChange={fileSelected} />
       </FormControl>
-      <Button type="submit">Submit</Button>
+      <Button mb={4} type="submit">
+        Submit
+      </Button>
     </form>
   )
 }
