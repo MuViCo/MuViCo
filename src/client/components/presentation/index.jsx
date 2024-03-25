@@ -9,6 +9,7 @@ import {
   Image,
   Heading,
 } from "@chakra-ui/react"
+import NewWindow from "react-new-window"
 
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
@@ -37,9 +38,20 @@ export const PresentationCues = ({ presentation, removeCue }) => (
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
 
+  const [showMode, setShowMode] = useState(false)
+
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const navigate = useNavigate()
+
+  const handleShowMode = () => {
+    setShowMode(!showMode)
+  }
+
+  const handleNewWindow = (fileUrl) => {
+    console.log("opening new window", fileUrl)
+    return null
+  }
 
   useEffect(() => {
     presentationService
@@ -73,17 +85,35 @@ const PresentationPage = ({ userId }) => {
     navigate("/home")
   }
 
+  if (!showMode) {
+    return (
+      <Container>
+        {presentationInfo && (
+          <>
+            <Heading>{presentationInfo.name}</Heading>
+            <CuesForm addCue={addCue} />
+            <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
+            <Button onClick={() => handleShowMode()}>
+              {showMode ? "Edit mode" : "Show mode"}</Button>
+            <Button onClick={() => deletePresentation()}>Delete presentation</Button>
+          </>
+        )}
+      </Container >
+    )
+  }
   return (
-    <Container>
-      {presentationInfo && (
-        <>
-          <Heading>{presentationInfo.name}</Heading>
-          <CuesForm addCue={addCue} />
-          <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
-          <Button onClick={() => deletePresentation()}>Delete presentation</Button>
-        </>
-      )}
-    </Container >
+      <Container>
+        {presentationInfo && (
+          <>
+            <Heading>{presentationInfo.name}</Heading>
+            <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
+            <Button onClick={() => handleShowMode()}>
+              {showMode ? "Edit mode" : "Show mode"}</Button>
+            <Button onClick={() => handleNewWindow(presentationInfo.cues[0].file.url)}>New Screen</Button>
+            <NewWindow url={presentationInfo.cues[0].file.url}>Content</NewWindow>
+          </>
+        )}
+      </Container>
   )
 }
 
