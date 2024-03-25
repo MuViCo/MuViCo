@@ -1,14 +1,11 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
-  Container,
   Button,
   SimpleGrid,
   Box,
   GridItem,
-  Image,
   Heading,
-  Flex,
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
@@ -22,8 +19,6 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   addEdge,
-  Position,
-  Handle,
 } from "reactflow"
 
 import "reactflow/dist/style.css"
@@ -31,10 +26,13 @@ import "reactflow/dist/style.css"
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
 import ButtonNode from "./ButtonNode"
-
-const nodeTypes = { buttonNode: ButtonNode }
+import ScreenNode from "./ScreenNode"
 
 const screenCount = 4
+const nodeTypes = {
+  buttonNode: ButtonNode,
+  screenNode: ScreenNode
+}
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
@@ -121,14 +119,25 @@ const PresentationPage = ({ userId }) => {
         return a.index - b.index
       })
 
-      const newNodes = sortedNodes.map((node) => ({
-        id: node._id,
-        type: "buttonNode",
-        position: { x: node.screen * 210, y: node.index * 100 },
-        data: {
-          cue: node,
-        }
-      }))
+      const newNodes = []
+      for (let i = 0; i < screenCount; i += 1) {
+        newNodes.push({
+          id: `${i}`,
+          type: "screenNode",
+          position: { x: i * 210, y: 10 },
+          data: { label: `screen ${i}` },
+        })
+      }
+      sortedNodes.forEach((node) => {
+        newNodes.push({
+          id: node._id,
+          type: "buttonNode",
+          position: { x: node.screen * 210, y: 200 + node.index * 100 },
+          data: {
+            cue: node,
+          }
+        })
+      })
       setNodes(newNodes)
 
       const newEdges = []
@@ -175,7 +184,7 @@ const PresentationPage = ({ userId }) => {
                 nodeTypes={nodeTypes}>
                 <Controls />
                 <MiniMap />
-                <Background gap={20} size={0} />
+                <Background gap={20} size={1} />
               </ReactFlow>
             </div>
           </div>

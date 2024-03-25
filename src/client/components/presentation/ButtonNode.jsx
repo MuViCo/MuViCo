@@ -8,12 +8,11 @@ import presentationService from "../../services/presentation"
 const ButtonNode = ({ data }) => {
   const { id } = useParams()
   const { cue } = data
-  const navigate = useNavigate()
   const [isHovered, setIsHovered] = useState(false)
 
   const handleRemove = async (cueId) => {
     await presentationService.removeCue(id, cueId)
-    navigate(`/presentation/${id}`)
+    window.location.reload(false)
   }
 
   return (
@@ -26,6 +25,7 @@ const ButtonNode = ({ data }) => {
       position="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      key={cue._id}
     >
       <Handle type="target" position={Position.Top} isConnectable={true} />
       <Box
