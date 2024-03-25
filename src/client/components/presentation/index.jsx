@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Container,
   Button,
@@ -7,10 +9,10 @@ import {
   Image,
   Link,
   Heading,
-} from "@chakra-ui/react"
+} from '@chakra-ui/react'
 
-import presentationService from "../../services/presentation"
-import CuesForm from "./Cues"
+import presentationService from '../../services/presentation'
+import CuesForm from './Cues'
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
@@ -32,6 +34,7 @@ export const PresentationCues = ({ presentation, removeCue }) => (
 )
 
 export const ScreenButtons = ({ cues, openWindow }) => {
+export const ScreenButtons = ({ cues, openWindow }) => {
   const buttons = []
   return (
     <>
@@ -44,6 +47,7 @@ export const ScreenButtons = ({ cues, openWindow }) => {
         return (
           <Button
             key={cue.name}
+            onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
             onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
           >
             Open screen {cue.screen}
@@ -68,7 +72,7 @@ const PresentationPage = ({ userId }) => {
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const [screensList, setScreensList] = useState([])
-  const [cueIndex, setCueIndex] = useState(2)
+  const [cueIndex, setCueIndex] = useState(1)
 
   const navigate = useNavigate()
 
@@ -83,20 +87,19 @@ const PresentationPage = ({ userId }) => {
         setPresentationInfo(presentation)
       })
       .catch((error) => {
-        navigate("/home")
+        navigate('/home')
       })
   }, [id, userId, navigate])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
-    formData.append("index", index)
-    formData.append("cueName", cueName)
-    formData.append("screen", screen)
-    formData.append("image", file)
-    formData.append("fileName", fileName)
-    const response = await presentationService.addCue(id, formData)
-    setPresentationInfo(response)
+    formData.append('index', index)
+    formData.append('cueName', cueName)
+    formData.append('screen', screen)
+    formData.append('image', file)
+    formData.append('fileName', fileName)
+    await presentationService.addCue(id, formData)
   }
 
   const removeCue = async (cueId) => {
@@ -106,34 +109,22 @@ const PresentationPage = ({ userId }) => {
 
   const deletePresentation = async () => {
     await presentationService.remove(id)
-    navigate("/home")
+    navigate('/home')
   }
 
   const openWindow = (fileUrl, name, screen) => {
-    const scrn = window.open(fileUrl, name, "width=600,height=600", true)
+    console.log(fileUrl)
+    console.log(name)
+    console.log(screen)
+    const scrn = window.open(fileUrl, name, 'width=600,height=600', true)
+    console.log('scrn:', scrn)
+    console.log('Screens: ', screensList)
     screensList.push(scrn)
     console.log(screensList)
   }
 
-  const changeCueIndex = () => {
-    const changedCueIndex = cueIndex + 1
-    setCueIndex(changedCueIndex)
-  }
-
-  const updateScreens = (cues) => {
-    changeCueIndex()
-    const cuesToUpdate = []
-    console.log(cues)
-    cues.forEach((cue) => {
-      if (cue.index === cueIndex) {
-        cuesToUpdate.push(cue)
-      }
-    })
-    screensList.forEach((screen, index) => {
-      if (index + 1 === cuesToUpdate[index].screen) {
-        screen.location.replace(cuesToUpdate[index].file.url)
-      }
-    })
+  const changeCue = ({ fileUrl, screen }) => {
+    screensList[screen].location.replace(fileUrl)
   }
 
   if (!showMode) {
@@ -148,7 +139,7 @@ const PresentationPage = ({ userId }) => {
               removeCue={removeCue}
             />
             <Button onClick={() => handleShowMode()}>
-              {showMode ? "Edit mode" : "Show mode"}
+              {showMode ? 'Edit mode' : 'Show mode'}
             </Button>
             <Button onClick={() => deletePresentation()}>
               Delete presentation
@@ -164,17 +155,14 @@ const PresentationPage = ({ userId }) => {
         <>
           <Heading>{presentationInfo.name}</Heading>
           <ScreenButtons cues={presentationInfo.cues} openWindow={openWindow} />
+          <ScreenButtons cues={presentationInfo.cues} openWindow={openWindow} />
           <PresentationCues
             presentation={presentationInfo}
             removeCue={removeCue}
           />
           <Button onClick={() => handleShowMode()}>
-            {showMode ? "Edit mode" : "Show mode"}
+            {showMode ? 'Edit mode' : 'Show mode'}
           </Button>
-          <ChangeCueButton
-            cues={presentationInfo.cues}
-            updateScreen={updateScreens}
-          />
         </>
       )}
     </Container>
