@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
 import {
   Container,
   Button,
@@ -7,9 +5,11 @@ import {
   Box,
   GridItem,
   Image,
+  Link,
   Heading,
 } from "@chakra-ui/react"
-
+import { Link as RouterLink, useEffect, useState } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
 
@@ -34,7 +34,6 @@ export const PresentationCues = ({ presentation, removeCue }) => (
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
-
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const navigate = useNavigate()
