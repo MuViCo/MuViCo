@@ -35,6 +35,8 @@ import ButtonNode from "./ButtonNode"
 
 const nodeTypes = { buttonNode: ButtonNode }
 
+const screenCount = 4
+
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
     <Box py={4}>
@@ -92,7 +94,7 @@ const Toolbox = ({ addCue }) => {
   return (
     <>
       <Button onClick={onOpen}>Add Cue</Button>
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -131,6 +133,7 @@ const PresentationPage = ({ userId }) => {
         setPresentationInfo(presentation)
       })
       .catch((error) => {
+        console.log(error)
         navigate("/home")
       })
   }, [id, userId, navigate])
@@ -174,17 +177,41 @@ const PresentationPage = ({ userId }) => {
 
   useEffect(() => {
     if (presentationInfo) {
-      const newNodes = presentationInfo.cues.map((node) => ({
+      // Sort the nodes based on screen and index
+      const sortedNodes = presentationInfo.cues.sort((a, b) => {
+        // Compare by screen value first
+        if (a.screen !== b.screen) {
+          return a.screen - b.screen
+        }
+        // If screen values are equal, compare by index
+        return a.index - b.index
+      })
+
+      const newNodes = sortedNodes.map((node) => ({
         id: node._id,
         type: "buttonNode",
-        position: { x: node.screen * 150, y: node.index * 30 },
+        position: { x: node.screen * 210, y: node.index * 100 },
         data: {
           cue: node,
         }
       }))
       setNodes(newNodes)
+
+      const newEdges = []
+      for (let i = 0; i < presentationInfo.cues.length - 1; i += 1) {
+        const currentNode = presentationInfo.cues[i]
+        const nextNode = presentationInfo.cues[i + 1]
+        if (currentNode.screen === nextNode.screen) {
+          // If consecutive nodes belong to the same screen, create an edge
+          newEdges.push({
+            source: currentNode._id,
+            target: nextNode._id
+          })
+        }
+      }
+      setEdges(newEdges)
     }
-  }, [presentationInfo, setNodes])
+  }, [presentationInfo, setNodes, setEdges])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
@@ -288,7 +315,7 @@ const PresentationPage = ({ userId }) => {
                 nodeTypes={nodeTypes}>
                 <Controls />
                 <MiniMap />
-                <Background gap={10} size={1} />
+                <Background gap={20} size={0} />
               </ReactFlow>
             </div>
           </div>
