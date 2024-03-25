@@ -33,7 +33,7 @@ import ScreenNode from "./ScreenNode"
 const screenCount = 4
 const nodeTypes = {
   buttonNode: ButtonNode,
-  screenNode: ScreenNode
+  screenNode: ScreenNode,
 }
 
 export const PresentationCues = ({ presentation, removeCue }) => (
@@ -315,7 +315,14 @@ const PresentationPage = ({ userId }) => {
             </ReactFlow>
           <div style={{ display: "flex" }}>
             <div style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}>
-              <Toolbox addCue={addCue} />
+              <SimpleGrid columns={[1, 2, 3]}>
+                <GridItem>
+                  <Toolbox addCue={addCue} />
+                </GridItem>
+                <GridItem>
+                  <Button onClick={() => deletePresentation}>Delete presentation</Button>
+                </GridItem>
+              </SimpleGrid>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
