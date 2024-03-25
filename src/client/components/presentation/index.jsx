@@ -25,15 +25,41 @@ export const PresentationCues = ({ presentation, removeCue }) => (
             <p>Name: {cue.name}</p>
             <p>Screen: {cue.screen}</p>
             <p>File: {cue.file.name}</p>
-            <Button onClick={() => removeCue(cue._id)}>
-              Remove cue
-            </Button>
+            <Button onClick={() => removeCue(cue._id)}>Remove cue</Button>
           </GridItem>
         ))}
       </SimpleGrid>
     </Box>
   </>
 )
+
+export const ScreenButtons = ({ cues }) => {
+  const buttons = []
+  console.log(buttons)
+  return (
+    <>
+      {cues.map((cue) => {
+        console.log("Cue:", cue)
+        console.log("Buttons:", buttons)
+        if (buttons.includes(cue.screen)) {
+          console.log("paul1", cue.screen)
+          return null
+        }
+        buttons.push(cue.screen)
+
+        return (
+          <Button
+            key={cue.name}
+            onClick={() => window.open(cue.file.url, cue.name, "width=600,height=600", true)
+            }
+          >
+            Open screen {cue.screen}
+          </Button>
+        )
+      })}
+    </>
+  )
+}
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -48,9 +74,11 @@ const PresentationPage = ({ userId }) => {
     setShowMode(!showMode)
   }
 
-  const handleNewWindow = (fileUrl) => {
-    console.log("opening new window", fileUrl)
-    return null
+  const handleNewWindow = async (fileCues) => {
+    // fileCues.forEach((cue) => {
+    //   console.log(cue.file.url)
+    //   window.open(cue.file.url, cue.name, "width=600,height=600", true)
+    // })
   }
 
   useEffect(() => {
@@ -92,28 +120,40 @@ const PresentationPage = ({ userId }) => {
           <>
             <Heading>{presentationInfo.name}</Heading>
             <CuesForm addCue={addCue} />
-            <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
+            <PresentationCues
+              presentation={presentationInfo}
+              removeCue={removeCue}
+            />
             <Button onClick={() => handleShowMode()}>
-              {showMode ? "Edit mode" : "Show mode"}</Button>
-            <Button onClick={() => deletePresentation()}>Delete presentation</Button>
-          </>
-        )}
-      </Container >
-    )
-  }
-  return (
-      <Container>
-        {presentationInfo && (
-          <>
-            <Heading>{presentationInfo.name}</Heading>
-            <PresentationCues presentation={presentationInfo} removeCue={removeCue} />
-            <Button onClick={() => handleShowMode()}>
-              {showMode ? "Edit mode" : "Show mode"}</Button>
-            <Button onClick={() => handleNewWindow(presentationInfo.cues[0].file.url)}>New Screen</Button>
-            <NewWindow url={presentationInfo.cues[0].file.url}>Content</NewWindow>
+              {showMode ? "Edit mode" : "Show mode"}
+            </Button>
+            <Button onClick={() => deletePresentation()}>
+              Delete presentation
+            </Button>
           </>
         )}
       </Container>
+    )
+  }
+  return (
+    <Container>
+      {presentationInfo && (
+        <>
+          <Heading>{presentationInfo.name}</Heading>
+          <ScreenButtons cues={presentationInfo.cues} />
+          <PresentationCues
+            presentation={presentationInfo}
+            removeCue={removeCue}
+          />
+          <Button onClick={() => handleShowMode()}>
+            {showMode ? "Edit mode" : "Show mode"}
+          </Button>
+          <Button onClick={() => handleNewWindow(presentationInfo.cues)}>
+            New Screen
+          </Button>
+        </>
+      )}
+    </Container>
   )
 }
 
