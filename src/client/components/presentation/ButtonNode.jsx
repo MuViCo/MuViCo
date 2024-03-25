@@ -1,12 +1,15 @@
 import { Handle, Position } from "reactflow"
-import { Box } from "@chakra-ui/react"
-import { useNavigate, useParams } from "react-router-dom"
+import { Box, Button, Icon, Image, Text } from "@chakra-ui/react"
+import { DeleteIcon, ExternalLinkIcon } from "@chakra-ui/icons"
+import { useState } from "react"
+import { useNavigate, useParams, Link } from "react-router-dom"
 import presentationService from "../../services/presentation"
 
 const ButtonNode = ({ data }) => {
   const { id } = useParams()
   const { cue } = data
   const navigate = useNavigate()
+  const [isHovered, setIsHovered] = useState(false)
 
   const handleRemove = async (cueId) => {
     await presentationService.removeCue(id, cueId)
@@ -15,21 +18,58 @@ const ButtonNode = ({ data }) => {
 
   return (
     <Box
-      w="100px" // Adjust width and height according to your design
-      h="50px"
-      bg="blue.500" // Example background color
-      borderRadius="md" // Example border radius
-      boxShadow="md" // Example box shadow
-      p="3" // Example padding
+      w="200px"
+      bg="gray.400"
+      borderRadius="md"
+      boxShadow="md"
+      textAlign="center"
+      position="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <Handle type="target" position={Position.Top} isConnectable={true} />
-      <div>{cue.name}</div>
-      <div>{cue.file.name}</div>
-      <div>
-        <button onClick={() => handleRemove(cue._id)} >Remove cue</button>
-      </div>
+      <Box
+        h="80px"
+        position="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Image
+          src={cue.file.url}
+          alt=""
+          objectFit="cover"
+          w="100%"
+          h="100%"
+          borderRadius="md"
+        />
+        <Text
+          position="absolute"
+          bottom="3"
+          left="0"
+          w="100%"
+          color="white"
+          fontWeight="bold"
+          style={{ textShadow: "2px 2px 4px rgba(0,0,0,1)" }}
+        >
+          {cue.name}
+        </Text>
+        {isHovered && ( // Show remove button only when hovered
+          <Button
+            onClick={() => handleRemove(cue._id)}
+            size="sm"
+            mt="2"
+            position="absolute"
+            top="15%"
+            left="88%"
+            transform="translate(-50%, -50%)"
+            zIndex="1"
+          >
+            <Icon as={DeleteIcon} />
+          </Button>
+        )}
+      </Box>
       <Handle type="source" position={Position.Bottom} isConnectable={true} />
-    </ Box>
+    </Box >
   )
 }
 
