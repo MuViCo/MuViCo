@@ -1,6 +1,6 @@
-import { Container, SimpleGrid, Button } from "@chakra-ui/react"
+import { Container, SimpleGrid, Button, Grid, GridItem } from "@chakra-ui/react"
 import { useNavigate } from "react-router-dom"
-import { useState, useEffect, useRef } from "react" // Add useRef
+import { useState, useEffect, useRef } from "react"
 import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
@@ -11,11 +11,17 @@ export const PresentationsGrid = ({
 }) => (
   <>
     <h2>Presentations</h2>
-    <SimpleGrid columns={[1, 2, 3]} gap={6}>
+    <SimpleGrid columns={[1, 2, 3]} gap={5}>
       {presentations.map((presentation) => (
         <Button
           key={presentation.id}
           onClick={() => handlePresentationClick(presentation.id)}
+          height="50px"
+          width="200px"
+          // flexDirection="column"
+          // justifyContent="flex-start"
+          // alignItems="center"
+          // paddingY="20px"
         >
           {presentation.name}
         </Button>
@@ -44,26 +50,36 @@ export const CreatePresentation = ({
   handleCancel,
   handleConnectionsClick,
 }) => (
-  <SimpleGrid columns={[1, 2, 3]} gap={1}>
-    <Togglable
-      buttonLabel="new presentation"
-      exitLabel="cancel"
-      ref={togglableRef}
-    >
-      <PresentationForm
-        createPresentation={createPresentation}
-        onCancel={handleCancel}
-      />
-    </Togglable>
-    <Button onClick={() => handleConnectionsClick()}>Connections</Button>
+  <SimpleGrid columns={[1, 2, 3]} gap={10}>
+    <GridItem>
+      <Togglable
+        buttonLabel="New presentation"
+        exitLabel="cancel"
+        ref={togglableRef}
+      >
+        <PresentationForm
+          createPresentation={createPresentation}
+          onCancel={handleCancel}
+        />
+      </Togglable>
+    </GridItem>
+    <GridItem>
+      <Button
+        width="200px"
+        height="60px"
+        ml={-2}
+        onClick={() => handleConnectionsClick()}
+      >
+        Connections
+      </Button>
+    </GridItem>
   </SimpleGrid>
 )
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
-  const togglableRef = useRef(null) // Create a ref for Togglable component
-
+  const togglableRef = useRef(null)
   useEffect(() => {
     presentationService
       .getAll()

@@ -15,13 +15,17 @@ const Togglable = forwardRef(({ buttonLabel, exitLabel, children }, ref) => {
   return (
     <Box>
       {!visible && (
-        <Button onClick={toggleVisibility}>{buttonLabel}</Button>
+        <Button
+          onClick={toggleVisibility}
+          mb={2}
+          width="200px"
+          height="60px"
+          fontWeight="bold"
+        >
+          {buttonLabel}
+        </Button>
       )}
-      {visible && (
-        <Box>
-          {children}
-        </Box>
-      )}
+      {visible && <Box>{children}</Box>}
     </Box>
   )
 })

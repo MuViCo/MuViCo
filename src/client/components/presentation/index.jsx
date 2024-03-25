@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
 import {
   Container,
   Button,
@@ -7,16 +5,17 @@ import {
   Box,
   GridItem,
   Image,
+  Link,
   Heading,
 } from "@chakra-ui/react"
-
+import { Link as RouterLink, useEffect, useState } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import presentationService from "../../services/presentation"
 import VideoInformationTable from "./Controlpanel"
 import CuesForm from "./Cues"
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
-
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const navigate = useNavigate()
@@ -69,12 +68,14 @@ const PresentationPage = ({ userId }) => {
               </SimpleGrid>
             </Box>
             <SimpleGrid columns={1} gap={6}>
-              {presentationInfo.files.map((mappedFile) => (
+              {presentationInfo.files.map((mappedFile, index) => (
                 <GridItem key={mappedFile._id}>
                   <Image src={mappedFile.url} alt={mappedFile.name} />
                   <Button onClick={() => removeFile(mappedFile._id)}>
                     Remove file
                   </Button>
+                  {index === 0 &&
+                    console.log("URL of the first photo:", mappedFile.url)}
                 </GridItem>
               ))}
             </SimpleGrid>
