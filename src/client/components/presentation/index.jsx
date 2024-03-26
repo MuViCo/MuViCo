@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import {
   Container,
   Button,
@@ -9,10 +9,10 @@ import {
   Image,
   Link,
   Heading,
-} from '@chakra-ui/react'
+} from "@chakra-ui/react"
 
-import presentationService from '../../services/presentation'
-import CuesForm from './Cues'
+import presentationService from "../../services/presentation"
+import CuesForm from "./Cues"
 
 export const PresentationCues = ({ presentation, removeCue }) => (
   <>
@@ -87,18 +87,18 @@ const PresentationPage = ({ userId }) => {
         setPresentationInfo(presentation)
       })
       .catch((error) => {
-        navigate('/home')
+        navigate("/home")
       })
   }, [id, userId, navigate])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
-    formData.append('index', index)
-    formData.append('cueName', cueName)
-    formData.append('screen', screen)
-    formData.append('image', file)
-    formData.append('fileName', fileName)
+    formData.append("index", index)
+    formData.append("cueName", cueName)
+    formData.append("screen", screen)
+    formData.append("image", file)
+    formData.append("fileName", fileName)
     await presentationService.addCue(id, formData)
   }
 
@@ -109,16 +109,16 @@ const PresentationPage = ({ userId }) => {
 
   const deletePresentation = async () => {
     await presentationService.remove(id)
-    navigate('/home')
+    navigate("/home")
   }
 
   const openWindow = (fileUrl, name, screen) => {
     console.log(fileUrl)
     console.log(name)
     console.log(screen)
-    const scrn = window.open(fileUrl, name, 'width=600,height=600', true)
-    console.log('scrn:', scrn)
-    console.log('Screens: ', screensList)
+    const scrn = window.open(fileUrl, name, "width=600,height=600", true)
+    console.log("scrn:", scrn)
+    console.log("Screens: ", screensList)
     screensList.push(scrn)
     console.log(screensList)
   }
@@ -139,7 +139,7 @@ const PresentationPage = ({ userId }) => {
               removeCue={removeCue}
             />
             <Button onClick={() => handleShowMode()}>
-              {showMode ? 'Edit mode' : 'Show mode'}
+              {showMode ? "Edit mode" : "Show mode"}
             </Button>
             <Button onClick={() => deletePresentation()}>
               Delete presentation
@@ -161,7 +161,7 @@ const PresentationPage = ({ userId }) => {
             removeCue={removeCue}
           />
           <Button onClick={() => handleShowMode()}>
-            {showMode ? 'Edit mode' : 'Show mode'}
+            {showMode ? "Edit mode" : "Show mode"}
           </Button>
         </>
       )}
