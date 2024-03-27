@@ -143,8 +143,8 @@ export const SignUpForm = ({ onSubmit, error }) => {
           )}
         </FormControl>
 
-        <Container mt={4}>
-          <Box textAlign="justify">
+        <Container mt={0}>
+          <Box fontSize={12}>
             <p>
               By clicking Sign up, you agree to our{" "}
               <Link
@@ -160,7 +160,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
           </Box>
         </Container>
 
-        <Box mt={0} display="flex" justifyContent="flex-start">
+        <Box mt={-2} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             colorScheme="teal"
             type="submit"

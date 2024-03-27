@@ -35,16 +35,6 @@ export const LoginForm = ({ onSubmit, error }) => {
       return
     }
 
-    if (!formData.username) {
-      setSubmissionError("Username is required")
-      return
-    }
-
-    if (!formData.password) {
-      setSubmissionError("Password is required")
-      return
-    }
-
     try {
       await onSubmit(formData)
     } catch (err) {
@@ -102,11 +92,12 @@ export const LoginForm = ({ onSubmit, error }) => {
             ref={passwordRef}
             onKeyDown={handleKeyDown}
           />
+          <Error error={submissionError || error} />{" "}
         </FormControl>
         <Container mt={4}>
           <Box textAlign="justify"></Box>
         </Container>
-        <Box mt={4} display="flex" justifyContent="flex-start">
+        <Box mt={4} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             colorScheme="teal"
             type="submit"
@@ -117,7 +108,6 @@ export const LoginForm = ({ onSubmit, error }) => {
           </Button>
         </Box>
       </form>
-      <Error error={submissionError || error} />
     </>
   )
 }

@@ -35,7 +35,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
           />
         </FormControl>
         <Flex align="center" mt={2}>
-          <Button id="create-button" type="submit">
+          <Button id="create-button" type="submit" colorScheme="teal">
             create
           </Button>
           <Button id="cancel-button" ml={2} onClick={onCancel}>
