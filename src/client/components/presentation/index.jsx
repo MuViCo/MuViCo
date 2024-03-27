@@ -34,7 +34,6 @@ export const PresentationCues = ({ presentation, removeCue }) => (
 )
 
 export const ScreenButtons = ({ cues, openWindow }) => {
-export const ScreenButtons = ({ cues, openWindow }) => {
   const buttons = []
   return (
     <>
@@ -47,7 +46,6 @@ export const ScreenButtons = ({ cues, openWindow }) => {
         return (
           <Button
             key={cue.name}
-            onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
             onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
           >
             Open screen {cue.screen}
@@ -166,7 +164,6 @@ const PresentationPage = ({ userId }) => {
       {presentationInfo && (
         <>
           <Heading>{presentationInfo.name}</Heading>
-          <ScreenButtons cues={presentationInfo.cues} openWindow={openWindow} />
           <ScreenButtons cues={presentationInfo.cues} openWindow={openWindow} />
           <PresentationCues
             presentation={presentationInfo}
