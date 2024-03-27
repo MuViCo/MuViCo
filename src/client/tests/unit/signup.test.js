@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import userEvent from "@testing-library/user-event"
 
@@ -59,5 +59,23 @@ describe("SignUp", () => {
 		)
 		await userEvent.click(screen.getByText("Sign up"))
 		expect(screen.getByText("Passwords must match")).toBeDefined()
+	})
+
+	test("handleKeyDown shifts focus correctly", () => {
+		const onSubmit = jest.fn()
+		const { getByLabelText, getByText } = render(
+			<SignUpForm onSubmit={onSubmit} />
+		)
+		const usernameInput = getByLabelText("Username")
+		const passwordInput = getByLabelText("Password")
+		const passwordAgainInput = getByLabelText("Confirm Password")
+		const termsCheckbox = getByText(/By clicking Sign up/i)
+		const submitButton = getByText("Sign up")
+
+		fireEvent.keyDown(usernameInput, { key: "Tab" })
+		expect(document.activeElement).toBe(passwordInput)
+
+		fireEvent.keyDown(passwordInput, { key: "Tab" })
+		expect(document.activeElement).toBe(passwordAgainInput)
 	})
 })
