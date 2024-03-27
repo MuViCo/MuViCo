@@ -11,9 +11,9 @@ describe("cues", () => {
 				<CuesForm />
 			</MemoryRouter>
 		)
-		expect(screen.getByText("Screen")).toBeDefined()
-		expect(screen.getByText("Index")).toBeDefined()
-		expect(screen.getByText("Name")).toBeDefined()
+		expect(screen.getByText("Screen 1-4*")).toBeDefined()
+		expect(screen.getByText("Index 0-350")).toBeDefined()
+		expect(screen.getByText("Name*")).toBeDefined()
 	})
 
 	test("add cues", async () => {
