@@ -69,8 +69,6 @@ describe("SignUp", () => {
 		const usernameInput = getByLabelText("Username")
 		const passwordInput = getByLabelText("Password")
 		const passwordAgainInput = getByLabelText("Confirm Password")
-		const termsCheckbox = getByText(/By clicking Sign up/i)
-		const submitButton = getByText("Sign up")
 
 		fireEvent.keyDown(usernameInput, { key: "Tab" })
 		expect(document.activeElement).toBe(passwordInput)
