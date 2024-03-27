@@ -72,7 +72,7 @@ const PresentationPage = ({ userId }) => {
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const [screensList, setScreensList] = useState([])
-  const [cueIndex, setCueIndex] = useState(1)
+  const [cueIndex, setCueIndex] = useState(2)
 
   const navigate = useNavigate()
 
@@ -113,18 +113,30 @@ const PresentationPage = ({ userId }) => {
   }
 
   const openWindow = (fileUrl, name, screen) => {
-    console.log(fileUrl)
-    console.log(name)
-    console.log(screen)
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
-    console.log("scrn:", scrn)
-    console.log("Screens: ", screensList)
     screensList.push(scrn)
     console.log(screensList)
   }
 
-  const changeCue = ({ fileUrl, screen }) => {
-    screensList[screen].location.replace(fileUrl)
+  const changeCueIndex = () => {
+    const changedCueIndex = cueIndex + 1
+    setCueIndex(changedCueIndex)
+  }
+
+  const updateScreens = (cues) => {
+    changeCueIndex()
+    const cuesToUpdate = []
+    console.log(cues)
+    cues.forEach((cue) => {
+      if (cue.index === cueIndex) {
+        cuesToUpdate.push(cue)
+      }
+    })
+    screensList.forEach((screen, index) => {
+      if (index + 1 === cuesToUpdate[index].screen) {
+        screen.location.replace(cuesToUpdate[index].file.url)
+      }
+    })
   }
 
   if (!showMode) {
@@ -163,6 +175,10 @@ const PresentationPage = ({ userId }) => {
           <Button onClick={() => handleShowMode()}>
             {showMode ? "Edit mode" : "Show mode"}
           </Button>
+          <ChangeCueButton
+            cues={presentationInfo.cues}
+            updateScreen={updateScreens}
+          />
         </>
       )}
     </Container>
