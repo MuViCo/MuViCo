@@ -35,4 +35,60 @@ describe("Login", () => {
 			})
 		})
 	})
+	test("error message when username or password is empty", async () => {
+		const onSubmit = jest.fn()
+		const { getByLabelText, getByText } = render(
+			<LoginForm onSubmit={onSubmit} />
+		)
+
+		fireEvent.change(getByLabelText("Username"), {
+			target: { value: "" },
+		})
+		fireEvent.change(getByLabelText("Password"), {
+			target: { value: "" },
+		})
+
+		fireEvent.submit(getByText("Log in"))
+		await waitFor(() => {
+			expect(screen.getByText("Username and password required")).toBeDefined()
+		})
+	})
+
+	test("error message when username is empty", async () => {
+		const onSubmit = jest.fn()
+		const { getByLabelText, getByText } = render(
+			<LoginForm onSubmit={onSubmit} />
+		)
+
+		fireEvent.change(getByLabelText("Username"), {
+			target: { value: "" },
+		})
+		fireEvent.change(getByLabelText("Password"), {
+			target: { value: "testpassword" },
+		})
+
+		fireEvent.submit(getByText("Log in"))
+		await waitFor(() => {
+			expect(screen.getByText("Username and password required")).toBeDefined()
+		})
+	})
+
+	test("error message when password is empty", async () => {
+		const onSubmit = jest.fn()
+		const { getByLabelText, getByText } = render(
+			<LoginForm onSubmit={onSubmit} />
+		)
+
+		fireEvent.change(getByLabelText("Username"), {
+			target: { value: "testuser" },
+		})
+		fireEvent.change(getByLabelText("Password"), {
+			target: { value: "" },
+		})
+
+		fireEvent.submit(getByText("Log in"))
+		await waitFor(() => {
+			expect(screen.getByText("Password is required")).toBeDefined()
+		})
+	})
 })
