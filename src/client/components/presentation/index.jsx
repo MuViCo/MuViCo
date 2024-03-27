@@ -8,6 +8,7 @@ import {
   Image,
   Link,
   Heading,
+  Text,
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
@@ -36,25 +37,6 @@ const nodeTypes = {
   screenNode: ScreenNode,
 }
 
-export const PresentationCues = ({ presentation, removeCue }) => (
-  <>
-    <Box py={4}>
-      <Heading size="md">Cues:</Heading>
-      <SimpleGrid columns={3} gap={6}>
-        {presentation.cues.map((cue) => (
-          <GridItem key={cue._id}>
-            <p>Index: {cue.index}</p>
-            <p>Name: {cue.name}</p>
-            <p>Screen: {cue.screen}</p>
-            <p>File: {cue.file.name}</p>
-            <Button onClick={() => removeCue(cue._id)}>Remove cue</Button>
-          </GridItem>
-        ))}
-      </SimpleGrid>
-    </Box>
-  </>
-)
-
 export const ScreenButtons = ({ cues, openWindow }) => {
   const buttons = []
   return (
@@ -70,7 +52,7 @@ export const ScreenButtons = ({ cues, openWindow }) => {
             key={cue.name}
             onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
           >
-            Open screen {cue.screen}
+            Open screen: {cue.screen}
           </Button>
         )
       })}
@@ -80,7 +62,7 @@ export const ScreenButtons = ({ cues, openWindow }) => {
 
 export const ChangeCueButton = ({ cues, updateScreen }) => (
   <>
-    <Button onClick={() => updateScreen(cues)}>Next cue</Button>
+    <Button bg="green" onClick={() => updateScreen(cues)}>Next cue</Button>
   </>
 )
 
@@ -146,7 +128,7 @@ const PresentationPage = ({ userId }) => {
       }))
       setNodes(newNodes)
     }
-  }, [presentationInfo])
+  }, [presentationInfo, setNodes])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
@@ -223,22 +205,9 @@ const PresentationPage = ({ userId }) => {
     }
   }, [presentationInfo, setNodes, setEdges])
 
-  const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData
-    const formData = new FormData()
-    formData.append("index", index)
-    formData.append("cueName", cueName)
-    formData.append("screen", screen)
-    formData.append("image", file)
-    formData.append("fileName", fileName)
-    const response = await presentationService.addCue(id, formData)
-    setPresentationInfo(response)
-  }
-
   const openWindow = (fileUrl, name, screen) => {
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
     screensList.push(scrn)
-    console.log(screensList)
   }
 
   const changeCueIndex = () => {
@@ -249,7 +218,6 @@ const PresentationPage = ({ userId }) => {
   const updateScreens = (cues) => {
     changeCueIndex()
     const cuesToUpdate = []
-    console.log(cues)
     cues.forEach((cue) => {
       if (cue.index === cueIndex) {
         cuesToUpdate.push(cue)
@@ -262,67 +230,30 @@ const PresentationPage = ({ userId }) => {
     })
   }
 
-  if (!showMode) {
-    return (
-      <Container>
-        {presentationInfo && (
-          <>
-            <Heading>{presentationInfo.name}</Heading>
-            <CuesForm addCue={addCue} />
-            <PresentationCues
-              presentation={presentationInfo}
-              removeCue={removeCue}
-            />
-            <Button onClick={() => handleShowMode()}>
-              {showMode ? "Edit mode" : "Show mode"}
-            </Button>
-            <Button onClick={() => deletePresentation()}>
-              Delete presentation
-            </Button>
-          </>
-        )}
-      </Container>
-    )
-  }
   return (
-    <Container>
     <>
       {presentationInfo && (
         <>
-          <Heading>{presentationInfo.name}</Heading>
-          <ScreenButtons cues={presentationInfo.cues} openWindow={openWindow} />
-          <PresentationCues
-            presentation={presentationInfo}
-            removeCue={removeCue}
-          />
-          <Button onClick={() => handleShowMode()}>
-            {showMode ? "Edit mode" : "Show mode"}
-          </Button>
-          <ChangeCueButton
-            cues={presentationInfo.cues}
-            updateScreen={updateScreens}
-          />
-          <div style={{ width: "50vw", height: "50vh" }}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}>
-              <Controls />
-              <MiniMap />
-              <Background gap={10} size={1} />
-            </ReactFlow>
+
           <div style={{ display: "flex" }}>
             <div style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}>
-              <SimpleGrid columns={[1, 2, 3]}>
-                <GridItem>
+              <Button onClick={() => handleShowMode()}>
+                {showMode ? "Edit mode" : "Show mode"}
+              </Button>
+              {!showMode && (
+                <>
                   <Toolbox addCue={addCue} />
-                </GridItem>
-                <GridItem>
-                  <Button onClick={() => deletePresentation}>Delete presentation</Button>
-                </GridItem>
-              </SimpleGrid>
+                  <Button onClick={() => deletePresentation()}>Delete presentation</Button>
+                </>
+              )}
+              {showMode && (
+                <>
+                  <ScreenButtons
+                    cues={presentationInfo.cues}
+                    openWindow={openWindow} />
+                  <ChangeCueButton cues={presentationInfo.cues} updateScreen={updateScreens} />
+                </>
+              )}
               <ReactFlow
                 nodes={nodes}
                 edges={edges}

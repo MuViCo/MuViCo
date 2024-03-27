@@ -39,8 +39,8 @@ const CuesForm = ({ addCue }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add cue</Heading>
-        <FormHelperText>Index 0-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={0} max={350} onChange={setIndex}>
+        <FormHelperText>Index 1-350</FormHelperText>
+        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField />
           <NumberInputStepper>
             <NumberIncrementStepper />
@@ -55,12 +55,12 @@ const CuesForm = ({ addCue }) => {
           onChange={(e) => setCueName(e.target.value)}
           required
         />
-        <FormHelperText>Screen 0-3*</FormHelperText>
+        <FormHelperText>Screen 1-4*</FormHelperText>
         <NumberInput
           value={screen}
           mb={4}
-          min={0}
-          max={3}
+          min={1}
+          max={4}
           onChange={setScreen}
           required
         >
