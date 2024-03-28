@@ -35,11 +35,6 @@ export const LoginForm = ({ onSubmit, error }) => {
       return
     }
 
-    if (!formData.password) {
-      setSubmissionError("Password is required")
-      return
-    }
-
     try {
       await onSubmit(formData)
     } catch (err) {
@@ -70,50 +65,50 @@ export const LoginForm = ({ onSubmit, error }) => {
   }
 
   return (
-		<>
-			<form onSubmit={handleSubmit}>
-				<FormControl>
-					<FormLabel htmlFor="username">Username</FormLabel>
-					<Input
-						id="username"
-						type="text"
-						name="username"
-						placeholder="Username"
-						value={formData.username}
-						onChange={handleChange}
-						ref={usernameRef}
-						onKeyDown={handleKeyDown}
-					/>
-				</FormControl>
-				<FormControl mt={4} mb={0}>
-					<FormLabel htmlFor="password">Password</FormLabel>
-					<Input
-						id="password"
-						type="password"
-						name="password"
-						placeholder="Password"
-						value={formData.password}
-						onChange={handleChange}
-						ref={passwordRef}
-						onKeyDown={handleKeyDown}
-					/>
-				</FormControl>
-				<Container mt={4}>
-					<Box textAlign="justify"></Box>
-				</Container>
-				<Box mt={4} display="flex" justifyContent="flex-start">
-					<Button
-						colorScheme="teal"
-						type="submit"
-						ref={submitButtonRef}
-						onKeyDown={handleKeyDown}
-					>
-						Log in
-					</Button>
-				</Box>
-			</form>
-			<Error error={submissionError || error} />
-		</>
+    <>
+      <form onSubmit={handleSubmit}>
+        <FormControl>
+          <FormLabel htmlFor="username">Username</FormLabel>
+          <Input
+            id="username"
+            type="text"
+            name="username"
+            placeholder="Username"
+            value={formData.username}
+            onChange={handleChange}
+            ref={usernameRef}
+            onKeyDown={handleKeyDown}
+          />
+        </FormControl>
+        <FormControl mt={4} mb={0}>
+          <FormLabel htmlFor="password">Password</FormLabel>
+          <Input
+            id="password"
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            ref={passwordRef}
+            onKeyDown={handleKeyDown}
+          />
+          <Error error={submissionError || error} />{" "}
+        </FormControl>
+        <Container mt={4}>
+          <Box textAlign="justify"></Box>
+        </Container>
+        <Box mt={4} mb={-2} display="flex" justifyContent="flex-start">
+          <Button
+            colorScheme="teal"
+            type="submit"
+            ref={submitButtonRef}
+            onKeyDown={handleKeyDown}
+          >
+            Log in
+          </Button>
+        </Box>
+      </form>
+    </>
   )
 }
 

@@ -73,8 +73,8 @@ export const CreatePresentation = ({
     <GridItem>
       <Button
         width="200px"
-        height="60px"
-        ml={-2}
+        height="40px"
+        ml={-10}
         onClick={() => handleConnectionsClick()}
       >
         Connections
