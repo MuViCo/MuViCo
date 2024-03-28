@@ -1,22 +1,22 @@
-import { useNavigate, Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom" // Add useNavigate
 import {
   Container,
   Box,
   Heading,
   Flex,
-  useColorModeValue,
   Button,
   Menu,
+  Tooltip,
   MenuButton,
   MenuList,
-  MenuItem,
+  Text,
 } from "@chakra-ui/react"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
 
 const NavBar = ({ user, setUser }) => {
-  const navigate = useNavigate()
+  const navigate = useNavigate() // Define navigate function
 
   const onLogin = (userJSON) => {
     setUser(userJSON)
@@ -50,9 +50,24 @@ const NavBar = ({ user, setUser }) => {
         justify="space-between"
       >
         <Flex align="center" mr={7}>
-          <Heading as="h3" size="lg" letterSpacing={"tighter"}>
-            <Link to={"/home"}>MuViCo</Link>
-          </Heading>
+          <Tooltip label="to Frontpage" aria-label="A tooltip">
+            <Heading as="h3" size="lg" letterSpacing={"tighter"}>
+              <Link to={"/home"} style={{ position: "relative" }}>
+                <Text as="span" color="inherit">
+                  MuViCo
+                </Text>
+                <Text
+                  as="span"
+                  position="absolute"
+                  bottom="-2px"
+                  left="0"
+                  w="100%"
+                  h="1px"
+                  bg="teal.500"
+                />
+              </Link>
+            </Heading>
+          </Tooltip>
         </Flex>
         <Box flex={3} align="right">
           <ThemeToggleButton />

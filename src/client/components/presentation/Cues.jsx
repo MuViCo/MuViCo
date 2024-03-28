@@ -10,6 +10,7 @@ import {
   Button,
   Heading,
 } from "@chakra-ui/react"
+import { teal } from "@mui/material/colors"
 import { useState } from "react"
 
 const CuesForm = ({ addCue }) => {
@@ -39,8 +40,8 @@ const CuesForm = ({ addCue }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add cue</Heading>
-        <FormHelperText>Index 0-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={0} max={350} onChange={setIndex}>
+        <FormHelperText>Index 1-350</FormHelperText>
+        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField />
           <NumberInputStepper>
             <NumberIncrementStepper />
@@ -72,7 +73,7 @@ const CuesForm = ({ addCue }) => {
         </NumberInput>
         <Input type="file" mb={4} onChange={fileSelected} />
       </FormControl>
-      <Button mb={4} type="submit">
+      <Button mb={4} type="submit" colorScheme="teal">
         Submit
       </Button>
     </form>

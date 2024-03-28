@@ -35,7 +35,10 @@ const s3 = new S3Client({
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
 const deletObject = async (id, cueId) => {
-  const cue = await Presentation.findOne({ _id: id, "cues._id": cueId }, { "cues.$": 1 })
+  const cue = await Presentation.findOne(
+    { _id: id, "cues._id": cueId },
+    { "cues.$": 1 }
+  )
   const updatedPresentation = await Presentation.findByIdAndUpdate(
     id,
     {
