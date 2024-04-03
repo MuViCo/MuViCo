@@ -137,7 +137,7 @@ const PresentationPage = ({ userId }) => {
     formData.append("cueName", cueName)
     formData.append("screen", screen)
     formData.append("image", file)
-    formData.append("fileName", fileName)
+    console.log("cueData: ", formData)
     await presentationService.addCue(id, formData)
   }
 
@@ -206,6 +206,11 @@ const PresentationPage = ({ userId }) => {
   }, [presentationInfo, setNodes, setEdges])
 
   const openWindow = (fileUrl, name, screen) => {
+    if (fileUrl.startsWith("https://muvico-file-system.s3.eu-north-1.amazonaws.com")) {
+      console.log("url screen ", screen, ":", fileUrl)
+    } else {
+      console.log("using local file")
+    }
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
     screensList.push(scrn)
   }

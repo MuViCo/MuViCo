@@ -150,12 +150,14 @@ router.put("/:id", upload.single("image"), async (req, res) => {
             file: {
               id: fileId,
               name: req.body.fileName,
-              url: "",
+              url:
+                req.body.image === "/src/client/public/blank.png" ? null : "",
             },
           },
         },
       },
-      { new: true }
+      { new: true },
+      console.log(req.body.image)
     )
 
     if (file) {
