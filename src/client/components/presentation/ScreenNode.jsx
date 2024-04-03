@@ -5,9 +5,9 @@ const ScreenNode = (data) => {
   const { label } = data
   return (
     <div>
-      <Handle type="source" position={Position.Top} isConnectable={true} />
+      <Handle type="source" position={Position.Left} isConnectable={true} />
       <div>{label}</div>
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
+      <Handle type="source" position={Position.Right} isConnectable={true} />
     </div>
   )
 }

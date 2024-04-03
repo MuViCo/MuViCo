@@ -27,7 +27,7 @@ const ButtonNode = ({ data }) => {
       onMouseLeave={() => setIsHovered(false)}
       key={cue._id}
     >
-      <Handle type="target" position={Position.Top} isConnectable={true} />
+      <Handle type="target" position={Position.Left} isConnectable={true} />
       <Box
         h="80px"
         position="relative"
@@ -68,7 +68,7 @@ const ButtonNode = ({ data }) => {
           </Button>
         )}
       </Box>
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
+      <Handle type="source" position={Position.Right} isConnectable={true} />
     </Box >
   )
 }

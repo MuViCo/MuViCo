@@ -123,7 +123,7 @@ const PresentationPage = ({ userId }) => {
     if (presentationInfo) {
       const newNodes = presentationInfo.cues.map((cue) => ({
         id: cue._id,
-        position: { x: cue.screen * 150, y: cue.index * 25 },
+        position: { x: cue.index * 150, y: cue.screen * 25 },
         data: { label: cue.name }
       }))
       setNodes(newNodes)
@@ -181,7 +181,7 @@ const PresentationPage = ({ userId }) => {
         newNodes.push({
           id: node._id,
           type: "buttonNode",
-          position: { x: node.screen * 210, y: 200 + node.index * 100 },
+          position: { x: node.index * 210, y: 200 + node.screen * 125 },
           data: {
             cue: node,
           }
