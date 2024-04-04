@@ -1,0 +1,89 @@
+{
+  "taskDefinitionArn": "arn:aws:ecs:eu-north-1:851725318925:task-definition/muvico-task-definition:1",
+  "containerDefinitions": [
+    {
+      "name": "muvico-container",
+      "image": "851725318925.dkr.ecr.eu-north-1.amazonaws.com/muvico-repository:latest",
+      "cpu": 1024,
+      "memory": 614,
+      "memoryReservation": 512,
+      "portMappings": [
+        {
+          "name": "container-port-protocol",
+          "containerPort": 8000,
+          "hostPort": 80,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "essential": true,
+      "environment": [],
+      "environmentFiles": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "ulimits": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-create-group": "true",
+          "awslogs-group": "/ecs/muvico-task-definition",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        },
+        "secretOptions": []
+      },
+      "systemControls": []
+    }
+  ],
+  "family": "muvico-task-definition",
+  "taskRoleArn": "arn:aws:iam::851725318925:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::851725318925:role/ecsTaskExecutionRole",
+  "revision": 1,
+  "volumes": [],
+  "status": "ACTIVE",
+  "requiresAttributes": [
+    {
+      "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+    },
+    {
+      "name": "ecs.capability.execution-role-awslogs"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.ecr-auth"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.task-iam-role"
+    },
+    {
+      "name": "ecs.capability.execution-role-ecr-pull"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+    },
+    {
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+    }
+  ],
+  "placementConstraints": [],
+  "compatibilities": [
+    "EC2"
+  ],
+  "requiresCompatibilities": [
+    "EC2"
+  ],
+  "cpu": "1024",
+  "memory": "717",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "registeredAt": "2024-04-04T11:37:12.241Z",
+  "registeredBy": "arn:aws:iam::851725318925:root",
+  "tags": []
+}
