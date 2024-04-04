@@ -17,7 +17,12 @@
       ],
       "essential": true,
       "environment": [],
-      "environmentFiles": [],
+      "environmentFiles": [
+        {
+            "value": "arn:aws:s3:::muvico-production/production.env",
+            "type": "s3"
+        },
+      ],
       "mountPoints": [],
       "volumesFrom": [],
       "ulimits": [],
