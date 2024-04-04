@@ -25,9 +25,6 @@ jobs:
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
 
-      - name: Build frontend
-        run: npm run build
-
       - name: Build image
         id: build-image
         uses: redhat-actions/buildah-build@v2
