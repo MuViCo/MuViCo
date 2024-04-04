@@ -23,6 +23,7 @@ const router = express.Router()
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
+const blankImage = "/src/client/public/blank.png"
 
 const s3 = new S3Client({
   region: BUCKET_REGION,
@@ -88,8 +89,14 @@ router.get("/:id", userExtractor, async (req, res) => {
           }
 
           const command = new GetObjectCommand(params)
-          const seconds = 60 * 60
-          cue.file.url = await getSignedUrl(s3, command, { expiresIn: seconds })
+          const seconds = 3 * 60 * 60
+          if (typeof cue.file.url === "string") {
+            cue.file.url = await getSignedUrl(s3, command, {
+              expiresIn: seconds,
+            })
+          } else {
+            cue.file.url = blankImage
+          }
           return cue
         })
       )
@@ -156,8 +163,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
           },
         },
       },
-      { new: true },
-      console.log(req.body.image)
+      { new: true }
     )
 
     if (file) {
