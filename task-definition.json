@@ -4,7 +4,7 @@
       "name": "muvico-container",
       "image": "851725318925.dkr.ecr.eu-north-1.amazonaws.com/muvico-repository:latest",
       "cpu": 1024,
-      "memory": 614,
+      "memory": 512,
       "memoryReservation": 512,
       "portMappings": [
         {
@@ -43,7 +43,7 @@
     "EC2"
   ],
   "cpu": "1024",
-  "memory": "717",
+  "memory": "512",
   "runtimePlatform": {
     "cpuArchitecture": "X86_64",
     "operatingSystemFamily": "LINUX"
