@@ -19,9 +19,9 @@
       "environment": [],
       "environmentFiles": [
         {
-            "value": "arn:aws:s3:::muvico-production/production.env",
-            "type": "s3"
-        },
+          "value": "arn:aws:s3:::muvico-production/production.env",
+          "type": "s3"
+        }
       ],
       "mountPoints": [],
       "volumesFrom": [],
