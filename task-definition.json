@@ -9,8 +9,8 @@
       "portMappings": [
         {
           "name": "container-port-protocol",
-          "containerPort": 80,
-          "hostPort": 8000,
+          "containerPort": 8000,
+          "hostPort": 80,
           "protocol": "tcp",
           "appProtocol": "http"
         }
