@@ -63,7 +63,9 @@ export const ScreenButtons = ({ cues, openWindow }) => {
 
 export const ChangeCueButton = ({ cues, updateScreen }) => (
   <>
-    <Button bg="green" onClick={() => updateScreen(cues)}>Next cue</Button>
+    <Button bg="green" onClick={() => updateScreen(cues)}>
+      Next cue
+    </Button>
   </>
 )
 
@@ -120,56 +122,67 @@ const PresentationPage = ({ userId }) => {
       })
   }, [id, userId, navigate])
 
-  const handleNodeChange = useCallback((presentation) => {
-    // Sort the nodes based on screen and index
-    const sortedNodes = presentation.cues.sort((a, b) => {
-      // Compare by screen value first
-      if (a.screen !== b.screen) {
-        return a.screen - b.screen
-      }
-      // If screen values are equal, compare by index
-      return a.index - b.index
-    })
-
-    const newNodes = []
-    for (let i = 0; i < screenCount; i += 1) {
-      newNodes.push({
-        id: `${i}`,
-        type: "screenNode",
-        position: { x: i * 210, y: 10 },
-        data: { label: `screen ${i}` },
-      })
-    }
-    sortedNodes.forEach((node) => {
-      newNodes.push({
-        id: node._id,
-        type: "buttonNode",
-        position: { x: node.index * 210, y: 200 + node.screen * 125 },
-        data: {
-          cue: node,
+  const handleNodeChange = useCallback(
+    (presentation) => {
+      // Sort the nodes based on screen and index
+      const sortedNodes = presentation.cues.sort((a, b) => {
+        // Compare by screen value first
+        if (a.screen !== b.screen) {
+          return a.screen - b.screen
         }
+        // If screen values are equal, compare by index
+        return a.index - b.index
       })
-    })
-    setNodes(newNodes)
 
-    const newEdges = []
-    for (let i = 0; i < presentation.cues.length - 1; i += 1) {
-      const currentNode = presentation.cues[i]
-      const nextNode = presentation.cues[i + 1]
-      if (currentNode.screen === nextNode.screen) {
-        // If consecutive nodes belong to the same screen, create an edge
-        newEdges.push({
-          source: currentNode._id,
-          target: nextNode._id
+      const newNodes = []
+      for (let i = 0; i < screenCount; i += 1) {
+        newNodes.push({
+          id: `${i}`,
+          type: "screenNode",
+          position: { x: i * 210, y: 10 },
+          data: { label: `screen ${i}` },
         })
       }
-    }
-    setEdges(newEdges)
-  }, [setNodes, setEdges])
+      sortedNodes.forEach((node) => {
+        newNodes.push({
+          id: node._id,
+          type: "buttonNode",
+          position: { x: node.index * 210, y: 200 + node.screen * 125 },
+          data: {
+            cue: node,
+          },
+        })
+      })
+      setNodes(newNodes)
+
+      const newEdges = []
+      for (let i = 0; i < presentation.cues.length - 1; i += 1) {
+        const currentNode = presentation.cues[i]
+        const nextNode = presentation.cues[i + 1]
+        if (currentNode.screen === nextNode.screen) {
+          // If consecutive nodes belong to the same screen, create an edge
+          newEdges.push({
+            source: currentNode._id,
+            target: nextNode._id,
+          })
+        }
+      }
+      setEdges(newEdges)
+    },
+    [setNodes, setEdges]
+  )
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
+    const cueExists = presentationInfo.cues.some(
+      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
+    )
+
+    if (cueExists) {
+      alert("Cue with same index and screen already exists") // eslint-disable-line no-alert
+      return
+    }
     formData.append("index", index)
     formData.append("cueName", cueName)
     formData.append("screen", screen)
@@ -188,7 +201,7 @@ const PresentationPage = ({ userId }) => {
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+    [setEdges]
   )
 
   useEffect(() => {
@@ -226,24 +239,31 @@ const PresentationPage = ({ userId }) => {
     <>
       {presentationInfo && (
         <>
-
           <div style={{ display: "flex" }}>
-            <div style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}>
+            <div
+              style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}
+            >
               <Button onClick={() => handleShowMode()}>
                 {showMode ? "Edit mode" : "Show mode"}
               </Button>
               {!showMode && (
                 <>
                   <Toolbox addCue={addCue} />
-                  <Button onClick={() => deletePresentation()}>Delete presentation</Button>
+                  <Button onClick={() => deletePresentation()}>
+                    Delete presentation
+                  </Button>
                 </>
               )}
               {showMode && (
                 <>
                   <ScreenButtons
                     cues={presentationInfo.cues}
-                    openWindow={openWindow} />
-                  <ChangeCueButton cues={presentationInfo.cues} updateScreen={updateScreens} />
+                    openWindow={openWindow}
+                  />
+                  <ChangeCueButton
+                    cues={presentationInfo.cues}
+                    updateScreen={updateScreens}
+                  />
                 </>
               )}
               <ReactFlow
@@ -252,7 +272,8 @@ const PresentationPage = ({ userId }) => {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
-                nodeTypes={nodeTypes}>
+                nodeTypes={nodeTypes}
+              >
                 <Controls />
                 <MiniMap />
                 <Background gap={20} size={1} />
