@@ -50,7 +50,7 @@ export const ScreenButtons = ({ cues, openWindow }) => {
         return (
           <Button
             key={cue.name}
-            onClick={() => openWindow(cue.file.url, cue.name, cue.screen)}
+            onClick={() => openWindow(cue.file.url, cue.id, cue.screen)}
           >
             Open screen: {cue.screen}
           </Button>
