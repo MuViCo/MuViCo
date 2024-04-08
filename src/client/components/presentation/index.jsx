@@ -175,10 +175,11 @@ const PresentationPage = ({ userId }) => {
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
+
+    // Check if cue with same index and screen already exists
     const cueExists = presentationInfo.cues.some(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
-
     if (cueExists) {
       alert("Cue with same index and screen already exists") // eslint-disable-line no-alert
       return
