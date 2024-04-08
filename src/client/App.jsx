@@ -16,37 +16,37 @@ import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
 
 const App = () => {
-	const [user, setUser] = useState(null)
+  const [user, setUser] = useState(null)
 
-	const [isInitialized, setIsInitialized] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
-	useEffect(() => {
-		const loggedUserJSON = window.localStorage.getItem("user")
-		if (loggedUserJSON) {
-			const parsedUser = JSON.parse(loggedUserJSON)
-			setUser(parsedUser)
-		}
+  useEffect(() => {
+    const loggedUserJSON = window.localStorage.getItem("user")
+    if (loggedUserJSON) {
+      const parsedUser = JSON.parse(loggedUserJSON)
+      setUser(parsedUser)
+    }
 
-		setIsInitialized(true)
+    setIsInitialized(true)
 
-		const handleUnload = () => {
-			// Poista käyttäjän tokeni sivun sulkemisen yhteydessä
-			window.localStorage.removeItem("user")
-		}
+    const handleUnload = () => {
+      // Poista käyttäjän tokeni sivun sulkemisen yhteydessä
+      window.localStorage.removeItem("user")
+    }
 
-		window.addEventListener("unload", handleUnload)
+    window.addEventListener("unload", handleUnload)
 
-		return () => {
-			// Poista tapahtumankäsittelijä komponentin purkamisen yhteydessä
-			window.removeEventListener("unload", handleUnload)
-		}
-	}, [])
+    return () => {
+      // Poista tapahtumankäsittelijä komponentin purkamisen yhteydessä
+      window.removeEventListener("unload", handleUnload)
+    }
+  }, [])
 
-	if (!isInitialized) {
-		return <div>Loading...</div>
-	}
+  if (!isInitialized) {
+    return <div>Loading...</div>
+  }
 
-	return (
+  return (
 		<ChakraProvider theme={theme}>
 			<Fonts />
 			<Box>
@@ -81,7 +81,7 @@ const App = () => {
 				</Container>
 			</Box>
 		</ChakraProvider>
-	)
+  )
 }
 
 export default App
