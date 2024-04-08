@@ -30,6 +30,7 @@ import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
 import ButtonNode from "./ButtonNode"
 import ScreenNode from "./ScreenNode"
+import { set } from "mongoose"
 
 const screenCount = 4
 const nodeTypes = {
@@ -119,16 +120,52 @@ const PresentationPage = ({ userId }) => {
       })
   }, [id, userId, navigate])
 
-  useEffect(() => {
-    if (presentationInfo) {
-      const newNodes = presentationInfo.cues.map((cue) => ({
-        id: cue._id,
-        position: { x: cue.index * 150, y: cue.screen * 25 },
-        data: { label: cue.name }
-      }))
-      setNodes(newNodes)
+  const handleNodeChange = useCallback((presentation) => {
+    // Sort the nodes based on screen and index
+    const sortedNodes = presentation.cues.sort((a, b) => {
+      // Compare by screen value first
+      if (a.screen !== b.screen) {
+        return a.screen - b.screen
+      }
+      // If screen values are equal, compare by index
+      return a.index - b.index
+    })
+
+    const newNodes = []
+    for (let i = 0; i < screenCount; i += 1) {
+      newNodes.push({
+        id: `${i}`,
+        type: "screenNode",
+        position: { x: i * 210, y: 10 },
+        data: { label: `screen ${i}` },
+      })
     }
-  }, [presentationInfo, setNodes])
+    sortedNodes.forEach((node) => {
+      newNodes.push({
+        id: node._id,
+        type: "buttonNode",
+        position: { x: node.index * 210, y: 200 + node.screen * 125 },
+        data: {
+          cue: node,
+        }
+      })
+    })
+    setNodes(newNodes)
+
+    const newEdges = []
+    for (let i = 0; i < presentation.cues.length - 1; i += 1) {
+      const currentNode = presentation.cues[i]
+      const nextNode = presentation.cues[i + 1]
+      if (currentNode.screen === nextNode.screen) {
+        // If consecutive nodes belong to the same screen, create an edge
+        newEdges.push({
+          source: currentNode._id,
+          target: nextNode._id
+        })
+      }
+    }
+    setEdges(newEdges)
+  }, [setNodes, setEdges])
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
@@ -139,6 +176,9 @@ const PresentationPage = ({ userId }) => {
     formData.append("image", file)
     console.log("cueData: ", formData)
     await presentationService.addCue(id, formData)
+    const updatedPresentation = await presentationService.get(id)
+    setPresentationInfo(updatedPresentation)
+    handleNodeChange(updatedPresentation)
   }
 
   const deletePresentation = async () => {
@@ -153,52 +193,9 @@ const PresentationPage = ({ userId }) => {
 
   useEffect(() => {
     if (presentationInfo) {
-      // Sort the nodes based on screen and index
-      const sortedNodes = presentationInfo.cues.sort((a, b) => {
-        // Compare by screen value first
-        if (a.screen !== b.screen) {
-          return a.screen - b.screen
-        }
-        // If screen values are equal, compare by index
-        return a.index - b.index
-      })
-
-      const newNodes = []
-      for (let i = 0; i < screenCount; i += 1) {
-        newNodes.push({
-          id: `${i}`,
-          type: "screenNode",
-          position: { x: i * 210, y: 10 },
-          data: { label: `screen ${i}` },
-        })
-      }
-      sortedNodes.forEach((node) => {
-        newNodes.push({
-          id: node._id,
-          type: "buttonNode",
-          position: { x: node.index * 210, y: 200 + node.screen * 125 },
-          data: {
-            cue: node,
-          }
-        })
-      })
-      setNodes(newNodes)
-
-      const newEdges = []
-      for (let i = 0; i < presentationInfo.cues.length - 1; i += 1) {
-        const currentNode = presentationInfo.cues[i]
-        const nextNode = presentationInfo.cues[i + 1]
-        if (currentNode.screen === nextNode.screen) {
-          // If consecutive nodes belong to the same screen, create an edge
-          newEdges.push({
-            source: currentNode._id,
-            target: nextNode._id
-          })
-        }
-      }
-      setEdges(newEdges)
+      handleNodeChange(presentationInfo)
     }
-  }, [presentationInfo, setNodes, setEdges])
+  }, [presentationInfo, handleNodeChange])
 
   const openWindow = (fileUrl, name, screen) => {
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
