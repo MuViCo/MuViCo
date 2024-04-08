@@ -30,7 +30,6 @@ import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
 import ButtonNode from "./ButtonNode"
 import ScreenNode from "./ScreenNode"
-import { set } from "mongoose"
 
 const screenCount = 4
 const nodeTypes = {
