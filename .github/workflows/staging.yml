@@ -37,7 +37,7 @@ jobs:
           image: muvico
           tags: staging ${{ github.sha }}
           containerfiles: |
-            ./Containerfile
+            ./Dockerfile
           build-args: |
             STAGING=true
 
