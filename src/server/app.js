@@ -41,7 +41,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :data"),
+  morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
 // app.use(middleware.requestLogger);
 app.use(express.static("dist"))
@@ -53,6 +53,12 @@ app.use("/api/presentation", presentationRouter)
 app.use("/api/connections", connectionsRouter)
 app.use("/api/terms", termsRouter)
 app.use("/api/admin", adminRouter)
+
+if (process.env.NODE_ENV === "test") {
+  // eslint-disable-next-line global-require
+  const testingRouter = require("./routes/testing")
+  app.use("/api/testing", testingRouter)
+}
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
