@@ -30,24 +30,8 @@ router.post("/", async (req, res) => {
 	}
 
 	const token = jwt.sign(userForToken, config.SECRET, {
-		expiresIn: 1 * 60,
+		expiresIn: 0.1 * 60,
 	})
-
-	const getTokenFrom = (request) => {
-		const authorization = request.get("authorization")
-		if (authorization && authorization.startsWith("Bearer ")) {
-			return authorization.replace("Bearer ", "")
-		}
-		return null
-	}
-
-	const decodedToken = jwt.verify(getTokenFrom(request), config.SECRET)
-	if (!decodedToken.id) {
-		return response.status(401).json({ error: "token invalid" })
-	}
-	if (!decodedToken.id) {
-		return response.status(401).json({ error: "token invalid" })
-	}
 
 	return res.status(200).send({
 		token,

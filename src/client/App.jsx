@@ -13,6 +13,7 @@ import ConnectionPage from "./components/connectionpage"
 import TermsPage from "./components/termspage"
 import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
+import loginService from "./services/login"
 
 const App = () => {
 	const [user, setUser] = useState(null)
@@ -21,20 +22,9 @@ const App = () => {
 
 	useEffect(() => {
 		const loggedUserJSON = window.localStorage.getItem("user")
-		const checkTokenExpiration = async () => {
-			try {
-				const response = await axios.post("/", {
-					headers: {
-						Authorization: `Bearer ${localStorage.getItem("userToken")}`,
-					},
-				})
-				console.log(response.data.isValid)
-				if (!response.data.isValid) {
-					localStorage.removeItem("userToken")
-				}
-			} catch (error) {
-				console.error("Error checking token validity:", error)
-			}
+		console.log(loggedUserJSON)
+		const checkTokenExpiration = () => {
+			console.log(loggedUserJSON)
 		}
 		if (loggedUserJSON) {
 			const parsedUser = JSON.parse(loggedUserJSON)
