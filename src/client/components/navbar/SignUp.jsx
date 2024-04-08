@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import * as yup from "yup"
 import {
   Container,
@@ -37,6 +37,11 @@ const validationSchema = yup.object().shape({
 export const SignUpForm = ({ onSubmit, error }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
+  const usernameRef = useRef(null)
+  const passwordRef = useRef(null)
+  const passwordagainRef = useRef(null)
+  const submitButtonRef = useRef(null)
+  const termsRef = useRef(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -57,6 +62,35 @@ export const SignUpForm = ({ onSubmit, error }) => {
     }
   }
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault()
+      if (e.target === usernameRef.current) {
+        passwordRef.current.focus()
+      } else if (e.target === passwordRef.current) {
+        passwordagainRef.current.focus()
+      } else if (e.target === passwordagainRef.current) {
+        if (e.key === "Tab") {
+          termsRef.current.focus()
+        } else {
+          handleSubmit(e) // Submit the form
+        }
+      } else if (e.target === termsRef.current) {
+        if (e.key === "Tab") {
+          submitButtonRef.current.focus()
+        } else {
+          window.location.href = "/terms" // Redirect to /terms
+        }
+      } else if (e.target === submitButtonRef.current) {
+        if (e.key === "Tab") {
+          usernameRef.current.focus()
+        } else {
+          handleSubmit(e) // Submit the form
+        }
+      }
+    }
+  }
+
   return (
     <>
       <form onSubmit={handleSubmit}>
@@ -64,30 +98,32 @@ export const SignUpForm = ({ onSubmit, error }) => {
           <FormLabel htmlFor="username">Username</FormLabel>
           <Input
             id="username"
+            data-testid="username_signup"
             type="text"
             name="username"
             placeholder="Username"
             value={formData.username}
             onChange={handleChange}
+            ref={usernameRef}
+            onKeyDown={handleKeyDown}
           />
-          {formErrors.username && (
-            <div className="alert alert-danger">{formErrors.username}</div>
-          )}
+          {formErrors.username && <Error error={formErrors.username} />}
         </FormControl>
 
         <FormControl mt={4}>
           <FormLabel htmlFor="password">Password</FormLabel>
           <Input
             id="password"
+            data-testid="password_signup"
             type="password"
             name="password"
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
+            ref={passwordRef}
+            onKeyDown={handleKeyDown}
           />
-          {formErrors.password && (
-            <div className="alert alert-danger">{formErrors.password}</div>
-          )}
+          {formErrors.password && <Error error={formErrors.password} />}
         </FormControl>
 
         <FormControl mt={4}>
@@ -96,33 +132,46 @@ export const SignUpForm = ({ onSubmit, error }) => {
           </FormLabel>
           <Input
             id="password_confirmation"
+            data-testid="password_signup_confirmation"
             type="password"
             name="password_confirmation"
             placeholder="Password"
             value={formData.password_confirmation}
             onChange={handleChange}
+            ref={passwordagainRef}
+            onKeyDown={handleKeyDown}
           />
           {formErrors.password_confirmation && (
-            <div className="alert alert-danger">
-              {formErrors.password_confirmation}
-            </div>
+            <Error error={formErrors.password_confirmation} />
           )}
         </FormControl>
 
-        <Container mt={4}>
-          <Box textAlign="justify">
+        <Container mt={0}>
+          <Box fontSize={12}>
             <p>
-              By clicking Submit, you agree to our{" "}
-              <Link color="teal.500" href="/terms" isExternal>
+              By clicking Sign up, you agree to our{" "}
+              <Link
+                color="teal.500"
+                href="/terms"
+                isExternal
+                ref={termsRef}
+                onKeyDown={handleKeyDown}
+              >
                 Terms of Service
               </Link>
             </p>
           </Box>
         </Container>
 
-        <Box mt={0} display="flex" justifyContent="flex-start">
-          <Button colorScheme="teal" type="submit">
-            Submit
+        <Box mt={-2} mb={-2} display="flex" justifyContent="flex-start">
+          <Button
+            data-testid="signup_inform"
+            colorScheme="teal"
+            type="submit"
+            ref={submitButtonRef}
+            onKeyDown={handleKeyDown}
+          >
+            Sign up
           </Button>
         </Box>
       </form>
@@ -130,7 +179,6 @@ export const SignUpForm = ({ onSubmit, error }) => {
     </>
   )
 }
-
 const SignUp = ({ onSignup }) => {
   const [error, setError] = useState(null)
 

@@ -29,17 +29,20 @@ const getTokenFrom = (request) => {
  * Extracts the user from the request token and attaches it to the request object.
  */
 const userExtractor = async (request, response, next) => {
-  getTokenFrom(request)
-  const { token } = request
-  if (token) {
-    const decodedToken = jwt.verify(token, process.env.SECRET)
-    if (!decodedToken.id) {
-      return response.status(401).json({ error: "token invalid" })
+  try {
+    getTokenFrom(request)
+    const { token } = request
+    if (token) {
+      const decodedToken = jwt.verify(token, process.env.SECRET)
+      if (!decodedToken.id) {
+        return response.status(401).json({ error: "token invalid" })
+      }
+
+      request.user = await User.findById(decodedToken.id)
     }
-
-    request.user = await User.findById(decodedToken.id)
+  } catch {
+    response.status(401).send({ error: "token-expired" })
   }
-
   next()
 
   return null

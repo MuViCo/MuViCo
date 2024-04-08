@@ -23,13 +23,19 @@ const ConnectionPage = () => {
     <Container maxW="container.lg">
       {masterMode ? (
         <div>
-          <Button onClick={() => handleSlaveModeClick()}>Switch to slave mode</Button>
-          <Button onClick={() => handleServerConnectionClick()}>Start a server connection</Button>
+          <Button onClick={() => handleSlaveModeClick()} mr={2}>
+            Switch to slave mode
+          </Button>
+          <Button onClick={() => handleServerConnectionClick()}>
+            Start a server connection
+          </Button>
         </div>
       ) : (
         <div>
-        <Button onClick={() => handleSlaveModeClick()}>Switch to master mode</Button>
-        <ConnectionForm createConnection={createConnection} />
+          <Button onClick={() => handleSlaveModeClick()}>
+            Switch to master mode
+          </Button>
+          <ConnectionForm createConnection={createConnection} />
         </div>
       )}
     </Container>

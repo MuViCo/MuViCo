@@ -9,8 +9,11 @@ import {
   Input,
   Button,
   Heading,
+  Divider
 } from "@chakra-ui/react"
+import { teal } from "@mui/material/colors"
 import { useState } from "react"
+import blankImage from "../../public/blank.png"
 
 const CuesForm = ({ addCue }) => {
   const [file, setFile] = useState(null)
@@ -31,16 +34,21 @@ const CuesForm = ({ addCue }) => {
 
   const fileSelected = (event) => {
     const selected = event.target.files[0]
-    setFile(selected)
-    setFileName(selected.name)
+    if (selected) {
+      setFile(selected)
+      setFileName(selected.name)
+    } else {
+      setFile(blankImage)
+      setFileName("blank.png")
+    }
   }
 
   return (
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add cue</Heading>
-        <FormHelperText>Index 0-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={0} max={350} onChange={setIndex}>
+        <FormHelperText>Index 1-350</FormHelperText>
+        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField />
           <NumberInputStepper>
             <NumberIncrementStepper />
@@ -70,9 +78,21 @@ const CuesForm = ({ addCue }) => {
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <Input type="file" mb={4} onChange={fileSelected} />
+        <Divider orientation="horizontal" mb={4} />
+        <FormHelperText>Upload media</FormHelperText>
+        <label htmlFor="file-upload">
+          <Button as="span" cursor="pointer">
+            Upload media
+          </Button>
+        </label>
+        <Input type="file" id="file-upload" style={{ display: "none" }} onChange={fileSelected} />
+        <FormHelperText>or add blank cue</FormHelperText>
+        <Button mb={4} onClick={() => fileSelected({ target: { files: [null] } })}>
+          Add blank
+        </Button>
+        <Divider orientation="horizontal" mb={4} />
       </FormControl>
-      <Button mb={4} type="submit">
+      <Button mb={4} type="submit" colorScheme="teal">
         Submit
       </Button>
     </form>

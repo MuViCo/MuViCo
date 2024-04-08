@@ -9,7 +9,6 @@ import NavBar from "./components/navbar"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
 import PresentationPage from "./components/presentation"
-import presentationService from "./services/presentations"
 import ConnectionPage from "./components/connectionpage"
 import TermsPage from "./components/termspage"
 import UserMedia from "./components/admin/UserMedia"
@@ -38,7 +37,7 @@ const App = () => {
       <Fonts />
       <Box>
         <NavBar user={user} setUser={setUser} />
-        <Container pt={20} maxW="container.md">
+        <Container pt={20} maxW="container.xl">
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route
@@ -48,11 +47,7 @@ const App = () => {
             <Route
               path="/presentation/:id"
               element={
-                user ? (
-                  <PresentationPage userId={user.id} />
-                ) : (
-                  <Navigate to="/" />
-                )
+                user ? <PresentationPage userId={user.id} /> : <Navigate to="/" />
               }
             />
             <Route
@@ -61,15 +56,11 @@ const App = () => {
             ></Route>
             <Route
               path="/users"
-              element={
-                user && user.isAdmin ? <UsersList /> : <Navigate to="/" />
-              }
+              element={user && user.isAdmin ? <UsersList /> : <Navigate to="/" />}
             />
             <Route
               path="/media"
-              element={
-                user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />
-              }
+              element={user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />}
             />
             <Route path="/terms" element={<TermsPage />} />
           </Routes>
