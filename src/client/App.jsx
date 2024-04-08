@@ -1,7 +1,6 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import { Routes, Route, Navigate } from "react-router-dom"
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
-
 import theme from "./lib/theme"
 import Fonts from "./lib/fonts"
 
@@ -17,30 +16,44 @@ import UsersList from "./components/admin/UsersList"
 
 const App = () => {
 	const [user, setUser] = useState(null)
-
+	const navigate = useNavigate()
 	const [isInitialized, setIsInitialized] = useState(false)
 
 	useEffect(() => {
 		const loggedUserJSON = window.localStorage.getItem("user")
+		const checkTokenExpiration = async () => {
+			try {
+				const response = await axios.post("/", {
+					headers: {
+						Authorization: `Bearer ${localStorage.getItem("userToken")}`,
+					},
+				})
+				console.log(response.data.isValid)
+				if (!response.data.isValid) {
+					localStorage.removeItem("userToken")
+				}
+			} catch (error) {
+				console.error("Error checking token validity:", error)
+			}
+		}
 		if (loggedUserJSON) {
 			const parsedUser = JSON.parse(loggedUserJSON)
-			setUser(parsedUser)
+			const isTokenExpired = checkTokenExpiration()
+			console.log(isTokenExpired, "vanhwntunut")
+			console.log(parsedUser)
+			if (isTokenExpired) {
+				// Token on vanhentunut, tee tarvittavat toimenpiteet
+				// esim. kirjaa käyttäjä ulos
+				window.localStorage.removeItem("user")
+				navigate("/")
+				console.log("true")
+			} else {
+				setUser(parsedUser)
+			}
 		}
 
 		setIsInitialized(true)
-
-		const handleUnload = () => {
-			// Poista käyttäjän tokeni sivun sulkemisen yhteydessä
-			window.localStorage.removeItem("user")
-		}
-
-		window.addEventListener("unload", handleUnload)
-
-		return () => {
-			// Poista tapahtumankäsittelijä komponentin purkamisen yhteydessä
-			window.removeEventListener("unload", handleUnload)
-		}
-	}, [])
+	}, [setUser])
 
 	if (!isInitialized) {
 		return <div>Loading...</div>
