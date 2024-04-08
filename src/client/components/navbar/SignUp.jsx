@@ -98,6 +98,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
           <FormLabel htmlFor="username">Username</FormLabel>
           <Input
             id="username"
+            data-testid="username_signup"
             type="text"
             name="username"
             placeholder="Username"
@@ -113,6 +114,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
           <FormLabel htmlFor="password">Password</FormLabel>
           <Input
             id="password"
+            data-testid="password_signup"
             type="password"
             name="password"
             placeholder="Password"
@@ -130,6 +132,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
           </FormLabel>
           <Input
             id="password_confirmation"
+            data-testid="password_signup_confirmation"
             type="password"
             name="password_confirmation"
             placeholder="Password"
@@ -162,6 +165,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
 
         <Box mt={-2} mb={-2} display="flex" justifyContent="flex-start">
           <Button
+            data-testid="signup_inform"
             colorScheme="teal"
             type="submit"
             ref={submitButtonRef}

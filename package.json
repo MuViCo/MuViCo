@@ -16,7 +16,7 @@
     "test-all": "npm run test-frontend && npm run test-backend",
     "test-coverage": "npm run test-frontend && codecov && npm run test-backend && codecov",
     "setup-e2e": "concurrently \"vite --host\"  \"NODE_ENV=test node src/server/index.js\"",
-    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 15 && playwright test\"",
+    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --ui\"",
     "e2e:report": "playwright show-report"
   },
   "jest": {
@@ -87,7 +87,7 @@
     "@babel/eslint-parser": "^7.22.11",
     "@babel/preset-env": "^7.23.9",
     "@babel/preset-react": "^7.23.3",
-    "@esbuild/linux-x64": "^0.20.0",
+    "@esbuild/darwin-arm64": "^0.20.0",
     "@playwright/test": "^1.43.0",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
