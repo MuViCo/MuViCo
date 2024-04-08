@@ -141,11 +141,6 @@ const PresentationPage = ({ userId }) => {
     await presentationService.addCue(id, formData)
   }
 
-  const removeCue = async (cueId) => {
-    const updatedPresentation = await presentationService.removeCue(id, cueId)
-    setPresentationInfo(updatedPresentation)
-  }
-
   const deletePresentation = async () => {
     await presentationService.remove(id)
     navigate("/home")
@@ -206,11 +201,6 @@ const PresentationPage = ({ userId }) => {
   }, [presentationInfo, setNodes, setEdges])
 
   const openWindow = (fileUrl, name, screen) => {
-    if (fileUrl.startsWith("https://muvico-file-system.s3.eu-north-1.amazonaws.com")) {
-      console.log("url screen ", screen, ":", fileUrl)
-    } else {
-      console.log("using local file")
-    }
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
     screensList.push(scrn)
   }
