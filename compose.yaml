@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: ./
-      dockerfile: Containerfile
+      dockerfile: Dockerfile
     image: dev
     environment:
       - BUCKET_NAME=value
