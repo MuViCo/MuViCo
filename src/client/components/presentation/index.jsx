@@ -97,7 +97,7 @@ const PresentationPage = ({ userId }) => {
 
   const [presentationInfo, setPresentationInfo] = useState(null)
 
-  const [screensList, setScreensList] = useState([])
+  const [screensList, setScreensList] = useState([null, null, null, null])
   const [cueIndex, setCueIndex] = useState(2)
 
   const navigate = useNavigate()
@@ -236,7 +236,8 @@ const PresentationPage = ({ userId }) => {
 
   const openWindow = (fileUrl, name, screen) => {
     const scrn = window.open(fileUrl, name, "width=600,height=600", true)
-    screensList.push(scrn)
+
+    screensList[screen - 1] = scrn
   }
 
   const changeCueIndex = () => {
