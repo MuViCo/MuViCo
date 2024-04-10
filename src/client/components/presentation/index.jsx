@@ -143,14 +143,16 @@ const PresentationPage = ({ userId }) => {
         })
       }
       sortedNodes.forEach((node) => {
-        newNodes.push({
-          id: node._id,
-          type: "buttonNode",
-          position: { x: node.index * 210, y: 200 + node.screen * 125 },
-          data: {
-            cue: node,
-          },
-        })
+        if (node.index !== 0) {
+          newNodes.push({
+            id: node._id,
+            type: "buttonNode",
+            position: { x: node.index * 210, y: 200 + node.screen * 125 },
+            data: {
+              cue: node,
+            },
+          })
+        }
       })
       setNodes(newNodes)
 
@@ -170,10 +172,26 @@ const PresentationPage = ({ userId }) => {
     },
     [setNodes, setEdges]
   )
+  const addBlankCue = async (screen) => {
+    const formData = new FormData()
+    formData.append("index", 0)
+    formData.append("cueName", "initial state")
+    formData.append("screen", screen)
+    formData.append("image", "/src/client/public/blank.png")
+    await presentationService.addCue(id, formData)
+  }
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
+
+    // Check if cue is the first cue to be added to the screen
+    const screenCues = presentationInfo.cues.filter(
+      (cue) => cue.screen === Number(screen)
+    )
+    if (screenCues.length === 0) {
+      await addBlankCue(screen)
+    }
 
     // Check if cue with same index and screen already exists
     const cueExists = presentationInfo.cues.some(
