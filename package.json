@@ -16,8 +16,8 @@
     "test-all": "npm run test-frontend && npm run test-backend",
     "test-coverage": "npm run test-frontend && codecov && npm run test-backend && codecov",
     "setup-e2e": "concurrently \"vite --host\"  \"NODE_ENV=test node src/server/index.js\"",
-    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --ui\"",
-    "e2e:report": "playwright show-report"
+    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --project chromium --ui\"",
+    "e2e:report": "playwright show-report && codecov"
   },
   "jest": {
     "globalTeardown": "./src/server/tests/teardown.js",

@@ -29,6 +29,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             Name
           </FormLabel>
           <Input
+            data-testid="presentation-name"
             id="name"
             value={name}
             onChange={({ target }) => setName(target.value)}
