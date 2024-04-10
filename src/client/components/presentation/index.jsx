@@ -183,10 +183,16 @@ const PresentationPage = ({ userId }) => {
       alert("Cue with same index and screen already exists") // eslint-disable-line no-alert
       return
     }
+
     formData.append("index", index)
     formData.append("cueName", cueName)
     formData.append("screen", screen)
-    formData.append("image", file)
+    // Add blank image if no file is selected
+    if (!file) {
+      formData.append("image", "/src/client/public/blank.png")
+    } else {
+      formData.append("image", file)
+    }
     console.log("cueData: ", formData)
     await presentationService.addCue(id, formData)
     const updatedPresentation = await presentationService.get(id)
