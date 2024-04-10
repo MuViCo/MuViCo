@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import * as yup from "yup"
 import {
   Container,
@@ -42,10 +43,14 @@ export const SignUpForm = ({ onSubmit, error }) => {
   const passwordagainRef = useRef(null)
   const submitButtonRef = useRef(null)
   const termsRef = useRef(null)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
+  }
+  const handleTermsClick = () => {
+    navigate("/terms")
   }
 
   const handleSubmit = async (e) => {
@@ -73,19 +78,19 @@ export const SignUpForm = ({ onSubmit, error }) => {
         if (e.key === "Tab") {
           termsRef.current.focus()
         } else {
-          handleSubmit(e) // Submit the form
+          handleSubmit(e)
         }
       } else if (e.target === termsRef.current) {
         if (e.key === "Tab") {
           submitButtonRef.current.focus()
         } else {
-          window.location.href = "/terms" // Redirect to /terms
+          window.location.navigate = "/terms" // Redirect to /terms
         }
       } else if (e.target === submitButtonRef.current) {
         if (e.key === "Tab") {
           usernameRef.current.focus()
         } else {
-          handleSubmit(e) // Submit the form
+          handleSubmit(e)
         }
       }
     }
@@ -149,9 +154,9 @@ export const SignUpForm = ({ onSubmit, error }) => {
               By clicking Sign up, you agree to our{" "}
               <Link
                 color="teal.500"
-                href="/terms"
-                isExternal
                 ref={termsRef}
+                onClick={handleTermsClick}
+                style={{ cursor: "pointer" }}
                 onKeyDown={handleKeyDown}
               >
                 Terms of Service
