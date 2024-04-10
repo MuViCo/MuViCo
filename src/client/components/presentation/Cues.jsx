@@ -42,6 +42,17 @@ const CuesForm = ({ addCue }) => {
 			setFileName("blank.png")
 		}
 	}
+	const [isButtonDisabled, setButtonDisabled] = useState(false)
+
+	const handleAdminButtonClick = () => {
+		const user = window.localStorage.getItem("user")
+		console.log(user)
+		if (user.isAdmin) {
+			setButtonDisabled(true)
+		} else {
+			setButtonDisabled(false)
+		}
+	}
 
 	return (
 		<form onSubmit={onAddCue}>
@@ -85,12 +96,15 @@ const CuesForm = ({ addCue }) => {
 						Upload media
 					</Button>
 				</label>
-				<Input
-					type="file"
-					id="file-upload"
-					style={{ display: "none" }}
-					onChange={fileSelected}
-				/>
+				{handleAdminButtonClick && (
+					<Input
+						type="file"
+						id="file-upload"
+						style={{ display: "none" }}
+						onChange={fileSelected}
+						disabled={{ isButtonDisabled }}
+					/>
+				)}
 				<FormHelperText>or add blank cue</FormHelperText>
 				<Button mb={4} onClick={() => fileSelected({ target: { files: [null] } })}>
 					Add blank
