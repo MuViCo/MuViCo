@@ -5,6 +5,8 @@ const styles = {
   global: (props) => ({
     body: {
       bg: mode("#ffffff", "#000000")(props),
+      // bgGradient: "radial(circle, rgba(118,31,78,1) 0%, rgba(0,0,0,0) 61%)",
+      transition: "background-color 1s ease-in-out",
     },
   }),
 }
@@ -26,7 +28,8 @@ const components = {
 }
 
 const fonts = {
-  heading: "'Roboto Mono'",
+  heading: "'Poppins', sans-serif",
+  body: "'Poppins', sans-serif",
 }
 
 const config = {
@@ -35,6 +38,10 @@ const config = {
 }
 
 const theme = extendTheme({
-  config, styles, components, fonts,
+  config,
+  styles,
+  components,
+  fonts,
 })
+
 export default theme

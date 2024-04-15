@@ -156,7 +156,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
             <p>
               By clicking Sign up, you agree to our{" "}
               <Link
-                color="teal.500"
+                color="purple.200"
                 ref={termsRef}
                 onClick={handleTermsClick}
                 style={{ cursor: "pointer" }}
@@ -171,7 +171,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
         <Box mt={-2} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             data-testid="signup_inform"
-            colorScheme="teal"
+            colorScheme="purple"
             type="submit"
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}

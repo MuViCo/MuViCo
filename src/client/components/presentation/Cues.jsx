@@ -9,7 +9,7 @@ import {
   Input,
   Button,
   Heading,
-  Divider
+  Divider,
 } from "@chakra-ui/react"
 import { teal } from "@mui/material/colors"
 import { useState } from "react"
@@ -85,14 +85,22 @@ const CuesForm = ({ addCue }) => {
             Upload media
           </Button>
         </label>
-        <Input type="file" id="file-upload" style={{ display: "none" }} onChange={fileSelected} />
+        <Input
+          type="file"
+          id="file-upload"
+          style={{ display: "none" }}
+          onChange={fileSelected}
+        />
         <FormHelperText>or add blank cue</FormHelperText>
-        <Button mb={4} onClick={() => fileSelected({ target: { files: [null] } })}>
+        <Button
+          mb={4}
+          onClick={() => fileSelected({ target: { files: [null] } })}
+        >
           Add blank
         </Button>
         <Divider orientation="horizontal" mb={4} />
       </FormControl>
-      <Button mb={4} type="submit" colorScheme="teal">
+      <Button mb={4} type="submit" colorScheme="purple">
         Submit
       </Button>
     </form>

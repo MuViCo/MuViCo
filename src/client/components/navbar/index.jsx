@@ -11,6 +11,7 @@ import {
   MenuList,
   Text,
 } from "@chakra-ui/react"
+import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
@@ -49,31 +50,41 @@ const NavBar = ({ user, setUser }) => {
         align="center"
         justify="space-between"
       >
-        <Flex align="center" mr={7}>
-          <Tooltip label="to Frontpage" aria-label="A tooltip">
-            <Heading as="h3" size="lg" letterSpacing={"tighter"}>
-              <Link to={"/home"} style={{ position: "relative" }}>
-                <Text as="span" color="inherit">
-                  MuViCo
-                </Text>
-                <Text
-                  as="span"
-                  position="absolute"
-                  bottom="-2px"
-                  left="0"
-                  w="100%"
-                  h="1px"
-                  bg="teal.500"
-                />
-              </Link>
-            </Heading>
-          </Tooltip>
-        </Flex>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          onHoverStart={(e) => {}}
+          onHoverEnd={(e) => {}}
+        >
+          <Flex align="center" mr={7}>
+            <Tooltip label="to Frontpage" aria-label="A tooltip">
+              <Heading as="h3" size="lg" letterSpacing={"tighter"}>
+                <Link to={"/home"} style={{ position: "relative" }}>
+                  <Text as="span" color="inherit">
+                    MuViCo
+                  </Text>
+                  <Text
+                    as="span"
+                    position="absolute"
+                    bottom="-2px"
+                    left="0"
+                    w="100%"
+                    h="1px"
+                    bg="purple.200"
+                  />
+                </Link>
+              </Heading>
+            </Tooltip>
+          </Flex>
+        </motion.div>
         <Box flex={3} align="right">
           <ThemeToggleButton />
           {user && (
             <Box ml={4} display={{ base: "inline-block" }}>
-              <Button colorScheme="teal" variant="ghost" onClick={handleLogout}>
+              <Button
+                colorScheme="purple"
+                variant="ghost"
+                onClick={handleLogout}
+              >
                 Logout
               </Button>
             </Box>
@@ -82,7 +93,11 @@ const NavBar = ({ user, setUser }) => {
             <>
               <Box ml={4} display={{ base: "inline-block" }}>
                 <Menu>
-                  <MenuButton as={Button} colorScheme="teal" variant="outline">
+                  <MenuButton
+                    as={Button}
+                    colorScheme="purple"
+                    variant="outline"
+                  >
                     Login
                   </MenuButton>
                   <MenuList>
@@ -94,7 +109,7 @@ const NavBar = ({ user, setUser }) => {
               </Box>
               <Box ml={4} display={{ base: "inline-block" }}>
                 <Menu>
-                  <MenuButton as={Button} colorScheme="teal">
+                  <MenuButton as={Button} colorScheme="purple">
                     Sign Up
                   </MenuButton>
                   <MenuList>
