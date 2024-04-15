@@ -2,13 +2,6 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   Button,
-  SimpleGrid,
-  Box,
-  GridItem,
-  Image,
-  Link,
-  Heading,
-  Text,
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
@@ -84,7 +77,7 @@ const PresentationPage = ({ userId }) => {
 
   const [presentationInfo, setPresentationInfo] = useState(null)
 
-  const [screensList, setScreensList] = useState([])
+  const [screensList, setScreensList] = useState([null, null, null, null])
   const [cueIndex, setCueIndex] = useState(2)
 
   const navigate = useNavigate()
@@ -233,7 +226,7 @@ const PresentationPage = ({ userId }) => {
       "width=600,height=600",
       true
     )
-    screensList.push(scrn)
+    screensList[screen - 1] = scrn
   }
 
   const changeCueIndex = () => {
