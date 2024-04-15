@@ -218,7 +218,10 @@ const PresentationPage = ({ userId }) => {
     const cueToOpen = presentationInfo.cues.find(
       (cue) => cue.screen === screen && cue.index === 1
     )
-
+    if (!cueToOpen) {
+      alert("No cues found for this screen") // eslint-disable-line no-alert
+      return
+    }
     const scrn = window.open(
       cueToOpen.file.url,
       cueToOpen.name,
