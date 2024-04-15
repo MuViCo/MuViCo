@@ -219,7 +219,6 @@ const PresentationPage = ({ userId }) => {
       (cue) => cue.screen === screen && cue.index === 1
     )
 
-    console.log(cueToOpen)
     const scrn = window.open(
       cueToOpen.file.url,
       cueToOpen.name,
@@ -236,15 +235,11 @@ const PresentationPage = ({ userId }) => {
 
   const updateScreens = (cues) => {
     changeCueIndex()
-    const cuesToUpdate = []
+
     cues.forEach((cue) => {
       if (cue.index === cueIndex) {
-        cuesToUpdate.push(cue)
-      }
-    })
-    screensList.forEach((screen, index) => {
-      if (index + 1 === cuesToUpdate[index].screen) {
-        screen.location.replace(cuesToUpdate[index].file.url)
+        const screen = screensList[cue.screen - 1]
+        screen.location.replace(cue.file.url)
       }
     })
   }
