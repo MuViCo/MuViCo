@@ -250,11 +250,26 @@ const PresentationPage = ({ userId }) => {
       }
     })
   }
-  document.onkeyup = function handleKeyUp(e) {
-    if (e.key === "ArrowRight") {
-      updateScreens(presentationInfo.cues)
+  useEffect(() => {
+    const handleKeyUp = (e) => {
+      if (e.key === "ArrowRight") {
+        updateScreens(presentationInfo.cues)
+      }
     }
-  }
+
+    document.addEventListener("keyup", handleKeyUp)
+
+    return () => {
+      document.removeEventListener("keyup", handleKeyUp)
+    }
+  })
+
+  // toi ylempi ilan useEffectiä. toimii kaikilla sivuilla
+  // document.onkeyup = function handleKeyUp(e) {
+  //   if (e.key === "ArrowRight") {
+  //     updateScreens(presentationInfo.cues)
+  //   }
+  // }
 
   return (
     <>
