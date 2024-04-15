@@ -37,34 +37,15 @@ const nodeTypes = {
   screenNode: ScreenNode,
 }
 
-export const ScreenButtons = ({ cues, openWindow }) => {
-  const buttons = []
-  return (
-    <>
-      {[...Array(screenCount)].map((_, index) => (
-        <Button key={index + 1} onClick={() => openWindow(index + 1)}>
-          Open screen: {index + 1}
-        </Button>
-      ))}
-
-      {/* {cues.map((cue) => {
-        if (buttons.includes(cue.screen)) {
-          return null
-        }
-        buttons.push(cue.screen)
-
-        return (
-          <Button
-            key={cue.name}
-            onClick={() => openWindow(cue.file.url, cue.id, cue.screen)}
-          >
-            Open screen: {cue.screen}
-          </Button>
-        )
-      })} */}
-    </>
-  )
-}
+export const ScreenButtons = ({ openWindow }) => (
+  <>
+    {[...Array(screenCount)].map((_, index) => (
+      <Button key={index + 1} onClick={() => openWindow(index + 1)}>
+        Open screen: {index + 1}
+      </Button>
+    ))}
+  </>
+)
 
 export const ChangeCueButton = ({ cues, updateScreen }) => (
   <>
