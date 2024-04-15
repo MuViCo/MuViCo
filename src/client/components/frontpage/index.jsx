@@ -2,33 +2,53 @@ import {
   Container,
   Box,
   Heading,
-  useColorModeValue,
-  Spacer,
+  SimpleGrid,
+  Stack,
+  Text,
+  Image,
 } from "@chakra-ui/react"
 
+import { motion } from "framer-motion"
+import InfoCard from "./Card"
+import RadialCircle from "./RadialCircle"
+
 const FrontPage = () => (
-	<Container>
-		<Box
-			borderRadius="lg"
-			mb={6}
-			p={3}
-			textAlign="center"
-			bg={useColorModeValue("whiteAlpha.500", "whiteAlpha.200")}
-			css={{ backdropFilter: "blur(10px)" }}
-		>
-			<p>
-				MuviCo is a multimodal application designed to provide versatile visual
-				elements and support functions for live music performances.The purpose of
-				the application is to bring an additional dimension to music experiences
-				that can complement and enrich the experience for both listeners and
-				performers.The program is browser-based and intended to operate on
-				computers. The application displays lyrics, images, or AI-generated visuals
-				to enhance the musical experience. Additionally, it reflects the lyrics to
-				support the singer. All performances can be pre-planned or guided in
-				real-time.
-			</p>
-		</Box>
-	</Container>
+  <Container maxW={"3xl"}>
+    <Stack
+      as={Box}
+      textAlign={"center"}
+      spacing={{ base: 8, md: 14 }}
+      py={{ base: 20, md: 36 }}
+    >
+      <Heading size="4xl">MuViCo</Heading>{" "}
+      <SimpleGrid justifyContent={"center"}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity }}
+        >
+          <RadialCircle />
+        </motion.div>
+      </SimpleGrid>
+      <Text color={"white.500"}>Music Visualisazation for Concerts</Text>
+      <SimpleGrid
+        spacing={4}
+        templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
+      >
+        <InfoCard
+          title="Ease of use"
+          description="Create a presentation in just a few clicks"
+        />
+        <InfoCard
+          title="Show mode"
+          description="Create a presentation in just a few clicks"
+        />
+        <InfoCard
+          title="Remote access"
+          description="Create a presentation in just a few clicks"
+        />
+      </SimpleGrid>
+    </Stack>
+  </Container>
 )
 
 export default FrontPage

@@ -112,7 +112,7 @@ export const LoginForm = ({ onSubmit, error }) => {
         <Box mt={4} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             data-testid="login_inform"
-            colorScheme="teal"
+            colorScheme="purple"
             type="submit"
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}

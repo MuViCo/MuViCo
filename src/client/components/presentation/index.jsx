@@ -45,7 +45,7 @@ export const ScreenButtons = ({ openWindow, screens }) => (
 
 export const ChangeCueButton = ({ cues, updateScreen }) => (
   <>
-    <Button bg="green" onClick={() => updateScreen(cues)}>
+    <Button bg="purple" onClick={() => updateScreen(cues)}>
       Next cue
     </Button>
   </>
