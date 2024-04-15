@@ -41,7 +41,13 @@ export const ScreenButtons = ({ cues, openWindow }) => {
   const buttons = []
   return (
     <>
-      {cues.map((cue) => {
+      {[...Array(screenCount)].map((_, index) => (
+        <Button key={index + 1} onClick={() => openWindow(index + 1)}>
+          Open screen: {index + 1}
+        </Button>
+      ))}
+
+      {/* {cues.map((cue) => {
         if (buttons.includes(cue.screen)) {
           return null
         }
@@ -55,7 +61,7 @@ export const ScreenButtons = ({ cues, openWindow }) => {
             Open screen: {cue.screen}
           </Button>
         )
-      })}
+      })} */}
     </>
   )
 }
@@ -97,7 +103,7 @@ const PresentationPage = ({ userId }) => {
 
   const [presentationInfo, setPresentationInfo] = useState(null)
 
-  const [screensList, setScreensList] = useState([null, null, null, null])
+  const [screensList, setScreensList] = useState([])
   const [cueIndex, setCueIndex] = useState(2)
 
   const navigate = useNavigate()
@@ -234,10 +240,19 @@ const PresentationPage = ({ userId }) => {
     }
   }, [presentationInfo, handleNodeChange])
 
-  const openWindow = (fileUrl, name, screen) => {
-    const scrn = window.open(fileUrl, name, "width=600,height=600", true)
+  const openWindow = (screen) => {
+    const cueToOpen = presentationInfo.cues.find(
+      (cue) => cue.screen === screen && cue.index === 1
+    )
 
-    screensList[screen - 1] = scrn
+    console.log(cueToOpen)
+    const scrn = window.open(
+      cueToOpen.file.url,
+      cueToOpen.name,
+      "width=600,height=600",
+      true
+    )
+    screensList.push(scrn)
   }
 
   const changeCueIndex = () => {
@@ -281,10 +296,7 @@ const PresentationPage = ({ userId }) => {
               )}
               {showMode && (
                 <>
-                  <ScreenButtons
-                    cues={presentationInfo.cues}
-                    openWindow={openWindow}
-                  />
+                  <ScreenButtons openWindow={openWindow} />
                   <ChangeCueButton
                     cues={presentationInfo.cues}
                     updateScreen={updateScreens}
