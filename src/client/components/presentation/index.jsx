@@ -250,6 +250,11 @@ const PresentationPage = ({ userId }) => {
       }
     })
   }
+  document.onkeyup = function handleKeyUp(e) {
+    if (e.key === "ArrowRight") {
+      updateScreens(presentationInfo.cues)
+    }
+  }
 
   return (
     <>
