@@ -78,7 +78,7 @@ const PresentationPage = ({ userId }) => {
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const [screensList, setScreensList] = useState([null, null, null, null])
-  const [cueIndex, setCueIndex] = useState(2)
+  const [cueIndex, setCueIndex] = useState(1)
 
   const navigate = useNavigate()
 
@@ -155,7 +155,7 @@ const PresentationPage = ({ userId }) => {
   const addBlankCue = async (screen) => {
     const formData = new FormData()
     formData.append("index", 0)
-    formData.append("cueName", "initial state")
+    formData.append("cueName", `intial cue for screen ${screen}`)
     formData.append("screen", screen)
     formData.append("image", "/src/client/public/blank.png")
     await presentationService.addCue(id, formData)
@@ -191,7 +191,6 @@ const PresentationPage = ({ userId }) => {
     } else {
       formData.append("image", file)
     }
-    console.log("cueData: ", formData)
     await presentationService.addCue(id, formData)
     const updatedPresentation = await presentationService.get(id)
     setPresentationInfo(updatedPresentation)
@@ -216,7 +215,7 @@ const PresentationPage = ({ userId }) => {
 
   const openWindow = (screen) => {
     const cueToOpen = presentationInfo.cues.find(
-      (cue) => cue.screen === screen && cue.index === 1
+      (cue) => cue.screen === screen && cue.index === 0
     )
     if (!cueToOpen) {
       alert("No cues found for this screen") // eslint-disable-line no-alert
