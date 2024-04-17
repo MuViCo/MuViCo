@@ -11,6 +11,7 @@ import {
 import { motion } from "framer-motion"
 import InfoCard from "./Card"
 import RadialCircle from "./RadialCircle"
+import { Upload, Desktop, Globe } from "./ModalSvgs"
 
 const FrontPage = () => (
   <Container maxW={"3xl"}>
@@ -37,14 +38,23 @@ const FrontPage = () => (
         <InfoCard
           title="Ease of use"
           description="Create a presentation in just a few clicks"
+          modalTitle="Ease of use"
+          modalDesc="Add your own images or gifs to the presentation and decide the order of the cues. It's that simple!"
+          modalSvg={<Upload />}
         />
         <InfoCard
-          title="Show mode"
-          description="Create a presentation in just a few clicks"
+          title="Multiple screens"
+          description="Control multiple screens at once"
+          modalTitle="Multiple screens"
+          modalDesc="Traverse through multiple screens at once using the unique cue system. Control the visuals on the fly with just one device!"
+          modalSvg={<Desktop />}
         />
         <InfoCard
           title="Remote access"
-          description="Create a presentation in just a few clicks"
+          description="Your presentations available on the go"
+          modalTitle="Remote access"
+          modalDesc="MuViCo provides access to your presentations from anywhere. Log in to your account and access your presentations from any device with an internet connection. This makes sharing your presentations between devices easy and convenient."
+          modalSvg={<Globe />}
         />
       </SimpleGrid>
     </Stack>
