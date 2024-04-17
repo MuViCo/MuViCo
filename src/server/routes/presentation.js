@@ -1,22 +1,10 @@
 const express = require("express")
 const multer = require("multer")
-const {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} = require("@aws-sdk/client-s3")
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 const crypto = require("crypto")
+const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
-const {
-  BUCKET_REGION,
-  BUCKET_NAME,
-  ACCESS_KEY,
-  SECRET_ACCESS_KEY,
-} = require("../utils/config")
 const logger = require("../utils/logger")
 
 const router = express.Router()
@@ -24,14 +12,6 @@ const router = express.Router()
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
 const blankImage = "/src/client/public/blank.png"
-
-const s3 = new S3Client({
-  region: BUCKET_REGION,
-  credentials: {
-    accessKeyId: ACCESS_KEY,
-    secretAccessKey: SECRET_ACCESS_KEY,
-  },
-})
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
@@ -52,15 +32,10 @@ const deletObject = async (id, cueId) => {
     { new: true }
   )
 
-  const fileId = cue.cues[0].file.id
+  const fileName = cue.cues[0].file.id
+  const key = `${id}/${fileName}`
 
-  const deleteParams = {
-    Bucket: BUCKET_NAME,
-    Key: `${id}/${fileId}`,
-  }
-
-  const command = new DeleteObjectCommand(deleteParams)
-  await s3.send(command)
+  await deleteFile(key)
 
   return updatedPresentation
 }
@@ -83,20 +58,8 @@ router.get("/:id", userExtractor, async (req, res) => {
     ) {
       presentation.files = await Promise.all(
         presentation.cues.map(async (cue) => {
-          const params = {
-            Bucket: BUCKET_NAME,
-            Key: `${id}/${cue.file.id.toString()}`,
-          }
-
-          const command = new GetObjectCommand(params)
-          const seconds = 3 * 60 * 60
-          if (typeof cue.file.url === "string") {
-            cue.file.url = await getSignedUrl(s3, command, {
-              expiresIn: seconds,
-            })
-          } else {
-            cue.file.url = blankImage
-          }
+          const key = `${id}/${cue.file.id.toString()}`
+          cue.file.url = await getObjectSignedUrl(key)
           return cue
         })
       )
@@ -167,17 +130,9 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     )
 
     if (file) {
-      const filePath = `${id}/${fileId}`
+      const fileName = `${id}/${fileId}`
 
-      const bucketParams = {
-        Bucket: BUCKET_NAME,
-        Key: filePath,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      }
-
-      const command = new PutObjectCommand(bucketParams)
-      await s3.send(command)
+      await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
     res.json(updatedPresentation)

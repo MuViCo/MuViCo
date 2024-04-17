@@ -3,11 +3,36 @@ const Presentation = require("../models/presentation")
 const User = require("../models/user")
 
 const app = require("../app")
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3")
 
 const api = supertest(app)
 
 let authHeader
 let testPresentationId
+
+const mockS3Instance = {
+  putObjectCommand: jest.fn().mockReturnThis(),
+  getObjectCommand: jest.fn().mockReturnThis(),
+  deleteObjectCommand: jest.fn().mockReturnThis(),
+  promise: jest.fn().mockReturnThis(),
+  catch: jest.fn(),
+}
+
+jest.mock("aws-sdk", () => {
+  return { S3: jest.fn(() => mockS3Instance) }
+})
+
+describe("S3", () => {
+  let s3service
+
+  beforeEach(() => {
+    s3service = new S3service()
+  })
+
+  test("upload file to s3 bucket", async () => {
+    const result = await s3service.
+  })
+})
 
 describe("test presentation", () => {
   beforeEach(async () => {
