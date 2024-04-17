@@ -7,6 +7,9 @@ import {
   DrawerCloseButton,
   DrawerBody,
   Drawer,
+  Box,
+  Flex,
+  Heading,
 } from "@chakra-ui/react"
 import ReactFlow, {
   MiniMap,
@@ -35,13 +38,21 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
     {[...Array(screenCount)].map((_, index) => {
       if (screens[index]) {
         return (
-          <Button key={index + 1} onClick={() => closeWindow(index + 1)}>
+          <Button
+            bg="purple.500"
+            key={index + 1}
+            onClick={() => closeWindow(index + 1)}
+          >
             Close screen: {index + 1}
           </Button>
         )
       }
       return (
-        <Button key={index + 1} onClick={() => openWindow(index + 1)}>
+        <Button
+          bg="purple"
+          key={index + 1}
+          onClick={() => openWindow(index + 1)}
+        >
           Open screen: {index + 1}
         </Button>
       )
@@ -49,10 +60,14 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
   </>
 )
 
-export const ChangeCueButton = ({ cues, updateScreen }) => (
+export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
   <>
-    <Button bg="purple" onClick={() => updateScreen(cues)}>
-      Next cue
+    <Button
+      width={40}
+      bg="purple"
+      onClick={() => updateScreen(cues, direction)}
+    >
+      {direction} cue
     </Button>
   </>
 )
@@ -87,7 +102,7 @@ const PresentationPage = ({ userId }) => {
   const [presentationInfo, setPresentationInfo] = useState(null)
 
   const [screensList, setScreensList] = useState([null, null, null, null])
-  const [cueIndex, setCueIndex] = useState(1)
+  const [cueIndex, setCueIndex] = useState(0)
 
   const navigate = useNavigate()
 
@@ -224,7 +239,7 @@ const PresentationPage = ({ userId }) => {
 
   const openWindow = (screen) => {
     const cueToOpen = presentationInfo.cues.find(
-      (cue) => cue.screen === screen && cue.index === 0
+      (cue) => cue.screen === screen && cue.index === cueIndex
     )
     if (!cueToOpen) {
       alert("No cues found for this screen") // eslint-disable-line no-alert
@@ -248,18 +263,25 @@ const PresentationPage = ({ userId }) => {
     setScreensList(newScreens)
   }
 
-  const changeCueIndex = () => {
-    const changedCueIndex = cueIndex + 1
-    setCueIndex(changedCueIndex)
+  const changeCueIndex = (direction) => {
+    if (direction === "Next") {
+      const newIndex = cueIndex + 1
+      setCueIndex(newIndex)
+      return newIndex
+    }
+    const newIndex = cueIndex === 0 ? 0 : cueIndex - 1
+    setCueIndex(newIndex)
+    return newIndex
   }
 
-  const updateScreens = (cues) => {
-    changeCueIndex()
-
+  const updateScreens = (cues, direction) => {
+    const newIndex = changeCueIndex(direction)
     cues.forEach((cue) => {
-      if (cue.index === cueIndex) {
+      if (cue.index === newIndex) {
         const screen = screensList[cue.screen - 1]
-        screen.location.replace(cue.file.url)
+        if (screen) {
+          screen.location.replace(cue.file.url)
+        }
       }
     })
   }
@@ -292,30 +314,48 @@ const PresentationPage = ({ userId }) => {
             <div
               style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}
             >
-              <Button onClick={() => handleShowMode()}>
-                {showMode ? "Edit mode" : "Show mode"}
-              </Button>
-              {!showMode && (
-                <>
-                  <Toolbox addCue={addCue} />
-                  <Button onClick={() => deletePresentation()}>
-                    Delete presentation
-                  </Button>
-                </>
-              )}
-              {showMode && (
-                <>
-                  <ScreenButtons
-                    openWindow={openWindow}
-                    closeWindow={closeWindow}
-                    screens={screensList}
-                  />
-                  <ChangeCueButton
-                    cues={presentationInfo.cues}
-                    updateScreen={updateScreens}
-                  />
-                </>
-              )}
+              <Flex flexDirection="row" flexWrap="wrap" gap={4}>
+                <Button bg="gray" onClick={() => handleShowMode()}>
+                  {showMode ? "Edit mode" : "Show mode"}
+                </Button>
+                {!showMode && (
+                  <>
+                    <Toolbox addCue={addCue} />
+                    <Button onClick={() => deletePresentation()}>
+                      Delete presentation
+                    </Button>
+                  </>
+                )}
+                {showMode && (
+                  <>
+                    <ScreenButtons
+                      openWindow={openWindow}
+                      closeWindow={closeWindow}
+                      screens={screensList}
+                    />
+                    <Box
+                      display="flex"
+                      justifyContent="flex-end"
+                      alignItems="center"
+                      flex="1"
+                      gap={4}
+                    >
+                      <ChangeCueButton
+                        cues={presentationInfo.cues}
+                        updateScreen={updateScreens}
+                        direction="Previous"
+                      />
+                      <Heading size="md">Cue {cueIndex}</Heading>
+                      <ChangeCueButton
+                        cues={presentationInfo.cues}
+                        updateScreen={updateScreens}
+                        direction="Next"
+                      />
+                    </Box>
+                  </>
+                )}
+              </Flex>
+
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
