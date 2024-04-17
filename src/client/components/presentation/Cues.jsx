@@ -111,7 +111,12 @@ const CuesForm = ({ addCue }) => {
 				</Button>
 				<Divider orientation="horizontal" mb={4} />
 			</FormControl>
-			<Button mb={4} type="submit" colorScheme="teal">
+			<Button
+				mb={4}
+				type="submit"
+				colorScheme="teal"
+				disabled={{ isButtonDisabled }}
+			>
 				Submit
 			</Button>
 		</form>

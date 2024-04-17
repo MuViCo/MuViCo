@@ -18,9 +18,10 @@ describe("cues", () => {
 
 	test("add cues", async () => {
 		const addCue = jest.fn()
+		const currentUser = { isAdmin: false }
 		const { getByLabelText, getByText, getByRole } = render(
 			<MemoryRouter>
-				<CuesForm addCue={addCue} />
+				<CuesForm addCue={addCue} isAdmin={false} />
 			</MemoryRouter>
 		)
 
@@ -30,6 +31,10 @@ describe("cues", () => {
 		fireEvent.change(indexInput, {
 			target: { value: "testuser" },
 		})
+
+		const addButton = getByText("Add Media")
+
+		expect(addButton).toBeDisabled()
 		expect(indexInput).toHaveValue("testuser")
 		expect(screen.getByText("Submit")).toBeDefined()
 	})
