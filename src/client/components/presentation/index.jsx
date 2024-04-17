@@ -30,10 +30,16 @@ const nodeTypes = {
   screenNode: ScreenNode,
 }
 
-export const ScreenButtons = ({ openWindow, screens }) => (
+export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
   <>
     {[...Array(screenCount)].map((_, index) => {
-      if (screens[index]) return null
+      if (screens[index]) {
+        return (
+          <Button key={index + 1} onClick={() => closeWindow(index + 1)}>
+            Close screen: {index + 1}
+          </Button>
+        )
+      }
       return (
         <Button key={index + 1} onClick={() => openWindow(index + 1)}>
           Open screen: {index + 1}
@@ -235,6 +241,13 @@ const PresentationPage = ({ userId }) => {
     setScreensList(newScreens)
   }
 
+  const closeWindow = (screen) => {
+    const newScreens = [...screensList]
+    newScreens[screen - 1].close()
+    newScreens[screen - 1] = null
+    setScreensList(newScreens)
+  }
+
   const changeCueIndex = () => {
     const changedCueIndex = cueIndex + 1
     setCueIndex(changedCueIndex)
@@ -294,6 +307,7 @@ const PresentationPage = ({ userId }) => {
                 <>
                   <ScreenButtons
                     openWindow={openWindow}
+                    closeWindow={closeWindow}
                     screens={screensList}
                   />
                   <ChangeCueButton
