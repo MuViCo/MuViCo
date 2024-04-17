@@ -11,7 +11,6 @@ const router = express.Router()
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
-const blankImage = "/src/client/public/blank.png"
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
