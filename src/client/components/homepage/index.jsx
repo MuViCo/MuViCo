@@ -25,10 +25,10 @@ export const PresentationsGrid = ({
           onClick={() => handlePresentationClick(presentation.id)}
           height="50px"
           width="200px"
-          // flexDirection="column"
-          // justifyContent="flex-start"
-          // alignItems="center"
-          // paddingY="20px"
+        // flexDirection="column"
+        // justifyContent="flex-start"
+        // alignItems="center"
+        // paddingY="20px"
         >
           {presentation.name}
         </Button>
@@ -55,7 +55,6 @@ export const CreatePresentation = ({
   createPresentation,
   togglableRef,
   handleCancel,
-  handleConnectionsClick,
 }) => (
   <SimpleGrid columns={[1, 2, 3]} gap={10}>
     <GridItem>
@@ -69,16 +68,6 @@ export const CreatePresentation = ({
           onCancel={handleCancel}
         />
       </Togglable>
-    </GridItem>
-    <GridItem>
-      <Button
-        width="200px"
-        height="40px"
-        ml={-10}
-        onClick={() => handleConnectionsClick()}
-      >
-        Connections
-      </Button>
     </GridItem>
   </SimpleGrid>
 )
@@ -112,10 +101,6 @@ const HomePage = ({ user }) => {
     navigate(`/presentation/${presentationId}`)
   }
 
-  const handleConnectionsClick = () => {
-    navigate("/connections")
-  }
-
   const handleCancel = () => {
     togglableRef.current.toggleVisibility()
   }
@@ -128,7 +113,6 @@ const HomePage = ({ user }) => {
           createPresentation={createPresentation}
           togglableRef={togglableRef}
           handleCancel={handleCancel}
-          handleConnectionsClick={handleConnectionsClick}
         />
         <PresentationsGrid
           presentations={presentations}
