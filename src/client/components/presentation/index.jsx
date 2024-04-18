@@ -39,7 +39,7 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
       if (screens[index]) {
         return (
           <Button
-            bg="purple.500"
+            colorScheme="pink"
             key={index + 1}
             onClick={() => closeWindow(index + 1)}
           >
@@ -49,7 +49,7 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
       }
       return (
         <Button
-          bg="purple"
+          colorScheme="purple"
           key={index + 1}
           onClick={() => openWindow(index + 1)}
         >
@@ -64,7 +64,7 @@ export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
   <>
     <Button
       width={40}
-      bg="purple"
+      colorScheme="purple"
       onClick={() => updateScreen(cues, direction)}
     >
       {direction} cue
@@ -318,13 +318,16 @@ const PresentationPage = ({ userId }) => {
               style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}
             >
               <Flex flexDirection="row" flexWrap="wrap" gap={4}>
-                <Button bg="gray" onClick={() => handleShowMode()}>
+                <Button colorScheme="gray" onClick={() => handleShowMode()}>
                   {showMode ? "Edit mode" : "Show mode"}
                 </Button>
                 {!showMode && (
                   <>
                     <Toolbox addCue={addCue} />
-                    <Button onClick={() => deletePresentation()}>
+                    <Button
+                      colorScheme="gray"
+                      onClick={() => deletePresentation()}
+                    >
                       Delete presentation
                     </Button>
                   </>
