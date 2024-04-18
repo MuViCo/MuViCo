@@ -1,12 +1,12 @@
 const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
+const { type } = require("os")
 const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
 const logger = require("../utils/logger")
-const { type } = require("os")
 
 const router = express.Router()
 
