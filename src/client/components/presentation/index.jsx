@@ -232,71 +232,6 @@ const PresentationPage = ({ userId }) => {
     navigate("/home")
   }
 
-  const openWindow = (screen) => {
-    const cueToOpen = presentationInfo.cues.find(
-      (cue) => cue.screen === screen && cue.index === cueIndex
-    )
-    if (!cueToOpen) {
-      alert("No cues found for this screen") // eslint-disable-line no-alert
-      return
-    }
-    const scrn = window.open(
-      cueToOpen.file.url,
-      cueToOpen.name,
-      "width=600,height=600",
-      true
-    )
-    const newScreens = [...screensList]
-    newScreens[screen - 1] = scrn
-    setScreensList(newScreens)
-  }
-
-  const closeWindow = (screen) => {
-    const newScreens = [...screensList]
-    newScreens[screen - 1].close()
-    newScreens[screen - 1] = null
-    setScreensList(newScreens)
-  }
-
-  const changeCueIndex = (direction) => {
-    if (direction === "Next") {
-      const newIndex = cueIndex + 1
-      setCueIndex(newIndex)
-      return newIndex
-    }
-    const newIndex = cueIndex === 0 ? 0 : cueIndex - 1
-    setCueIndex(newIndex)
-    return newIndex
-  }
-
-  const updateScreens = (cues, direction) => {
-    const newIndex = changeCueIndex(direction)
-    cues.forEach((cue) => {
-      if (cue.index === newIndex) {
-        const screen = screensList[cue.screen - 1]
-        if (screen) {
-          screen.location.replace(cue.file.url)
-        }
-      }
-    })
-  }
-  useEffect(() => {
-    const handleKeyUp = (e) => {
-      if (e.key === "ArrowRight") {
-        updateScreens(presentationInfo.cues, "Next")
-      }
-      if (e.key === "ArrowLeft") {
-        updateScreens(presentationInfo.cues, "Previous")
-      }
-    }
-
-    document.addEventListener("keyup", handleKeyUp)
-
-    return () => {
-      document.removeEventListener("keyup", handleKeyUp)
-    }
-  })
-
   return (
     <>
       {presentationInfo && (
@@ -323,11 +258,10 @@ const PresentationPage = ({ userId }) => {
                 {showMode && (
                   <>
                     <ShowModeButtons
-                      openWindow={openWindow}
-                      closeWindow={closeWindow}
-                      screens={screensList}
-                      cues={presentationInfo.cues}
-                      updateScreen={updateScreens}
+                      screensList={screensList}
+                      setScreensList={setScreensList}
+                      presentationInfo={presentationInfo}
+                      setCueIndex={setCueIndex}
                       cueIndex={cueIndex}
                     />
                   </>
