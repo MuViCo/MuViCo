@@ -1,5 +1,6 @@
-import { Button, Box, Heading } from "@chakra-ui/react"
+import { Button, Box, Heading, IconButton } from "@chakra-ui/react"
 import { useEffect } from "react"
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 const screenCount = 4
 
@@ -32,13 +33,23 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
 
 export const ChangeCueButton = ({ updateScreen, direction }) => (
   <>
-    <Button
-      width={40}
-      colorScheme="purple"
-      onClick={() => updateScreen(direction)}
-    >
-      {direction} cue
-    </Button>
+    {direction === "Previous" ? (
+      <IconButton
+        aria-label="Previous Cue"
+        icon={<ChevronLeftIcon />}
+        onClick={() => updateScreen(direction)}
+        bg="purple"
+        size="md"
+      />
+    ) : (
+      <IconButton
+        aria-label="Next Cue"
+        icon={<ChevronRightIcon />}
+        onClick={() => updateScreen(direction)}
+        bg="purple"
+        size="md"
+      />
+    )}
   </>
 )
 
