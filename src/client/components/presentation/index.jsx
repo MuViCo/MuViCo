@@ -1,24 +1,16 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import {
-  Button,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
-  DrawerBody,
-  Drawer,
-  Flex,
-} from "@chakra-ui/react"
+import { Button, Flex } from "@chakra-ui/react"
 import { useNodesState, useEdgesState } from "reactflow"
 
 import "reactflow/dist/style.css"
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 import presentationService from "../../services/presentation"
-import CuesForm from "./Cues"
 
 import ShowModeButtons from "./ShowModeButtons"
 import FlowMap from "./FlowMap"
+import Toolbox from "./ToolBox"
 
 const screenCount = 4
 <<<<<<< HEAD
@@ -77,28 +69,6 @@ export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
 )
 =======
 >>>>>>> d4cd10e (refactored the index file of presentation page)
-
-const Toolbox = ({ addCue }) => {
-  const [isOpen, setIsOpen] = useState(false)
-
-  const onClose = () => setIsOpen(false)
-  const onOpen = () => setIsOpen(true)
-
-  return (
-    <>
-      <Button onClick={onOpen}>Add Cue</Button>
-      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerBody>
-            <CuesForm addCue={addCue} onClose={onClose} />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
-    </>
-  )
-}
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
