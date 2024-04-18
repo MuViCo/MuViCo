@@ -7,30 +7,21 @@ import {
   DrawerCloseButton,
   DrawerBody,
   Drawer,
-  Box,
   Flex,
-  Heading,
-  IconButton,
 } from "@chakra-ui/react"
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
-
-import ReactFlow, {
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-} from "reactflow"
+import { useNodesState, useEdgesState } from "reactflow"
 
 import "reactflow/dist/style.css"
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 import presentationService from "../../services/presentation"
 import CuesForm from "./Cues"
-import ButtonNode from "./ButtonNode"
-import ScreenNode from "./ScreenNode"
+
+import ShowModeButtons from "./ShowModeButtons"
+import FlowMap from "./FlowMap"
 
 const screenCount = 4
+<<<<<<< HEAD
 const nodeTypes = {
   buttonNode: ButtonNode,
   screenNode: ScreenNode,
@@ -84,6 +75,8 @@ export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
     )}
   </>
 )
+=======
+>>>>>>> d4cd10e (refactored the index file of presentation page)
 
 const Toolbox = ({ addCue }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -239,17 +232,6 @@ const PresentationPage = ({ userId }) => {
     navigate("/home")
   }
 
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  )
-
-  useEffect(() => {
-    if (presentationInfo) {
-      handleNodeChange(presentationInfo)
-    }
-  }, [presentationInfo, handleNodeChange])
-
   const openWindow = (screen) => {
     const cueToOpen = presentationInfo.cues.find(
       (cue) => cue.screen === screen && cue.index === cueIndex
@@ -315,13 +297,6 @@ const PresentationPage = ({ userId }) => {
     }
   })
 
-  // toi ylempi ilan useEffectiä. toimii kaikilla sivuilla
-  // document.onkeyup = function handleKeyUp(e) {
-  //   if (e.key === "ArrowRight") {
-  //     updateScreens(presentationInfo.cues)
-  //   }
-  // }
-
   return (
     <>
       {presentationInfo && (
@@ -347,46 +322,27 @@ const PresentationPage = ({ userId }) => {
                 )}
                 {showMode && (
                   <>
-                    <ScreenButtons
+                    <ShowModeButtons
                       openWindow={openWindow}
                       closeWindow={closeWindow}
                       screens={screensList}
+                      cues={presentationInfo.cues}
+                      updateScreen={updateScreens}
+                      cueIndex={cueIndex}
                     />
-                    <Box
-                      display="flex"
-                      justifyContent="flex-end"
-                      alignItems="center"
-                      flex="1"
-                      gap={4}
-                    >
-                      <ChangeCueButton
-                        cues={presentationInfo.cues}
-                        updateScreen={updateScreens}
-                        direction="Previous"
-                      />
-                      <Heading size="md">Cue {cueIndex}</Heading>
-                      <ChangeCueButton
-                        cues={presentationInfo.cues}
-                        updateScreen={updateScreens}
-                        direction="Next"
-                      />
-                    </Box>
                   </>
                 )}
               </Flex>
 
-              <ReactFlow
+              <FlowMap
+                handleNodeChange={handleNodeChange}
+                presentationInfo={presentationInfo}
                 nodes={nodes}
                 edges={edges}
+                setEdges={setEdges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                nodeTypes={nodeTypes}
-              >
-                <Controls />
-                <MiniMap />
-                <Background gap={20} size={1} />
-              </ReactFlow>
+              />
             </div>
           </div>
         </>
