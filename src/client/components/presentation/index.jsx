@@ -181,7 +181,7 @@ const PresentationPage = ({ userId }) => {
     formData.append("index", 0)
     formData.append("cueName", `intial cue for screen ${screen}`)
     formData.append("screen", screen)
-    formData.append("image", "/src/client/public/blank.png")
+    formData.append("image", "/blank.png")
     await presentationService.addCue(id, formData)
   }
 
@@ -211,7 +211,7 @@ const PresentationPage = ({ userId }) => {
     formData.append("screen", screen)
     // Add blank image if no file is selected
     if (!file) {
-      formData.append("image", "/src/client/public/blank.png")
+      formData.append("image", "/blank.png")
     } else {
       formData.append("image", file)
     }

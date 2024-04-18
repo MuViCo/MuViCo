@@ -6,6 +6,7 @@ const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
 const logger = require("../utils/logger")
+const { type } = require("os")
 
 const router = express.Router()
 
@@ -57,8 +58,12 @@ router.get("/:id", userExtractor, async (req, res) => {
     ) {
       presentation.files = await Promise.all(
         presentation.cues.map(async (cue) => {
-          const key = `${id}/${cue.file.id.toString()}`
-          cue.file.url = await getObjectSignedUrl(key)
+          if (typeof cue.file.url === "string") {
+            const key = `${id}/${cue.file.id.toString()}`
+            cue.file.url = await getObjectSignedUrl(key)
+          } else {
+            cue.file.url = "/blank.png"
+          }
           return cue
         })
       )
@@ -120,7 +125,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
               id: fileId,
               name: req.body.fileName,
               url:
-                req.body.image === "/src/client/public/blank.png" ? null : "",
+                req.body.image === "/blank.png" ? null : "",
             },
           },
         },

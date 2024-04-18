@@ -11,9 +11,7 @@ import {
   Heading,
   Divider,
 } from "@chakra-ui/react"
-import { teal } from "@mui/material/colors"
 import { useState } from "react"
-import blankImage from "../../public/blank.png"
 
 const CuesForm = ({ addCue }) => {
   const [file, setFile] = useState(null)
@@ -38,7 +36,7 @@ const CuesForm = ({ addCue }) => {
       setFile(selected)
       setFileName(selected.name)
     } else {
-      setFile(blankImage)
+      setFile("/blank.png")
       setFileName("blank.png")
     }
   }
