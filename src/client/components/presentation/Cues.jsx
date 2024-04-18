@@ -102,7 +102,6 @@ const CuesForm = ({ addCue }) => {
 						id="file-upload"
 						style={{ display: "none" }}
 						onChange={fileSelected}
-						disabled={{ isButtonDisabled }}
 					/>
 				)}
 				<FormHelperText>or add blank cue</FormHelperText>
@@ -111,12 +110,7 @@ const CuesForm = ({ addCue }) => {
 				</Button>
 				<Divider orientation="horizontal" mb={4} />
 			</FormControl>
-			<Button
-				mb={4}
-				type="submit"
-				colorScheme="teal"
-				disabled={{ isButtonDisabled }}
-			>
+			<Button mb={4} type="submit" colorScheme="teal">
 				Submit
 			</Button>
 		</form>
