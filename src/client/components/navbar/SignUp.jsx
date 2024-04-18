@@ -35,7 +35,7 @@ const validationSchema = yup.object().shape({
     .required("Password confirmation is required"),
 })
 
-export const SignUpForm = ({ onSubmit, error }) => {
+export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
   const usernameRef = useRef(null)
@@ -43,14 +43,10 @@ export const SignUpForm = ({ onSubmit, error }) => {
   const passwordagainRef = useRef(null)
   const submitButtonRef = useRef(null)
   const termsRef = useRef(null)
-  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
-  }
-  const handleTermsClick = () => {
-    navigate("/terms")
   }
 
   const handleSubmit = async (e) => {
@@ -161,6 +157,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
                 onClick={handleTermsClick}
                 style={{ cursor: "pointer" }}
                 onKeyDown={handleKeyDown}
+                data-testid="terms_link"
               >
                 Terms of Service
               </Link>
@@ -186,7 +183,11 @@ export const SignUpForm = ({ onSubmit, error }) => {
 }
 const SignUp = ({ onSignup }) => {
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
+  const handleTermsClick = () => {
+    navigate("/terms")
+  }
   const onSubmit = async ({ username, password }) => {
     try {
       await signupService.signup({ username, password })
@@ -200,7 +201,13 @@ const SignUp = ({ onSignup }) => {
     }
   }
 
-  return <SignUpForm onSubmit={onSubmit} error={error} />
+  return (
+    <SignUpForm
+      onSubmit={onSubmit}
+      error={error}
+      handleTermsClick={handleTermsClick}
+    />
+  )
 }
 
 export default SignUp
