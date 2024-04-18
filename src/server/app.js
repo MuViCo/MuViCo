@@ -3,6 +3,7 @@ const cookieParser = require("cookie-parser")
 const cors = require("cors")
 const morgan = require("morgan")
 const mongoose = require("mongoose")
+const path = require("path")
 const config = require("./utils/config")
 
 const logger = require("./utils/logger")
@@ -13,7 +14,6 @@ const presentationsRouter = require("./routes/presentations")
 const presentationRouter = require("./routes/presentation")
 const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
-
 const middleware = require("./utils/middleware")
 
 const app = express()
@@ -42,8 +42,9 @@ app.use(cookieParser())
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
-// app.use(middleware.requestLogger);
+
 app.use(express.static("dist"))
+app.use(express.static(path.join(__dirname, "public")))
 
 app.use("/api/login", loginRouter)
 app.use("/api/signup", signupRouter)
