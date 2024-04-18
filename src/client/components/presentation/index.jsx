@@ -10,7 +10,10 @@ import {
   Box,
   Flex,
   Heading,
+  IconButton,
 } from "@chakra-ui/react"
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
+
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -62,13 +65,23 @@ export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
 
 export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
   <>
-    <Button
-      width={40}
-      colorScheme="purple"
-      onClick={() => updateScreen(cues, direction)}
-    >
-      {direction} cue
-    </Button>
+    {direction === "Previous" ? (
+      <IconButton
+        aria-label="Previous Cue"
+        icon={<ChevronLeftIcon />}
+        onClick={() => updateScreen(cues, direction)}
+        bg="purple"
+        size="md"
+      />
+    ) : (
+      <IconButton
+        aria-label="Next Cue"
+        icon={<ChevronRightIcon />}
+        onClick={() => updateScreen(cues, direction)}
+        bg="purple"
+        size="md"
+      />
+    )}
   </>
 )
 

@@ -11,7 +11,6 @@ import {
 import { motion } from "framer-motion"
 import InfoCard from "./Card"
 import RadialCircle from "./RadialCircle"
-import { Upload, Desktop, Globe } from "./ModalSvgs"
 
 const FrontPage = () => (
   <Container maxW={"3xl"}>
@@ -21,8 +20,14 @@ const FrontPage = () => (
       spacing={{ base: 8, md: 14 }}
       py={{ base: 20, md: 36 }}
     >
-      <Heading size="4xl">MuViCo</Heading>{" "}
-      <SimpleGrid justifyContent={"center"}>
+      <Heading
+        size="4xl"
+        bgGradient="linear(to-r, pink, purple.500)"
+        bgClip="text"
+      >
+        MuViCo
+      </Heading>{" "}
+      <SimpleGrid justifyContent={"center"} mb={5}>
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 30, repeat: Infinity }}
@@ -30,7 +35,7 @@ const FrontPage = () => (
           <RadialCircle />
         </motion.div>
       </SimpleGrid>
-      <Text color={"white.500"}>Music Visualisazation for Concerts</Text>
+      <Text color={"white.500"}>Music Visualization in Concerts</Text>
       <SimpleGrid
         spacing={4}
         templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
@@ -38,23 +43,14 @@ const FrontPage = () => (
         <InfoCard
           title="Ease of use"
           description="Create a presentation in just a few clicks"
-          modalTitle="Ease of use"
-          modalDesc="Add your own images or gifs to the presentation and decide the order of the cues. It's that simple!"
-          modalSvg={<Upload />}
         />
         <InfoCard
-          title="Multiple screens"
-          description="Control multiple screens at once"
-          modalTitle="Multiple screens"
-          modalDesc="Traverse through multiple screens at once using the unique cue system. Control the visuals on the fly with just one device!"
-          modalSvg={<Desktop />}
+          title="Show mode"
+          description="Create a presentation in just a few clicks"
         />
         <InfoCard
           title="Remote access"
-          description="Your presentations available on the go"
-          modalTitle="Remote access"
-          modalDesc="MuViCo provides access to your presentations from anywhere. Log in to your account and access your presentations from any device with an internet connection. This makes sharing your presentations between devices easy and convenient."
-          modalSvg={<Globe />}
+          description="Create a presentation in just a few clicks"
         />
       </SimpleGrid>
     </Stack>
