@@ -1,5 +1,14 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import { Routes, Route, Navigate } from "react-router-dom"
+import {
+  RouterProvider,
+  Route,
+  createBrowserRouter,
+  createRoutesFromElements,
+  Routes,
+  Navigate,
+  Outlet,
+} from "react-router-dom"
+
 import { useState, useEffect } from "react"
 
 import theme from "./lib/theme"
@@ -61,8 +70,18 @@ const App = () => {
           </Routes>
         </Container>
       </Box>
+      <Outlet />
     </ChakraProvider>
   )
 }
+
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<App />} />
+  )
+
+)
+
+const Router = () => <RouterProvider router={router} />
 
 export default App
