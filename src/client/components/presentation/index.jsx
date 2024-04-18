@@ -288,7 +288,10 @@ const PresentationPage = ({ userId }) => {
   useEffect(() => {
     const handleKeyUp = (e) => {
       if (e.key === "ArrowRight") {
-        updateScreens(presentationInfo.cues)
+        updateScreens(presentationInfo.cues, "Next")
+      }
+      if (e.key === "ArrowLeft") {
+        updateScreens(presentationInfo.cues, "Previous")
       }
     }
 
