@@ -4,7 +4,6 @@ import { Button, Flex } from "@chakra-ui/react"
 import { useNodesState, useEdgesState } from "reactflow"
 
 import "reactflow/dist/style.css"
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 import presentationService from "../../services/presentation"
 
@@ -13,62 +12,6 @@ import FlowMap from "./FlowMap"
 import Toolbox from "./ToolBox"
 
 const screenCount = 4
-<<<<<<< HEAD
-const nodeTypes = {
-  buttonNode: ButtonNode,
-  screenNode: ScreenNode,
-}
-
-export const ScreenButtons = ({ openWindow, closeWindow, screens }) => (
-  <>
-    {[...Array(screenCount)].map((_, index) => {
-      if (screens[index]) {
-        return (
-          <Button
-            colorScheme="pink"
-            key={index + 1}
-            onClick={() => closeWindow(index + 1)}
-          >
-            Close screen: {index + 1}
-          </Button>
-        )
-      }
-      return (
-        <Button
-          colorScheme="purple"
-          key={index + 1}
-          onClick={() => openWindow(index + 1)}
-        >
-          Open screen: {index + 1}
-        </Button>
-      )
-    })}
-  </>
-)
-
-export const ChangeCueButton = ({ cues, updateScreen, direction }) => (
-  <>
-    {direction === "Previous" ? (
-      <IconButton
-        aria-label="Previous Cue"
-        icon={<ChevronLeftIcon />}
-        onClick={() => updateScreen(cues, direction)}
-        bg="purple"
-        size="md"
-      />
-    ) : (
-      <IconButton
-        aria-label="Next Cue"
-        icon={<ChevronRightIcon />}
-        onClick={() => updateScreen(cues, direction)}
-        bg="purple"
-        size="md"
-      />
-    )}
-  </>
-)
-=======
->>>>>>> d4cd10e (refactored the index file of presentation page)
 
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
@@ -231,8 +174,8 @@ const PresentationPage = ({ userId }) => {
                       screensList={screensList}
                       setScreensList={setScreensList}
                       presentationInfo={presentationInfo}
-                      setCueIndex={setCueIndex}
                       cueIndex={cueIndex}
+                      setCueIndex={setCueIndex}
                     />
                   </>
                 )}

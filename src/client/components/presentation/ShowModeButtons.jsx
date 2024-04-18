@@ -38,7 +38,7 @@ export const ChangeCueButton = ({ updateScreen, direction }) => (
         aria-label="Previous Cue"
         icon={<ChevronLeftIcon />}
         onClick={() => updateScreen(direction)}
-        bg="purple"
+        colorScheme="purple"
         size="md"
       />
     ) : (
@@ -46,7 +46,7 @@ export const ChangeCueButton = ({ updateScreen, direction }) => (
         aria-label="Next Cue"
         icon={<ChevronRightIcon />}
         onClick={() => updateScreen(direction)}
-        bg="purple"
+        colorScheme="purple"
         size="md"
       />
     )}
