@@ -38,7 +38,9 @@ export const PresentationsGrid = ({
   handlePresentationClick,
 }) => (
   <>
-    <Heading mb={4}>Presentations</Heading>
+    <h1 align="center" style={{ padding: "30px" }}>
+      Presentations
+    </h1>
     <SimpleGrid columns={[1, 2, 3]} gap={5}>
       {presentations.map((presentation, index) => (
         <motion.div

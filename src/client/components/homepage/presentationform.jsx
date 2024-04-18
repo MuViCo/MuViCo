@@ -22,10 +22,9 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
 
   return (
     <Box>
-      <h2>Create new</h2>
       <form onSubmit={addPresentation}>
         <FormControl>
-          <FormLabel htmlFor="name" mb={0} fontWeight="bold">
+          <FormLabel htmlFor="name" mb={3} fontWeight="bold">
             Name
           </FormLabel>
           <Input
@@ -35,8 +34,8 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setName(target.value)}
           />
         </FormControl>
-        <Flex align="center" mt={2}>
-          <Button id="create-button" type="submit" colorScheme="teal">
+        <Flex align="center" mt={2} mb={4}>
+          <Button id="create-button" type="submit" colorScheme="purple">
             create
           </Button>
           <Button id="cancel-button" ml={2} onClick={onCancel}>
