@@ -22,7 +22,7 @@ const Toolbox = ({ addCue }) => {
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerCloseButton />
+          <DrawerCloseButton zIndex={1} />
           <DrawerBody>
             <CuesForm addCue={addCue} onClose={onClose} />
           </DrawerBody>
