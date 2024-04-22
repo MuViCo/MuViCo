@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex } from "@chakra-ui/react"
+import { Button, Flex, useToast } from "@chakra-ui/react"
 import { useNodesState, useEdgesState } from "reactflow"
 
 import "reactflow/dist/style.css"
@@ -24,6 +24,7 @@ const PresentationPage = ({ userId }) => {
   const [cueIndex, setCueIndex] = useState(0)
 
   const navigate = useNavigate()
+  const toast = useToast()
 
   const handleShowMode = () => {
     setShowMode(!showMode)
@@ -122,7 +123,14 @@ const PresentationPage = ({ userId }) => {
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      alert("Cue with same index and screen already exists") // eslint-disable-line no-alert
+      toast({
+        title: "Cue already exists",
+        description: `Cue with index ${index} already exists on screen ${screen}`,
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
       return
     }
 
@@ -139,6 +147,14 @@ const PresentationPage = ({ userId }) => {
     const updatedPresentation = await presentationService.get(id)
     setPresentationInfo(updatedPresentation)
     handleNodeChange(updatedPresentation)
+    toast({
+      title: "Cue added",
+      description: `Cue ${cueName} added to screen ${screen}`,
+      status: "success",
+      position: "top",
+      duration: 3000,
+      isClosable: true,
+    })
   }
 
   const deletePresentation = async () => {
