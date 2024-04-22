@@ -1,60 +1,60 @@
 import {
-	FormControl,
-	NumberInput,
-	NumberInputField,
-	NumberInputStepper,
-	NumberIncrementStepper,
-	FormHelperText,
-	NumberDecrementStepper,
-	Input,
-	Button,
-	Heading,
-	Divider,
+  FormControl,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  FormHelperText,
+  NumberDecrementStepper,
+  Input,
+  Button,
+  Heading,
+  Divider,
 } from "@chakra-ui/react"
 import { teal } from "@mui/material/colors"
 import { useState } from "react"
 import blankImage from "../../public/blank.png"
 
 const CuesForm = ({ addCue }) => {
-	const [file, setFile] = useState(null)
-	const [fileName, setFileName] = useState("")
-	const [index, setIndex] = useState(0)
-	const [cueName, setCueName] = useState("")
-	const [screen, setScreen] = useState(0)
+  const [file, setFile] = useState(null)
+  const [fileName, setFileName] = useState("")
+  const [index, setIndex] = useState(0)
+  const [cueName, setCueName] = useState("")
+  const [screen, setScreen] = useState(0)
 
-	const onAddCue = (event) => {
-		event.preventDefault()
-		addCue({ file, index, cueName, screen, fileName })
-		setFile(null)
-		setFileName("")
-		setCueName("")
-		setIndex(0)
-		setScreen(0)
-	}
+  const onAddCue = (event) => {
+    event.preventDefault()
+    addCue({ file, index, cueName, screen, fileName })
+    setFile(null)
+    setFileName("")
+    setCueName("")
+    setIndex(0)
+    setScreen(0)
+  }
 
-	const fileSelected = (event) => {
-		const selected = event.target.files[0]
-		if (selected) {
-			setFile(selected)
-			setFileName(selected.name)
-		} else {
-			setFile(blankImage)
-			setFileName("blank.png")
-		}
-	}
-	const [isButtonDisabled, setButtonDisabled] = useState(false)
+  const fileSelected = (event) => {
+    const selected = event.target.files[0]
+    if (selected) {
+      setFile(selected)
+      setFileName(selected.name)
+    } else {
+      setFile(blankImage)
+      setFileName("blank.png")
+    }
+  }
+  const [isButtonDisabled, setButtonDisabled] = useState(false)
 
-	const handleAdminButtonClick = () => {
-		const user = window.localStorage.getItem("user")
-		console.log(user)
-		if (user.isAdmin) {
-			setButtonDisabled(true)
-		} else {
-			setButtonDisabled(false)
-		}
-	}
+  const handleAdminButtonClick = () => {
+    const user = window.localStorage.getItem("user")
+    console.log(user)
+    if (user.isAdmin) {
+      setButtonDisabled(true)
+    } else {
+      setButtonDisabled(false)
+    }
+  }
 
-	return (
+  return (
 		<form onSubmit={onAddCue}>
 			<FormControl as="fieldset">
 				<Heading size="md">Add cue</Heading>
@@ -114,7 +114,7 @@ const CuesForm = ({ addCue }) => {
 				Submit
 			</Button>
 		</form>
-	)
+  )
 }
 
 export default CuesForm

@@ -1,40 +1,40 @@
 import { Link, useNavigate } from "react-router-dom" // Add useNavigate
 import {
-	Container,
-	Box,
-	Heading,
-	Flex,
-	Button,
-	Menu,
-	Tooltip,
-	MenuButton,
-	MenuList,
-	Text,
+  Container,
+  Box,
+  Heading,
+  Flex,
+  Button,
+  Menu,
+  Tooltip,
+  MenuButton,
+  MenuList,
+  Text,
 } from "@chakra-ui/react"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
 
 const NavBar = ({ user, setUser }) => {
-	const navigate = useNavigate() // Define navigate function
+  const navigate = useNavigate() // Define navigate function
 
-	const onLogin = (userJSON) => {
-		setUser(userJSON)
-		navigate("/home")
-	}
+  const onLogin = (userJSON) => {
+    setUser(userJSON)
+    navigate("/home")
+  }
 
-	const onSignup = (userJSON) => {
-		setUser(userJSON)
-		navigate("/home")
-	}
+  const onSignup = (userJSON) => {
+    setUser(userJSON)
+    navigate("/home")
+  }
 
-	const handleLogout = () => {
-		window.localStorage.removeItem("user")
-		setUser(null)
-		navigate("/")
-	}
+  const handleLogout = () => {
+    window.localStorage.removeItem("user")
+    setUser(null)
+    navigate("/")
+  }
 
-	return (
+  return (
 		<Box
 			position="fixed"
 			as="nav"
@@ -109,7 +109,7 @@ const NavBar = ({ user, setUser }) => {
 				</Box>
 			</Container>
 		</Box>
-	)
+  )
 }
 
 export default NavBar

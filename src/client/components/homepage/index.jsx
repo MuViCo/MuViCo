@@ -1,10 +1,10 @@
 import {
-	Container,
-	SimpleGrid,
-	Button,
-	Grid,
-	GridItem,
-	Heading,
+  Container,
+  SimpleGrid,
+  Button,
+  Grid,
+  GridItem,
+  Heading,
 } from "@chakra-ui/react"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
@@ -13,8 +13,8 @@ import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 
 export const PresentationsGrid = ({
-	presentations,
-	handlePresentationClick,
+  presentations,
+  handlePresentationClick,
 }) => (
 	<>
 		<Heading>Presentations</Heading>
@@ -52,10 +52,10 @@ export const AdminControls = ({ isAdmin, navigate }) => (
 )
 
 export const CreatePresentation = ({
-	createPresentation,
-	togglableRef,
-	handleCancel,
-	handleConnectionsClick,
+  createPresentation,
+  togglableRef,
+  handleCancel,
+  handleConnectionsClick,
 }) => (
 	<SimpleGrid columns={[1, 2, 3]} gap={10}>
 		<GridItem>
@@ -84,52 +84,43 @@ export const CreatePresentation = ({
 )
 
 const HomePage = ({ user }) => {
-	const [presentations, setPresentations] = useState([])
-	const navigate = useNavigate()
-	const togglableRef = useRef(null)
-	useEffect(() => {
-		const getPresentationData = async () => {
-			try {
-				const updatedPresentations = await presentationService.getAll()
-				setPresentations(updatedPresentations)
-			} catch (error) {
-				if (error.response.status === 401) {
-					window.localStorage.removeItem("user")
-					navigate("/")
-				} else {
-					console.log("virhe")
-				}
-			}
-		}
-		getPresentationData()
-	}, [])
+  const [presentations, setPresentations] = useState([])
+  const navigate = useNavigate()
+  const togglableRef = useRef(null)
+  useEffect(() => {
+    const getPresentationData = async () => {
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+    }
+    getPresentationData()
+  }, [])
 
-	const createPresentation = async (presentationObject) => {
-		try {
-			await presentationService.create(presentationObject)
-			const updatedPresentations = await presentationService.getAll()
-			setPresentations(updatedPresentations)
-			const presentationId =
+  const createPresentation = async (presentationObject) => {
+    try {
+      await presentationService.create(presentationObject)
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+      const presentationId =
 				updatedPresentations[updatedPresentations.length - 1].id
-			navigate(`/presentation/${presentationId}`)
-		} catch (error) {
-			console.error("Error creating presentation:", error)
-		}
-	}
+      navigate(`/presentation/${presentationId}`)
+    } catch (error) {
+      console.error("Error creating presentation:", error)
+    }
+  }
 
-	const handlePresentationClick = (presentationId) => {
-		navigate(`/presentation/${presentationId}`)
-	}
+  const handlePresentationClick = (presentationId) => {
+    navigate(`/presentation/${presentationId}`)
+  }
 
-	const handleConnectionsClick = () => {
-		navigate("/connections")
-	}
+  const handleConnectionsClick = () => {
+    navigate("/connections")
+  }
 
-	const handleCancel = () => {
-		togglableRef.current.toggleVisibility()
-	}
+  const handleCancel = () => {
+    togglableRef.current.toggleVisibility()
+  }
 
-	return (
+  return (
 		<Container maxW="container.lg">
 			<div>
 				<AdminControls isAdmin={user.isAdmin} navigate={navigate} />
@@ -145,7 +136,7 @@ const HomePage = ({ user }) => {
 				/>
 			</div>
 		</Container>
-	)
+  )
 }
 
 export default HomePage

@@ -1,9 +1,9 @@
 import {
-	Container,
-	Box,
-	Heading,
-	useColorModeValue,
-	Spacer,
+  Container,
+  Box,
+  Heading,
+  useColorModeValue,
+  Spacer,
 } from "@chakra-ui/react"
 
 const FrontPage = () => (
