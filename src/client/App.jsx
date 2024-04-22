@@ -1,12 +1,8 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
 import {
-  RouterProvider,
   Route,
-  createBrowserRouter,
-  createRoutesFromElements,
   Routes,
   Navigate,
-  Outlet,
 } from "react-router-dom"
 
 import { useState, useEffect } from "react"
@@ -70,18 +66,8 @@ const App = () => {
           </Routes>
         </Container>
       </Box>
-      <Outlet />
     </ChakraProvider>
   )
 }
-
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="/" element={<App />} />
-  )
-
-)
-
-const Router = () => <RouterProvider router={router} />
 
 export default App
