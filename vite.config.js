@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import dotenv from 'dotenv'
+import { resolve } from 'path'
 
 dotenv.config()
 
@@ -28,5 +29,8 @@ export default defineConfig({
     host: true,
     strictPort: true,
     port: devPort || 8000,
+  },
+  build: {
+    manifest: true,
   },
 })
