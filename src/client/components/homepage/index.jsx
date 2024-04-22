@@ -1,37 +1,74 @@
 import {
   Container,
   SimpleGrid,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
   Button,
   Grid,
   GridItem,
+  Image,
   Heading,
+  Center,
 } from "@chakra-ui/react"
+import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
 import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 
+// Function to generate random color values within a certain range, focusing on darker shades of purple
+const randomColor = () => {
+  const red = 200 // R: 218
+  const blue = 255 // B: 255
+  const green = Math.floor(Math.random() * 175) // G: Random value between 0 and 100
+  return `rgba(${red}, ${green}, ${blue}, 1)`
+}
+
+// Function to generate a random linear gradient
+const randomLinearGradient = () => {
+  const color1 = randomColor()
+  const color2 = randomColor()
+  return `linear-gradient(0deg, ${color1} 0%, ${color2} 100%)`
+}
 export const PresentationsGrid = ({
   presentations,
   handlePresentationClick,
 }) => (
   <>
-    <Heading>Presentations</Heading>
+    <h1 align="center" style={{ padding: "30px" }}>
+      Presentations
+    </h1>
     <SimpleGrid columns={[1, 2, 3]} gap={5}>
-      {presentations.map((presentation) => (
-        <Button
+      {presentations.map((presentation, index) => (
+        <motion.div
           key={presentation.id}
-          onClick={() => handlePresentationClick(presentation.id)}
-          height="50px"
-          width="200px"
-          // flexDirection="column"
-          // justifyContent="flex-start"
-          // alignItems="center"
-          // paddingY="20px"
+          whileHover={{ scale: 1.05 }}
+          onHoverStart={(e) => {}}
+          onHoverEnd={(e) => {}}
         >
-          {presentation.name}
-        </Button>
+          <Card
+            height="280px"
+            onClick={() => handlePresentationClick(presentation.id)}
+            cursor="pointer"
+            justifyContent="center"
+            textAlign="center"
+            bg={randomLinearGradient()}
+          >
+            <CardHeader>
+              <Heading
+                size="md"
+                color={"white"}
+                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
+              >
+                {presentation.name}
+              </Heading>
+            </CardHeader>
+            {/* <CardBody>{assertImage(index)}</CardBody> */}
+          </Card>
+        </motion.div>
       ))}
     </SimpleGrid>
   </>
@@ -55,7 +92,6 @@ export const CreatePresentation = ({
   createPresentation,
   togglableRef,
   handleCancel,
-  handleConnectionsClick,
 }) => (
   <SimpleGrid columns={[1, 2, 3]} gap={10}>
     <GridItem>
@@ -69,16 +105,6 @@ export const CreatePresentation = ({
           onCancel={handleCancel}
         />
       </Togglable>
-    </GridItem>
-    <GridItem>
-      <Button
-        width="200px"
-        height="40px"
-        ml={-10}
-        onClick={() => handleConnectionsClick()}
-      >
-        Connections
-      </Button>
     </GridItem>
   </SimpleGrid>
 )
@@ -112,10 +138,6 @@ const HomePage = ({ user }) => {
     navigate(`/presentation/${presentationId}`)
   }
 
-  const handleConnectionsClick = () => {
-    navigate("/connections")
-  }
-
   const handleCancel = () => {
     togglableRef.current.toggleVisibility()
   }
@@ -128,7 +150,6 @@ const HomePage = ({ user }) => {
           createPresentation={createPresentation}
           togglableRef={togglableRef}
           handleCancel={handleCancel}
-          handleConnectionsClick={handleConnectionsClick}
         />
         <PresentationsGrid
           presentations={presentations}

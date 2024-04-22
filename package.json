@@ -6,7 +6,7 @@
   "scripts": {
     "start": "docker compose up",
     "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite --host\"",
-    "prod": "node src/server/index.js",
+    "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom",
@@ -16,8 +16,8 @@
     "test-all": "npm run test-frontend && npm run test-backend",
     "test-coverage": "npm run test-frontend && codecov && npm run test-backend && codecov",
     "setup-e2e": "concurrently \"vite --host\"  \"NODE_ENV=test node src/server/index.js\"",
-    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --ui\"",
-    "e2e:report": "playwright show-report"
+    "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --project chromium --ui\"",
+    "e2e:report": "playwright show-report && codecov"
   },
   "jest": {
     "globalTeardown": "./src/server/tests/teardown.js",
@@ -58,7 +58,7 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "formik": "^2.4.5",
-    "framer-motion": "^11.0.3",
+    "framer-motion": "^11.0.28",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.3.0",
     "mongoose": "^8.0.0",

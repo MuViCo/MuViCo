@@ -30,8 +30,18 @@ export const LoginForm = ({ onSubmit, error }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.username && !FormData.password) {
+    if (!formData.username && !formData.password) {
       setSubmissionError("Username and password required")
+      return
+    }
+
+    if (!formData.username) {
+      setSubmissionError("Username required")
+      return
+    }
+
+    if (!formData.password) {
+      setSubmissionError("Password required")
       return
     }
 
@@ -102,7 +112,7 @@ export const LoginForm = ({ onSubmit, error }) => {
         <Box mt={4} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             data-testid="login_inform"
-            colorScheme="teal"
+            colorScheme="purple"
             type="submit"
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}

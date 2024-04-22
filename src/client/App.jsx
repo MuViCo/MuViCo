@@ -1,5 +1,10 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import { Routes, Route, Navigate } from "react-router-dom"
+import {
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom"
+
 import { useState, useEffect } from "react"
 
 import theme from "./lib/theme"
@@ -9,7 +14,6 @@ import NavBar from "./components/navbar"
 import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
 import PresentationPage from "./components/presentation"
-import ConnectionPage from "./components/connectionpage"
 import TermsPage from "./components/termspage"
 import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
@@ -50,10 +54,6 @@ const App = () => {
                 user ? <PresentationPage userId={user.id} /> : <Navigate to="/" />
               }
             />
-            <Route
-              path="/connections"
-              element={user ? <ConnectionPage /> : <Navigate to="/" />}
-            ></Route>
             <Route
               path="/users"
               element={user && user.isAdmin ? <UsersList /> : <Navigate to="/" />}

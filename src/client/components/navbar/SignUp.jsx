@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import * as yup from "yup"
 import {
   Container,
@@ -34,7 +35,7 @@ const validationSchema = yup.object().shape({
     .required("Password confirmation is required"),
 })
 
-export const SignUpForm = ({ onSubmit, error }) => {
+export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
   const usernameRef = useRef(null)
@@ -73,19 +74,19 @@ export const SignUpForm = ({ onSubmit, error }) => {
         if (e.key === "Tab") {
           termsRef.current.focus()
         } else {
-          handleSubmit(e) // Submit the form
+          handleSubmit(e)
         }
       } else if (e.target === termsRef.current) {
         if (e.key === "Tab") {
           submitButtonRef.current.focus()
         } else {
-          window.location.href = "/terms" // Redirect to /terms
+          window.location.navigate = "/terms" // Redirect to /terms
         }
       } else if (e.target === submitButtonRef.current) {
         if (e.key === "Tab") {
           usernameRef.current.focus()
         } else {
-          handleSubmit(e) // Submit the form
+          handleSubmit(e)
         }
       }
     }
@@ -151,11 +152,12 @@ export const SignUpForm = ({ onSubmit, error }) => {
             <p>
               By clicking Sign up, you agree to our{" "}
               <Link
-                color="teal.500"
-                href="/terms"
-                isExternal
+                color="purple.200"
                 ref={termsRef}
+                onClick={handleTermsClick}
+                style={{ cursor: "pointer" }}
                 onKeyDown={handleKeyDown}
+                data-testid="terms_link"
               >
                 Terms of Service
               </Link>
@@ -166,7 +168,7 @@ export const SignUpForm = ({ onSubmit, error }) => {
         <Box mt={-2} mb={-2} display="flex" justifyContent="flex-start">
           <Button
             data-testid="signup_inform"
-            colorScheme="teal"
+            colorScheme="purple"
             type="submit"
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}
@@ -181,7 +183,11 @@ export const SignUpForm = ({ onSubmit, error }) => {
 }
 const SignUp = ({ onSignup }) => {
   const [error, setError] = useState(null)
+  const navigate = useNavigate()
 
+  const handleTermsClick = () => {
+    navigate("/terms")
+  }
   const onSubmit = async ({ username, password }) => {
     try {
       await signupService.signup({ username, password })
@@ -195,7 +201,13 @@ const SignUp = ({ onSignup }) => {
     }
   }
 
-  return <SignUpForm onSubmit={onSubmit} error={error} />
+  return (
+    <SignUpForm
+      onSubmit={onSubmit}
+      error={error}
+      handleTermsClick={handleTermsClick}
+    />
+  )
 }
 
 export default SignUp

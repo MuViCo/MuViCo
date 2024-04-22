@@ -1,3 +1,5 @@
+import { loginWith } from "./helper"
+
 const { test, describe, expect, beforeEach } = require("@playwright/test")
 
 describe("Frontpage", () => {
@@ -5,7 +7,7 @@ describe("Frontpage", () => {
     await request.post("http:localhost:8000/api/testing/reset")
     await request.post("http:localhost:8000/api/signup", {
       data: {
-        username: "ttttt",
+        username: "testuser",
         password: "test",
       },
     })
@@ -25,10 +27,8 @@ describe("Frontpage", () => {
   })
 
   test("user can login", async ({ page }) => {
-    await page.getByRole("button", { name: "Login" }).click()
-    await page.getByTestId("username_login").fill("testuser")
-    await page.getByTestId("password_login").fill("test")
-    await page.getByTestId("login_inform").click()
-    await expect(page).toHaveText("/Presentations/")
+    loginWith(page, "testuser", "test")
+    await expect(page).toHaveURL(/\/home/)
+    await page.getByRole("button", { name: "Logout" }).click()
   })
 })

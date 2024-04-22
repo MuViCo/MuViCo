@@ -2,33 +2,69 @@ import {
   Container,
   Box,
   Heading,
-  useColorModeValue,
-  Spacer,
+  SimpleGrid,
+  Stack,
+  Text,
+  Image,
 } from "@chakra-ui/react"
 
+import { motion } from "framer-motion"
+import InfoCard from "./Card"
+import RadialCircle from "./RadialCircle"
+import { Upload, Desktop, Globe } from "./ModalSvgs"
+
 const FrontPage = () => (
-	<Container>
-		<Box
-			borderRadius="lg"
-			mb={6}
-			p={3}
-			textAlign="center"
-			bg={useColorModeValue("whiteAlpha.500", "whiteAlpha.200")}
-			css={{ backdropFilter: "blur(10px)" }}
-		>
-			<p>
-				MuviCo is a multimodal application designed to provide versatile visual
-				elements and support functions for live music performances.The purpose of
-				the application is to bring an additional dimension to music experiences
-				that can complement and enrich the experience for both listeners and
-				performers.The program is browser-based and intended to operate on
-				computers. The application displays lyrics, images, or AI-generated visuals
-				to enhance the musical experience. Additionally, it reflects the lyrics to
-				support the singer. All performances can be pre-planned or guided in
-				real-time.
-			</p>
-		</Box>
-	</Container>
+  <Container maxW={"3xl"}>
+    <Stack
+      as={Box}
+      textAlign={"center"}
+      spacing={{ base: 8, md: 14 }}
+      py={{ base: 20, md: 36 }}
+    >
+      <Heading
+        size="4xl"
+        bgGradient="linear(to-r, pink, purple.500)"
+        bgClip="text"
+      >
+        MuViCo
+      </Heading>{" "}
+      <SimpleGrid justifyContent={"center"} mb={5}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 30, repeat: Infinity }}
+        >
+          <RadialCircle />
+        </motion.div>
+      </SimpleGrid>
+      <Text color={"white.500"}>Music Visualization in Concerts</Text>
+      <SimpleGrid
+        spacing={4}
+        templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
+      >
+        <InfoCard
+          title="Ease of use"
+          description="Create a presentation in just a few clicks"
+          modalTitle="Ease of use"
+          modalDesc="Add your own images or gifs to the presentation and decide the order of the cues. It's that simple!"
+          modalSvg={<Upload />}
+        />
+        <InfoCard
+          title="Multiple screens"
+          description="Control multiple screens at once"
+          modalTitle="Multiple screens"
+          modalDesc="Traverse through multiple screens at once using the unique cue system. Control the visuals on the fly with just one device!"
+          modalSvg={<Desktop />}
+        />
+        <InfoCard
+          title="Remote access"
+          description="Your presentations available on the go"
+          modalTitle="Remote access"
+          modalDesc="MuViCo provides access to your presentations from anywhere. Log in to your account and access your presentations from any device with an internet connection. This makes sharing your presentations between devices easy and convenient."
+          modalSvg={<Globe />}
+        />
+      </SimpleGrid>
+    </Stack>
+  </Container>
 )
 
 export default FrontPage

@@ -1,8 +1,12 @@
 const supertest = require("supertest")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
+const multer = require("multer")
 
 const app = require("../app")
+const { describe } = require("node:test")
+const fs = require("fs")
+const path = require("path")
 
 const api = supertest(app)
 
@@ -46,8 +50,24 @@ describe("test presentation", () => {
     test(" /api/presentation/:id", async () => {
       await api
         .delete(`/api/presentation/${testPresentationId}`)
-        .set("Authorization", authHeader)
         .expect(204)
+    })
+  })
+
+  describe("PUT /api/presentation/:id", () => {
+    test("update presentation", async () => {
+      const imageFilePath = path.join(__dirname, 'mock_image.png')
+      const image = fs.readFileSync(imageFilePath)
+
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1") // Add other form fields as needed
+        .field("cueName", "Test Cue")
+        .field("screen", "1")
+        .field("fileName", "")
+        .expect(200)
     })
   })
 })
