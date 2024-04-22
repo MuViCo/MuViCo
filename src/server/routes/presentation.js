@@ -54,7 +54,7 @@ router.get("/:id", userExtractor, async (req, res) => {
     const presentation = await Presentation.findById(req.params.id)
     if (
       presentation &&
-			(presentation.user.toString() === user._id.toString() || user.isAdmin)
+      (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       presentation.files = await Promise.all(
         presentation.cues.map(async (cue) => {
@@ -119,7 +119,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
-        .status(500)
+        .status(401)
         .json({ error: "Maximum number of files reached (10)" })
     }
 

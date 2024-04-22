@@ -143,23 +143,36 @@ const PresentationPage = ({ userId }) => {
     } else {
       formData.append("image", file)
     }
-    await presentationService.addCue(id, formData)
-    const updatedPresentation = await presentationService.get(id)
-    setPresentationInfo(updatedPresentation)
-    handleNodeChange(updatedPresentation)
-    toast({
-      title: "Cue added",
-      description: `Cue ${cueName} added to screen ${screen}`,
-      status: "success",
-      position: "top",
-      duration: 3000,
-      isClosable: true,
-    })
+    try {
+      await presentationService.addCue(id, formData)
+      const updatedPresentation = await presentationService.get(id)
+      setPresentationInfo(updatedPresentation)
+      handleNodeChange(updatedPresentation)
+      toast({
+        title: "Cue added",
+        description: `Cue ${cueName} added to screen ${screen}`,
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response.data.error,
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
 
   const deletePresentation = async () => {
-    if (!window.confirm("Are you sure you want to delete this presentation?"))
+    if (!window.confirm("Are you sure you want to delete this presentation?")) {
+      //eslint-disable-line
       return
+    }
     await presentationService.remove(id)
     navigate("/home")
   }
