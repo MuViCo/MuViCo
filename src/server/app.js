@@ -44,12 +44,11 @@ app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
 
-app.use(express.static(path.join(__dirname, "public")))
-
 if (inProduction) {
   const DIST_PATH = path.resolve(__dirname, "../../dist/")
   const INDEX_PATH = path.resolve(DIST_PATH, "index.html")
 
+  app.use(express.static(path.join(__dirname, "public")))
   app.use(express.static(DIST_PATH))
   app.get("*", (_, res) => res.sendFile(INDEX_PATH))
 }
