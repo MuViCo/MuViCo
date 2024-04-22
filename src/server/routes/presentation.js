@@ -139,10 +139,9 @@ router.delete("/:id", async (req, res) => {
 router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 	try {
 		const { id } = req.params
+		const { file, user } = req
 		const fileId = generateFileId()
-		const { file } = req
-		const { user } = req
-		console.log(req.user)
+
 		if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
 			return res.status(400).json({ error: "Missing required fields" })
 		}
@@ -151,13 +150,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 		const cuenumber = presentation.cues.length
 		console.log(cuenumber, "number")
 
-		if (presentation.cues.length >= 10 && !req.user.isAdmin) {
+		if (presentation.cues.length >= 10 && !user.isAdmin) {
 			return res
 				.status(500)
 				.json({ error: "Maximum number of files reached (10)" })
 		}
 
-		if (file.size > 1 * 1024 * 1024 && !req.user.isAdmin) {
+		if (file.size > 1 * 1024 * 1024 && !user.isAdmin) {
 			return res.status(400).json({ error: "File size exceeds 1 MB limit" })
 		}
 

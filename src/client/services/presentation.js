@@ -29,12 +29,13 @@ const remove = async (id) => {
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
 const addCue = async (id, formData) => {
-	const response = await axios.put(`${baseUrl}/${id}`, formData, {
+	const config = {
 		headers: {
 			"Content-Type": "multipart/form-data",
 			Authorization: `bearer ${getToken()}`,
 		},
-	})
+	}
+	const response = await axios.put(`${baseUrl}/${id}`, formData, config)
 	return response.data
 }
 
