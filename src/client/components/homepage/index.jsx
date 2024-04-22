@@ -1,16 +1,16 @@
 import {
-	Container,
-	SimpleGrid,
-	Card,
-	CardHeader,
-	CardBody,
-	CardFooter,
-	Button,
-	Grid,
-	GridItem,
-	Image,
-	Heading,
-	Center,
+  Container,
+  SimpleGrid,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Button,
+  Grid,
+  GridItem,
+  Image,
+  Heading,
+  Center,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -21,21 +21,21 @@ import Togglable from "../utils/Togglable"
 
 // Function to generate random color values within a certain range, focusing on darker shades of purple
 const randomColor = () => {
-	const red = 200 // R: 218
-	const blue = 255 // B: 255
-	const green = Math.floor(Math.random() * 175) // G: Random value between 0 and 100
-	return `rgba(${red}, ${green}, ${blue}, 1)`
+  const red = 200 // R: 218
+  const blue = 255 // B: 255
+  const green = Math.floor(Math.random() * 175) // G: Random value between 0 and 100
+  return `rgba(${red}, ${green}, ${blue}, 1)`
 }
 
 // Function to generate a random linear gradient
 const randomLinearGradient = () => {
-	const color1 = randomColor()
-	const color2 = randomColor()
-	return `linear-gradient(0deg, ${color1} 0%, ${color2} 100%)`
+  const color1 = randomColor()
+  const color2 = randomColor()
+  return `linear-gradient(0deg, ${color1} 0%, ${color2} 100%)`
 }
 export const PresentationsGrid = ({
-	presentations,
-	handlePresentationClick,
+  presentations,
+  handlePresentationClick,
 }) => (
 	<>
 		<h1 align="center" style={{ padding: "30px" }}>
@@ -89,9 +89,9 @@ export const AdminControls = ({ isAdmin, navigate }) => (
 )
 
 export const CreatePresentation = ({
-	createPresentation,
-	togglableRef,
-	handleCancel,
+  createPresentation,
+  togglableRef,
+  handleCancel,
 }) => (
 	<SimpleGrid columns={[1, 2, 3]} gap={10}>
 		<GridItem>
@@ -110,39 +110,39 @@ export const CreatePresentation = ({
 )
 
 const HomePage = ({ user }) => {
-	const [presentations, setPresentations] = useState([])
-	const navigate = useNavigate()
-	const togglableRef = useRef(null)
-	useEffect(() => {
-		const getPresentationData = async () => {
-			const updatedPresentations = await presentationService.getAll()
-			setPresentations(updatedPresentations)
-		}
-		getPresentationData()
-	}, [])
+  const [presentations, setPresentations] = useState([])
+  const navigate = useNavigate()
+  const togglableRef = useRef(null)
+  useEffect(() => {
+    const getPresentationData = async () => {
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+    }
+    getPresentationData()
+  }, [])
 
-	const createPresentation = async (presentationObject) => {
-		try {
-			await presentationService.create(presentationObject)
-			const updatedPresentations = await presentationService.getAll()
-			setPresentations(updatedPresentations)
-			const presentationId =
+  const createPresentation = async (presentationObject) => {
+    try {
+      await presentationService.create(presentationObject)
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+      const presentationId =
 				updatedPresentations[updatedPresentations.length - 1].id
-			navigate(`/presentation/${presentationId}`)
-		} catch (error) {
-			console.error("Error creating presentation:", error)
-		}
-	}
+      navigate(`/presentation/${presentationId}`)
+    } catch (error) {
+      console.error("Error creating presentation:", error)
+    }
+  }
 
-	const handlePresentationClick = (presentationId) => {
-		navigate(`/presentation/${presentationId}`)
-	}
+  const handlePresentationClick = (presentationId) => {
+    navigate(`/presentation/${presentationId}`)
+  }
 
-	const handleCancel = () => {
-		togglableRef.current.toggleVisibility()
-	}
+  const handleCancel = () => {
+    togglableRef.current.toggleVisibility()
+  }
 
-	return (
+  return (
 		<Container maxW="container.lg">
 			<div>
 				<AdminControls isAdmin={user.isAdmin} navigate={navigate} />
@@ -157,7 +157,7 @@ const HomePage = ({ user }) => {
 				/>
 			</div>
 		</Container>
-	)
+  )
 }
 
 export default HomePage
