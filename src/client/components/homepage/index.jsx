@@ -115,17 +115,8 @@ const HomePage = ({ user }) => {
 	const togglableRef = useRef(null)
 	useEffect(() => {
 		const getPresentationData = async () => {
-			try {
-				const updatedPresentations = await presentationService.getAll()
-				setPresentations(updatedPresentations)
-			} catch (error) {
-				if (error.response.status === 401) {
-					window.localStorage.removeItem("user")
-					navigate("/")
-				} else {
-					console.log("virhe")
-				}
-			}
+			const updatedPresentations = await presentationService.getAll()
+			setPresentations(updatedPresentations)
 		}
 		getPresentationData()
 	}, [])
