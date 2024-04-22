@@ -9,7 +9,6 @@ const { BUCKET_NAME } = process.env
 const { BUCKET_REGION } = process.env
 const { ACCESS_KEY } = process.env
 const { SECRET_ACCESS_KEY } = process.env
-const inProduction = process.env.NODE_ENV === "production"
 
 module.exports = {
   MONGODB_URI,
@@ -19,5 +18,4 @@ module.exports = {
   BUCKET_REGION,
   ACCESS_KEY,
   SECRET_ACCESS_KEY,
-  inProduction,
 }
