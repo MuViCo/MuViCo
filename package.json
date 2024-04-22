@@ -6,7 +6,7 @@
   "scripts": {
     "start": "docker compose up",
     "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite --host\"",
-    "prod": "node src/server/index.js",
+    "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom",

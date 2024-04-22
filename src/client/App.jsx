@@ -1,5 +1,10 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import { Routes, Route, Navigate } from "react-router-dom"
+import {
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom"
+
 import { useState, useEffect } from "react"
 
 import theme from "./lib/theme"
