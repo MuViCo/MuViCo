@@ -169,10 +169,8 @@ const PresentationPage = ({ userId }) => {
   }
 
   const deletePresentation = async () => {
-    if (!window.confirm("Are you sure you want to delete this presentation?")) {
-      //eslint-disable-line
-      return
-    }
+    if (!window.confirm("Are you sure you want to delete this presentation?"))
+      return // eslint-disable-line
     await presentationService.remove(id)
     navigate("/home")
   }

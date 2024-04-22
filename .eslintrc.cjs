@@ -43,5 +43,7 @@ module.exports = {
     "comma-dangle": 0,
     "object-curly-newline": 0,
     "operator-linebreak": 0,
+    "no-alert": "off", // Disable warning for window.alert
+    "no-confirm": "off",
   },
 }
