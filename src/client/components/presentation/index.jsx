@@ -158,6 +158,8 @@ const PresentationPage = ({ userId }) => {
   }
 
   const deletePresentation = async () => {
+    if (!window.confirm("Are you sure you want to delete this presentation?"))
+      return
     await presentationService.remove(id)
     navigate("/home")
   }
