@@ -71,6 +71,7 @@ const PresentationPage = ({ userId }) => {
             id: node._id,
             type: "buttonNode",
             position: { x: node.index * 210, y: 200 + node.screen * 125 },
+            draggable: false,
             data: {
               cue: node,
             },
