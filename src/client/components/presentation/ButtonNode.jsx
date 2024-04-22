@@ -11,6 +11,7 @@ const ButtonNode = ({ data }) => {
   const [isHovered, setIsHovered] = useState(false)
 
   const handleRemove = async (cueId) => {
+    if (!window.confirm("Are you sure you want to remove this cue?")) return //eslint-disable-line
     await presentationService.removeCue(id, cueId)
     window.location.reload(false)
   }
@@ -69,7 +70,7 @@ const ButtonNode = ({ data }) => {
         )}
       </Box>
       <Handle type="source" position={Position.Right} isConnectable={true} />
-    </Box >
+    </Box>
   )
 }
 
