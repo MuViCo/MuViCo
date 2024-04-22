@@ -4,18 +4,18 @@ import getToken from "../auth"
 const baseUrl = "/api/presentation/"
 
 const get = async (id) => {
-  const config = {
-    headers: {
-      Authorization: `bearer ${getToken()}`,
-    },
-  }
-  const response = await axios.get(`${baseUrl}${id}`, config)
-  return response.data
+	const config = {
+		headers: {
+			Authorization: `bearer ${getToken()}`,
+		},
+	}
+	const response = await axios.get(`${baseUrl}${id}`, config)
+	return response.data
 }
 
 const remove = async (id) => {
-  const response = await axios.delete(`${baseUrl}/${id}`)
-  return response.data
+	const response = await axios.delete(`${baseUrl}/${id}`)
+	return response.data
 }
 
 /**
@@ -29,20 +29,23 @@ const remove = async (id) => {
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
 const addCue = async (id, formData) => {
-  const response = await axios.put(`${baseUrl}/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  })
-  return response.data
+	const response = await axios.put(`${baseUrl}/${id}`, formData, {
+		headers: {
+			"Content-Type": "multipart/form-data",
+			Authorization: `bearer ${getToken()}`,
+		},
+	})
+	return response.data
 }
 
 const removeCue = async (id, cueId) => {
-  const response = await axios.delete(`${baseUrl}/${id}/${cueId}`)
-  return response.data
+	const response = await axios.delete(`${baseUrl}/${id}/${cueId}`)
+	return response.data
 }
 
 export default {
-  get,
-  remove,
-  addCue,
-  removeCue,
+	get,
+	remove,
+	addCue,
+	removeCue,
 }

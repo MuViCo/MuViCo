@@ -142,7 +142,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 		const fileId = generateFileId()
 		const { file } = req
 		const { user } = req
-
+		console.log(req.user)
 		if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
 			return res.status(400).json({ error: "Missing required fields" })
 		}
@@ -150,13 +150,14 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 		const presentation = await Presentation.findById(id)
 		const cuenumber = presentation.cues.length
 		console.log(cuenumber, "number")
-		if (presentation.cues.length >= 10) {
+
+		if (presentation.cues.length >= 10 && !req.user.isAdmin) {
 			return res
 				.status(500)
 				.json({ error: "Maximum number of files reached (10)" })
 		}
 
-		if (file.size > 1 * 1024 * 1024) {
+		if (file.size > 1 * 1024 * 1024 && !req.user.isAdmin) {
 			return res.status(400).json({ error: "File size exceeds 1 MB limit" })
 		}
 
