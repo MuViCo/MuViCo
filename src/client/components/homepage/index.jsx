@@ -3,14 +3,10 @@ import {
   SimpleGrid,
   Card,
   CardHeader,
-  CardBody,
-  CardFooter,
   Button,
-  Grid,
   GridItem,
-  Image,
   Heading,
-  Center,
+  Text,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -67,7 +63,9 @@ export const AdminControls = ({ isAdmin, navigate }) => (
     {" "}
     {isAdmin && (
       <>
-        <h2>Admin controls</h2>
+        <Text fontSize="xl" fontWeight="bold">
+          Admin controls
+        </Text>
         <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
           <Button onClick={() => navigate("/users")}>All users</Button>
         </SimpleGrid>
@@ -132,18 +130,16 @@ const HomePage = ({ user }) => {
 
   return (
     <Container maxW="container.lg">
-      <div>
-        <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
-        <CreatePresentation
-          createPresentation={createPresentation}
-          togglableRef={togglableRef}
-          handleCancel={handleCancel}
-        />
-        <PresentationsGrid
-          presentations={presentations}
-          handlePresentationClick={handlePresentationClick}
-        />
-      </div>
+      <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
+      <CreatePresentation
+        createPresentation={createPresentation}
+        togglableRef={togglableRef}
+        handleCancel={handleCancel}
+      />
+      <PresentationsGrid
+        presentations={presentations}
+        handlePresentationClick={handlePresentationClick}
+      />
     </Container>
   )
 }
