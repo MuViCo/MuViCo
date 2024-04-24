@@ -57,6 +57,6 @@ router.get("/userspresentations/:id", userExtractor, async (req, res) => {
     return res.status(401).json({ error: "operation not permitted" })
   }
   const presentations = await Presentation.find({ user: req.params.id })
-  res.json(presentations.map((presentation) => presentation.toJSON()))
+  return res.json(presentations.map((presentation) => presentation.toJSON()))
 })
 module.exports = router
