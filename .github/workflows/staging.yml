@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        run: npm ci 
+        run: npm i 
 
       - name: Build frontend
         run: npm run build
