@@ -1,6 +1,7 @@
 const express = require("express")
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
+const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
 const router = express.Router()
@@ -51,4 +52,11 @@ router.post("/create/", async (req, res) => {
   }
 })
 
+router.get("/userspresentations/:id", userExtractor, async (req, res) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(401).json({ error: "operation not permitted" })
+  }
+  const presentations = await Presentation.find({ user: req.params.id })
+  res.json(presentations.map((presentation) => presentation.toJSON()))
+})
 module.exports = router

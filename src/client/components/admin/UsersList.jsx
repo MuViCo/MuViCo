@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 import {
   Container,
@@ -16,6 +17,7 @@ import randomLinearGradient from "../utils/randomGradient"
 
 const UsersList = () => {
   const [users, setUsers] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     adminServices.allUsers().then((allUsers) => setUsers(allUsers))
@@ -61,15 +63,30 @@ const UsersList = () => {
                 Admin
               </Text>
             ) : (
-              <Flex gap={4}>
-                {" "}
-                <Button colorScheme="purple" onClick={() => onRemove(user.id)}>
-                  Remove
+              <>
+                <Flex gap={4}>
+                  {" "}
+                  <Button
+                    colorScheme="purple"
+                    onClick={() => onRemove(user.id)}
+                  >
+                    Remove
+                  </Button>
+                  <Button
+                    colorScheme="purple"
+                    onClick={() => makeAdmin(user.id)}
+                  >
+                    Make Admin
+                  </Button>
+                </Flex>
+                <Button
+                  colorScheme="purple"
+                  mt={10}
+                  onClick={() => navigate(`/userspresentations/${user.id}`)}
+                >
+                  Presentations
                 </Button>
-                <Button colorScheme="purple" onClick={() => makeAdmin(user.id)}>
-                  Make Admin
-                </Button>
-              </Flex>
+              </>
             )}
           </Card>
         ))}

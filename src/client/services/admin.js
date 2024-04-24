@@ -13,6 +13,19 @@ const allUsers = async () => {
   return response.data
 }
 
+const usersPresentations = async (id) => {
+  const config = {
+    headers: {
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.get(
+    `${baseUrl}/userspresentations/${id}`,
+    config
+  )
+  return response.data
+}
+
 const deleteUser = async (id) => {
   const config = {
     headers: {
@@ -31,4 +44,4 @@ const makeAdmin = async (id) => {
   await axios.put(`${baseUrl}/makeadmin/${id}`, {}, config)
 }
 
-export default { allUsers, deleteUser, makeAdmin }
+export default { allUsers, deleteUser, makeAdmin, usersPresentations }
