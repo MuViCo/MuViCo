@@ -1,15 +1,12 @@
-name: Deploy to staging
+name: Test and deploy to staging
 
 on:
   push:
     branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
+      - "**"
 
 jobs:
-  build-and-push:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,14 +15,28 @@ jobs:
         with:
           node-version: "20"
       - name: Install dependencies
-        run: npm i
+        run: npm ci
       - name: Run linter
         run: npm run lint
       - name: Run unit tests
         run: |
-          npm run test-coverage
+          npm run test-all
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+      - name: Coverage reoport
+        run: bash <(curl -s https://codecov.io/bash)
+  
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: npm i 
 
       - name: Build image
         id: build-image

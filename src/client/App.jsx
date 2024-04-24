@@ -1,9 +1,5 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import {
-  Route,
-  Routes,
-  Navigate,
-} from "react-router-dom"
+import { Route, Routes, Navigate } from "react-router-dom"
 
 import { useState, useEffect } from "react"
 
@@ -17,6 +13,7 @@ import PresentationPage from "./components/presentation"
 import TermsPage from "./components/termspage"
 import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
+import UserPresentations from "./components/admin/UserPresentations"
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -51,18 +48,30 @@ const App = () => {
             <Route
               path="/presentation/:id"
               element={
-                user ? <PresentationPage userId={user.id} /> : <Navigate to="/" />
+                user ? (
+                  <PresentationPage userId={user.id} />
+                ) : (
+                  <Navigate to="/" />
+                )
               }
             />
             <Route
               path="/users"
-              element={user && user.isAdmin ? <UsersList /> : <Navigate to="/" />}
+              element={
+                user && user.isAdmin ? <UsersList /> : <Navigate to="/" />
+              }
             />
             <Route
               path="/media"
-              element={user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />}
+              element={
+                user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />
+              }
             />
             <Route path="/terms" element={<TermsPage />} />
+            <Route
+              path="/userspresentations/:id"
+              element={<UserPresentations />}
+            />
           </Routes>
         </Container>
       </Box>

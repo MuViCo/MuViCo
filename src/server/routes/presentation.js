@@ -103,14 +103,28 @@ router.delete("/:id", async (req, res) => {
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id", upload.single("image"), async (req, res) => {
+router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   try {
     const { id } = req.params
     const fileId = generateFileId()
-    const { file } = req
+    const { file, user } = req
 
     if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
       return res.status(400).json({ error: "Missing required fields" })
+    }
+
+    const presentation = await Presentation.findById(id)
+    const cuenumber = presentation.cues.length
+    console.log(cuenumber, "number")
+
+    if (presentation.cues.length >= 10 && !user.isAdmin) {
+      return res
+        .status(401)
+        .json({ error: "Maximum number of files reached (10)" })
+    }
+
+    if (file.size > 1 * 1024 * 1024 && !user.isAdmin) {
+      return res.status(400).json({ error: "File size exceeds 1 MB limit" })
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
@@ -124,8 +138,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
             file: {
               id: fileId,
               name: req.body.fileName,
-              url:
-                req.body.image === "/blank.png" ? null : "",
+              url: req.body.image === "/blank.png" ? null : "",
             },
           },
         },

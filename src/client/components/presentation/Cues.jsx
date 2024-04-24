@@ -10,12 +10,16 @@ import {
   Button,
   Heading,
   Divider,
+  Flex,
+  Box,
 } from "@chakra-ui/react"
+import { CheckIcon } from "@chakra-ui/icons"
+
 import { useState } from "react"
 
 const CuesForm = ({ addCue }) => {
-  const [file, setFile] = useState(null)
-  const [fileName, setFileName] = useState("")
+  const [file, setFile] = useState("/blank.png")
+  const [fileName, setFileName] = useState("blank.png")
   const [index, setIndex] = useState(0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(0)
@@ -45,7 +49,7 @@ const CuesForm = ({ addCue }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add cue</Heading>
-        <FormHelperText>Index 1-350</FormHelperText>
+        <FormHelperText mb={2}>Index 1-350</FormHelperText>
         <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField />
           <NumberInputStepper>
@@ -53,15 +57,15 @@ const CuesForm = ({ addCue }) => {
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <FormHelperText>Name*</FormHelperText>
+        <FormHelperText mb={2}>Name*</FormHelperText>
         <Input
           value={cueName}
           placeholder="Cue name"
-          mb={4}
+          mb={2}
           onChange={(e) => setCueName(e.target.value)}
           required
         />
-        <FormHelperText>Screen 1-4*</FormHelperText>
+        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
         <NumberInput
           value={screen}
           mb={4}
@@ -76,10 +80,10 @@ const CuesForm = ({ addCue }) => {
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <Divider orientation="horizontal" mb={4} />
-        <FormHelperText>Upload media</FormHelperText>
+        <Divider orientation="horizontal" my={4} />
+        <FormHelperText mb={2}>Upload media</FormHelperText>
         <label htmlFor="file-upload">
-          <Button as="span" cursor="pointer">
+          <Button as="span" cursor="pointer" w={40} mr={2}>
             Upload media
           </Button>
         </label>
@@ -88,15 +92,21 @@ const CuesForm = ({ addCue }) => {
           id="file-upload"
           style={{ display: "none" }}
           onChange={fileSelected}
-        />
-        <FormHelperText>or add blank cue</FormHelperText>
+        />{" "}
+        {file !== "/blank.png" && <CheckIcon color="green.500" />}
+        <FormHelperText mb={2}>or add blank cue</FormHelperText>
         <Button
-          mb={4}
-          onClick={() => fileSelected({ target: { files: [null] } })}
+          w={40}
+          mr={2}
+          onClick={() => {
+            setFile("/blank.png")
+            setFileName("")
+          }}
         >
           Add blank
-        </Button>
-        <Divider orientation="horizontal" mb={4} />
+        </Button>{" "}
+        {file === "/blank.png" && <CheckIcon color="green.500" />}
+        <Divider orientation="horizontal" my={4} />
       </FormControl>
       <Button mb={4} type="submit" colorScheme="purple">
         Submit

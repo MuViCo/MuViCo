@@ -1,4 +1,3 @@
-
 name: Deploy to Amazon ECS
 
 on:
@@ -11,7 +10,7 @@ env:
   ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY}}
 
 jobs:
-  deploy:
+  build-and-deploy:
     name: Deploy
     runs-on: ubuntu-latest
 

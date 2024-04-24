@@ -3,14 +3,10 @@ import {
   SimpleGrid,
   Card,
   CardHeader,
-  CardBody,
-  CardFooter,
   Button,
-  Grid,
   GridItem,
-  Image,
   Heading,
-  Center,
+  Text,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -18,29 +14,17 @@ import { useState, useEffect, useRef } from "react"
 import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
+import randomLinearGradient from "../utils/randomGradient"
 
-// Function to generate random color values within a certain range, focusing on darker shades of purple
-const randomColor = () => {
-  const red = 200 // R: 218
-  const blue = 255 // B: 255
-  const green = Math.floor(Math.random() * 175) // G: Random value between 0 and 100
-  return `rgba(${red}, ${green}, ${blue}, 1)`
-}
-
-// Function to generate a random linear gradient
-const randomLinearGradient = () => {
-  const color1 = randomColor()
-  const color2 = randomColor()
-  return `linear-gradient(0deg, ${color1} 0%, ${color2} 100%)`
-}
 export const PresentationsGrid = ({
   presentations,
   handlePresentationClick,
 }) => (
   <>
-    <h1 align="center" style={{ padding: "30px" }}>
+    <Heading style={{ textAlign: "center", padding: "30px" }}>
       Presentations
-    </h1>
+    </Heading>
+
     <SimpleGrid columns={[1, 2, 3]} gap={5}>
       {presentations.map((presentation, index) => (
         <motion.div
@@ -79,7 +63,9 @@ export const AdminControls = ({ isAdmin, navigate }) => (
     {" "}
     {isAdmin && (
       <>
-        <h2>Admin controls</h2>
+        <Text fontSize="xl" fontWeight="bold">
+          Admin controls
+        </Text>
         <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
           <Button onClick={() => navigate("/users")}>All users</Button>
         </SimpleGrid>
@@ -144,18 +130,16 @@ const HomePage = ({ user }) => {
 
   return (
     <Container maxW="container.lg">
-      <div>
-        <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
-        <CreatePresentation
-          createPresentation={createPresentation}
-          togglableRef={togglableRef}
-          handleCancel={handleCancel}
-        />
-        <PresentationsGrid
-          presentations={presentations}
-          handlePresentationClick={handlePresentationClick}
-        />
-      </div>
+      <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
+      <CreatePresentation
+        createPresentation={createPresentation}
+        togglableRef={togglableRef}
+        handleCancel={handleCancel}
+      />
+      <PresentationsGrid
+        presentations={presentations}
+        handlePresentationClick={handlePresentationClick}
+      />
     </Container>
   )
 }

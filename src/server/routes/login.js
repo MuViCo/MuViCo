@@ -11,11 +11,12 @@ router.post("/", async (req, res) => {
 
   const user = await User.findOne({ username })
   /**
-   * Checks if the entered password is correct for the given user.
-   *
-   * @type {boolean}
-   */
-  const passwordCorrect = user === null ? false : await bcrypt.compare(password, user.passwordHash)
+	 * Checks if the entered password is correct for the given user.
+	 *
+	 * @type {boolean}
+	 */
+  const passwordCorrect =
+		user === null ? false : await bcrypt.compare(password, user.passwordHash)
 
   if (!(user && passwordCorrect)) {
     return res.status(401).json({
