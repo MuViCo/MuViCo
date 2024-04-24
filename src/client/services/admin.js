@@ -22,4 +22,13 @@ const deleteUser = async (id) => {
   await axios.delete(`${baseUrl}/user/${id}`, config)
 }
 
-export default { allUsers, deleteUser }
+const makeAdmin = async (id) => {
+  const config = {
+    headers: {
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  await axios.put(`${baseUrl}/makeadmin/${id}`, {}, config)
+}
+
+export default { allUsers, deleteUser, makeAdmin }
