@@ -10,10 +10,7 @@ const router = express.Router()
  */
 router.get("/", userExtractor, async (req, res) => {
   const { user } = req
-  if (user && user.isAdmin) {
-    const presentations = await Presentation.find()
-    res.json(presentations.map((presentation) => presentation.toJSON()))
-  } else if (user) {
+  if (user) {
     const presentations = await Presentation.find({ user: user._id })
     res.json(presentations.map((presentation) => presentation.toJSON()))
   } else {

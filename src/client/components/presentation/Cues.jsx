@@ -27,7 +27,7 @@ const CuesForm = ({ addCue }) => {
   const onAddCue = (event) => {
     event.preventDefault()
     addCue({ file, index, cueName, screen, fileName })
-    setFile(null)
+    setFile("/blank.png")
     setFileName("")
     setCueName("")
     setIndex(0)
