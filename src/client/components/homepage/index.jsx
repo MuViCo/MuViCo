@@ -37,55 +37,56 @@ export const PresentationsGrid = ({
   presentations,
   handlePresentationClick,
 }) => (
-	<>
-		<h1 align="center" style={{ padding: "30px" }}>
-			Presentations
-		</h1>
-		<SimpleGrid columns={[1, 2, 3]} gap={5}>
-			{presentations.map((presentation, index) => (
-				<motion.div
-					key={presentation.id}
-					whileHover={{ scale: 1.05 }}
-					onHoverStart={(e) => {}}
-					onHoverEnd={(e) => {}}
-				>
-					<Card
-						height="280px"
-						onClick={() => handlePresentationClick(presentation.id)}
-						cursor="pointer"
-						justifyContent="center"
-						textAlign="center"
-						bg={randomLinearGradient()}
-					>
-						<CardHeader>
-							<Heading
-								size="md"
-								color={"white"}
-								style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
-							>
-								{presentation.name}
-							</Heading>
-						</CardHeader>
-						{/* <CardBody>{assertImage(index)}</CardBody> */}
-					</Card>
-				</motion.div>
-			))}
-		</SimpleGrid>
-	</>
+  <>
+    <Heading style={{ textAlign: "center", padding: "30px" }}>
+      Presentations
+    </Heading>
+
+    <SimpleGrid columns={[1, 2, 3]} gap={5}>
+      {presentations.map((presentation, index) => (
+        <motion.div
+          key={presentation.id}
+          whileHover={{ scale: 1.05 }}
+          onHoverStart={(e) => {}}
+          onHoverEnd={(e) => {}}
+        >
+          <Card
+            height="280px"
+            onClick={() => handlePresentationClick(presentation.id)}
+            cursor="pointer"
+            justifyContent="center"
+            textAlign="center"
+            bg={randomLinearGradient()}
+          >
+            <CardHeader>
+              <Heading
+                size="md"
+                color={"white"}
+                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
+              >
+                {presentation.name}
+              </Heading>
+            </CardHeader>
+            {/* <CardBody>{assertImage(index)}</CardBody> */}
+          </Card>
+        </motion.div>
+      ))}
+    </SimpleGrid>
+  </>
 )
 
 export const AdminControls = ({ isAdmin, navigate }) => (
-	<>
-		{" "}
-		{isAdmin && (
-			<>
-				<h2>Admin controls</h2>
-				<SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
-					<Button onClick={() => navigate("/users")}>All users</Button>
-				</SimpleGrid>
-			</>
-		)}
-	</>
+  <>
+    {" "}
+    {isAdmin && (
+      <>
+        <h2>Admin controls</h2>
+        <SimpleGrid columns={[1, 2, 3]} mb={100} gap={6}>
+          <Button onClick={() => navigate("/users")}>All users</Button>
+        </SimpleGrid>
+      </>
+    )}
+  </>
 )
 
 export const CreatePresentation = ({
@@ -93,20 +94,20 @@ export const CreatePresentation = ({
   togglableRef,
   handleCancel,
 }) => (
-	<SimpleGrid columns={[1, 2, 3]} gap={10}>
-		<GridItem>
-			<Togglable
-				buttonLabel="New presentation"
-				exitLabel="cancel"
-				ref={togglableRef}
-			>
-				<PresentationForm
-					createPresentation={createPresentation}
-					onCancel={handleCancel}
-				/>
-			</Togglable>
-		</GridItem>
-	</SimpleGrid>
+  <SimpleGrid columns={[1, 2, 3]} gap={10}>
+    <GridItem>
+      <Togglable
+        buttonLabel="New presentation"
+        exitLabel="cancel"
+        ref={togglableRef}
+      >
+        <PresentationForm
+          createPresentation={createPresentation}
+          onCancel={handleCancel}
+        />
+      </Togglable>
+    </GridItem>
+  </SimpleGrid>
 )
 
 const HomePage = ({ user }) => {
@@ -127,7 +128,7 @@ const HomePage = ({ user }) => {
       const updatedPresentations = await presentationService.getAll()
       setPresentations(updatedPresentations)
       const presentationId =
-				updatedPresentations[updatedPresentations.length - 1].id
+        updatedPresentations[updatedPresentations.length - 1].id
       navigate(`/presentation/${presentationId}`)
     } catch (error) {
       console.error("Error creating presentation:", error)
@@ -143,20 +144,20 @@ const HomePage = ({ user }) => {
   }
 
   return (
-		<Container maxW="container.lg">
-			<div>
-				<AdminControls isAdmin={user.isAdmin} navigate={navigate} />
-				<CreatePresentation
-					createPresentation={createPresentation}
-					togglableRef={togglableRef}
-					handleCancel={handleCancel}
-				/>
-				<PresentationsGrid
-					presentations={presentations}
-					handlePresentationClick={handlePresentationClick}
-				/>
-			</div>
-		</Container>
+    <Container maxW="container.lg">
+      <div>
+        <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
+        <CreatePresentation
+          createPresentation={createPresentation}
+          togglableRef={togglableRef}
+          handleCancel={handleCancel}
+        />
+        <PresentationsGrid
+          presentations={presentations}
+          handlePresentationClick={handlePresentationClick}
+        />
+      </div>
+    </Container>
   )
 }
 
