@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
 
 import {
   Container,
@@ -8,8 +7,12 @@ import {
   Box,
   Text,
   Card,
+  CardHeader,
+  Heading,
+  Flex,
 } from "@chakra-ui/react"
 import adminServices from "../../services/admin"
+import randomLinearGradient from "../utils/randomGradient"
 
 const UsersList = () => {
   const [users, setUsers] = useState([])
@@ -36,21 +39,37 @@ const UsersList = () => {
     <Container maxW="container.lg">
       <SimpleGrid columns={[1, 2, 3]} gap={6}>
         {users.map((user) => (
-          <Card key={user.id}>
-            <Text fontSize="lg">{user.username}</Text>
+          <Card
+            key={user.id}
+            height="280px"
+            cursor="pointer"
+            align="center"
+            bg={randomLinearGradient()}
+          >
+            <CardHeader>
+              <Heading
+                size="md"
+                color={"white"}
+                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
+              >
+                {user.username}
+              </Heading>
+            </CardHeader>
 
             {user.isAdmin ? (
-              "Admin"
+              <Text fontSize="xl" fontWeight="bold" color="white">
+                Admin
+              </Text>
             ) : (
-              <>
+              <Flex gap={4}>
                 {" "}
-                <Button w="full" onClick={() => onRemove(user.id)}>
+                <Button colorScheme="purple" onClick={() => onRemove(user.id)}>
                   Remove
                 </Button>
-                <Button w="full" onClick={() => makeAdmin(user.id)}>
+                <Button colorScheme="purple" onClick={() => makeAdmin(user.id)}>
                   Make Admin
                 </Button>
-              </>
+              </Flex>
             )}
           </Card>
         ))}
