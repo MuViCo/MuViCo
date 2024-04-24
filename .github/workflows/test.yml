@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: "20"
       - name: Install dependencies
-        run: npm i
+        run: npm ci
       - name: Run linter
         run: npm run lint
       - name: Run unit tests
