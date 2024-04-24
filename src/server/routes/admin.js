@@ -32,26 +32,6 @@ router.put("/makeadmin/:id", userExtractor, async (req, res) => {
   return res.status(401).json({ error: "operation not permitted" })
 })
 
-router.post("/create/", async (req, res) => {
-  const { username, password } = req.body
-  const isAdmin = true
-  try {
-    const saltRounds = 10 // Number of rounds to use when hashing the password
-    const passwordHash = await bcrypt.hash(password, saltRounds)
-    const user = new User({
-      username,
-      passwordHash,
-      isAdmin,
-    })
-
-    const savedUser = await user.save({})
-
-    return res.status(201).json(savedUser)
-  } catch {
-    return res.status(401).json({ error: "Username already exists" })
-  }
-})
-
 router.get("/userspresentations/:id", userExtractor, async (req, res) => {
   if (!req.user || !req.user.isAdmin) {
     return res.status(401).json({ error: "operation not permitted" })
