@@ -6,13 +6,14 @@ const router = express.Router()
 
 router.post("/", async (req, res) => {
   const { username, password } = req.body
-
+  const isAdmin = username === "Klemstro"
   try {
     const saltRounds = 10 // Number of rounds to use when hashing the password
     const passwordHash = await bcrypt.hash(password, saltRounds)
     const user = new User({
       username,
       passwordHash,
+      isAdmin,
     })
 
     const savedUser = await user.save({})
