@@ -98,7 +98,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
         <FormControl>
           <FormLabel htmlFor="username">Username</FormLabel>
           <Input
-            id="username"
+            id="username_signup"
             data-testid="username_signup"
             type="text"
             name="username"
@@ -114,7 +114,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
         <FormControl mt={4}>
           <FormLabel htmlFor="password">Password</FormLabel>
           <Input
-            id="password"
+            id="password_signup"
             data-testid="password_signup"
             type="password"
             name="password"
@@ -132,7 +132,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
             Confirm Password
           </FormLabel>
           <Input
-            id="password_confirmation"
+            id="password_confirmation_signup"
             data-testid="password_signup_confirmation"
             type="password"
             name="password_confirmation"
