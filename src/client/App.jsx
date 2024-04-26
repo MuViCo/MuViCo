@@ -14,6 +14,7 @@ import TermsPage from "./components/termspage"
 import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
+import Footer from "./components/footer"
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -74,6 +75,7 @@ const App = () => {
             />
           </Routes>
         </Container>
+        <Footer />
       </Box>
     </ChakraProvider>
   )
