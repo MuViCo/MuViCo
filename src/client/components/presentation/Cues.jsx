@@ -28,9 +28,9 @@ import { useState } from "react"
 const CuesForm = ({ addCue }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(1)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(0)
+  const [screen, setScreen] = useState(1)
 
   const onAddCue = (event) => {
     event.preventDefault()
@@ -38,8 +38,8 @@ const CuesForm = ({ addCue }) => {
     setFile("/blank.png")
     setFileName("")
     setCueName("")
-    setIndex(0)
-    setScreen(0)
+    setIndex(1)
+    setScreen(1)
   }
 
   const fileSelected = (event) => {
