@@ -15,6 +15,15 @@ import {
 import adminServices from "../../services/admin"
 import randomLinearGradient from "../utils/randomGradient"
 
+/**
+ * Renders a list of users with options to remove, make admin, and view presentations.
+ *
+ * @component
+ * @example
+ * return (
+ *   <UsersList />
+ * )
+ */
 const UsersList = () => {
   const [users, setUsers] = useState([])
   const navigate = useNavigate()
