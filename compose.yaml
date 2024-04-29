@@ -2,18 +2,26 @@ services:
   app:
     build:
       context: ./
-      dockerfile: Dockerfile
+      dockerfile: dev.Dockerfile
     image: dev
     environment:
-      - BUCKET_NAME=value
-      - BUCKET_REGION=value
-      - ACCESS_KEY=value
-      - SECRET_ACCESS_KEY=value
+      - MONGODB_URI=mongodb://root:root@db/admin
     volumes:
       - ./:/opt/app-root/src
     ports:
+      - 3000:3000
       - 8000:8000
     container_name: dev
+  db:
+    image: docker.io/mongo:7.0.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db 
+    container_name: dev_db
   
 volumes:
   mongo_data:

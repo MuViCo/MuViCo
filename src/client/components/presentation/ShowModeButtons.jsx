@@ -53,6 +53,18 @@ export const ChangeCueButton = ({ updateScreen, direction }) => (
   </>
 )
 
+/**
+ * Renders the Show Mode buttons component.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Array} props.screensList - The list of screens.
+ * @param {Function} props.setScreensList - The function to set the screens list.
+ * @param {Object} props.presentationInfo - The presentation information.
+ * @param {Function} props.setCueIndex - The function to set the cue index.
+ * @param {number} props.cueIndex - The current cue index.
+ * @returns {JSX.Element} The rendered component.
+ */
 const ShowModeButtons = ({
   screensList,
   setScreensList,

@@ -9,6 +9,21 @@ const nodeTypes = {
   screenNode: ScreenNode,
 }
 
+/**
+ * FlowMap component represents a flowchart visualization using the ReactFlow library.
+ * The FlowMap component is used to render the control panel on the presentation page.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Function} props.handleNodeChange - The function to handle node changes.
+ * @param {Object} props.presentationInfo - The presentation information.
+ * @param {Array} props.nodes - The array of nodes in the flowchart.
+ * @param {Array} props.edges - The array of edges in the flowchart.
+ * @param {Function} props.setEdges - The function to set the edges in the flowchart.
+ * @param {Function} props.onNodesChange - The function to handle node changes.
+ * @param {Function} props.onEdgesChange - The function to handle edge changes.
+ * @returns {JSX.Element} The rendered FlowMap component.
+ */
 const FlowMap = ({
   handleNodeChange,
   presentationInfo,

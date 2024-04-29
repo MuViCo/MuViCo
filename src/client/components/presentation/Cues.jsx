@@ -17,6 +17,14 @@ import { CheckIcon } from "@chakra-ui/icons"
 
 import { useState } from "react"
 
+/**
+ * Renders a form for adding cues.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Function} props.addCue - The function to add a cue.
+ * @returns {JSX.Element} The CuesForm component.
+ */
 const CuesForm = ({ addCue }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
