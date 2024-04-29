@@ -8,6 +8,15 @@ import {
   Flex,
 } from "@chakra-ui/react"
 
+/**
+ * PresentationForm component for adding the presentation.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Function} props.createPresentation - The function to create a presentation.
+ * @param {Function} props.onCancel - The function to cancel the presentation creation.
+ * @returns {JSX.Element} The rendered PresentationForm component.
+ */
 const PresentationForm = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
 

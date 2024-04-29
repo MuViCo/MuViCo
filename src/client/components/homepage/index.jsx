@@ -95,6 +95,13 @@ export const CreatePresentation = ({
   </SimpleGrid>
 )
 
+/**
+ * Renders the homepage component where users can navigate to their previously created presentations.
+ *
+ * @component
+ * @param {Object} user - The user object.
+ * @returns {JSX.Element} The rendered homepage component.
+ */
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
