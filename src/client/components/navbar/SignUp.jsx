@@ -172,6 +172,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
             type="submit"
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}
+            mt={3}
           >
             Sign up
           </Button>
