@@ -13,6 +13,15 @@ import Toolbox from "./ToolBox"
 
 const screenCount = 4
 
+/**
+ * Renders the presentation page.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} props.userId - The user ID.
+ * @returns {JSX.Element} The presentation page component.
+ */
+
 const PresentationPage = ({ userId }) => {
   const { id } = useParams()
 
