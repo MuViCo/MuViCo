@@ -37,3 +37,14 @@ Currently the application is running on a staging server, which, for security re
 ### Documentation
 
 The latest component diagram can be viewed [here](https://github.com/MuViCo/MuViCo/blob/documentation/documentation/architecture/sprint%202.png).
+
+## Development
+
+1. Install npm, docker and docker compose
+2. Clone repository to local machine ```git clone git@github.com:MuViCo/MuViCo.git```
+3. Change directory to project root ```cd MuViCo```
+4. Copy .env-template as .env and fill the required values
+5. Install depedencies ```npm i```
+6. Run ```npm start```
+
+You can also start developing by just running ```npm run dev``` after all dependencies are installed and .env in configured
