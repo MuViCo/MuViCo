@@ -47,4 +47,4 @@ The latest component diagram can be viewed [here](https://github.com/MuViCo/MuVi
 5. Install depedencies ```npm i```
 6. Run ```npm start```
 
-You can also start developing by just running ```npm run dev``` after all dependencies are installed and .env in configured
+Note: You can also start developing by just running ```npm run dev``` after all dependencies are installed and .env is configured
