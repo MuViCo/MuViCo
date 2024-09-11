@@ -62,7 +62,7 @@ router.get("/:id", userExtractor, async (req, res) => {
             const key = `${id}/${cue.file.id.toString()}`
             cue.file.url = await getObjectSignedUrl(key)
           } else {
-            cue.file.url = "/blank.png"
+            cue.file.url = " /src/client/public/blank.png"
           }
           return cue
         })
