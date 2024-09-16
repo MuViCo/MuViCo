@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import ReactDOM from "react-dom"
 
 // Screen Component (handles window logic and content rendering)
-const Screen = ({ screenNumber, cue, isVisible, toggleVisibility }) => {
+const Screen = ({ screenNumber, screenData, isVisible, toggleVisibility }) => {
   const [container, setContainer] = useState(null)
 
   useEffect(() => {
@@ -26,23 +26,23 @@ const Screen = ({ screenNumber, cue, isVisible, toggleVisibility }) => {
     }
   }, [isVisible, screenNumber, toggleVisibility])
 
-  // This useEffect listens for changes to the cue and updates the content accordingly
+  // This useEffect listens for changes to the screenData and updates the content accordingly
   useEffect(() => {
     if (container && isVisible) {
-      // Optionally update the window title or other window attributes based on cue
-      document.title = `Screen ${screenNumber} - Cue: ${cue?.name || ""}`
+      // Optionally update the window title or other window attributes based on screenData
+      document.title = `Screen ${screenNumber} - Cue: ${screenData?.name || ""}`
     }
-  }, [cue, container, isVisible])
+  }, [screenData, container, isVisible])
 
-  // Render updated content based on the cue
+  // Render updated content based on the screenData
   const screenContent = (
     <div>
       <h1>Screen {screenNumber}</h1>
-      {cue ? (
+      {screenData ? (
         <>
-          <p><strong>Cue Name:</strong> {cue.name}</p>
-          <p><strong>File:</strong> {cue.file?.name}</p>
-          {/* Add any additional cue details or media (images, videos, etc.) */}
+          <p><strong>Cue Name:</strong> {screenData.name}</p>
+          <p><strong>File:</strong> {screenData.file?.name}</p>
+          {/* Add any additional screenData details or media (images, videos, etc.) */}
         </>
       ) : (
         <p>No cue data available</p>
