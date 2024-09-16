@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from "react"
 import ReactDOM from "react-dom"
 
-// Screen Component (handles window logic and content rendering)
-const Screen = ({ screenNumber, screenData, isVisible, toggleVisibility }) => {
+const Screen = ({ screenNumber, screenData, isVisible }) => {
   const [container, setContainer] = useState(null)
 
   useEffect(() => {
     if (isVisible) {
-      const newWindow = window.open("", ` Screen ${screenNumber}`, "width=800,height=600")
+      const newWindow = window.open(screenData.file.url, ` Screen ${screenNumber}`, "width=800,height=600")
       const div = document.createElement("div")
       newWindow.document.body.appendChild(div)
       setContainer(div)
 
       // Handle window close
       const handleClose = () => {
-        toggleVisibility(screenNumber)
         newWindow.close()
       }
 
@@ -24,7 +22,7 @@ const Screen = ({ screenNumber, screenData, isVisible, toggleVisibility }) => {
         newWindow.close()
       }
     }
-  }, [isVisible, screenNumber, toggleVisibility])
+  }, [isVisible, screenNumber])
 
   // This useEffect listens for changes to the screenData and updates the content accordingly
   useEffect(() => {

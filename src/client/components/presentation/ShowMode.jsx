@@ -46,7 +46,7 @@ const ShowMode = ({ presentationInfo }) => {
           key={screenNumber}
           screenData={screenCues[screenNumber][cueIndex]}
           screenNumber={screenNumber}
-          isVisible={screenVisibility[screenNumber - 1]} // Visibility state is indexed from 0
+          isVisible={screenVisibility[screenNumber - 1]}
         />
       ))}
     </div>
