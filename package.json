@@ -8,6 +8,7 @@
     "dev": "NODE_ENV=development concurrently \"nodemon --exec node src/server/index.js\" \"vite --host\"",
     "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
+    "lint-fix": "eslint 'src/**/*.js' 'src/**/*.jsx' -- --fix",
     "format": "prettier --write '*.{js,json,css,md}'",
     "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom --coverage --coverageReporters=\"cobertura\"",
     "build": "vite build",

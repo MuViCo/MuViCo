@@ -1,5 +1,5 @@
 // @ts-check
-const { defineConfig, devices } = require("@playwright/test")
+const { defineConfig, devices } = require("@playwright/test");
 
 /**
  * Read environment variables from file.
@@ -75,4 +75,4 @@ module.exports = defineConfig({
   //   url: 'http://127.0.0.1:3000',
   //   reuseExistingServer: !process.env.CI,
   // },
-})
+});
