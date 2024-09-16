@@ -1,18 +1,16 @@
 import React, { useState } from "react"
-import { Button, IconButton } from "@chakra-ui/react"
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 import preloadCues from "../utils/preloadCues"
 import Screen from "./Screen"
-import ScreenButtons from "./ShowModeButtons"
-import ChangeCueButton from "./ShowModeButtons"
+import ShowModeButtons from "./ShowModeButtons"
 
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
   const [screenCues] = useState(() => preloadCues(presentationInfo))
+  console.log(screenCues)
 
   // Manage the current cue index and screen visibility
-  const [cueIndex, setCueIndex] = useState(1)
+  const [cueIndex, setCueIndex] = useState(0)
   const [screenVisibility, setScreenVisibility] = useState(
     Array(Object.keys(screenCues).length).fill(false)
   )
@@ -33,26 +31,25 @@ const ShowMode = ({ presentationInfo }) => {
   }
 
   return (
-        <div className="show-mode">
-            {/* Render buttons for opening/closing screens */}
-            <ScreenButtons screens={screenVisibility} toggleScreenVisibility={toggleScreenVisibility} />
+    <div className="show-mode">
+      {/* Pass screen visibility and cue navigation to ShowModeButtons */}
+      <ShowModeButtons
+        screens={screenVisibility}
+        toggleScreenVisibility={toggleScreenVisibility}
+        cueIndex={cueIndex}
+        updateCue={updateCue}
+      />
 
-            {/* Change cue buttons */}
-            <div className="cue-buttons">
-                <ChangeCueButton updateCue={updateCue} direction="Previous" />
-                <ChangeCueButton updateCue={updateCue} direction="Next" />
-            </div>
-
-            {/* Render screens based on visibility and cue index */}
-            {Object.keys(screenCues).map((screenNumber) => (
-                <Screen
-                    key={screenNumber}
-                    screenData={screenCues[screenNumber][cueIndex]}
-                    screenNumber={screenNumber}
-                    isVisible={screenVisibility[screenNumber - 1]} // Visibility state is indexed from 0
-                />
-            ))}
-        </div>
+      {/* Render screens based on visibility and cue index */}
+      {Object.keys(screenCues).map((screenNumber) => (
+        <Screen
+          key={screenNumber}
+          screenData={screenCues[screenNumber][cueIndex]}
+          screenNumber={screenNumber}
+          isVisible={screenVisibility[screenNumber - 1]} // Visibility state is indexed from 0
+        />
+      ))}
+    </div>
   )
 }
 
