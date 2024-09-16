@@ -26,7 +26,7 @@ const ShowMode = ({ presentationInfo }) => {
     if (direction === "Next") {
       setCueIndex((prevCueIndex) => prevCueIndex + 1)
     } else {
-      setCueIndex((prevCueIndex) => Math.max(1, prevCueIndex - 1)) // Prevent going below cue 1
+      setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1)) // Prevent going below cue 1
     }
   }
 
