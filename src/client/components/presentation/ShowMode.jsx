@@ -26,7 +26,7 @@ const ShowMode = ({ presentationInfo }) => {
     if (direction === "Next") {
       setCueIndex((prevCueIndex) => prevCueIndex + 1)
     } else {
-      setCueIndex((prevCueIndex) => Math.max(1, prevCueIndex - 1)) // Prevent going below cue 1
+      setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1)) // Prevent going below cue 1
     }
   }
 
@@ -45,6 +45,7 @@ const ShowMode = ({ presentationInfo }) => {
         <Screen
           key={screenNumber}
           screenData={screenCues[screenNumber][cueIndex]}
+          cue={cueIndex}
           screenNumber={screenNumber}
           isVisible={screenVisibility[screenNumber - 1]} // Visibility state is indexed from 0
         />
