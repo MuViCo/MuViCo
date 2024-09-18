@@ -18,9 +18,15 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
       `;
     }
 
+    // Handle closing the window when `isVisible` becomes false
+    if (!isVisible && windowRef.current) {
+      windowRef.current.close(); // Close the window
+      windowRef.current = null; // Reset the window reference
+    }
+
     return () => {
-      // Optionally close the window if `isVisible` becomes false
-      if (!isVisible && windowRef.current) {
+      // Ensure the window is closed when the component unmounts
+      if (windowRef.current) {
         windowRef.current.close();
         windowRef.current = null;
       }
