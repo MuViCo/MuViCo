@@ -1,37 +1,39 @@
 import React, { useEffect, useRef } from "react";
 
-const Screen = ({ screenNumber, screenData, isVisible }) => {
-  const windowRef = useRef(null); // Keep a reference to the window object
+const Screen = ({ screenNumber, screenData, isVisible, onWindowClose }) => {
+  const windowRef = useRef(null);
 
   useEffect(() => {
     if (isVisible && !windowRef.current) {
-      // Open a new window only if it isn't already opened
       const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600");
       windowRef.current = newWindow;
 
-      // Initial content rendering
       newWindow.document.body.innerHTML = `
         <div>
           <h1>Screen ${screenNumber}</h1>
           <div id="screen-content"></div>
         </div>
       `;
-    }
 
-    // Handle closing the window when `isVisible` becomes false
-    if (!isVisible && windowRef.current) {
-      windowRef.current.close(); // Close the window
-      windowRef.current = null; // Reset the window reference
-    }
+      // Add listener to handle window close
+      const handleWindowClose = () => {
+        if (onWindowClose) {
+          onWindowClose(screenNumber); // Inform parent that the window is closed
+        }
+      };
 
-    return () => {
-      // Ensure the window is closed when the component unmounts
-      if (windowRef.current) {
-        windowRef.current.close();
-        windowRef.current = null;
-      }
-    };
-  }, [isVisible, screenNumber]);
+      newWindow.addEventListener("beforeunload", handleWindowClose);
+
+      // Cleanup: remove the event listener on component unmount or window close
+      return () => {
+        if (windowRef.current) {
+          windowRef.current.removeEventListener("beforeunload", handleWindowClose);
+          windowRef.current.close();
+          windowRef.current = null;
+        }
+      };
+    }
+  }, [isVisible, screenNumber, onWindowClose]);
 
   // Update window content when `screenData` changes
   useEffect(() => {
@@ -39,7 +41,6 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
       const contentDiv = windowRef.current.document.getElementById("screen-content");
 
       if (screenData?.file?.url) {
-        // Display the media file (image in this case)
         contentDiv.innerHTML = `
           <p><strong>Cue Name:</strong> ${screenData.name}</p>
           <img src="${screenData.file.url}" style="max-width: 100%;" alt="${screenData.name}" />
@@ -52,7 +53,7 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
     }
   }, [screenData]);
 
-  return null; // No need to render anything in the main window
+  return null;
 };
 
 export default Screen;
