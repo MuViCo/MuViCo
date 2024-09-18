@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react"
-import preloadCues from "../utils/preloadCues"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
 
@@ -7,47 +6,63 @@ import ShowModeButtons from "./ShowModeButtons"
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({});
-  const [screenCues] = useState(() => preloadCues(presentationInfo))
-  console.log(screenCues)
 
   // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
-  const [screenVisibility, setScreenVisibility] = useState(
-    Array(Object.keys(screenCues).length).fill(false)
-  )
+  const [screenVisibility, setScreenVisibility] = useState({})
 
   useEffect(() => {
-    const preloadImage = (url) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.src = url;
-        img.onload = () => resolve(true);  // Resolve promise when image is loaded
-        img.onerror = reject;              // Reject if there's an error
-      });
-    };
-  
-    const preloadCues = async () => {
-      const preloaded = {};
-      for (let screen in screenCues) {
-        preloaded[screen] = {};
-        for (let cueId in screenCues[screen]) {
-          const cue = screenCues[screen][cueId];
-          if (cue.file?.url) {
-            try {
-              await preloadImage(cue.file.url);  // Preload the image for each cue
-            } catch (error) {
-              console.error(`Error preloading image for cue: ${cue.name}`, error);
-            }
-          }
-          preloaded[screen][cueId] = cue;  // Add cue to preloaded after preloading image
+    // This function organizes the cues by screen and cue index, and preloads media files
+    const organizeAndPreloadCues = async () => {
+      const screenCues = {};
+
+      const preloadImage = (url) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = url;
+          img.onload = () => resolve(true); // Resolve when image is loaded
+          img.onerror = reject;             // Reject on error
+        });
+      };
+
+      // Iterate over all cues in presentationInfo
+      for (let cue of presentationInfo.cues) {
+        const { screen: screenNumber, index: cueIndex, file, name, _id: cueId } = cue;
+
+        // Ensure screenCues has an entry for the current screen
+        if (!screenCues[screenNumber]) {
+          screenCues[screenNumber] = {};
         }
+
+        // Preload the media file if available
+        if (file?.url) {
+          try {
+            await preloadImage(file.url); // Preload the image (or handle video similarly)
+          } catch (error) {
+            console.error(`Error preloading file for cue: ${name}`, error);
+          }
+        }
+
+        // Store the cue under the corresponding screen and cue index
+        screenCues[screenNumber][cueIndex] = {
+          name,
+          file,
+          cueId
+        };
       }
-      setPreloadedCues(preloaded);  // Store preloaded cues in state
+
+      // Store the preloaded cues in state
+      setPreloadedCues(screenCues);
+
+      // Initialize screen visibility state
+      setScreenVisibility(Array(Object.keys(screenCues).length).fill(false));
     };
-  
-    preloadCues();  // Trigger the preloading process when component mounts
-  }, [screenCues]);
-  
+
+    // Call the function to organize and preload cues
+    organizeAndPreloadCues();
+  }, [presentationInfo]);
+
+  // Now preloadedCues contains the data, ready to be passed to the Screen component or used further.
   
   console.log('preloadedCues', preloadedCues)
   
