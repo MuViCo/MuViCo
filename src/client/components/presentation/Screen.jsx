@@ -1,54 +1,52 @@
-import React, { useState, useEffect } from "react"
-import ReactDOM from "react-dom"
+import React, { useEffect, useRef } from "react";
 
 const Screen = ({ screenNumber, screenData, isVisible }) => {
-  const [container, setContainer] = useState(null)
+  const windowRef = useRef(null); // Keep a reference to the window object
 
   useEffect(() => {
-    if (isVisible) {
-      const newWindow = window.open(screenData.file.url, ` Screen ${screenNumber}`, "width=800,height=600")
-      const div = document.createElement("div")
-      newWindow.document.body.appendChild(div)
-      setContainer(div)
+    if (isVisible && !windowRef.current) {
+      // Open a new window only if it isn't already opened
+      const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600");
+      windowRef.current = newWindow;
 
-      // Handle window close
-      const handleClose = () => {
-        newWindow.close()
-      }
-
-      newWindow.addEventListener("beforeunload", handleClose)
-      return () => {
-        newWindow.removeEventListener("beforeunload", handleClose)
-        newWindow.close()
-      }
+      // Initial content rendering
+      newWindow.document.body.innerHTML = `
+        <div>
+          <h1>Screen ${screenNumber}</h1>
+          <div id="screen-content"></div>
+        </div>
+      `;
     }
-  }, [isVisible, screenNumber])
 
-  // This useEffect listens for changes to the screenData and updates the content accordingly
+    return () => {
+      // Optionally close the window if `isVisible` becomes false
+      if (!isVisible && windowRef.current) {
+        windowRef.current.close();
+        windowRef.current = null;
+      }
+    };
+  }, [isVisible, screenNumber]);
+
+  // Update window content when `screenData` changes
   useEffect(() => {
-    if (container && isVisible) {
-      // Optionally update the window title or other window attributes based on screenData
-      document.title = `Screen ${screenNumber} - Cue: ${screenData?.name || ""}`
+    if (windowRef.current && screenData) {
+      const contentDiv = windowRef.current.document.getElementById("screen-content");
+
+      if (screenData?.file?.url) {
+        // Display the media file (image in this case)
+        contentDiv.innerHTML = `
+          <p><strong>Cue Name:</strong> ${screenData.name}</p>
+          <img src="${screenData.file.url}" style="max-width: 100%;" alt="${screenData.name}" />
+        `;
+      } else {
+        contentDiv.innerHTML = `
+          <p>No media available for this cue.</p>
+        `;
+      }
     }
-  }, [screenData, container, isVisible])
+  }, [screenData]);
 
-  // Render updated content based on the screenData
-  const screenContent = (
-    <div>
-      <h1>Screen {screenNumber}</h1>
-      {screenData ? (
-        <>
-          <p><strong>Cue Name:</strong> {screenData.name}</p>
-          <p><strong>File:</strong> {screenData.file?.name}</p>
-          {/* Add any additional screenData details or media (images, videos, etc.) */}
-        </>
-      ) : (
-        <p>No cue data available</p>
-      )}
-    </div>
-  )
+  return null; // No need to render anything in the main window
+};
 
-  return container && isVisible ? ReactDOM.createPortal(screenContent, container) : null
-}
-
-export default Screen
+export default Screen;
