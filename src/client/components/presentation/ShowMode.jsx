@@ -12,20 +12,21 @@ const ShowMode = ({ presentationInfo }) => {
   const [screenVisibility, setScreenVisibility] = useState({})
 
   useEffect(() => {
-    // This function organizes the cues by screen and cue index, and preloads media files
+    const preloadImage = (url) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => resolve(true);
+        img.onerror = () => {
+          console.error(`Error loading image: ${url}`);
+          resolve(false); // Resolve with false to continue, even on error
+        };
+      });
+    };
+
     const organizeAndPreloadCues = async () => {
       const screenCues = {};
 
-      const preloadImage = (url) => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.src = url;
-          img.onload = () => resolve(true); // Resolve when image is loaded
-          img.onerror = reject;             // Reject on error
-        });
-      };
-
-      // Iterate over all cues in presentationInfo
       for (let cue of presentationInfo.cues) {
         const { screen: screenNumber, index: cueIndex, file, name, _id: cueId } = cue;
 
@@ -37,17 +38,17 @@ const ShowMode = ({ presentationInfo }) => {
         // Preload the media file if available
         if (file?.url) {
           try {
-            await preloadImage(file.url); // Preload the image (or handle video similarly)
+            await preloadImage(file.url); // Preload the image
           } catch (error) {
             console.error(`Error preloading file for cue: ${name}`, error);
           }
         }
 
-        // Store the cue under the corresponding screen and cue index
+        // Store the cue with fallback values
         screenCues[screenNumber][cueIndex] = {
-          name,
-          file,
-          cueId
+          name: name || "Unknown Cue",
+          file: file || { url: null }, // Fallback to an empty file object if missing
+          cueId: cueId || "unknown-id",
         };
       }
 
@@ -55,19 +56,15 @@ const ShowMode = ({ presentationInfo }) => {
       setPreloadedCues(screenCues);
 
       // Initialize screen visibility state
-      setScreenVisibility(Array(Object.keys(screenCues).length).fill(false));
+      setScreenVisibility(
+        Array(Object.keys(screenCues).length).fill(false)
+      );
     };
 
-    // Call the function to organize and preload cues
     organizeAndPreloadCues();
-  }, [presentationInfo]);
+  }, [presentationInfo])
 
-  // Now preloadedCues contains the data, ready to be passed to the Screen component or used further.
   
-  console.log('preloadedCues', preloadedCues)
-  
-
-
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
     const screenIdx = screenNumber - 1
