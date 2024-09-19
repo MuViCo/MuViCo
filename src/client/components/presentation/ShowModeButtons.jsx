@@ -1,6 +1,6 @@
-import React from "react";
-import { Button, Box, IconButton, Heading } from "@chakra-ui/react";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import React from "react"
+import { Button, Box, IconButton, Heading } from "@chakra-ui/react"
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 // Component for rendering the screen toggle buttons
 const ScreenToggleButtons = ({ screens, toggleScreenVisibility }) => (
@@ -17,7 +17,7 @@ const ScreenToggleButtons = ({ screens, toggleScreenVisibility }) => (
       </Button>
     ))}
   </Box>
-);
+)
 
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue }) => (
@@ -37,7 +37,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
       colorScheme="purple"
     />
   </Box>
-);
+)
 
 // ShowModeButtons component to handle screen visibility and cue navigation
 const ShowModeButtons = ({ screens, toggleScreenVisibility, cueIndex, updateCue }) => (
@@ -45,6 +45,6 @@ const ShowModeButtons = ({ screens, toggleScreenVisibility, cueIndex, updateCue 
     <ScreenToggleButtons screens={screens} toggleScreenVisibility={toggleScreenVisibility} />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
   </Box>
-);
+)
 
-export default ShowModeButtons;
+export default ShowModeButtons

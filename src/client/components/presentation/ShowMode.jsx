@@ -5,7 +5,7 @@ import ShowModeButtons from "./ShowModeButtons"
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
-  const [preloadedCues, setPreloadedCues] = useState({});
+  const [preloadedCues, setPreloadedCues] = useState({})
 
   // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
@@ -14,33 +14,33 @@ const ShowMode = ({ presentationInfo }) => {
   useEffect(() => {
     const preloadImage = (url) => {
       return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.src = url;
-        img.onload = () => resolve(true);
+        const img = new Image()
+        img.src = url
+        img.onload = () => resolve(true)
         img.onerror = () => {
-          console.error(`Error loading image: ${url}`);
-          resolve(false); // Resolve with false to continue, even on error
-        };
-      });
-    };
+          console.error(`Error loading image: ${url}`)
+          resolve(false) // Resolve with false to continue, even on error
+        }
+      })
+    }
 
     const organizeAndPreloadCues = async () => {
-      const screenCues = {};
+      const screenCues = {}
 
       for (let cue of presentationInfo.cues) {
-        const { screen: screenNumber, index: cueIndex, file, name, _id: cueId } = cue;
+        const { screen: screenNumber, index: cueIndex, file, name, _id: cueId } = cue
 
         // Ensure screenCues has an entry for the current screen
         if (!screenCues[screenNumber]) {
-          screenCues[screenNumber] = {};
+          screenCues[screenNumber] = {}
         }
 
         // Preload the media file if available
         if (file?.url) {
           try {
-            await preloadImage(file.url); // Preload the image
+            await preloadImage(file.url) // Preload the image
           } catch (error) {
-            console.error(`Error preloading file for cue: ${name}`, error);
+            console.error(`Error preloading file for cue: ${name}`, error)
           }
         }
 
@@ -49,19 +49,19 @@ const ShowMode = ({ presentationInfo }) => {
           name: name || "Unknown Cue",
           file: file || { url: null }, // Fallback to an empty file object if missing
           cueId: cueId || "unknown-id",
-        };
+        }
       }
 
       // Store the preloaded cues in state
-      setPreloadedCues(screenCues);
+      setPreloadedCues(screenCues)
 
       // Initialize screen visibility state
       setScreenVisibility(
         Array(Object.keys(screenCues).length).fill(false)
-      );
-    };
+      )
+    }
 
-    organizeAndPreloadCues();
+    organizeAndPreloadCues()
   }, [presentationInfo])
 
   
