@@ -99,8 +99,6 @@ const ShowMode = ({ presentationInfo }) => {
           screenData={preloadedCues[screenNumber][cueIndex]} // Use preloaded cues
           screenNumber={screenNumber}
           isVisible={screenVisibility[screenNumber - 1]}
-          onWindowClose={toggleScreenVisibility} // Pass the function to handle window close
-
         />
       ))}
     </div>

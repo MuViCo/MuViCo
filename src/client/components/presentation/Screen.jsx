@@ -8,12 +8,25 @@ const Screen = ({ screenNumber, screenData, isVisible}) => {
       const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
       windowRef.current = newWindow
 
-      newWindow.document.body.innerHTML = `
+      if (!screenData) {
+
+        newWindow.document.body.innerHTML = `
         <div>
-          <h1>Screen ${screenNumber}</h1>
-          <div id="screen-content"></div>
+        <h1>Screen ${screenNumber}</h1>
+        <div id="screen-content"></div>
         </div>
-      `
+        `
+      } else {
+        newWindow.document.body.innerHTML = `
+        <div>
+        <h1>Screen ${screenNumber}</h1>
+        <div id="screen-content">
+        <p><strong>Cue Name:</strong> ${screenData.name}</p>
+        <img src="${screenData.file.url}" style="max-width: 100%;" alt="${screenData.name}" />
+        </div>
+        </div>
+        `
+      }
 
     // Add listener to handle window close
     newWindow.addEventListener("beforeunload", () => {
