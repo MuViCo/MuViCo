@@ -5,7 +5,7 @@ import ShowModeButtons from "./ShowModeButtons"
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
-  const [preloadedCues, setPreloadedCues] = useState({});
+  const [preloadedCues, setPreloadedCues] = useState({})
   console.log(presentationInfo)
   console.log(preloadedCues)
 
