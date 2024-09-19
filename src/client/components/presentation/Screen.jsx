@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react"
 
-const Screen = ({ screenNumber, screenData, isVisible, onWindowClose }) => {
-  const windowRef = useRef(null)
+const Screen = ({ screenNumber, screenData, isVisible}) => {
+  const windowRef = useRef(null);
 
   useEffect(() => {
     if (isVisible && !windowRef.current) {
@@ -15,25 +15,26 @@ const Screen = ({ screenNumber, screenData, isVisible, onWindowClose }) => {
         </div>
       `
 
-      // Add listener to handle window close
-      const handleWindowClose = () => {
-        if (onWindowClose) {
-          onWindowClose(screenNumber) // Inform parent that the window is closed
-        }
-      }
+    // Add listener to handle window close
+    newWindow.addEventListener("beforeunload", () => {
+      windowRef.current = null;
+    });
+  }
 
-      newWindow.addEventListener("beforeunload", handleWindowClose)
+  if (!isVisible && windowRef.current) {
+    windowRef.current.close(); // Close the window
+    windowRef.current = null; // Reset the window reference
+  }
 
-      // Cleanup: remove the event listener on component unmount or window close
-      return () => {
-        if (windowRef.current) {
-          windowRef.current.removeEventListener("beforeunload", handleWindowClose)
-          windowRef.current.close()
-          windowRef.current = null
-        }
-      }
+  return () => {
+    // Ensure the window is closed when the component unmounts
+    if (windowRef.current) {
+      windowRef.current.close();
+      windowRef.current = null;
     }
-  }, [isVisible, screenNumber, onWindowClose])
+  };
+}, [isVisible, screenNumber]);
+
 
   // Update window content when `screenData` changes
   useEffect(() => {

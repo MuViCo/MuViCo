@@ -5,7 +5,9 @@ import ShowModeButtons from "./ShowModeButtons"
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
-  const [preloadedCues, setPreloadedCues] = useState({})
+  const [preloadedCues, setPreloadedCues] = useState({});
+  console.log(presentationInfo)
+  console.log(preloadedCues)
 
   // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
@@ -64,7 +66,7 @@ const ShowMode = ({ presentationInfo }) => {
     organizeAndPreloadCues()
   }, [presentationInfo])
 
-  
+
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
     const screenIdx = screenNumber - 1

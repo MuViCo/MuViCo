@@ -29,7 +29,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
       onClick={() => updateCue("Previous")}
       colorScheme="purple"
     />
-    <Heading size="md">Cue {cueIndex + 1}</Heading>
+    <Heading size="md">Cue {cueIndex}</Heading>
     <IconButton
       aria-label="Next Cue"
       icon={<ChevronRightIcon />}
