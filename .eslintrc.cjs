@@ -6,14 +6,12 @@ module.exports = {
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
     "plugin:react-hooks/recommended",
-    "airbnb-base",
-    "airbnb/hooks",
   ],
   ignorePatterns: ["dist", ".eslintrc.cjs", "vite.config.js", "**tests**"],
   parserOptions: { ecmaVersion: "latest", sourceType: "module" },
   settings: {
     react: {
-      version: "18.2",
+      version: "18.3",
     },
     "import/resolver": {
       node: {
