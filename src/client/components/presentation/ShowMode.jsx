@@ -8,7 +8,7 @@ const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
-  const [screenCues] = useState(() => preloadCues(presentationInfo));
+  const [screenCues] = useState(() => preloadCues(presentationInfo))
 
   // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
