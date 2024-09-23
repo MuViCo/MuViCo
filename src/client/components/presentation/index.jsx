@@ -7,7 +7,7 @@ import "reactflow/dist/style.css"
 
 import presentationService from "../../services/presentation"
 
-import ShowModeButtons from "./ShowModeButtons"
+import ShowMode from "./ShowMode"
 import FlowMap from "./FlowMap"
 import Toolbox from "./ToolBox"
 
@@ -28,9 +28,6 @@ const PresentationPage = ({ userId }) => {
   const [showMode, setShowMode] = useState(false)
 
   const [presentationInfo, setPresentationInfo] = useState(null)
-
-  const [screensList, setScreensList] = useState([null, null, null, null])
-  const [cueIndex, setCueIndex] = useState(0)
 
   const navigate = useNavigate()
   const toast = useToast()
@@ -209,12 +206,8 @@ const PresentationPage = ({ userId }) => {
                 )}
                 {showMode && (
                   <>
-                    <ShowModeButtons
-                      screensList={screensList}
-                      setScreensList={setScreensList}
+                    <ShowMode
                       presentationInfo={presentationInfo}
-                      cueIndex={cueIndex}
-                      setCueIndex={setCueIndex}
                     />
                   </>
                 )}

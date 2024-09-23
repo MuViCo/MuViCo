@@ -44,9 +44,7 @@
   "executionRoleArn": "arn:aws:iam::851725318925:role/ecsTaskExecutionRole",
   "volumes": [],
   "placementConstraints": [],
-  "requiresCompatibilities": [
-    "EC2"
-  ],
+  "requiresCompatibilities": ["EC2"],
   "cpu": "1024",
   "memory": "512",
   "runtimePlatform": {

@@ -12,18 +12,22 @@ The application displays lyrics, images, or AI-generated visuals to enhance the 
 ### Used technologies
 
 #### Backend
+
 - [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
 - [Express.js](https://expressjs.com/en/5x/api.html)
 
 #### Frontend
+
 - [React](https://react.dev/learn)
 - JavaScript (ES6+)
 
 #### Testing
+
 - [Jest](https://jestjs.io/docs/tutorial-react)
 - [Cypress](https://docs.cypress.io/guides/overview/why-cypress)
 
 #### Database
+
 - [mongodb](https://www.mongodb.com/)
 
 ### Use
@@ -41,10 +45,10 @@ The latest component diagram can be viewed [here](https://github.com/MuViCo/MuVi
 ## Development
 
 1. Install npm, docker and docker compose
-2. Clone repository to local machine ```git clone git@github.com:MuViCo/MuViCo.git```
-3. Change directory to project root ```cd MuViCo```
+2. Clone repository to local machine `git clone git@github.com:MuViCo/MuViCo.git`
+3. Change directory to project root `cd MuViCo`
 4. Copy .env-template as .env and fill the required values
-5. Install depedencies ```npm i```
-6. Run ```npm start```
+5. Install depedencies `npm i`
+6. Run `npm start`
 
-Note: You can also start developing by just running ```npm run dev``` after all dependencies are installed and .env is configured
+Note: You can also start developing by just running `npm run dev` after all dependencies are installed and .env is configured

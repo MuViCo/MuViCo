@@ -1,24 +1,20 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import dotenv from 'dotenv'
-import { resolve } from 'path'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import dotenv from "dotenv";
+import { resolve } from "path";
 
-dotenv.config()
+dotenv.config();
 
-const devPort = process.env.NODE_ENV === "development"
-  ? process.env.VITE_DEV_PORT
-  : 8000
-
-
-
+const devPort =
+  process.env.NODE_ENV === "development" ? process.env.VITE_DEV_PORT : 8000;
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  base: "/",
   server: {
     proxy: {
-      '/api/': {
-        target: 'http://localhost:8000',
+      "/api/": {
+        target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,
       },
@@ -33,4 +29,4 @@ export default defineConfig({
   build: {
     manifest: true,
   },
-})
+});
