@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  env: { browser: true, es2020: true },
+  env: { node: true, browser: true, es2021: true },
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",
@@ -22,6 +22,7 @@ module.exports = {
   plugins: ["react-refresh"],
   rules: {
     "no-console": "off",
+    "no-undef": "off",
     "no-tabs": ["error", { allowIndentationTabs: true }],
     "no-unused-vars": "off",
     "react/prop-types": "off",
