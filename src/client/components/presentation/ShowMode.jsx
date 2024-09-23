@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
+import preloadCues from "../utils/preloadCues"
 
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
-  console.log(presentationInfo)
-  console.log(preloadedCues)
+
+  const [screenCues] = useState(() => preloadCues(presentationInfo));
 
   // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
-  const [screenVisibility, setScreenVisibility] = useState({})
+  
+  const [screenVisibility, setScreenVisibility] = useState(() =>Array(Object.keys(screenCues).length).fill(false))
+
 
   useEffect(() => {
     const preloadImage = (url) => {
@@ -19,53 +22,31 @@ const ShowMode = ({ presentationInfo }) => {
         const img = new Image()
         img.src = url
         img.onload = () => resolve(true)
-        img.onerror = () => {
-          console.error(`Error loading image: ${url}`)
-          resolve(false) // Resolve with false to continue, even on error
-        }
+        img.onerror = reject
       })
     }
 
-    const organizeAndPreloadCues = async () => {
-      const screenCues = {}
-
-      for (let cue of presentationInfo.cues) {
-        const { screen: screenNumber, index: cueIndex, file, name, _id: cueId } = cue
-
-        // Ensure screenCues has an entry for the current screen
-        if (!screenCues[screenNumber]) {
-          screenCues[screenNumber] = {}
-        }
-
-        // Preload the media file if available
-        if (file?.url) {
-          try {
-            await preloadImage(file.url) // Preload the image
-          } catch (error) {
-            console.error(`Error preloading file for cue: ${name}`, error)
+    const preloadCueData = async () => {
+      const preloaded = {}
+      for (let screen in screenCues) {
+        preloaded[screen] = {}
+        for (let cueId in screenCues[screen]) {
+          const cue = screenCues[screen][cueId]
+          if (cue.file?.url) {
+            try {
+              await preloadImage(cue.file.url)
+            } catch (error) {
+              console.error(`Error preloading image for cue: ${cue.name}`, error)
+            }
           }
-        }
-
-        // Store the cue with fallback values
-        screenCues[screenNumber][cueIndex] = {
-          name: name || "Unknown Cue",
-          file: file || { url: null }, // Fallback to an empty file object if missing
-          cueId: cueId || "unknown-id",
+          preloaded[screen][cueId] = cue
         }
       }
-
-      // Store the preloaded cues in state
-      setPreloadedCues(screenCues)
-
-      // Initialize screen visibility state
-      setScreenVisibility(
-        Array(Object.keys(screenCues).length).fill(false)
-      )
+      setPreloadedCues(preloaded)
     }
 
-    organizeAndPreloadCues()
-  }, [presentationInfo])
-
+    preloadCueData()
+  }, [screenCues])
 
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
