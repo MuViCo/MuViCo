@@ -1,19 +1,17 @@
 module.exports = {
   root: true,
-  env: { browser: true, es2020: true },
+  env: { node: true, browser: true, es2021: true },
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
     "plugin:react-hooks/recommended",
-    "airbnb-base",
-    "airbnb/hooks",
   ],
   ignorePatterns: ["dist", ".eslintrc.cjs", "vite.config.js", "**tests**"],
   parserOptions: { ecmaVersion: "latest", sourceType: "module" },
   settings: {
     react: {
-      version: "18.2",
+      version: "18.3",
     },
     "import/resolver": {
       node: {
@@ -24,6 +22,7 @@ module.exports = {
   plugins: ["react-refresh"],
   rules: {
     "no-console": "off",
+    "no-undef": "off",
     "no-tabs": ["error", { allowIndentationTabs: true }],
     "no-unused-vars": "off",
     "react/prop-types": "off",
