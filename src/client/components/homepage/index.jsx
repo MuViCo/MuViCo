@@ -99,13 +99,22 @@ const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
+
   useEffect(() => {
     const getPresentationData = async () => {
-      const updatedPresentations = await presentationService.getAll()
-      setPresentations(updatedPresentations)
+      try {
+        const updatedPresentations = await presentationService.getAll()
+        setPresentations(updatedPresentations)
+      } catch (err) {
+        if (err.response && err.response.status === 401) {
+          // Handle 401 Unauthorized error
+          window.localStorage.removeItem("user")
+          navigate("/home")
+        }
+      }
     }
     getPresentationData()
-  }, [])
+  }, [navigate])
 
   const createPresentation = async (presentationObject) => {
     try {
