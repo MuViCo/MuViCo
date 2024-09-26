@@ -31,7 +31,10 @@
       ".*/src/server/tests/test_helper.js",
       ".*/src/server/connections/",
       ".*/src/server/routes/connections.js"
-    ]
+    ],
+    "moduleNameMapper": {
+          "\\.(css|less|scss|sass)$": "<rootDir>/__mocks__/styleMock.js"
+    }
   },
   "repository": {
     "type": "git",
