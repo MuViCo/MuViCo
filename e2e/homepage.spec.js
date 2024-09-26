@@ -23,11 +23,10 @@ describe("Homepage", () => {
   })
 
   test("user can enter a presentation", async ({ page }) => {
-    
-    const heading = page.getByText("testi");
-    const card = heading.locator('..').locator('..');
-    await expect(card).toBeVisible();
-    await card.click();
+    const heading = page.getByText("testi")
+    const card = heading.locator("..").locator("..")
+    await expect(card).toBeVisible()
+    await card.click()
 
     await expect(page.getByRole("button", { name: "Show mode" })).toBeVisible()
   })
