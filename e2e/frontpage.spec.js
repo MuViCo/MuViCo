@@ -31,4 +31,9 @@ describe("Frontpage", () => {
     await expect(page).toHaveURL(/\/home/)
     await page.getByRole("button", { name: "Logout" }).click()
   })
+
+  test("user can log out", async ({ page }) => {
+    await page.click('button[name="logout"]');
+    await expect(page).toHaveURL("http://localhost:3000/login");
+  });
 })

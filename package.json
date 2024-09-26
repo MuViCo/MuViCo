@@ -9,7 +9,7 @@
     "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
     "format": "prettier --write '*.{js,json,css,md}'",
-    "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom --coverage --coverageReporters=\"cobertura\"",
+    "test-frontend": "jest --testPathPattern=src/client/tests/unit --verbose --runInBand --env=jsdom --coverage --coverageReporters=\"html\"",
     "build": "vite build",
     "test-backend": "NODE_ENV=test jest --testPathPattern=src/server/tests/ --verbose --runInBand --env=node",
     "test:cypress-open": "cypress open",
