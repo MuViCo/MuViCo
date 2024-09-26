@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom" // Add useNavigate
+import { useEffect } from "react"
 import {
   Container,
   Box,
@@ -15,6 +16,8 @@ import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
+import getToken from "../../auth"
+import { isTokenExpired } from "../../auth"
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate() // Define navigate function
@@ -35,6 +38,13 @@ const NavBar = ({ user, setUser }) => {
     navigate("/")
   }
 
+  // Check token expiration
+  useEffect(() => {
+    const token = getToken()
+    if (isTokenExpired(token)) {
+      handleLogout()
+    }
+  }, []) // [] makes this run only once
   return (
     <Box
       position="fixed"
