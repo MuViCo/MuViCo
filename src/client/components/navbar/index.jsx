@@ -96,7 +96,9 @@ const NavBar = ({ user, setUser }) => {
               <Button
                 colorScheme="purple"
                 variant="ghost"
-                onClick={handleLogout}
+                onClick={() => {
+                  setTimeout(() => handleLogout(navigate, setUser), 0) // Trigger logout after current render cycle
+                }}
               >
                 Logout
               </Button>
