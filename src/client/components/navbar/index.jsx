@@ -19,6 +19,12 @@ import SignUp from "./SignUp"
 import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 
+const handleLogout = (navigate, setUser) => {
+  window.localStorage.removeItem("user")
+  setUser(null)
+  navigate("/home")
+}
+
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate() // Define navigate function
 
@@ -32,21 +38,15 @@ const NavBar = ({ user, setUser }) => {
     navigate("/home")
   }
 
-  const handleLogout = () => {
-    window.localStorage.removeItem("user")
-    setUser(null)
-    navigate("/")
-  }
-
   // Check token expiration
   useEffect(() => {
     console.log("Checking token expiration (navbar)")
     const token = getToken()
     if (isTokenExpired(token)) {
       console.log("Token was expired (navbar)")
-      handleLogout()
+      handleLogout(navigate, setUser)
     }
-  }, []) // [] makes this run only once
+  }, []) //run only once
 
   return (
     <Box
@@ -141,3 +141,4 @@ const NavBar = ({ user, setUser }) => {
 }
 
 export default NavBar
+export { handleLogout }

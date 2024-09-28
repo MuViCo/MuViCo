@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast } from "@chakra-ui/react"
 import { useNodesState, useEdgesState } from "reactflow"
-
 import "reactflow/dist/style.css"
 
 import presentationService from "../../services/presentation"
+import { handleLogout } from "../navbar/index"
 
 import ShowMode from "./ShowMode"
 import FlowMap from "./FlowMap"
@@ -22,7 +22,7 @@ const screenCount = 4
  * @returns {JSX.Element} The presentation page component.
  */
 
-const PresentationPage = ({ userId }) => {
+const PresentationPage = ({ userId, setUser }) => {
   const { id } = useParams()
 
   const [showMode, setShowMode] = useState(false)
@@ -40,15 +40,20 @@ const PresentationPage = ({ userId }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   useEffect(() => {
-    presentationService
-      .get(id)
-      .then((presentation) => {
+    const fetchPresentation = async () => {
+      try {
+        const presentation = await presentationService.get(id)
         setPresentationInfo(presentation)
-      })
-      .catch((error) => {
-        console.log(error)
-        navigate("/home")
-      })
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          // Handle 401 Unauthorized error
+          handleLogout(navigate, setUser)
+          navigate("/home")
+        }
+      }
+    }
+
+    fetchPresentation()
   }, [id, userId, navigate])
 
   const handleNodeChange = useCallback(
