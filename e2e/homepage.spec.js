@@ -11,7 +11,7 @@ describe("Homepage", () => {
         password: "test",
       },
     })
-    await page.goto("http://localhost:3000/")
+    page.goto("http://localhost:3000/")
     await loginWith(page, "testuser", "test")
     await addPresentation(page, "testi")
     page.goto("http://localhost:3000/home")
@@ -35,14 +35,14 @@ describe("Homepage", () => {
   })
 
   test("user can delete a presentation", async ({ page }) => {
-    const heading = page.getByText("test_to_delete");
-    const card = heading.locator("..").locator("..");
-    await expect(card).toBeVisible();
-    await card.click();
-    const deleteButton = await page.locator('button:has-text("Delete presentation")');
-    await expect(deleteButton).toBeVisible();
-    await deleteButton.click();
-    await expect(card).not.toBeVisible();
-  });
+    const heading = page.getByText("test_to_delete")
+    const card = heading.locator("..").locator("..")
+    await expect(card).toBeVisible()
+    await card.click()
+    const deleteButton = await page.locator('button:has-text("Delete presentation")')
+    await expect(deleteButton).toBeVisible()
+    await deleteButton.click()
+    await expect(card).not.toBeVisible()
+  })
   
 })
