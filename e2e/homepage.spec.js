@@ -14,7 +14,10 @@ describe("Homepage", () => {
     await page.goto("http://localhost:3000/")
     await loginWith(page, "testuser", "test")
     await addPresentation(page, "testi")
-    await page.goto("http://localhost:3000/home")
+    page.goto("http://localhost:3000/home")
+    await addPresentation(page, "test_to_delete")
+    page.goto("http://localhost:3000/home")
+
   })
 
   test("user can add a presentation", async ({ page }) => {
@@ -32,7 +35,7 @@ describe("Homepage", () => {
   })
 
   test("user can delete a presentation", async ({ page }) => {
-    const heading = page.getByText("testi");
+    const heading = page.getByText("test_to_delete");
     const card = heading.locator("..").locator("..");
     await expect(card).toBeVisible();
     await card.click();
