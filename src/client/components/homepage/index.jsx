@@ -109,8 +109,7 @@ const HomePage = ({ user, setUser }) => {
       } catch (error) {
         if (error.response && error.response.status === 401) {
           // Handle 401 Unauthorized error
-          handleLogout(navigate, setUser)
-          navigate("/home")
+          navigate("/")
         }
       }
     }
