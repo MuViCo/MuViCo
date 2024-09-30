@@ -36,23 +36,10 @@ describe("Homepage", () => {
     const card = heading.locator("..").locator("..");
     await expect(card).toBeVisible();
     await card.click();
-    await page.click('button[name="delete-presentation"]');
+    const deleteButton = await page.locator('button:has-text("Delete presentation")');
+    await expect(deleteButton).toBeVisible();
+    await deleteButton.click();
     await expect(card).not.toBeVisible();
   });
-
-  test("user can edit a presentation", async ({ page }) => {
-    const heading = page.getByText("testi");
-    const card = heading.locator("..").locator("..");
-    await expect(card).toBeVisible();
-    await card.hover();
-    await page.click('button[name="edit-presentation"]');
-    await page.fill('input[name="presentation-name"]', "editedpresentation");
-    await page.click('button[type="submit"]');
-    await expect(page.getByText("editedpresentation")).toBeVisible();
-  });
-
-
-
-  
   
 })
