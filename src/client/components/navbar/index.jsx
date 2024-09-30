@@ -40,10 +40,8 @@ const NavBar = ({ user, setUser }) => {
 
   // Check token expiration
   useEffect(() => {
-    console.log("Checking token expiration (navbar)")
     const token = getToken()
     if (isTokenExpired(token)) {
-      console.log("Token was expired (navbar)")
       handleLogout(navigate, setUser)
     }
   }, []) //run only once
