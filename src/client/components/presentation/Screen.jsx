@@ -24,44 +24,34 @@ const ScreenContent = ({ screenNumber, screenData }) => (
 
 const Screen = ({ screenNumber, screenData, isVisible }) => {
   const windowRef = useRef(null)
-  const containerRef = useRef(null)
 
   useEffect(() => {
     if (isVisible && !windowRef.current) {
       const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
       windowRef.current = newWindow
 
-      // Create a container in the new window for React to render into
-      const container = newWindow.document.createElement("div")
-      newWindow.document.body.appendChild(container)
-      containerRef.current = container
-
       // Clean up when the window is closed
       newWindow.addEventListener("beforeunload", () => {
         windowRef.current = null
       })
-    }
 
-    if (!isVisible && windowRef.current) {
-      windowRef.current.close() // Close the window
-      windowRef.current = null // Reset the window reference
-    }
-
-    return () => {
-      if (windowRef.current) {
-        windowRef.current.close()
-        windowRef.current = null
+      // Clean up when the component is unmounted
+      return () => {
+        if (windowRef.current) {
+          windowRef.current.close()
+        }
       }
     }
   }, [isVisible, screenNumber])
 
-  // Use ReactDOM.createPortal to render content into the new window
-  return windowRef.current && containerRef.current
-    ? ReactDOM.createPortal(
-        <ScreenContent screenNumber={screenNumber} screenData={screenData} />,
-        containerRef.current
-      )
-    : null
+  if (!isVisible || !windowRef.current) {
+    return null
+  }
+
+  return ReactDOM.createPortal(
+    <ScreenContent screenNumber={screenNumber} screenData={screenData} />,
+    windowRef.current.document.body
+  )
 }
 
 export default Screen
