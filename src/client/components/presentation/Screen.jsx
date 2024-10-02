@@ -1,21 +1,24 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
-import { Box, Image, Text } from "@chakra-ui/react"
+import { Box, ChakraProvider, Image, Text } from "@chakra-ui/react"
+import theme from "../../lib/theme"
+import Fonts from "../../lib/fonts"
 
-// ScreenContent now assumes ChakraProvider is already in place higher up in the component tree
+
+// ScreenContent with Chakra styling applied directly through props
 const ScreenContent = ({ screenNumber, screenData }) => (
-  <Box p={4}>
+  <Box p={4} bg="white" color="black" width="100vw" height="100vh">
     <Text fontSize="2xl" fontWeight="bold">Screen {screenNumber}</Text>
     {screenData ? (
       <Box>
         <Text><strong>Cue Name:</strong> {screenData.name}</Text>
         {screenData.file?.url ? (
           <Image 
-          src={screenData.file.url} 
-          alt={screenData.name} 
-          maxW="100vw"  // Image won't exceed viewport width
-          height="auto" // Maintains the aspect ratio of the image
-          objectFit="contain" // Makes sure the image is contained within the box
+            src={screenData.file.url} 
+            alt={screenData.name} 
+            maxW="100vw" 
+            height="auto" 
+            objectFit="contain" 
           />
         ) : (
           <Text>No media available for this cue.</Text>
@@ -31,46 +34,65 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
 
+  // Function to copy the dynamic Chakra styles from the parent document to the new window
+  const copyChakraStyles = () => {
+    const parentStyles = document.querySelectorAll("style[data-emotion]") // Chakra UI styles are inside <style data-emotion> tags
+    parentStyles.forEach((style) => {
+      if (windowRef.current) {
+        windowRef.current.document.head.appendChild(style.cloneNode(true)) // Clone the dynamic styles into the new window
+      }
+    })
+  }
+
   useEffect(() => {
     if (isVisible) {
-      // Reset isWindowReady to false before opening the window again
-      setIsWindowReady(false)
-
       if (!windowRef.current) {
         const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
-        windowRef.current = newWindow
 
-        // Set window as ready once the container is available
+
+        windowRef.current = newWindow
         setIsWindowReady(true)
 
         // Handle window close event to reset the reference
         newWindow.addEventListener("beforeunload", () => {
           windowRef.current = null
-          setIsWindowReady(false) // Reset the state when the window is closed
+          setIsWindowReady(false)
         })
       }
     }
 
     if (!isVisible && windowRef.current) {
-      windowRef.current.close() // Close the window
-      windowRef.current = null  // Reset the window reference
-      setIsWindowReady(false)   // Reset readiness state
+      windowRef.current.close()
+      windowRef.current = null
+      setIsWindowReady(false)
     }
 
+    // Cleanup on unmount
     return () => {
       if (windowRef.current) {
-        windowRef.current.close() // Ensure the window is closed on unmount
+        windowRef.current.close()
         windowRef.current = null
-        setIsWindowReady(false)   // Reset readiness state on unmount
+        setIsWindowReady(false)
       }
     }
   }, [isVisible, screenNumber])
 
-  // Use ReactDOM.createPortal to render content into the new window
+  useEffect(() => {
+    // After the window is ready, copy the Chakra styles
+    if (isWindowReady && windowRef.current) {
+      copyChakraStyles()
+    }
+  }, [isWindowReady])
+
+  // Only render the portal when the window is ready
   return windowRef.current && isWindowReady
     ? ReactDOM.createPortal(
-      <ScreenContent screenNumber={screenNumber} screenData={screenData} />,
-      windowRef.current.document.body
+        // Render the ChakraProvider in the new window
+        <ChakraProvider theme={theme}>
+          <Fonts />
+            <ScreenContent screenNumber={screenNumber} screenData={screenData} />
+        </ChakraProvider>,
+        windowRef.current.document.body // render to new window's document.body
       )
     : null
 }
