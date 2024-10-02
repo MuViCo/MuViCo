@@ -10,7 +10,13 @@ const ScreenContent = ({ screenNumber, screenData }) => (
       <Box>
         <Text><strong>Cue Name:</strong> {screenData.name}</Text>
         {screenData.file?.url ? (
-          <Image src={screenData.file.url} alt={screenData.name} maxWidth="100%" />
+          <Image 
+          src={screenData.file.url} 
+          alt={screenData.name} 
+          maxW="100vw"  // Image won't exceed viewport width
+          height="auto" // Maintains the aspect ratio of the image
+          objectFit="contain" // Makes sure the image is contained within the box
+          />
         ) : (
           <Text>No media available for this cue.</Text>
         )}
