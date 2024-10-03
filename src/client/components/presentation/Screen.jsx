@@ -31,6 +31,7 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
       const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
       windowRef.current = newWindow
 
+
       // Create a container in the new window for React to render into
       const container = newWindow.document.createElement("div")
       newWindow.document.body.appendChild(container)
@@ -65,3 +66,4 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
 }
 
 export default Screen
+

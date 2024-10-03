@@ -40,12 +40,11 @@ const userExtractor = async (request, response, next) => {
 
       request.user = await User.findById(decodedToken.id)
     }
-  } catch {
-    response.status(401).send({ error: "token-expired" })
+    next() // Call next() only if no response has been sent
+  } catch (error) {
+    console.log("Token expired (middleware)")
+    return response.status(401).send({ error: "token-expired" })
   }
-  next()
-
-  return null
 }
 
 const unknownEndpoint = (request, response) => {
