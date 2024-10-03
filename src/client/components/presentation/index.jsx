@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, useToast } from "@chakra-ui/react"
+import { Button, Flex, useToast, Box } from "@chakra-ui/react"
 import { useNodesState, useEdgesState } from "reactflow"
 
 import "reactflow/dist/style.css"
@@ -10,6 +10,7 @@ import presentationService from "../../services/presentation"
 import ShowMode from "./ShowMode"
 import FlowMap from "./FlowMap"
 import Toolbox from "./ToolBox"
+import EditMode from "./EditMode"
 
 const screenCount = 4
 
@@ -184,47 +185,27 @@ const PresentationPage = ({ userId }) => {
   return (
     <>
       {presentationInfo && (
-        <>
-          <div style={{ display: "flex" }}>
-            <div
-              style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}
-            >
-              <Flex flexDirection="row" flexWrap="wrap" gap={4}>
-                <Button colorScheme="gray" onClick={() => handleShowMode()}>
-                  {showMode ? "Edit mode" : "Show mode"}
+        <Box width="100vw" height="95vh" margin={0} padding={0}>
+          <Flex flexDirection="row" flexWrap="wrap" gap={4} padding={4}>
+            <Button colorScheme="gray" onClick={handleShowMode}>
+              {showMode ? "Edit mode" : "Show mode"}
+            </Button>
+            {!showMode && (
+              <>
+                <Button colorScheme="gray" onClick={addCue}>
+                  Add Cue
                 </Button>
-                {!showMode && (
-                  <>
-                    <Toolbox addCue={addCue} />
-                    <Button
-                      colorScheme="gray"
-                      onClick={() => deletePresentation()}
-                    >
-                      Delete presentation
-                    </Button>
-                  </>
-                )}
-                {showMode && (
-                  <>
-                    <ShowMode
-                      presentationInfo={presentationInfo}
-                    />
-                  </>
-                )}
-              </Flex>
-
-              <FlowMap
-                handleNodeChange={handleNodeChange}
-                presentationInfo={presentationInfo}
-                nodes={nodes}
-                edges={edges}
-                setEdges={setEdges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-              />
-            </div>
-          </div>
-        </>
+                <Button colorScheme="gray" onClick={deletePresentation}>
+                  Delete presentation
+                </Button>
+              </>
+            )}
+          </Flex>
+          <Box flex="1" padding={4} marginLeft="0px"> {/* Adjust marginLeft to move the grid to the left */}
+            {showMode && <ShowMode presentationInfo={presentationInfo} />}
+            <EditMode cues={presentationInfo.cues} isEditable={!showMode} />
+          </Box>
+        </Box>
       )}
     </>
   )

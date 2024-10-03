@@ -25,7 +25,18 @@ const components = {
       },
     },
   },
+  Footer: {
+    baseStyle: {
+      backgroundColor: "#f1f1f1",
+      padding: "10px",
+      textAlign: "center",
+      width: "100%",
+      position: "relative",
+      bottom: 0,
+    },
+  },
 }
+
 
 const fonts = {
   heading: "'Poppins', sans-serif",
