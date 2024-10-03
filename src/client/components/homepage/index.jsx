@@ -15,6 +15,7 @@ import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 import randomLinearGradient from "../utils/randomGradient"
+import { handleLogout } from "../navbar"
 
 export const PresentationsGrid = ({
   presentations,
@@ -95,17 +96,25 @@ export const CreatePresentation = ({
   </SimpleGrid>
 )
 
-const HomePage = ({ user }) => {
+const HomePage = ({ user, setUser }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
+
   useEffect(() => {
     const getPresentationData = async () => {
-      const updatedPresentations = await presentationService.getAll()
-      setPresentations(updatedPresentations)
+      try {
+        const updatedPresentations = await presentationService.getAll()
+        setPresentations(updatedPresentations)
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          // Handle 401 Unauthorized error
+          navigate("/")
+        }
+      }
     }
     getPresentationData()
-  }, [])
+  }, [navigate])
 
   const createPresentation = async (presentationObject) => {
     try {

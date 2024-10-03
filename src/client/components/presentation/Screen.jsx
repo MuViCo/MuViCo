@@ -54,7 +54,6 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
       if (!windowRef.current) {
         const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
 
-
         windowRef.current = newWindow
         setIsWindowReady(true)
 
@@ -103,3 +102,4 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
 }
 
 export default Screen
+

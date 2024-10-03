@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom" // Add useNavigate
+import { useEffect } from "react"
 import {
   Container,
   Box,
@@ -15,6 +16,14 @@ import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
+import getToken from "../../auth"
+import { isTokenExpired } from "../../auth"
+
+const handleLogout = (navigate, setUser) => {
+  window.localStorage.removeItem("user")
+  setUser(null)
+  navigate("/home")
+}
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate() // Define navigate function
@@ -29,11 +38,13 @@ const NavBar = ({ user, setUser }) => {
     navigate("/home")
   }
 
-  const handleLogout = () => {
-    window.localStorage.removeItem("user")
-    setUser(null)
-    navigate("/")
-  }
+  // Check token expiration
+  useEffect(() => {
+    const token = getToken()
+    if (isTokenExpired(token)) {
+      handleLogout(navigate, setUser)
+    }
+  }, []) //run only once
 
   return (
     <Box
@@ -83,7 +94,9 @@ const NavBar = ({ user, setUser }) => {
               <Button
                 colorScheme="purple"
                 variant="ghost"
-                onClick={handleLogout}
+                onClick={() => {
+                  setTimeout(() => handleLogout(navigate, setUser), 0) // Trigger logout after current render cycle
+                }}
               >
                 Logout
               </Button>
@@ -128,3 +141,4 @@ const NavBar = ({ user, setUser }) => {
 }
 
 export default NavBar
+export { handleLogout }

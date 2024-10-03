@@ -136,7 +136,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
             data-testid="password_signup_confirmation"
             type="password"
             name="password_confirmation"
-            placeholder="Password"
+            placeholder="Password_confirmation"
             value={formData.password_confirmation}
             onChange={handleChange}
             ref={passwordagainRef}

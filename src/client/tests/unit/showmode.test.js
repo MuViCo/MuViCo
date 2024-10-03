@@ -10,6 +10,10 @@ const mockPresentationInfo = {
   ],
 }
 
+const mockemptyPresentationInfo = {
+  cues: [],
+}
+
 describe('ShowMode', () => {
     test('renders without crashing', () => {
       render(<ShowMode presentationInfo={mockPresentationInfo} />)
@@ -44,5 +48,27 @@ describe('ShowMode', () => {
         
         fireEvent.click(screen.getByRole('button', { name: 'Close screen: 1' }))
         expect(screen.getByRole('button', { name: 'Open screen: 1' })).toBeInTheDocument()
+      })
+
+      test('toggles visibility for multiple screens', () => {
+        render(<ShowMode presentationInfo={mockPresentationInfo} />);
+        
+        fireEvent.click(screen.getByRole('button', { name: 'Open screen: 1' }));
+        expect(screen.getByRole('button', { name: 'Close screen: 1' })).toBeInTheDocument()
+        
+        fireEvent.click(screen.getByRole('button', { name: 'Open screen: 2' }));
+        expect(screen.getByRole('button', { name: 'Close screen: 2' })).toBeInTheDocument()
+        
+        fireEvent.click(screen.getByRole('button', { name: 'Close screen: 1' }));
+        expect(screen.getByRole('button', { name: 'Open screen: 1' })).toBeInTheDocument()
+        
+        fireEvent.click(screen.getByRole('button', { name: 'Close screen: 2' }));
+        expect(screen.getByRole('button', { name: 'Open screen: 2' })).toBeInTheDocument()
+      })
+    
+      test('handles empty presentationInfo', () => {
+        render(<ShowMode presentationInfo={mockemptyPresentationInfo} />)
+        expect(screen.queryByRole('button', { name: 'Open screen: 1' })).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Open screen: 2' })).not.toBeInTheDocument()
       })
 })

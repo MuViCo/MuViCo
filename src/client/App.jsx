@@ -44,13 +44,13 @@ const App = () => {
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"
-              element={user ? <HomePage user={user} /> : <Navigate to="/" />}
+              element={user ? <HomePage user={user} setUser={setUser} /> : <Navigate to="/" />}
             />
             <Route
               path="/presentation/:id"
               element={
                 user ? (
-                  <PresentationPage userId={user.id} />
+                  <PresentationPage userId={user.id} setUser={setUser} />
                 ) : (
                   <Navigate to="/" />
                 )
