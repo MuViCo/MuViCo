@@ -7,26 +7,31 @@ import Fonts from "../../lib/fonts"
 
 // ScreenContent with Chakra styling applied directly through props
 const ScreenContent = ({ screenNumber, screenData }) => (
-  <Box p={4} bg="white" color="black" width="100vw" height="100vh">
-    <Text fontSize="2xl" fontWeight="bold">Screen {screenNumber}</Text>
-    {screenData ? (
-      <Box>
-        <Text><strong>Cue Name:</strong> {screenData.name}</Text>
-        {screenData.file?.url ? (
-          <Image 
-            src={screenData.file.url} 
-            alt={screenData.name} 
-            maxW="100vw" 
-            height="auto" 
-            objectFit="contain" 
-          />
-        ) : (
-          <Text>No media available for this cue.</Text>
-        )}
-      </Box>
-    ) : (
-      <Text>No data available for this screen.</Text>
-    )}
+  <Box p={4} bg="white" color="black" width="100vw" height="100vh" display="flex" flexDirection="column">
+    {/* Header with Screen Number on the left and Cue Name on the right */}
+    <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+      <Text fontSize="2xl" fontWeight="bold">Screen {screenNumber}</Text>
+      {screenData && (
+        <Text fontSize="lg" textAlign="right">
+          <strong>Cue Name:</strong> {screenData.name}
+        </Text>
+      )}
+    </Box>
+
+    {/* Main Content Section for Image or Fallback Text */}
+    <Box flex="1" display="flex" justifyContent="center" alignItems="center">
+      {screenData?.file?.url ? (
+        <Image 
+          src={screenData.file.url} 
+          alt={screenData.name} 
+          maxW="80vw" 
+          maxH="80vh" 
+          objectFit="contain"
+        />
+      ) : (
+        <Text>No media available for this cue.</Text>
+      )}
+    </Box>
   </Box>
 )
 
