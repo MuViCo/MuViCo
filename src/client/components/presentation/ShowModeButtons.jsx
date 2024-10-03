@@ -5,19 +5,19 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
 // Component for rendering the screen toggle buttons
 const ScreenToggleButtons = ({ screens, toggleScreenVisibility }) => (
   <Box>
-    {/* Render buttons to toggle screen visibility */}
-    {[...Array(screens.length)].map((_, index) => (
+    {Object.keys(screens).map((screenNumber) => (
       <Button
-        key={index}
-        colorScheme={screens[index] ? "pink" : "purple"}
-        onClick={() => toggleScreenVisibility(index + 1)}
+        key={screenNumber}
+        colorScheme={screens[screenNumber] ? "pink" : "purple"}
+        onClick={() => toggleScreenVisibility(screenNumber)}
         m={2}
       >
-        {screens[index] ? `Close screen: ${index + 1}` : `Open screen: ${index + 1}`}
+        {screens[screenNumber] ? `Close screen: ${screenNumber}` : `Open screen: ${screenNumber}`}
       </Button>
     ))}
   </Box>
 )
+
 
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue }) => (

@@ -1,65 +1,83 @@
 import React, { useState, useEffect } from "react"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
-import preloadCues from "../utils/preloadCues"
 
 // ShowMode component
 const ShowMode = ({ presentationInfo }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
-  const [screenCues] = useState(() => preloadCues(presentationInfo))
-
-  // Manage the current cue index and screen visibility
   const [cueIndex, setCueIndex] = useState(0)
   
-  const [screenVisibility, setScreenVisibility] = useState(() =>Array(Object.keys(screenCues).length).fill(false))
-
+  const [screenVisibility, setScreenVisibility] = useState(() => {
+    const initialScreenVisibility = [...new Set(presentationInfo.cues.map(cue => cue.screen))]
+  
+    return initialScreenVisibility.reduce((acc, screenNumber) => {
+      acc[screenNumber] = false
+      return acc
+    }, {})
+  })
 
   useEffect(() => {
     const preloadImage = (url) => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const img = new Image()
         img.src = url
         img.onload = () => resolve(true)
-        img.onerror = reject
+        img.onerror = () => {
+          console.error(`Error loading image: ${url}`)
+          resolve(false)
+        }
       })
     }
-
+  
     const preloadCueData = async () => {
       const preloaded = {}
-      for (let screen in screenCues) {
+  
+      // Group cues by screen number
+      const cuesByScreen = presentationInfo.cues.reduce((acc, cue) => {
+        if (!acc[cue.screen]) {
+          acc[cue.screen] = {}
+        }
+        acc[cue.screen][cue.index] = cue
+        return acc
+      }, {})
+  
+      const preloadPromises = Object.entries(cuesByScreen).flatMap(([screen, cues]) => {
         preloaded[screen] = {}
-        for (let cueId in screenCues[screen]) {
-          const cue = screenCues[screen][cueId]
+  
+        return Object.entries(cues).map(async ([cueId, cue]) => {
           if (cue.file?.url) {
-            try {
-              await preloadImage(cue.file.url)
-            } catch (error) {
-              console.error(`Error preloading image for cue: ${cue.name}`, error)
-            }
+            await preloadImage(cue.file.url)
           }
           preloaded[screen][cueId] = cue
-        }
-      }
+        })
+      })
+  
+      // Wait for all preloads to finish
+      await Promise.all(preloadPromises)
+  
       setPreloadedCues(preloaded)
     }
-
+  
     preloadCueData()
-  }, [screenCues])
+  }, [presentationInfo])
+  
 
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
-    const screenIdx = screenNumber - 1
-    setScreenVisibility((prev) => prev.map((isVisible, index) => (index === screenIdx ? !isVisible : isVisible)))
-  }
+  setScreenVisibility(prevVisibility => ({
+    ...prevVisibility,
+    [screenNumber]: !prevVisibility[screenNumber]
+  }))
+}
 
-  // Update cue (Next or Previous)
+
   const updateCue = (direction) => {
     if (direction === "Next") {
       setCueIndex((prevCueIndex) => prevCueIndex + 1)
     } else {
-      setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1)) // Prevent going below cue 1
+      setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1))
     }
   }
 
@@ -77,9 +95,9 @@ const ShowMode = ({ presentationInfo }) => {
       {Object.keys(preloadedCues).map((screenNumber) => (
         <Screen
           key={screenNumber}
-          screenData={preloadedCues[screenNumber][cueIndex]} // Use preloaded cues
+          screenData={preloadedCues[screenNumber][cueIndex]}
           screenNumber={screenNumber}
-          isVisible={screenVisibility[screenNumber - 1]}
+          isVisible={screenVisibility[screenNumber]}
         />
       ))}
     </div>
