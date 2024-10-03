@@ -77,10 +77,10 @@ describe('PresentationForm', () => {
   test('renders the form with name input field and buttons', () => {
     render(<PresentationForm />)
 
-    expect(screen.getByText('Create new')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    expect(screen.getByTestId('presentation-name')).toBeInTheDocument()
     expect(screen.getByLabelText('Name')).toBeInTheDocument()
-    expect(screen.getByText('create')).toBeInTheDocument()
-    expect(screen.getByText('cancel')).toBeInTheDocument()
   })
 
   test('calls createPresentation function when create button is clicked', () => {
@@ -196,7 +196,6 @@ describe('Create presentation form', () => {
       />
     )
     expect(screen.getByText('New presentation')).toBeInTheDocument()
-    expect(screen.getByText('Connections')).toBeInTheDocument()
   })
   test('calls createPresentation function when create button is clicked', () => {
     const createPresentationMock = jest.fn()

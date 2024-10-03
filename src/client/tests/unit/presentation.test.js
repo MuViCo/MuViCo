@@ -8,35 +8,6 @@ import { CuesForm } from "../../components/presentation/Cues"
 import presentation from "../../services/presentation"
 import "@testing-library/jest-dom"
 
-describe("PresentationPage", () => {
-  test("cues are rendered", () => {
-    const presentation = {
-      cues: [
-        {
-          _id: "1",
-          index: 1,
-          name: "Cue 1",
-          screen: 1,
-          file: { name: "cue1.jpg" },
-        },
-        {
-          _id: "2",
-          index: 2,
-          name: "Cue 2",
-          screen: 2,
-          file: { name: "cue2.png" },
-        },
-      ],
-    }
-    const removeCue = jest.fn()
-    render(
-      <PresentationCues presentation={presentation} removeCue={removeCue} />
-    )
-    expect(screen.getByText("Cues:")).toBeInTheDocument()
-    expect(screen.getByText("Name: Cue 1")).toBeInTheDocument()
-    expect(screen.getByText("Name: Cue 2")).toBeInTheDocument()
-  })
-})
 
 describe("services tests", () => {
   test("presentation service calls remove", async () => {

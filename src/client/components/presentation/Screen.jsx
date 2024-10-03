@@ -1,73 +1,105 @@
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useState } from "react"
+import ReactDOM from "react-dom"
+import { Box, ChakraProvider, Image, Text } from "@chakra-ui/react"
+import theme from "../../lib/theme"
+import Fonts from "../../lib/fonts"
 
-const Screen = ({ screenNumber, screenData, isVisible}) => {
+
+// ScreenContent with Chakra styling applied directly through props
+const ScreenContent = ({ screenNumber, screenData }) => (
+  <Box p={4} bg="white" color="black" width="100vw" height="100vh" display="flex" flexDirection="column">
+    {/* Header with Screen Number on the left and Cue Name on the right */}
+    <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+      <Text fontSize="2xl" fontWeight="bold">Screen {screenNumber}</Text>
+      {screenData && (
+        <Text fontSize="lg" textAlign="right">
+          <strong>Cue Name:</strong> {screenData.name}
+        </Text>
+      )}
+    </Box>
+
+    {/* Main Content Section for Image or Fallback Text */}
+    <Box flex="1" display="flex" justifyContent="center" alignItems="center">
+      {screenData?.file?.url ? (
+        <Image 
+          src={screenData.file.url} 
+          alt={screenData.name} 
+          maxW="80vw" 
+          maxH="80vh" 
+          objectFit="contain"
+        />
+      ) : (
+        <Text>No media available for this cue.</Text>
+      )}
+    </Box>
+  </Box>
+)
+
+const Screen = ({ screenNumber, screenData, isVisible }) => {
   const windowRef = useRef(null)
+  const [isWindowReady, setIsWindowReady] = useState(false)
 
-  useEffect(() => {
-    if (isVisible && !windowRef.current) {
-      const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
-      windowRef.current = newWindow
-
-      if (!screenData) {
-
-        newWindow.document.body.innerHTML = `
-        <div>
-        <h1>Screen ${screenNumber}</h1>
-        <div id="screen-content"></div>
-        </div>
-        `
-      } else {
-        newWindow.document.body.innerHTML = `
-        <div>
-        <h1>Screen ${screenNumber}</h1>
-        <div id="screen-content">
-        <p><strong>Cue Name:</strong> ${screenData.name}</p>
-        <img src="${screenData.file.url}" style="max-width: 100%;" alt="${screenData.name}" />
-        </div>
-        </div>
-        `
+  // Function to copy the dynamic Chakra styles from the parent document to the new window
+  const copyChakraStyles = () => {
+    const parentStyles = document.querySelectorAll("style[data-emotion]") // Chakra UI styles are inside <style data-emotion> tags
+    parentStyles.forEach((style) => {
+      if (windowRef.current) {
+        windowRef.current.document.head.appendChild(style.cloneNode(true)) // Clone the dynamic styles into the new window
       }
-
-    // Add listener to handle window close
-    newWindow.addEventListener("beforeunload", () => {
-      windowRef.current = null
     })
   }
 
-  if (!isVisible && windowRef.current) {
-    windowRef.current.close() // Close the window
-    windowRef.current = null // Reset the window reference
-  }
-
-  return () => {
-    // Ensure the window is closed when the component unmounts
-    if (windowRef.current) {
-      windowRef.current.close()
-      windowRef.current = null
-    }
-  }
-}, [isVisible, screenNumber])
-
-
-  // Update window content when `screenData` changes
   useEffect(() => {
-    if (windowRef.current && screenData) {
-      const contentDiv = windowRef.current.document.getElementById("screen-content")
+    if (isVisible) {
+      if (!windowRef.current) {
+        const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
 
-      if (screenData?.file?.url) {
-        contentDiv.innerHTML = `
-          <p><strong>Cue Name:</strong> ${screenData.name}</p>
-          <img src="${screenData.file.url}" style="max-width: 100%;" alt="${screenData.name}" />
-        `
-      } else {
-        contentDiv.innerHTML = `
-          <p>No media available for this cue.</p>
-        `
+        windowRef.current = newWindow
+        setIsWindowReady(true)
+
+        // Handle window close event to reset the reference
+        newWindow.addEventListener("beforeunload", () => {
+          windowRef.current = null
+          setIsWindowReady(false)
+        })
       }
     }
-  }, [screenData])
 
-  return null
+    if (!isVisible && windowRef.current) {
+      windowRef.current.close()
+      windowRef.current = null
+      setIsWindowReady(false)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (windowRef.current) {
+        windowRef.current.close()
+        windowRef.current = null
+        setIsWindowReady(false)
+      }
+    }
+  }, [isVisible, screenNumber])
+
+  useEffect(() => {
+    // After the window is ready, copy the Chakra styles
+    if (isWindowReady && windowRef.current) {
+      copyChakraStyles()
+    }
+  }, [isWindowReady])
+
+  // Only render the portal when the window is ready
+  return windowRef.current && isWindowReady
+    ? ReactDOM.createPortal(
+        // Render the ChakraProvider in the new window
+        <ChakraProvider theme={theme}>
+          <Fonts />
+            <ScreenContent screenNumber={screenNumber} screenData={screenData} />
+        </ChakraProvider>,
+        windowRef.current.document.body // render to new window's document.body
+      )
+    : null
 }
 
 export default Screen
+

@@ -30,5 +30,7 @@ describe("Frontpage", () => {
     loginWith(page, "testuser", "test")
     await expect(page).toHaveURL(/\/home/)
     await page.getByRole("button", { name: "Logout" }).click()
+    await expect(page).toHaveURL("http://localhost:3000");
   })
+
 })
