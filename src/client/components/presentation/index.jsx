@@ -185,7 +185,7 @@ const PresentationPage = ({ userId }) => {
   return (
     <>
       {presentationInfo && (
-        <Box width="100vw" height="95vh" margin={0} padding={0}>
+        <Box width="100vw" height="95vh" margin={0} padding={0} display="flex" flexDirection="column">
           <Flex flexDirection="row" flexWrap="wrap" gap={4} padding={4}>
             <Button colorScheme="gray" onClick={handleShowMode}>
               {showMode ? "Edit mode" : "Show mode"}
@@ -201,7 +201,7 @@ const PresentationPage = ({ userId }) => {
               </>
             )}
           </Flex>
-          <Box flex="1" padding={4} marginLeft="0px"> {/* Adjust marginLeft to move the grid to the left */}
+          <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
             <EditMode cues={presentationInfo.cues} isEditable={!showMode} />
           </Box>
