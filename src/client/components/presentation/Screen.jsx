@@ -35,7 +35,7 @@ const ScreenContent = ({ screenNumber, screenData }) => (
   </Box>
 )
 
-const Screen = ({ screenNumber, screenData, isVisible }) => {
+const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
 
@@ -60,6 +60,7 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
         // Handle window close event to reset the reference
         newWindow.addEventListener("beforeunload", () => {
           windowRef.current = null
+          onClose(screenNumber)
           setIsWindowReady(false)
         })
       }
@@ -77,9 +78,10 @@ const Screen = ({ screenNumber, screenData, isVisible }) => {
         windowRef.current.close()
         windowRef.current = null
         setIsWindowReady(false)
+        onClose(screenNumber)
       }
     }
-  }, [isVisible, screenNumber])
+  }, [isVisible, screenNumber, onClose])
 
   useEffect(() => {
     // After the window is ready, copy the Chakra styles
