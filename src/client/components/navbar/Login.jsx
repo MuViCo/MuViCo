@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google"
 import {
   Button,
   FormControl,
@@ -9,6 +10,8 @@ import {
 } from "@chakra-ui/react"
 import loginService from "../../services/login"
 import Error from "./Error"
+
+
 
 const initialValues = {
   username: "",
@@ -73,6 +76,26 @@ export const LoginForm = ({ onSubmit, error }) => {
       }
     }
   }
+  
+  const handleGoogleSuccess = async (response) => {
+    const { credential } = response
+    try {
+      const res = await axios.post("/api/login/auth/google", { tokenId: credential })
+      const { token, username, name } = res.data
+      // Save the token and user info to local storage or state
+      localStorage.setItem("token", token)
+      localStorage.setItem("username", username)
+      localStorage.setItem("name", name)
+      // Redirect or update the UI as necessary
+    } catch (error) {
+      console.error("Google login error:", error)
+    }
+  }
+  
+
+  const handleGoogleFailure = (error) => {
+    console.error("Google login failed:", error)
+  }
 
   return (
     <>
@@ -119,6 +142,13 @@ export const LoginForm = ({ onSubmit, error }) => {
           >
             Log in
           </Button>
+          {submissionError && <Error message={submissionError} />}
+          <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleFailure}
+          />
+        </GoogleOAuthProvider>
         </Box>
       </form>
     </>
@@ -140,7 +170,7 @@ const Login = ({ onLogin }) => {
     }
   }
 
-  return <LoginForm onSubmit={onSubmit} error={error} />
-}
+  return  <LoginForm onSubmit={onSubmit} error={error} />
+} 
 
 export default Login

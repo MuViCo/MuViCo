@@ -5,8 +5,10 @@ const morgan = require("morgan")
 const mongoose = require("mongoose")
 const path = require("path")
 const config = require("./utils/config")
+const passport = require("./routes/googleAuth")
 
 const logger = require("./utils/logger")
+
 
 const signupRouter = require("./routes/signup")
 const loginRouter = require("./routes/login")
@@ -42,6 +44,10 @@ app.use(cookieParser())
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
+
+app.use(passport.initialize())
+app.use(passport.session())
+
 
 app.use("/api/login", loginRouter)
 app.use("/api/signup", signupRouter)

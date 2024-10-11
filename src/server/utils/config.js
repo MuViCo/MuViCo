@@ -9,6 +9,8 @@ const { BUCKET_NAME } = process.env
 const { BUCKET_REGION } = process.env
 const { ACCESS_KEY } = process.env
 const { SECRET_ACCESS_KEY } = process.env
+const  { GOOGLE_CLIENT_ID } = process.env
+const { GOOGLE_CLIENT_SECRET } = process.env
 
 module.exports = {
   MONGODB_URI,
@@ -18,4 +20,6 @@ module.exports = {
   BUCKET_REGION,
   ACCESS_KEY,
   SECRET_ACCESS_KEY,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
 }
