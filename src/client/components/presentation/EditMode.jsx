@@ -1,5 +1,6 @@
 import React from "react"
-import { Box, Text, ChakraProvider, extendTheme, useColorModeValue } from "@chakra-ui/react"
+import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
+import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -23,6 +24,7 @@ const EditMode = ({ cues }) => {
     return position
   })
 
+
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
@@ -30,12 +32,20 @@ const EditMode = ({ cues }) => {
   const gapColor = useColorModeValue("gray.100", "gray.700")
 
   const handlePositionChange = (layout, oldItem, newItem) => {
+    if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
+      return
+    }
     console.log(`Cue moved from position (${oldItem.x}, ${oldItem.y}) to (${newItem.x}, ${newItem.y})`)
     
     console.log("Current layout:")
     layout.forEach(item => {
       console.log(`Cue ID: ${item.i}, Position: (${item.x}, ${item.y})`)
     })
+  }
+
+
+  const handleRemoveItem = (cueId) => {
+    console.log(`handleRemoveItem called with cueId: ${cueId}`)
   }
 
   return (
@@ -53,7 +63,7 @@ const EditMode = ({ cues }) => {
         >
           <Box h={`${rowHeight}px`} bg="transparent" />
 
-          {yLabels.map((label, index) => (
+          {yLabels.map((label) => (
             <Box
               key={label}
               display="flex"
@@ -80,7 +90,7 @@ const EditMode = ({ cues }) => {
             bg={gapColor}
             mb={`${gap}px`}
           >
-            {xLabels.map((label, index) => (
+            {xLabels.map((label) => (
               <Box
                 key={label}
                 display="flex"
@@ -122,11 +132,28 @@ const EditMode = ({ cues }) => {
                   static: false,
                 }}
               >
-                <Box position="relative" h="100%" border="1px solid gray">
+                <Box position="relative" h="100%">
+                  <IconButton
+                    icon={<CloseIcon />}
+                    size="xs"
+                    position="absolute"
+                    _hover={{ bg: "red.500", color: "white" }}
+                    backgroundColor="red.300"
+                    draggable={false}
+                    zIndex="10"
+                    top="0px"
+                    right="0px"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      console.log(`Remove cue with ID: ${cue._id}`)
+                      handleRemoveItem(cue._id)
+                      }
+                    }
+                  />
                   <img
                     src={cue.file.url}
                     alt={cue.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
                   />
                   <Text
                     position="absolute"
