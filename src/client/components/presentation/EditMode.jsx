@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
 import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
@@ -12,24 +12,20 @@ const EditMode = ({ cues }) => {
   const maxScreen = Math.max(...cues.map(cue => cue.screen))
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
 
-  const layout = cues.map((cue) => {
-    const position = {
-      i: cue._id.toString(),
-      x: cue.index,
-      y: cue.screen - 1,
-      w: 1,
-      h: 1,
-      static: false,
-    }
-    return position
-  })
-
+  const [layout, setLayout] = useState(cues.map((cue) => ({
+    i: cue._id.toString(),
+    x: cue.index,
+    y: cue.screen - 1,
+    w: 1,
+    h: 1,
+    static: false,
+  })))
 
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
 
-  const gapColor = useColorModeValue("gray.100", "gray.700")
+  const gapColor = useColorModeValue("blue.100", "green.700")
 
   const handlePositionChange = (layout, oldItem, newItem) => {
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
@@ -43,9 +39,12 @@ const EditMode = ({ cues }) => {
     })
   }
 
-
   const handleRemoveItem = (cueId) => {
     console.log(`handleRemoveItem called with cueId: ${cueId}`)
+    setLayout(prevLayout => {
+      const newLayout = prevLayout.filter(item => item.i !== cueId)
+      console.log("new layout:", newLayout)
+    })
   }
 
   return (
@@ -58,8 +57,7 @@ const EditMode = ({ cues }) => {
           position="sticky"
           left={0}
           zIndex={2}
-          bg={gapColor}
-          borderRight="1px solid gray"
+          bg={"transparent"}
         >
           <Box h={`${rowHeight}px`} bg="transparent" />
 
@@ -69,12 +67,12 @@ const EditMode = ({ cues }) => {
               display="flex"
               alignItems="center"
               justifyContent="center"
-              bg="gray.200"
-              border="1px solid gray"
+              bg="purple.200"
+              borderRadius="md"
               h={`${rowHeight}px`}
               width={`${columnWidth}px`}
             >
-              <Text fontWeight="bold">{label}</Text>
+              <Text fontWeight="bold" color="black">{label}</Text>
             </Box>
           ))}
         </Box>
@@ -87,7 +85,7 @@ const EditMode = ({ cues }) => {
             position="sticky"
             top={0}
             zIndex={1}
-            bg={gapColor}
+            bg={"transparent"}
             mb={`${gap}px`}
           >
             {xLabels.map((label) => (
@@ -97,11 +95,11 @@ const EditMode = ({ cues }) => {
                 alignItems="center"
                 justifyContent="center"
                 bg="gray.200"
-                border="1px solid gray"
+                borderRadius="md"
                 h={`${rowHeight}px`}
                 width={`${columnWidth}px`}
               >
-                <Text fontWeight="bold">{label}</Text>
+                <Text fontWeight="bold" color="black">{label}</Text>
               </Box>
             ))}
           </Box>
@@ -114,12 +112,14 @@ const EditMode = ({ cues }) => {
             width={xLabels.length * columnWidth + (xLabels.length - 1) * gap}
             isResizable={false}
             compactType={null}
-            preventCollision={true}
+            isBounded={true}
+            preventCollision={false}
             margin={[gap, gap]}
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             onDragStop={handlePositionChange}
-            maxRows={maxScreen}
+            maxRows={yLabels.length}
+            maxCols={xLabels.length}
           >
             {cues.map((cue) => (
               <div
@@ -138,7 +138,7 @@ const EditMode = ({ cues }) => {
                     size="xs"
                     position="absolute"
                     _hover={{ bg: "red.500", color: "white" }}
-                    backgroundColor="red.300"
+                    backgroundColor="red.200"
                     draggable={false}
                     zIndex="10"
                     top="0px"
@@ -164,7 +164,7 @@ const EditMode = ({ cues }) => {
                     fontWeight="bold"
                     textAlign="center"
                     bg="rgba(0, 0, 0, 0.5)"
-                    p={2}
+                    p={1}
                     borderRadius="md"
                   >
                     {cue.name}
