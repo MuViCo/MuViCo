@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
-import { fetchPresentationInfo, createOrUpdateCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
+import { fetchPresentationInfo, createCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
@@ -24,10 +24,9 @@ const PresentationPage = ({ userId }) => {
 
   const [showMode, setShowMode] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-
+  const [gridLayout, setGridLayout] = useState([])
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
-  const gridLayout = useSelector((state) => state.presentation.gridLayout)
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -48,7 +47,8 @@ const PresentationPage = ({ userId }) => {
     dispatch(fetchPresentationInfo(id))
   }, [id, userId, navigate, dispatch])
 
-  const handleGridChange = () => {
+  const handleGridChange = (newLayout) => {
+    setGridLayout(newLayout)
     setHasUnsavedChanges(true)
   }
 
@@ -70,7 +70,7 @@ const PresentationPage = ({ userId }) => {
     formData.append("image", "/blank.png")
   
     try {
-      await dispatch(createOrUpdateCue(id, formData))
+      await dispatch(createCue(id, formData))
       toast({
         title: "Cue added",
         description: `Initial cue added to screen ${screen}`,
@@ -128,7 +128,7 @@ const PresentationPage = ({ userId }) => {
     formData.append("fileName", fileName)
   
     try {
-      await dispatch(createOrUpdateCue(id, formData))
+      await dispatch(createCue(id, formData))
       toast({
         title: "Cue added",
         description: `Cue ${cueName} added to screen ${screen}`,
@@ -154,7 +154,6 @@ const PresentationPage = ({ userId }) => {
       return // eslint-disable-line
     try {
       await dispatch(deletePresentation(id))
-      console.log("Deleted presentation successfully")
       navigate("/home")
     }
     catch (error) {

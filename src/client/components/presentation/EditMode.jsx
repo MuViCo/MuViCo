@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
 import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
@@ -6,7 +6,7 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue, saveGrid } from "../../redux/presentationReducer"
+import { removeCue } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
@@ -14,8 +14,8 @@ const EditMode = ({ id, cues, handleGridChange }) => {
   const toast = useToast()
   const dispatch = useDispatch()
 
-  const [xLabels, setxLabels] = useState(Array.from({ length: 101 }, (_, index) => `Cue ${index}`))
-  const maxScreen = Math.max(...cues.map(cue => cue.screen))
+  const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
+  const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
 
   const layout = cues.map((cue) => {
@@ -35,20 +35,18 @@ const EditMode = ({ id, cues, handleGridChange }) => {
   const rowHeight = 100
   const gap = 10
 
-  const gapColor = useColorModeValue("blue.100", "green.700")
+  const gapColor = useColorModeValue("gray.100", "gray.700")
 
-  const handlePositionChange = (layout, oldItem, newItem) => {
+  const handlePositionChange = (layout) => {
     const convertedLayout = layout.map(item => ({
       id: item.i,
       cueIndex: item.x,
       screen: item.y + 1,
     }))
-    dispatch(saveGrid(convertedLayout))
-    handleGridChange()
+    handleGridChange(convertedLayout)
   }
   
   const handleRemoveItem = async (cueId) => {
-    console.log(`handleRemoveItem called with cueId: ${cueId}`)
     if (!window.confirm("Are you sure you want to delete this cue?")) return
 
     try {
@@ -76,7 +74,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
 
   return (
     <ChakraProvider theme={theme}>
-      <Box display="flex" height="600px" marginTop="30px" width="100%">
+      <Box display="flex" height="600px" width="100%" marginTop={`${gap*2}px`}>
         <Box
           display="grid"
           gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
@@ -96,6 +94,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
               justifyContent="center"
               bg="purple.200"
               borderRadius="md"
+              marginRight={`${gap}px`}
               h={`${rowHeight}px`}
               width={`${columnWidth}px`}
             >
@@ -145,8 +144,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
             containerPadding={[0, 0]}
             useCSSTransforms={true}
             onDragStop={handlePositionChange}
-            maxRows={yLabels.length}
-            maxCols={xLabels.length}
+            maxRows={maxScreen}
           >
             {cues.map((cue) => (
               <div
@@ -165,14 +163,13 @@ const EditMode = ({ id, cues, handleGridChange }) => {
                     size="xs"
                     position="absolute"
                     _hover={{ bg: "red.500", color: "white" }}
-                    backgroundColor="red.200"
+                    backgroundColor="red.300"
                     draggable={false}
                     zIndex="10"
                     top="0px"
                     right="0px"
                     onMouseDown={(e) => {
                       e.stopPropagation()
-                      console.log(`Remove cue with ID: ${cue._id}`)
                       handleRemoveItem(cue._id)
                       }
                     }
@@ -191,7 +188,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
                     fontWeight="bold"
                     textAlign="center"
                     bg="rgba(0, 0, 0, 0.5)"
-                    p={1}
+                    p={2}
                     borderRadius="md"
                   >
                     {cue.name}

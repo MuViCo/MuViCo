@@ -3,7 +3,6 @@ import presentationService from "../services/presentation"
 
 const initialState = {
   presentationInfo: null,
-  gridLayout: [],
 }
 
 const presentationSlice = createSlice({
@@ -21,11 +20,17 @@ const presentationSlice = createSlice({
     addCue(state, action) {
       state.presentationInfo = action.payload
     },
+    updateCue(state, action) {
+      const updatedCue = action.payload
+      const cueIndex = state.presentationInfo.cues.findIndex(
+        (cue) => cue._id === updatedCue._id
+      )
+      if (cueIndex !== -1) {
+        state.presentationInfo.cues[cueIndex] = updatedCue
+      }
+    },
     removePresentation(state) {
       state.presentationInfo = null
-    },
-    saveGridState(state, action) {
-      state.gridLayout = action.payload
     },
   },
 })
@@ -33,8 +38,8 @@ const presentationSlice = createSlice({
 export const {
   setPresentationInfo,
   deleteCue,
-  saveGridState,
   addCue,
+  updateCue
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
@@ -58,16 +63,11 @@ export const removeCue = (presentationId, cueId) => async (dispatch) => {
   }
 }
 
-export const createOrUpdateCue = (id, formData) => async (dispatch) => {
+export const createCue = (id, formData) => async (dispatch) => {
   try {
-    const updatedPresentation = await presentationService.addOrUpdateCue(id, formData)
-    const cueId = formData.get("cueId")
+    const updatedPresentation = await presentationService.addCue(id, formData)
+    dispatch(addCue(updatedPresentation))
 
-    if (cueId) {
-      dispatch(updateCue(updatedPresentation))
-    } else {
-      dispatch(addCue(updatedPresentation))
-    }
   } catch (error) {
     console.error(error)
   }
@@ -84,23 +84,15 @@ export const deletePresentation = (id) => async (dispatch) => {
 
 export const updatePresentation = (id, layout) => async (dispatch) => {
   try {
-    console.log("layout", layout)
     for (const cue of layout) {
       const formData = new FormData()
       formData.append("index", cue.cueIndex)
       formData.append("screen", cue.screen)
       formData.append("cueId", cue.id)
-      console.log("formData", formData)
-      await presentationService.addOrUpdateCue(id, formData)
+      const updatedCue = await presentationService.updateCue(id, cue.id, formData)
+      dispatch(updateCue(updatedCue))
     }
-    const updatedPresentation = await presentationService.get(id)
-    dispatch(setPresentationInfo(updatedPresentation))
-
   } catch (error) {
     console.error(error)
   }
-}
-
-export const saveGrid = (layout) => async (dispatch) => {
-  dispatch(saveGridState(layout))
 }
