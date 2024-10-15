@@ -103,63 +103,89 @@ router.delete("/:id", async (req, res) => {
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
+router.put("/:id/:cueId?", userExtractor, upload.single("image"), async (req, res) => {
   try {
-    const { id } = req.params
-    const fileId = generateFileId()
+    const { id, cueId } = req.params
     const { file, user } = req
-    if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
+    const { index, cueName, screen, fileName, image } = req.body
+
+    if (!id || !index || !cueName || !screen) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
     const presentation = await Presentation.findById(id)
-    const cuenumber = presentation.cues.length
-    console.log(cuenumber, "number")
+    if (!presentation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
 
     if (presentation.cues.length >= 10 && !user.isAdmin) {
-      return res
-        .status(401)
-        .json({ error: "Maximum number of files reached (10)" })
+      return res.status(401).json({ error: "Maximum number of files reached (10)" })
     }
 
     if (file && file.size > 1 * 1024 * 1024 && !user.isAdmin) {
       return res.status(400).json({ error: "File size exceeds 1 MB limit" })
     }
 
-    const updatedPresentation = await Presentation.findByIdAndUpdate(
-      id,
-      {
-        $push: {
-          cues: {
-            index: req.body.index,
-            name: req.body.cueName,
-            screen: req.body.screen,
-            file: {
-              id: fileId,
-              name: req.body.fileName,
-              url: req.body.image === "/blank.png" ? null : "",
+    let updatedPresentation
+
+    if (cueId) {
+      // Update existing cue
+      updatedPresentation = await Presentation.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            "cues.$[elem]": {
+              index,
+              name: cueName,
+              screen,
+              file: {
+                id: cueId,
+                name: fileName,
+                url: image === "/blank.png" ? null : "",
+              },
             },
           },
         },
-      },
-      { new: true }
-    )
+        {
+          new: true,
+          arrayFilters: [{ "elem._id": cueId }],
+          upsert: true,
+        }
+      )
+    } else {
+      // Add new cue
+      const fileId = generateFileId()
+      updatedPresentation = await Presentation.findByIdAndUpdate(
+        id,
+        {
+          $push: {
+            cues: {
+              index,
+              name: cueName,
+              screen,
+              file: {
+                id: fileId,
+                name: fileName,
+                url: image === "/blank.png" ? null : "",
+              },
+            },
+          },
+        },
+        { new: true }
+      )
 
-    if (file) {
-      const fileName = `${id}/${fileId}`
-
-      await uploadFile(file.buffer, fileName, file.mimetype)
+      if (file) {
+        const fileName = `${id}/${fileId}`
+        await uploadFile(file.buffer, fileName, file.mimetype)
+      }
     }
 
     res.json(updatedPresentation)
-
-    return res.status(204).end()
   } catch (error) {
-    logger.info("Error:", error)
-    return res.status(500).json({ error: "Internal server error" })
+    console.error("Error:", error)
+    res.status(500).json({ error: "Internal server error" })
   }
 })
-
 /**
  * Update the presentation by removing a file from the files array.
  */

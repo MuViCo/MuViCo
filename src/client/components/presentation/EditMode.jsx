@@ -4,10 +4,16 @@ import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
+import { useDispatch } from "react-redux"
+import { useToast } from "@chakra-ui/react"
+import { removeCue } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
-const EditMode = ({ cues }) => {
+const EditMode = ({ id, cues }) => {
+  const toast = useToast()
+  const dispatch = useDispatch()
+
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen))
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
@@ -16,7 +22,7 @@ const EditMode = ({ cues }) => {
     const position = {
       i: cue._id.toString(),
       x: cue.index,
-      y: cue.screen - 1,
+      y: cue.screen,
       w: 1,
       h: 1,
       static: false,
@@ -32,20 +38,41 @@ const EditMode = ({ cues }) => {
   const gapColor = useColorModeValue("gray.100", "gray.700")
 
   const handlePositionChange = (layout, oldItem, newItem) => {
-    if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
-      return
-    }
     console.log(`Cue moved from position (${oldItem.x}, ${oldItem.y}) to (${newItem.x}, ${newItem.y})`)
+    const convertedLayout = layout.map(item => ({
+      id: item.i,
+      cueIndex: item.x,
+      screen: item.y + 1,
+    }))
     
-    console.log("Current layout:")
-    layout.forEach(item => {
-      console.log(`Cue ID: ${item.i}, Position: (${item.x}, ${item.y})`)
-    })
+    console.log("new layout",convertedLayout)
   }
-
-
-  const handleRemoveItem = (cueId) => {
+  
+  const handleRemoveItem = async (cueId) => {
     console.log(`handleRemoveItem called with cueId: ${cueId}`)
+    if (!window.confirm("Are you sure you want to delete this cue?")) return
+
+    try {
+      await dispatch(removeCue(id, cueId))
+      toast({
+        title: "Cue removed",
+        description: `Cue with ID ${cueId} has been removed.`,
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "An error occurred while removing the cue.",
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
 
   return (

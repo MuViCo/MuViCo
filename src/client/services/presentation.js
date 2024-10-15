@@ -28,14 +28,15 @@ const remove = async (id) => {
  *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
-const addCue = async (id, formData) => {
+const addOrUpdateCue = async (id, formData, cueId) => {
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}/${id}`, formData, config)
+  const url = cueId ? `${baseUrl}/${id}/${cueId}` : `${baseUrl}/${id}`
+  const response = await axios.put(url, formData, config)
   return response.data
 }
 
@@ -47,6 +48,6 @@ const removeCue = async (id, cueId) => {
 export default {
   get,
   remove,
-  addCue,
+  addOrUpdateCue,
   removeCue,
 }
