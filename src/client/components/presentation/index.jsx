@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
-import { fetchPresentationInfo, createOrUpdateCue, deletePresentation } from "../../redux/presentationReducer"
+import { fetchPresentationInfo, createOrUpdateCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
@@ -23,18 +23,44 @@ const PresentationPage = ({ userId }) => {
   const toast = useToast()
 
   const [showMode, setShowMode] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
+  const gridLayout = useSelector((state) => state.presentation.gridLayout)
 
-  const handleShowMode = () => {
-    setShowMode(!showMode)
-  }
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault()
+        event.returnValue = ""
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, userId, navigate, dispatch])
-  
+
+  const handleGridChange = () => {
+    setHasUnsavedChanges(true)
+  }
+
+  const handleShowMode = () => {
+    if (hasUnsavedChanges) {
+      const confirm = window.confirm("You have unsaved changes. Do you want to save them before entering show mode?")
+      if (confirm) {
+        handleSave()
+      }
+    }
+    setShowMode(!showMode)
+  }
   
   const addBlankCue = async (screen) => {
     const formData = new FormData()
@@ -144,6 +170,31 @@ const PresentationPage = ({ userId }) => {
     }
   }
 
+  const handleSave = async () => {
+    try {
+      await dispatch(updatePresentation(presentationInfo.id, gridLayout))
+      setHasUnsavedChanges(false)
+      toast({
+        title: "Presentation saved",
+        description: "The presentation has been successfully saved.",
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: "An error occurred while saving the presentation.",
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
+  }
+
   return (
     <>
       {presentationInfo && (
@@ -158,12 +209,15 @@ const PresentationPage = ({ userId }) => {
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
                 </Button>
+                <Button colorScheme="blue" onClick={handleSave}>
+                  Save
+                </Button>
               </>
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isEditable={!showMode} />
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} handleGridChange={handleGridChange}/>
           </Box>
         </Box>
       )}

@@ -6,11 +6,11 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue } from "../../redux/presentationReducer"
+import { removeCue, saveGrid } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues }) => {
+const EditMode = ({ id, cues, handleGridChange }) => {
   const toast = useToast()
   const dispatch = useDispatch()
 
@@ -38,13 +38,13 @@ const EditMode = ({ id, cues }) => {
   const gapColor = useColorModeValue("blue.100", "green.700")
 
   const handlePositionChange = (layout, oldItem, newItem) => {
-    console.log(`Cue moved from position (${oldItem.x}, ${oldItem.y}) to (${newItem.x}, ${newItem.y})`)
     const convertedLayout = layout.map(item => ({
       id: item.i,
       cueIndex: item.x,
       screen: item.y + 1,
     }))
-    console.log("new layout", convertedLayout)
+    dispatch(saveGrid(convertedLayout))
+    handleGridChange()
   }
   
   const handleRemoveItem = async (cueId) => {

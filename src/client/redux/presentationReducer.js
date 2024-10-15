@@ -24,14 +24,8 @@ const presentationSlice = createSlice({
     removePresentation(state) {
       state.presentationInfo = null
     },
-    updateCue(state, action) {
-      const updatedCue = action.payload
-      const cueIndex = state.presentationInfo.cues.findIndex(cue => cue._id === updatedCue._id)
-      if (cueIndex !== -1) {
-        state.presentationInfo.cues[cueIndex] = updatedCue
-      } else {
-        console.warn(`Cue with id ${updatedCue._id} not found`)
-      }
+    saveGridState(state, action) {
+      state.gridLayout = action.payload
     },
   },
 })
@@ -86,4 +80,27 @@ export const deletePresentation = (id) => async (dispatch) => {
   } catch (error) {
     console.error(error)
   }
+}
+
+export const updatePresentation = (id, layout) => async (dispatch) => {
+  try {
+    console.log("layout", layout)
+    for (const cue of layout) {
+      const formData = new FormData()
+      formData.append("index", cue.cueIndex)
+      formData.append("screen", cue.screen)
+      formData.append("cueId", cue.id)
+      console.log("formData", formData)
+      await presentationService.addOrUpdateCue(id, formData)
+    }
+    const updatedPresentation = await presentationService.get(id)
+    dispatch(setPresentationInfo(updatedPresentation))
+
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+export const saveGrid = (layout) => async (dispatch) => {
+  dispatch(saveGridState(layout))
 }

@@ -103,13 +103,13 @@ router.delete("/:id", async (req, res) => {
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id/:cueId?", userExtractor, upload.single("image"), async (req, res) => {
+router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   try {
-    const { id, cueId } = req.params
+    const { id } = req.params
     const { file, user } = req
-    const { index, cueName, screen, fileName, image } = req.body
+    const { index, cueName, screen, fileName, image, cueId } = req.body
 
-    if (!id || !index || !cueName || !screen) {
+    if (!id || !index || !screen || (!cueId && !cueName)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
@@ -129,6 +129,15 @@ router.put("/:id/:cueId?", userExtractor, upload.single("image"), async (req, re
     let updatedPresentation
 
     if (cueId) {
+      // Update existing
+      const existingCue = presentation.cues.id(cueId)
+      if (!existingCue) {
+        return res.status(404).json({ error: "Cue not found" })
+      }
+      
+      const cueName = existingCue.name
+      const existingFile = existingCue.file
+
       // Update existing cue
       updatedPresentation = await Presentation.findByIdAndUpdate(
         id,
@@ -139,9 +148,9 @@ router.put("/:id/:cueId?", userExtractor, upload.single("image"), async (req, re
               name: cueName,
               screen,
               file: {
-                id: cueId,
-                name: fileName,
-                url: image === "/blank.png" ? null : "",
+                id: existingFile.id,
+                name: fileName || existingFile.name,
+                url: image === "/blank.png" ? null : existingFile.url,
               },
             },
           },
@@ -152,6 +161,7 @@ router.put("/:id/:cueId?", userExtractor, upload.single("image"), async (req, re
           upsert: true,
         }
       )
+      
     } else {
       // Add new cue
       const fileId = generateFileId()
