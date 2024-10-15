@@ -14,7 +14,7 @@ const EditMode = ({ id, cues }) => {
   const toast = useToast()
   const dispatch = useDispatch()
 
-  const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
+  const [xLabels, setxLabels] = useState(Array.from({ length: 101 }, (_, index) => `Cue ${index}`))
   const maxScreen = Math.max(...cues.map(cue => cue.screen))
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
 
@@ -44,8 +44,7 @@ const EditMode = ({ id, cues }) => {
       cueIndex: item.x,
       screen: item.y + 1,
     }))
-    
-    console.log("new layout",convertedLayout)
+    console.log("new layout", convertedLayout)
   }
   
   const handleRemoveItem = async (cueId) => {
@@ -77,7 +76,7 @@ const EditMode = ({ id, cues }) => {
 
   return (
     <ChakraProvider theme={theme}>
-      <Box display="flex" height="600px" width="100%">
+      <Box display="flex" height="600px" marginTop="30px" width="100%">
         <Box
           display="grid"
           gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
@@ -141,7 +140,7 @@ const EditMode = ({ id, cues }) => {
             isResizable={false}
             compactType={null}
             isBounded={true}
-            preventCollision={false}
+            preventCollision={true}
             margin={[gap, gap]}
             containerPadding={[0, 0]}
             useCSSTransforms={true}
