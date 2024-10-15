@@ -154,7 +154,6 @@ const PresentationPage = ({ userId }) => {
       return // eslint-disable-line
     try {
       await dispatch(deletePresentation(id))
-      console.log("Deleted presentation successfully")
       navigate("/home")
     }
     catch (error) {

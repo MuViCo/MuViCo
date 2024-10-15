@@ -48,7 +48,6 @@ const EditMode = ({ id, cues, handleGridChange }) => {
   }
   
   const handleRemoveItem = async (cueId) => {
-    console.log(`handleRemoveItem called with cueId: ${cueId}`)
     if (!window.confirm("Are you sure you want to delete this cue?")) return
 
     try {
@@ -171,7 +170,6 @@ const EditMode = ({ id, cues, handleGridChange }) => {
                     right="0px"
                     onMouseDown={(e) => {
                       e.stopPropagation()
-                      console.log(`Remove cue with ID: ${cue._id}`)
                       handleRemoveItem(cue._id)
                       }
                     }

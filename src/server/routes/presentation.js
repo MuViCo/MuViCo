@@ -161,6 +161,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           upsert: true,
         }
       )
+
+      if (file) {
+        const fileName = `${id}/${existingFile.id}`
+        await uploadFile(file.buffer, fileName, file.mimetype)
+      }
       
     } else {
       // Add new cue

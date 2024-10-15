@@ -84,13 +84,11 @@ export const deletePresentation = (id) => async (dispatch) => {
 
 export const updatePresentation = (id, layout) => async (dispatch) => {
   try {
-    console.log("layout", layout)
     for (const cue of layout) {
       const formData = new FormData()
       formData.append("index", cue.cueIndex)
       formData.append("screen", cue.screen)
       formData.append("cueId", cue.id)
-      console.log("formData", formData)
       await presentationService.addOrUpdateCue(id, formData)
     }
     const updatedPresentation = await presentationService.get(id)
