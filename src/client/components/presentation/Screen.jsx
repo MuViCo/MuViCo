@@ -38,6 +38,7 @@ const ScreenContent = ({ screenNumber, screenData }) => (
 const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
+  const [previousScreenData, setPreviousScreenData] = useState(null)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -90,13 +91,20 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [isWindowReady])
 
+  useEffect(() => {
+    // Update the previous screen data if new screen data is available
+    if (screenData) {
+      setPreviousScreenData(screenData)
+    }
+  }, [screenData])
+
   // Only render the portal when the window is ready
-  return windowRef.current && isWindowReady
+  return windowRef.current && isWindowReady && (screenData || previousScreenData)
     ? ReactDOM.createPortal(
         // Render the ChakraProvider in the new window
         <ChakraProvider theme={theme}>
           <Fonts />
-            <ScreenContent screenNumber={screenNumber} screenData={screenData} />
+          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} />
         </ChakraProvider>,
         windowRef.current.document.body // render to new window's document.body
       )
