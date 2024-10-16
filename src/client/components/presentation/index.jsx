@@ -1,18 +1,12 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, useToast } from "@chakra-ui/react"
-import { useNodesState, useEdgesState } from "reactflow"
+import { Button, Flex, useToast, Box } from "@chakra-ui/react"
+import { fetchPresentationInfo, createCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
-
-import presentationService from "../../services/presentation"
-import { handleLogout } from "../navbar/index"
-
+import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
-import FlowMap from "./FlowMap"
-import Toolbox from "./ToolBox"
-
-const screenCount = 4
-
+import EditMode from "./EditMode"
+import Toolbox from "./Toolbox"
 /**
  * Renders the presentation page.
  *
@@ -24,102 +18,84 @@ const screenCount = 4
 
 const PresentationPage = ({ userId, setUser }) => {
   const { id } = useParams()
-
-  const [showMode, setShowMode] = useState(false)
-
-  const [presentationInfo, setPresentationInfo] = useState(null)
-
+  const dispatch = useDispatch()
   const navigate = useNavigate()
   const toast = useToast()
 
-  const handleShowMode = () => {
-    setShowMode(!showMode)
-  }
-
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [showMode, setShowMode] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [gridLayout, setGridLayout] = useState([])
+  // Fetch presentation info from Redux state
+  const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
 
   useEffect(() => {
-    const fetchPresentation = async () => {
-      try {
-        const presentation = await presentationService.get(id)
-        setPresentationInfo(presentation)
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          // Handle 401 Unauthorized error
-          navigate("/")
-        }
+    const handleBeforeUnload = (event) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault()
+        event.returnValue = ""
       }
     }
 
-    fetchPresentation()
-  }, [id, userId, navigate])
+    window.addEventListener("beforeunload", handleBeforeUnload)
 
-  const handleNodeChange = useCallback(
-    (presentation) => {
-      // Sort the nodes based on screen and index
-      const sortedNodes = presentation.cues.sort((a, b) => {
-        // Compare by screen value first
-        if (a.screen !== b.screen) {
-          return a.screen - b.screen
-        }
-        // If screen values are equal, compare by index
-        return a.index - b.index
-      })
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
 
-      const newNodes = []
-      for (let i = 0; i < screenCount; i += 1) {
-        newNodes.push({
-          id: `${i}`,
-          type: "screenNode",
-          position: { x: i * 210, y: 10 },
-          data: { label: `screen ${i}` },
-        })
+  useEffect(() => {
+    dispatch(fetchPresentationInfo(id))
+  }, [id, userId, navigate, dispatch])
+
+  const handleGridChange = (newLayout) => {
+    setGridLayout(newLayout)
+    setHasUnsavedChanges(true)
+  }
+
+  const handleShowMode = () => {
+    if (hasUnsavedChanges) {
+      const confirm = window.confirm("You have unsaved changes. Do you want to save them before entering show mode?")
+      if (confirm) {
+        handleSave()
       }
-      sortedNodes.forEach((node) => {
-        if (node.index !== 0) {
-          newNodes.push({
-            id: node._id,
-            type: "buttonNode",
-            position: { x: node.index * 210, y: 200 + node.screen * 125 },
-            draggable: false,
-            data: {
-              cue: node,
-            },
-          })
-        }
-      })
-      setNodes(newNodes)
-
-      const newEdges = []
-      for (let i = 0; i < presentation.cues.length - 1; i += 1) {
-        const currentNode = presentation.cues[i]
-        const nextNode = presentation.cues[i + 1]
-        if (currentNode.screen === nextNode.screen) {
-          // If consecutive nodes belong to the same screen, create an edge
-          newEdges.push({
-            source: currentNode._id,
-            target: nextNode._id,
-          })
-        }
-      }
-      setEdges(newEdges)
-    },
-    [setNodes, setEdges]
-  )
+    }
+    setShowMode(!showMode)
+  }
+  
   const addBlankCue = async (screen) => {
     const formData = new FormData()
     formData.append("index", 0)
-    formData.append("cueName", `intial cue for screen ${screen}`)
+    formData.append("cueName", `initial cue for screen ${screen}`)
     formData.append("screen", screen)
     formData.append("image", "/blank.png")
-    await presentationService.addCue(id, formData)
+  
+    try {
+      await dispatch(createCue(id, formData))
+      toast({
+        title: "Cue added",
+        description: `Initial cue added to screen ${screen}`,
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "An error occurred",
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
+
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
     const formData = new FormData()
-
+  
     // Check if cue is the first cue to be added to the screen
     const screenCues = presentationInfo.cues.filter(
       (cue) => cue.screen === Number(screen)
@@ -127,7 +103,7 @@ const PresentationPage = ({ userId, setUser }) => {
     if (screenCues.length === 0) {
       await addBlankCue(screen)
     }
-
+  
     // Check if cue with same index and screen already exists
     const cueExists = presentationInfo.cues.some(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
@@ -143,21 +119,16 @@ const PresentationPage = ({ userId, setUser }) => {
       })
       return
     }
-
+  
+    // Add the new cue
     formData.append("index", index)
     formData.append("cueName", cueName)
     formData.append("screen", screen)
-    // Add blank image if no file is selected
-    if (!file) {
-      formData.append("image", "/blank.png")
-    } else {
-      formData.append("image", file)
-    }
+    formData.append("file", file)
+    formData.append("fileName", fileName)
+  
     try {
-      await presentationService.addCue(id, formData)
-      const updatedPresentation = await presentationService.get(id)
-      setPresentationInfo(updatedPresentation)
-      handleNodeChange(updatedPresentation)
+      await dispatch(createCue(id, formData))
       toast({
         title: "Cue added",
         description: `Cue ${cueName} added to screen ${screen}`,
@@ -169,7 +140,7 @@ const PresentationPage = ({ userId, setUser }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response.data.error,
+        description: error.response?.data?.error || "An error occurred",
         status: "error",
         position: "top",
         duration: 3000,
@@ -178,57 +149,76 @@ const PresentationPage = ({ userId, setUser }) => {
     }
   }
 
-  const deletePresentation = async () => {
+  const handleDeletePresentation = async (id) => {
     if (!window.confirm("Are you sure you want to delete this presentation?"))
       return // eslint-disable-line
-    await presentationService.remove(id)
-    navigate("/home")
+    try {
+      await dispatch(deletePresentation(id))
+      navigate("/home")
+    }
+    catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || "An error occurred",
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      await dispatch(updatePresentation(presentationInfo.id, gridLayout))
+      setHasUnsavedChanges(false)
+      toast({
+        title: "Presentation saved",
+        description: "The presentation has been successfully saved.",
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: "An error occurred while saving the presentation.",
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }
   }
 
   return (
     <>
       {presentationInfo && (
-        <>
-          <div style={{ display: "flex" }}>
-            <div
-              style={{ width: "100vw", height: "95vh", margin: 0, padding: 0 }}
-            >
-              <Flex flexDirection="row" flexWrap="wrap" gap={4}>
-                <Button colorScheme="gray" onClick={() => handleShowMode()}>
-                  {showMode ? "Edit mode" : "Show mode"}
+        <Box width="100vw" height="95vh" margin={0} padding={0} display="flex" flexDirection="column">
+          <Flex flexDirection="row" flexWrap="wrap" gap={4} padding={4}>
+            <Button colorScheme="gray" onClick={handleShowMode}>
+              {showMode ? "Edit mode" : "Show mode"}
+            </Button>
+            {!showMode && (
+              <>
+                <Toolbox addCue={addCue} />
+                <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
+                  Delete Presentation
                 </Button>
-                {!showMode && (
-                  <>
-                    <Toolbox addCue={addCue} />
-                    <Button
-                      colorScheme="gray"
-                      onClick={() => deletePresentation()}
-                    >
-                      Delete presentation
-                    </Button>
-                  </>
-                )}
-                {showMode && (
-                  <>
-                    <ShowMode
-                      presentationInfo={presentationInfo}
-                    />
-                  </>
-                )}
-              </Flex>
-
-              <FlowMap
-                handleNodeChange={handleNodeChange}
-                presentationInfo={presentationInfo}
-                nodes={nodes}
-                edges={edges}
-                setEdges={setEdges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-              />
-            </div>
-          </div>
-        </>
+                <Button colorScheme="blue" onClick={handleSave}>
+                  Save
+                </Button>
+              </>
+            )}
+          </Flex>
+          <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
+            {showMode && <ShowMode presentationInfo={presentationInfo} />}
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} handleGridChange={handleGridChange}/>
+          </Box>
+        </Box>
       )}
     </>
   )

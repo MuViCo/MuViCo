@@ -160,6 +160,44 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   }
 })
 
+router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
+  try {
+    const { id, cueId } = req.params
+    const { file, user } = req
+    const { index, screen } = req.body
+
+    if (!id || !index || !screen || !cueId) {
+      return res.status(400).json({ error: "Missing required fields" })
+    }
+
+    const presentation = await Presentation.findById(id)
+    if (!presentation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    const cue = presentation.cues.id(cueId)
+    if (!cue) {
+      return res.status(404).json({ error: "Cue not found" })
+    }
+
+    // Update cue fields
+    cue.index = index
+    cue.screen = screen
+
+    if (file) {
+      const fileName = `${id}/${cue.file.id}`
+      await uploadFile(file.buffer, fileName, file.mimetype)
+    }
+
+    await presentation.save()
+
+    res.json(presentation)
+  } catch (error) {
+    console.error("Error:", error)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
 /**
  * Update the presentation by removing a file from the files array.
  */
