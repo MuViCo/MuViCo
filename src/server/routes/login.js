@@ -4,7 +4,6 @@ const bcrypt = require("bcrypt")
 const { OAuth2Client } = require("google-auth-library")
 const User = require("../models/user")
 const config = require("../utils/config")
-const passport = require("./googleAuth")
 
 const router = express.Router()
 const client = new OAuth2Client(config.GOOGLE_CLIENT_ID)

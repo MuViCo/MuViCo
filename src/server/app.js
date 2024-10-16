@@ -45,8 +45,6 @@ app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )
 
-app.use(passport.initialize())
-app.use(passport.session())
 
 
 app.use("/api/login", loginRouter)
