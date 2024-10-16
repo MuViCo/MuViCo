@@ -6,7 +6,7 @@ import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-import Toolbox from "./Toolbox"
+import ToolBox from "./Toolbox"
 /**
  * Renders the presentation page.
  *
@@ -124,8 +124,12 @@ const PresentationPage = ({ userId, setUser }) => {
     formData.append("index", index)
     formData.append("cueName", cueName)
     formData.append("screen", screen)
-    formData.append("file", file)
-    formData.append("fileName", fileName)
+    
+    if (!file) {
+      formData.append("image", "/blank.png")
+    } else {
+      formData.append("image", file)
+    }
   
     try {
       await dispatch(createCue(id, formData))
@@ -204,7 +208,7 @@ const PresentationPage = ({ userId, setUser }) => {
             </Button>
             {!showMode && (
               <>
-                <Toolbox addCue={addCue} />
+                <ToolBox addCue={addCue} />
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
                 </Button>
