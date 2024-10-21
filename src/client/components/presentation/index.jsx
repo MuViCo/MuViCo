@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
 import { fetchPresentationInfo, createCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
@@ -6,7 +6,7 @@ import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-import Toolbox from "./Toolbox"
+import ToolBox from "./ToolBox"
 /**
  * Renders the presentation page.
  *
@@ -80,9 +80,10 @@ const PresentationPage = ({ userId }) => {
         isClosable: true,
       })
     } catch (error) {
+      const errorMessage = error.message || "An error occurred"
       toast({
         title: "Error",
-        description: error.response?.data?.error || "An error occurred",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -124,9 +125,14 @@ const PresentationPage = ({ userId }) => {
     formData.append("index", index)
     formData.append("cueName", cueName)
     formData.append("screen", screen)
-    formData.append("file", file)
-    formData.append("fileName", fileName)
-  
+    
+    if (!file) {
+      formData.append("image", "/blank.png")
+    } else {
+      formData.append("image", file)
+    }
+
+
     try {
       await dispatch(createCue(id, formData))
       toast({
@@ -138,9 +144,10 @@ const PresentationPage = ({ userId }) => {
         isClosable: true,
       })
     } catch (error) {
+      const errorMessage = error.message
       toast({
         title: "Error",
-        description: error.response?.data?.error || "An error occurred",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -158,9 +165,10 @@ const PresentationPage = ({ userId }) => {
     }
     catch (error) {
       console.error(error)
+      const errorMessage = error.message || "An error occurred"
       toast({
         title: "Error",
-        description: error.response?.data?.error || "An error occurred",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -183,9 +191,10 @@ const PresentationPage = ({ userId }) => {
       })
     } catch (error) {
       console.error(error)
+      const errorMessage = error.message || "An error occurred"
       toast({
         title: "Error",
-        description: "An error occurred while saving the presentation.",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -204,7 +213,7 @@ const PresentationPage = ({ userId }) => {
             </Button>
             {!showMode && (
               <>
-                <Toolbox addCue={addCue} />
+                <ToolBox addCue={addCue} />
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
                 </Button>
