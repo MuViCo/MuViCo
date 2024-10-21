@@ -4,28 +4,28 @@ import { Box, ChakraProvider, Image, Text } from "@chakra-ui/react"
 import theme from "../../lib/theme"
 import Fonts from "../../lib/fonts"
 
-
-// ScreenContent with Chakra styling applied directly through props
-const ScreenContent = ({ screenNumber, screenData }) => (
-  <Box p={4} bg="white" color="black" width="100vw" height="100vh" display="flex" flexDirection="column">
+const ScreenContent = ({ screenNumber, screenData, showText }) => (
+  <Box bg="black" color="white" width="100vw" height="100vh" display="flex" flexDirection="column">
     {/* Header with Screen Number on the left and Cue Name on the right */}
-    <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-      <Text fontSize="2xl" fontWeight="bold">Screen {screenNumber}</Text>
+    <Box display="flex" justifyContent="space-between" alignItems="center" position="absolute" width="90vw" left="5vw" zIndex={1}>
+      <Text fontSize="xl" textShadow='1px 0 2px #000000' style={{visibility: showText ? "visible" : "hidden"}}>
+        Screen {screenNumber}
+      </Text>
       {screenData && (
-        <Text fontSize="lg" textAlign="right">
-          <strong>Cue Name:</strong> {screenData.name}
+        <Text fontSize="xl" textShadow='1px 0 2px #000000' style={{visibility: showText ? "visible" : "hidden"}}>
+          Cue Name: {screenData.name}
         </Text>
       )}
     </Box>
 
     {/* Main Content Section for Image or Fallback Text */}
-    <Box flex="1" display="flex" justifyContent="center" alignItems="center">
+    <Box flex="1" display="flex" justifyContent="center" alignItems="center" position="absolute" width="100vw" zIndex={0}>
       {screenData?.file?.url ? (
         <Image 
           src={screenData.file.url} 
           alt={screenData.name} 
-          maxW="80vw" 
-          maxH="80vh" 
+          width="100%" 
+          height="100vh" 
           objectFit="contain"
         />
       ) : (
@@ -39,6 +39,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
   const [previousScreenData, setPreviousScreenData] = useState(null)
+  const [showText, setShowText] = useState(false)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -98,13 +99,35 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [screenData])
 
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Shift") {
+        setShowText(true)
+      }
+    }
+
+    const handleKeyUp = (event) => {
+      if (event.key === "Shift") {
+        setShowText(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("keyup", handleKeyUp)
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keyup", handleKeyUp)
+    }
+  }, [])
+
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && (screenData || previousScreenData)
     ? ReactDOM.createPortal(
         // Render the ChakraProvider in the new window
         <ChakraProvider theme={theme}>
           <Fonts />
-          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} />
+          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} showText={showText} />
         </ChakraProvider>,
         windowRef.current.document.body // render to new window's document.body
       )
@@ -112,4 +135,3 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
 }
 
 export default Screen
-

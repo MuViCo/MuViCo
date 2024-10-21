@@ -50,7 +50,9 @@ export const fetchPresentationInfo = (id) => async (dispatch) => {
     const presentation = await presentationService.get(id)
     dispatch(setPresentationInfo(presentation))
   } catch (error) {
-    console.error(error)
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -59,7 +61,9 @@ export const removeCue = (presentationId, cueId) => async (dispatch) => {
     await presentationService.removeCue(presentationId, cueId)
     dispatch(deleteCue(cueId))
   } catch (error) {
-    console.error(error)
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -69,7 +73,9 @@ export const createCue = (id, formData) => async (dispatch) => {
     dispatch(addCue(updatedPresentation))
 
   } catch (error) {
-    console.error(error)
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -78,7 +84,9 @@ export const deletePresentation = (id) => async (dispatch) => {
     await presentationService.remove(id)
     dispatch(removePresentation())
   } catch (error) {
-    console.error(error)
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
@@ -93,6 +101,8 @@ export const updatePresentation = (id, layout) => async (dispatch) => {
       dispatch(updateCue(updatedCue))
     }
   } catch (error) {
-    console.error(error)
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
 }
