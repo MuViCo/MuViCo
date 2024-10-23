@@ -39,7 +39,8 @@ export const {
   setPresentationInfo,
   deleteCue,
   addCue,
-  updateCue
+  updateCue,
+  removePresentation,
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
