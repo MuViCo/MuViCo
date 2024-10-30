@@ -6,11 +6,11 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue } from "../../redux/presentationReducer"
+import { removeCue, updatePresentation } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, handleGridChange }) => {
+const EditMode = ({ id, cues }) => {
   const toast = useToast()
   const dispatch = useDispatch()
 
@@ -35,16 +35,38 @@ const EditMode = ({ id, cues, handleGridChange }) => {
   const rowHeight = 100
   const gap = 10
 
-  const gapColor = useColorModeValue("gray.100", "gray.700")
+  const handlePositionChange = async (layout, olditem, newItem) => {
+    const movedCue = {
+      cueId: newItem.i,
+      cueIndex: newItem.x,
+      screen: newItem.y+1,
+    }
+    if (movedCue) {
+      try {
+        await dispatch(updatePresentation(id, movedCue))
+        toast({
+          title: "Presentation saved",
+          description: "The presentation has been successfully saved.",
+          status: "success",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+      } catch (error) {
+        console.error(error)
+        const errorMessage = error.message || "An error occurred"
+        toast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+          })
+        }
+      }
+    }
 
-  const handlePositionChange = (layout) => {
-    const convertedLayout = layout.map(item => ({
-      id: item.i,
-      cueIndex: item.x,
-      screen: item.y + 1,
-    }))
-    handleGridChange(convertedLayout)
-  }
   
   const handleRemoveItem = async (cueId) => {
     if (!window.confirm("Are you sure you want to delete this cue?")) return
@@ -61,9 +83,10 @@ const EditMode = ({ id, cues, handleGridChange }) => {
       })
     } catch (error) {
       console.error(error)
+      const errorMessage = error.message || "An error occurred"
       toast({
         title: "Error",
-        description: error.response?.data?.error || "An error occurred while removing the cue.",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -138,7 +161,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
             width={xLabels.length * columnWidth + (xLabels.length - 1) * gap}
             isResizable={false}
             compactType={null}
-            isBounded={true}
+            isBounded={false}
             preventCollision={true}
             margin={[gap, gap]}
             containerPadding={[0, 0]}

@@ -91,16 +91,14 @@ export const deletePresentation = (id) => async (dispatch) => {
   }
 }
 
-export const updatePresentation = (id, layout) => async (dispatch) => {
+export const updatePresentation = (id, movedCue) => async (dispatch) => {
   try {
-    for (const cue of layout) {
-      const formData = new FormData()
-      formData.append("index", cue.cueIndex)
-      formData.append("screen", cue.screen)
-      formData.append("cueId", cue.id)
-      const updatedCue = await presentationService.updateCue(id, cue.id, formData)
-      dispatch(updateCue(updatedCue))
-    }
+    const formData = new FormData()
+    formData.append("index", movedCue.cueIndex)
+    formData.append("screen", movedCue.screen)
+    formData.append("cueId", movedCue.cueId)
+    const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
+    dispatch(updateCue(updatedCue))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
