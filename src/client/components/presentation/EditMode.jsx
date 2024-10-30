@@ -1,18 +1,22 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
-import { CloseIcon } from "@chakra-ui/icons"
+import { CloseIcon, CheckIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
 import { removeCue, updatePresentation } from "../../redux/presentationReducer"
+import { set } from "mongoose"
 
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues }) => {
   const toast = useToast()
   const dispatch = useDispatch()
+
+  // for ui element
+  const [status, setStatus] = useState("idle")
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -39,33 +43,21 @@ const EditMode = ({ id, cues }) => {
     const movedCue = {
       cueId: newItem.i,
       cueIndex: newItem.x,
-      screen: newItem.y+1,
+      screen: newItem.y + 1,
     }
+    
     if (movedCue) {
+      setStatus(false)
       try {
         await dispatch(updatePresentation(id, movedCue))
-        toast({
-          title: "Presentation saved",
-          description: "The presentation has been successfully saved.",
-          status: "success",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
-        })
+        setStatus("saved")
+        console.log("saved")
       } catch (error) {
         console.error(error)
-        const errorMessage = error.message || "An error occurred"
-        toast({
-          title: "Error",
-          description: errorMessage,
-          status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
-          })
-        }
+        setStatus("idle")
       }
     }
+  }
 
   
   const handleRemoveItem = async (cueId) => {
@@ -221,7 +213,42 @@ const EditMode = ({ id, cues }) => {
             ))}
           </GridLayout>
         </Box>
+        <Box position="absolute" top="100px" right="990px" display="flex" alignItems="center">
+          {status === "saved" && (
+            <Box
+              display="flex"
+              alignItems="center"
+              style={{
+                animation: "fadeOut 2s forwards",
+              }}
+            >
+              <CheckIcon w={6} h={6} color="green.500" />
+              <Text ml={2} fontSize="medium" color="green.500" fontWeight="bold">
+                Saved!
+              </Text>
+            </Box>
+          )}
+        </Box>
       </Box>
+      <style jsx>{`
+        @keyframes fadeOut {
+          0% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        @keyframes roll {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </ChakraProvider>
   )
 }
