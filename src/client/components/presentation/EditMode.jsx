@@ -41,7 +41,12 @@ const EditMode = ({ id, cues }) => {
   const rowHeight = 100
   const gap = 10
 
-  const handlePositionChange = async (layout, olditem, newItem) => {
+  const handlePositionChange = async (layout, oldItem, newItem) => {
+
+    if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
+      return
+    }
+    
     const movedCue = {
       cueId: newItem.i,
       cueIndex: newItem.x,
