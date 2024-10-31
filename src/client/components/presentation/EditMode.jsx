@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
 import { CloseIcon, CheckIcon } from "@chakra-ui/icons"
+import { Spinner } from "@chakra-ui/react"
+import { Tooltip } from "@chakra-ui/react"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -16,7 +18,7 @@ const EditMode = ({ id, cues }) => {
   const dispatch = useDispatch()
 
   // for ui element
-  const [status, setStatus] = useState("idle")
+  const [status, setStatus] = useState("saved")
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -47,14 +49,12 @@ const EditMode = ({ id, cues }) => {
     }
     
     if (movedCue) {
-      setStatus(false)
+      setStatus("loading")
       try {
         await dispatch(updatePresentation(id, movedCue))
-        setStatus("saved")
-        console.log("saved")
+        setTimeout(() => setStatus("saved"), 300) // Delay is purely for visuals
       } catch (error) {
-        console.error(error)
-        setStatus("idle")
+        console.error(error) 
       }
     }
   }
@@ -213,42 +213,22 @@ const EditMode = ({ id, cues }) => {
             ))}
           </GridLayout>
         </Box>
-        <Box position="absolute" top="100px" right="990px" display="flex" alignItems="center">
-          {status === "saved" && (
-            <Box
-              display="flex"
-              alignItems="center"
-              style={{
-                animation: "fadeOut 2s forwards",
-              }}
-            >
-              <CheckIcon w={6} h={6} color="green.500" />
-              <Text ml={2} fontSize="medium" color="green.500" fontWeight="bold">
-                Saved!
-              </Text>
-            </Box>
-          )}
+          <Box position="absolute" top="105px" right="1060px" display="flex" alignItems="center">
+            <Tooltip label={status === "loading" ? "Loading..." : "Your changes are saved!"} aria-label="Status Tooltip" placement="right" zIndex="tooltip">
+              <Box>
+                {status === "loading" ? (
+                  <>
+                    <Spinner size="md" color="purple.200" />
+                  </>
+                ) : (
+                  <>
+                    <CheckIcon w={5} h={5} color="purple.200" />
+                  </>
+                )}
+              </Box>
+          </Tooltip>
         </Box>
       </Box>
-      <style jsx>{`
-        @keyframes fadeOut {
-          0% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-
-        @keyframes roll {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </ChakraProvider>
   )
 }
