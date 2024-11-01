@@ -3,6 +3,7 @@ const express = require("express")
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const config = require("../utils/config")
+const verifyToken = require("../utils/verifyToken")
 
 const router = express.Router()
 
@@ -40,6 +41,24 @@ router.post("/", async (req, res) => {
     isAdmin: user.isAdmin,
     id: user._id,
   })
+})
+
+router.post("/firebase", verifyToken, async (req, res) => {
+  const { uid, email, name } = req.user
+  
+  try {
+    // Here, find or create the user in your database
+    let user = await User.findOne({ uid })
+
+    if (!user) {
+      user = new User({ uid, email, name })
+      await user.save()
+    }
+
+    res.status(200).json({ message: "User logged in successfully", user })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 })
 
 

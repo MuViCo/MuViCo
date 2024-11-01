@@ -9,6 +9,7 @@ import {
 } from "@chakra-ui/react"
 import loginService from "../../services/login"
 import Error from "./Error"
+import GoogleSignInButton from "../utils/GoogleSignInButton"
 
 const initialValues = {
   username: "",
@@ -140,7 +141,12 @@ const Login = ({ onLogin }) => {
     }
   }
 
-  return <LoginForm onSubmit={onSubmit} error={error} />
+  return (
+    <div>
+      <LoginForm onSubmit={onSubmit} error={error} />
+      <GoogleSignInButton onLogin={onLogin} />
+    </div> 
+    )
 }
 
 export default Login
