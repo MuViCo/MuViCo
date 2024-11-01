@@ -59,14 +59,15 @@ const CuesForm = ({ addCue }) => {
         <Heading size="md">Add cue</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
         <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
-          <NumberInputField />
+          <NumberInputField data-testid="index-number"/>
           <NumberInputStepper>
-            <NumberIncrementStepper />
+            <NumberIncrementStepper/>
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
         <FormHelperText mb={2}>Name*</FormHelperText>
         <Input
+          data-testid="cue-name"
           value={cueName}
           placeholder="Cue name"
           mb={2}
@@ -82,9 +83,9 @@ const CuesForm = ({ addCue }) => {
           onChange={setScreen}
           required
         >
-          <NumberInputField />
+          <NumberInputField  data-testid="screen-number"/>
           <NumberInputStepper>
-            <NumberIncrementStepper />
+            <NumberIncrementStepper/>
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
