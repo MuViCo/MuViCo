@@ -44,9 +44,21 @@ const removeCue = async (id, cueId) => {
   return response.data
 }
 
+const updateCue = async (id, cueId, formData) => {
+  const config = {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.put(`${baseUrl}/${id}/${cueId}`, formData, config)
+  return response.data
+}
+
 export default {
   get,
   remove,
   addCue,
   removeCue,
+  updateCue,
 }

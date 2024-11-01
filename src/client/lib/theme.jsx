@@ -27,6 +27,7 @@ const components = {
   },
 }
 
+
 const fonts = {
   heading: "'Poppins', sans-serif",
   body: "'Poppins', sans-serif",
