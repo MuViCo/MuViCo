@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
 
@@ -72,6 +72,13 @@ const ShowMode = ({ presentationInfo }) => {
   }))
 }
 
+const handleScreenClose = useCallback((screenNumber) => {
+  setScreenVisibility(prevVisibility => ({
+    ...prevVisibility,
+    [screenNumber]: false
+  }))
+}, [])
+
 
   const updateCue = (direction) => {
     if (direction === "Next") {
@@ -98,6 +105,7 @@ const ShowMode = ({ presentationInfo }) => {
           screenData={preloadedCues[screenNumber][cueIndex]}
           screenNumber={screenNumber}
           isVisible={screenVisibility[screenNumber]}
+          onClose={handleScreenClose}
         />
       ))}
     </div>

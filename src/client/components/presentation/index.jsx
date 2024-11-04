@@ -16,7 +16,7 @@ import ToolBox from "./ToolBox"
  * @returns {JSX.Element} The presentation page component.
  */
 
-const PresentationPage = ({ userId }) => {
+const PresentationPage = ({ userId, setUser }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -103,8 +103,7 @@ const PresentationPage = ({ userId }) => {
     } else {
       formData.append("image", file)
     }
-
-
+  
     try {
       await dispatch(createCue(id, formData))
       toast({
