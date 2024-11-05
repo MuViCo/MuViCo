@@ -12,12 +12,6 @@ describe("Screen", () => {
         password: "screentest",
       },
     })
-
-    page.goto("http://localhost:3000/")
-    await loginWith(page, "screentestuser", "screentest")
-    await addPresentation(page, "testi")
-    page.goto("http://localhost:3000/home")
-
   })
 
   test("user can press shift to display screen and cue info", async () => {
@@ -25,7 +19,10 @@ describe("Screen", () => {
     const context = await browser.newContext()
     const page1 = await context.newPage()
     page1.goto("http://localhost:3000/")
+    await expect(page1.getByRole("button", { name: "Login" })).toBeVisible()
     await loginWith(page1, "screentestuser", "screentest")
+    page1.goto("http://localhost:3000/home")
+    await addPresentation(page1, "testi")
     page1.goto("http://localhost:3000/home")
     await page1.getByText("testi").click()
     await addBlankCue(page1, "test cue", "1", "1")
