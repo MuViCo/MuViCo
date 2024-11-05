@@ -4,6 +4,10 @@ import '@testing-library/jest-dom'
 import React from 'react'
 import NavBar from '../../components/navbar/index'
 
+jest.mock('../../components/utils/firebase', () => ({
+  apikey: 'testkey'
+  }))
+
 describe('logout', () => {
   test('render content', () => {
     const setUser = jest.fn()

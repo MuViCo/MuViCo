@@ -46,6 +46,7 @@ router.post("/", async (req, res) => {
 router.post("/firebase", verifyToken, async (req, res) => {
   const { uid, email, name } = req.user
 
+
   try {
     const username = email ? email.split("@")[0] : `user_${uid}` 
     const user = await User.findOne({ username })
