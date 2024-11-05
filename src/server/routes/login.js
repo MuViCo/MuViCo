@@ -44,22 +44,15 @@ router.post("/", async (req, res) => {
 })
 
 router.post("/firebase", verifyToken, async (req, res) => {
-  const { uid, email, name, username } = req.user
-  //console.log("uid", uid, req.user)
-  
-  try {
+  const { uid, email, name } = req.user
 
-    let user = await User.findOne({ uid })
-    // console.log("User data being saved:", {
-    //   uid,
-    //   email,
-    //   name,
-    //   username: email ? email.split("@")[0] : `user_${uid}`,
-    // })
+  try {
+    const username = email ? email.split("@")[0] : `user_${uid}` 
+    const user = await User.findOne({ username })
+   
    
     if (!user) {
-      const username = email ? email.split("@")[0] : `user_${uid}` 
-      user = new User({ uid, email, name, username })
+      const user = new User({ uid, email, name, username })
       await user.save()
     }
 

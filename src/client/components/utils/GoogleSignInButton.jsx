@@ -6,10 +6,8 @@ import axios from "axios"
 const GoogleSignInButton = ({ onLogin }) => {
   const handleGoogleSignIn = async () => {
     try {
-      //console.log("Signing in with Google", auth, googleProvider)
       const result = await signInWithPopup(auth, googleProvider)
       const idToken = await result.user.getIdToken(true)
-      console.log("idToken", idToken)
       const response = await axios.post(
         "/api/login/firebase",
         {},
@@ -20,10 +18,9 @@ const GoogleSignInButton = ({ onLogin }) => {
         }
       )
       
-      // const user = response.data.user 
-      // window.localStorage.setItem("user", JSON.stringify(user) ?? "No user")
-      // console.log("User", user ?? "No user")
-      // onLogin(user) 
+      const user = response.data
+      window.localStorage.setItem("user", JSON.stringify(user) ?? "No user")
+      onLogin(user) 
     } catch (error) {
       console.error("Error signing in with Google:", error)
     }
