@@ -44,22 +44,47 @@ router.post("/", async (req, res) => {
 })
 
 router.post("/firebase", verifyToken, async (req, res) => {
-  const { uid, email, name } = req.user
+  const { uid, email, name, username } = req.user
+  //console.log("uid", uid, req.user)
   
   try {
-    // Here, find or create the user in your database
-    let user = await User.findOne({ uid })
 
+    let user = await User.findOne({ uid })
+    // console.log("User data being saved:", {
+    //   uid,
+    //   email,
+    //   name,
+    //   username: email ? email.split("@")[0] : `user_${uid}`,
+    // })
+   
     if (!user) {
-      user = new User({ uid, email, name })
+      const username = email ? email.split("@")[0] : `user_${uid}` 
+      user = new User({ uid, email, name, username })
       await user.save()
     }
 
-    res.status(200).json({ message: "User logged in successfully", user })
-  } catch (error) {
+    const userForToken = {
+      username: user.username,
+      id: user._id,
+    }
+
+  
+    const token = jwt.sign(userForToken, config.SECRET, {
+      expiresIn: 60 * 60,
+    })
+
+  
+    return res.status(200).send({
+      token,
+      username: user.username,
+      name: user.name,
+      isAdmin: user.isAdmin,
+      id: user._id,
+    })
+    } catch (error) {
     res.status(500).json({ error: error.message })
-  }
-})
+    }
+    })
 
 
 module.exports = router

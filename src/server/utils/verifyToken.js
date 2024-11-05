@@ -1,17 +1,19 @@
 const admin = require("firebase-admin")
+const serviceAccount = require("./serviceAccountKey.json")
 
-// Initialize Firebase Admin SDK once
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+    credential: admin.credential.cert(serviceAccount),
   })
 }
+
 
 const verifyToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]
 
+
   if (!token) {
-    return res.status(401).json({ error: "Unauthorized" })
+    return res.status(401).json({ error: "no token" })
   }
 
   try {
