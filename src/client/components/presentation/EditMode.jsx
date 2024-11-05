@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
 import { CloseIcon, CheckIcon } from "@chakra-ui/icons"
 import { Spinner } from "@chakra-ui/react"
@@ -8,14 +8,14 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue, updatePresentation } from "../../redux/presentationReducer"
-import { set } from "mongoose"
+import { removeCue, updatePresentation, createCue } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues }) => {
   const toast = useToast()
   const dispatch = useDispatch()
+  const containerRef = useRef(null)
 
   // for ui element
   const [status, setStatus] = useState("saved")
@@ -91,9 +91,45 @@ const EditMode = ({ id, cues }) => {
       })
     }
   }
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    const files = Array.from(e.dataTransfer.files)
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+    
+    if (containerRef.current) {
+      const dropX = e.clientX
+
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const containerScrollLeft = containerRef.current.scrollLeft
+
+      const relativeX = dropX - containerRect.left
+      const realX = relativeX + containerScrollLeft
+      const mouseY = e.clientY - containerRect.top
+
+      const effectiveCellWidth = columnWidth + gap
+      const effectiveCellHeight = rowHeight + gap
+
+      const yIndex = Math.floor(mouseY / effectiveCellHeight)
+      const xIndex = Math.floor(realX / effectiveCellWidth)
+
+      console.log("xIndex", xIndex)
+      console.log("yIndex", yIndex)
+      imageFiles.forEach((file, index) => {
+        const formData = new FormData()
+        formData.append("index", xIndex)
+        formData.append("cueName", file.name)
+        formData.append("screen", yIndex)
+        formData.append("image", file)
+  
+        dispatch(createCue(id, formData))
+      })
+    }
+    }, [dispatch, gap, rowHeight, columnWidth, id])
 
   return (
     <ChakraProvider theme={theme}>
+      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} >
+
       <Box display="flex" height="600px" width="100%" marginTop={`${gap*2}px`}>
         <Box
           display="grid"
@@ -133,6 +169,7 @@ const EditMode = ({ id, cues }) => {
             zIndex={1}
             bg={"transparent"}
             mb={`${gap}px`}
+            ref={containerRef}
           >
             {xLabels.map((label) => (
               <Box
@@ -236,6 +273,7 @@ const EditMode = ({ id, cues }) => {
           </Tooltip>
         </Box>
       </Box>
+      </div>
     </ChakraProvider>
   )
 }
