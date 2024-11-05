@@ -169,6 +169,7 @@ const EditMode = ({ id, cues }) => {
             {cues.map((cue) => (
               <div
                 key={cue._id}
+                data-testid={`cue-${cue.name}`}
                 data-grid={{
                   x: cue.index,
                   y: cue.screen - 1,
@@ -188,6 +189,7 @@ const EditMode = ({ id, cues }) => {
                     zIndex="10"
                     top="0px"
                     right="0px"
+                    aria-label={`Delete ${cue.name}`}
                     onMouseDown={(e) => {
                       e.stopPropagation()
                       handleRemoveItem(cue._id)
@@ -218,7 +220,7 @@ const EditMode = ({ id, cues }) => {
             ))}
           </GridLayout>
         </Box>
-          <Box position="absolute" top="105px" right="1060px" display="flex" alignItems="center">
+          <Box position="absolute" top="105px" right="1050" display="flex" alignItems="center" zIndex={1}>
             <Tooltip label={status === "loading" ? "Loading..." : "Your changes are saved!"} aria-label="Status Tooltip" placement="right" zIndex="tooltip">
               <Box>
                 {status === "loading" ? (

@@ -18,11 +18,11 @@ const Toolbox = ({ addCue }) => {
 
   return (
     <>
-      <Button onClick={onOpen}>Add Cue</Button>
+      <Button onClick={onOpen} zIndex={2}>Add Cue</Button>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerCloseButton zIndex={1} />
+          <DrawerCloseButton zIndex={1} aria-label="Close drawer"/>
           <DrawerBody>
             <CuesForm addCue={addCue} onClose={onClose} />
           </DrawerBody>
