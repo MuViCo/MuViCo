@@ -91,40 +91,72 @@ const EditMode = ({ id, cues }) => {
       })
     }
   }
-  const handleDrop = useCallback((e) => {
-    e.preventDefault()
-    const files = Array.from(e.dataTransfer.files)
+  const handleDrop =  useCallback(async (event) => {
+    event.preventDefault()
+    const files = Array.from(event.dataTransfer.files)
     const imageFiles = files.filter((file) => file.type.startsWith("image/"))
-    
-    if (containerRef.current) {
-      const dropX = e.clientX
+
+    if (imageFiles.length > 0 && containerRef.current) {
+      const dropX = event.clientX
 
       const containerRect = containerRef.current.getBoundingClientRect()
       const containerScrollLeft = containerRef.current.scrollLeft
 
-      const relativeX = dropX - containerRect.left
-      const realX = relativeX + containerScrollLeft
-      const mouseY = e.clientY - containerRect.top
+      const relativeDropX = dropX - containerRect.left
+      const absoluteDropX = relativeDropX + containerScrollLeft
+      const dropY = event.clientY - containerRect.top
 
-      const effectiveCellWidth = columnWidth + gap
-      const effectiveCellHeight = rowHeight + gap
+      const cellWidthWithGap = columnWidth + gap
+      const cellHeightWithGap = rowHeight + gap
 
-      const yIndex = Math.floor(mouseY / effectiveCellHeight)
-      const xIndex = Math.floor(realX / effectiveCellWidth)
+      const yIndex = Math.floor(dropY / cellHeightWithGap)
+      const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
-      console.log("xIndex", xIndex)
-      console.log("yIndex", yIndex)
-      imageFiles.forEach((file, index) => {
-        const formData = new FormData()
-        formData.append("index", xIndex)
-        formData.append("cueName", file.name)
-        formData.append("screen", yIndex)
-        formData.append("image", file)
-  
-        dispatch(createCue(id, formData))
-      })
+      const cueExists = cues.some(
+        (cue) => cue.index === Number(xIndex) && cue.screen === Number(yIndex)
+      )
+      if (cueExists) {
+        toast({
+          title: "Cue already exists",
+          description: `Cue with index ${xIndex} already exists on screen ${yIndex}`,
+          status: "error",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+        return
+      }
+
+      const file = imageFiles[0]
+      const formData = new FormData()
+      formData.append("index", xIndex)
+      formData.append("cueName", file.name)
+      formData.append("screen", yIndex)
+      formData.append("image", file)
+
+      try {
+        await dispatch(createCue(id, formData))
+        toast({
+          title: "Cue added",
+          description: `Cue ${file.name} added to screen ${yIndex}`,
+          status: "success",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+      } catch (error) {
+        const errorMessage = error.message || "An error occurred"
+        toast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+      }
     }
-    }, [dispatch, gap, rowHeight, columnWidth, id])
+  }, [dispatch, gap, rowHeight, columnWidth, id])
 
   return (
     <ChakraProvider theme={theme}>
