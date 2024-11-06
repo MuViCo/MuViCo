@@ -270,40 +270,58 @@ const EditMode = ({ id, cues }) => {
                     alt={cue.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
                   />
-                  <Text
-                    position="absolute"
-                    top="50%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    color="white"
-                    fontWeight="bold"
-                    textAlign="center"
-                    bg="rgba(0, 0, 0, 0.5)"
-                    p={2}
-                    borderRadius="md"
-                  >
-                    {cue.name}
-                  </Text>
+                  <Tooltip label={cue.name} placement="top" hasArrow>
+                    <Text
+                      position="absolute"
+                      top="50%"
+                      left="50%"
+                      transform="translate(-50%, -50%)"
+                      color="white"
+                      fontWeight="bold"
+                      bg="rgba(0, 0, 0, 0.5)"
+                      p={2}
+                      borderRadius="md"
+                      whiteSpace="nowrap"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      display="inline-block" 
+                      maxWidth="80%" 
+                      textAlign="center" 
+                      style={{ 
+                        textShadow: "2px 2px 4px rgba(0,0,0,1)" 
+                      }}
+                    >
+                      {cue.name}
+                    </Text>
+                  </Tooltip>
                 </Box>
               </div>
             ))}
           </GridLayout>
         </Box>
-          <Box position="absolute" top="105px" right="1050" display="flex" alignItems="center" zIndex={1}>
-            <Tooltip label={status === "loading" ? "Loading..." : "Your changes are saved!"} aria-label="Status Tooltip" placement="right" zIndex="tooltip">
-              <Box>
-                {status === "loading" ? (
-                  <>
-                    <Spinner size="md" color="purple.200" />
-                  </>
-                ) : (
-                  <>
-                    <CheckIcon w={5} h={5} color="purple.200" />
-                  </>
-                )}
-              </Box>
-          </Tooltip>
-        </Box>
+        <Box 
+        position="fixed" 
+        top="11%" 
+        right="5%" 
+        display="flex"
+        alignItems="center"
+        zIndex={1}
+      >
+        <Tooltip
+          label={status === "loading" ? "Saving in progress..." : "Your changes are saved!"}
+          aria-label="Status Tooltip"
+          placement="right"
+          zIndex="tooltip"
+        >
+          <Box>
+            {status === "loading" ? (
+              <Spinner size="md" color="purple.200" />
+            ) : (
+              <CheckIcon w={6} h={6} color="purple.200" />
+            )}
+          </Box>
+        </Tooltip>
+      </Box>
       </Box>
       </div>
     </ChakraProvider>
