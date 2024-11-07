@@ -2,6 +2,9 @@ import { loginWith, addPresentation, addBlankCue } from "./helper"
 
 const { test, describe, expect, beforeEach, chromium } = require("@playwright/test")
 
+const path = require('path')
+const fs = require('fs')
+
 describe("GridLayout", () => {   
         beforeEach(async ({ page, request }) => {
             await request.post("http:localhost:8000/api/testing/reset")
@@ -54,4 +57,39 @@ describe("GridLayout", () => {
         await page.locator('button[aria-label="Delete testcue_del"]').click()
         await expect(page.locator('[data-testid="cue-testcue_del"]')).not.toBeVisible()
     })
+
+    test('should add a cue by dragging and dropping a file', async ({ page }) => {
+
+      await page.getByText("testi").click()
+      const dropArea = page.locator('[data-testid="drop-area"]')
+
+      await addBlankCue(page, "testcue", "1", "1")
+      const source = page.locator('[data-testid="cue-testcue"]')
+
+      const filePath = path.resolve(__dirname, '../src/client/public/blank.png')
+
+      const buffer = fs.readFileSync(filePath)
+
+      const dataTransfer = await page.evaluateHandle((data) => {
+        const dt = new DataTransfer()
+        const file = new File([data], 'blank.png', { type: 'image/png' })
+        dt.items.add(file)
+        return dt
+      }, buffer)
+
+      const sourceBox = await source.boundingBox()
+      if (!sourceBox) throw new Error("Source element bounding box not found")
+
+      const dropX = sourceBox.x + 300
+      const dropY = sourceBox.y + 200
+
+      await dropArea.dispatchEvent('dragenter', { clientX: dropX, clientY: dropY })
+      await dropArea.dispatchEvent('dragover', { clientX: dropX, clientY: dropY })
+      await dropArea.dispatchEvent('drop', { clientX: dropX, clientY: dropY, dataTransfer })
+
+      await expect(page.getByText("Cue blank.png added to screen 2").first()).toBeVisible()
+      await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
+    })
+
+
 })
