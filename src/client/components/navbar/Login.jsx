@@ -16,7 +16,7 @@ const initialValues = {
   password: "",
 }
 
-export const LoginForm = ({ onSubmit, error }) => {
+export const LoginForm = ({ onSubmit, error, onLogin }) => {
   const [formData, setFormData] = useState(initialValues)
   const [submissionError, setSubmissionError] = useState(null)
   const usernameRef = useRef(null)
@@ -110,7 +110,7 @@ export const LoginForm = ({ onSubmit, error }) => {
         <Container mt={4}>
           <Box textAlign="justify"></Box>
         </Container>
-        <Box mt={4} mb={-2} display="flex" justifyContent="flex-start">
+        <Box mt={4} mb={-2} display="flex" gap={4} justifyContent="flex-start" alignItems="center">
           <Button
             data-testid="login_inform"
             colorScheme="purple"
@@ -120,6 +120,7 @@ export const LoginForm = ({ onSubmit, error }) => {
           >
             Log in
           </Button>
+          <GoogleSignInButton onLogin={onLogin} />
         </Box>
       </form>
     </>
@@ -143,8 +144,7 @@ const Login = ({ onLogin }) => {
 
   return (
     <div>
-      <LoginForm onSubmit={onSubmit} error={error} />
-      <GoogleSignInButton onLogin={onLogin} />
+      <LoginForm onSubmit={onSubmit} error={error} onLogin={onLogin} />
     </div> 
     )
 }
