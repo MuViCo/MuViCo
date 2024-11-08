@@ -1,18 +1,24 @@
-import React from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { Box, Text, ChakraProvider, extendTheme, useColorModeValue, IconButton} from "@chakra-ui/react"
-import { CloseIcon } from "@chakra-ui/icons"
+import { CloseIcon, CheckIcon } from "@chakra-ui/icons"
+import { Spinner } from "@chakra-ui/react"
+import { Tooltip } from "@chakra-ui/react"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue } from "../../redux/presentationReducer"
+import { removeCue, updatePresentation, createCue } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, handleGridChange }) => {
+const EditMode = ({ id, cues }) => {
   const toast = useToast()
   const dispatch = useDispatch()
+  const containerRef = useRef(null)
+
+  // for ui element
+  const [status, setStatus] = useState("saved")
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -35,16 +41,29 @@ const EditMode = ({ id, cues, handleGridChange }) => {
   const rowHeight = 100
   const gap = 10
 
-  const gapColor = useColorModeValue("gray.100", "gray.700")
+  const handlePositionChange = async (layout, oldItem, newItem) => {
 
-  const handlePositionChange = (layout) => {
-    const convertedLayout = layout.map(item => ({
-      id: item.i,
-      cueIndex: item.x,
-      screen: item.y + 1,
-    }))
-    handleGridChange(convertedLayout)
+    if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
+      return
+    }
+    
+    const movedCue = {
+      cueId: newItem.i,
+      cueIndex: newItem.x,
+      screen: newItem.y + 1,
+    }
+    
+    if (movedCue) {
+      setStatus("loading")
+      try {
+        await dispatch(updatePresentation(id, movedCue))
+        setTimeout(() => setStatus("saved"), 300) // Delay is purely for visuals
+      } catch (error) {
+        console.error(error) 
+      }
+    }
   }
+
   
   const handleRemoveItem = async (cueId) => {
     if (!window.confirm("Are you sure you want to delete this cue?")) return
@@ -61,9 +80,10 @@ const EditMode = ({ id, cues, handleGridChange }) => {
       })
     } catch (error) {
       console.error(error)
+      const errorMessage = error.message || "An error occurred"
       toast({
         title: "Error",
-        description: error.response?.data?.error || "An error occurred while removing the cue.",
+        description: errorMessage,
         status: "error",
         position: "top",
         duration: 3000,
@@ -71,9 +91,77 @@ const EditMode = ({ id, cues, handleGridChange }) => {
       })
     }
   }
+  const handleDrop =  useCallback(async (event) => {
+    event.preventDefault()
+    const files = Array.from(event.dataTransfer.files)
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+
+    if (imageFiles.length > 0 && containerRef.current) {
+      const dropX = event.clientX
+
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const containerScrollLeft = containerRef.current.scrollLeft
+
+      const relativeDropX = dropX - containerRect.left
+      const absoluteDropX = relativeDropX + containerScrollLeft
+      const dropY = event.clientY - containerRect.top
+
+      const cellWidthWithGap = columnWidth + gap
+      const cellHeightWithGap = rowHeight + gap
+
+      const yIndex = Math.floor(dropY / cellHeightWithGap)
+      const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
+
+      const cueExists = cues.some(
+        (cue) => cue.index === Number(xIndex) && cue.screen === Number(yIndex)
+      )
+      if (cueExists) {
+        toast({
+          title: "Cue already exists",
+          description: `Cue with index ${xIndex} already exists on screen ${yIndex}`,
+          status: "error",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+        return
+      }
+
+      const file = imageFiles[0]
+      const formData = new FormData()
+      formData.append("index", xIndex)
+      formData.append("cueName", file.name)
+      formData.append("screen", yIndex)
+      formData.append("image", file)
+
+      try {
+        await dispatch(createCue(id, formData))
+        toast({
+          title: "Cue added",
+          description: `Cue ${file.name} added to screen ${yIndex}`,
+          status: "success",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+      } catch (error) {
+        const errorMessage = error.message || "An error occurred"
+        toast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+          position: "top",
+          duration: 3000,
+          isClosable: true,
+        })
+      }
+    }
+  }, [dispatch, gap, rowHeight, columnWidth, id])
 
   return (
     <ChakraProvider theme={theme}>
+      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} data-testid="drop-area">
+
       <Box display="flex" height="600px" width="100%" marginTop={`${gap*2}px`}>
         <Box
           display="grid"
@@ -113,6 +201,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
             zIndex={1}
             bg={"transparent"}
             mb={`${gap}px`}
+            ref={containerRef}
           >
             {xLabels.map((label) => (
               <Box
@@ -138,7 +227,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
             width={xLabels.length * columnWidth + (xLabels.length - 1) * gap}
             isResizable={false}
             compactType={null}
-            isBounded={true}
+            isBounded={false}
             preventCollision={true}
             margin={[gap, gap]}
             containerPadding={[0, 0]}
@@ -149,6 +238,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
             {cues.map((cue) => (
               <div
                 key={cue._id}
+                data-testid={`cue-${cue.name}`}
                 data-grid={{
                   x: cue.index,
                   y: cue.screen - 1,
@@ -168,6 +258,7 @@ const EditMode = ({ id, cues, handleGridChange }) => {
                     zIndex="10"
                     top="0px"
                     right="0px"
+                    aria-label={`Delete ${cue.name}`}
                     onMouseDown={(e) => {
                       e.stopPropagation()
                       handleRemoveItem(cue._id)
@@ -179,26 +270,60 @@ const EditMode = ({ id, cues, handleGridChange }) => {
                     alt={cue.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
                   />
-                  <Text
-                    position="absolute"
-                    top="50%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    color="white"
-                    fontWeight="bold"
-                    textAlign="center"
-                    bg="rgba(0, 0, 0, 0.5)"
-                    p={2}
-                    borderRadius="md"
-                  >
-                    {cue.name}
-                  </Text>
+                  <Tooltip label={cue.name} placement="top" hasArrow>
+                    <Text
+                      position="absolute"
+                      top="50%"
+                      left="50%"
+                      transform="translate(-50%, -50%)"
+                      color="white"
+                      fontWeight="bold"
+                      bg="rgba(0, 0, 0, 0.5)"
+                      p={2}
+                      borderRadius="md"
+                      whiteSpace="nowrap"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      display="inline-block" 
+                      maxWidth="80%" 
+                      textAlign="center" 
+                      style={{ 
+                        textShadow: "2px 2px 4px rgba(0,0,0,1)" 
+                      }}
+                    >
+                      {cue.name}
+                    </Text>
+                  </Tooltip>
                 </Box>
               </div>
             ))}
           </GridLayout>
         </Box>
+        <Box 
+        position="fixed" 
+        top="11%" 
+        right="5%" 
+        display="flex"
+        alignItems="center"
+        zIndex={1}
+      >
+        <Tooltip
+          label={status === "loading" ? "Saving in progress..." : "Your changes are saved!"}
+          aria-label="Status Tooltip"
+          placement="right"
+          zIndex="tooltip"
+        >
+          <Box>
+            {status === "loading" ? (
+              <Spinner size="md" color="purple.200" />
+            ) : (
+              <CheckIcon w={6} h={6} color="purple.200" />
+            )}
+          </Box>
+        </Tooltip>
       </Box>
+      </Box>
+      </div>
     </ChakraProvider>
   )
 }

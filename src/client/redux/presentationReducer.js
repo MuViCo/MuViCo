@@ -18,7 +18,7 @@ const presentationSlice = createSlice({
       )
     },
     addCue(state, action) {
-      state.presentationInfo = action.payload
+      state.presentationInfo.cues.push(action.payload)
     },
     updateCue(state, action) {
       const updatedCue = action.payload
@@ -71,8 +71,10 @@ export const removeCue = (presentationId, cueId) => async (dispatch) => {
 export const createCue = (id, formData) => async (dispatch) => {
   try {
     const updatedPresentation = await presentationService.addCue(id, formData)
-    dispatch(addCue(updatedPresentation))
-
+    const newCue = updatedPresentation.cues.find(
+      (cue) => cue.index === Number(formData.get("index")) && cue.screen === Number(formData.get("screen"))
+    )
+    dispatch(addCue(newCue))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
@@ -91,16 +93,14 @@ export const deletePresentation = (id) => async (dispatch) => {
   }
 }
 
-export const updatePresentation = (id, layout) => async (dispatch) => {
+export const updatePresentation = (id, movedCue) => async (dispatch) => {
   try {
-    for (const cue of layout) {
-      const formData = new FormData()
-      formData.append("index", cue.cueIndex)
-      formData.append("screen", cue.screen)
-      formData.append("cueId", cue.id)
-      const updatedCue = await presentationService.updateCue(id, cue.id, formData)
-      dispatch(updateCue(updatedCue))
-    }
+    const formData = new FormData()
+    formData.append("index", movedCue.cueIndex)
+    formData.append("screen", movedCue.screen)
+    formData.append("cueId", movedCue.cueId)
+    const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
+    dispatch(updateCue(updatedCue))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
