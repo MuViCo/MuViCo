@@ -1,4 +1,4 @@
-import { loginWith, addPresentation } from "./helper"
+import { loginWith, addPresentation, addBlankCue} from "./helper"
 
 const { test, describe, expect, beforeEach } = require("@playwright/test")
 
@@ -32,6 +32,20 @@ describe("Homepage", () => {
     await card.click()
 
     await expect(page.getByRole("button", { name: "Show mode" })).toBeVisible()
+  })
+
+  test("user can add blank cue", async ({ page }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "test cue", "1", "1")
+    await expect(page.getByText("Cue test cue added to screen").first()).toBeVisible()
+  })
+
+  test("user can enter showmode", async ({ page }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "test cue", "1", "1")
+    await expect(page.getByText("Cue test cue added to screen").first()).toBeVisible()
+    await page.getByRole("button", { name: "Show mode" }).click()
+    await expect(page.getByRole("button", { name: "Open screen: 1" })).toBeVisible()
   })
 
   test("user can delete a presentation", async ({ page }) => {

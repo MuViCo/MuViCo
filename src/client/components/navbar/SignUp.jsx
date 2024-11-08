@@ -197,7 +197,6 @@ const SignUp = ({ onSignup }) => {
       window.localStorage.setItem("user", userJSON)
       onSignup(userJSON)
     } catch (e) {
-      console.log(e)
       setError(e.response.data.error)
     }
   }

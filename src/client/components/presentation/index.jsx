@@ -23,42 +23,14 @@ const PresentationPage = ({ userId, setUser }) => {
   const toast = useToast()
 
   const [showMode, setShowMode] = useState(false)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [gridLayout, setGridLayout] = useState([])
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
-
-  useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      if (hasUnsavedChanges) {
-        event.preventDefault()
-        event.returnValue = ""
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload)
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
-    }
-  }, [hasUnsavedChanges])
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, userId, navigate, dispatch])
 
-  const handleGridChange = (newLayout) => {
-    setGridLayout(newLayout)
-    setHasUnsavedChanges(true)
-  }
-
   const handleShowMode = () => {
-    if (hasUnsavedChanges) {
-      const confirm = window.confirm("You have unsaved changes. Do you want to save them before entering show mode?")
-      if (confirm) {
-        handleSave()
-      }
-    }
     setShowMode(!showMode)
   }
   
@@ -176,32 +148,6 @@ const PresentationPage = ({ userId, setUser }) => {
     }
   }
 
-  const handleSave = async () => {
-    try {
-      await dispatch(updatePresentation(presentationInfo.id, gridLayout))
-      setHasUnsavedChanges(false)
-      toast({
-        title: "Presentation saved",
-        description: "The presentation has been successfully saved.",
-        status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      console.error(error)
-      const errorMessage = error.message || "An error occurred"
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    }
-  }
-
   return (
     <>
       {presentationInfo && (
@@ -216,15 +162,12 @@ const PresentationPage = ({ userId, setUser }) => {
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
                 </Button>
-                <Button colorScheme="blue" onClick={handleSave}>
-                  Save
-                </Button>
               </>
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} handleGridChange={handleGridChange}/>
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues}/>
           </Box>
         </Box>
       )}

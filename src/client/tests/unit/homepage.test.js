@@ -13,6 +13,9 @@ import '@testing-library/jest-dom'
 jest.mock('react-router-dom', () => ({
   useNavigate: jest.fn(),
 }))
+jest.mock('../../components/utils/firebase', () => ({
+  apikey: 'testkey'
+  }))
 
 // describe("HomePage", () => {
 //   beforeEach(() => {

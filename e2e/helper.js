@@ -11,4 +11,13 @@ const addPresentation = async (page, name) => {
   await page.getByRole("button", { name: "create" }).click()
 }
 
-export { loginWith, addPresentation }
+const addBlankCue = async (page, name, index, screen) => {
+  await page.getByRole("button", { name: "Add Cue" }).click()
+  await page.getByTestId("index-number").fill(index)
+  await page.getByTestId("cue-name").fill(name)
+  await page.getByTestId("screen-number").fill(screen)
+  await page.getByRole("button", { name: "Submit" }).click()
+  await page.getByRole('button', { name: 'Close drawer' }).click()
+}
+
+export { loginWith, addPresentation, addBlankCue }
