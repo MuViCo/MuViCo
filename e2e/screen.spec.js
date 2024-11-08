@@ -22,6 +22,7 @@ describe("Screen", () => {
     await expect(page1.getByRole("button", { name: "Login" })).toBeVisible()
     await loginWith(page1, "screentestuser", "screentest")
     await addPresentation(page1, "testi")
+    page1.goto("http://localhost:3000/home")
     await page1.getByText("testi").click()
     await addBlankCue(page1, "test cue", "1", "1")
     await expect(page1.getByText("Cue test cue added to screen").first()).toBeVisible()
