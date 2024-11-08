@@ -29,6 +29,7 @@ const App = () => {
     }
     setIsInitialized(true)
   }, [])
+  
 
   if (!isInitialized) {
     return <div>Loading...</div>

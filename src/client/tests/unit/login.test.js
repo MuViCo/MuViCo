@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { LoginForm } from '../../components/navbar/Login'
 
+jest.mock('../../components/utils/firebase', () => ({
+  apikey: 'testkey'
+  }))
+
 describe('Login', () => {
   test('renders content', () => {
     const onSubmit = jest.fn()
