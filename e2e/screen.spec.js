@@ -26,7 +26,6 @@ describe("Screen", () => {
     const page1 = await context.newPage()
     page1.goto("http://localhost:3000/")
     await loginWith(page1, "screentestuser", "screentest")
-    page1.goto("http://localhost:3000/home")
     await page1.getByText("testi").click()
     await addBlankCue(page1, "test cue", "1", "1")
     await expect(page1.getByText("Cue test cue added to screen").first()).toBeVisible()
