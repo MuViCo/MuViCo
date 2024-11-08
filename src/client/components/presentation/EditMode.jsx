@@ -160,7 +160,7 @@ const EditMode = ({ id, cues }) => {
 
   return (
     <ChakraProvider theme={theme}>
-      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} >
+      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} data-testid="drop-area">
 
       <Box display="flex" height="600px" width="100%" marginTop={`${gap*2}px`}>
         <Box
