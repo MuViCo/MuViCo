@@ -10,6 +10,9 @@ jest.mock('react-router-dom', () => ({
     ...jest.requireActual('react-router-dom'),
     useNavigate: jest.fn(),
   }))
+jest.mock('../../components/utils/firebase', () => ({
+  apikey: 'testkey'
+  }))
 
 describe('autologout', () => {
   test('user is logged out when token expires', async () => {

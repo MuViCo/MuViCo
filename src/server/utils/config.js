@@ -10,6 +10,7 @@ const { BUCKET_REGION } = process.env
 const { ACCESS_KEY } = process.env
 const { SECRET_ACCESS_KEY } = process.env
 
+
 module.exports = {
   MONGODB_URI,
   PORT,
