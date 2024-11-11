@@ -139,6 +139,7 @@ const EditMode = ({ id, cues }) => {
 
       try {
         await dispatch(createCue(id, formData))
+        await dispatch(fetchPresentationInfo(id))
         toast({
           title: "Cue added",
           description: `Cue ${file.name} added to screen ${yIndex}`,
