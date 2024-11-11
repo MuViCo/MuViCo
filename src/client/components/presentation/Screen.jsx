@@ -124,11 +124,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && (screenData || previousScreenData)
     ? ReactDOM.createPortal(
-        // Render the ChakraProvider in the new window
-        <ChakraProvider theme={theme}>
-          <Fonts />
-          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} showText={showText} />
-        </ChakraProvider>,
+          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} showText={showText} />,
         windowRef.current.document.body // render to new window's document.body
       )
     : null

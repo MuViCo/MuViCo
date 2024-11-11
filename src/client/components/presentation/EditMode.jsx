@@ -8,7 +8,7 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
-import { removeCue, updatePresentation, createCue } from "../../redux/presentationReducer"
+import { removeCue, updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 
 const theme = extendTheme({})
 
@@ -57,7 +57,10 @@ const EditMode = ({ id, cues }) => {
       setStatus("loading")
       try {
         await dispatch(updatePresentation(id, movedCue))
-        setTimeout(() => setStatus("saved"), 300) // Delay is purely for visuals
+        setTimeout(() => {
+          setStatus("saved")
+          dispatch(fetchPresentationInfo(id))
+        }, 300)
       } catch (error) {
         console.error(error) 
       }
