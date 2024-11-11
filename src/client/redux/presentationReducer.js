@@ -21,7 +21,7 @@ const presentationSlice = createSlice({
       state.presentationInfo.cues.push(action.payload)
     },
     updateCue(state, action) {
-      const updatedCue = action.payload;
+      const updatedCue = action.payload
       state.presentationInfo.cues = state.presentationInfo.cues.map((cue) =>
         cue._id === updatedCue._id ? updatedCue : cue
       )

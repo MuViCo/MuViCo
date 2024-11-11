@@ -58,7 +58,7 @@ const EditMode = ({ id, cues }) => {
       try {
         await dispatch(updatePresentation(id, movedCue))
         setTimeout(() => {
-          setStatus("saved");
+          setStatus("saved")
           dispatch(fetchPresentationInfo(id))
         }, 300)
       } catch (error) {
