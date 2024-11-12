@@ -29,6 +29,9 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
 
+      - name: Create Firebase service account file
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > /src/server/utils/serviceAccountKey.json
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
