@@ -56,7 +56,7 @@ const CuesForm = ({ addCue }) => {
   return (
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
-        <Heading size="md">Add cue</Heading>
+        <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
         <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField data-testid="index-number"/>
@@ -69,7 +69,7 @@ const CuesForm = ({ addCue }) => {
         <Input
           data-testid="cue-name"
           value={cueName}
-          placeholder="Cue name"
+          placeholder="Element name"
           mb={2}
           onChange={(e) => setCueName(e.target.value)}
           required
@@ -103,7 +103,7 @@ const CuesForm = ({ addCue }) => {
           onChange={fileSelected}
         />{" "}
         {file !== "/blank.png" && <CheckIcon color="green.500" />}
-        <FormHelperText mb={2}>or add blank cue</FormHelperText>
+        <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
           mr={2}

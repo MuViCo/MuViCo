@@ -12,7 +12,7 @@ const addPresentation = async (page, name) => {
 }
 
 const addBlankCue = async (page, name, index, screen) => {
-  await page.getByRole("button", { name: "Add Cue" }).click()
+  await page.getByRole("button", { name: "Add element" }).click()
   await page.getByTestId("index-number").fill(index)
   await page.getByTestId("cue-name").fill(name)
   await page.getByTestId("screen-number").fill(screen)

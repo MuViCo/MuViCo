@@ -69,13 +69,13 @@ const EditMode = ({ id, cues }) => {
 
   
   const handleRemoveItem = async (cueId) => {
-    if (!window.confirm("Are you sure you want to delete this cue?")) return
+    if (!window.confirm("Are you sure you want to delete this element?")) return
 
     try {
       await dispatch(removeCue(id, cueId))
       toast({
-        title: "Cue removed",
-        description: `Cue with ID ${cueId} has been removed.`,
+        title: "Element removed",
+        description: `Element with ID ${cueId} has been removed.`,
         status: "success",
         position: "top",
         duration: 3000,
@@ -120,8 +120,8 @@ const EditMode = ({ id, cues }) => {
       )
       if (cueExists) {
         toast({
-          title: "Cue already exists",
-          description: `Cue with index ${xIndex} already exists on screen ${yIndex}`,
+          title: "Element already exists",
+          description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
           status: "error",
           position: "top",
           duration: 3000,
@@ -141,8 +141,8 @@ const EditMode = ({ id, cues }) => {
         await dispatch(createCue(id, formData))
         await dispatch(fetchPresentationInfo(id))
         toast({
-          title: "Cue added",
-          description: `Cue ${file.name} added to screen ${yIndex}`,
+          title: "Element added",
+          description: `Element ${file.name} added to screen ${yIndex}`,
           status: "success",
           position: "top",
           duration: 3000,

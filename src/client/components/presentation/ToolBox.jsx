@@ -18,7 +18,7 @@ const Toolbox = ({ addCue }) => {
 
   return (
     <>
-      <Button onClick={onOpen} zIndex={2}>Add Cue</Button>
+      <Button onClick={onOpen} zIndex={2}>Add Element</Button>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>

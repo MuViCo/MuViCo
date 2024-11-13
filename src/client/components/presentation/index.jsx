@@ -37,15 +37,15 @@ const PresentationPage = ({ userId, setUser }) => {
   const addBlankCue = async (screen) => {
     const formData = new FormData()
     formData.append("index", 0)
-    formData.append("cueName", `initial cue for screen ${screen}`)
+    formData.append("cueName", `initial element for screen ${screen}`)
     formData.append("screen", screen)
     formData.append("image", "/blank.png")
   
     try {
       await dispatch(createCue(id, formData))
       toast({
-        title: "Cue added",
-        description: `Initial cue added to screen ${screen}`,
+        title: "Element added",
+        description: `Initial element added to screen ${screen}`,
         status: "success",
         position: "top",
         duration: 3000,
@@ -83,8 +83,8 @@ const PresentationPage = ({ userId, setUser }) => {
     )
     if (cueExists) {
       toast({
-        title: "Cue already exists",
-        description: `Cue with index ${index} already exists on screen ${screen}`,
+        title: "Element already exists",
+        description: `Element with index ${index} already exists on screen ${screen}`,
         status: "error",
         position: "top",
         duration: 3000,
@@ -107,8 +107,8 @@ const PresentationPage = ({ userId, setUser }) => {
     try {
       await dispatch(createCue(id, formData))
       toast({
-        title: "Cue added",
-        description: `Cue ${cueName} added to screen ${screen}`,
+        title: "Element added",
+        description: `Element ${cueName} added to screen ${screen}`,
         status: "success",
         position: "top",
         duration: 3000,
