@@ -9,6 +9,7 @@ import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
 import { removeCue, updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
+import EditToolBox from "./EditToolBox"
 
 const theme = extendTheme({})
 
@@ -19,6 +20,9 @@ const EditMode = ({ id, cues }) => {
 
   // for ui element
   const [status, setStatus] = useState("saved")
+
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [selectedCue, setSelectedCue] = useState(null)
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -67,6 +71,14 @@ const EditMode = ({ id, cues }) => {
     }
   }
 
+  const handleDoubleClick = (cue) => {
+    setSelectedCue(cue)
+    setIsEditOpen(true)
+  }
+
+  const updateCue = (updatedCue) => {
+    console.log("Updated element:", updatedCue)
+  }
   
   const handleRemoveItem = async (cueId) => {
     if (!window.confirm("Are you sure you want to delete this element?")) return
@@ -250,6 +262,11 @@ const EditMode = ({ id, cues }) => {
                   h: 1,
                   static: false,
                 }}
+                onDoubleClick={() => {
+                  setSelectedCue(cue)
+                  handleDoubleClick(cue)
+                  setIsEditOpen(true)
+                }}
               >
                 <Box position="relative" h="100%">
                   <IconButton
@@ -303,6 +320,14 @@ const EditMode = ({ id, cues }) => {
             ))}
           </GridLayout>
         </Box>
+          {selectedCue && (
+            <EditToolBox
+              isOpen={isEditOpen}
+              onClose={() => setIsEditOpen(false)}
+              cueData={selectedCue}
+              updateCue={updateCue}
+            />
+          )}
         <Box 
         position="fixed" 
         top="11%" 

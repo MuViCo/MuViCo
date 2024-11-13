@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import ToolBox from "./ToolBox"
+import EditToolBox from "./EditToolBox"
 /**
  * Renders the presentation page.
  *
