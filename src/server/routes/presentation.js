@@ -115,15 +115,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
     console.log(cuenumber, "number")
-
+/*  Limiter for the maximum amount of files, disabled
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
         .status(401)
         .json({ error: "Maximum number of files reached (10)" })
     }
-
-    if (file && file.size > 1 * 1024 * 1024 && !user.isAdmin) {
-      return res.status(400).json({ error: "File size exceeds 1 MB limit" })
+*/
+    if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+      return res.status(400).json({ error: "File size exceeds 50 MB limit" })
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
