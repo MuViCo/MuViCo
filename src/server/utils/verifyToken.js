@@ -1,5 +1,18 @@
 const admin = require("firebase-admin")
-const serviceAccount = require("./serviceAccountKey.json")
+const fs = require("fs")
+const path = require("path")
+
+const serviceAccountPath = path.resolve(__dirname, "serviceAccountKey.json")
+
+if (!fs.existsSync(serviceAccountPath)) {
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+  if (!serviceAccountKey) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set")
+  }
+  fs.writeFileSync(serviceAccountPath, serviceAccountKey)
+}
+
+const serviceAccount = require(serviceAccountPath)
 
 if (!admin.apps.length) {
   admin.initializeApp({
