@@ -2,7 +2,7 @@ const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
 const { type } = require("os")
-const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
+const { uploadFile, deleteFile, getObjectSignedUrl, getFileSize } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 
@@ -61,6 +61,9 @@ router.get("/:id", userExtractor, async (req, res) => {
           if (typeof cue.file.url === "string") {
             const key = `${id}/${cue.file.id.toString()}`
             cue.file.url = await getObjectSignedUrl(key)
+            // getFileSize function currently only works with GET method.
+            // This creates unnecessary AWS traffic and should kept disabled until solution using HEAD method is found.
+            // getFileSize(cue.file.url).then(fileSize => {console.log(fileSize)}) 
           } else {
             cue.file.url = " /src/client/public/blank.png"
           }
