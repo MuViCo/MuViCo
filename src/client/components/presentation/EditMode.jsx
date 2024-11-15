@@ -106,26 +106,34 @@ const EditMode = ({ id, cues }) => {
       })
     }
   }
+
+  const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
+    const dropX = event.clientX
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const containerScrollLeft = containerRef.current.scrollLeft
+  
+    const relativeDropX = dropX - containerRect.left
+    const absoluteDropX = relativeDropX + containerScrollLeft
+    const dropY = event.clientY - containerRect.top
+  
+    const cellWidthWithGap = columnWidth + gap
+    const cellHeightWithGap = rowHeight + gap
+  
+    const yIndex = Math.floor(dropY / cellHeightWithGap)
+    const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
+  
+    return { xIndex, yIndex }
+  }
+
+
   const handleDrop =  useCallback(async (event) => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
     const imageFiles = files.filter((file) => file.type.startsWith("image/"))
 
     if (imageFiles.length > 0 && containerRef.current) {
-      const dropX = event.clientX
 
-      const containerRect = containerRef.current.getBoundingClientRect()
-      const containerScrollLeft = containerRef.current.scrollLeft
-
-      const relativeDropX = dropX - containerRect.left
-      const absoluteDropX = relativeDropX + containerScrollLeft
-      const dropY = event.clientY - containerRect.top
-
-      const cellWidthWithGap = columnWidth + gap
-      const cellHeightWithGap = rowHeight + gap
-
-      const yIndex = Math.floor(dropY / cellHeightWithGap)
-      const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
+      const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
 
       const cueExists = cues.some(
         (cue) => cue.index === Number(xIndex) && cue.screen === Number(yIndex)
