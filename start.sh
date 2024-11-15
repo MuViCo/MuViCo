@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "$FIREBASE_SERVICE_ACCOUNT_KEY" > /path/to/serviceAccountKey.json
-chmod 600 /path/to/serviceAccountKey.json
+echo "$FIREBASE_SERVICE_ACCOUNT_KEY" > /src/server/utils/serviceAccountKey.json
+chmod 600 /src/server/utils/serviceAccountKey.json
 exec "$@"
