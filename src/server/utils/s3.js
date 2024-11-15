@@ -5,6 +5,7 @@ const {
   GetObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
+const axios = require("axios")
 
 const {
   BUCKET_REGION,
@@ -51,8 +52,26 @@ const getObjectSignedUrl = async (key) => {
   const command = new GetObjectCommand(params)
   const seconds = 3 * 60 * 60
   const url = await getSignedUrl(s3, command, { expiresIn: seconds })
-
   return url
 }
 
-module.exports = { uploadFile, deleteFile, getObjectSignedUrl }
+const getFileSize = async (url) => {
+  try {
+    // Make a HEAD request to the pre-signed URL
+    const response = await fetch(url, { method: "HEAD" })
+
+    // Extract the Content-Length header
+    const contentLength = response.headers.get("Content-Length")
+
+    if (contentLength) {
+      return parseInt(contentLength, 10) // Convert to integer
+    } else {
+      throw new Error("Content-Length header is missing.")
+    }
+  } catch (error) {
+    console.error("Error getting file size:", error)
+    throw error
+  }
+}
+
+module.exports = { uploadFile, deleteFile, getObjectSignedUrl, getFileSize }
