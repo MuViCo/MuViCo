@@ -23,6 +23,12 @@
           "type": "s3"
         }
       ],
+      "secrets": [
+        {
+          "name": "FIREBASE_SERVICE_ACCOUNT_KEY",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:851725318925:secret:SERVICE_ACCOUNT_KEY"
+        }
+      ],
       "mountPoints": [],
       "volumesFrom": [],
       "ulimits": [],

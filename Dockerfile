@@ -14,6 +14,12 @@ COPY . /opt/app-root/src
 RUN npm run build
 RUN rm -rf /opt/app-root/src/client/
 
+COPY start.sh /usr/local/bin/start.sh
+
+RUN chmod +x /usr/local/bin/start.sh
+
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+
 EXPOSE 8000
 
 CMD ["npm", "run","prod"]
