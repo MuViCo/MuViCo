@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.654.0",
+    "@aws-sdk/client-secrets-manager": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.654.0",
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
