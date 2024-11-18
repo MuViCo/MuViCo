@@ -3,7 +3,6 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth"
 
 import firebaseConfig from "./config"
 
-console.log('firebaseConfig:', firebaseConfig)
 
 const app = initializeApp(firebaseConfig)
 
