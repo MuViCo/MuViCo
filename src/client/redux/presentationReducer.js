@@ -93,10 +93,10 @@ export const deletePresentation = (id) => async (dispatch) => {
 export const updatePresentation = (id, movedCue) => async (dispatch) => {
   try {
     const formData = new FormData()
-    formData.append("index", movedCue.cueIndex)
+    formData.append("index", movedCue.cueIndex || movedCue.index)
     formData.append("screen", movedCue.screen)
     formData.append("cueId", movedCue.cueId)
-    formData.append("cueName", movedCue.cueName)
+    formData.append("name", movedCue.cueName)
     const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
     dispatch(updateCue(updatedCue))
   } catch (error) {
