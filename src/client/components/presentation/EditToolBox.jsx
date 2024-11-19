@@ -23,19 +23,31 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
     const [cueName, setCueName] = useState(cueData.name)
     const [index, setIndex] = useState(cueData.index)
     const [screen, setScreen] = useState(cueData.screen)
-    const [file, setFile] = useState("/blank.png")
-    const [fileName, setFileName] = useState("blank.png")
+    const [cueId, setCueId] = useState(cueData._id)
+    const [file, setFile] = useState(null)
+    const [fileName, setFileName] = useState(null)
 
     useEffect(() => {
         setCueName(cueData.name)
         setIndex(cueData.index)
         setScreen(cueData.screen)
+        setCueId(cueData._id)
     }, [cueData])
 
-    const handleSubmit = () => {
-        updateCue({ ...cueData, cueName, index, screen })
+    const handleSubmit = async () => {
+        const updatedCue = {
+          cueId,
+          cueName,
+          index,
+          screen,
+          file,
+        }
+        
+        console.log("calling updateCue with", cueId, updatedCue)
+        await updateCue(cueId, updatedCue)
+        console.log("called updateCue with", cueId, updatedCue)
         onClose()
-    }
+      }
 
     const fileSelected = (event) => {
         const selected = event.target.files[0]
@@ -94,8 +106,8 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
                             onChange={fileSelected}
                         />
                         {fileName && <FormHelperText>{fileName}</FormHelperText>}
-                        <Button mt={4} colorScheme="purple" onClick={handleSubmit}>Submit</Button>
                     </FormControl>
+                    <Button mt={4} colorScheme="purple" onClick={handleSubmit}>Submit</Button>
                 </DrawerBody>
             </DrawerContent>
         </Drawer>

@@ -10,6 +10,7 @@ import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
 import { removeCue, updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
+import Toolbox from "./ToolBox"
 
 const theme = extendTheme({})
 
@@ -22,6 +23,7 @@ const EditMode = ({ id, cues }) => {
   const [status, setStatus] = useState("saved")
 
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
@@ -60,10 +62,14 @@ const EditMode = ({ id, cues }) => {
     if (movedCue) {
       setStatus("loading")
       try {
+        console.log("calling updatePrese with", id, movedCue)
         await dispatch(updatePresentation(id, movedCue))
+        console.log("called updatePrese with", id, movedCue)
         setTimeout(() => {
           setStatus("saved")
+          console.log("calling fetchPrese with", id)
           dispatch(fetchPresentationInfo(id))
+          console.log("called fetchPrese with", id)
         }, 300)
       } catch (error) {
         console.error(error) 
@@ -71,13 +77,38 @@ const EditMode = ({ id, cues }) => {
     }
   }
 
-  const handleDoubleClick = (cue) => {
-    setSelectedCue(cue)
-    setIsEditOpen(true)
+  const cueExists = (xIndex, yIndex) => {
+    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex + 1)
   }
 
-  const updateCue = (updatedCue) => {
-    console.log("Updated element:", updatedCue)
+  const handleDoubleClick = (event) => {
+    console.log("Double click!")
+    const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
+    console.log("click at", xIndex, yIndex)
+    const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
+    if (cue) {
+      console.log("Cue found:", cue)
+      setSelectedCue(cue)
+      setIsEditOpen(true)
+    } else {
+      console.log("No cue found at position:", xIndex, yIndex)
+      setIsToolboxOpen(true)
+    }
+  }
+
+  const updateCue = async (cueId, updatedCue) => {
+    try {
+      console.log("updateCue", cueId, updatedCue)
+      console.log("calling updatePrese with", id, updatedCue)
+      await dispatch(updatePresentation(id, updatedCue))
+      setTimeout(() => {
+        setStatus("saved")
+        console.log("calling fetchPrese with", id)
+        dispatch(fetchPresentationInfo(id))
+      }, 300)
+    } catch (error) {
+      console.error(error) 
+    }
   }
   
   const handleRemoveItem = async (cueId) => {
@@ -126,19 +157,15 @@ const EditMode = ({ id, cues }) => {
   }
 
 
-  const handleDrop =  useCallback(async (event) => {
+  const handleDrop = useCallback(async (event) => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
     const imageFiles = files.filter((file) => file.type.startsWith("image/"))
 
     if (imageFiles.length > 0 && containerRef.current) {
-
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
 
-      const cueExists = cues.some(
-        (cue) => cue.index === Number(xIndex) && cue.screen === Number(yIndex)
-      )
-      if (cueExists) {
+      if (cueExists(xIndex, yIndex)) {
         toast({
           title: "Element already exists",
           description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
@@ -270,11 +297,7 @@ const EditMode = ({ id, cues }) => {
                   h: 1,
                   static: false,
                 }}
-                onDoubleClick={() => {
-                  setSelectedCue(cue)
-                  handleDoubleClick(cue)
-                  setIsEditOpen(true)
-                }}
+                onDoubleClick={handleDoubleClick}
               >
                 <Box position="relative" h="100%">
                   <IconButton

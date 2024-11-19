@@ -96,6 +96,7 @@ export const updatePresentation = (id, movedCue) => async (dispatch) => {
     formData.append("index", movedCue.cueIndex)
     formData.append("screen", movedCue.screen)
     formData.append("cueId", movedCue.cueId)
+    formData.append("cueName", movedCue.cueName)
     const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
     dispatch(updateCue(updatedCue))
   } catch (error) {
