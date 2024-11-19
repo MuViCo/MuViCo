@@ -61,9 +61,7 @@ router.get("/:id", userExtractor, async (req, res) => {
           if (typeof cue.file.url === "string") {
             const key = `${id}/${cue.file.id.toString()}`
             cue.file.url = await getObjectSignedUrl(key)
-            // getFileSize function currently only works with GET method.
-            // This creates unnecessary AWS traffic and should kept disabled until solution using HEAD method is found.
-            // getFileSize(cue.file.url).then(fileSize => {console.log(fileSize)}) 
+            getFileSize(key).then(fileSize => {console.log(fileSize)}) 
           } else {
             cue.file.url = " /src/client/public/blank.png"
           }
