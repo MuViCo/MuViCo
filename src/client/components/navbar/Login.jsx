@@ -9,7 +9,7 @@ import {
 } from "@chakra-ui/react"
 import loginService from "../../services/login"
 import Error from "./Error"
-import GoogleSignInButton from "../utils/GoogleSignInButton"
+import GoogleSignInButton from "../presentation/GoogleSignInButton"
 
 const initialValues = {
   username: "",

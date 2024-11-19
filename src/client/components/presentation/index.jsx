@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
-import { fetchPresentationInfo, createCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
+import { fetchPresentationInfo, createCue, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
@@ -16,7 +16,7 @@ import ToolBox from "./ToolBox"
  * @returns {JSX.Element} The presentation page component.
  */
 
-const PresentationPage = ({ userId, setUser }) => {
+const PresentationPage = ({ userId }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -66,7 +66,7 @@ const PresentationPage = ({ userId, setUser }) => {
 
 
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData
+    const { index, cueName, screen, file } = cueData
     const formData = new FormData()
   
     // Check if cue is the first cue to be added to the screen
