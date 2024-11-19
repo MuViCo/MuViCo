@@ -62,14 +62,10 @@ const EditMode = ({ id, cues }) => {
     if (movedCue) {
       setStatus("loading")
       try {
-        console.log("calling updatePrese with", id, movedCue)
         await dispatch(updatePresentation(id, movedCue))
-        console.log("called updatePrese with", id, movedCue)
         setTimeout(() => {
           setStatus("saved")
-          console.log("calling fetchPrese with", id)
           dispatch(fetchPresentationInfo(id))
-          console.log("called fetchPrese with", id)
         }, 300)
       } catch (error) {
         console.error(error) 
@@ -82,28 +78,22 @@ const EditMode = ({ id, cues }) => {
   }
 
   const handleDoubleClick = (event) => {
-    console.log("Double click!")
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-    console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
     if (cue) {
-      console.log("Cue found:", cue)
       setSelectedCue(cue)
       setIsEditOpen(true)
     } else {
-      console.log("No cue found at position:", xIndex, yIndex)
       setIsToolboxOpen(true)
     }
   }
 
   const updateCue = async (cueId, updatedCue) => {
+    setStatus("loading")
     try {
-      console.log("updateCue", cueId, updatedCue)
-      console.log("calling updatePrese with", id, updatedCue)
       await dispatch(updatePresentation(id, updatedCue))
       setTimeout(() => {
         setStatus("saved")
-        console.log("calling fetchPrese with", id)
         dispatch(fetchPresentationInfo(id))
       }, 300)
     } catch (error) {

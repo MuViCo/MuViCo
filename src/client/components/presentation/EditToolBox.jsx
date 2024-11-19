@@ -43,9 +43,7 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
           file,
         }
         
-        console.log("calling updateCue with", cueId, updatedCue)
         await updateCue(cueId, updatedCue)
-        console.log("called updateCue with", cueId, updatedCue)
         onClose()
       }
 
