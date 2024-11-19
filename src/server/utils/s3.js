@@ -3,6 +3,7 @@ const {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 const axios = require("axios")
@@ -55,7 +56,15 @@ const getObjectSignedUrl = async (key) => {
   return url
 }
 
-const getFileSize = async (url) => {
+const getFileSize = async (key) => {
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: key
+  }
+
+  const command = new HeadObjectCommand(params)
+  const seconds = 3 * 60 * 60
+  const url = await getSignedUrl(s3, command, { expiresIn: seconds })
   try {
     // Make a HEAD request to the pre-signed URL
     const response = await fetch(url, { method: "HEAD" })
