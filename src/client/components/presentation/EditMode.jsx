@@ -11,6 +11,7 @@ import { useToast } from "@chakra-ui/react"
 import { removeCue, updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import Toolbox from "./ToolBox"
+import { createFormData } from "../utils/formDataUtils"
 
 const theme = extendTheme({})
 
@@ -78,7 +79,7 @@ const EditMode = ({ id, cues }) => {
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex + 1)
+    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex)
   }
 
   const handleDoubleClick = (event) => {
@@ -172,11 +173,8 @@ const EditMode = ({ id, cues }) => {
       }
 
       const file = imageFiles[0]
-      const formData = new FormData()
-      formData.append("index", xIndex)
-      formData.append("cueName", file.name)
-      formData.append("screen", yIndex)
-      formData.append("image", file)
+
+      const formData = createFormData(xIndex, file.name, yIndex, file)
 
       try {
         await dispatch(createCue(id, formData))

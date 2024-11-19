@@ -8,6 +8,7 @@ import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import ToolBox from "./ToolBox"
 import EditToolBox from "./EditToolBox"
+import { createFormData } from "../utils/formDataUtils"
 /**
  * Renders the presentation page.
  *
@@ -36,12 +37,8 @@ const PresentationPage = ({ userId, setUser }) => {
   }
   
   const addBlankCue = async (screen) => {
-    const formData = new FormData()
-    formData.append("index", 0)
-    formData.append("cueName", `initial element for screen ${screen}`)
-    formData.append("screen", screen)
-    formData.append("image", "/blank.png")
-  
+    
+    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
     try {
       await dispatch(createCue(id, formData))
       toast({
@@ -67,9 +64,7 @@ const PresentationPage = ({ userId, setUser }) => {
 
 
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData
-    const formData = new FormData()
-  
+    const { index, cueName, screen, file, fileName } = cueData  
     // Check if cue is the first cue to be added to the screen
     const screenCues = presentationInfo.cues.filter(
       (cue) => cue.screen === Number(screen)
@@ -94,16 +89,7 @@ const PresentationPage = ({ userId, setUser }) => {
       return
     }
   
-    // Add the new cue
-    formData.append("index", index)
-    formData.append("cueName", cueName)
-    formData.append("screen", screen)
-    
-    if (!file) {
-      formData.append("image", "/blank.png")
-    } else {
-      formData.append("image", file)
-    }
+    const formData = createFormData(index, cueName, screen, file || "/blank.png")
   
     try {
       await dispatch(createCue(id, formData))
