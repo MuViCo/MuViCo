@@ -58,6 +58,10 @@ const EditMode = ({ id, cues }) => {
       cueIndex: newItem.x,
       screen: newItem.y + 1,
     }
+    const cue = cues.find(cue => cue._id === newItem.i);
+    if (cue) {
+      movedCue.cueName = cue.name;
+    }
     
     if (movedCue) {
       setStatus("loading")
