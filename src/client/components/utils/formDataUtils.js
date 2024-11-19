@@ -10,14 +10,14 @@
  */
 export const createFormData = (index, name, screen, file, cueId) => {
   const formData = new FormData()
-  formData.append('index', index)
-  formData.append('cueName', name)
-  formData.append('screen', screen)
+  formData.append("index", index)
+  formData.append("cueName", name)
+  formData.append("screen", screen)
   if (file) {
-    formData.append('image', file)
+    formData.append("image", file)
   }
   if (cueId) {
-    formData.append('cueId', cueId)
+    formData.append("cueId", cueId)
   }
   return formData
 }
