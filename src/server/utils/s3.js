@@ -61,19 +61,14 @@ const getFileSize = async (key) => {
     Bucket: BUCKET_NAME,
     Key: key
   }
-
   const command = new HeadObjectCommand(params)
   const seconds = 3 * 60 * 60
   const url = await getSignedUrl(s3, command, { expiresIn: seconds })
   try {
-    // Make a HEAD request to the pre-signed URL
     const response = await fetch(url, { method: "HEAD" })
-
-    // Extract the Content-Length header
     const contentLength = response.headers.get("Content-Length")
-
     if (contentLength) {
-      return parseInt(contentLength, 10) // Convert to integer
+      return parseInt(contentLength, 10)
     } else {
       throw new Error("Content-Length header is missing.")
     }

@@ -33,8 +33,14 @@ const PresentationPage = ({ userId, setUser }) => {
   const handleShowMode = () => {
     setShowMode(!showMode)
   }
-  
+
+  if (presentationInfo) {
+    const totalSize = presentationInfo.cues.reduce((sum, cue) => sum + parseInt(cue.file.size), 0)
+    console.log("Presentation full size", (totalSize / (1024 * 1024)).toFixed(2), "MB")
+  }
+
   const addBlankCue = async (screen) => {
+
     const formData = new FormData()
     formData.append("index", 0)
     formData.append("cueName", `initial cue for screen ${screen}`)
@@ -73,6 +79,8 @@ const PresentationPage = ({ userId, setUser }) => {
     const screenCues = presentationInfo.cues.filter(
       (cue) => cue.screen === Number(screen)
     )
+
+  
     if (screenCues.length === 0) {
       await addBlankCue(screen)
     }

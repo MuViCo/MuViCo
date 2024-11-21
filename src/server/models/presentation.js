@@ -20,6 +20,7 @@ const presentationSchema = mongoose.Schema({
         id: String,
         name: String,
         url: String,
+        size: {type: String, default: "0"}
       },
     },
   ],

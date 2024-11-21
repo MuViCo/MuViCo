@@ -61,7 +61,9 @@ router.get("/:id", userExtractor, async (req, res) => {
           if (typeof cue.file.url === "string") {
             const key = `${id}/${cue.file.id.toString()}`
             cue.file.url = await getObjectSignedUrl(key)
-            getFileSize(key).then(fileSize => {console.log(fileSize)}) 
+            if (cue.file.size) {
+              await getFileSize(key).then(fileSize => cue.file.size = fileSize)
+            }
           } else {
             cue.file.url = " /src/client/public/blank.png"
           }
