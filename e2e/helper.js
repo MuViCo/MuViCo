@@ -17,7 +17,6 @@ const addBlankCue = async (page, name, index, screen) => {
   await page.getByTestId("cue-name").fill(name)
   await page.getByTestId("screen-number").fill(screen)
   await page.getByRole("button", { name: "Submit" }).click()
-  await page.getByRole('button', { name: 'Close drawer' }).click()
 }
 
 export { loginWith, addPresentation, addBlankCue }

@@ -28,13 +28,15 @@ import { useState, useEffect } from "react"
 const CuesForm = ({ addCue, onClose, position }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
-  const [index, setIndex] = useState(position.index)
+  const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(position.screen)
-
+  const [screen, setScreen] = useState(position?.screen || 0)
+  
   useEffect(() => {
-    setIndex(position.index)
-    setScreen(position.screen)
+    if (position) {
+      setIndex(position.index)
+      setScreen(position.screen)
+    }
   }, [position])
 
   const onAddCue = (event) => {

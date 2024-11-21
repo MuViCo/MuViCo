@@ -93,8 +93,9 @@ export const deletePresentation = (id) => async (dispatch) => {
 
 export const updatePresentation = (id, movedCue) => async (dispatch) => {
   try {
+    console.log("movedCue", movedCue)
     const formData = createFormData(
-      movedCue.cueIndex || movedCue.index,
+      movedCue.index,
       movedCue.cueName,
       movedCue.screen,
       movedCue.file,

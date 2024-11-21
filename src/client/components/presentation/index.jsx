@@ -25,6 +25,7 @@ const PresentationPage = ({ userId, setUser }) => {
   const toast = useToast()
 
   const [showMode, setShowMode] = useState(false)
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
 
@@ -63,57 +64,6 @@ const PresentationPage = ({ userId, setUser }) => {
   }
 
 
-  const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData  
-    // Check if cue is the first cue to be added to the screen
-    const screenCues = presentationInfo.cues.filter(
-      (cue) => cue.screen === Number(screen)
-    )
-    if (screenCues.length === 0) {
-      await addBlankCue(screen)
-    }
-  
-    // Check if cue with same index and screen already exists
-    const cueExists = presentationInfo.cues.some(
-      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
-    )
-    if (cueExists) {
-      toast({
-        title: "Element already exists",
-        description: `Element with index ${index} already exists on screen ${screen}`,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-  
-    const formData = createFormData(index, cueName, screen, file || "/blank.png")
-  
-    try {
-      await dispatch(createCue(id, formData))
-      toast({
-        title: "Element added",
-        description: `Element ${cueName} added to screen ${screen}`,
-        status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      const errorMessage = error.message
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    }
-  }
-
   const handleDeletePresentation = async (id) => {
     if (!window.confirm("Are you sure you want to delete this presentation?"))
       return // eslint-disable-line
@@ -145,16 +95,18 @@ const PresentationPage = ({ userId, setUser }) => {
             </Button>
             {!showMode && (
               <>
-                <ToolBox addCue={addCue} />
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
+                </Button>
+                <Button colorScheme="gray" onClick={() => setIsToolboxOpen(true)}>
+                  Add Element
                 </Button>
               </>
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues}/>
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} addBlankCue={addBlankCue}/>
           </Box>
         </Box>
       )}
