@@ -166,6 +166,9 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     const { file, user } = req
     const { index, screen, cueName } = req.body
 
+    console.log("backend received file", file)
+    console.log("Request body:", req.body)
+
     if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
     }

@@ -97,7 +97,7 @@ export const updatePresentation = (id, movedCue) => async (dispatch) => {
       movedCue.cueIndex || movedCue.index,
       movedCue.cueName,
       movedCue.screen,
-      undefined,
+      movedCue.file,
       movedCue.cueId
     )
     

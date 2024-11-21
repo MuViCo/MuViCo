@@ -10,8 +10,8 @@ import { useDispatch } from "react-redux"
 import { useToast } from "@chakra-ui/react"
 import { removeCue, updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
-import Toolbox from "./ToolBox"
 import { createFormData } from "../utils/formDataUtils"
+import ToolBox from "./ToolBox"
 
 const theme = extendTheme({})
 
@@ -20,12 +20,11 @@ const EditMode = ({ id, cues }) => {
   const dispatch = useDispatch()
   const containerRef = useRef(null)
 
-  // for ui element
   const [status, setStatus] = useState("saved")
-
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false)
+  const [doubleClickPosition, setDoubleClickPosition] = useState({ xIndex: 0, yIndex: 0 })
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -84,11 +83,14 @@ const EditMode = ({ id, cues }) => {
 
   const handleDoubleClick = (event) => {
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
+    console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
+    console.log("cue found:", cue)
     if (cue) {
       setSelectedCue(cue)
       setIsEditOpen(true)
     } else {
+      setDoubleClickPosition({ index: xIndex, screen: yIndex })
       setIsToolboxOpen(true)
     }
   }
@@ -97,6 +99,7 @@ const EditMode = ({ id, cues }) => {
     setStatus("loading")
     try {
       await dispatch(updatePresentation(id, updatedCue))
+      console.log("updated cue with file", updatedCue.file)
       setTimeout(() => {
         setStatus("saved")
         dispatch(fetchPresentationInfo(id))
@@ -203,7 +206,7 @@ const EditMode = ({ id, cues }) => {
 
   return (
     <ChakraProvider theme={theme}>
-      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} data-testid="drop-area">
+      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} data-testid="drop-area" onDoubleClick={handleDoubleClick}>
 
       <Box display="flex" height="600px" width="100%" marginTop={`${gap*2}px`}>
         <Box
@@ -351,6 +354,12 @@ const EditMode = ({ id, cues }) => {
               updateCue={updateCue}
             />
           )}
+          <ToolBox
+            isOpen={isToolboxOpen}
+            onClose={() => setIsToolboxOpen(false)}
+            position={doubleClickPosition}
+            addCue={createCue}
+        />
         <Box 
         position="fixed" 
         top="11%" 

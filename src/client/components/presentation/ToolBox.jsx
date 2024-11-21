@@ -10,21 +10,29 @@ import { useState } from "react"
 
 import CuesForm from "./Cues"
 
-const Toolbox = ({ addCue }) => {
-  const [isOpen, setIsOpen] = useState(false)
+const Toolbox = ({ addCue, isOpen, onClose, position }) => {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  const onClose = () => setIsOpen(false)
-  const onOpen = () => setIsOpen(true)
+  const handleOpen = () => {
+    setIsDrawerOpen(true)
+  }
+
+  const handleClose = () => {
+    setIsDrawerOpen(false)
+    if (onClose) {
+      onClose()
+    }
+  }
 
   return (
     <>
-      <Button onClick={onOpen} zIndex={2}>Add Element</Button>
-      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+      <Button onClick={handleOpen} zIndex={2}>Add Element</Button>
+      <Drawer isOpen={isDrawerOpen || isOpen} placement="left" onClose={handleClose}>
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton zIndex={1} aria-label="Close drawer"/>
           <DrawerBody>
-            <CuesForm addCue={addCue} onClose={onClose} />
+            <CuesForm addCue={addCue} onClose={handleClose} position={position} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

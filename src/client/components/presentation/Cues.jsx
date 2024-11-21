@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 /**
  * Renders a form for adding cues.
@@ -25,12 +25,17 @@ import { useState } from "react"
  * @param {Function} props.addCue - The function to add a cue.
  * @returns {JSX.Element} The CuesForm component.
  */
-const CuesForm = ({ addCue }) => {
+const CuesForm = ({ addCue, onClose, position }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(position.index)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(0)
+  const [screen, setScreen] = useState(position.screen)
+
+  useEffect(() => {
+    setIndex(position.index)
+    setScreen(position.screen)
+  }, [position])
 
   const onAddCue = (event) => {
     event.preventDefault()
@@ -40,6 +45,7 @@ const CuesForm = ({ addCue }) => {
     setCueName("")
     setIndex(0)
     setScreen(0)
+    onClose()
   }
 
   const fileSelected = (event) => {
