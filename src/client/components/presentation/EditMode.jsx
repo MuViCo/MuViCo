@@ -82,15 +82,21 @@ const EditMode = ({ id, cues }) => {
   }
 
   const handleDoubleClick = (event) => {
+    if (event.target.closest(".x-index-label")) {
+      return
+    }
+
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
     console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
     console.log("cue found:", cue)
+    
     if (cue) {
       setSelectedCue(cue)
       setIsEditOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
+   //   console.log('no cue found', xIndex, yIndex)
       setIsToolboxOpen(true)
     }
   }
@@ -237,7 +243,7 @@ const EditMode = ({ id, cues }) => {
           ))}
         </Box>
 
-        <Box overflow="auto" width="100%" position="relative">
+        <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick}>
           <Box
             display="grid"
             gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
@@ -252,6 +258,7 @@ const EditMode = ({ id, cues }) => {
             {xLabels.map((label) => (
               <Box
                 key={label}
+                className="x-index-label"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -292,7 +299,7 @@ const EditMode = ({ id, cues }) => {
                   h: 1,
                   static: false,
                 }}
-                onDoubleClick={handleDoubleClick}
+
               >
                 <Box position="relative" h="100%">
                   <IconButton
