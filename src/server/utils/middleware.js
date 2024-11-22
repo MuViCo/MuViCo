@@ -1,6 +1,4 @@
 const jwt = require("jsonwebtoken")
-const { log } = require("console")
-const { get } = require("http")
 const User = require("../models/user")
 const logger = require("./logger")
 

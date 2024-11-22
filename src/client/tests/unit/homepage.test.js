@@ -17,64 +17,20 @@ jest.mock('../../components/utils/firebase', () => ({
   apikey: 'testkey'
   }))
 
-// describe("HomePage", () => {
-//   beforeEach(() => {
-//     useNavigate.mockClear()
-//   })
+describe("HomePage", () => {
+  beforeEach(() => {
+    useNavigate.mockClear()
+  })
 
-//   test("renders the component", () => {
-//     render(
-//       <Router>
-//         <HomePage user={{ isAdmin: true }} />
-//       </Router>
-//     )
-//     expect(screen.getByText("Admin controls")).toBeInTheDocument()
-//     expect(screen.getByText("Presentations")).toBeInTheDocument()
-//   })
 
-//   test('navigates to /users when "All users" button is clicked', () => {
-//     const navigate = jest.fn()
-//     useNavigate.mockReturnValue(navigate)
-//     render(<HomePage user={{ isAdmin: true }} />)
-//     fireEvent.click(screen.getByText("All users"))
-//     expect(navigate).toHaveBeenCalledWith("/users")
-//   })
-
-//   test('navigates to /connections when "Connections" button is clicked', () => {
-//     const navigate = jest.fn()
-//     useNavigate.mockReturnValue(navigate)
-//     render(<HomePage user={{ isAdmin: false }} />)
-//     fireEvent.click(screen.getByText("Connections"))
-//     expect(navigate).toHaveBeenCalledWith("/connections")
-//   })
-
-//   test("creates a new presentation and navigates to the presentation page", async () => {
-//     const navigate = jest.fn()
-//     useNavigate.mockReturnValue(navigate)
-//     render(<HomePage user={{ isAdmin: false }} />)
-//     fireEvent.click(screen.getByText("new presentation"))
-//     // Simulate filling out the presentation form
-//     fireEvent.change(screen.getByLabelText("Presentation Name"), {
-//       target: { value: "Test Presentation" },
-//     })
-//     fireEvent.click(screen.getByText("Create Presentation"))
-//     // Simulate successful creation of presentation
-//     const createdPresentation = { id: "123", name: "Test Presentation" }
-//     jest.spyOn(global, "fetch").mockResolvedValueOnce({
-//       json: jest.fn().mockResolvedValueOnce(createdPresentation),
-//     })
-//     await screen.findByText("Test Presentation")
-//     expect(screen.getByText("Test Presentation")).toBeInTheDocument()
-//     expect(navigate).toHaveBeenCalledWith("/presentation/123")
-//   })
-
-//   test("cancels creating a new presentation", () => {
-//     render(<HomePage user={{ isAdmin: false }} />)
-//     fireEvent.click(screen.getByText("new presentation"))
-//     fireEvent.click(screen.getByText("Cancel"))
-//     expect(screen.queryByText("Cancel")).not.toBeInTheDocument()
-//   })
-// })
+  test('navigates to /users when "All users" button is clicked', () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+    render(<HomePage user={{ isAdmin: true }} />)
+    fireEvent.click(screen.getByText("All users"))
+    expect(navigate).toHaveBeenCalledWith("/users")
+  })
+})
 
 describe('PresentationForm', () => {
   test('renders the form with name input field and buttons', () => {

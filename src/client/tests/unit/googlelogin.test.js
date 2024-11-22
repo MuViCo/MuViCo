@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import GoogleSignInButton from '../../components/utils/GoogleSignInButton'
+import GoogleSignInButton from '../../components/presentation/GoogleSignInButton'
 import { signInWithPopup } from 'firebase/auth'
 import axios from 'axios'
 
