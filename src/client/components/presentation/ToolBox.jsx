@@ -1,30 +1,23 @@
 import {
-  Button,
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
   DrawerBody,
   Drawer,
 } from "@chakra-ui/react"
-import { useState } from "react"
 
 import CuesForm from "./Cues"
 
-const Toolbox = ({ addCue }) => {
-  const [isOpen, setIsOpen] = useState(false)
-
-  const onClose = () => setIsOpen(false)
-  const onOpen = () => setIsOpen(true)
+const Toolbox = ({ addCue, isOpen, onClose, position }) => {
 
   return (
     <>
-      <Button onClick={onOpen} zIndex={2}>Add Cue</Button>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay />
         <DrawerContent>
-          <DrawerCloseButton zIndex={1} aria-label="Close drawer"/>
+          <DrawerCloseButton zIndex={1} aria-label="Close drawer"data-testid="close-drawer-button" />
           <DrawerBody>
-            <CuesForm addCue={addCue} onClose={onClose} />
+            <CuesForm addCue={addCue} onClose={onClose} position={position} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

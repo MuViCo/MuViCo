@@ -40,7 +40,7 @@ describe("GridLayout", () => {
         page.reload()
 
         await addBlankCue(page, "testcue_ver", "2", "2")
-        await expect(page.getByText("Cue with index 2 already exists on screen 2").first()).toBeVisible()
+        await expect(page.getByText("Element with index 2 already exists on screen 2").first()).toBeVisible()
     })
 
     test("user can delete cue", async ({ page }) => {
@@ -50,7 +50,7 @@ describe("GridLayout", () => {
         await page.getByRole("button", { name: "Delete testcue_del" }).click()
 
         page.once('dialog', async dialog => {
-            expect(dialog.message()).toContain("Are you sure you want to delete this cue?")
+            expect(dialog.message()).toContain("Are you sure you want to delete this element?")
             await dialog.accept()
         })
 
@@ -87,7 +87,7 @@ describe("GridLayout", () => {
       await dropArea.dispatchEvent('dragover', { clientX: dropX, clientY: dropY })
       await dropArea.dispatchEvent('drop', { clientX: dropX, clientY: dropY, dataTransfer })
 
-      await expect(page.getByText("Cue blank.png added to screen 2").first()).toBeVisible()
+      await expect(page.getByText("Element blank.png added to screen 2").first()).toBeVisible()
       await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
     })
 

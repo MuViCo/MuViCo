@@ -7,6 +7,8 @@ import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import ToolBox from "./ToolBox"
+import EditToolBox from "./EditToolBox"
+import { createFormData } from "../utils/formDataUtils"
 /**
  * Renders the presentation page.
  *
@@ -23,6 +25,7 @@ const PresentationPage = ({ userId }) => {
   const toast = useToast()
 
   const [showMode, setShowMode] = useState(false)
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
 
@@ -35,17 +38,13 @@ const PresentationPage = ({ userId }) => {
   }
   
   const addBlankCue = async (screen) => {
-    const formData = new FormData()
-    formData.append("index", 0)
-    formData.append("cueName", `initial cue for screen ${screen}`)
-    formData.append("screen", screen)
-    formData.append("image", "/blank.png")
-  
+    
+    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
     try {
       await dispatch(createCue(id, formData))
       toast({
-        title: "Cue added",
-        description: `Initial cue added to screen ${screen}`,
+        title: "Element added",
+        description: `Initial element added to screen ${screen}`,
         status: "success",
         position: "top",
         duration: 3000,
@@ -64,68 +63,6 @@ const PresentationPage = ({ userId }) => {
     }
   }
 
-
-  const addCue = async (cueData) => {
-    const { index, cueName, screen, file } = cueData
-    const formData = new FormData()
-  
-    // Check if cue is the first cue to be added to the screen
-    const screenCues = presentationInfo.cues.filter(
-      (cue) => cue.screen === Number(screen)
-    )
-    if (screenCues.length === 0) {
-      await addBlankCue(screen)
-    }
-  
-    // Check if cue with same index and screen already exists
-    const cueExists = presentationInfo.cues.some(
-      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
-    )
-    if (cueExists) {
-      toast({
-        title: "Cue already exists",
-        description: `Cue with index ${index} already exists on screen ${screen}`,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-  
-    // Add the new cue
-    formData.append("index", index)
-    formData.append("cueName", cueName)
-    formData.append("screen", screen)
-    
-    if (!file) {
-      formData.append("image", "/blank.png")
-    } else {
-      formData.append("image", file)
-    }
-  
-    try {
-      await dispatch(createCue(id, formData))
-      toast({
-        title: "Cue added",
-        description: `Cue ${cueName} added to screen ${screen}`,
-        status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      const errorMessage = error.message
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    }
-  }
 
   const handleDeletePresentation = async (id) => {
     if (!window.confirm("Are you sure you want to delete this presentation?"))
@@ -158,16 +95,18 @@ const PresentationPage = ({ userId }) => {
             </Button>
             {!showMode && (
               <>
-                <ToolBox addCue={addCue} />
                 <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
                   Delete Presentation
+                </Button>
+                <Button colorScheme="gray" onClick={() => setIsToolboxOpen(true)}>
+                  Add Element
                 </Button>
               </>
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues}/>
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} addBlankCue={addBlankCue}/>
           </Box>
         </Box>
       )}

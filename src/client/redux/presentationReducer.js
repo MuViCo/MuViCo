@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
+import { createFormData } from "../components/utils/formDataUtils"
 
 const initialState = {
   presentationInfo: null,
@@ -92,10 +93,15 @@ export const deletePresentation = (id) => async (dispatch) => {
 
 export const updatePresentation = (id, movedCue) => async (dispatch) => {
   try {
-    const formData = new FormData()
-    formData.append("index", movedCue.cueIndex)
-    formData.append("screen", movedCue.screen)
-    formData.append("cueId", movedCue.cueId)
+    console.log("movedCue", movedCue)
+    const formData = createFormData(
+      movedCue.index,
+      movedCue.cueName,
+      movedCue.screen,
+      movedCue.file,
+      movedCue.cueId
+    )
+    
     const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
     dispatch(updateCue(updatedCue))
   } catch (error) {
