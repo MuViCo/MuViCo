@@ -15,7 +15,7 @@ import presentationService from "../../services/presentations"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 import randomLinearGradient from "../utils/randomGradient"
-import { handleLogout } from "../navbar"
+
 
 export const PresentationsGrid = ({
   presentations,

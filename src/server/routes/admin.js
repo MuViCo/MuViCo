@@ -1,5 +1,4 @@
 const express = require("express")
-const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")

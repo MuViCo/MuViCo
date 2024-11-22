@@ -15,7 +15,6 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  Image,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 

@@ -1,7 +1,6 @@
 const supertest = require("supertest")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
-const multer = require("multer")
 
 const app = require("../app")
 const { describe } = require("node:test")

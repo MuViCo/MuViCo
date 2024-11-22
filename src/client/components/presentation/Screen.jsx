@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
-import { Box, ChakraProvider, Image, Text } from "@chakra-ui/react"
-import theme from "../../lib/theme"
-import Fonts from "../../lib/fonts"
+import { Box, Image, Text } from "@chakra-ui/react"
+
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
   <Box bg="black" color="white" width="100vw" height="100vh" display="flex" flexDirection="column">
@@ -13,7 +12,7 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       </Text>
       {screenData && (
         <Text fontSize="xl" textShadow='1px 0 2px #000000' style={{visibility: showText ? "visible" : "hidden"}}>
-          Cue Name: {screenData.name}
+          Element Name: {screenData.name}
         </Text>
       )}
     </Box>

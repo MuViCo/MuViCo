@@ -1,5 +1,4 @@
 import { Handle, Position } from "reactflow"
-import { Box } from "@chakra-ui/react"
 
 const ScreenNode = (data) => {
   const { label } = data
