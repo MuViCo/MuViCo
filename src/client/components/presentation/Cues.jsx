@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 /**
  * Renders a form for adding cues.
@@ -25,12 +25,19 @@ import { useState } from "react"
  * @param {Function} props.addCue - The function to add a cue.
  * @returns {JSX.Element} The CuesForm component.
  */
-const CuesForm = ({ addCue }) => {
+const CuesForm = ({ addCue, onClose, position }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(0)
+  const [screen, setScreen] = useState(position?.screen || 0)
+  
+  useEffect(() => {
+    if (position) {
+      setIndex(position.index)
+      setScreen(position.screen)
+    }
+  }, [position])
 
   const onAddCue = (event) => {
     event.preventDefault()
@@ -40,6 +47,7 @@ const CuesForm = ({ addCue }) => {
     setCueName("")
     setIndex(0)
     setScreen(0)
+    onClose()
   }
 
   const fileSelected = (event) => {
@@ -56,7 +64,7 @@ const CuesForm = ({ addCue }) => {
   return (
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
-        <Heading size="md">Add cue</Heading>
+        <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
         <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
           <NumberInputField data-testid="index-number"/>
@@ -69,7 +77,7 @@ const CuesForm = ({ addCue }) => {
         <Input
           data-testid="cue-name"
           value={cueName}
-          placeholder="Cue name"
+          placeholder="Element name"
           mb={2}
           onChange={(e) => setCueName(e.target.value)}
           required
@@ -103,7 +111,7 @@ const CuesForm = ({ addCue }) => {
           onChange={fileSelected}
         />{" "}
         {file !== "/blank.png" && <CheckIcon color="green.500" />}
-        <FormHelperText mb={2}>or add blank cue</FormHelperText>
+        <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
           mr={2}

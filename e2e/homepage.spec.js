@@ -37,13 +37,13 @@ describe("Homepage", () => {
   test("user can add blank cue", async ({ page }) => {
     await page.getByText("testi").click()
     await addBlankCue(page, "test cue", "1", "1")
-    await expect(page.getByText("Cue test cue added to screen").first()).toBeVisible()
+    await expect(page.getByText("Element test cue added to screen").first()).toBeVisible()
   })
 
   test("user can enter showmode", async ({ page }) => {
     await page.getByText("testi").click()
     await addBlankCue(page, "test cue", "1", "1")
-    await expect(page.getByText("Cue test cue added to screen").first()).toBeVisible()
+    await expect(page.getByText("Element test cue added to screen").first()).toBeVisible()
     await page.getByRole("button", { name: "Show mode" }).click()
     await expect(page.getByRole("button", { name: "Open screen: 1" })).toBeVisible()
   })
