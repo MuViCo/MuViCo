@@ -54,12 +54,13 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
         if (cue) {
           movedCue.cueName = cue.name
         }
-        console.log("movedCue", movedCue)
+
         
         if (movedCue) {
           setStatus("loading")
           try {
             await dispatch(updatePresentation(id, movedCue))
+            await dispatch(fetchPresentationInfo(id))
             setTimeout(() => {
               setStatus("saved")
               dispatch(fetchPresentationInfo(id))
