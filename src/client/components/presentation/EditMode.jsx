@@ -47,13 +47,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData  
-   // Check if cue is the first cue to be added to the screen
-    const screenCues = cues.filter(
-      (cue) => cue.screen === Number(screen)
-    )
-    if (screenCues.length === 0) {
-      await addBlankCue(screen)
-    }
   
     //Check if cue with same index and screen already exists
     const cueExists = cues.some(
