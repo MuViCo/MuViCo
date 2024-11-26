@@ -1,3 +1,4 @@
+import { time } from "console"
 import { loginWith, addPresentation, addBlankCue } from "./helper"
 
 const { test, describe, expect, beforeEach, chromium } = require("@playwright/test")
@@ -91,5 +92,20 @@ describe("GridLayout", () => {
       await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
     })
 
+    test('user can rename cue', async ({ page }) => {
+        await page.getByText("testi").click()
+        await addBlankCue(page, "testcue", "1", "1")
+        await page.waitForTimeout(500)
+
+        const cue = page.getByTestId('cue-testcue')
+        await cue.hover()
+        await cue.dblclick()
+
+        await page.waitForTimeout(500)
+        await page.getByTestId('cue-name').fill("testcue_renamed")
+        await page.getByText('Submit').click()
+
+        await expect(page.getByText("testcue_renamed")).toBeVisible()
+    })
 
 })
