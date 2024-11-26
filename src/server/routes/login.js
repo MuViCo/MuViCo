@@ -49,11 +49,11 @@ router.post("/firebase", verifyToken, async (req, res) => {
 
   try {
     const username = email ? email.split("@")[0] : `user_${uid}` 
-    const user = await User.findOne({ username })
+    let user = await User.findOne({ username })
    
    
     if (!user) {
-      const user = new User({ uid, email, name, username })
+      user = new User({ uid, email, name, username })
       await user.save()
     }
 

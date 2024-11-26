@@ -1,7 +1,7 @@
 import React from "react"
-import { auth, googleProvider } from "./firebase"
+import { auth, googleProvider } from "../utils/firebase"
 import { signInWithPopup } from "firebase/auth"
-import { Button, Image, Box, Text, Flex } from "@chakra-ui/react"
+import { Button, Box, Text } from "@chakra-ui/react"
 import axios from "axios"
 
 

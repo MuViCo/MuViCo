@@ -5,6 +5,7 @@ const { type } = require("os")
 const { uploadFile, deleteFile, getObjectSignedUrl, getFileSize } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
+const { BUCKET_NAME } = require("../utils/config")
 
 const logger = require("../utils/logger")
 
@@ -167,9 +168,9 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
   try {
     const { id, cueId } = req.params
     const { file, user } = req
-    const { index, screen } = req.body
+    const { index, screen, cueName } = req.body
 
-    if (!id || !index || !screen || !cueId) {
+    if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
@@ -186,14 +187,31 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     // Update cue fields
     cue.index = index
     cue.screen = screen
+    cue.name = cueName
 
     if (file) {
-      const fileName = `${id}/${cue.file.id}`
-      await uploadFile(file.buffer, fileName, file.mimetype)
+      const newFileId = generateFileId()
+
+      if ( cue.file && cue.file.url ) {
+        const oldFileName = cue.file.url.split("/").pop()
+        await deleteFile(`${id}/${oldFileName}`)
+      }
+      try {
+        const fileName = `${id}/${newFileId}`
+        await uploadFile(file.buffer, fileName, file.mimetype)
+        cue.file = {
+          id: newFileId,
+          name: file.originalname,
+          url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+        }
+      } catch (error) {
+        console.error("File upload error:", error)
+        return res.status(500).json({ error: "File upload failed" })
+      }
+    
     }
 
     await presentation.save()
-
     res.json(presentation)
   } catch (error) {
     console.error("Error:", error)

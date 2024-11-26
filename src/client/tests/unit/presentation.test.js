@@ -1,10 +1,3 @@
-import React from "react"
-import { render, screen, waitFor } from "@testing-library/react"
-import {
-  PresentationCues,
-  PresentationFiles,
-} from "../../components/presentation/index"
-import { CuesForm } from "../../components/presentation/Cues"
 import presentation from "../../services/presentation"
 import "@testing-library/jest-dom"
 
