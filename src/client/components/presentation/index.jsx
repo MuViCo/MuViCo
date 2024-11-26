@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, useToast, Box } from "@chakra-ui/react"
+import { Button, Flex, useToast, Box, Text } from "@chakra-ui/react"
 import { fetchPresentationInfo, createCue, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -23,7 +23,7 @@ const PresentationPage = ({ userId }) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const toast = useToast()
-
+  const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   // Fetch presentation info from Redux state
@@ -38,10 +38,11 @@ const PresentationPage = ({ userId }) => {
   }
 
   if (presentationInfo) {
-    const totalSize = presentationInfo.cues.reduce((sum, cue) => sum + parseInt(cue.file.size), 0)
-    console.log("Presentation full size", (totalSize / (1024 * 1024)).toFixed(2), "MB")
+    const totalSize = (presentationInfo.cues.reduce((sum, cue) => sum + parseInt(cue.file.size), 0))
+       if (presentationSize != (totalSize / (1024 * 1024)).toFixed(2)) {
+      setPresentationSize((totalSize / (1024 * 1024)).toFixed(2))
+    }
   }
-
   const addBlankCue = async (screen) => {
     
     const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
@@ -108,6 +109,7 @@ const PresentationPage = ({ userId }) => {
                 </Button>
               </>
             )}
+            <Text alignSelf="center">{presentationSize} MB</Text>
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
