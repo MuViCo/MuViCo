@@ -95,17 +95,24 @@ describe("GridLayout", () => {
     test('user can rename cue', async ({ page }) => {
         await page.getByText("testi").click()
         await addBlankCue(page, "testcue", "1", "1")
-        await page.waitForTimeout(500)
 
         const cue = page.getByTestId('cue-testcue')
         await cue.hover()
         await cue.dblclick()
 
-        await page.waitForTimeout(500)
         await page.getByTestId('cue-name').fill("testcue_renamed")
         await page.getByText('Submit').click()
 
         await expect(page.getByText("testcue_renamed")).toBeVisible()
+    })
+
+    test('double click on empty space should open add element view', async ({ page }) => {
+        await page.getByText("testi").click()
+        const grid = page.locator('[data-testid="drop-area"]')
+        var box = (await grid.boundingBox())
+
+        await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+        await expect(page.getByRole("heading", { name: "Add element" })).toBeVisible()
     })
 
 })
