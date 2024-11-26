@@ -27,6 +27,31 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
 
+  const [isDragging, setIsDragging] = useState(false)
+  const clickTimeout = useRef(null)
+
+  const handleMouseDown = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = () => {
+    setIsDragging(true)
+  }
+
+  const handleMouseUp = (event) => {
+    if (!isDragging) {
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current)
+        clickTimeout.current = null
+        handleDoubleClick(event)
+      } else {
+        clickTimeout.current = setTimeout(() => {
+          clickTimeout.current = null
+        }, 300)
+      }
+    }
+  }
+
   const layout = cues.map((cue) => {
     const position = {
       i: cue._id.toString(),
@@ -72,7 +97,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     }
   
     const formData = createFormData(index, cueName, screen, file || "/blank.png")
-    console.log("index, cueName, screen, file", index, cueName, screen, file)
   
     try {
       await dispatch(createCue(id, formData))
@@ -117,7 +141,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       setIsEditOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
-   //   console.log('no cue found', xIndex, yIndex)
       setIsToolboxOpen(true)
     }
   }
@@ -236,7 +259,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
             ))}
           </Box>
   
-          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick}>
+          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <Box
               display="grid"
               gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
