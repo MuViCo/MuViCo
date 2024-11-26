@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
-import { fetchPresentationInfo, createCue, deletePresentation } from "../../redux/presentationReducer"
+import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-import ToolBox from "./ToolBox"
-import EditToolBox from "./EditToolBox"
-import { createFormData } from "../utils/formDataUtils"
+
 /**
  * Renders the presentation page.
  *
@@ -36,33 +34,6 @@ const PresentationPage = ({ userId }) => {
   const handleShowMode = () => {
     setShowMode(!showMode)
   }
-  
-  const addBlankCue = async (screen) => {
-    
-    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
-    try {
-      await dispatch(createCue(id, formData))
-      toast({
-        title: "Element added",
-        description: `Initial element added to screen ${screen}`,
-        status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    } catch (error) {
-      const errorMessage = error.message || "An error occurred"
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
-    }
-  }
-
 
   const handleDeletePresentation = async (id) => {
     if (!window.confirm("Are you sure you want to delete this presentation?"))
@@ -106,7 +77,7 @@ const PresentationPage = ({ userId }) => {
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} addBlankCue={addBlankCue}/>
+            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} />
           </Box>
         </Box>
       )}

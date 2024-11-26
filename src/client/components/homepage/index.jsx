@@ -7,14 +7,18 @@ import {
   GridItem,
   Heading,
   Text,
+  useToast
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
 import presentationService from "../../services/presentations"
+import presentation from "../../services/presentation"
 import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 import randomLinearGradient from "../utils/randomGradient"
+import { createFormData } from "../utils/formDataUtils"
+
 
 
 export const PresentationsGrid = ({
@@ -96,10 +100,11 @@ export const CreatePresentation = ({
   </SimpleGrid>
 )
 
-const HomePage = ({ user, setUser }) => {
+const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
+  const toast = useToast()
 
   useEffect(() => {
     const getPresentationData = async () => {
@@ -116,6 +121,35 @@ const HomePage = ({ user, setUser }) => {
     getPresentationData()
   }, [navigate])
 
+  const addBlankCue = async (presentationId) => {
+    const screens = [1,2,3,4]
+    for (const screen of screens) {
+    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
+    console.log("formData", formData, screen)
+    try {
+      await presentation.addCue(presentationId, formData)
+      toast({
+        title: "Element added",
+        description: `Initial element added to screen ${screen}`,
+        status: "success",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      const errorMessage = error.message || "An error occurred"
+      console.error("Error adding initial element:", error)
+      toast({
+        title: "Error",
+        description: errorMessage,
+        status: "error",
+        position: "top",
+        duration: 3000,
+        isClosable: true,
+      })
+    }}}
+  
+
   const createPresentation = async (presentationObject) => {
     try {
       await presentationService.create(presentationObject)
@@ -123,6 +157,8 @@ const HomePage = ({ user, setUser }) => {
       setPresentations(updatedPresentations)
       const presentationId =
         updatedPresentations[updatedPresentations.length - 1].id
+      
+      await addBlankCue(presentationId)
       navigate(`/presentation/${presentationId}`)
     } catch (error) {
       console.error("Error creating presentation:", error)
@@ -152,5 +188,6 @@ const HomePage = ({ user, setUser }) => {
     </Container>
   )
 }
+
 
 export default HomePage

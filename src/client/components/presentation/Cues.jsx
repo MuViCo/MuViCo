@@ -9,9 +9,7 @@ import {
   Input,
   Button,
   Heading,
-  Divider,
-  Flex,
-  Box,
+  Divider
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
 
