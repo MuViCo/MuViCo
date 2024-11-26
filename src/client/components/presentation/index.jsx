@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, useToast, Box } from "@chakra-ui/react"
-import { fetchPresentationInfo, createCue, deletePresentation, updatePresentation } from "../../redux/presentationReducer"
+import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-import ToolBox from "./ToolBox"
-import EditToolBox from "./EditToolBox"
+import { useCustomToast } from "../utils/toastUtils"
 import { createFormData } from "../utils/formDataUtils"
+import { createCue } from "../../redux/presentationReducer"
 /**
  * Renders the presentation page.
  *
@@ -22,7 +22,7 @@ const PresentationPage = ({ userId, setUser }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const toast = useToast()
+  const showToast = useCustomToast()
 
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
@@ -42,23 +42,17 @@ const PresentationPage = ({ userId, setUser }) => {
     const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
     try {
       await dispatch(createCue(id, formData))
-      toast({
+      showToast({
         title: "Element added",
         description: `Initial element added to screen ${screen}`,
         status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
       const errorMessage = error.message || "An error occurred"
-      toast({
+      showToast({
         title: "Error",
-        description: errorMessage,
+        description: errorMessage,  
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }
@@ -74,13 +68,10 @@ const PresentationPage = ({ userId, setUser }) => {
     catch (error) {
       console.error(error)
       const errorMessage = error.message || "An error occurred"
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }

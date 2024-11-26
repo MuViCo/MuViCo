@@ -3,18 +3,18 @@ import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { useToast } from "@chakra-ui/react"
 import { updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) => {
-  const toast = useToast()
+  const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
 
@@ -85,13 +85,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      toast({
+      showToast({
         title: "Element already exists",
         description: `Element with index ${index} already exists on screen ${screen}`,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
       return
     }
@@ -101,23 +98,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     try {
       await dispatch(createCue(id, formData))
       await dispatch(fetchPresentationInfo(id))
-      toast({
+      showToast({
         title: "Element added",
         description: `Element ${cueName} added to screen ${screen}`,
         status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
       const errorMessage = error.message
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }
@@ -132,9 +123,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     }
 
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-    console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
-    console.log("cue found:", cue)
     
     if (cue) {
       setSelectedCue(cue)
@@ -187,13 +176,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
 
       if (cueExists(xIndex, yIndex)) {
-        toast({
+        showToast({
           title: "Element already exists",
           description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
           status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
         return
       }
@@ -205,23 +191,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       try {
         await dispatch(createCue(id, formData))
         await dispatch(fetchPresentationInfo(id))
-        toast({
+        showToast({
           title: "Element added",
           description: `Element ${file.name} added to screen ${yIndex}`,
           status: "success",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       } catch (error) {
         const errorMessage = error.message || "An error occurred"
-        toast({
+        showToast({
           title: "Error",
           description: errorMessage,
           status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       }
     }

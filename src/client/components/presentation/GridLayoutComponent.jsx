@@ -6,36 +6,29 @@ import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { updatePresentation, fetchPresentationInfo, removeCue } from "../../redux/presentationReducer"
-import { useToast } from "@chakra-ui/react"
+import { useCustomToast } from "../utils/toastUtils"
 
 const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeight, gap }) => {
-
+    const showToast = useCustomToast()
     const dispatch = useDispatch()
-    const toast = useToast()
 
     const handleRemoveItem = async (cueId) => {
         if (!window.confirm("Are you sure you want to delete this element?")) return
     
         try {
           await dispatch(removeCue(id, cueId))
-          toast({
+          showToast({
             title: "Element removed",
             description: `Element with ID ${cueId} has been removed.`,
             status: "success",
-            position: "top",
-            duration: 3000,
-            isClosable: true,
           })
         } catch (error) {
           console.error(error)
           const errorMessage = error.message || "An error occurred"
-          toast({
+          showToast({
             title: "Error",
             description: errorMessage,
             status: "error",
-            position: "top",
-            duration: 3000,
-            isClosable: true,
           })
         }
       }
@@ -54,7 +47,6 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
         if (cue) {
           movedCue.cueName = cue.name
         }
-        console.log("movedCue", movedCue)
         
         if (movedCue) {
           setStatus("loading")
