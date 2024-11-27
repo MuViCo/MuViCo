@@ -49,18 +49,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     const { index, cueName, screen, file, fileName } = cueData  
   
     //Check if cue with same index and screen already exists
-    const cueExists = cues.some(
+    const cueExists = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      toast({
-        title: "Element already exists",
-        description: `Element with index ${index} already exists on screen ${screen}`,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
-      })
+      const userConfirmed = window.confirm(`Element with index ${index} already exists on screen ${screen}. Do you want to update it?`)
+      if (userConfirmed) {
+        const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
+        await updateCue(cueExists._id, updatedCue)
+        //await dispatch(fetchPresentationInfo(id))
+        return
+      }
       return
     }
   
