@@ -6,7 +6,9 @@ import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-
+import { useCustomToast } from "../utils/toastUtils"
+import { createFormData } from "../utils/formDataUtils"
+import { createCue } from "../../redux/presentationReducer"
 /**
  * Renders the presentation page.
  *
@@ -20,7 +22,7 @@ const PresentationPage = ({ userId }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const toast = useToast()
+  const showToast = useCustomToast()
 
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
@@ -45,13 +47,10 @@ const PresentationPage = ({ userId }) => {
     catch (error) {
       console.error(error)
       const errorMessage = error.message || "An error occurred"
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }

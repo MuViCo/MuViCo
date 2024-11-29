@@ -3,18 +3,18 @@ import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { useToast } from "@chakra-ui/react"
 import { updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) => {
-  const toast = useToast()
+  const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
 
@@ -26,6 +26,31 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
+
+  const [isDragging, setIsDragging] = useState(false)
+  const clickTimeout = useRef(null)
+
+  const handleMouseDown = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = () => {
+    setIsDragging(true)
+  }
+
+  const handleMouseUp = (event) => {
+    if (!isDragging) {
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current)
+        clickTimeout.current = null
+        handleDoubleClick(event)
+      } else {
+        clickTimeout.current = setTimeout(() => {
+          clickTimeout.current = null
+        }, 300)
+      }
+    }
+  }
 
   const layout = cues.map((cue) => {
     const position = {
@@ -53,6 +78,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
+      showToast({
+        title: "Element already exists",
+        description: `Element with index ${index} already exists on screen ${screen}`,
+        status: "error",
+      })
       const userConfirmed = window.confirm(`Element with index ${index} already exists on screen ${screen}. Do you want to update it?`)
       if (userConfirmed) {
         const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
@@ -64,28 +94,21 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     }
   
     const formData = createFormData(index, cueName, screen, file || "/blank.png")
-    console.log("index, cueName, screen, file", index, cueName, screen, file)
   
     try {
       await dispatch(createCue(id, formData))
       await dispatch(fetchPresentationInfo(id))
-      toast({
+      showToast({
         title: "Element added",
         description: `Element ${cueName} added to screen ${screen}`,
         status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
       const errorMessage = error.message
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }
@@ -100,16 +123,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     }
 
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-    console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
-    console.log("cue found:", cue)
     
     if (cue) {
       setSelectedCue(cue)
       setIsEditOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
-   //   console.log('no cue found', xIndex, yIndex)
       setIsToolboxOpen(true)
     }
   }
@@ -156,13 +176,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
 
       if (cueExists(xIndex, yIndex)) {
-        toast({
+        showToast({
           title: "Element already exists",
           description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
           status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
         return
       }
@@ -174,23 +191,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       try {
         await dispatch(createCue(id, formData))
         await dispatch(fetchPresentationInfo(id))
-        toast({
+        showToast({
           title: "Element added",
           description: `Element ${file.name} added to screen ${yIndex}`,
           status: "success",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       } catch (error) {
         const errorMessage = error.message || "An error occurred"
-        toast({
+        showToast({
           title: "Error",
           description: errorMessage,
           status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       }
     }
@@ -228,7 +239,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
             ))}
           </Box>
   
-          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick}>
+          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <Box
               display="grid"
               gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
