@@ -1,9 +1,9 @@
-import React, { useState, useRef, useCallback } from "react"
+import React, { useState, useRef, useCallback, useLayoutEffect } from "react"
 import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
+import { updatePresentation, createCue } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
@@ -97,7 +97,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   
     try {
       await dispatch(createCue(id, formData))
-      await dispatch(fetchPresentationInfo(id))
       showToast({
         title: "Element added",
         description: `Element ${cueName} added to screen ${screen}`,
@@ -141,7 +140,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       console.log("updated cue with file", updatedCue.file)
       setTimeout(() => {
         setStatus("saved")
-        dispatch(fetchPresentationInfo(id))
       }, 300)
     } catch (error) {
       console.error(error) 
@@ -190,7 +188,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
 
       try {
         await dispatch(createCue(id, formData))
-        await dispatch(fetchPresentationInfo(id))
         showToast({
           title: "Element added",
           description: `Element ${file.name} added to screen ${yIndex}`,

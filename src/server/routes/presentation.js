@@ -6,7 +6,7 @@ const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
-
+const { generateSignedUrlForCue } = require("../utils/helper")
 const logger = require("../utils/logger")
 
 const router = express.Router()
@@ -184,7 +184,6 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     if (!cue) {
       return res.status(404).json({ error: "Cue not found" })
     }
-
     // Update cue fields
     cue.index = index
     cue.screen = screen
@@ -205,15 +204,18 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
           name: file.originalname,
           url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
         }
+        await generateSignedUrlForCue(cue, id)
       } catch (error) {
         console.error("File upload error:", error)
         return res.status(500).json({ error: "File upload failed" })
       }
-    
     }
 
     await presentation.save()
-    res.json(presentation)
+
+    const updatedCue = await generateSignedUrlForCue(cue, id)
+
+    res.json(updatedCue)
   } catch (error) {
     console.error("Error:", error)
     res.status(500).json({ error: "Internal server error" })

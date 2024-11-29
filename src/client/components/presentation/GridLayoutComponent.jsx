@@ -54,7 +54,6 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
             await dispatch(updatePresentation(id, movedCue))
             setTimeout(() => {
               setStatus("saved")
-              dispatch(fetchPresentationInfo(id))
             }, 300)
           } catch (error) {
             console.error(error) 
