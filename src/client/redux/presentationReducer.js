@@ -14,7 +14,6 @@ const presentationSlice = createSlice({
       state.cues = action.payload
     },
     deleteCue(state, action) {
-      console.log("deleteCue", action.payload)
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
     },
     addCue(state, action) {
@@ -99,7 +98,6 @@ export const updatePresentation = (id, movedCue) => async (dispatch) => {
       movedCue.file,
       movedCue.cueId
     )
-    
     const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
     dispatch(editCue(updatedCue))
   } catch (error) {
