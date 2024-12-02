@@ -31,7 +31,7 @@ const PresentationPage = ({ userId, setUser }) => {
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
-  }, [])
+  }, [id, userId, navigate, dispatch])
 
   useEffect(() => {
     console.log("updated presentationInfo", presentationInfo)
