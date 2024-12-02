@@ -1,5 +1,6 @@
 import axios from "axios"
 import getToken from "../auth"
+import { createFormData } from "../components/utils/formDataUtils"
 
 const baseUrl = "/api/presentation/"
 
@@ -51,6 +52,7 @@ const updateCue = async (id, cueId, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
+  console.log("update", formData.get("image"), cueId)
   const response = await axios.put(`${baseUrl}/${id}/${cueId}`, formData, config)
   return response.data
 }

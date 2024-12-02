@@ -6,8 +6,7 @@ import {
   Button,
   GridItem,
   Heading,
-  Text,
-  useToast
+  Text
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
@@ -18,6 +17,7 @@ import PresentationForm from "./presentationform"
 import Togglable from "../utils/Togglable"
 import randomLinearGradient from "../utils/randomGradient"
 import { createFormData } from "../utils/formDataUtils"
+import { useCustomToast } from "../utils/toastUtils"
 
 
 
@@ -104,7 +104,7 @@ const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
-  const toast = useToast()
+  const showToast = useCustomToast()
 
   useEffect(() => {
     const getPresentationData = async () => {
@@ -125,27 +125,20 @@ const HomePage = ({ user }) => {
     const screens = [1,2,3,4]
     for (const screen of screens) {
     const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
-    console.log("formData", formData, screen)
     try {
       await presentation.addCue(presentationId, formData)
-      toast({
+      showToast({
         title: "Element added",
         description: `Initial element added to screen ${screen}`,
         status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
       const errorMessage = error.message || "An error occurred"
       console.error("Error adding initial element:", error)
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }}}
   

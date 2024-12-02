@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, useToast, Box } from "@chakra-ui/react"
+import { Button, Flex, Box } from "@chakra-ui/react"
 import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
-import { createFormData } from "../utils/formDataUtils"
-import { createCue } from "../../redux/presentationReducer"
+
 /**
  * Renders the presentation page.
  *
@@ -27,11 +26,15 @@ const PresentationPage = ({ userId }) => {
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   // Fetch presentation info from Redux state
-  const presentationInfo = useSelector((state) => state.presentation.presentationInfo)
+  const presentationInfo = useSelector((state) => state.presentation.cues)
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
-  }, [id, userId, navigate, dispatch])
+  }, [])
+
+  useEffect(() => {
+    console.log("updated presentationInfo", presentationInfo)
+  }, [presentationInfo])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
@@ -57,7 +60,7 @@ const PresentationPage = ({ userId }) => {
 
   return (
     <>
-      {presentationInfo && (
+      { presentationInfo && (
         <Box width="100vw" height="95vh" margin={0} padding={0} display="flex" flexDirection="column">
           <Flex flexDirection="row" flexWrap="wrap" gap={4} padding={4}>
             <Button colorScheme="gray" onClick={handleShowMode}>
@@ -65,7 +68,7 @@ const PresentationPage = ({ userId }) => {
             </Button>
             {!showMode && (
               <>
-                <Button colorScheme="gray" onClick={() => handleDeletePresentation(presentationInfo.id)}>
+                <Button colorScheme="gray" onClick={() => handleDeletePresentation(id)}>
                   Delete Presentation
                 </Button>
                 <Button colorScheme="gray" onClick={() => setIsToolboxOpen(true)}>
@@ -75,8 +78,8 @@ const PresentationPage = ({ userId }) => {
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
-            {showMode && <ShowMode presentationInfo={presentationInfo} />}
-            <EditMode id={presentationInfo.id} cues={presentationInfo.cues} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} />
+            {showMode && <ShowMode cues={presentationInfo}  />}
+            <EditMode id={id} cues={presentationInfo} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} />
           </Box>
         </Box>
       )}

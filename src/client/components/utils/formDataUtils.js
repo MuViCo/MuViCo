@@ -13,6 +13,7 @@ export const createFormData = (index, name, screen, file, cueId) => {
   formData.append("index", index)
   formData.append("cueName", name)
   formData.append("screen", screen)
+  console.log("file", file)
   if (file) {
     formData.append("image", file)
   }

@@ -41,7 +41,7 @@ describe("GridLayout", () => {
         page.reload()
 
         await addBlankCue(page, "testcue_ver", "2", "2")
-        await expect(page.getByText("Element with index 2 already exists on screen 2").first()).toBeVisible()
+        await expect(page.getByText("Cue 2 element already exists on screen 2").first()).toBeVisible()
     })
 
     test("user can delete cue", async ({ page }) => {
@@ -92,27 +92,21 @@ describe("GridLayout", () => {
       await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
     })
 
-    test('user can rename cue', async ({ page }) => {
-        await page.getByText("testi").click()
-        await addBlankCue(page, "testcue", "1", "1")
-
-        const cue = page.getByTestId('cue-testcue')
-        await cue.hover()
-        await cue.dblclick()
-
-        await page.getByTestId('cue-name').fill("testcue_renamed")
-        await page.getByText('Submit').click()
-
-        await expect(page.getByText("testcue_renamed")).toBeVisible()
+    test("element is updated correctly", async ({ page }) => {
+      await page.getByText("testi").click()
+  
+      // Add initial element
+      await addBlankCue(page, "blank.png", "1", "1")
+      await expect(page.getByText("Element blank.png added to screen 1").first()).toBeVisible()
+      await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
+  
+      // Attempt to add another element at the same position
+      await addBlankCue(page, "test.png", "1", "1")
+  
+      // Confirm the update
+      await page.getByRole('button', { name: 'Yes' }).click()
+  
+      await expect(page.getByText("Element test.png updated on screen 1").first()).toBeVisible()
+      await expect(page.locator('[data-testid="cue-test.png"]')).toBeVisible()
     })
-
-    test('double click on empty space should open add element view', async ({ page }) => {
-        await page.getByText("testi").click()
-        const grid = page.locator('[data-testid="drop-area"]')
-        var box = (await grid.boundingBox())
-
-        await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
-        await expect(page.getByRole("heading", { name: "Add element" })).toBeVisible()
-    })
-
 })

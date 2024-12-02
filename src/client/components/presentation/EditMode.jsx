@@ -1,19 +1,20 @@
-import React, { useState, useRef, useCallback } from "react"
+import React, { useState, useRef, useCallback, useLayoutEffect } from "react"
 import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
+import { updatePresentation, createCue } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) => {
+const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
@@ -22,6 +23,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
   const [doubleClickPosition, setDoubleClickPosition] = useState({ xIndex: 0, yIndex: 0 })
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmMessage, setConfirmMessage] = useState("")
+  const [confirmAction, setConfirmAction] = useState(() => () => {})
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -78,26 +83,21 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      showToast({
-        title: "Element already exists",
-        description: `Element with index ${index} already exists on screen ${screen}`,
-        status: "error",
-      })
-      const userConfirmed = window.confirm(`Element with index ${index} already exists on screen ${screen}. Do you want to update it?`)
-      if (userConfirmed) {
+      setConfirmMessage(`Cue ${index} element already exists on screen ${screen}. Do you want to update it?`)
+      setConfirmAction(() => async () => {
         const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
         await updateCue(cueExists._id, updatedCue)
-        //await dispatch(fetchPresentationInfo(id))
-        return
-      }
+        setIsConfirmOpen(false)
+      })
+      setIsConfirmOpen(true)
       return
     }
   
     const formData = createFormData(index, cueName, screen, file || "/blank.png")
+    console.log("index, cueName, screen, file", index, cueName, screen, file)
   
     try {
       await dispatch(createCue(id, formData))
-      await dispatch(fetchPresentationInfo(id))
       showToast({
         title: "Element added",
         description: `Element ${cueName} added to screen ${screen}`,
@@ -137,11 +137,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const updateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
-      await dispatch(updatePresentation(id, updatedCue))
+      await dispatch(updatePresentation(id, updatedCue, cueId))
       console.log("updated cue with file", updatedCue.file)
       setTimeout(() => {
         setStatus("saved")
-        dispatch(fetchPresentationInfo(id))
       }, 300)
     } catch (error) {
       console.error(error) 
@@ -176,11 +175,16 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
 
       if (cueExists(xIndex, yIndex)) {
-        showToast({
-          title: "Element already exists",
-          description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
-          status: "error",
+        setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
+        setConfirmAction(() => async () => {
+          const existingCue = cues.find(
+            (cue) => cue.index === xIndex && cue.screen === yIndex
+          )
+          const updatedCue = { ...existingCue, index: xIndex, cueName: imageFiles[0].name, screen: yIndex, file: imageFiles[0] }
+          await updateCue(existingCue._id, updatedCue)
+          setIsConfirmOpen(false)
         })
+        setIsConfirmOpen(true)
         return
       }
 
@@ -190,7 +194,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
 
       try {
         await dispatch(createCue(id, formData))
-        await dispatch(fetchPresentationInfo(id))
         showToast({
           title: "Element added",
           description: `Element ${file.name} added to screen ${yIndex}`,
@@ -311,6 +314,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
           onClose={() => setIsToolboxOpen(false)}
           position={doubleClickPosition}
           addCue={addCue}
+        />
+        <Dialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={confirmAction}
+          message={confirmMessage}
         />
       </div>
     </ChakraProvider>
