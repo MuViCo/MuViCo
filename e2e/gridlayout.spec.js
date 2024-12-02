@@ -45,18 +45,16 @@ describe("GridLayout", () => {
     })
 
     test("user can delete cue", async ({ page }) => {
-        await page.getByText("testi").click()
-
-        await addBlankCue(page, "testcue_del", "3", "3")
-        await page.getByRole("button", { name: "Delete testcue_del" }).click()
-
-        page.once('dialog', async dialog => {
-            expect(dialog.message()).toContain("Are you sure you want to delete this element?")
-            await dialog.accept()
-        })
-
-        await page.locator('button[aria-label="Delete testcue_del"]').click()
-        await expect(page.locator('[data-testid="cue-testcue_del"]')).not.toBeVisible()
+      await page.getByText("testi").click()
+  
+      await addBlankCue(page, "testcue_del", "3", "3")
+      await page.getByRole("button", { name: "Delete testcue_del" }).click()
+  
+      // Interact with the ConfirmationDialog
+      await expect(page.getByText("Are you sure you want to remove this element?")).toBeVisible()
+      await page.getByRole('button', { name: 'Yes' }).click()
+  
+      await expect(page.locator('[data-testid="cue-testcue_del"]')).not.toBeVisible()
     })
 
     test('should add a cue by dragging and dropping a file', async ({ page }) => {

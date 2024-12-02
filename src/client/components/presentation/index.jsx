@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
+import Dialog from "../utils/AlertDialog"
 
 /**
  * Renders the presentation page.
@@ -17,7 +18,7 @@ import { useCustomToast } from "../utils/toastUtils"
  * @returns {JSX.Element} The presentation page component.
  */
 
-const PresentationPage = ({ userId }) => {
+const PresentationPage = () => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -25,6 +26,8 @@ const PresentationPage = ({ userId }) => {
 
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [presentationToDelete, setPresentationToDelete] = useState(null)
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
@@ -36,22 +39,30 @@ const PresentationPage = ({ userId }) => {
     setShowMode(!showMode)
   }
 
-  const handleDeletePresentation = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this presentation?"))
-      return // eslint-disable-line
-    try {
-      await dispatch(deletePresentation(id))
-      navigate("/home")
+  const handleDeletePresentation = (presentationId) => {
+    setPresentationToDelete(presentationId)
+    setIsDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (presentationToDelete) {
+      try {
+        await dispatch(deletePresentation(presentationToDelete))
+        showToast({
+          title: "Presentation deleted",
+          description: "The presentation has been deleted successfully.",
+          status: "success",
+        })
+        navigate("/home")
+      } catch (error) {
+        showToast({
+          title: "Error",
+          description: error.message || "An error occurred",
+          status: "error",
+        })
+      }
     }
-    catch (error) {
-      console.error(error)
-      const errorMessage = error.message || "An error occurred"
-      showToast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-      })
-    }
+    setIsDialogOpen(false)
   }
 
   return (
@@ -77,6 +88,12 @@ const PresentationPage = ({ userId }) => {
             {showMode && <ShowMode cues={presentationInfo}  />}
             <EditMode id={id} cues={presentationInfo} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} />
           </Box>
+          <Dialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onConfirm={handleConfirmDelete}
+          message="Are you sure you want to delete this presentation?"
+          />
         </Box>
       )}
     </>

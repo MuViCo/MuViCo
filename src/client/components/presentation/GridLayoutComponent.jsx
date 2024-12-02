@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
 import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
@@ -7,19 +7,27 @@ import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { updatePresentation, fetchPresentationInfo, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
+import Dialog from "../utils/AlertDialog"
 
 const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeight, gap }) => {
     const showToast = useCustomToast()
     const dispatch = useDispatch()
 
-    const handleRemoveItem = async (cueId) => {
-        if (!window.confirm("Are you sure you want to delete this element?")) return
-    
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [cueToRemove, setCueToRemove] = useState(null)
+
+    const handleRemoveItem = (cueId) => {
+      setCueToRemove(cueId)
+      setIsDialogOpen(true)
+    }
+
+    const handleConfirmRemove = async () => {
+      if (cueToRemove) {
         try {
-          await dispatch(removeCue(id, cueId))
+          await dispatch(removeCue(id, cueToRemove))
           showToast({
             title: "Element removed",
-            description: `Element with ID ${cueId} has been removed.`,
+            description: `Element with ID ${cueToRemove} has been removed.`,
             status: "success",
           })
         } catch (error) {
@@ -32,8 +40,11 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
           })
         }
       }
+      setIsDialogOpen(false)
+    }
 
-    const handlePositionChange = async (layout, oldItem, newItem) => {
+
+    const handlePositionChange = async (oldItem, newItem) => {
 
         if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
           return
@@ -139,6 +150,12 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
                   </Text>
                 </Tooltip>
               </Box>
+              <Dialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onConfirm={handleConfirmRemove}
+                message="Are you sure you want to remove this element?"
+              />
             </div>
           ))}
         </GridLayout>
