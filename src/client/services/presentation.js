@@ -52,7 +52,6 @@ const updateCue = async (id, cueId, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  console.log("update", formData.get("image"), cueId)
   const response = await axios.put(`${baseUrl}/${id}/${cueId}`, formData, config)
   return response.data
 }

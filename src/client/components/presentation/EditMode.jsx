@@ -94,7 +94,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   
     const formData = createFormData(index, cueName, screen, file || "/blank.png")
-    console.log("index, cueName, screen, file", index, cueName, screen, file)
   
     try {
       await dispatch(createCue(id, formData))
@@ -138,12 +137,21 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     setStatus("loading")
     try {
       await dispatch(updatePresentation(id, updatedCue, cueId))
-      console.log("updated cue with file", updatedCue.file)
       setTimeout(() => {
         setStatus("saved")
+        showToast({
+          title: "Element updated",
+          description: `Element ${updatedCue.cueName} updated on screen ${updatedCue.screen}`,
+          status: "success",
+        })
       }, 300)
     } catch (error) {
-      console.error(error) 
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
     }
   }
 

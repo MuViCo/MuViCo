@@ -14,7 +14,6 @@ const presentationSlice = createSlice({
       state.cues = action.payload
     },
     deleteCue(state, action) {
-      console.log("deleteCue", action.payload)
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
     },
     addCue(state, action) {

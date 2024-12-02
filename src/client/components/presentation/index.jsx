@@ -30,11 +30,7 @@ const PresentationPage = ({ userId }) => {
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
-  }, [])
-
-  useEffect(() => {
-    console.log("updated presentationInfo", presentationInfo)
-  }, [presentationInfo])
+  }, [dispatch, id])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
