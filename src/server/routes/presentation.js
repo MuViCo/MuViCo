@@ -5,7 +5,7 @@ const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
-
+const { generateSignedUrlForCue } = require("../utils/helper")
 const logger = require("../utils/logger")
 
 const router = express.Router()
@@ -57,15 +57,7 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       presentation.files = await Promise.all(
-        presentation.cues.map(async (cue) => {
-          if (typeof cue.file.url === "string") {
-            const key = `${id}/${cue.file.id.toString()}`
-            cue.file.url = await getObjectSignedUrl(key)
-          } else {
-            cue.file.url = " /src/client/public/blank.png"
-          }
-          return cue
-        })
+        presentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
       )
       res.json(presentation)
     } else {
@@ -114,7 +106,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
-    console.log(cuenumber, "number")
 
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
@@ -151,6 +142,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
+    const updatedCues = await Promise.all(
+      updatedPresentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
+    )
+
+    updatedPresentation.cues = updatedCues
     res.json(updatedPresentation)
 
     return res.status(204).end()
@@ -163,8 +159,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
   try {
     const { id, cueId } = req.params
-    const { file, user } = req
-    const { index, screen, cueName } = req.body
+    const { file } = req
+    const { index, screen, cueName, image } = req.body
 
     if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -179,11 +175,20 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     if (!cue) {
       return res.status(404).json({ error: "Cue not found" })
     }
-
     // Update cue fields
     cue.index = index
     cue.screen = screen
     cue.name = cueName
+    
+    if (image === "/blank.png") {
+      const newFileId = generateFileId()
+      cue.file = {
+        id: newFileId,
+        name: "blank.png",
+        url: null,
+      }
+    }
+    
 
     if (file) {
       const newFileId = generateFileId()
@@ -200,15 +205,17 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
           name: file.originalname,
           url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
         }
+        await generateSignedUrlForCue(cue, id)
       } catch (error) {
         console.error("File upload error:", error)
         return res.status(500).json({ error: "File upload failed" })
       }
-    
     }
-
     await presentation.save()
-    res.json(presentation)
+
+    const updatedCue = await generateSignedUrlForCue(cue, id)
+
+    res.json(updatedCue)
   } catch (error) {
     console.error("Error:", error)
     res.status(500).json({ error: "Internal server error" })

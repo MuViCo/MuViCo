@@ -3,7 +3,7 @@ import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
 
 const initialState = {
-  presentationInfo: null,
+  cues: [],
 }
 
 const presentationSlice = createSlice({
@@ -11,24 +11,23 @@ const presentationSlice = createSlice({
   initialState,
   reducers: {
     setPresentationInfo(state, action) {
-      state.presentationInfo = action.payload
+      state.cues = action.payload
     },
     deleteCue(state, action) {
-      state.presentationInfo.cues = state.presentationInfo.cues.filter(
-        (cue) => cue._id !== action.payload
-      )
+      state.cues = state.cues.filter((cue) => cue._id !== action.payload)
     },
     addCue(state, action) {
-      state.presentationInfo.cues.push(action.payload)
+      state.cues.push(action.payload)
     },
-    updateCue(state, action) {
-      const updatedCue = action.payload
-      state.presentationInfo.cues = state.presentationInfo.cues.map((cue) =>
-        cue._id === updatedCue._id ? updatedCue : cue
-      )
+    editCue(state, action) {
+      const cueToChange = action.payload
+      const updatedCues = state.cues.map((cue) =>
+          cue._id !== cueToChange._id ? cue : cueToChange,
+        )
+      state.cues = updatedCues
     },
     removePresentation(state) {
-      state.presentationInfo = null
+      state.cues = null
     },
   },
 })
@@ -37,7 +36,7 @@ export const {
   setPresentationInfo,
   deleteCue,
   addCue,
-  updateCue,
+  editCue,
   removePresentation,
 } = presentationSlice.actions
 
@@ -47,7 +46,7 @@ export default presentationSlice.reducer
 export const fetchPresentationInfo = (id) => async (dispatch) => {
   try {
     const presentation = await presentationService.get(id)
-    dispatch(setPresentationInfo(presentation))
+    dispatch(setPresentationInfo(presentation.cues))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
@@ -91,22 +90,23 @@ export const deletePresentation = (id) => async (dispatch) => {
   }
 }
 
-export const updatePresentation = (id, movedCue) => async (dispatch) => {
+export const updatePresentation = (id, movedCue, cueId) => async (dispatch) => {
   try {
-    console.log("movedCue", movedCue)
     const formData = createFormData(
       movedCue.index,
       movedCue.cueName,
       movedCue.screen,
       movedCue.file,
-      movedCue.cueId
+      movedCue.cueId || cueId
     )
     
-    const updatedCue = await presentationService.updateCue(id, movedCue.cueId, formData)
-    dispatch(updateCue(updatedCue))
+    const updatedCue = await presentationService.updateCue(id, movedCue.cueId || cueId, formData)
+    dispatch(editCue(updatedCue))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
     throw new Error(errorMessage)
   }
 }
+
+
