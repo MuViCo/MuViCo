@@ -20,11 +20,13 @@ const presentationSlice = createSlice({
       state.cues.push(action.payload)
     },
     editCue(state, action) {
-      const updatedCue = action.payload
-      state.cues = state.cues.map((cue) =>
-        cue._id === updatedCue._id ? updatedCue : cue
-      )
-    },
+      const cueToChange = action.payload
+      const updatedCues = state.cues.map((cue) =>
+          cue._id !== cueToChange._id ? cue : cueToChange,
+        )
+      state.cues = updatedCues
+ 
+    }, 
     removePresentation(state) {
       state.cues = null
     },

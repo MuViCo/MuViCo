@@ -57,19 +57,7 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       presentation.files = await Promise.all(
-        presentation.cues.map(async (cue) => {
-          if (typeof cue.file.url === "string") {
-            const key = `${id}/${cue.file.id.toString()}`
-            cue.file.url = await getObjectSignedUrl(key)
-          } else {
-            if (process.env.NODE_ENV === "development") {
-              cue.file.url = "/src/server/public/blank.png"
-            } else {
-              cue.file.url = "/blank.png"
-            }
-          }
-          return cue
-        })
+        presentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
       )
       res.json(presentation)
     } else {
@@ -154,6 +142,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
+    const updatedCues = await Promise.all(
+      updatedPresentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
+    )
+
+    updatedPresentation.cues = updatedCues
     res.json(updatedPresentation)
 
     return res.status(204).end()

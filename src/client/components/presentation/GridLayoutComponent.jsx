@@ -5,7 +5,7 @@ import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, fetchPresentationInfo, removeCue } from "../../redux/presentationReducer"
+import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 
@@ -44,7 +44,7 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
     }
 
 
-    const handlePositionChange = async (oldItem, newItem) => {
+    const handlePositionChange = async (layout, oldItem, newItem) => {
 
         if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
           return
@@ -64,7 +64,6 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
           setStatus("loading")
           try {
             await dispatch(updatePresentation(id, movedCue))
-            await dispatch(fetchPresentationInfo(id))
             setTimeout(() => {
               setStatus("saved")
             }, 300)

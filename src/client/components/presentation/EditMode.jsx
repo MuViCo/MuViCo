@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useLayoutEffect } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -113,7 +113,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex)
+    return cues.some(cue => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -181,7 +181,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
     if (imageFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-
       if (cueExists(xIndex, yIndex)) {
         setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
         setConfirmAction(() => async () => {
@@ -216,7 +215,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         })
       }
     }
-  }, [dispatch, gap, rowHeight, columnWidth, id])
+  }, [dispatch, gap, rowHeight, columnWidth, id, cues])
 
   return (
     <ChakraProvider theme={theme}>

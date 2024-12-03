@@ -33,7 +33,7 @@ const PresentationPage = () => {
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
-  }, [dispatch, id])
+  }, [id, navigate, dispatch])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
