@@ -25,8 +25,7 @@ const presentationSlice = createSlice({
           cue._id !== cueToChange._id ? cue : cueToChange,
         )
       state.cues = updatedCues
- 
-    }, 
+    },
     removePresentation(state) {
       state.cues = null
     },
@@ -109,3 +108,5 @@ export const updatePresentation = (id, movedCue, cueId) => async (dispatch) => {
     throw new Error(errorMessage)
   }
 }
+
+
