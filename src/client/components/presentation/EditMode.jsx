@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useLayoutEffect } from "react"
+import React, { useState, useRef, useCallback } from "react"
 import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -71,7 +71,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
 
   
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData  
+    const { index, cueName, screen, file } = cueData  
    // Check if cue is the first cue to be added to the screen
     const screenCues = cues.filter(
       (cue) => cue.screen === Number(screen)
@@ -113,7 +113,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex)
+    return cues.some(cue => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -172,7 +172,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
 
     if (imageFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-
+      console.log("cues", cues)
       if (cueExists(xIndex, yIndex)) {
         showToast({
           title: "Element already exists",

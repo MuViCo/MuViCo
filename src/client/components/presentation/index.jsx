@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, useToast, Box } from "@chakra-ui/react"
+import { Button, Flex, Box } from "@chakra-ui/react"
 import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -18,7 +18,7 @@ import { createCue } from "../../redux/presentationReducer"
  * @returns {JSX.Element} The presentation page component.
  */
 
-const PresentationPage = ({ userId, setUser }) => {
+const PresentationPage = () => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -26,16 +26,12 @@ const PresentationPage = ({ userId, setUser }) => {
 
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
-  // Fetch presentation info from Redux state
+
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
-  }, [id, userId, navigate, dispatch])
-
-  useEffect(() => {
-    console.log("updated presentationInfo", presentationInfo)
-  }, [presentationInfo])
+  }, [id, navigate, dispatch])
 
   const handleShowMode = () => {
     setShowMode(!showMode)

@@ -5,7 +5,7 @@ import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, fetchPresentationInfo, removeCue } from "../../redux/presentationReducer"
+import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 
 const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeight, gap }) => {
