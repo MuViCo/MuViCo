@@ -3,14 +3,14 @@ import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
 
 // ShowMode component
-const ShowMode = ({ presentationInfo }) => {
+const ShowMode = ({ cues }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
   const [cueIndex, setCueIndex] = useState(0)
   
   const [screenVisibility, setScreenVisibility] = useState(() => {
-    const initialScreenVisibility = [...new Set(presentationInfo.cues.map(cue => cue.screen))]
+    const initialScreenVisibility = [...new Set(cues.map(cue => cue.screen))]
   
     return initialScreenVisibility.reduce((acc, screenNumber) => {
       acc[screenNumber] = false
@@ -35,7 +35,7 @@ const ShowMode = ({ presentationInfo }) => {
       const preloaded = {}
   
       // Group cues by screen number
-      const cuesByScreen = presentationInfo.cues.reduce((acc, cue) => {
+      const cuesByScreen = cues.reduce((acc, cue) => {
         if (!acc[cue.screen]) {
           acc[cue.screen] = {}
         }
@@ -61,7 +61,7 @@ const ShowMode = ({ presentationInfo }) => {
     }
   
     preloadCueData()
-  }, [presentationInfo])
+  }, [cues])
   
 
   // Toggle screen visibility
