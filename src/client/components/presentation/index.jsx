@@ -38,11 +38,14 @@ const PresentationPage = () => {
   }
 
   if (presentationInfo) {
-    const totalSize = (presentationInfo.cues.reduce((sum, cue) => sum + parseInt(cue.file.size), 0))
+    const totalSize = presentationInfo.reduce((sum, cue) => {
+      return cue.file ? sum + parseInt(cue.file.size) : sum
+    }, 0)
        if (presentationSize != (totalSize / (1024 * 1024)).toFixed(2)) {
       setPresentationSize((totalSize / (1024 * 1024)).toFixed(2))
     }
   }
+
   const addBlankCue = async (screen) => {
     
     const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")

@@ -58,22 +58,11 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       presentation.files = await Promise.all(
-        presentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
+        presentation.cues.map((cue) => 
+          generateSignedUrlForCue(cue, id)),
+        presentation.cues.map((cue) => 
+          cue.file.url != "/src/server/public/blank.png" ? getFileSize(cue, id) : cue )           
       )
-      /*
-        presentation.cues.map(async (cue) => {
-          if (typeof cue.file.url === "string") {
-            const key = `${id}/${cue.file.id.toString()}`
-            cue.file.url = await getObjectSignedUrl(key)
-            if (cue.file.size) {
-              await getFileSize(key).then(fileSize => cue.file.size = fileSize)
-            }
-          } else {
-            cue.file.url = " /src/client/public/blank.png"
-          }
-          return cue
-        })
-      */
       res.json(presentation)
     } else {
       res.status(404).end()

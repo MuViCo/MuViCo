@@ -1,10 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
-<<<<<<< HEAD
-
-=======
->>>>>>> edit-element
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
   <Box bg="black" color="white" width="100vw" height="100vh" display="flex" flexDirection="column">

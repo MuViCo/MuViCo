@@ -56,7 +56,8 @@ const getObjectSignedUrl = async (key) => {
   return url
 }
 
-const getFileSize = async (key) => {
+const getFileSize = async (cue, presentationId) => {
+  const key = `${presentationId}/${cue.file.id.toString()}`
   const params = {
     Bucket: BUCKET_NAME,
     Key: key
@@ -68,7 +69,8 @@ const getFileSize = async (key) => {
     const response = await fetch(url, { method: "HEAD" })
     const contentLength = response.headers.get("Content-Length")
     if (contentLength) {
-      return parseInt(contentLength, 10)
+      cue.file.size = parseInt(contentLength, 10)
+      return cue
     } else {
       throw new Error("Content-Length header is missing.")
     }

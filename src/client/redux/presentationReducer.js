@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
+import { getFileType } from "../components/utils/fileTypeUtils"
 
 const initialState = {
   cues: [],
@@ -11,7 +12,14 @@ const presentationSlice = createSlice({
   initialState,
   reducers: {
     setPresentationInfo(state, action) {
-      state.cues = action.payload
+      let cues = action.payload
+      if (cues) {
+        cues = cues.map(cue => ({
+          ...cue,
+          fileType: getFileType(cue.file.url)
+        }))
+      }
+      state.cues = cues
     },
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)

@@ -47,10 +47,6 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
         if (cue) {
           movedCue.cueName = cue.name
         }
-<<<<<<< HEAD
-
-=======
->>>>>>> edit-element
         
         if (movedCue) {
           setStatus("loading")
