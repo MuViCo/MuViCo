@@ -58,10 +58,15 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       presentation.files = await Promise.all(
-        presentation.cues.map((cue) => 
-          generateSignedUrlForCue(cue, id)),
-        presentation.cues.map((cue) => 
-          cue.file.url != "/src/server/public/blank.png" ? getFileSize(cue, id) : cue )           
+        presentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
+      )
+    
+      await Promise.all(
+        presentation.cues.map(async (cue) => {
+          if (cue.file.url !== "/src/server/public/blank.png") {
+            await getFileSize(cue, id)
+          }
+        })
       )
       res.json(presentation)
     } else {
@@ -152,6 +157,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     )
 
     updatedPresentation.cues = updatedCues
+
+    await Promise.all(
+      updatedPresentation.cues.map(async (cue) => {
+        if (cue.file.url !== "/src/server/public/blank.png") {
+          await getFileSize(cue, id)
+        }
+      })
+    )
+
     res.json(updatedPresentation)
 
     return res.status(204).end()
@@ -210,6 +224,10 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     await presentation.save()
 
     const updatedCue = await generateSignedUrlForCue(cue, id)
+    
+    if (cue.file.url !== "/src/server/public/blank.png") {
+      await getFileSize(cue, id)
+    }
 
     res.json(updatedCue)
   } catch (error) {
