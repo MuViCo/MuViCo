@@ -107,11 +107,28 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
                     handleRemoveItem(cue._id)
                   }}
                 />
-                <img
-                  src={cue.file.url}
-                  alt={cue.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
-                />
+                
+                {cue.file.type.startsWith("video/") ? ( // Thumbail for video
+                      <video
+                      src={cue.file.url}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "10px",
+                      }}
+                      muted
+                      playsInline
+                      controls={false}
+                    />
+                ) :
+                <img                                   // Thumbail for image
+                    src={cue.file.url}
+                    alt={cue.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
+                  />
+                }
+
                 <Tooltip label={cue.name} placement="top" hasArrow>
                   <Text
                     position="absolute"

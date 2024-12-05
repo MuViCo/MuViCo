@@ -22,7 +22,6 @@ const processCueFiles = async (cues, presentationId) => {
       if (cue.file.url !== "/src/server/public/blank.png") {
         await getFileSize(cue, presentationId)
         const fileType = await getFileType(cue, presentationId)
-        console.log("fileType:", fileType)
       }
       return cue
     })
