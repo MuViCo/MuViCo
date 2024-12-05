@@ -6,7 +6,7 @@ const generateSignedUrlForCue = async (cue, presentationId) => {
     const key = `${presentationId}/${cue.file.id.toString()}`
     cue.file.url = await getObjectSignedUrl(key)
   } else {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
       cue.file.url = "/src/server/public/blank.png"
     } else {
       cue.file.url = "/blank.png"
