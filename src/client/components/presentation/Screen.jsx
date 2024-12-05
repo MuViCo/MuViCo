@@ -33,7 +33,6 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
               src={screenData.file.url}
               width="100%"
               height="100%"
-              controls
               autoPlay
               loop
               muted
