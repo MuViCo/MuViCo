@@ -6,7 +6,6 @@ const {
   HeadObjectCommand
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
-const axios = require("axios")
 
 const {
   BUCKET_REGION,
@@ -46,7 +45,7 @@ const deleteFile = (fileName) => {
 const getObjectSignedUrl = async (key) => {
   const params = {
     Bucket: BUCKET_NAME,
-    Key: key
+    Key: key,
   }
 
   // https://aws.amazon.com/blogs/developer/generate-presigned-url-modular-aws-sdk-javascript/
@@ -80,4 +79,29 @@ const getFileSize = async (cue, presentationId) => {
   }
 }
 
-module.exports = { uploadFile, deleteFile, getObjectSignedUrl, getFileSize }
+const getFileType = async (cue, presentationId) => {
+  const key = `${presentationId}/${cue.file.id.toString()}`
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: key,
+  }
+  const command = new HeadObjectCommand(params)
+  const url = await getSignedUrl(s3, command, { expiresIn: 3600 })
+
+  try {
+    const response = await fetch(url, { method: "HEAD" })
+    const contentType = response.headers.get("Content-Type")
+    if (contentType) {
+      const fileType = contentType
+      console.log("fileType:", fileType)
+      return fileType
+    } else {
+      throw new Error("Content-Type header is missing.")
+    }
+  } catch (error) {
+    console.error("Error getting file type:", error)
+    throw error
+  }
+}
+
+module.exports = { uploadFile, deleteFile, getObjectSignedUrl, getFileSize, getFileType }

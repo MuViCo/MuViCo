@@ -2,13 +2,13 @@ const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
 const { type } = require("os")
-const { uploadFile, deleteFile, getObjectSignedUrl, getFileSize } = require("../utils/s3")
+const { uploadFile, deleteFile } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
 const { generateSignedUrlForCue } = require("../utils/helper")
 const logger = require("../utils/logger")
-
+const { processCueFiles } = require("../utils/helper")
 const router = express.Router()
 
 const storage = multer.memoryStorage()
@@ -57,17 +57,7 @@ router.get("/:id", userExtractor, async (req, res) => {
       presentation &&
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
-      presentation.files = await Promise.all(
-        presentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
-      )
-    
-      await Promise.all(
-        presentation.cues.map(async (cue) => {
-          if (cue.file.url !== "/src/server/public/blank.png") {
-            await getFileSize(cue, id)
-          }
-        })
-      )
+      presentation.cues = await processCueFiles(presentation.cues, id)
       res.json(presentation)
     } else {
       res.status(404).end()
@@ -152,19 +142,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
-    const updatedCues = await Promise.all(
-      updatedPresentation.cues.map((cue) => generateSignedUrlForCue(cue, id))
-    )
-
-    updatedPresentation.cues = updatedCues
-
-    await Promise.all(
-      updatedPresentation.cues.map(async (cue) => {
-        if (cue.file.url !== "/src/server/public/blank.png") {
-          await getFileSize(cue, id)
-        }
-      })
-    )
+    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
 
     res.json(updatedPresentation)
 
@@ -223,13 +201,9 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
 
     await presentation.save()
 
-    const updatedCue = await generateSignedUrlForCue(cue, id)
-    
-    if (cue.file.url !== "/src/server/public/blank.png") {
-      await getFileSize(cue, id)
-    }
+    const updatedCue = await processCueFiles([cue], id)
+    res.json(updatedCue[0])
 
-    res.json(updatedCue)
   } catch (error) {
     console.error("Error:", error)
     res.status(500).json({ error: "Internal server error" })

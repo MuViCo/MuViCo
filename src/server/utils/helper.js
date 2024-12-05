@@ -1,4 +1,5 @@
 const { getObjectSignedUrl } = require("./s3")
+const { getFileSize, getFileType } = require("../utils/s3")
 
 const generateSignedUrlForCue = async (cue, presentationId) => {
   if (typeof cue.file.url === "string") {
@@ -14,6 +15,22 @@ const generateSignedUrlForCue = async (cue, presentationId) => {
   return cue
 }
 
+const processCueFiles = async (cues, presentationId) => {
+  const processedCues = await Promise.all(
+    cues.map(async (cue) => {
+      await generateSignedUrlForCue(cue, presentationId)
+      if (cue.file.url !== "/src/server/public/blank.png") {
+        await getFileSize(cue, presentationId)
+        const fileType = await getFileType(cue, presentationId)
+        console.log("fileType:", fileType)
+      }
+      return cue
+    })
+  )
+  return processedCues
+}
+
 module.exports = {
   generateSignedUrlForCue,
+  processCueFiles,
 }
