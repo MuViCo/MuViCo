@@ -168,11 +168,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const handleDrop = useCallback(async (event) => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+    const mediaFiles = files.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
 
-    if (imageFiles.length > 0 && containerRef.current) {
+    if (mediaFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-      console.log("cues", cues)
       if (cueExists(xIndex, yIndex)) {
         showToast({
           title: "Element already exists",
@@ -182,8 +181,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
         return
       }
 
-      const file = imageFiles[0]
-
+      const file = mediaFiles[0]
       const formData = createFormData(xIndex, file.name, yIndex, file)
 
       try {
