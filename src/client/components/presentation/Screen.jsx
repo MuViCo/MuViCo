@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
+import { isImage } from "../utils/fileTypeUtils"
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
   <Box bg="black" color="white" width="100vw" height="100vh" display="flex" flexDirection="column">
@@ -19,16 +20,29 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
     {/* Main Content Section for Image or Fallback Text */}
     <Box flex="1" display="flex" justifyContent="center" alignItems="center" position="absolute" width="100vw" zIndex={0}>
       {screenData?.file?.url ? (
-        <Image 
-          src={screenData.file.url} 
-          alt={screenData.name} 
-          width="100%" 
-          height="100vh" 
-          objectFit="contain"
-        />
-      ) : (
-        <Text>No media available for this cue.</Text>
-      )}
+          isImage(screenData.file) ? (
+            <Image
+              src={screenData.file.url}
+              alt={screenData.name}
+              width="100%"
+              height="100vh"
+              objectFit="contain"
+            />
+          ) : (
+            <video
+              src={screenData.file.url}
+              width="100%"
+              height="100%"
+              controls
+              autoPlay
+              loop
+              muted
+              style={{ objectFit: "contain" }}
+          />
+          )
+        ) : (
+          <Text>No media available for this cue.</Text>
+        )}
     </Box>
   </Box>
 )

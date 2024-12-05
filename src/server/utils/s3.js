@@ -92,9 +92,8 @@ const getFileType = async (cue, presentationId) => {
     const response = await fetch(url, { method: "HEAD" })
     const contentType = response.headers.get("Content-Type")
     if (contentType) {
-      const fileType = contentType
-      console.log("fileType:", fileType)
-      return fileType
+      cue.file.type = contentType
+      return cue
     } else {
       throw new Error("Content-Type header is missing.")
     }
