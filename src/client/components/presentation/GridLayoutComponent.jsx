@@ -25,9 +25,10 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
       if (cueToRemove) {
         try {
           await dispatch(removeCue(id, cueToRemove))
+          const cue = cues.find(cue => cue._id === cueToRemove)
           showToast({
             title: "Element removed",
-            description: `Element with ID ${cueToRemove} has been removed.`,
+            description: `Element ${cue.name} has been removed.`,
             status: "success",
           })
         } catch (error) {
