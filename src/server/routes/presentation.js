@@ -105,7 +105,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
-    console.log(cuenumber, "number")
 /*  Limiter for the maximum amount of files, disabled
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
@@ -143,9 +142,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     }
 
     updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
-
     res.json(updatedPresentation)
-
     return res.status(204).end()
   } catch (error) {
     logger.info("Error:", error)
@@ -156,8 +153,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
   try {
     const { id, cueId } = req.params
-    const { file, user } = req
-    const { index, screen, cueName } = req.body
+    const { file } = req
+    const { index, screen, cueName, image } = req.body
 
     if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -176,6 +173,16 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     cue.index = index
     cue.screen = screen
     cue.name = cueName
+    
+    if (image === "/blank.png") {
+      const newFileId = generateFileId()
+      cue.file = {
+        id: newFileId,
+        name: "blank.png",
+        url: null,
+      }
+    }
+    
 
     if (file) {
       const newFileId = generateFileId()
@@ -198,12 +205,10 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
         return res.status(500).json({ error: "File upload failed" })
       }
     }
-
     await presentation.save()
 
     const updatedCue = await processCueFiles([cue], id)
     res.json(updatedCue[0])
-
   } catch (error) {
     console.error("Error:", error)
     res.status(500).json({ error: "Internal server error" })

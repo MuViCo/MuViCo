@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, Box, Text } from "@chakra-ui/react"
+import { Button, Flex, Box } from "@chakra-ui/react"
 import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -9,6 +9,8 @@ import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
 import { createFormData } from "../utils/formDataUtils"
 import { createCue } from "../../redux/presentationReducer"
+import Dialog from "../utils/AlertDialog"
+
 /**
  * Renders the presentation page.
  *
@@ -23,9 +25,13 @@ const PresentationPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const showToast = useCustomToast()
+
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [presentationToDelete, setPresentationToDelete] = useState(null)
+  // Fetch presentation info from Redux state
 
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
@@ -66,23 +72,30 @@ const PresentationPage = () => {
     }
   }
 
+  const handleDeletePresentation = (presentationId) => {
+    setPresentationToDelete(presentationId)
+    setIsDialogOpen(true)
+  }
 
-  const handleDeletePresentation = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this presentation?"))
-      return // eslint-disable-line
-    try {
-      await dispatch(deletePresentation(id))
-      navigate("/home")
+  const handleConfirmDelete = async () => {
+    if (presentationToDelete) {
+      try {
+        await dispatch(deletePresentation(presentationToDelete))
+        showToast({
+          title: "Presentation deleted",
+          description: "The presentation has been deleted successfully.",
+          status: "success",
+        })
+        navigate("/home")
+      } catch (error) {
+        showToast({
+          title: "Error",
+          description: error.message || "An error occurred",
+          status: "error",
+        })
+      }
     }
-    catch (error) {
-      console.error(error)
-      const errorMessage = error.message || "An error occurred"
-      showToast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-      })
-    }
+    setIsDialogOpen(false)
   }
 
   return (
@@ -107,8 +120,14 @@ const PresentationPage = () => {
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode cues={presentationInfo}  />}
-            <EditMode id={id} cues={presentationInfo} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} addBlankCue={addBlankCue}/>
+            <EditMode id={id} cues={presentationInfo} isToolboxOpen={isToolboxOpen} setIsToolboxOpen={setIsToolboxOpen} />
           </Box>
+          <Dialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onConfirm={handleConfirmDelete}
+          message="Are you sure you want to delete this presentation?"
+          />
         </Box>
       )}
     </>

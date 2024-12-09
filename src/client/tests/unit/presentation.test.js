@@ -34,4 +34,17 @@ describe("services tests", () => {
     const response = await presentation.addFile("1", "formData")
     expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "added" }))
   })
+
+  test("presentation service calls updateCue", async () => {
+    const updateCue = jest.fn()
+    presentation.updateCue = updateCue
+    updateCue.mockResolvedValueOnce({ data: "updated" })
+    const formData = new FormData()
+    formData.append("index", 1)
+    formData.append("cueName", "testCue")
+    formData.append("screen", 1)
+    formData.append("file", new Blob(["file content"], { type: "text/plain" }), "test.txt")
+    const response = await presentation.updateCue("1", "1", formData)
+    expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
+  })
 })

@@ -9,11 +9,12 @@ import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) => {
+const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
@@ -22,6 +23,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
   const [doubleClickPosition, setDoubleClickPosition] = useState({ xIndex: 0, yIndex: 0 })
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmMessage, setConfirmMessage] = useState("")
+  const [confirmAction, setConfirmAction] = useState(() => () => {})
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
@@ -71,25 +76,20 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
 
   
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file } = cueData  
-   // Check if cue is the first cue to be added to the screen
-    const screenCues = cues.filter(
-      (cue) => cue.screen === Number(screen)
-    )
-    if (screenCues.length === 0) {
-      await addBlankCue(screen)
-    }
+    const { index, cueName, screen, file, fileName } = cueData  
   
     //Check if cue with same index and screen already exists
-    const cueExists = cues.some(
+    const cueExists = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      showToast({
-        title: "Element already exists",
-        description: `Element with index ${index} already exists on screen ${screen}`,
-        status: "error",
+      setConfirmMessage(`Cue ${index} element already exists on screen ${screen}. Do you want to update it?`)
+      setConfirmAction(() => async () => {
+        const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
+        await updateCue(cueExists._id, updatedCue)
+        setIsConfirmOpen(false)
       })
+      setIsConfirmOpen(true)
       return
     }
   
@@ -136,13 +136,22 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const updateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
-      await dispatch(updatePresentation(id, updatedCue))
-      console.log("updated cue with file", updatedCue.file)
+      await dispatch(updatePresentation(id, updatedCue, cueId))
       setTimeout(() => {
         setStatus("saved")
+        showToast({
+          title: "Element updated",
+          description: `Element ${updatedCue.cueName} updated on screen ${updatedCue.screen}`,
+          status: "success",
+        })
       }, 300)
     } catch (error) {
-      console.error(error) 
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
     }
   }
 
@@ -173,11 +182,16 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     if (mediaFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
       if (cueExists(xIndex, yIndex)) {
-        showToast({
-          title: "Element already exists",
-          description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
-          status: "error",
+        setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
+        setConfirmAction(() => async () => {
+          const existingCue = cues.find(
+            (cue) => cue.index === xIndex && cue.screen === yIndex
+          )
+          const updatedCue = { ...existingCue, index: xIndex, cueName: imageFiles[0].name, screen: yIndex, file: imageFiles[0] }
+          await updateCue(existingCue._id, updatedCue)
+          setIsConfirmOpen(false)
         })
+        setIsConfirmOpen(true)
         return
       }
 
@@ -200,7 +214,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
         })
       }
     }
-  }, [dispatch, gap, rowHeight, columnWidth, id])
+  }, [dispatch, gap, rowHeight, columnWidth, id, cues])
 
   return (
     <ChakraProvider theme={theme}>
@@ -306,6 +320,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
           onClose={() => setIsToolboxOpen(false)}
           position={doubleClickPosition}
           addCue={addCue}
+        />
+        <Dialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={confirmAction}
+          message={confirmMessage}
         />
       </div>
     </ChakraProvider>
