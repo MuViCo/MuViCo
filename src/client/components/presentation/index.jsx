@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, Box } from "@chakra-ui/react"
+import { Button, Flex, Box, Text } from "@chakra-ui/react"
 import { fetchPresentationInfo, deletePresentation } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
-import { createFormData } from "../utils/formDataUtils"
-import { createCue } from "../../redux/presentationReducer"
 import Dialog from "../utils/AlertDialog"
 
 /**
@@ -52,25 +50,6 @@ const PresentationPage = () => {
     }
   }
 
-  const addBlankCue = async (screen) => {
-    
-    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
-    try {
-      await dispatch(createCue(id, formData))
-      showToast({
-        title: "Element added",
-        description: `Initial element added to screen ${screen}`,
-        status: "success",
-      })
-    } catch (error) {
-      const errorMessage = error.message || "An error occurred"
-      showToast({
-        title: "Error",
-        description: errorMessage,  
-        status: "error",
-      })
-    }
-  }
 
   const handleDeletePresentation = (presentationId) => {
     setPresentationToDelete(presentationId)

@@ -173,16 +173,6 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     cue.index = index
     cue.screen = screen
     cue.name = cueName
-    
-    if (image === "/blank.png") {
-      const newFileId = generateFileId()
-      cue.file = {
-        id: newFileId,
-        name: "blank.png",
-        url: null,
-      }
-    }
-    
 
     if (file) {
       const newFileId = generateFileId()
