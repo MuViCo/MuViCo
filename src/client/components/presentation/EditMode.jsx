@@ -187,7 +187,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
           const existingCue = cues.find(
             (cue) => cue.index === xIndex && cue.screen === yIndex
           )
-          const updatedCue = { ...existingCue, index: xIndex, cueName: imageFiles[0].name, screen: yIndex, file: imageFiles[0] }
+          const updatedCue = { ...existingCue, index: xIndex, cueName: mediaFiles[0].name, screen: yIndex, file: mediaFiles[0] }
           await updateCue(existingCue._id, updatedCue)
           setIsConfirmOpen(false)
         })
