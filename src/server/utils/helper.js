@@ -19,9 +19,13 @@ const processCueFiles = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
       await generateSignedUrlForCue(cue, presentationId)
-      if (cue.file.url !== "/src/server/public/blank.png") {
+      if (cue.file.url === "/src/server/public/blank.png" || cue.file.url === "/blank.png") {
+        cue.file.size = 0
+        cue.file.type = "image/png"
+      } else
+      if (cue.file.url !== "/src/server/public/blank.png" || cue.file.url !== "/blank.png") {
         await getFileSize(cue, presentationId)
-        const fileType = await getFileType(cue, presentationId)
+        await getFileType(cue, presentationId)
       }
       return cue
     })
