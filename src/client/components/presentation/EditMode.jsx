@@ -177,9 +177,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const handleDrop = useCallback(async (event) => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+    const mediaFiles = files.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
 
-    if (imageFiles.length > 0 && containerRef.current) {
+    if (mediaFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
       if (cueExists(xIndex, yIndex)) {
         setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
@@ -195,8 +195,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         return
       }
 
-      const file = imageFiles[0]
-
+      const file = mediaFiles[0]
       const formData = createFormData(xIndex, file.name, yIndex, file)
 
       try {

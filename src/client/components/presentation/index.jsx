@@ -7,6 +7,8 @@ import { useDispatch, useSelector } from "react-redux"
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
+import { createFormData } from "../utils/formDataUtils"
+import { createCue } from "../../redux/presentationReducer"
 import Dialog from "../utils/AlertDialog"
 
 /**
@@ -24,11 +26,13 @@ const PresentationPage = () => {
   const navigate = useNavigate()
   const showToast = useCustomToast()
 
+  const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
   // Fetch presentation info from Redux state
+
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
   useEffect(() => {
@@ -37,6 +41,35 @@ const PresentationPage = () => {
 
   const handleShowMode = () => {
     setShowMode(!showMode)
+  }
+
+  if (presentationInfo) {
+    const totalSize = presentationInfo.reduce((sum, cue) => {
+      return cue.file ? sum + parseInt(cue.file.size) : sum
+    }, 0)
+       if (presentationSize != (totalSize / (1024 * 1024)).toFixed(2)) {
+      setPresentationSize((totalSize / (1024 * 1024)).toFixed(2))
+    }
+  }
+
+  const addBlankCue = async (screen) => {
+    
+    const formData = createFormData(0, `initial element for screen ${screen}`, screen, "/blank.png")
+    try {
+      await dispatch(createCue(id, formData))
+      showToast({
+        title: "Element added",
+        description: `Initial element added to screen ${screen}`,
+        status: "success",
+      })
+    } catch (error) {
+      const errorMessage = error.message || "An error occurred"
+      showToast({
+        title: "Error",
+        description: errorMessage,  
+        status: "error",
+      })
+    }
   }
 
   const handleDeletePresentation = (presentationId) => {
@@ -83,6 +116,7 @@ const PresentationPage = () => {
                 </Button>
               </>
             )}
+            <Text alignSelf="center">{presentationSize} MB</Text>
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode cues={presentationInfo}  />}
