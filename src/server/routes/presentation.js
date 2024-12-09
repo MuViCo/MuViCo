@@ -1,13 +1,14 @@
 const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
-const { uploadFile, deleteFile, getObjectSignedUrl } = require("../utils/s3")
+const { type } = require("os")
+const { uploadFile, deleteFile } = require("../utils/s3")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
-
+const { generateSignedUrlForCue } = require("../utils/helper")
 const logger = require("../utils/logger")
-
+const { processCueFiles } = require("../utils/helper")
 const router = express.Router()
 
 const storage = multer.memoryStorage()
@@ -56,17 +57,7 @@ router.get("/:id", userExtractor, async (req, res) => {
       presentation &&
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
-      presentation.files = await Promise.all(
-        presentation.cues.map(async (cue) => {
-          if (typeof cue.file.url === "string") {
-            const key = `${id}/${cue.file.id.toString()}`
-            cue.file.url = await getObjectSignedUrl(key)
-          } else {
-            cue.file.url = " /src/client/public/blank.png"
-          }
-          return cue
-        })
-      )
+      presentation.cues = await processCueFiles(presentation.cues, id)
       res.json(presentation)
     } else {
       res.status(404).end()
@@ -114,16 +105,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
-    console.log(cuenumber, "number")
-
+/*  Limiter for the maximum amount of files, disabled
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
         .status(401)
         .json({ error: "Maximum number of files reached (10)" })
     }
-
-    if (file && file.size > 1 * 1024 * 1024 && !user.isAdmin) {
-      return res.status(400).json({ error: "File size exceeds 1 MB limit" })
+*/
+    if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+      return res.status(400).json({ error: "File size exceeds 50 MB limit" })
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
@@ -151,8 +141,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
+    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
     res.json(updatedPresentation)
-
     return res.status(204).end()
   } catch (error) {
     logger.info("Error:", error)
@@ -163,8 +153,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
   try {
     const { id, cueId } = req.params
-    const { file, user } = req
-    const { index, screen, cueName } = req.body
+    const { file } = req
+    const { index, screen, cueName, image } = req.body
 
     if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -179,7 +169,6 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
     if (!cue) {
       return res.status(404).json({ error: "Cue not found" })
     }
-
     // Update cue fields
     cue.index = index
     cue.screen = screen
@@ -200,15 +189,16 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
           name: file.originalname,
           url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
         }
+        await generateSignedUrlForCue(cue, id)
       } catch (error) {
         console.error("File upload error:", error)
         return res.status(500).json({ error: "File upload failed" })
       }
-    
     }
-
     await presentation.save()
-    res.json(presentation)
+
+    const updatedCue = await processCueFiles([cue], id)
+    res.json(updatedCue[0])
   } catch (error) {
     console.error("Error:", error)
     res.status(500).json({ error: "Internal server error" })

@@ -1,44 +1,49 @@
-import React from "react"
+import React, { useState } from "react"
 import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
 import { CloseIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, fetchPresentationInfo, removeCue } from "../../redux/presentationReducer"
-import { useToast } from "@chakra-ui/react"
+import { updatePresentation, removeCue } from "../../redux/presentationReducer"
+import { useCustomToast } from "../utils/toastUtils"
+import Dialog from "../utils/AlertDialog"
 
 const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeight, gap }) => {
-
+    const showToast = useCustomToast()
     const dispatch = useDispatch()
-    const toast = useToast()
 
-    const handleRemoveItem = async (cueId) => {
-        if (!window.confirm("Are you sure you want to delete this element?")) return
-    
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [cueToRemove, setCueToRemove] = useState(null)
+
+    const handleRemoveItem = (cueId) => {
+      setCueToRemove(cueId)
+      setIsDialogOpen(true)
+    }
+
+    const handleConfirmRemove = async () => {
+      if (cueToRemove) {
         try {
-          await dispatch(removeCue(id, cueId))
-          toast({
+          await dispatch(removeCue(id, cueToRemove))
+          const cue = cues.find(cue => cue._id === cueToRemove)
+          showToast({
             title: "Element removed",
-            description: `Element with ID ${cueId} has been removed.`,
+            description: `Element ${cue.name} has been removed.`,
             status: "success",
-            position: "top",
-            duration: 3000,
-            isClosable: true,
           })
         } catch (error) {
           console.error(error)
           const errorMessage = error.message || "An error occurred"
-          toast({
+          showToast({
             title: "Error",
             description: errorMessage,
             status: "error",
-            position: "top",
-            duration: 3000,
-            isClosable: true,
           })
         }
       }
+      setIsDialogOpen(false)
+    }
+
 
     const handlePositionChange = async (layout, oldItem, newItem) => {
 
@@ -54,16 +59,13 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
         if (cue) {
           movedCue.cueName = cue.name
         }
-
         
         if (movedCue) {
           setStatus("loading")
           try {
             await dispatch(updatePresentation(id, movedCue))
-            await dispatch(fetchPresentationInfo(id))
             setTimeout(() => {
               setStatus("saved")
-              dispatch(fetchPresentationInfo(id))
             }, 300)
           } catch (error) {
             console.error(error) 
@@ -117,11 +119,28 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
                     handleRemoveItem(cue._id)
                   }}
                 />
-                <img
-                  src={cue.file.url}
-                  alt={cue.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
-                />
+                
+                {cue.file.type.startsWith("video/") ? ( // Thumbail for video
+                      <video
+                      src={cue.file.url}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: "10px",
+                      }}
+                      muted
+                      playsInline
+                      controls={false}
+                    />
+                ) :
+                <img                                   // Thumbail for image
+                    src={cue.file.url}
+                    alt={cue.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
+                  />
+                }
+
                 <Tooltip label={cue.name} placement="top" hasArrow>
                   <Text
                     position="absolute"
@@ -147,6 +166,12 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
                   </Text>
                 </Tooltip>
               </Box>
+              <Dialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onConfirm={handleConfirmRemove}
+                message="Are you sure you want to remove this element?"
+              />
             </div>
           ))}
         </GridLayout>

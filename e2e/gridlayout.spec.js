@@ -1,3 +1,4 @@
+import { time } from "console"
 import { loginWith, addPresentation, addBlankCue } from "./helper"
 
 const { test, describe, expect, beforeEach, chromium } = require("@playwright/test")
@@ -40,22 +41,20 @@ describe("GridLayout", () => {
         page.reload()
 
         await addBlankCue(page, "testcue_ver", "2", "2")
-        await expect(page.getByText("Element with index 2 already exists on screen 2").first()).toBeVisible()
+        await expect(page.getByText("Element already exists on screen 2. Do you want to update it?").first()).toBeVisible()
     })
 
     test("user can delete cue", async ({ page }) => {
-        await page.getByText("testi").click()
-
-        await addBlankCue(page, "testcue_del", "3", "3")
-        await page.getByRole("button", { name: "Delete testcue_del" }).click()
-
-        page.once('dialog', async dialog => {
-            expect(dialog.message()).toContain("Are you sure you want to delete this element?")
-            await dialog.accept()
-        })
-
-        await page.locator('button[aria-label="Delete testcue_del"]').click()
-        await expect(page.locator('[data-testid="cue-testcue_del"]')).not.toBeVisible()
+      await page.getByText("testi").click()
+  
+      await addBlankCue(page, "testcue_del", "3", "3")
+      await page.getByRole("button", { name: "Delete testcue_del" }).click()
+  
+      // Interact with the ConfirmationDialog
+      await expect(page.getByText("Are you sure you want to remove this element?")).toBeVisible()
+      await page.getByRole('button', { name: 'Yes' }).click()
+  
+      await expect(page.locator('[data-testid="cue-testcue_del"]')).not.toBeVisible()
     })
 
     test('should add a cue by dragging and dropping a file', async ({ page }) => {
@@ -91,5 +90,44 @@ describe("GridLayout", () => {
       await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
     })
 
+    test('user can rename cue', async ({ page }) => {
+        await page.getByText("testi").click()
+        await addBlankCue(page, "testcue", "1", "1")
 
+        const cue = page.getByTestId('cue-testcue')
+        await cue.hover()
+        await cue.dblclick()
+
+        await page.getByTestId('cue-name').fill("testcue_renamed")
+        await page.getByText('Submit').click()
+
+        await expect(page.getByText("testcue_renamed")).toBeVisible()
+    })
+
+    test('double click on empty space should open add element view', async ({ page }) => {
+        await page.getByText("testi").click()
+        const grid = page.locator('[data-testid="drop-area"]')
+        var box = (await grid.boundingBox())
+
+        await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
+        await expect(page.getByRole("heading", { name: "Add element" })).toBeVisible()
+    })
+
+    test("element is updated correctly", async ({ page }) => {
+      await page.getByText("testi").click()
+  
+      // Add initial element
+      await addBlankCue(page, "blank.png", "1", "1")
+      await expect(page.getByText("Element blank.png added to screen 1").first()).toBeVisible()
+      await expect(page.locator('[data-testid="cue-blank.png"]')).toBeVisible()
+  
+      // Attempt to add another element at the same position
+      await addBlankCue(page, "test.png", "1", "1")
+  
+      // Confirm the update
+      await page.getByRole('button', { name: 'Yes' }).click()
+  
+      await expect(page.getByText("Element test.png updated on screen 1").first()).toBeVisible()
+      await expect(page.locator('[data-testid="cue-test.png"]')).toBeVisible()
+    })
 })

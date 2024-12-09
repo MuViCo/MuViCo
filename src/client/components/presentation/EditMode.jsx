@@ -3,18 +3,19 @@ import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { useToast } from "@chakra-ui/react"
-import { updatePresentation, createCue, fetchPresentationInfo } from "../../redux/presentationReducer"
+import { updatePresentation, createCue } from "../../redux/presentationReducer"
 import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import Dialog from "../utils/AlertDialog"
+import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) => {
-  const toast = useToast()
+const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
+  const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
 
@@ -23,9 +24,38 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const [selectedCue, setSelectedCue] = useState(null)
   const [doubleClickPosition, setDoubleClickPosition] = useState({ xIndex: 0, yIndex: 0 })
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmMessage, setConfirmMessage] = useState("")
+  const [confirmAction, setConfirmAction] = useState(() => () => {})
+
   const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
+
+  const [isDragging, setIsDragging] = useState(false)
+  const clickTimeout = useRef(null)
+
+  const handleMouseDown = () => {
+    setIsDragging(false)
+  }
+
+  const handleMouseMove = () => {
+    setIsDragging(true)
+  }
+
+  const handleMouseUp = (event) => {
+    if (!isDragging) {
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current)
+        clickTimeout.current = null
+        handleDoubleClick(event)
+      } else {
+        clickTimeout.current = setTimeout(() => {
+          clickTimeout.current = null
+        }, 300)
+      }
+    }
+  }
 
   const layout = cues.map((cue) => {
     const position = {
@@ -47,59 +77,43 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData  
-   // Check if cue is the first cue to be added to the screen
-    const screenCues = cues.filter(
-      (cue) => cue.screen === Number(screen)
-    )
-    if (screenCues.length === 0) {
-      await addBlankCue(screen)
-    }
   
     //Check if cue with same index and screen already exists
-    const cueExists = cues.some(
+    const cueExists = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      toast({
-        title: "Element already exists",
-        description: `Element with index ${index} already exists on screen ${screen}`,
-        status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
+      setConfirmMessage(`Cue ${index} element already exists on screen ${screen}. Do you want to update it?`)
+      setConfirmAction(() => async () => {
+        const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
+        await updateCue(cueExists._id, updatedCue)
+        setIsConfirmOpen(false)
       })
+      setIsConfirmOpen(true)
       return
     }
   
     const formData = createFormData(index, cueName, screen, file || "/blank.png")
-    console.log("index, cueName, screen, file", index, cueName, screen, file)
   
     try {
       await dispatch(createCue(id, formData))
-      await dispatch(fetchPresentationInfo(id))
-      toast({
+      showToast({
         title: "Element added",
         description: `Element ${cueName} added to screen ${screen}`,
         status: "success",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     } catch (error) {
       const errorMessage = error.message
-      toast({
+      showToast({
         title: "Error",
         description: errorMessage,
         status: "error",
-        position: "top",
-        duration: 3000,
-        isClosable: true,
       })
     }
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(cue => cue.index === xIndex && cue.screen === yIndex)
+    return cues.some(cue => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -108,16 +122,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
     }
 
     const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-    console.log("click at", xIndex, yIndex)
     const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
-    console.log("cue found:", cue)
     
     if (cue) {
       setSelectedCue(cue)
       setIsEditOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
-   //   console.log('no cue found', xIndex, yIndex)
       setIsToolboxOpen(true)
     }
   }
@@ -125,14 +136,22 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const updateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
-      await dispatch(updatePresentation(id, updatedCue))
-      console.log("updated cue with file", updatedCue.file)
+      await dispatch(updatePresentation(id, updatedCue, cueId))
       setTimeout(() => {
         setStatus("saved")
-        dispatch(fetchPresentationInfo(id))
+        showToast({
+          title: "Element updated",
+          description: `Element ${updatedCue.cueName} updated on screen ${updatedCue.screen}`,
+          status: "success",
+        })
       }, 300)
     } catch (error) {
-      console.error(error) 
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
     }
   }
 
@@ -158,51 +177,44 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
   const handleDrop = useCallback(async (event) => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
-    const imageFiles = files.filter((file) => file.type.startsWith("image/"))
+    const mediaFiles = files.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
 
-    if (imageFiles.length > 0 && containerRef.current) {
+    if (mediaFiles.length > 0 && containerRef.current) {
       const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-
       if (cueExists(xIndex, yIndex)) {
-        toast({
-          title: "Element already exists",
-          description: `Element with index ${xIndex} already exists on screen ${yIndex}`,
-          status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
+        setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
+        setConfirmAction(() => async () => {
+          const existingCue = cues.find(
+            (cue) => cue.index === xIndex && cue.screen === yIndex
+          )
+          const updatedCue = { ...existingCue, index: xIndex, cueName: imageFiles[0].name, screen: yIndex, file: imageFiles[0] }
+          await updateCue(existingCue._id, updatedCue)
+          setIsConfirmOpen(false)
         })
+        setIsConfirmOpen(true)
         return
       }
 
-      const file = imageFiles[0]
-
+      const file = mediaFiles[0]
       const formData = createFormData(xIndex, file.name, yIndex, file)
 
       try {
         await dispatch(createCue(id, formData))
-        await dispatch(fetchPresentationInfo(id))
-        toast({
+        showToast({
           title: "Element added",
           description: `Element ${file.name} added to screen ${yIndex}`,
           status: "success",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       } catch (error) {
         const errorMessage = error.message || "An error occurred"
-        toast({
+        showToast({
           title: "Error",
           description: errorMessage,
           status: "error",
-          position: "top",
-          duration: 3000,
-          isClosable: true,
         })
       }
     }
-  }, [dispatch, gap, rowHeight, columnWidth, id])
+  }, [dispatch, gap, rowHeight, columnWidth, id, cues])
 
   return (
     <ChakraProvider theme={theme}>
@@ -236,7 +248,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
             ))}
           </Box>
   
-          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick}>
+          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <Box
               display="grid"
               gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
@@ -308,6 +320,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen, addBlankCue }) =>
           onClose={() => setIsToolboxOpen(false)}
           position={doubleClickPosition}
           addCue={addCue}
+        />
+        <Dialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={confirmAction}
+          message={confirmMessage}
         />
       </div>
     </ChakraProvider>
