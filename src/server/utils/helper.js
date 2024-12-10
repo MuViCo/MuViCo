@@ -12,7 +12,7 @@ const generateSignedUrlForCue = async (cue, presentationId) => {
       cue.file.url = "/blank.png"
     }
   }
-  return cue.file.url
+  return cue
 }
 
 const processCueFiles = async (cues, presentationId) => {
