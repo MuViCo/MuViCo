@@ -47,4 +47,17 @@ describe("services tests", () => {
     const response = await presentation.updateCue("1", "1", formData)
     expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
   })
+
+  test("presentation service calls updateCue with video", async () => {
+    const updateCue = jest.fn()
+    presentation.updateCue = updateCue
+    updateCue.mockResolvedValueOnce({ data: "updated" })
+    const formData = new FormData()
+    formData.append("index", 1)
+    formData.append("cueName", "testCue")
+    formData.append("screen", 1)
+    formData.append("file", new Blob(["video content"], { type: "video/mp4" }), "test.mp4")
+    const response = await presentation.updateCue("1", "1", formData)
+    expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
+  })
 })

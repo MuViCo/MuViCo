@@ -180,6 +180,7 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
         id: newFileId,
         name: "blank.png",
         url: null,
+        type: "image/png",
       }
     } 
 

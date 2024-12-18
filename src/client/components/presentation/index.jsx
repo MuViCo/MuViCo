@@ -95,7 +95,7 @@ const PresentationPage = () => {
                 </Button>
               </>
             )}
-            <Text alignSelf="center">{presentationSize} MB</Text>
+            <Text alignSelf="center" data-testid="presentationSize">{presentationSize} MB</Text>
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto"> {/* Adjust marginLeft to move the grid to the left */}
             {showMode && <ShowMode cues={presentationInfo}  />}
