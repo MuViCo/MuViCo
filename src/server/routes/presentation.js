@@ -57,6 +57,7 @@ router.get("/:id", userExtractor, async (req, res) => {
       presentation &&
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
+      // processCueFiles parces cues and gets them their file size and type
       presentation.cues = await processCueFiles(presentation.cues, id)
       res.json(presentation)
     } else {

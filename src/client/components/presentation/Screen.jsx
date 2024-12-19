@@ -17,9 +17,9 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       )}
     </Box>
 
-    {/* Main Content Section for Image or Fallback Text */}
     <Box flex="1" display="flex" justifyContent="center" alignItems="center" position="absolute" width="100vw" zIndex={0}>
       {screenData?.file?.url ? (
+        // If data is an image
           isImage(screenData.file) ? (
             <Image
               src={screenData.file.url}
@@ -29,6 +29,7 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
               objectFit="contain"
             />
           ) : (
+        // If data is a video
             <video
               src={screenData.file.url}
               width="100%"
@@ -40,6 +41,7 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
           />
           )
         ) : (
+        // If no data
           <Text>No media available for this cue.</Text>
         )}
     </Box>
@@ -110,6 +112,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [screenData])
 
+  // Listeners for shift-press to show screen data on screens
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Shift") {

@@ -41,6 +41,8 @@ const PresentationPage = () => {
     setShowMode(!showMode)
   }
 
+  // Calculates the total presentation size for display
+  // Currently no limitations regarding total size, but possible to implement with this if needed
   if (presentationInfo) {
     const totalSize = presentationInfo.reduce((sum, cue) => {
       return cue.file ? sum + parseInt(cue.file.size) : sum
