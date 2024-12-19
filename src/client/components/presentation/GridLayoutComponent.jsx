@@ -44,7 +44,10 @@ const GridLayoutComponent = ({ id, layout, cues, setStatus, columnWidth, rowHeig
       setIsDialogOpen(false)
     }
 
-
+    /**
+     * Do not remove the `layout` parameter from the `handlePositionChange` function.
+     * It is required for the function to work correctly.
+     */
     const handlePositionChange = async (layout, oldItem, newItem) => {
 
         if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
