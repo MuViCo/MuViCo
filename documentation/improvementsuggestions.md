@@ -1,21 +1,9 @@
 
 # Future Improvement Suggestions
 
- #### Migrate from Window Objects to React Components in Show Mode:
-
-- Consider refactoring the existing codebase to utilize React components instead of JavaScript window objects in the show mode. This will enhance code maintainability, scalability, and overall user experience and enable preloading the media so that internet connection during the show isn't an issue.
-
-#### **Implement Google Login:**
-
-- Integrate Google login functionality to provide users with a seamless authentication experience. This will enhance user convenience and security.
-
 #### **Diversify Media Content:**
 
-- Expand the variety of media content by incorporating features such as looping videos. This will enrich the user experience and provide more engaging content.
-
-#### **Enhance Login and Signup Processes:**
-
-- Improve the login and signup flows by ensuring that tokens work seamlessly on the frontend. This will optimize user authentication and enhance security measures.
+- Expand the variety of supported video files. This will enrich the user experience and provide more flexibility.
 
 #### **Enable Lyrics Addition:**
 
@@ -24,4 +12,12 @@
 #### **Expand number of outputs:**
 
 - Right now the screen capacity is limited at 4 screens. Explore different options for expanding this capacity.
+
+### **Introduce effect features**
+
+- Effects could be both audio and visual, such as sound- and transition effects to enrich the user experience.
+
+### **Random element**
+
+- Introduce a new type of element which contains a pool of media that gets displayed randomly for the duration of the element. This makes it easier for the user to generate bigger presentations where the order of the media isn't relevant.
    

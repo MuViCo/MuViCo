@@ -2,8 +2,7 @@
 
 ### Normal user:
 - Creating an account via signup creates a "normal user"
-- Presentations have a limit of 10 pieces of media
-- Media size is limited to 1Mb maximum
+- Media size is limited to 50Mb maximum
 
 ### Admin:
 - Admin has the power to:
