@@ -80,7 +80,16 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               mb={4}
               min={1}
               max={350}
-              onChange={setIndex}
+              onChange={(value) => {
+                const intValue = parseInt(value, 10)
+                if (isNaN(intValue)) {
+                  // Prevent invalid inputs like "e" or "."
+                  // NumberInput retains last valid value
+                  setIndex("")
+                } else {
+                  setIndex(intValue)
+                }
+              }}
               required
             >
               <NumberInputField data-testid="index-number" />
@@ -95,7 +104,16 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               mb={4}
               min={1}
               max={4}
-              onChange={setScreen}
+              onChange={(value) => {
+                const intValue = parseInt(value, 10)
+                if (isNaN(intValue)) {
+                  // Prevent invalid inputs like "e" or "."
+                  // NumberInput retains last valid value
+                  setScreen("")
+                } else {
+                  setScreen(intValue)
+                }
+              }}
               required
             >
               <NumberInputField data-testid="screen-number" />

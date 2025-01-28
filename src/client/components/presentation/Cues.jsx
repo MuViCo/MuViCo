@@ -64,7 +64,23 @@ const CuesForm = ({ addCue, onClose, position }) => {
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
+        <NumberInput
+          value={index}
+          mb={4}
+          min={1}
+          max={350}
+          onChange={(value) => {
+            const intValue = parseInt(value, 10)
+            if (isNaN(intValue)) {
+              // Prevent invalid inputs like "e" or "."
+              // NumberInput retains last valid value
+              setIndex("")
+            } else {
+              setIndex(intValue)
+            }
+          }}
+          required
+        >
           <NumberInputField data-testid="index-number" />
           <NumberInputStepper>
             <NumberIncrementStepper />
@@ -86,7 +102,16 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={4}
-          onChange={setScreen}
+          onChange={(value) => {
+            const intValue = parseInt(value, 10)
+            if (isNaN(intValue)) {
+              // Prevent invalid inputs like "e" or "."
+              // NumberInput retains last valid value
+              setScreen("")
+            } else {
+              setScreen(intValue)
+            }
+          }}
           required
         >
           <NumberInputField data-testid="screen-number" />
