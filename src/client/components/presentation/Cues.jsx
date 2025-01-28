@@ -9,7 +9,7 @@ import {
   Input,
   Button,
   Heading,
-  Divider
+  Divider,
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
 
@@ -29,7 +29,7 @@ const CuesForm = ({ addCue, onClose, position }) => {
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
-  
+
   useEffect(() => {
     if (position) {
       setIndex(position.index)
@@ -65,9 +65,9 @@ const CuesForm = ({ addCue, onClose, position }) => {
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
         <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
-          <NumberInputField data-testid="index-number"/>
+          <NumberInputField data-testid="index-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
@@ -89,9 +89,9 @@ const CuesForm = ({ addCue, onClose, position }) => {
           onChange={setScreen}
           required
         >
-          <NumberInputField  data-testid="screen-number"/>
+          <NumberInputField data-testid="screen-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
