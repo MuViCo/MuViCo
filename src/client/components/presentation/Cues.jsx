@@ -10,9 +10,10 @@ import {
   Button,
   Heading,
   Divider,
+  Tooltip,
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
-
+import { LuInfo } from "react-icons/lu"
 import { useState, useEffect } from "react"
 
 import {
@@ -110,7 +111,26 @@ const CuesForm = ({ addCue, onClose, position }) => {
           </NumberInputStepper>
         </NumberInput>
         <Divider orientation="horizontal" my={4} />
-        <FormHelperText mb={2}>Upload media</FormHelperText>
+        <FormHelperText mb={2}>
+          Upload media
+          <Tooltip
+            label={
+              <>
+                <strong>Valid image types: </strong>.png, .bmp, .jpeg, .jpg,
+                .jpe, .jfif, .gif, .cur, .ico
+                <br />
+                <strong>Valid video types: </strong> .mp4, .webm and .ogg
+              </>
+            }
+            placement="right-end"
+            p={2}
+            fontSize="sm"
+          >
+            <Button variant="ghost" size="xs" marginLeft={2}>
+              <LuInfo />
+            </Button>
+          </Tooltip>
+        </FormHelperText>
         <label htmlFor="file-upload">
           <Button as="span" cursor="pointer" w={40} mr={2}>
             Upload media
