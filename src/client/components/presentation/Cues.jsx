@@ -9,11 +9,17 @@ import {
   Input,
   Button,
   Heading,
-  Divider
+  Divider,
+  Tooltip,
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
-
+import { LuInfo } from "react-icons/lu"
 import { useState, useEffect } from "react"
+
+import {
+  handleNumericInputChange,
+  validateAndSetNumber,
+} from "../utils/numberInputUtils"
 
 /**
  * Renders a form for adding cues.
@@ -29,7 +35,7 @@ const CuesForm = ({ addCue, onClose, position }) => {
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
-  
+
   useEffect(() => {
     if (position) {
       setIndex(position.index)
@@ -64,10 +70,18 @@ const CuesForm = ({ addCue, onClose, position }) => {
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
-          <NumberInputField data-testid="index-number"/>
+        <NumberInput
+          value={index}
+          mb={4}
+          min={1}
+          max={350}
+          onChange={handleNumericInputChange(setIndex)}
+          onBlur={validateAndSetNumber(setIndex, 1, 350)}
+          required
+        >
+          <NumberInputField data-testid="index-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
@@ -86,17 +100,37 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={4}
-          onChange={setScreen}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
           required
         >
-          <NumberInputField  data-testid="screen-number"/>
+          <NumberInputField data-testid="screen-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
         <Divider orientation="horizontal" my={4} />
-        <FormHelperText mb={2}>Upload media</FormHelperText>
+        <FormHelperText mb={2}>
+          Upload media
+          <Tooltip
+            label={
+              <>
+                <strong>Valid image types: </strong>.png, .bmp, .jpeg, .jpg,
+                .jpe, .jfif, .gif, .cur, .ico
+                <br />
+                <strong>Valid video types: </strong> .mp4, .webm and .ogg
+              </>
+            }
+            placement="right-end"
+            p={2}
+            fontSize="sm"
+          >
+            <Button variant="ghost" size="xs" marginLeft={2}>
+              <LuInfo />
+            </Button>
+          </Tooltip>
+        </FormHelperText>
         <label htmlFor="file-upload">
           <Button as="span" cursor="pointer" w={40} mr={2}>
             Upload media
