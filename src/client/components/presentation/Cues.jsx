@@ -16,6 +16,11 @@ import { CheckIcon } from "@chakra-ui/icons"
 import { LuInfo } from "react-icons/lu"
 import { useState, useEffect } from "react"
 
+import {
+  handleNumericInputChange,
+  validateAndSetNumber,
+} from "../utils/numberInputUtils"
+
 /**
  * Renders a form for adding cues.
  *
@@ -65,7 +70,15 @@ const CuesForm = ({ addCue, onClose, position }) => {
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
+        <NumberInput
+          value={index}
+          mb={4}
+          min={1}
+          max={350}
+          onChange={handleNumericInputChange(setIndex)}
+          onBlur={validateAndSetNumber(setIndex, 1, 350)}
+          required
+        >
           <NumberInputField data-testid="index-number" />
           <NumberInputStepper>
             <NumberIncrementStepper />
@@ -87,7 +100,8 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={4}
-          onChange={setScreen}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
           required
         >
           <NumberInputField data-testid="screen-number" />
