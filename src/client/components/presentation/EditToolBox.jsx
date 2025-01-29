@@ -19,6 +19,11 @@ import {
 } from "@chakra-ui/react"
 import { useEffect, useState } from "react"
 
+import {
+  handleNumericInputChange,
+  validateAndSetNumber,
+} from "../utils/numberInputUtils"
+
 const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
   const [cueName, setCueName] = useState(cueData.name)
   const [index, setIndex] = useState(cueData.index)
@@ -79,17 +84,9 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               value={index}
               mb={4}
               min={1}
-              max={350}
-              onChange={(value) => {
-                const intValue = parseInt(value, 10)
-                if (isNaN(intValue)) {
-                  // Prevent invalid inputs like "e" or "."
-                  // NumberInput retains last valid value
-                  setIndex("")
-                } else {
-                  setIndex(intValue)
-                }
-              }}
+              max={100}
+              onChange={handleNumericInputChange(setIndex)}
+              onBlur={validateAndSetNumber(setIndex, 1, 100)}
               required
             >
               <NumberInputField data-testid="index-number" />
@@ -104,16 +101,8 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               mb={4}
               min={1}
               max={4}
-              onChange={(value) => {
-                const intValue = parseInt(value, 10)
-                if (isNaN(intValue)) {
-                  // Prevent invalid inputs like "e" or "."
-                  // NumberInput retains last valid value
-                  setScreen("")
-                } else {
-                  setScreen(intValue)
-                }
-              }}
+              onChange={handleNumericInputChange(setScreen)}
+              onBlur={validateAndSetNumber(setScreen, 1, 4)}
               required
             >
               <NumberInputField data-testid="screen-number" />

@@ -15,6 +15,11 @@ import { CheckIcon } from "@chakra-ui/icons"
 
 import { useState, useEffect } from "react"
 
+import {
+  handleNumericInputChange,
+  validateAndSetNumber,
+} from "../utils/numberInputUtils"
+
 /**
  * Renders a form for adding cues.
  *
@@ -69,16 +74,8 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={350}
-          onChange={(value) => {
-            const intValue = parseInt(value, 10)
-            if (isNaN(intValue)) {
-              // Prevent invalid inputs like "e" or "."
-              // NumberInput retains last valid value
-              setIndex("")
-            } else {
-              setIndex(intValue)
-            }
-          }}
+          onChange={handleNumericInputChange(setIndex)}
+          onBlur={validateAndSetNumber(setIndex, 1, 350)}
           required
         >
           <NumberInputField data-testid="index-number" />
@@ -102,16 +99,8 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={4}
-          onChange={(value) => {
-            const intValue = parseInt(value, 10)
-            if (isNaN(intValue)) {
-              // Prevent invalid inputs like "e" or "."
-              // NumberInput retains last valid value
-              setScreen("")
-            } else {
-              setScreen(intValue)
-            }
-          }}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
           required
         >
           <NumberInputField data-testid="screen-number" />
