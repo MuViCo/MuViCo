@@ -104,6 +104,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
+        // Validate index range
+    if (req.body.index < 1 || req.body.index > 100) {
+      return res.status(400).json({ error: "Index must be between 0 and 100" })
+    }
+
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
 /*  Limiter for the maximum amount of files, disabled
@@ -159,6 +164,11 @@ router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res
 
     if (!id || !index || !screen || !cueId || !cueName) {
       return res.status(400).json({ error: "Missing required fields" })
+    }
+
+    // Validate index range
+    if (index < 1 || index > 100) {
+      return res.status(400).json({ error: "Index must be between 0 and 100" })
     }
 
     const presentation = await Presentation.findById(id)
