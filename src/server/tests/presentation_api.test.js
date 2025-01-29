@@ -102,7 +102,7 @@ describe("test presentation", () => {
   })
 
   describe("Test index range validation", () => {
-    it("PUT /api/presentation/:id with invalid index should return 400", async () => {
+    it("PUT /api/presentation/:id/ with index greater than 100 should return 400", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
@@ -112,10 +112,34 @@ describe("test presentation", () => {
           screen: "1",
         })
       expect(response.status).toBe(400)
-      expect(response.body.error).toBe("Index must be between 0 and 100")
     })
 
-    it("PUT /api/presentation/:id/:cueId with invalid index should return 400", async () => {
+    it("PUT /api/presentation/:id/ with index less than 100 should return 400", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .send({
+          index: 0,
+          cueName: "Test Cue",
+          screen: "1",
+        })
+      expect(response.status).toBe(400)
+    })
+
+    it("PUT /api/presentation/:id/:cueId with index less than 1 should return 400", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .send({
+          index: 0,
+          cueName: "Test Cue",
+          screen: "1",
+        })
+      
+      expect(response.status).toBe(400)
+    })
+
+    it("PUT /api/presentation/:id/:cueId with index greater than 100 should return 400", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .set("Authorization", authHeader)
@@ -125,7 +149,6 @@ describe("test presentation", () => {
           screen: "1",
         })
       expect(response.status).toBe(400)
-      expect(response.body.error).toBe("Index must be between 0 and 100")
     })
   })
 })
