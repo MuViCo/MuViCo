@@ -28,7 +28,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
 
-  const xLabels = Array.from({ length: 101 }, (_, index) => `Cue ${index}`)
+  const xLabels = Array.from({ length: 101 }, (_, index) => `Index ${index}`)
   const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
   const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
 
