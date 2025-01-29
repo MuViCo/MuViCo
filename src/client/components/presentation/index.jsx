@@ -113,7 +113,7 @@ const PresentationPage = () => {
               </>
             )}
             <Text alignSelf="center" data-testid="presentationSize">
-              {presentationSize} MB
+              {presentationSize} MB / 50 MB
             </Text>
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
