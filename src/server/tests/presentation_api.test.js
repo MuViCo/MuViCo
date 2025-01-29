@@ -11,6 +11,7 @@ const api = supertest(app)
 
 let authHeader
 let testPresentationId
+let testCueId
 
 describe("test presentation", () => {
   beforeEach(async () => {
@@ -34,6 +35,17 @@ describe("test presentation", () => {
       name: "Test presentation",
     })
     testPresentationId = presentation._id
+
+    const cueResponse = await api
+      .post(`/api/presentation/${testPresentationId}/cues`)
+      .set("Authorization", authHeader)
+      .send({
+        index: 1,
+        cueName: "Test Cue",
+        screen: "1",
+      })
+
+    testCueId = cueResponse.body._id
   })
 
   describe("GET /api/presentation/:id", () => {
@@ -86,6 +98,34 @@ describe("test presentation", () => {
       const response = await api.put("/api/presentation/:id")
 
       expect(response.status).toBe(400)
+    })
+  })
+
+  describe("Test index range validation", () => {
+    it("PUT /api/presentation/:id with invalid index should return 400", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .send({
+          index: 101,
+          cueName: "Test Cue",
+          screen: "1",
+        })
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("Index must be between 0 and 100")
+    })
+
+    it("PUT /api/presentation/:id/:cueId with invalid index should return 400", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .send({
+          index: 101,
+          cueName: "Test Cue",
+          screen: "1",
+        })
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("Index must be between 0 and 100")
     })
   })
 })
