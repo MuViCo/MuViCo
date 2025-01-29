@@ -9,11 +9,16 @@ import {
   Input,
   Button,
   Heading,
-  Divider
+  Divider,
 } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
 
 import { useState, useEffect } from "react"
+
+import {
+  handleNumericInputChange,
+  validateAndSetNumber,
+} from "../utils/numberInputUtils"
 
 /**
  * Renders a form for adding cues.
@@ -29,7 +34,7 @@ const CuesForm = ({ addCue, onClose, position }) => {
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
-  
+
   useEffect(() => {
     if (position) {
       setIndex(position.index)
@@ -64,10 +69,18 @@ const CuesForm = ({ addCue, onClose, position }) => {
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Index 1-350</FormHelperText>
-        <NumberInput value={index} mb={4} min={1} max={350} onChange={setIndex}>
-          <NumberInputField data-testid="index-number"/>
+        <NumberInput
+          value={index}
+          mb={4}
+          min={1}
+          max={350}
+          onChange={handleNumericInputChange(setIndex)}
+          onBlur={validateAndSetNumber(setIndex, 1, 350)}
+          required
+        >
+          <NumberInputField data-testid="index-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
@@ -86,12 +99,13 @@ const CuesForm = ({ addCue, onClose, position }) => {
           mb={4}
           min={1}
           max={4}
-          onChange={setScreen}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
           required
         >
-          <NumberInputField  data-testid="screen-number"/>
+          <NumberInputField data-testid="screen-number" />
           <NumberInputStepper>
-            <NumberIncrementStepper/>
+            <NumberIncrementStepper />
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
