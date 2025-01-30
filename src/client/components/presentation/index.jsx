@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
 import {
@@ -11,15 +11,8 @@ import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
-
-/**
- * Renders the presentation page.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {string} props.userId - The user ID.
- * @returns {JSX.Element} The presentation page component.
- */
+import { createFormData } from "../utils/formDataUtils"
+import presentation from "../../services/presentation"
 
 const PresentationPage = () => {
   const { id } = useParams()
@@ -32,26 +25,68 @@ const PresentationPage = () => {
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
-  // Fetch presentation info from Redux state
+  const hasAddedCues = useRef(false)
 
+  // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, navigate, dispatch])
 
+  useEffect(() => {
+    if (
+      !hasAddedCues.current &&
+      presentationInfo &&
+      presentationInfo.length === 0
+    ) {
+      addBlankCue(id).then(() => {
+        dispatch(fetchPresentationInfo(id))
+      })
+    }
+  }, [presentationInfo, dispatch, id])
+
   const handleShowMode = () => {
     setShowMode(!showMode)
   }
 
-  // Calculates the total presentation size for display
-  // Currently no limitations regarding total size, but possible to implement with this if needed
-  if (presentationInfo) {
-    const totalSize = presentationInfo.reduce((sum, cue) => {
-      return cue.file ? sum + parseInt(cue.file.size) : sum
-    }, 0)
-    if (presentationSize != (totalSize / (1024 * 1024)).toFixed(2)) {
-      setPresentationSize((totalSize / (1024 * 1024)).toFixed(2))
+  useEffect(() => {
+    if (presentationInfo) {
+      const totalSize = presentationInfo.reduce((sum, cue) => {
+        return cue.file ? sum + parseInt(cue.file.size) : sum
+      }, 0)
+      const newSize = (totalSize / (1024 * 1024)).toFixed(2)
+      if (presentationSize !== newSize) {
+        setPresentationSize(newSize)
+      }
+    }
+  }, [presentationInfo, presentationSize])
+
+  const addBlankCue = async (presentationId) => {
+    const screens = [1, 2, 3, 4]
+    for (const screen of screens) {
+      const formData = createFormData(
+        0,
+        `initial element for screen ${screen}`,
+        screen,
+        "/blank.png"
+      )
+      try {
+        await presentation.addCue(presentationId, formData)
+        showToast({
+          title: "Element added",
+          description: `Initial element added to screen ${screen}`,
+          status: "success",
+        })
+      } catch (error) {
+        const errorMessage = error.message || "An error occurred"
+        console.error("Error adding initial element:", error)
+        showToast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+        })
+      }
     }
   }
 
