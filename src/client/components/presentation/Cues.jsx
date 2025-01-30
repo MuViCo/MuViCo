@@ -69,14 +69,14 @@ const CuesForm = ({ addCue, onClose, position }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
-        <FormHelperText mb={2}>Index 1-350</FormHelperText>
+        <FormHelperText mb={2}>Index 1-100</FormHelperText>
         <NumberInput
           value={index}
           mb={4}
           min={1}
-          max={350}
+          max={100}
           onChange={handleNumericInputChange(setIndex)}
-          onBlur={validateAndSetNumber(setIndex, 1, 350)}
+          onBlur={validateAndSetNumber(setIndex, 1, 100)}
           required
         >
           <NumberInputField data-testid="index-number" />
