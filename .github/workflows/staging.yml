@@ -25,11 +25,14 @@ jobs:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
       - name: Coverage reoport
         run: bash <(curl -s https://codecov.io/bash)
-      - name: Upload coverage to Codecov
+      - name: Coverage reoport
+        run: bash <(curl -s https://codecov.io/bash)
+      - name: Upload frontend & backend coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-  
+          files: coverage/frontend/lcov.info,coverage/backend/lcov.info
+
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
