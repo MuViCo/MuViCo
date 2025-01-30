@@ -79,7 +79,7 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               mb={2}
               onChange={(e) => setCueName(e.target.value)}
             />
-            <FormHelperText mb={2}>Index 1-350</FormHelperText>
+            <FormHelperText mb={2}>Index 1-100</FormHelperText>
             <NumberInput
               value={index}
               mb={4}
