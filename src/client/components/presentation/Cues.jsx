@@ -80,7 +80,23 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
-        <FormHelperText mb={2}>Index 1-100</FormHelperText>
+        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
+        <NumberInput
+          value={screen}
+          mb={4}
+          min={1}
+          max={4}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
+          required
+        >
+          <NumberInputField data-testid="screen-number" />
+          <NumberInputStepper>
+            <NumberIncrementStepper />
+            <NumberDecrementStepper />
+          </NumberInputStepper>
+        </NumberInput>
+        <FormHelperText mb={2}>Index 1-100*</FormHelperText>
         <NumberInput
           value={index}
           mb={4}
@@ -105,22 +121,6 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           onChange={(e) => setCueName(e.target.value)}
           required
         />
-        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
-        <NumberInput
-          value={screen}
-          mb={4}
-          min={1}
-          max={4}
-          onChange={handleNumericInputChange(setScreen)}
-          onBlur={validateAndSetNumber(setScreen, 1, 4)}
-          required
-        >
-          <NumberInputField data-testid="screen-number" />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
         <Divider orientation="horizontal" my={4} />
         <FormHelperText mb={2}>
           Upload media
