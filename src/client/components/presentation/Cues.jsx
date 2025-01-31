@@ -19,6 +19,7 @@ import { useState, useEffect } from "react"
 import {
   handleNumericInputChange,
   validateAndSetNumber,
+  getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
 /**
@@ -29,7 +30,7 @@ import {
  * @param {Function} props.addCue - The function to add a cue.
  * @returns {JSX.Element} The CuesForm component.
  */
-const CuesForm = ({ addCue, onClose, position }) => {
+const CuesForm = ({ addCue, onClose, position, cues }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
   const [index, setIndex] = useState(position?.index || 0)
@@ -42,6 +43,16 @@ const CuesForm = ({ addCue, onClose, position }) => {
       setScreen(position.screen)
     }
   }, [position])
+
+  useEffect(() => {
+    if (screen > 0) {
+      setIndex((prevIndex) => {
+        const newIndex = getNextAvailableIndex(screen, cues)
+        console.log("newindex", newIndex)
+        return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
+      })
+    }
+  }, [screen, cues])
 
   const onAddCue = (event) => {
     event.preventDefault()
