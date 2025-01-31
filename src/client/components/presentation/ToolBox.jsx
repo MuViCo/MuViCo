@@ -8,7 +8,7 @@ import {
 
 import CuesForm from "./Cues"
 
-const Toolbox = ({ addCue, isOpen, onClose, position }) => {
+const Toolbox = ({ addCue, isOpen, onClose, position, cues }) => {
   return (
     <>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
@@ -20,7 +20,12 @@ const Toolbox = ({ addCue, isOpen, onClose, position }) => {
             data-testid="close-drawer-button"
           />
           <DrawerBody>
-            <CuesForm addCue={addCue} onClose={onClose} position={position} />
+            <CuesForm
+              addCue={addCue}
+              onClose={onClose}
+              position={position}
+              cues={cues}
+            />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

@@ -390,6 +390,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
           onClose={() => setIsToolboxOpen(false)}
           position={doubleClickPosition}
           addCue={addCue}
+          cues={cues}
         />
         <Dialog
           isOpen={isConfirmOpen}
