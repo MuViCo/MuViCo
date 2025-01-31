@@ -23,7 +23,7 @@ const CreatePresentation = ({ createPresentation, onCancel }) => {
   return (
     <Box>
       <form onSubmit={addPresentation}>
-        <FormControl>
+        <FormControl isRequired>
           <FormLabel htmlFor="name" mb={3} fontWeight="bold">
             Name
           </FormLabel>
