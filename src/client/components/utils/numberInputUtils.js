@@ -22,7 +22,6 @@ export const validateAndSetNumber = (setState, min, max) => (event) => {
  */
 export const getNextAvailableIndex = (screen, cues) => {
   if (screen < 1 || screen > 4 || isNaN(screen)) {
-    console.log(`Invalid screen: ${screen}. Returning default index 1.`)
     return 1 // Return defaut index 1 if the screen is invalid
   }
 
@@ -31,11 +30,6 @@ export const getNextAvailableIndex = (screen, cues) => {
     cues
       .filter((cue) => Number(cue.screen) === Number(screen))
       .map((cue) => Number(cue.index))
-  )
-
-  console.log(
-    `Indexes for screen ${screen}:`,
-    Array.from(indexes).sort((a, b) => a - b)
   )
 
   // Find the first available index

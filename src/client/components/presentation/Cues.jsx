@@ -48,7 +48,6 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     if (screen > 0) {
       setIndex((prevIndex) => {
         const newIndex = getNextAvailableIndex(screen, cues)
-        console.log("newindex", newIndex)
         return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
       })
     }
