@@ -22,15 +22,21 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const [status, setStatus] = useState("saved")
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
-  const [doubleClickPosition, setDoubleClickPosition] = useState({ xIndex: 0, yIndex: 0 })
+  const [doubleClickPosition, setDoubleClickPosition] = useState({
+    xIndex: 0,
+    yIndex: 0,
+  })
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
 
   const xLabels = Array.from({ length: 101 }, (_, index) => `Index ${index}`)
-  const maxScreen = Math.max(...cues.map(cue => cue.screen), 4)
-  const yLabels = Array.from({ length: maxScreen }, (_, index) => `Screen ${index + 1}`)
+  const maxScreen = Math.max(...cues.map((cue) => cue.screen), 4)
+  const yLabels = Array.from(
+    { length: maxScreen },
+    (_, index) => `Screen ${index + 1}`
+  )
 
   const [isDragging, setIsDragging] = useState(false)
   const clickTimeout = useRef(null)
@@ -69,32 +75,44 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     return position
   })
 
-
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
 
-  
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData  
-  
+    const { index, cueName, screen, file, fileName } = cueData
+
     //Check if cue with same index and screen already exists
     const cueExists = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
     if (cueExists) {
-      setConfirmMessage(`Cue ${index} element already exists on screen ${screen}. Do you want to update it?`)
+      setConfirmMessage(
+        `Cue ${index} element already exists on screen ${screen}. Do you want to update it?`
+      )
       setConfirmAction(() => async () => {
-        const updatedCue = { ...cueExists, index, cueName, screen, file, fileName }
+        const updatedCue = {
+          ...cueExists,
+          index,
+          cueName,
+          screen,
+          file,
+          fileName,
+        }
         await updateCue(cueExists._id, updatedCue)
         setIsConfirmOpen(false)
       })
       setIsConfirmOpen(true)
       return
     }
-  
-    const formData = createFormData(index, cueName, screen, file || "/blank.png")
-  
+
+    const formData = createFormData(
+      index,
+      cueName,
+      screen,
+      file || "/blank.png"
+    )
+
     try {
       await dispatch(createCue(id, formData))
       showToast({
@@ -113,7 +131,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(cue => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex))
+    return cues.some(
+      (cue) =>
+        Number(cue.index) === Number(xIndex) &&
+        Number(cue.screen) === Number(yIndex)
+    )
   }
 
   const handleDoubleClick = (event) => {
@@ -121,9 +143,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       return
     }
 
-    const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-    const cue = cues.find(cue => cue.index === xIndex && cue.screen === yIndex)
-    
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    const cue = cues.find(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+
     if (cue) {
       setSelectedCue(cue)
       setIsEditOpen(true)
@@ -159,67 +189,95 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     const dropX = event.clientX
     const containerRect = containerRef.current.getBoundingClientRect()
     const containerScrollLeft = containerRef.current.scrollLeft
-  
+
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
     const dropY = event.clientY - containerRect.top
-  
+
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + gap
-  
+
     const yIndex = Math.floor(dropY / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
-  
+
     return { xIndex, yIndex }
   }
 
+  const handleDrop = useCallback(
+    async (event) => {
+      event.preventDefault()
+      const files = Array.from(event.dataTransfer.files)
+      const mediaFiles = files.filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/")
+      )
 
-  const handleDrop = useCallback(async (event) => {
-    event.preventDefault()
-    const files = Array.from(event.dataTransfer.files)
-    const mediaFiles = files.filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
-
-    if (mediaFiles.length > 0 && containerRef.current) {
-      const { xIndex, yIndex } = getPosition(event, containerRef, columnWidth, rowHeight, gap)
-      if (cueExists(xIndex, yIndex)) {
-        setConfirmMessage(`Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`)
-        setConfirmAction(() => async () => {
-          const existingCue = cues.find(
-            (cue) => cue.index === xIndex && cue.screen === yIndex
+      if (mediaFiles.length > 0 && containerRef.current) {
+        const { xIndex, yIndex } = getPosition(
+          event,
+          containerRef,
+          columnWidth,
+          rowHeight,
+          gap
+        )
+        if (cueExists(xIndex, yIndex)) {
+          setConfirmMessage(
+            `Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`
           )
-          const updatedCue = { ...existingCue, index: xIndex, cueName: mediaFiles[0].name, screen: yIndex, file: mediaFiles[0] }
-          await updateCue(existingCue._id, updatedCue)
-          setIsConfirmOpen(false)
-        })
-        setIsConfirmOpen(true)
-        return
-      }
+          setConfirmAction(() => async () => {
+            const existingCue = cues.find(
+              (cue) => cue.index === xIndex && cue.screen === yIndex
+            )
+            const updatedCue = {
+              ...existingCue,
+              index: xIndex,
+              cueName: mediaFiles[0].name,
+              screen: yIndex,
+              file: mediaFiles[0],
+            }
+            await updateCue(existingCue._id, updatedCue)
+            setIsConfirmOpen(false)
+          })
+          setIsConfirmOpen(true)
+          return
+        }
 
-      const file = mediaFiles[0]
-      const formData = createFormData(xIndex, file.name, yIndex, file)
+        const file = mediaFiles[0]
+        const formData = createFormData(xIndex, file.name, yIndex, file)
 
-      try {
-        await dispatch(createCue(id, formData))
-        showToast({
-          title: "Element added",
-          description: `Element ${file.name} added to screen ${yIndex}`,
-          status: "success",
-        })
-      } catch (error) {
-        const errorMessage = error.message || "An error occurred"
-        showToast({
-          title: "Error",
-          description: errorMessage,
-          status: "error",
-        })
+        try {
+          await dispatch(createCue(id, formData))
+          showToast({
+            title: "Element added",
+            description: `Element ${file.name} added to screen ${yIndex}`,
+            status: "success",
+          })
+        } catch (error) {
+          const errorMessage = error.message || "An error occurred"
+          showToast({
+            title: "Error",
+            description: errorMessage,
+            status: "error",
+          })
+        }
       }
-    }
-  }, [dispatch, gap, rowHeight, columnWidth, id, cues])
+    },
+    [dispatch, gap, rowHeight, columnWidth, id, cues]
+  )
 
   return (
     <ChakraProvider theme={theme}>
-      <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} data-testid="drop-area">
-        <Box display="flex" height="600px" width="100%" marginTop={`${gap * 2}px`}>
+      <div
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        data-testid="drop-area"
+      >
+        <Box
+          display="flex"
+          height="600px"
+          width="100%"
+          marginTop={`${gap * 2}px`}
+        >
           <Box
             display="grid"
             gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
@@ -230,7 +288,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             bg={"transparent"}
           >
             <Box h={`${rowHeight}px`} bg="transparent" />
-  
+
             {yLabels.map((label) => (
               <Box
                 key={label}
@@ -243,12 +301,23 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                 h={`${rowHeight}px`}
                 width={`${columnWidth}px`}
               >
-                <Text fontWeight="bold" color="black">{label}</Text>
+                <Text fontWeight="bold" color="black">
+                  {label}
+                </Text>
               </Box>
             ))}
           </Box>
-  
-          <Box overflow="auto" width="100%" position="relative" ref={containerRef} onDoubleClick={handleDoubleClick} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+
+          <Box
+            overflow="auto"
+            width="100%"
+            position="relative"
+            ref={containerRef}
+            onDoubleClick={handleDoubleClick}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+          >
             <Box
               display="grid"
               gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
@@ -271,11 +340,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                   h={`${rowHeight}px`}
                   width={`${columnWidth}px`}
                 >
-                  <Text fontWeight="bold" color="black">{label}</Text>
+                  <Text fontWeight="bold" color="black">
+                    {label}
+                  </Text>
                 </Box>
               ))}
             </Box>
-  
+
             <GridLayoutComponent
               layout={layout}
               cues={cues}
@@ -303,8 +374,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
           display="flex"
           alignItems="center"
           zIndex={1}
-        >
-        </Box>
+        ></Box>
         <Box
           position="fixed"
           top="11%"
