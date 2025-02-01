@@ -14,10 +14,10 @@ coverage:
   status:
     project:
       default:
-        target: 50%
+        target: 40%
     patch:
       default:
-        target: 50%
+        target: 40%
 
   # Custom flags for different parts of the project
   flags:

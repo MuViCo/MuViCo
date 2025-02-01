@@ -19,6 +19,7 @@ import { useState, useEffect } from "react"
 import {
   handleNumericInputChange,
   validateAndSetNumber,
+  getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
 /**
@@ -29,7 +30,7 @@ import {
  * @param {Function} props.addCue - The function to add a cue.
  * @returns {JSX.Element} The CuesForm component.
  */
-const CuesForm = ({ addCue, onClose, position }) => {
+const CuesForm = ({ addCue, onClose, position, cues }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
   const [index, setIndex] = useState(position?.index || 0)
@@ -42,6 +43,15 @@ const CuesForm = ({ addCue, onClose, position }) => {
       setScreen(position.screen)
     }
   }, [position])
+
+  useEffect(() => {
+    if (screen > 0) {
+      setIndex((prevIndex) => {
+        const newIndex = getNextAvailableIndex(screen, cues)
+        return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
+      })
+    }
+  }, [screen, cues])
 
   const onAddCue = (event) => {
     event.preventDefault()
@@ -69,7 +79,23 @@ const CuesForm = ({ addCue, onClose, position }) => {
     <form onSubmit={onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
-        <FormHelperText mb={2}>Index 1-100</FormHelperText>
+        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
+        <NumberInput
+          value={screen}
+          mb={4}
+          min={1}
+          max={4}
+          onChange={handleNumericInputChange(setScreen)}
+          onBlur={validateAndSetNumber(setScreen, 1, 4)}
+          required
+        >
+          <NumberInputField data-testid="screen-number" />
+          <NumberInputStepper>
+            <NumberIncrementStepper />
+            <NumberDecrementStepper />
+          </NumberInputStepper>
+        </NumberInput>
+        <FormHelperText mb={2}>Index 1-100*</FormHelperText>
         <NumberInput
           value={index}
           mb={4}
@@ -94,22 +120,6 @@ const CuesForm = ({ addCue, onClose, position }) => {
           onChange={(e) => setCueName(e.target.value)}
           required
         />
-        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
-        <NumberInput
-          value={screen}
-          mb={4}
-          min={1}
-          max={4}
-          onChange={handleNumericInputChange(setScreen)}
-          onBlur={validateAndSetNumber(setScreen, 1, 4)}
-          required
-        >
-          <NumberInputField data-testid="screen-number" />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
         <Divider orientation="horizontal" my={4} />
         <FormHelperText mb={2}>
           Upload media
