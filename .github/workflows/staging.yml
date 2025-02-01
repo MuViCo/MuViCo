@@ -28,7 +28,7 @@ jobs:
       - name: Coverage reoport
         run: bash <(curl -s https://codecov.io/bash)
       - name: Upload frontend & backend coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/frontend/lcov.info,coverage/backend/lcov.info
