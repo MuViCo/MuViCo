@@ -25,26 +25,24 @@ const PresentationPage = () => {
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
-  const hasAddedCues = useRef(false)
+  const [hasFetched, setHasFetched] = useState(false)
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
-
   useEffect(() => {
-    dispatch(fetchPresentationInfo(id))
+    dispatch(fetchPresentationInfo(id)).then(() => {
+      setHasFetched(true) // mark cues fetched
+    })
   }, [id, navigate, dispatch])
 
+  // add blanks only if presentation has no cues
   useEffect(() => {
-    if (
-      !hasAddedCues.current &&
-      presentationInfo &&
-      presentationInfo.length === 0
-    ) {
+    if (hasFetched && presentationInfo && presentationInfo.length === 0) {
       addBlankCue(id).then(() => {
         dispatch(fetchPresentationInfo(id))
       })
     }
-  }, [presentationInfo, dispatch, id])
+  }, [presentationInfo, hasFetched, dispatch, id])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
