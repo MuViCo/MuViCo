@@ -49,7 +49,10 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
     }
 
     await updateCue(cueId, updatedCue)
+
     onClose()
+
+    setFileName("")
   }
 
   const fileSelected = (event) => {
