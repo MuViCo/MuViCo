@@ -23,10 +23,6 @@ jobs:
           npm run test-all
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-      - name: Coverage report
-        run: bash <(curl -s https://codecov.io/bash)
-      - name: Coverage report
-        run: bash <(curl -s https://codecov.io/bash)
       - name: Upload frontend & backend coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -43,7 +39,7 @@ jobs:
         with:
           node-version: "20"
       - name: Install dependencies
-        run: npm i 
+        run: npm i
 
       - name: Build image
         id: build-image
