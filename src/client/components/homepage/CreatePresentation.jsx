@@ -8,7 +8,7 @@ import {
   Flex,
 } from "@chakra-ui/react"
 
-const PresentationForm = ({ createPresentation, onCancel }) => {
+const CreatePresentation = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
 
   const addPresentation = (event) => {
@@ -23,7 +23,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
   return (
     <Box>
       <form onSubmit={addPresentation}>
-        <FormControl>
+        <FormControl isRequired>
           <FormLabel htmlFor="name" mb={3} fontWeight="bold">
             Name
           </FormLabel>
@@ -47,4 +47,4 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
   )
 }
 
-export default PresentationForm
+export default CreatePresentation

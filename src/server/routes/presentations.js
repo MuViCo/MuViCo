@@ -25,7 +25,7 @@ router.post("/", userExtractor, async (req, res) => {
   const { name } = req.body
   const { user } = req
 
-  if (!user) {
+  if (!user || !name) {
     return res.status(401).json({ error: "operation not permitted" })
   }
 
