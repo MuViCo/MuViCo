@@ -15,3 +15,28 @@ export const validateAndSetNumber = (setState, min, max) => (event) => {
   const parsedValue = parseInt(event.target.value, 10)
   setState(isNaN(parsedValue) ? min : Math.min(Math.max(parsedValue, min), max))
 }
+
+/**
+ * Finds the next available index for a given screen.
+ * Only runs if the screen number is between 1 and 4.
+ */
+export const getNextAvailableIndex = (screen, cues) => {
+  if (screen < 1 || screen > 4 || isNaN(screen)) {
+    return 1 // Return defaut index 1 if the screen is invalid
+  }
+
+  // Extract and sort the indexes for the selected screen
+  const indexes = new Set(
+    cues
+      .filter((cue) => Number(cue.screen) === Number(screen))
+      .map((cue) => Number(cue.index))
+  )
+
+  // Find the first available index
+  let nextIndex = 0
+  while (indexes.has(nextIndex)) {
+    nextIndex++
+  }
+
+  return nextIndex
+}

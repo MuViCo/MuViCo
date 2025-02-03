@@ -1,0 +1,43 @@
+# codecov.yml
+codecov:
+  # Basic configuration
+  notify:
+    require_ci_to_pass: yes
+
+coverage:
+  # Specify the coverage report format
+  precision: 2
+  round: down
+  range: "70...100"
+
+  # Custom threshold for coverage
+  status:
+    project:
+      default:
+        target: 40%
+    patch:
+      default:
+        target: 40%
+
+  # Custom flags for different parts of the project
+  flags:
+    frontend:
+      paths:
+        - src/client
+    backend:
+      paths:
+        - src/server
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: no
+
+parsers:
+  javascript:
+    enable_partials: yes
+
+# Exclude specific files or directories from coverage
+ignore:
+  - "src/client/tests/*"
+  - "src/server/tests/*"
