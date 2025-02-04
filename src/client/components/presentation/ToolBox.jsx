@@ -6,7 +6,7 @@ import {
   Drawer,
 } from "@chakra-ui/react"
 
-import CuesForm from "./Cues"
+import CuesForm from "./CuesForm"
 
 const Toolbox = ({ addCue, isOpen, onClose, position, cues }) => {
   return (
