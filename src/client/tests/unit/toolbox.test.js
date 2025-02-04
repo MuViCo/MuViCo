@@ -7,6 +7,7 @@ describe("ToolBox Component", () => {
   const mockAddCue = jest.fn()
   const mockOnClose = jest.fn()
   const position = { index: 1, screen: 1 }
+  const mockCues = []
 
   it("renders correctly when open", () => {
     render(
@@ -15,6 +16,7 @@ describe("ToolBox Component", () => {
         isOpen={true}
         onClose={mockOnClose}
         position={position}
+        cues={mockCues}
       />
     )
     expect(screen.getByRole("dialog")).toBeInTheDocument()
@@ -28,6 +30,7 @@ describe("ToolBox Component", () => {
         isOpen={true}
         onClose={mockOnClose}
         position={position}
+        cues={mockCues}
       />
     )
 
@@ -42,6 +45,7 @@ describe("ToolBox Component", () => {
         isOpen={false}
         onClose={mockOnClose}
         position={position}
+        cues={mockCues}
       />
     )
 
