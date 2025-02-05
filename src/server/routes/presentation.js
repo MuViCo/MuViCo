@@ -106,7 +106,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     const presentation = await Presentation.findById(id)
     const cuenumber = presentation.cues.length
-/*  Limiter for the maximum amount of files, disabled
+    /*  Limiter for the maximum amount of files, disabled
     if (presentation.cues.length >= 10 && !user.isAdmin) {
       return res
         .status(401)
@@ -142,7 +142,10 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
-    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
+    updatedPresentation.cues = await processCueFiles(
+      updatedPresentation.cues,
+      id
+    )
     res.json(updatedPresentation)
     return res.status(204).end()
   } catch (error) {
@@ -151,70 +154,75 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   }
 })
 
-router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
-  try {
-    const { id, cueId } = req.params
-    const { file } = req
-    const { index, screen, cueName, image } = req.body
+router.put(
+  "/:id/:cueId",
+  userExtractor,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const { id, cueId } = req.params
+      const { file } = req
+      const { index, screen, cueName, image } = req.body
 
-    if (!id || !index || !screen || !cueId || !cueName) {
-      return res.status(400).json({ error: "Missing required fields" })
-    }
-
-    const presentation = await Presentation.findById(id)
-    if (!presentation) {
-      return res.status(404).json({ error: "Presentation not found" })
-    }
-
-    const cue = presentation.cues.id(cueId)
-    if (!cue) {
-      return res.status(404).json({ error: "Cue not found" })
-    }
-    // Update cue fields
-    cue.index = index
-    cue.screen = screen
-    cue.name = cueName
-
-    if (image === "/blank.png") {
-      const newFileId = generateFileId()
-      cue.file = {
-        id: newFileId,
-        name: "blank.png",
-        url: null,
-        type: "image/png",
+      if (!id || !index || !screen || !cueId || !cueName) {
+        return res.status(400).json({ error: "Missing required fields" })
       }
-    } 
 
-    if (file) {
-      const newFileId = generateFileId()
-
-      if ( cue.file && cue.file.url ) {
-        const oldFileName = cue.file.url.split("/").pop()
-        await deleteFile(`${id}/${oldFileName}`)
+      const presentation = await Presentation.findById(id)
+      if (!presentation) {
+        return res.status(404).json({ error: "Presentation not found" })
       }
-      try {
-        const fileName = `${id}/${newFileId}`
-        await uploadFile(file.buffer, fileName, file.mimetype)
+
+      const cue = presentation.cues.id(cueId)
+      if (!cue) {
+        return res.status(404).json({ error: "Cue not found" })
+      }
+      // Update cue fields
+      cue.index = index
+      cue.screen = screen
+      cue.name = cueName
+
+      if (image === "/blank.png") {
+        const newFileId = generateFileId()
         cue.file = {
           id: newFileId,
-          name: file.originalname,
-          url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+          name: "blank.png",
+          url: null,
+          type: "image/png",
         }
-        await generateSignedUrlForCue(cue, id)
-      } catch (error) {
-        console.error("File upload error:", error)
-        return res.status(500).json({ error: "File upload failed" })
       }
-    }
-    await presentation.save()
 
-    const updatedCue = await processCueFiles([cue], id)
-    res.json(updatedCue[0])
-  } catch (error) {
-    console.error("Error:", error)
-    res.status(500).json({ error: "Internal server error" })
+      if (file) {
+        const newFileId = generateFileId()
+
+        if (cue.file && cue.file.url) {
+          const oldFileName = cue.file.url.split("/").pop()
+          await deleteFile(`${id}/${oldFileName}`)
+        }
+        try {
+          const fileName = `${id}/${newFileId}`
+          await uploadFile(file.buffer, fileName, file.mimetype)
+          cue.file = {
+            id: newFileId,
+            name: file.originalname,
+            url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+          }
+          await generateSignedUrlForCue(cue, id)
+        } catch (error) {
+          console.error("File upload error:", error)
+          return res.status(500).json({ error: "File upload failed" })
+        }
+      }
+      await presentation.save()
+
+      const updatedCue = await processCueFiles([cue], id)
+      res.json(updatedCue[0])
+    } catch (error) {
+      console.error("Error:", error)
+      res.status(500).json({ error: "Internal server error" })
+    }
   }
-})
+)
 
 /**
  * Update the presentation by removing a file from the files array.
