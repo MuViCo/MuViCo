@@ -104,17 +104,54 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    const presentation = await Presentation.findById(id)
-    const cuenumber = presentation.cues.length
-    /*  Limiter for the maximum amount of files, disabled
-    if (presentation.cues.length >= 10 && !user.isAdmin) {
-      return res
-        .status(401)
-        .json({ error: "Maximum number of files reached (10)" })
-    }
-*/
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
       return res.status(400).json({ error: "File size exceeds 50 MB limit" })
+    }
+
+    if (file) {
+      const validVideoTypes = ["video/mp4", "video/3gpp"]
+      const validImageTypes = [
+        "image/jpeg",
+        "image/gif",
+        "image/apng",
+        "image/bmp",
+        "image/png",
+        "image/svg+xml",
+        "image/webp",
+        "image/vnd.microsoft.icon",
+        "image/avif",
+        "image/x-win-bitmap",
+      ]
+
+      let fileType = ""
+      if (file.mimetype.startsWith("image/")) {
+        fileType = "image"
+      } else if (file.mimetype.startsWith("video/")) {
+        fileType = "video"
+      }
+
+      switch (fileType) {
+        case "image":
+          if (!validImageTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        case "video":
+          if (!validVideoTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        default:
+          return res
+            .status(400)
+            .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
