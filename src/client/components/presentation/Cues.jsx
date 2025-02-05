@@ -126,10 +126,10 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           <Tooltip
             label={
               <>
-                <strong>Valid image types: </strong>.png, .bmp, .jpeg, .jpg,
-                .jpe, .jfif, .gif, .cur, .ico
+                <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
                 <br />
-                <strong>Valid video types: </strong> .mp4, .webm and .ogg
+                <strong>Valid video types: </strong> .mp4 and .3gp
               </>
             }
             placement="right-end"
