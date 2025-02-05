@@ -8,7 +8,16 @@ import {
 
 import CuesForm from "./CuesForm"
 
-const Toolbox = ({ addCue, isOpen, onClose, position, cues }) => {
+const Toolbox = ({
+  addCue,
+  isOpen,
+  onClose,
+  position,
+  cues,
+  cueData,
+  updateCue,
+}) => {
+  //console.log(`This is cueData in ToolBox:`, cueData)
   return (
     <>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
@@ -25,6 +34,8 @@ const Toolbox = ({ addCue, isOpen, onClose, position, cues }) => {
               onClose={onClose}
               position={position}
               cues={cues}
+              cueData={cueData || null}
+              updateCue={updateCue}
             />
           </DrawerBody>
         </DrawerContent>

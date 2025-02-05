@@ -30,12 +30,13 @@ import {
  * @param {Function} props.addCue - The function to add a cue.
  * @returns {JSX.Element} The CuesForm component.
  */
-const CuesForm = ({ addCue, onClose, position, cues }) => {
+const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
+  const [cueId, setCueId] = useState("")
 
   useEffect(() => {
     if (position) {
@@ -53,6 +54,17 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     }
   }, [screen, cues])
 
+  useEffect(() => {
+    if (cueData) {
+      setCueName(cueData.name)
+      setIndex(cueData.index)
+      setScreen(cueData.screen)
+      setCueId(cueData._id)
+      setFile(cueData.file)
+      setFileName(cueData.file?.name)
+    }
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
+
   const onAddCue = (event) => {
     event.preventDefault()
     addCue({ file, index, cueName, screen, fileName })
@@ -62,6 +74,25 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     setIndex(0)
     setScreen(0)
     onClose()
+  }
+
+  //tää tuotiin EditToolBoxista, siellä se oli handleSubmit
+  const handleUpdateSubmit = async (event) => {
+    event.preventDefault()
+    const updatedCue = {
+      cueId,
+      cueName,
+      index,
+      screen,
+      file,
+    }
+
+    await updateCue(cueId, updatedCue)
+
+    onClose()
+
+    setFileName("")
+    setCueName("")
   }
 
   const fileSelected = (event) => {
@@ -76,7 +107,8 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
   }
 
   return (
-    <form onSubmit={onAddCue}>
+    //Tähän cueDatan suhteen että kumpaa submittii käytetään
+    <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
         <FormHelperText mb={2}>Screen 1-4*</FormHelperText>

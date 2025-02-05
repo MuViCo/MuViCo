@@ -156,7 +156,8 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
     if (cue) {
       setSelectedCue(cue)
-      setIsEditOpen(true)
+      // setIsEditOpen(true)
+      setIsToolboxOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
       setIsToolboxOpen(true)
@@ -358,14 +359,23 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               id={id}
             />
           </Box>
-          {selectedCue && (
+          {/* {selectedCue && (
             <EditToolBox
               isOpen={isEditOpen}
               onClose={() => setIsEditOpen(false)}
               cueData={selectedCue}
               updateCue={updateCue}
             />
-          )}
+          )} */}
+          <ToolBox
+            isOpen={isToolboxOpen}
+            onClose={() => setIsToolboxOpen(false)}
+            position={doubleClickPosition}
+            addCue={addCue}
+            cues={cues}
+            cueData={selectedCue || null}
+            updateCue={updateCue}
+          />
         </Box>
         <Box
           position="fixed"
@@ -385,13 +395,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         >
           <StatusTooltip status={status} />
         </Box>
-        <ToolBox
+        {/* <ToolBox
           isOpen={isToolboxOpen}
           onClose={() => setIsToolboxOpen(false)}
           position={doubleClickPosition}
           addCue={addCue}
           cues={cues}
-        />
+        /> */}
         <Dialog
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
