@@ -123,6 +123,7 @@ const EditToolBox = ({ isOpen, onClose, cueData, updateCue }) => {
               id="file-upload"
               style={{ display: "none" }}
               onChange={fileSelected}
+              accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp, image/avif, image/apng, image/ico, image/jfif, image/jpe, image/svg, video/mp4, video/3gp"
             />
             {fileName && <FormHelperText>{fileName}</FormHelperText>}
           </FormControl>
