@@ -15,7 +15,7 @@ import {
 import { CheckIcon, CloseIcon } from "@chakra-ui/icons"
 import { LuInfo } from "react-icons/lu"
 import { useState, useEffect } from "react"
-
+import Error from "./Error"
 import {
   handleNumericInputChange,
   validateAndSetNumber,
@@ -194,13 +194,7 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           ) : (
             <CheckIcon color="green.500" />
           ))}
-        {error && (
-          <div
-            style={{ color: "#D2042D", fontSize: "14px", marginTop: "10px" }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <Error message={error} />}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
