@@ -12,7 +12,7 @@ import {
   Divider,
   Tooltip,
 } from "@chakra-ui/react"
-import { CheckIcon } from "@chakra-ui/icons"
+import { CheckIcon, CloseIcon } from "@chakra-ui/icons"
 import { LuInfo } from "react-icons/lu"
 import { useState, useEffect } from "react"
 
@@ -21,6 +21,7 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
+import { set } from "mongoose"
 
 /**
  * Renders a form for adding cues.
@@ -36,6 +37,23 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
+  const [error, setError] = useState(null)
+  const allowedTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/gif",
+    "image/bmp",
+    "image/webp",
+    "image/avif",
+    "image/apng",
+    "image/ico",
+    "image/jfif",
+    "image/jpe",
+    "image/svg+xml",
+    "video/mp4",
+    "video/3gpp",
+  ]
 
   useEffect(() => {
     if (position) {
@@ -55,7 +73,20 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
 
   const onAddCue = (event) => {
     event.preventDefault()
+
+    if (file !== "/blank.png") {
+      if (!allowedTypes.includes(file.type)) {
+        setError(
+          "Invalid file type. Please see the info button for valid types."
+        )
+        setTimeout(() => {
+          setError(null)
+        }, 5000)
+        return
+      }
+    }
     addCue({ file, index, cueName, screen, fileName })
+    setError(null)
     setFile("/blank.png")
     setFileName("")
     setCueName("")
@@ -66,6 +97,8 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
 
   const fileSelected = (event) => {
     const selected = event.target.files[0]
+    console.log("File selected:", selected)
+
     if (selected) {
       setFile(selected)
       setFileName(selected.name)
@@ -73,6 +106,8 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
       setFile("/blank.png")
       setFileName("blank.png")
     }
+
+    setError(null)
   }
 
   return (
@@ -151,8 +186,21 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           id="file-upload"
           style={{ display: "none" }}
           onChange={fileSelected}
+          accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp, image/avif, image/apng, image/ico, image/jfif, image/jpe, image/svg, video/mp4, video/3gp"
         />{" "}
-        {file !== "/blank.png" && <CheckIcon color="green.500" />}
+        {file !== "/blank.png" &&
+          (!allowedTypes.includes(file.type) ? (
+            <CloseIcon color="#D2042D" />
+          ) : (
+            <CheckIcon color="green.500" />
+          ))}
+        {error && (
+          <div
+            style={{ color: "#D2042D", fontSize: "14px", marginTop: "10px" }}
+          >
+            {error}
+          </div>
+        )}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
