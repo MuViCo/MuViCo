@@ -12,10 +12,9 @@ import {
   Divider,
   Tooltip,
 } from "@chakra-ui/react"
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons"
-import { LuInfo } from "react-icons/lu"
+import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect } from "react"
-import Error from "./Error"
+import Error from "../utils/Error"
 import {
   handleNumericInputChange,
   validateAndSetNumber,
@@ -172,7 +171,7 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
             fontSize="sm"
           >
             <Button variant="ghost" size="xs" marginLeft={2}>
-              <LuInfo />
+              <InfoOutlineIcon />
             </Button>
           </Tooltip>
         </FormHelperText>
@@ -186,15 +185,15 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           id="file-upload"
           style={{ display: "none" }}
           onChange={fileSelected}
-          accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp, image/avif, image/apng, image/ico, image/jfif, image/jpe, image/svg, video/mp4, video/3gp"
+          accept={allowedTypes}
         />{" "}
         {file !== "/blank.png" &&
           (!allowedTypes.includes(file.type) ? (
             <CloseIcon color="#D2042D" />
           ) : (
-            <CheckIcon color="green.500" />
+            <CheckIcon color="#03C03C" />
           ))}
-        {error && <Error message={error} />}
+        {error && <Error error={error} />}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
@@ -206,7 +205,7 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
         >
           Add blank
         </Button>{" "}
-        {file === "/blank.png" && <CheckIcon color="green.500" />}
+        {file === "/blank.png" && <CheckIcon color="#03C03C" />}
         <Divider orientation="horizontal" my={4} />
       </FormControl>
       <Button mb={4} type="submit" colorScheme="purple">
