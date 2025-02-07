@@ -1,10 +1,9 @@
-import React, { useState, useRef, useCallback } from "react"
+import React, { useState, useRef, useCallback, useEffect } from "react"
 import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { updatePresentation, createCue } from "../../redux/presentationReducer"
-import EditToolBox from "./EditToolBox"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
@@ -20,7 +19,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const containerRef = useRef(null)
 
   const [status, setStatus] = useState("saved")
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedCue, setSelectedCue] = useState(null)
   const [doubleClickPosition, setDoubleClickPosition] = useState({
     xIndex: 0,
@@ -40,6 +38,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
   const [isDragging, setIsDragging] = useState(false)
   const clickTimeout = useRef(null)
+
+  useEffect(() => {
+    if (!isToolboxOpen) {
+      setSelectedCue(null)
+    }
+  }, [isToolboxOpen])
 
   const handleMouseDown = () => {
     setIsDragging(false)
@@ -156,7 +160,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
     if (cue) {
       setSelectedCue(cue)
-      // setIsEditOpen(true)
       setIsToolboxOpen(true)
     } else {
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
@@ -359,14 +362,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               id={id}
             />
           </Box>
-          {/* {selectedCue && (
-            <EditToolBox
-              isOpen={isEditOpen}
-              onClose={() => setIsEditOpen(false)}
-              cueData={selectedCue}
-              updateCue={updateCue}
-            />
-          )} */}
           <ToolBox
             isOpen={isToolboxOpen}
             onClose={() => setIsToolboxOpen(false)}
@@ -395,13 +390,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         >
           <StatusTooltip status={status} />
         </Box>
-        {/* <ToolBox
-          isOpen={isToolboxOpen}
-          onClose={() => setIsToolboxOpen(false)}
-          position={doubleClickPosition}
-          addCue={addCue}
-          cues={cues}
-        /> */}
         <Dialog
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}

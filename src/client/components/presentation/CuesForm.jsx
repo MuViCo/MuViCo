@@ -22,14 +22,6 @@ import {
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
-/**
- * Renders a form for adding cues.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {Function} props.addCue - The function to add a cue.
- * @returns {JSX.Element} The CuesForm component.
- */
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("blank.png")
@@ -46,13 +38,13 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   }, [position])
 
   useEffect(() => {
-    if (screen > 0) {
+    if (screen > 0 && !cueData) {
       setIndex((prevIndex) => {
         const newIndex = getNextAvailableIndex(screen, cues)
         return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
       })
     }
-  }, [screen, cues])
+  }, [screen, cues, cueData])
 
   useEffect(() => {
     if (cueData) {
@@ -76,7 +68,6 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     onClose()
   }
 
-  //tää tuotiin EditToolBoxista, siellä se oli handleSubmit
   const handleUpdateSubmit = async (event) => {
     event.preventDefault()
     const updatedCue = {
@@ -107,7 +98,6 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   }
 
   return (
-    //Tähän cueDatan suhteen että kumpaa submittii käytetään
     <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
         <Heading size="md">Add element</Heading>
