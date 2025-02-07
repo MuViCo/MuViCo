@@ -100,7 +100,11 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   return (
     <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
-        <Heading size="md">Add element</Heading>
+        {cueData ? (
+          <Heading size="md">Edit Element</Heading>
+        ) : (
+          <Heading size="md">Add element</Heading>
+        )}
         <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
         <NumberInput
           value={screen}
