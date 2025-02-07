@@ -1,29 +1,54 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import Toolbox from '../../components/presentation/ToolBox.jsx';
-import '@testing-library/jest-dom'
+import React from "react"
+import { render, screen, fireEvent } from "@testing-library/react"
+import Toolbox from "../../components/presentation/ToolBox.jsx"
+import "@testing-library/jest-dom"
 
-describe('ToolBox Component', () => {
-  const mockAddCue = jest.fn();
-  const mockOnClose = jest.fn();
-  const position = { index: 1, screen: 1 };
+describe("ToolBox Component", () => {
+  const mockAddCue = jest.fn()
+  const mockOnClose = jest.fn()
+  const position = { index: 1, screen: 1 }
+  const mockCues = []
 
-  it('renders correctly when open', () => {
-    render(<Toolbox addCue={mockAddCue} isOpen={true} onClose={mockOnClose} position={position} />);
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByTestId('close-drawer-button')).toBeInTheDocument();
-  });
+  it("renders correctly when open", () => {
+    render(
+      <Toolbox
+        addCue={mockAddCue}
+        isOpen={true}
+        onClose={mockOnClose}
+        position={position}
+        cues={mockCues}
+      />
+    )
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByTestId("close-drawer-button")).toBeInTheDocument()
+  })
 
-  it('calls onClose when the close button is clicked', () => {
-    render(<Toolbox addCue={mockAddCue} isOpen={true} onClose={mockOnClose} position={position} />);
+  it("calls onClose when the close button is clicked", () => {
+    render(
+      <Toolbox
+        addCue={mockAddCue}
+        isOpen={true}
+        onClose={mockOnClose}
+        position={position}
+        cues={mockCues}
+      />
+    )
 
-    fireEvent.click(screen.getByTestId('close-drawer-button'));
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
-  });
+    fireEvent.click(screen.getByTestId("close-drawer-button"))
+    expect(mockOnClose).toHaveBeenCalledTimes(1)
+  })
 
-  it('does not render when closed', () => {
-    render(<Toolbox addCue={mockAddCue} isOpen={false} onClose={mockOnClose} position={position} />);
+  it("does not render when closed", () => {
+    render(
+      <Toolbox
+        addCue={mockAddCue}
+        isOpen={false}
+        onClose={mockOnClose}
+        position={position}
+        cues={mockCues}
+      />
+    )
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-});
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+})
