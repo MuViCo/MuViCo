@@ -53,7 +53,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setScreen(cueData.screen)
       setCueId(cueData._id)
       setFile(cueData.file)
-      setFileName(cueData.file?.name)
+      setFileName(cueData.file.name ? cueData.file.name : "blank.png")
     }
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
@@ -96,6 +96,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setFileName("blank.png")
     }
   }
+
+  console.log("Here is fileName: ", fileName)
+  console.log("Here is file: ", file)
 
   return (
     <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
@@ -178,19 +181,29 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           style={{ display: "none" }}
           onChange={fileSelected}
         />{" "}
-        {file !== "/blank.png" && <CheckIcon color="green.500" />}
+        {fileName !== "blank.png" && (
+          <>
+            <CheckIcon color="green.500" />
+            <FormHelperText>{fileName}</FormHelperText>
+          </>
+        )}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
           mr={2}
           onClick={() => {
             setFile("/blank.png")
-            setFileName("")
+            setFileName("blank.png")
           }}
         >
           Add blank
         </Button>{" "}
-        {file === "/blank.png" && <CheckIcon color="green.500" />}
+        {fileName === "blank.png" && (
+          <>
+            <CheckIcon color="green.500" />
+            <FormHelperText>{fileName}</FormHelperText>
+          </>
+        )}
         <Divider orientation="horizontal" my={4} />
       </FormControl>
       <Button mb={4} type="submit" colorScheme="purple">
