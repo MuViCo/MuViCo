@@ -97,9 +97,6 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     }
   }
 
-  console.log("Here is fileName: ", fileName)
-  console.log("Here is file: ", file)
-
   return (
     <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">

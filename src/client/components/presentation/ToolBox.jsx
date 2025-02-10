@@ -17,7 +17,6 @@ const Toolbox = ({
   cueData,
   updateCue,
 }) => {
-  console.log("Here is cueData: ", cueData)
   return (
     <>
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
