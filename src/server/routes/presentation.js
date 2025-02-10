@@ -104,17 +104,54 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    const presentation = await Presentation.findById(id)
-    const cuenumber = presentation.cues.length
-/*  Limiter for the maximum amount of files, disabled
-    if (presentation.cues.length >= 10 && !user.isAdmin) {
-      return res
-        .status(401)
-        .json({ error: "Maximum number of files reached (10)" })
-    }
-*/
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
       return res.status(400).json({ error: "File size exceeds 50 MB limit" })
+    }
+
+    if (file) {
+      const validVideoTypes = ["video/mp4", "video/3gpp"]
+      const validImageTypes = [
+        "image/jpeg",
+        "image/gif",
+        "image/apng",
+        "image/bmp",
+        "image/png",
+        "image/svg+xml",
+        "image/webp",
+        "image/vnd.microsoft.icon",
+        "image/avif",
+        "image/x-win-bitmap",
+      ]
+
+      let fileType = ""
+      if (file.mimetype.startsWith("image/")) {
+        fileType = "image"
+      } else if (file.mimetype.startsWith("video/")) {
+        fileType = "video"
+      }
+
+      switch (fileType) {
+        case "image":
+          if (!validImageTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        case "video":
+          if (!validVideoTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        default:
+          return res
+            .status(400)
+            .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
@@ -142,7 +179,10 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       await uploadFile(file.buffer, fileName, file.mimetype)
     }
 
-    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
+    updatedPresentation.cues = await processCueFiles(
+      updatedPresentation.cues,
+      id
+    )
     res.json(updatedPresentation)
     return res.status(204).end()
   } catch (error) {
@@ -151,70 +191,75 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   }
 })
 
-router.put("/:id/:cueId", userExtractor, upload.single("image"), async (req, res) => {
-  try {
-    const { id, cueId } = req.params
-    const { file } = req
-    const { index, screen, cueName, image } = req.body
+router.put(
+  "/:id/:cueId",
+  userExtractor,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const { id, cueId } = req.params
+      const { file } = req
+      const { index, screen, cueName, image } = req.body
 
-    if (!id || !index || !screen || !cueId || !cueName) {
-      return res.status(400).json({ error: "Missing required fields" })
-    }
-
-    const presentation = await Presentation.findById(id)
-    if (!presentation) {
-      return res.status(404).json({ error: "Presentation not found" })
-    }
-
-    const cue = presentation.cues.id(cueId)
-    if (!cue) {
-      return res.status(404).json({ error: "Cue not found" })
-    }
-    // Update cue fields
-    cue.index = index
-    cue.screen = screen
-    cue.name = cueName
-
-    if (image === "/blank.png") {
-      const newFileId = generateFileId()
-      cue.file = {
-        id: newFileId,
-        name: "blank.png",
-        url: null,
-        type: "image/png",
+      if (!id || !index || !screen || !cueId || !cueName) {
+        return res.status(400).json({ error: "Missing required fields" })
       }
-    } 
 
-    if (file) {
-      const newFileId = generateFileId()
-
-      if ( cue.file && cue.file.url ) {
-        const oldFileName = cue.file.url.split("/").pop()
-        await deleteFile(`${id}/${oldFileName}`)
+      const presentation = await Presentation.findById(id)
+      if (!presentation) {
+        return res.status(404).json({ error: "Presentation not found" })
       }
-      try {
-        const fileName = `${id}/${newFileId}`
-        await uploadFile(file.buffer, fileName, file.mimetype)
+
+      const cue = presentation.cues.id(cueId)
+      if (!cue) {
+        return res.status(404).json({ error: "Cue not found" })
+      }
+      // Update cue fields
+      cue.index = index
+      cue.screen = screen
+      cue.name = cueName
+
+      if (image === "/blank.png") {
+        const newFileId = generateFileId()
         cue.file = {
           id: newFileId,
-          name: file.originalname,
-          url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+          name: "blank.png",
+          url: null,
+          type: "image/png",
         }
-        await generateSignedUrlForCue(cue, id)
-      } catch (error) {
-        console.error("File upload error:", error)
-        return res.status(500).json({ error: "File upload failed" })
       }
-    }
-    await presentation.save()
 
-    const updatedCue = await processCueFiles([cue], id)
-    res.json(updatedCue[0])
-  } catch (error) {
-    console.error("Error:", error)
-    res.status(500).json({ error: "Internal server error" })
+      if (file) {
+        const newFileId = generateFileId()
+
+        if (cue.file && cue.file.url) {
+          const oldFileName = cue.file.url.split("/").pop()
+          await deleteFile(`${id}/${oldFileName}`)
+        }
+        try {
+          const fileName = `${id}/${newFileId}`
+          await uploadFile(file.buffer, fileName, file.mimetype)
+          cue.file = {
+            id: newFileId,
+            name: file.originalname,
+            url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+          }
+          await generateSignedUrlForCue(cue, id)
+        } catch (error) {
+          console.error("File upload error:", error)
+          return res.status(500).json({ error: "File upload failed" })
+        }
+      }
+      await presentation.save()
+
+      const updatedCue = await processCueFiles([cue], id)
+      res.json(updatedCue[0])
+    } catch (error) {
+      console.error("Error:", error)
+      res.status(500).json({ error: "Internal server error" })
+    }
   }
-})
+)
 
 /**
  * Update the presentation by removing a file from the files array.

@@ -8,7 +8,7 @@ import {
   Box,
 } from "@chakra-ui/react"
 import loginService from "../../services/login"
-import Error from "./Error"
+import Error from "../utils/Error"
 import GoogleSignInButton from "../presentation/GoogleSignInButton"
 
 const initialValues = {
@@ -110,7 +110,14 @@ export const LoginForm = ({ onSubmit, error, onLogin }) => {
         <Container mt={4}>
           <Box textAlign="justify"></Box>
         </Container>
-        <Box mt={4} mb={-2} display="flex" gap={4} justifyContent="flex-start" alignItems="center">
+        <Box
+          mt={4}
+          mb={-2}
+          display="flex"
+          gap={4}
+          justifyContent="flex-start"
+          alignItems="center"
+        >
           <Button
             data-testid="login_inform"
             colorScheme="purple"
@@ -145,8 +152,8 @@ const Login = ({ onLogin }) => {
   return (
     <div>
       <LoginForm onSubmit={onSubmit} error={error} onLogin={onLogin} />
-    </div> 
-    )
+    </div>
+  )
 }
 
 export default Login
