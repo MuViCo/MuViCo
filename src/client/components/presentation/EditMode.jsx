@@ -26,7 +26,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     xIndex: 0,
     yIndex: 0,
   })
-
+  const [hoverPosition, setHoverPosition] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
@@ -42,14 +42,39 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const clickTimeout = useRef(null)
 
   const handleMouseDown = () => {
-    setIsDragging(false)
-  }
-
-  const handleMouseMove = () => {
     setIsDragging(true)
   }
 
+  const handleMouseMove = (event) => {
+    if (isDragging) return
+    if (event.target.closest(".x-index-label")) {
+      return
+    }
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    const cueExists = cues.some(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+    if (
+      !cueExists &&
+      xIndex >= 0 &&
+      xIndex <= 101 &&
+      yIndex <= 4 &&
+      yIndex >= 1
+    ) {
+      setHoverPosition({ index: xIndex + 1, screen: yIndex })
+    } else {
+      setHoverPosition(null)
+    }
+  }
+
   const handleMouseUp = (event) => {
+    setIsDragging(false)
     if (!isDragging) {
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
@@ -272,6 +297,31 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         onDragOver={(e) => e.preventDefault()}
         data-testid="drop-area"
       >
+        <Box
+          overflow="visible"
+          width="100%"
+          position="relative"
+          ref={containerRef}
+          onDoubleClick={handleDoubleClick}
+          onMouseMove={handleMouseMove} // Detects empty spaces
+        >
+          <GridLayoutComponent id={id} cues={cues} setStatus={setStatus} />
+
+          {hoverPosition && (
+            <Box
+              position="absolute"
+              left={`${hoverPosition.index * (columnWidth + gap)}px`}
+              top={`${hoverPosition.screen * (rowHeight + gap)}px`}
+              width={`${columnWidth}px`}
+              height={`${rowHeight}px`}
+              bg="#481a23"
+              borderRadius="8px"
+              transition="0"
+              zIndex={0} // Ensure it's above other elements
+              pointerEvents="none"
+            />
+          )}
+        </Box>
         <Box
           display="flex"
           height="600px"
