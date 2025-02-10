@@ -4,16 +4,20 @@ const {
   GetSecretValueCommand,
 } = require("@aws-sdk/client-secrets-manager")
 
-const { BUCKET_REGION, ACCESS_KEY, SECRET_ACCESS_KEY } = require("./config")
+const {
+  AWS_REGION,
+  AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY,
+} = require("./config")
 
 const initializeFirebase = async () => {
   const secret_name = "ServiceAccountKey"
 
   const client = new SecretsManagerClient({
-    region: BUCKET_REGION,
+    region: AWS_REGION,
     credentials: {
-      accessKeyId: ACCESS_KEY,
-      secretAccessKey: SECRET_ACCESS_KEY,
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
     },
   })
 

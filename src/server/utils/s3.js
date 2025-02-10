@@ -8,17 +8,17 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 
 const {
-  BUCKET_REGION,
   BUCKET_NAME,
-  ACCESS_KEY,
-  SECRET_ACCESS_KEY,
+  AWS_REGION,
+  AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY,
 } = require("./config")
 
 const s3 = new S3Client({
-  region: BUCKET_REGION,
+  region: AWS_REGION,
   credentials: {
-    accessKeyId: ACCESS_KEY,
-    secretAccessKey: SECRET_ACCESS_KEY,
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY,
   },
 })
 
