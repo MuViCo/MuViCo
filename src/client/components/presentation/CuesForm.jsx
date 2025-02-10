@@ -24,7 +24,7 @@ import {
 
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
-  const [fileName, setFileName] = useState("blank.png")
+  const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
@@ -53,7 +53,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setScreen(cueData.screen)
       setCueId(cueData._id)
       setFile(cueData.file)
-      setFileName(cueData.file.name ? cueData.file.name : "blank.png")
+      setFileName(cueData.file.name ? cueData.file.name : "")
     }
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
@@ -92,11 +92,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setFile(selected)
       setFileName(selected.name)
     } else {
-      setFile("/blank.png")
-      setFileName("blank.png")
+      setFile("")
+      setFileName("")
     }
   }
 
+  console.log("Täs filename: ", fileName)
   return (
     <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
@@ -178,7 +179,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           style={{ display: "none" }}
           onChange={fileSelected}
         />{" "}
-        {fileName !== "blank.png" && (
+        {fileName && fileName !== "blank.png" && (
           <>
             <CheckIcon color="green.500" />
             <FormHelperText>{fileName}</FormHelperText>
