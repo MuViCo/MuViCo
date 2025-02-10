@@ -21,20 +21,13 @@ import {
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
-/**
- * Renders a form for adding cues.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {Function} props.addCue - The function to add a cue.
- * @returns {JSX.Element} The CuesForm component.
- */
-const CuesForm = ({ addCue, onClose, position, cues }) => {
+const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
-  const [fileName, setFileName] = useState("blank.png")
+  const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
+  const [cueId, setCueId] = useState("")
   const [error, setError] = useState(null)
   const allowedTypes = [
     "image/png",
@@ -61,28 +54,45 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
   }, [position])
 
   useEffect(() => {
-    if (screen > 0) {
+    if (screen > 0 && !cueData) {
       setIndex((prevIndex) => {
         const newIndex = getNextAvailableIndex(screen, cues)
         return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
       })
     }
-  }, [screen, cues])
+  }, [screen, cues, cueData])
+
+  useEffect(() => {
+    if (cueData) {
+      setCueName(cueData.name)
+      setIndex(cueData.index)
+      setScreen(cueData.screen)
+      setCueId(cueData._id)
+      setFile(cueData.file)
+      setFileName(cueData.file.name ? cueData.file.name : "")
+    }
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
+
+  const checkFileType = (file) => {
+    if (!allowedTypes.includes(file.type)) {
+      setError("Invalid file type. Please see the info button for valid types.")
+      setTimeout(() => {
+        setError(null)
+      }, 5000)
+      return false
+    }
+    return true
+  }
 
   const onAddCue = (event) => {
     event.preventDefault()
 
     if (file !== "/blank.png") {
-      if (!allowedTypes.includes(file.type)) {
-        setError(
-          "Invalid file type. Please see the info button for valid types."
-        )
-        setTimeout(() => {
-          setError(null)
-        }, 5000)
+      if (checkFileType(file) == false) {
         return
       }
     }
+
     addCue({ file, index, cueName, screen, fileName })
     setError(null)
     setFile("/blank.png")
@@ -93,25 +103,50 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     onClose()
   }
 
+  const handleUpdateSubmit = async (event) => {
+    event.preventDefault()
+    const updatedCue = {
+      cueId,
+      cueName,
+      index,
+      screen,
+      file,
+    }
+
+    if (file.name !== "/blank.png") {
+      if (checkFileType(file) == false) {
+        return
+      }
+    }
+
+    await updateCue(cueId, updatedCue)
+
+    onClose()
+
+    setFileName("")
+    setCueName("")
+  }
+
   const fileSelected = (event) => {
     const selected = event.target.files[0]
-    console.log("File selected:", selected)
-
     if (selected) {
       setFile(selected)
       setFileName(selected.name)
     } else {
-      setFile("/blank.png")
-      setFileName("blank.png")
+      setFile("")
+      setFileName("")
     }
-
     setError(null)
   }
 
   return (
-    <form onSubmit={onAddCue}>
+    <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
-        <Heading size="md">Add element</Heading>
+        {cueData ? (
+          <Heading size="md">Edit Element</Heading>
+        ) : (
+          <Heading size="md">Add element</Heading>
+        )}
         <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
         <NumberInput
           value={screen}
@@ -186,11 +221,19 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           onChange={fileSelected}
           accept={allowedTypes}
         />{" "}
-        {file !== "/blank.png" &&
+        {fileName &&
+          fileName !== "blank.png" &&
           (!allowedTypes.includes(file.type) ? (
-            <CloseIcon color="#D2042D" />
+            <>
+              {" "}
+              <CloseIcon color="#D2042D" />
+              <FormHelperText>{fileName}</FormHelperText>
+            </>
           ) : (
-            <CheckIcon color="#03C03C" />
+            <>
+              <CheckIcon color="#03C03C" />
+              <FormHelperText>{fileName}</FormHelperText>
+            </>
           ))}
         {error && <Error error={error} />}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
@@ -199,12 +242,17 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           mr={2}
           onClick={() => {
             setFile("/blank.png")
-            setFileName("")
+            setFileName("blank.png")
           }}
         >
           Add blank
         </Button>{" "}
-        {file === "/blank.png" && <CheckIcon color="#03C03C" />}
+        {fileName === "blank.png" && (
+          <>
+            <CheckIcon color="#03C03C" />
+            <FormHelperText>{fileName}</FormHelperText>
+          </>
+        )}{" "}
         <Divider orientation="horizontal" my={4} />
       </FormControl>
       <Button mb={4} type="submit" colorScheme="purple">
