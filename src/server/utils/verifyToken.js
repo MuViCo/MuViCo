@@ -1,12 +1,10 @@
 const admin = require("firebase-admin")
-const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager")
-
 const {
-  BUCKET_REGION,
-  ACCESS_KEY,
-  SECRET_ACCESS_KEY,
-} = require("./config")
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} = require("@aws-sdk/client-secrets-manager")
 
+const { BUCKET_REGION, ACCESS_KEY, SECRET_ACCESS_KEY } = require("./config")
 
 const initializeFirebase = async () => {
   const secret_name = "ServiceAccountKey"
@@ -19,31 +17,25 @@ const initializeFirebase = async () => {
     },
   })
 
-    const response = await client.send(
-      new GetSecretValueCommand({
-        SecretId: secret_name,
-        VersionStage: "AWSCURRENT", 
-      })
-    )
+  const response = await client.send(
+    new GetSecretValueCommand({
+      SecretId: secret_name,
+      VersionStage: "AWSCURRENT",
+    })
+  )
 
+  const secret = JSON.parse(response.SecretString)
 
-    const secret = JSON.parse(response.SecretString)
-
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(secret),
-      })
-      console.log("Firebase initialized successfully.")
-    }
-
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(secret),
+    })
+    console.log("Firebase initialized successfully.")
+  }
 }
-
-
-
 
 const verifyToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]
-
 
   if (!token) {
     return res.status(401).json({ error: "no token" })
