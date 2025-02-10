@@ -3,7 +3,7 @@ const {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
-  HeadObjectCommand
+  HeadObjectCommand,
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 
@@ -27,7 +27,7 @@ const uploadFile = (fileBuffer, fileName, mimetype) => {
     Bucket: BUCKET_NAME,
     Body: fileBuffer,
     Key: fileName,
-    ContentType: mimetype
+    ContentType: mimetype,
   }
 
   return s3.send(new PutObjectCommand(uploadParams))
@@ -59,7 +59,7 @@ const getFileSize = async (cue, presentationId) => {
   const key = `${presentationId}/${cue.file.id.toString()}`
   const params = {
     Bucket: BUCKET_NAME,
-    Key: key
+    Key: key,
   }
   const command = new HeadObjectCommand(params)
   const seconds = 3 * 60 * 60
@@ -103,4 +103,10 @@ const getFileType = async (cue, presentationId) => {
   }
 }
 
-module.exports = { uploadFile, deleteFile, getObjectSignedUrl, getFileSize, getFileType }
+module.exports = {
+  uploadFile,
+  deleteFile,
+  getObjectSignedUrl,
+  getFileSize,
+  getFileType,
+}
