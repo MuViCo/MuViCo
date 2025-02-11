@@ -15,6 +15,7 @@ const presentationRouter = require("./routes/presentation")
 const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
 const middleware = require("./utils/middleware")
+const stripeRouter = require("./routes/stripe")
 
 const app = express()
 
@@ -49,6 +50,7 @@ app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
 app.use("/api/terms", termsRouter)
 app.use("/api/admin", adminRouter)
+app.use("/api/stripe", stripeRouter)
 
 if (process.env.NODE_ENV === "production") {
   const DIST_PATH = path.resolve(__dirname, "../../dist/")

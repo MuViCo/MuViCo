@@ -5,6 +5,7 @@ import presentationService from "../../services/presentations"
 import AdminControls from "./AdminControls"
 import PresentationsGrid from "./PresentationsGrid"
 import CreatePresentationContainer from "./CreatePresentationContainer"
+import StripeComponent from "../stripe/Stripe"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
@@ -56,6 +57,7 @@ const HomePage = ({ user }) => {
         togglableRef={togglableRef}
         handleCancel={handleCancel}
       />
+      <StripeComponent />
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
