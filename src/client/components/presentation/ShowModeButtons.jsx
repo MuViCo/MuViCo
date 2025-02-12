@@ -12,12 +12,13 @@ const ScreenToggleButtons = ({ screens, toggleScreenVisibility }) => (
         onClick={() => toggleScreenVisibility(screenNumber)}
         m={2}
       >
-        {screens[screenNumber] ? `Close screen: ${screenNumber}` : `Open screen: ${screenNumber}`}
+        {screens[screenNumber]
+          ? `Close screen: ${screenNumber}`
+          : `Open screen: ${screenNumber}`}
       </Button>
     ))}
   </Box>
 )
-
 
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue }) => (
@@ -40,9 +41,17 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
 )
 
 // ShowModeButtons component to handle screen visibility and cue navigation
-const ShowModeButtons = ({ screens, toggleScreenVisibility, cueIndex, updateCue }) => (
+const ShowModeButtons = ({
+  screens,
+  toggleScreenVisibility,
+  cueIndex,
+  updateCue,
+}) => (
   <Box display="flex" flexDirection="column" alignItems="center" gap={4} mt={4}>
-    <ScreenToggleButtons screens={screens} toggleScreenVisibility={toggleScreenVisibility} />
+    <ScreenToggleButtons
+      screens={screens}
+      toggleScreenVisibility={toggleScreenVisibility}
+    />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
   </Box>
 )

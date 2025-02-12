@@ -4,46 +4,77 @@ import { Box, Image, Text } from "@chakra-ui/react"
 import { isImage } from "../utils/fileTypeUtils"
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
-  <Box bg="black" color="white" width="100vw" height="100vh" display="flex" flexDirection="column">
+  <Box
+    bg="black"
+    color="white"
+    width="100vw"
+    height="100vh"
+    display="flex"
+    flexDirection="column"
+  >
     {/* Header with Screen Number on the left and Cue Name on the right */}
-    <Box display="flex" justifyContent="space-between" alignItems="center" position="absolute" width="90vw" left="5vw" zIndex={1}>
-      <Text fontSize="xl" textShadow='1px 0 2px #000000' style={{visibility: showText ? "visible" : "hidden"}}>
+    <Box
+      display="flex"
+      justifyContent="space-between"
+      alignItems="center"
+      position="absolute"
+      width="90vw"
+      left="5vw"
+      zIndex={1}
+    >
+      <Text
+        fontSize="xl"
+        textShadow="1px 0 2px #000000"
+        style={{ visibility: showText ? "visible" : "hidden" }}
+      >
         Screen {screenNumber}
       </Text>
       {screenData && (
-        <Text fontSize="xl" textShadow='1px 0 2px #000000' style={{visibility: showText ? "visible" : "hidden"}}>
+        <Text
+          fontSize="xl"
+          textShadow="1px 0 2px #000000"
+          style={{ visibility: showText ? "visible" : "hidden" }}
+        >
           Element Name: {screenData.name}
         </Text>
       )}
     </Box>
 
-    <Box flex="1" display="flex" justifyContent="center" alignItems="center" position="absolute" width="100vw" zIndex={0}>
+    <Box
+      flex="1"
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      position="absolute"
+      width="100vw"
+      zIndex={0}
+    >
       {screenData?.file?.url ? (
         // If data is an image
-          isImage(screenData.file) ? (
-            <Image
-              src={screenData.file.url}
-              alt={screenData.name}
-              width="100%"
-              height="100vh"
-              objectFit="contain"
-            />
-          ) : (
-        // If data is a video
-            <video
-              src={screenData.file.url}
-              width="100%"
-              height="100%"
-              autoPlay
-              loop
-              muted
-              style={{ objectFit: "contain" }}
+        isImage(screenData.file) ? (
+          <Image
+            src={screenData.file.url}
+            alt={screenData.name}
+            width="100%"
+            height="100vh"
+            objectFit="contain"
           />
-          )
         ) : (
+          // If data is a video
+          <video
+            src={screenData.file.url}
+            width="100%"
+            height="100%"
+            autoPlay
+            loop
+            muted
+            style={{ objectFit: "contain" }}
+          />
+        )
+      ) : (
         // If no data
-          <Text>No media available for this cue.</Text>
-        )}
+        <Text>No media available for this cue.</Text>
+      )}
     </Box>
   </Box>
 )
@@ -67,7 +98,11 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   useEffect(() => {
     if (isVisible) {
       if (!windowRef.current) {
-        const newWindow = window.open("", `Screen ${screenNumber}`, "width=800,height=600")
+        const newWindow = window.open(
+          "",
+          `Screen ${screenNumber}`,
+          "width=800,height=600"
+        )
 
         windowRef.current = newWindow
         setIsWindowReady(true)
@@ -136,9 +171,15 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   }, [])
 
   // Only render the portal when the window is ready
-  return windowRef.current && isWindowReady && (screenData || previousScreenData)
+  return windowRef.current &&
+    isWindowReady &&
+    (screenData || previousScreenData)
     ? ReactDOM.createPortal(
-          <ScreenContent screenNumber={screenNumber} screenData={screenData || previousScreenData} showText={showText} />,
+        <ScreenContent
+          screenNumber={screenNumber}
+          screenData={screenData || previousScreenData}
+          showText={showText}
+        />,
         windowRef.current.document.body // render to new window's document.body
       )
     : null

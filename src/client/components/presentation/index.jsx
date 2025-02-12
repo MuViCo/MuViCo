@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
 import {
   fetchPresentationInfo,
@@ -7,42 +7,42 @@ import {
 } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
+
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
-import { createFormData } from "../utils/formDataUtils"
-import presentation from "../../services/presentation"
+import addInitialElements from "../utils/addInitialElements"
 
 const PresentationPage = () => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const showToast = useCustomToast()
+  const location = useLocation()
+  const isJustCreated = useRef(location.state?.isJustCreated || false)
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
-  const [hasFetched, setHasFetched] = useState(false)
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
   useEffect(() => {
-    dispatch(fetchPresentationInfo(id)).then(() => {
-      setHasFetched(true) // mark cues fetched
-    })
+    dispatch(fetchPresentationInfo(id))
   }, [id, navigate, dispatch])
 
-  // add blanks only if presentation has no cues
+  //If the presentation is brand new, add four empty elements
   useEffect(() => {
-    if (hasFetched && presentationInfo && presentationInfo.length === 0) {
-      addBlankCue(id).then(() => {
+    if (isJustCreated.current) {
+      addInitialElements(id, showToast).then(() => {
         dispatch(fetchPresentationInfo(id))
       })
     }
-  }, [presentationInfo, hasFetched, dispatch, id])
+    isJustCreated.current = false
+  }, [dispatch, id, showToast, isJustCreated])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
@@ -59,34 +59,6 @@ const PresentationPage = () => {
       }
     }
   }, [presentationInfo, presentationSize])
-
-  const addBlankCue = async (presentationId) => {
-    const screens = [1, 2, 3, 4]
-    for (const screen of screens) {
-      const formData = createFormData(
-        0,
-        `initial element for screen ${screen}`,
-        screen,
-        "/blank.png"
-      )
-      try {
-        await presentation.addCue(presentationId, formData)
-        showToast({
-          title: "Element added",
-          description: `Initial element added to screen ${screen}`,
-          status: "success",
-        })
-      } catch (error) {
-        const errorMessage = error.message || "An error occurred"
-        console.error("Error adding initial element:", error)
-        showToast({
-          title: "Error",
-          description: errorMessage,
-          status: "error",
-        })
-      }
-    }
-  }
 
   const handleDeletePresentation = (presentationId) => {
     setPresentationToDelete(presentationId)

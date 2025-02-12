@@ -8,10 +8,10 @@ const ShowMode = ({ cues }) => {
   const [preloadedCues, setPreloadedCues] = useState({})
 
   const [cueIndex, setCueIndex] = useState(0)
-  
+
   const [screenVisibility, setScreenVisibility] = useState(() => {
-    const initialScreenVisibility = [...new Set(cues.map(cue => cue.screen))]
-  
+    const initialScreenVisibility = [...new Set(cues.map((cue) => cue.screen))]
+
     return initialScreenVisibility.reduce((acc, screenNumber) => {
       acc[screenNumber] = false
       return acc
@@ -30,10 +30,10 @@ const ShowMode = ({ cues }) => {
         }
       })
     }
-  
+
     const preloadCueData = async () => {
       const preloaded = {}
-  
+
       // Group cues by screen number
       const cuesByScreen = cues.reduce((acc, cue) => {
         if (!acc[cue.screen]) {
@@ -42,43 +42,43 @@ const ShowMode = ({ cues }) => {
         acc[cue.screen][cue.index] = cue
         return acc
       }, {})
-  
-      const preloadPromises = Object.entries(cuesByScreen).flatMap(([screen, cues]) => {
-        preloaded[screen] = {}
-  
-        return Object.entries(cues).map(async ([cueId, cue]) => {
-          if (cue.file?.url) {
-            await preloadImage(cue.file.url)
-          }
-          preloaded[screen][cueId] = cue
-        })
-      })
-  
+
+      const preloadPromises = Object.entries(cuesByScreen).flatMap(
+        ([screen, cues]) => {
+          preloaded[screen] = {}
+
+          return Object.entries(cues).map(async ([cueId, cue]) => {
+            if (cue.file?.url) {
+              await preloadImage(cue.file.url)
+            }
+            preloaded[screen][cueId] = cue
+          })
+        }
+      )
+
       // Wait for all preloads to finish
       await Promise.all(preloadPromises)
-  
+
       setPreloadedCues(preloaded)
     }
-  
+
     preloadCueData()
   }, [cues])
-  
 
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
-  setScreenVisibility(prevVisibility => ({
-    ...prevVisibility,
-    [screenNumber]: !prevVisibility[screenNumber]
-  }))
-}
+    setScreenVisibility((prevVisibility) => ({
+      ...prevVisibility,
+      [screenNumber]: !prevVisibility[screenNumber],
+    }))
+  }
 
-const handleScreenClose = useCallback((screenNumber) => {
-  setScreenVisibility(prevVisibility => ({
-    ...prevVisibility,
-    [screenNumber]: false
-  }))
-}, [])
-
+  const handleScreenClose = useCallback((screenNumber) => {
+    setScreenVisibility((prevVisibility) => ({
+      ...prevVisibility,
+      [screenNumber]: false,
+    }))
+  }, [])
 
   const updateCue = (direction) => {
     if (direction === "Next") {

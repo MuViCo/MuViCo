@@ -34,7 +34,9 @@ const HomePage = ({ user }) => {
       const presentationId =
         updatedPresentations[updatedPresentations.length - 1].id
 
-      navigate(`/presentation/${presentationId}`)
+      navigate(`/presentation/${presentationId}`, {
+        state: { isJustCreated: true },
+      })
     } catch (error) {
       console.error("Error creating presentation:", error)
     }
