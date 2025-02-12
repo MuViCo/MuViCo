@@ -29,7 +29,6 @@ const App = () => {
     }
     setIsInitialized(true)
   }, [])
-  
 
   if (!isInitialized) {
     return <div>Loading...</div>
@@ -45,7 +44,13 @@ const App = () => {
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"
-              element={user ? <HomePage user={user} setUser={setUser} /> : <Navigate to="/" />}
+              element={
+                user ? (
+                  <HomePage user={user} setUser={setUser} />
+                ) : (
+                  <Navigate to="/" />
+                )
+              }
             />
             <Route
               path="/presentation/:id"

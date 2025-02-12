@@ -10,7 +10,7 @@ import {
   FormLabel,
   Input,
 } from "@chakra-ui/react"
-import Error from "./Error"
+import Error from "../utils/Error"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
 
