@@ -9,6 +9,7 @@ const { BUCKET_NAME } = process.env
 const { BUCKET_REGION } = process.env
 const { ACCESS_KEY } = process.env
 const { SECRET_ACCESS_KEY } = process.env
+const { STRIPE_SECRET_KEY } = process.env
 
 
 module.exports = {
@@ -19,4 +20,5 @@ module.exports = {
   BUCKET_REGION,
   ACCESS_KEY,
   SECRET_ACCESS_KEY,
+  STRIPE_SECRET_KEY,
 }

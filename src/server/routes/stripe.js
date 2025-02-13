@@ -1,7 +1,5 @@
 // This is your test secret API key.
-const stripe = require("stripe")(
-  "sk_test_51QrLMpHQg7gLEDipprRIXhFFASgI7z16P2eAX9z5uTHK7Lep6So0i37nSf1MV5Wq0flsqxzU0IS9txc09foNINxG00f9ugY2I0"
-)
+const stripe = require("stripe")(require("../utils/config").STRIPE_SECRET_KEY) 
 const express = require("express")
 
 const router = express.Router()
@@ -13,7 +11,7 @@ router.post("/create-checkout-session", async (req, res) => {
     line_items: [
       {
         // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
-        price: "prod_RkroQ18Fcen11F",
+        price: "price_1QrccDHQg7gLEDipGHTBG70X",
         quantity: 1,
       },
     ],
