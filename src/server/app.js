@@ -5,7 +5,6 @@ const morgan = require("morgan")
 const mongoose = require("mongoose")
 const path = require("path")
 const config = require("./utils/config")
-
 const logger = require("./utils/logger")
 
 const signupRouter = require("./routes/signup")
@@ -16,6 +15,7 @@ const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
 const middleware = require("./utils/middleware")
 const stripeRouter = require("./routes/stripe")
+const webhookRouter = require("./routes/webhook")
 
 const app = express()
 
@@ -37,9 +37,13 @@ mongoose
   })
 
 app.use(cors())
+app.use(cookieParser())
+
+app.use("/api/webhook", express.raw({ type: "application/json" }), webhookRouter)
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
-app.use(cookieParser())
+
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms :data")
 )

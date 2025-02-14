@@ -16,7 +16,9 @@
     "test:cypress-open": "cypress open",
     "setup-e2e": "concurrently \"vite --host\"  \"NODE_ENV=test node src/server/index.js\"",
     "e2e": "concurrently \"npm run setup-e2e\"  \"sleep 1 && playwright test --project chromium --ui\"",
-    "e2e:report": "playwright show-report && codecov"
+    "e2e:report": "playwright show-report && codecov",
+    "stripe-listen": "stripe listen --forward-to http://localhost:8000/webhook"
+
   },
   "jest": {
     "globalTeardown": "./src/server/tests/teardown.js",
@@ -109,6 +111,7 @@
     "lint-staged": "^15.2.0",
     "nodemon": "^3.1.5",
     "prettier": "^3.3.3",
+    "stripe-cli": "^0.1.0",
     "supertest": "^7.0.0"
   },
   "proxy": "http://localhost:8000"

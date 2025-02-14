@@ -32,17 +32,13 @@ const StripeComponent = () => {
   const [message, setMessage] = useState("")
 
   useEffect(() => {
-    // Check to see if this is a redirect back from Checkout
     const query = new URLSearchParams(window.location.search)
+    console.log("Query Params:", query)
 
     if (query.get("success")) {
-      setMessage("Order placed! You will receive an email confirmation.")
-    }
-
-    if (query.get("canceled")) {
-      setMessage(
-        "Order canceled -- continue to shop around and checkout when you're ready."
-      )
+      setMessage("✅ Order placed! You will receive an email confirmation.")
+    } else if (query.get("canceled")) {
+      setMessage("❌ Order canceled. Please try again.")
     }
   }, [])
 
