@@ -113,7 +113,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       file,
     }
 
-    if (file.name !== "/blank.png") {
+    if (file !== "/blank.png") {
       if (checkFileType(file) == false) {
         return
       }
@@ -217,6 +217,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
         <Input
           type="file"
           id="file-upload"
+          data-testid="file-name"
           style={{ display: "none" }}
           onChange={fileSelected}
           accept={allowedTypes}
