@@ -3,7 +3,14 @@ import React from "react"
 const Error = ({ error }) => {
   if (error) {
     return (
-      <div style={{ color: "red", paddingTop: "5px", textAlign: "left" }}>
+      <div
+        style={{
+          color: "#D2042D",
+          paddingTop: "5px",
+          textAlign: "left",
+          fontSize: "14px",
+        }}
+      >
         {error}
       </div>
     )

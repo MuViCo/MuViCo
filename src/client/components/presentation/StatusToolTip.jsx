@@ -4,7 +4,9 @@ import { CheckIcon } from "@chakra-ui/icons"
 
 const StatusTooltip = ({ status }) => (
   <Tooltip
-    label={status === "loading" ? "Saving in progress..." : "Your changes are saved!"}
+    label={
+      status === "loading" ? "Saving in progress..." : "Your changes are saved!"
+    }
     aria-label="Status Tooltip"
     placement="right"
     zIndex="tooltip"
