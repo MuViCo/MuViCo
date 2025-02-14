@@ -12,30 +12,39 @@ import {
   Divider,
   Tooltip,
 } from "@chakra-ui/react"
-import { CheckIcon } from "@chakra-ui/icons"
-import { LuInfo } from "react-icons/lu"
+import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect } from "react"
-
+import Error from "../utils/Error"
 import {
   handleNumericInputChange,
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
-/**
- * Renders a form for adding cues.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {Function} props.addCue - The function to add a cue.
- * @returns {JSX.Element} The CuesForm component.
- */
-const CuesForm = ({ addCue, onClose, position, cues }) => {
+const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
-  const [fileName, setFileName] = useState("blank.png")
+  const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
+  const [cueId, setCueId] = useState("")
+  const [error, setError] = useState(null)
+  const allowedTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/gif",
+    "image/bmp",
+    "image/webp",
+    "image/avif",
+    "image/apng",
+    "image/ico",
+    "image/jfif",
+    "image/jpe",
+    "image/svg+xml",
+    "video/mp4",
+    "video/3gpp",
+  ]
 
   useEffect(() => {
     if (position) {
@@ -45,17 +54,47 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
   }, [position])
 
   useEffect(() => {
-    if (screen > 0) {
+    if (screen > 0 && !cueData) {
       setIndex((prevIndex) => {
         const newIndex = getNextAvailableIndex(screen, cues)
         return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
       })
     }
-  }, [screen, cues])
+  }, [screen, cues, cueData])
+
+  useEffect(() => {
+    if (cueData) {
+      setCueName(cueData.name)
+      setIndex(cueData.index)
+      setScreen(cueData.screen)
+      setCueId(cueData._id)
+      setFile(cueData.file)
+      setFileName(cueData.file.name ? cueData.file.name : "")
+    }
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
+
+  const checkFileType = (file) => {
+    if (!allowedTypes.includes(file.type)) {
+      setError("Invalid file type. Please see the info button for valid types.")
+      setTimeout(() => {
+        setError(null)
+      }, 5000)
+      return false
+    }
+    return true
+  }
 
   const onAddCue = (event) => {
     event.preventDefault()
+
+    if (file !== "/blank.png") {
+      if (checkFileType(file) == false) {
+        return
+      }
+    }
+
     addCue({ file, index, cueName, screen, fileName })
+    setError(null)
     setFile("/blank.png")
     setFileName("")
     setCueName("")
@@ -64,21 +103,50 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
     onClose()
   }
 
+  const handleUpdateSubmit = async (event) => {
+    event.preventDefault()
+    const updatedCue = {
+      cueId,
+      cueName,
+      index,
+      screen,
+      file,
+    }
+
+    if (file !== "/blank.png") {
+      if (checkFileType(file) == false) {
+        return
+      }
+    }
+
+    await updateCue(cueId, updatedCue)
+
+    onClose()
+
+    setFileName("")
+    setCueName("")
+  }
+
   const fileSelected = (event) => {
     const selected = event.target.files[0]
     if (selected) {
       setFile(selected)
       setFileName(selected.name)
     } else {
-      setFile("/blank.png")
-      setFileName("blank.png")
+      setFile("")
+      setFileName("")
     }
+    setError(null)
   }
 
   return (
-    <form onSubmit={onAddCue}>
+    <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
       <FormControl as="fieldset">
-        <Heading size="md">Add element</Heading>
+        {cueData ? (
+          <Heading size="md">Edit Element</Heading>
+        ) : (
+          <Heading size="md">Add element</Heading>
+        )}
         <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
         <NumberInput
           value={screen}
@@ -126,10 +194,10 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
           <Tooltip
             label={
               <>
-                <strong>Valid image types: </strong>.png, .bmp, .jpeg, .jpg,
-                .jpe, .jfif, .gif, .cur, .ico
+                <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
                 <br />
-                <strong>Valid video types: </strong> .mp4, .webm and .ogg
+                <strong>Valid video types: </strong> .mp4 and .3gp
               </>
             }
             placement="right-end"
@@ -137,7 +205,7 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
             fontSize="sm"
           >
             <Button variant="ghost" size="xs" marginLeft={2}>
-              <LuInfo />
+              <InfoOutlineIcon />
             </Button>
           </Tooltip>
         </FormHelperText>
@@ -149,22 +217,43 @@ const CuesForm = ({ addCue, onClose, position, cues }) => {
         <Input
           type="file"
           id="file-upload"
+          data-testid="file-name"
           style={{ display: "none" }}
           onChange={fileSelected}
+          accept={allowedTypes}
         />{" "}
-        {file !== "/blank.png" && <CheckIcon color="green.500" />}
+        {fileName &&
+          fileName !== "blank.png" &&
+          (!allowedTypes.includes(file.type) ? (
+            <>
+              {" "}
+              <CloseIcon color="#D2042D" />
+              <FormHelperText>{fileName}</FormHelperText>
+            </>
+          ) : (
+            <>
+              <CheckIcon color="#03C03C" />
+              <FormHelperText>{fileName}</FormHelperText>
+            </>
+          ))}
+        {error && <Error error={error} />}
         <FormHelperText mb={2}>or add blank element</FormHelperText>
         <Button
           w={40}
           mr={2}
           onClick={() => {
             setFile("/blank.png")
-            setFileName("")
+            setFileName("blank.png")
           }}
         >
           Add blank
         </Button>{" "}
-        {file === "/blank.png" && <CheckIcon color="green.500" />}
+        {fileName === "blank.png" && (
+          <>
+            <CheckIcon color="#03C03C" />
+            <FormHelperText>{fileName}</FormHelperText>
+          </>
+        )}{" "}
         <Divider orientation="horizontal" my={4} />
       </FormControl>
       <Button mb={4} type="submit" colorScheme="purple">
