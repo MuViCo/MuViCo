@@ -41,8 +41,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const [isDragging, setIsDragging] = useState(false)
   const clickTimeout = useRef(null)
 
-  const handleMouseDown = () => {
-    setIsDragging(true)
+  const handleMouseDown = (event) => {
+    if (event.target.closest(".react-grid-item")) {
+      setIsDragging(true)
+      setHoverPosition(null)
+    } else {
+      setIsDragging(false)
+    }
   }
 
   const handleMouseMove = (event) => {
@@ -297,31 +302,34 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         onDragOver={(e) => e.preventDefault()}
         data-testid="drop-area"
       >
-        <Box
-          overflow="visible"
-          width="100%"
-          position="relative"
-          ref={containerRef}
-          onDoubleClick={handleDoubleClick}
-          onMouseMove={handleMouseMove} // Detects empty spaces
-        >
-          <GridLayoutComponent id={id} cues={cues} setStatus={setStatus} />
+        <Box position="relative" width="100%">
+          <Box
+            overflow="auto"
+            width="100%"
+            position="relative"
+            ref={containerRef}
+            onDoubleClick={handleDoubleClick}
+            onMouseMove={handleMouseMove}
+          >
+            <GridLayoutComponent id={id} cues={cues} setStatus={setStatus} />
+          </Box>
 
-          {hoverPosition && (
+          {hoverPosition && !isDragging && (
             <Box
               position="absolute"
               left={`${hoverPosition.index * (columnWidth + gap)}px`}
-              top={`${hoverPosition.screen * (rowHeight + gap)}px`}
+              top={`${hoverPosition.screen * (rowHeight + gap) + 20}px`}
               width={`${columnWidth}px`}
               height={`${rowHeight}px`}
-              bg="#481a23"
+              bg="rgba(72, 26, 35, 0.8)"
               borderRadius="8px"
               transition="0"
-              zIndex={0} // Ensure it's above other elements
+              zIndex={0}
               pointerEvents="none"
             />
           )}
         </Box>
+
         <Box
           display="flex"
           height="600px"
