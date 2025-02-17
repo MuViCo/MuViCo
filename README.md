@@ -45,7 +45,7 @@ Currently the application is running on a staging server, which, for security re
 
 ### Documentation
 
-For detailed instructions on how to use the application check out the [User Guide](https://github.com/MuViCo/MuViCo/blob/docs/issue-212-add-user-guide/documentation/userguide.md)
+For detailed instructions on how to use the application check out the [User Guide](https://github.com/MuViCo/MuViCo/blob/3fa0f45fdeec4fe03a244c961004a385991dd78b/documentation/userguide.md)
 
 The latest component diagram can be viewed [here](https://github.com/MuViCo/MuViCo/blob/documentation/documentation/architecture/sprint%202.png).
 
