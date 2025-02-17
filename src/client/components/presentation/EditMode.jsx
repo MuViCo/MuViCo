@@ -103,7 +103,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
           file,
           fileName,
         }
-        await updateCue(cueExists._id, updatedCue)
+        await dispatchUpdateCue(cueExists._id, updatedCue)
         setIsConfirmOpen(false)
       })
       setIsConfirmOpen(true)
@@ -132,6 +132,27 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         status: "error",
       })
     }
+  }
+
+  const updateCue = async (cueId, updatedCue) => {
+    const cueExists = cues.find(
+      (cue) =>
+        cue.index === Number(updatedCue.index) &&
+        cue.screen === Number(updatedCue.screen)
+    )
+
+    if (cueExists && cueExists._id !== cueId) {
+      setConfirmMessage(
+        `Cue ${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to update it?`
+      )
+      setConfirmAction(() => async () => {
+        await dispatchUpdateCue(cueExists._id, updatedCue)
+        setIsConfirmOpen(false)
+      })
+      setIsConfirmOpen(true)
+      return
+    }
+    await dispatchUpdateCue(cueId, updatedCue)
   }
 
   const cueExists = (xIndex, yIndex) => {
@@ -167,7 +188,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }
 
-  const updateCue = async (cueId, updatedCue) => {
+  const dispatchUpdateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
       await dispatch(updatePresentation(id, updatedCue, cueId))
@@ -239,7 +260,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               screen: yIndex,
               file: mediaFiles[0],
             }
-            await updateCue(existingCue._id, updatedCue)
+            await dispatchUpdateCue(existingCue._id, updatedCue)
             setIsConfirmOpen(false)
           })
           setIsConfirmOpen(true)
