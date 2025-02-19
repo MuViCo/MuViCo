@@ -1,6 +1,8 @@
 import React from "react"
-import { render, screen, fireEvent } from "@testing-library/react"
-import { useNavigate, Router } from "react-router-dom"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { useNavigate } from "react-router-dom"
+import "@testing-library/jest-dom"
+
 import HomePage from "../../components/homepage/index"
 import {
   AdminControls,
@@ -8,7 +10,9 @@ import {
   CreatePresentation,
 } from "../../components/homepage/index"
 import PresentationForm from "../../components/homepage/CreatePresentation"
-import "@testing-library/jest-dom"
+import presentationService from "../../services/presentations"
+import addInitialElements from "../../components/utils/addInitialElements"
+import { useCustomToast } from "../../components/utils/toastUtils"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
@@ -17,17 +21,72 @@ jest.mock("../../components/utils/firebase", () => ({
   apikey: "testkey",
 }))
 
+jest.mock("../../services/presentations", () => ({
+  create: jest.fn(),
+  getAll: jest.fn(),
+}))
+
+jest.mock("../../components/utils/addInitialElements", () => jest.fn())
+
+jest.mock("../../components/utils/toastUtils", () => ({
+  useCustomToast: jest.fn(() => jest.fn()),
+}))
+
 describe("HomePage", () => {
   beforeEach(() => {
     useNavigate.mockClear()
+    presentationService.create.mockClear()
+    presentationService.getAll.mockClear()
+    addInitialElements.mockClear()
   })
 
-  test('navigates to /users when "All users" button is clicked', () => {
+  test('navigates to /users when "All users" button is clicked', async () => {
     const navigate = jest.fn()
     useNavigate.mockReturnValue(navigate)
     render(<HomePage user={{ isAdmin: true }} />)
     fireEvent.click(screen.getByText("All users"))
     expect(navigate).toHaveBeenCalledWith("/users")
+  })
+
+  test("creates a presentation and navigates to the new presentation", async () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    const mockPresentations = [
+      { id: 1, name: "Presentation 1" },
+      { id: 2, name: "Presentation 2" },
+      { id: 3, name: "Presentation 3" },
+    ]
+    presentationService.getAll.mockResolvedValue(mockPresentations)
+    presentationService.create.mockResolvedValue({
+      id: 3,
+      name: "Presentation 3",
+    })
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    fireEvent.click(screen.getByText("New presentation"))
+
+    fireEvent.change(screen.getByTestId("presentation-name"), {
+      target: { value: "Presentation 3" },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /create/i }))
+
+    await waitFor(() =>
+      expect(presentationService.create).toHaveBeenCalledWith({
+        name: "Presentation 3",
+      })
+    )
+
+    await waitFor(() =>
+      expect(presentationService.getAll).toHaveBeenCalledTimes(2)
+    ) //one call in useEffect and one call in createPresentation
+
+    const showToast = useCustomToast.mock.results[0].value
+    expect(addInitialElements).toHaveBeenCalledWith(3, showToast)
+
+    expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
 })
 
