@@ -403,9 +403,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
                   bg="rgba(72, 26, 35, 0.8)"
-                  borderRadius="8px"
+                  borderRadius="16"
                   transition="0"
-                  zIndex={0}
+                  zIndex={-1}
                   pointerEvents="none"
                 />
               )}
