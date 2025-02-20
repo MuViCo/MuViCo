@@ -5,6 +5,8 @@ import presentationService from "../../services/presentations"
 import AdminControls from "./AdminControls"
 import PresentationsGrid from "./PresentationsGrid"
 import CreatePresentationContainer from "./CreatePresentationContainer"
+import IAMInstructions from "../aws/IAMInstructions"
+import IAMSettings from "../aws/IAMSettings"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
@@ -58,6 +60,8 @@ const HomePage = ({ user }) => {
         togglableRef={togglableRef}
         handleCancel={handleCancel}
       />
+      <IAMInstructions/>
+      <IAMSettings/>
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
