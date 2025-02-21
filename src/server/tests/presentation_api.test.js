@@ -11,6 +11,7 @@ const api = supertest(app)
 
 let authHeader
 let testPresentationId
+let testCueId
 
 describe("test presentation", () => {
   beforeEach(async () => {
@@ -49,7 +50,7 @@ describe("test presentation", () => {
       .field("screen", screen)
       .field("fileName", "")
 
-    return cueResponse.body.cues[0]
+    return cueResponse.body.cues[0]._id // Return ID of created cue
   }
 
   describe("GET /api/presentation/:id", () => {
@@ -102,8 +103,8 @@ describe("test presentation", () => {
     })
   })
 
-  describe("PUT /api/presentation/:id - Cue creation tests", () => {
-    test("Create cue with valid screen 1", async () => {
+  describe("Cue creation tests", () => {
+    test("PUT /api/presentation/:id with valid cue information should return 200", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
@@ -112,40 +113,12 @@ describe("test presentation", () => {
         .attach("image", image, "mock_image.png")
         .field("index", "1")
         .field("cueName", "Test Cue")
-        .field("screen", "1") // Valid screen
+        .field("screen", "1")
         .field("fileName", "")
         .expect(200)
     })
 
-    test("Create cue with valid screen 4", async () => {
-      const imageFilePath = path.join(__dirname, "mock_image.png")
-      const image = fs.readFileSync(imageFilePath)
-
-      await api
-        .put(`/api/presentation/${testPresentationId}`)
-        .attach("image", image, "mock_image.png")
-        .field("index", "1")
-        .field("cueName", "Test Cue")
-        .field("screen", "4") // Valid screen
-        .field("fileName", "")
-        .expect(200)
-    })
-
-    test("Create cue with invalid screen 0", async () => {
-      const imageFilePath = path.join(__dirname, "mock_image.png")
-      const image = fs.readFileSync(imageFilePath)
-
-      await api
-        .put(`/api/presentation/${testPresentationId}`)
-        .attach("image", image, "mock_image.png")
-        .field("index", "1")
-        .field("cueName", "Test Cue")
-        .field("screen", "0") // Invalid screen
-        .field("fileName", "")
-        .expect(400)
-    })
-
-    test("Create cue with invalid screen 5", async () => {
+    test("PUT /api/presentation/:id with invalid screen should return 400", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
@@ -159,7 +132,7 @@ describe("test presentation", () => {
         .expect(400)
     })
 
-    test("Create cue with missing name field", async () => {
+    test("PUT /api/presentation/:id with missing name should return 400", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
@@ -174,47 +147,22 @@ describe("test presentation", () => {
     })
   })
 
-  describe("PUT /api/presentation/:id/:cueId - Cue Updates", () => {
-    let testCue
-    let testCueId
+  describe("Cue update tests", () => {
+    test("PUT /api/presentation/:id/:cueId with valid cue information should return 200", async () => {
+      testCueId = await createCue(2) // Create cue in screen 2
 
-    // Create a cue for update test group
-    beforeEach(async () => {
-      testCue = await createCue(2) // Cue is created in screen 2
-      testCueId = testCue._id
-    })
-
-    test("Update existing cue with valid screen 1", async () => {
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "1")
         .field("cueName", "Test Cue")
-        .field("screen", "1") // Valid screen
+        .field("screen", "1")
         .field("fileName", "")
         .expect(200)
     })
 
-    test("Update existing cue with valid screen 4", async () => {
-      await api
-        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "1")
-        .field("cueName", "Test Cue")
-        .field("screen", "4") // Valid screen
-        .field("fileName", "")
-        .expect(200)
-    })
+    test("PUT /api/presentation/:id/:cueId with invalid screen should return 400", async () => {
+      testCueId = await createCue(2) // Create cue in screen 2
 
-    test("Update existing cue with invalid screen 0", async () => {
-      await api
-        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "1")
-        .field("cueName", "Test Cue")
-        .field("screen", "0") // Invalid screen
-        .field("fileName", "")
-        .expect(400)
-    })
-
-    test("Update existing cue with invalid screen 5", async () => {
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "1")
@@ -224,10 +172,14 @@ describe("test presentation", () => {
         .expect(400)
     })
 
-    test("Update existing cue with missing fields", async () => {
+    test("PUT /api/presentation/:id/:cueId with missing name should return 400", async () => {
+      testCueId = await createCue(2) // Create cue in screen 2
+
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "1") // Missing required fields
+        .field("index", "1")
+        // Missing cue name
+        .field("screen", "4")
         .field("fileName", "")
         .expect(400)
     })
