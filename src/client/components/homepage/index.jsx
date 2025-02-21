@@ -1,15 +1,19 @@
 import { Container } from "@chakra-ui/react"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
+
 import presentationService from "../../services/presentations"
 import AdminControls from "./AdminControls"
 import PresentationsGrid from "./PresentationsGrid"
 import CreatePresentationContainer from "./CreatePresentationContainer"
+import addInitialElements from "../utils/addInitialElements"
+import { useCustomToast } from "../utils/toastUtils"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
+  const showToast = useCustomToast()
 
   useEffect(() => {
     const getPresentationData = async () => {
@@ -34,9 +38,8 @@ const HomePage = ({ user }) => {
       const presentationId =
         updatedPresentations[updatedPresentations.length - 1].id
 
-      navigate(`/presentation/${presentationId}`, {
-        state: { isJustCreated: true },
-      })
+      await addInitialElements(presentationId, showToast)
+      navigate(`/presentation/${presentationId}`)
     } catch (error) {
       console.error("Error creating presentation:", error)
     }

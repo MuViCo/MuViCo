@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
 import {
   fetchPresentationInfo,
@@ -10,17 +10,12 @@ import { useDispatch, useSelector } from "react-redux"
 
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
-import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
-import addInitialElements from "../utils/addInitialElements"
 
 const PresentationPage = () => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const showToast = useCustomToast()
-  const location = useLocation()
-  const isJustCreated = useRef(location.state?.isJustCreated || false)
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
@@ -30,19 +25,10 @@ const PresentationPage = () => {
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
+
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, navigate, dispatch])
-
-  //If the presentation is brand new, add four empty elements
-  useEffect(() => {
-    if (isJustCreated.current) {
-      addInitialElements(id, showToast).then(() => {
-        dispatch(fetchPresentationInfo(id))
-      })
-    }
-    isJustCreated.current = false
-  }, [dispatch, id, showToast, isJustCreated])
 
   const handleShowMode = () => {
     setShowMode(!showMode)
@@ -51,7 +37,8 @@ const PresentationPage = () => {
   useEffect(() => {
     if (presentationInfo) {
       const totalSize = presentationInfo.reduce((sum, cue) => {
-        return cue.file ? sum + parseInt(cue.file.size) : sum
+        const fileSize = cue.file?.size || 0
+        return !isNaN(fileSize) ? sum + Number(fileSize) : sum
       }, 0)
       const newSize = (totalSize / (1024 * 1024)).toFixed(2)
       if (presentationSize !== newSize) {
