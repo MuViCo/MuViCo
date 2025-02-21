@@ -47,17 +47,14 @@ describe("test presentation", () => {
   })
   describe("DELETE", () => {
     test(" /api/presentation/:id", async () => {
-      await api
-        .delete(`/api/presentation/${testPresentationId}`)
-        .expect(204)
+      await api.delete(`/api/presentation/${testPresentationId}`).expect(204)
     })
   })
 
   describe("PUT /api/presentation/:id", () => {
     test("update presentation", async () => {
-      const imageFilePath = path.join(__dirname, 'mock_image.png')
+      const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
-
 
       await api
         .put(`/api/presentation/${testPresentationId}`)
