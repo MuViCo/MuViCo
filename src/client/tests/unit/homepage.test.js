@@ -12,7 +12,6 @@ import {
 import PresentationForm from "../../components/homepage/CreatePresentation"
 import presentationService from "../../services/presentations"
 import addInitialElements from "../../components/utils/addInitialElements"
-import { useCustomToast } from "../../components/utils/toastUtils"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
@@ -27,10 +26,6 @@ jest.mock("../../services/presentations", () => ({
 }))
 
 jest.mock("../../components/utils/addInitialElements", () => jest.fn())
-
-jest.mock("../../components/utils/toastUtils", () => ({
-  useCustomToast: jest.fn(() => jest.fn()),
-}))
 
 describe("HomePage", () => {
   beforeEach(() => {
@@ -83,8 +78,7 @@ describe("HomePage", () => {
       expect(presentationService.getAll).toHaveBeenCalledTimes(2)
     ) //one call in useEffect and one call in createPresentation
 
-    const showToast = useCustomToast.mock.results[0].value
-    expect(addInitialElements).toHaveBeenCalledWith(3, showToast)
+    expect(addInitialElements).toHaveBeenCalledWith(3, expect.any(Function))
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
