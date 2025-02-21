@@ -36,6 +36,22 @@ describe("test presentation", () => {
     testPresentationId = presentation._id
   })
 
+  // Helper function for creating cues
+  const createCue = async (screen) => {
+    const imageFilePath = path.join(__dirname, "mock_image.png")
+    const image = fs.readFileSync(imageFilePath)
+
+    const cueResponse = await api
+      .put(`/api/presentation/${testPresentationId}`)
+      .attach("image", image, "mock_image.png")
+      .field("index", "1")
+      .field("cueName", "Test Cue")
+      .field("screen", screen)
+      .field("fileName", "")
+
+    return cueResponse.body.cues[0]._id // Return ID of created cue
+  }
+
   describe("GET /api/presentation/:id", () => {
     test("presentation is returned as json", async () => {
       await api
