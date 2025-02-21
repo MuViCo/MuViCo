@@ -100,11 +100,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { id } = req.params
     const fileId = generateFileId()
     const { file, user } = req
-    if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
+    const { index, screen, cueName, image, fileName } = req.body
+
+    if (!id || !index || !cueName || !screen) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (req.body.screen < 1 || req.body.screen > 4) {
+    if (screen < 1 || screen > 4) {
       return res
         .status(400)
         .json({ error: "Screen number must be between 1 and 4." })
@@ -165,13 +167,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       {
         $push: {
           cues: {
-            index: req.body.index,
-            name: req.body.cueName,
-            screen: req.body.screen,
+            index: index,
+            name: cueName,
+            screen: screen,
             file: {
               id: fileId,
-              name: req.body.fileName,
-              url: req.body.image === "/blank.png" ? null : "",
+              name: fileName,
+              url: image === "/blank.png" ? null : "",
             },
           },
         },
