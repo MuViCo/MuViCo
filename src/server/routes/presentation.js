@@ -211,7 +211,7 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (req.body.screen < 1 || req.body.screen > 4) {
+      if (screen < 1 || screen > 4) {
         return res
           .status(400)
           .json({ error: "Screen number must be between 1 and 4." })
