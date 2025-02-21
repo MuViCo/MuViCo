@@ -87,47 +87,107 @@ describe("test presentation", () => {
   })
 
   describe("PUT /api/presentation/:id", () => {
-    test("Create cue with valid screen", async () => {
+    test("Create cue with valid screen 4", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
       await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
-        .field("index", "1") // Add other form fields as needed
+        .field("index", "1")
         .field("cueName", "Test Cue")
-        .field("screen", "2")
+        .field("screen", "4")
         .field("fileName", "")
         .expect(200)
     })
   })
 
   describe("PUT /api/presentation/:id", () => {
-    test("Create cue with invalid screen", async () => {
+    test("Create cue with invalid screen 5", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
       await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
-        .field("index", "1") // Add other form fields as needed
+        .field("index", "1")
         .field("cueName", "Test Cue")
-        .field("screen", "0")
+        .field("screen", "5")
         .field("fileName", "")
         .expect(400)
     })
   })
-  describe("PUT /api/presentation/:id", () => {
-    test("Create cue with invalid screen", async () => {
+
+  describe("PUT /api/presentation/:id/:cueId", () => {
+    test("Update existing cue with valid screen 1", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
-      await api
+      const cueResponse = await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
-        .field("index", "1") // Add other form fields as needed
+        .field("index", "1")
+        .field("cueName", "Test Cue")
+        .field("screen", "2")
+        .field("fileName", "")
+
+      const testCueId = cueResponse.body.cues[0]._id
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1")
+        .field("cueName", "Test Cue")
+        .field("screen", "1")
+        .field("fileName", "")
+        .expect(200)
+    })
+  })
+
+  describe("PUT /api/presentation/:id/:cueId", () => {
+    test("Update existing cue with invalid screen 5", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      const cueResponse = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1")
+        .field("cueName", "Test Cue")
+        .field("screen", "2")
+        .field("fileName", "")
+
+      const testCueId = cueResponse.body.cues[0]._id
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1")
         .field("cueName", "Test Cue")
         .field("screen", "5")
+        .field("fileName", "")
+        .expect(400)
+    })
+  })
+  describe("PUT /api/presentation/:id/:cueId", () => {
+    test("Update existing cue with missing fields", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      const cueResponse = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1")
+        .field("cueName", "Test Cue")
+        .field("screen", "2")
+        .field("fileName", "")
+
+      const testCueId = cueResponse.body.cues[0]._id
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1")
         .field("fileName", "")
         .expect(400)
     })
