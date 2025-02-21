@@ -51,7 +51,8 @@ const PresentationPage = () => {
   useEffect(() => {
     if (presentationInfo) {
       const totalSize = presentationInfo.reduce((sum, cue) => {
-        return cue.file ? sum + parseInt(cue.file.size) : sum
+        const fileSize = cue.file?.size || 0
+        return !isNaN(fileSize) ? sum + Number(fileSize) : sum
       }, 0)
       const newSize = (totalSize / (1024 * 1024)).toFixed(2)
       if (presentationSize !== newSize) {
