@@ -47,17 +47,14 @@ describe("test presentation", () => {
   })
   describe("DELETE", () => {
     test(" /api/presentation/:id", async () => {
-      await api
-        .delete(`/api/presentation/${testPresentationId}`)
-        .expect(204)
+      await api.delete(`/api/presentation/${testPresentationId}`).expect(204)
     })
   })
 
   describe("PUT /api/presentation/:id", () => {
     test("update presentation", async () => {
-      const imageFilePath = path.join(__dirname, 'mock_image.png')
+      const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
-
 
       await api
         .put(`/api/presentation/${testPresentationId}`)
@@ -86,6 +83,53 @@ describe("test presentation", () => {
       const response = await api.put("/api/presentation/:id")
 
       expect(response.status).toBe(400)
+    })
+  })
+
+  describe("PUT /api/presentation/:id", () => {
+    test("Create cue with valid screen", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1") // Add other form fields as needed
+        .field("cueName", "Test Cue")
+        .field("screen", "2")
+        .field("fileName", "")
+        .expect(200)
+    })
+  })
+
+  describe("PUT /api/presentation/:id", () => {
+    test("Create cue with invalid screen", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1") // Add other form fields as needed
+        .field("cueName", "Test Cue")
+        .field("screen", "0")
+        .field("fileName", "")
+        .expect(400)
+    })
+  })
+  describe("PUT /api/presentation/:id", () => {
+    test("Create cue with invalid screen", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "1") // Add other form fields as needed
+        .field("cueName", "Test Cue")
+        .field("screen", "5")
+        .field("fileName", "")
+        .expect(400)
     })
   })
 })
