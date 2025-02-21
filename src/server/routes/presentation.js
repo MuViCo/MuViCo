@@ -104,6 +104,12 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
+    if (req.body.screen < 1 || req.body.screen > 4) {
+      return res
+        .status(400)
+        .json({ error: "Invalid screen number. Must be between 1 and 4." })
+    }
+
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
       return res.status(400).json({ error: "File size exceeds 50 MB limit" })
     }
@@ -203,6 +209,12 @@ router.put(
 
       if (!id || !index || !screen || !cueId || !cueName) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (req.body.screen < 1 || req.body.screen > 4) {
+        return res
+          .status(400)
+          .json({ error: "Invalid screen number. Must be between 1 and 4." })
       }
 
       const presentation = await Presentation.findById(id)
