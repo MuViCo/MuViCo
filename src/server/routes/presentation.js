@@ -100,6 +100,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { id } = req.params
     const fileId = generateFileId()
     const { file, user } = req
+
     if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
       return res.status(400).json({ error: "Missing required fields" })
     }
@@ -110,7 +111,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         .json({ error: "Cue screen must be between 1 and 4." })
     }
 
-    if (req.body.index < 1 || req.body.index > 100) {
+    // Validate cue index (must be 1-100, unless an initial element)
+    if (
+      (req.body.index < 1 || req.body.index > 100) &&
+      req.body.isInitialElement != "true"
+    ) {
       return res
         .status(400)
         .json({ error: "Cue index must be between 1 and 100." })

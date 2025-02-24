@@ -11,6 +11,10 @@ const addInitialElements = async (presentationId, showToast) => {
         screen,
         "/blank.png"
       )
+
+      // Allow index 0 for initial elements (bypasses validation)
+      formData.append("isInitialElement", "true")
+
       await presentation.addCue(presentationId, formData)
     }
 
