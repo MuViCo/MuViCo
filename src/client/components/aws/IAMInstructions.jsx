@@ -14,8 +14,11 @@ const IAMInstructions = () => {
                     </Link>.
                 </ListItem>
                 <ListItem>Go to IAM &gt; Roles and click "Create Role".</ListItem>
-                <ListItem>Select "Another AWS account" and enter MuViCo’s AWS account ID.</ListItem>
-                <ListItem>Attach "AmazonS3FullAccess" (or a custom policy with restricted access).</ListItem>
+                <ListItem>
+                    Select "AWS account" &gt; "Another AWS account" and enter MuViCo’s AWS account ID:{" "}
+                    <Text as="span" fontWeight="bold">851725318925</Text>.
+                </ListItem>
+                <ListItem>Attach "AmazonS3FullAccess" to permissions.</ListItem>
                 <ListItem>Review and create the role. Copy the IAM Role ARN.</ListItem>
                 <ListItem>Enter the IAM role ARN in the settings page below.</ListItem>
             </OrderedList>
