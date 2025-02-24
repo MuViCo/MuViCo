@@ -20,11 +20,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
   const [status, setStatus] = useState("saved")
   const [selectedCue, setSelectedCue] = useState(null)
+
   const [doubleClickPosition, setDoubleClickPosition] = useState({
     xIndex: 0,
     yIndex: 0,
   })
-
+  const [hoverPosition, setHoverPosition] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
@@ -45,15 +46,45 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }, [isToolboxOpen])
 
-  const handleMouseDown = () => {
-    setIsDragging(false)
+  const handleMouseDown = (event) => {
+    if (event.target.closest(".react-grid-item")) {
+      setIsDragging(true)
+      setHoverPosition(null)
+    } else {
+      setIsDragging(false)
+    }
   }
 
-  const handleMouseMove = () => {
-    setIsDragging(true)
+  const handleMouseMove = (event) => {
+    if (isDragging) return
+    if (event.target.closest(".x-index-label")) {
+      return
+    }
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    const cueExists = cues.some(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+    if (
+      !cueExists &&
+      xIndex >= 0 &&
+      xIndex <= 101 &&
+      yIndex <= 4 &&
+      yIndex >= 1
+    ) {
+      setHoverPosition({ index: xIndex, screen: yIndex })
+    } else {
+      setHoverPosition(null)
+    }
   }
 
   const handleMouseUp = (event) => {
+    setIsDragging(false)
     if (!isDragging) {
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
@@ -333,56 +364,75 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             ))}
           </Box>
 
-          <Box
-            overflow="auto"
-            width="100%"
-            position="relative"
-            ref={containerRef}
-            onDoubleClick={handleDoubleClick}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-          >
+          <Box position="relative">
             <Box
-              display="grid"
-              gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
-              gap={`${gap}px`}
-              position="sticky"
-              top={0}
-              zIndex={1}
-              bg={"transparent"}
-              mb={`${gap}px`}
+              height="600px"
+              overflow="auto"
+              width="100%"
+              position="relative"
+              ref={containerRef}
+              onDoubleClick={handleDoubleClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
             >
-              {xLabels.map((label) => (
-                <Box
-                  key={label}
-                  className="x-index-label"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  bg="gray.200"
-                  borderRadius="md"
-                  h={`${rowHeight}px`}
-                  width={`${columnWidth}px`}
-                >
-                  <Text fontWeight="bold" color="black">
-                    {label}
-                  </Text>
-                </Box>
-              ))}
-            </Box>
+              <Box
+                display="grid"
+                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
+                gap={`${gap}px`}
+                position="sticky"
+                top={0}
+                zIndex={1}
+                bg={"transparent"}
+                mb={`${gap}px`}
+              >
+                {xLabels.map((label) => (
+                  <Box
+                    key={label}
+                    className="x-index-label"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    bg="gray.200"
+                    borderRadius="md"
+                    h={`${rowHeight}px`}
+                    width={`${columnWidth}px`}
+                  >
+                    <Text fontWeight="bold" color="black">
+                      {label}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
 
-            <GridLayoutComponent
-              layout={layout}
-              cues={cues}
-              containerRef={containerRef}
-              columnWidth={columnWidth}
-              rowHeight={rowHeight}
-              gap={gap}
-              setStatus={setStatus}
-              id={id}
-            />
+              <GridLayoutComponent
+                layout={layout}
+                cues={cues}
+                containerRef={containerRef}
+                columnWidth={columnWidth}
+                rowHeight={rowHeight}
+                gap={gap}
+                setStatus={setStatus}
+                id={id}
+              />
+
+              {hoverPosition && !isDragging && (
+                <Box
+                  position="absolute"
+                  left={`${hoverPosition.index * (columnWidth + gap)}px`}
+                  top={`${hoverPosition.screen * (rowHeight + gap)}px`}
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  bg="rgba(72, 26, 35, 0.8)"
+                  borderRadius="16"
+                  transition="0"
+                  zIndex={-1}
+                  pointerEvents="none"
+                />
+              )}
+            </Box>
           </Box>
+
           <ToolBox
             isOpen={isToolboxOpen}
             onClose={() => setIsToolboxOpen(false)}
