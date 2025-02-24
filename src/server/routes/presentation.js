@@ -107,7 +107,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     if (req.body.screen < 1 || req.body.screen > 4) {
       return res
         .status(400)
-        .json({ error: "Screen number must be between 1 and 4." })
+        .json({ error: "Cue screen must be between 1 and 4." })
+    }
+
+    if (req.body.index < 1 || req.body.index > 100) {
+      return res
+        .status(400)
+        .json({ error: "Cue index must be between 1 and 100." })
     }
 
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
@@ -214,7 +220,13 @@ router.put(
       if (screen < 1 || screen > 4) {
         return res
           .status(400)
-          .json({ error: "Screen number must be between 1 and 4." })
+          .json({ error: "Cue screen must be between 1 and 4." })
+      }
+
+      if (index < 1 || index > 100) {
+        return res
+          .status(400)
+          .json({ error: "Cue index must be between 1 and 100." })
       }
 
       const presentation = await Presentation.findById(id)
