@@ -224,6 +224,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
         />{" "}
         {fileName &&
           fileName !== "blank.png" &&
+          fileName !== "undefined" &&
           (!allowedTypes.includes(file.type) ? (
             <>
               {" "}
