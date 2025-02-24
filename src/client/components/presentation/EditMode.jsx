@@ -3,7 +3,11 @@ import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
-import { updatePresentation, createCue } from "../../redux/presentationReducer"
+import {
+  updatePresentation,
+  createCue,
+  removeCue,
+} from "../../redux/presentationReducer"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
@@ -123,7 +127,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     )
     if (cueExists) {
       setConfirmMessage(
-        `Cue ${index} element already exists on screen ${screen}. Do you want to update it?`
+        `Index ${index} element already exists on screen ${screen}. Do you want to replace it?`
       )
       setConfirmAction(() => async () => {
         const updatedCue = {
@@ -165,6 +169,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }
 
+  const fetchFileFromUrl = async (url, fileName) => {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new File([blob], fileName, { type: blob.type })
+  }
+
   const updateCue = async (cueId, updatedCue) => {
     const cueExists = cues.find(
       (cue) =>
@@ -174,10 +184,22 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
     if (cueExists && cueExists._id !== cueId) {
       setConfirmMessage(
-        `Cue ${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to update it?`
+        `Index ${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to replace it?`
       )
       setConfirmAction(() => async () => {
-        await dispatchUpdateCue(cueExists._id, updatedCue)
+        const updatedDataCue = {
+          ...cueExists,
+          index: updatedCue.index,
+          cueName: updatedCue.cueName,
+          screen: updatedCue.screen,
+          file: await fetchFileFromUrl(
+            updatedCue.file.url,
+            updatedCue.file.name
+          ),
+        }
+        await dispatch(removeCue(id, cueId))
+        await dispatchUpdateCue(cueExists._id, updatedDataCue)
+
         setIsConfirmOpen(false)
       })
       setIsConfirmOpen(true)
@@ -278,7 +300,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         )
         if (cueExists(xIndex, yIndex)) {
           setConfirmMessage(
-            `Cue ${xIndex} element already exists on screen ${yIndex}. Do you want to update it?`
+            `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
           )
           setConfirmAction(() => async () => {
             const existingCue = cues.find(
