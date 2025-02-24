@@ -104,7 +104,7 @@ describe("test presentation", () => {
   })
 
   describe("Cue creation tests", () => {
-    test("PUT /api/presentation/:id with valid screen should return 200", async () => {
+    test("PUT /api/presentation/:id with valid inputs should return 200", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
@@ -113,7 +113,7 @@ describe("test presentation", () => {
         .attach("image", image, "mock_image.png")
         .field("index", "1")
         .field("cueName", "Test Cue")
-        .field("screen", "1") // Valid screen
+        .field("screen", "1")
         .field("fileName", "")
         .expect(200)
     })
@@ -128,6 +128,20 @@ describe("test presentation", () => {
         .field("index", "1")
         .field("cueName", "Test Cue")
         .field("screen", "5") // Invalid screen
+        .field("fileName", "")
+        .expect(400)
+    })
+
+    test("PUT /api/presentation/:id with invalid index should return 400", async () => {
+      const imageFilePath = path.join(__dirname, "mock_image.png")
+      const image = fs.readFileSync(imageFilePath)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .attach("image", image, "mock_image.png")
+        .field("index", "101") // Invalid index
+        .field("cueName", "Test Cue")
+        .field("screen", "4")
         .field("fileName", "")
         .expect(400)
     })
@@ -147,21 +161,21 @@ describe("test presentation", () => {
     })
   })
 
-  describe("Cue update tests", () => {
-    test("PUT /api/presentation/:id/:cueId with valid screen should return 200", async () => {
-      testCueId = await createCue(2) // Create cue in screen 2
+  describe("Cue updation tests", () => {
+    test("PUT /api/presentation/:id/:cueId with valid inputs should return 200", async () => {
+      testCueId = await createCue(2)
 
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "1")
+        .field("index", "100")
         .field("cueName", "Test Cue")
-        .field("screen", "1") // Valid screen
+        .field("screen", "4")
         .field("fileName", "")
         .expect(200)
     })
 
     test("PUT /api/presentation/:id/:cueId with invalid screen should return 400", async () => {
-      testCueId = await createCue(2) // Create cue in screen 2
+      testCueId = await createCue(2)
 
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
@@ -172,8 +186,20 @@ describe("test presentation", () => {
         .expect(400)
     })
 
+    test("PUT /api/presentation/:id/:cueId with invalid index should return 400", async () => {
+      testCueId = await createCue(2)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .field("index", "0") // Invalid index
+        .field("cueName", "Test Cue")
+        .field("screen", "4")
+        .field("fileName", "")
+        .expect(400)
+    })
+
     test("PUT /api/presentation/:id/:cueId with missing screen should return 400", async () => {
-      testCueId = await createCue(2) // Create cue in screen 2
+      testCueId = await createCue(2)
 
       await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
