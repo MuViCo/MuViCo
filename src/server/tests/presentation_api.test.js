@@ -122,7 +122,7 @@ describe("test presentation", () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
         .field("index", "1")
@@ -130,13 +130,15 @@ describe("test presentation", () => {
         .field("screen", "5") // Invalid screen
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Cue screen must be between 1 and 4.")
     })
 
     test("PUT /api/presentation/:id with invalid index should return 400", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
         .field("index", "101") // Invalid index
@@ -144,13 +146,15 @@ describe("test presentation", () => {
         .field("screen", "4")
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Cue index must be between 1 and 100.")
     })
 
     test("PUT /api/presentation/:id with missing screen should return 400", async () => {
       const imageFilePath = path.join(__dirname, "mock_image.png")
       const image = fs.readFileSync(imageFilePath)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}`)
         .attach("image", image, "mock_image.png")
         .field("index", "1")
@@ -158,6 +162,8 @@ describe("test presentation", () => {
         .field("cueName", "Test Cue")
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Missing required fields")
     })
   })
 
@@ -177,37 +183,43 @@ describe("test presentation", () => {
     test("PUT /api/presentation/:id/:cueId with invalid screen should return 400", async () => {
       testCueId = await createCue(2)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "1")
         .field("cueName", "Test Cue")
         .field("screen", "5") // Invalid screen
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Cue screen must be between 1 and 4.")
     })
 
     test("PUT /api/presentation/:id/:cueId with invalid index should return 400", async () => {
       testCueId = await createCue(2)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "0") // Invalid index
         .field("cueName", "Test Cue")
         .field("screen", "4")
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Cue index must be between 1 and 100.")
     })
 
     test("PUT /api/presentation/:id/:cueId with missing screen should return 400", async () => {
       testCueId = await createCue(2)
 
-      await api
+      const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "1")
         .field("cueName", "Test Cue")
         // Missing screen field
         .field("fileName", "")
         .expect(400)
+
+      expect(response.body.error).toBe("Missing required fields")
     })
   })
 })
