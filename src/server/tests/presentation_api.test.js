@@ -222,4 +222,61 @@ describe("test presentation", () => {
       expect(response.body.error).toBe("Missing required fields")
     })
   })
+
+  describe("Initial element tests", () => {
+    test("PUT /api/presentation/:id with 4 cues having index = 0 and isInitialElement = true should return 200", async () => {
+      const screens = [1, 2, 3, 4]
+
+      for (const screen of screens) {
+        const imageFilePath = path.join(__dirname, "mock_image.png")
+        const image = fs.readFileSync(imageFilePath)
+
+        await api
+          .put(`/api/presentation/${testPresentationId}`)
+          .attach("image", image, "mock_image.png")
+          .field("index", "0")
+          .field("cueName", `initial element for screen ${screen}`)
+          .field("screen", screen)
+          .field("fileName", "")
+          .field("isInitialElement", "true")
+          .expect(200)
+      }
+
+      // Fetch presentation to check stored cues
+      const response = await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      const { cues } = response.body
+
+      // Ensure exactly 4 cues exist
+      expect(cues.length).toBe(4)
+
+      // Validate properties of each cue
+      cues.forEach((cue, index) => {
+        expect(cue.index).toBe(0)
+        expect(cue.name).toBe(`initial element for screen ${screens[index]}`)
+        expect(cue.screen).toBe(screens[index])
+      })
+    })
+
+    test("PUT /api/presentation/:id with 4 cues having index = 0 but missing isInitialElement should return 400", async () => {
+      const screens = [1, 2, 3, 4]
+
+      for (const screen of screens) {
+        const imageFilePath = path.join(__dirname, "mock_image.png")
+        const image = fs.readFileSync(imageFilePath)
+
+        await api
+          .put(`/api/presentation/${testPresentationId}`)
+          .attach("image", image, "mock_image.png")
+          .field("index", "0")
+          .field("cueName", `initial element for screen ${screen}`)
+          .field("screen", screen)
+          .field("fileName", "")
+          .expect(400)
+      }
+    })
+  })
 })
