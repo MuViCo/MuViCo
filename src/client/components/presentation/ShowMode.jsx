@@ -18,6 +18,8 @@ const ShowMode = ({ cues }) => {
     }, {})
   })
 
+  const [mirroring, setMirroring] = useState({})
+
   useEffect(() => {
     const preloadImage = (url) => {
       return new Promise((resolve) => {
@@ -65,12 +67,38 @@ const ShowMode = ({ cues }) => {
     preloadCueData()
   }, [cues])
 
+  useEffect(() => {
+    // This makes sure the screen data is properly updated when cueIndex changes
+    setPreloadedCues((prevCues) => {
+      const updatedCues = { ...prevCues }
+      Object.keys(updatedCues).forEach((screenNumber) => {
+        updatedCues[screenNumber] = {
+          ...updatedCues[screenNumber],
+          [cueIndex]: updatedCues[screenNumber]?.[cueIndex] || {}
+        }
+      })
+      return updatedCues
+    })
+  }, [cueIndex])
+
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
     setScreenVisibility((prevVisibility) => ({
       ...prevVisibility,
       [screenNumber]: !prevVisibility[screenNumber],
     }))
+  }
+
+  const toggleScreenMirroring = (screenNumber, targetScreen) => {
+    setMirroring((prevMirroring) => {
+      const updatedMirroring = { ...prevMirroring }
+      if (targetScreen) {
+        updatedMirroring[screenNumber] = targetScreen
+      } else {
+        delete updatedMirroring[screenNumber]
+      }
+      return updatedMirroring
+    })
   }
 
   const handleScreenClose = useCallback((screenNumber) => {
@@ -94,20 +122,28 @@ const ShowMode = ({ cues }) => {
       <ShowModeButtons
         screens={screenVisibility}
         toggleScreenVisibility={toggleScreenVisibility}
+        toggleScreenMirroring={toggleScreenMirroring}
+        mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}
       />
 
       {/* Render screens based on visibility and cue index */}
-      {Object.keys(preloadedCues).map((screenNumber) => (
-        <Screen
-          key={screenNumber}
-          screenData={preloadedCues[screenNumber][cueIndex]}
-          screenNumber={screenNumber}
-          isVisible={screenVisibility[screenNumber]}
-          onClose={handleScreenClose}
-        />
-      ))}
+      {Object.keys(preloadedCues).map((screenNumber) => {
+        // Check if this screen is mirroring another
+        const mirroredScreen = mirroring[screenNumber]
+        const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
+
+        return (
+          <Screen
+            key={screenNumber}
+            screenData={preloadedCues[sourceScreen]?.[cueIndex]}
+            screenNumber={screenNumber}
+            isVisible={screenVisibility[screenNumber]}
+            onClose={handleScreenClose}
+          />
+        )
+      })}
     </div>
   )
 }

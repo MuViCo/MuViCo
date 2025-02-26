@@ -1,21 +1,44 @@
 import React from "react"
-import { Button, Box, IconButton, Heading } from "@chakra-ui/react"
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons"
+import { Button, Box, IconButton, Heading, Select, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react"
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons"
 
 // Component for rendering the screen toggle buttons
-const ScreenToggleButtons = ({ screens, toggleScreenVisibility }) => (
+const ScreenToggleButtons = ({ screens, toggleScreenVisibility, toggleScreenMirroring, mirroring }) => (
   <Box>
     {Object.keys(screens).map((screenNumber) => (
-      <Button
-        key={screenNumber}
-        colorScheme={screens[screenNumber] ? "pink" : "purple"}
-        onClick={() => toggleScreenVisibility(screenNumber)}
-        m={2}
-      >
-        {screens[screenNumber]
-          ? `Close screen: ${screenNumber}`
-          : `Open screen: ${screenNumber}`}
-      </Button>
+      <Menu key={screenNumber}>
+        <MenuButton
+          as={Button}
+          rightIcon={<ChevronDownIcon />}
+          colorScheme={screens[screenNumber] ? "pink" : "purple"}
+          onClick={(event) => {
+            if (event.target.tagName !== "BUTTON") return
+            toggleScreenVisibility(screenNumber)}
+          }
+          m={2}
+        >
+          {mirroring[screenNumber]
+            ? `Mirroring screen: ${mirroring[screenNumber]}`
+            : screens[screenNumber]
+            ? `Close screen: ${screenNumber}`
+            : `Open screen: ${screenNumber}`}
+        </MenuButton>
+        <MenuList>
+          <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
+            No mirroring
+          </MenuItem>
+          {Object.keys(screens)
+            .filter((targetScreen) => targetScreen !== screenNumber)
+            .map((targetScreen) => (
+              <MenuItem
+                key={targetScreen}
+                onClick={() => toggleScreenMirroring(screenNumber, targetScreen)}
+              >
+                Mirror screen: {targetScreen}
+              </MenuItem>
+            ))}
+        </MenuList>
+      </Menu>
     ))}
   </Box>
 )
@@ -44,6 +67,8 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
 const ShowModeButtons = ({
   screens,
   toggleScreenVisibility,
+  toggleScreenMirroring,
+  mirroring,
   cueIndex,
   updateCue,
 }) => (
@@ -51,6 +76,8 @@ const ShowModeButtons = ({
     <ScreenToggleButtons
       screens={screens}
       toggleScreenVisibility={toggleScreenVisibility}
+      toggleScreenMirroring={toggleScreenMirroring}
+      mirroring={mirroring}
     />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
   </Box>
