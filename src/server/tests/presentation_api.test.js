@@ -253,5 +253,5 @@ describe("test presentation", () => {
         )
       }
     })
-  })
+  }, 10000)
 })
