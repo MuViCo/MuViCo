@@ -37,7 +37,6 @@ describe("test presentation", () => {
     testPresentationId = presentation._id
   })
 
-  // Helper function for creating cues
   const createCue = async (
     index,
     cueName,
@@ -206,7 +205,6 @@ describe("test presentation", () => {
         expect(response.status).toBe(200)
       }
 
-      // Fetch presentation to check stored cues
       const response = await api
         .get(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
@@ -214,7 +212,6 @@ describe("test presentation", () => {
 
       const { cues } = response.body
 
-      // Ensure exactly 4 cues exist
       expect(cues.length).toBe(4)
 
       cues.forEach((cue, index) => {
