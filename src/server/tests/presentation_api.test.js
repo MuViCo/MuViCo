@@ -239,5 +239,22 @@ describe("test presentation", () => {
         )
       }
     })
+
+    test("PUT /api/presentation/:id with 4 cues having isInitialElement = true but index != 0 should return 400", async () => {
+      const screens = [1, 2, 3, 4]
+
+      for (const screen of screens) {
+        const response = await createCue(
+          1,
+          `initial element for screen ${screen}`,
+          screen,
+          true
+        )
+        expect(response.status).toBe(400)
+        expect(response.body.error).toBe(
+          "Invalid initial element index: 1. Index must be exactly 0."
+        )
+      }
+    })
   })
 })
