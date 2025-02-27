@@ -80,6 +80,53 @@ describe("SignUp", () => {
     fireEvent.keyDown(passwordInput, { key: "Tab" })
     expect(document.activeElement).toBe(passwordAgainInput)
   })
+
+  test("handleKeyDown shifts focus to terms link and enter calls function correctly", () => {
+    const onSubmit = jest.fn()
+    const handleTermsClick = jest.fn()
+    const { getByPlaceholderText } = render(
+      <SignUpForm onSubmit={onSubmit} handleTermsClick={handleTermsClick} />
+    )
+    const usernameInput = getByPlaceholderText("Username")
+    const passwordInput = getByPlaceholderText("Password")
+    const passwordAgainInput = getByPlaceholderText("Password_confirmation")
+    const termsLink = screen.getByTestId("terms_link")
+
+    fireEvent.keyDown(usernameInput, { key: "Tab" })
+    expect(document.activeElement).toBe(passwordInput)
+
+    fireEvent.keyDown(passwordInput, { key: "Tab" })
+    expect(document.activeElement).toBe(passwordAgainInput)
+
+    fireEvent.keyDown(passwordAgainInput, { key: "Tab" })
+    expect(document.activeElement).toBe(termsLink)
+
+    fireEvent.keyDown(termsLink, { key: "Enter" })
+    expect(handleTermsClick).toHaveBeenCalledTimes(1)
+  })
+
+  test("handleKeyDown shifts focus correctly to submit button", () => {
+    const onSubmit = jest.fn()
+    const { getByPlaceholderText } = render(<SignUpForm onSubmit={onSubmit} />)
+    const usernameInput = getByPlaceholderText("Username")
+    const passwordInput = getByPlaceholderText("Password")
+    const passwordAgainInput = getByPlaceholderText("Password_confirmation")
+    const termsLink = screen.getByTestId("terms_link")
+    const submitButton = screen.getByTestId("signup_inform")
+
+    fireEvent.keyDown(usernameInput, { key: "Tab" })
+    expect(document.activeElement).toBe(passwordInput)
+
+    fireEvent.keyDown(passwordInput, { key: "Tab" })
+    expect(document.activeElement).toBe(passwordAgainInput)
+
+    fireEvent.keyDown(passwordAgainInput, { key: "Tab" })
+    expect(document.activeElement).toBe(termsLink)
+
+    fireEvent.keyDown(termsLink, { key: "Tab" })
+    expect(document.activeElement).toBe(submitButton)
+  })
+
   test("handleTermsClick is called when terms link is clicked", async () => {
     const onSubmit = jest.fn()
     const handleTermsClick = jest.fn()
