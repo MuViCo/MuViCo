@@ -122,7 +122,7 @@ describe("test presentation", () => {
       const response = await createCue(101, "Test Cue", 4)
       expect(response.status).toBe(400)
       expect(response.body.error).toBe(
-        "Invalid cue index: 101. Index must be between 1 and 100."
+        "Invalid cue index: 101. Index must be between 0 and 100."
       )
     })
 
@@ -179,7 +179,7 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe(
-        "Invalid cue index: 0. Index must be between 1 and 100."
+        "Invalid cue index: -1. Index must be between 0 and 100."
       )
     })
 
