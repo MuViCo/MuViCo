@@ -228,17 +228,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       rowHeight,
       gap
     )
-
-    // Stop if cue screen is not within valid range
-    if (yIndex < 1 || yIndex > 4) {
-      return
-    }
-
-    // Stop if cue index is not within valid range
-    if (xIndex < 1 || xIndex > 100) {
-      return
-    }
-
     const cue = cues.find(
       (cue) => cue.index === xIndex && cue.screen === yIndex
     )
