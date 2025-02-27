@@ -80,7 +80,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
         if (e.key === "Tab") {
           submitButtonRef.current.focus()
         } else {
-          window.location.navigate = "/terms" // Redirect to /terms
+          handleTermsClick()
         }
       } else if (e.target === submitButtonRef.current) {
         if (e.key === "Tab") {
@@ -158,6 +158,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
                 style={{ cursor: "pointer" }}
                 onKeyDown={handleKeyDown}
                 data-testid="terms_link"
+                tabIndex={0}
               >
                 Terms of Service
               </Link>
