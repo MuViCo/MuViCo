@@ -219,7 +219,7 @@ describe("test presentation", () => {
         expect(cue.name).toBe(`initial element for screen ${screens[index]}`)
         expect(cue.screen).toBe(screens[index])
       })
-    })
+    }, 10000)
 
     test("PUT /api/presentation/:id with 4 cues having index = 0 without isInitialElement flag should return 400", async () => {
       const screens = [1, 2, 3, 4]
@@ -253,5 +253,5 @@ describe("test presentation", () => {
         )
       }
     })
-  }, 10000)
+  })
 })
