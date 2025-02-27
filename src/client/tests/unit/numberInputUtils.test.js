@@ -5,7 +5,7 @@ import {
 } from "../../components/utils/numberInputUtils.js"
 
 describe("handleNumericInputChange", () => {
-  test("should only only numeric values", () => {
+  test("should only accept numeric values", () => {
     let state = ""
     const setState = (newState) => {
       state = newState
