@@ -14,7 +14,7 @@ const get = async (id) => {
 }
 
 const remove = async (id) => {
-  const response = await axios.delete(`${baseUrl}/${id}`)
+  const response = await axios.delete(`${baseUrl}${id}`)
   return response.data
 }
 
@@ -35,12 +35,12 @@ const addCue = async (id, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}/${id}`, formData, config)
+  const response = await axios.put(`${baseUrl}${id}`, formData, config)
   return response.data
 }
 
 const removeCue = async (id, cueId) => {
-  const response = await axios.delete(`${baseUrl}/${id}/${cueId}`)
+  const response = await axios.delete(`${baseUrl}${id}/${cueId}`)
   return response.data
 }
 
@@ -51,11 +51,7 @@ const updateCue = async (id, cueId, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(
-    `${baseUrl}/${id}/${cueId}`,
-    formData,
-    config
-  )
+  const response = await axios.put(`${baseUrl}${id}/${cueId}`, formData, config)
   return response.data
 }
 
