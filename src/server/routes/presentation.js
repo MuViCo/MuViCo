@@ -103,7 +103,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { cueName, image } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
-    const isInitialElement = req.query.isInitialElement === "true"
 
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -115,18 +114,9 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       })
     }
 
-    // Index validation:
-    // - Initial elements (index 0) are system-generated and bypass the usual 1-100 limit.
-    // - Normal cues must have an index between 1-100, while initial elements must be exactly 0.
-    // - Initial element validation applies only during creation, not updates.
-    if (!isInitialElement && (index < 1 || index > 100)) {
+    if (index < 0 || index > 100) {
       return res.status(400).json({
-        error: `Invalid cue index: ${index}. Index must be between 1 and 100.`,
-      })
-    }
-    if (isInitialElement && index !== 0) {
-      return res.status(400).json({
-        error: `Invalid initial element index: ${index}. Index must be exactly 0.`,
+        error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
       })
     }
 
@@ -239,9 +229,9 @@ router.put(
         })
       }
 
-      if (index < 1 || index > 100) {
+      if (index < 0 || index > 100) {
         return res.status(400).json({
-          error: `Invalid cue index: ${index}. Index must be between 1 and 100.`,
+          error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
         })
       }
 
