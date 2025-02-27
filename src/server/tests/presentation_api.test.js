@@ -189,6 +189,18 @@ describe("test presentation", () => {
         "Invalid cue index: 0. Index must be between 1 and 100."
       )
     })
+
+    test("PUT /api/presentation/:id/:cueId with missing fields should return 400", async () => {
+      testCueId = (await createCue(1, "Test Cue", 2)).body.cues[0]._id
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .field("index", "1")
+        .field("fileName", "")
+        .expect(400)
+
+      expect(response.body.error).toBe("Missing required fields")
+    })
   })
 
   describe("Initial element tests", () => {
