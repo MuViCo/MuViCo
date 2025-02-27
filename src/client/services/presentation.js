@@ -39,6 +39,25 @@ const addCue = async (id, formData) => {
   return response.data
 }
 
+/**
+ * Adds an initial element cue (index 0) to the server.
+ * Uses `isInitialElement=true` in the query to bypass the normal index limit (1-100).
+ */
+const addInitialElementCue = async (id, formData) => {
+  const config = {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.put(
+    `${baseUrl}/${id}?isInitialElement=true`,
+    formData,
+    config
+  )
+  return response.data
+}
+
 const removeCue = async (id, cueId) => {
   const response = await axios.delete(`${baseUrl}/${id}/${cueId}`)
   return response.data
@@ -63,6 +82,7 @@ export default {
   get,
   remove,
   addCue,
+  addInitialElementCue,
   removeCue,
   updateCue,
 }

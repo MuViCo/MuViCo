@@ -11,7 +11,8 @@ const addInitialElements = async (presentationId, showToast) => {
         screen,
         "/blank.png"
       )
-      await presentation.addCue(presentationId, formData)
+
+      await presentation.addInitialElementCue(presentationId, formData)
     }
 
     showToast({
