@@ -67,20 +67,6 @@ const ShowMode = ({ cues }) => {
     preloadCueData()
   }, [cues])
 
-  useEffect(() => {
-    // This makes sure the screen data is properly updated when cueIndex changes
-    setPreloadedCues((prevCues) => {
-      const updatedCues = { ...prevCues }
-      Object.keys(updatedCues).forEach((screenNumber) => {
-        updatedCues[screenNumber] = {
-          ...updatedCues[screenNumber],
-          [cueIndex]: updatedCues[screenNumber]?.[cueIndex] || {}
-        }
-      })
-      return updatedCues
-    })
-  }, [cueIndex])
-
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
     setScreenVisibility((prevVisibility) => ({
