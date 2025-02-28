@@ -1,5 +1,5 @@
 import React from "react"
-import { Button, Box, IconButton, Heading, Select, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react"
+import { Button, Box, IconButton, Heading, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons"
 
 const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
