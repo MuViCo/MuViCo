@@ -2,43 +2,59 @@ import React from "react"
 import { Button, Box, IconButton, Heading, Select, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react"
 import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons"
 
+const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
+  <Menu>
+    <MenuButton as={Button} colorScheme="gray" p={1}>
+      <ChevronDownIcon />
+    </MenuButton>
+    <MenuList>
+      <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
+        No mirroring
+      </MenuItem>
+      {Object.keys(screens)
+        .filter((targetScreen) => targetScreen !== screenNumber)
+        .map((targetScreen) => (
+          <MenuItem
+            key={targetScreen}
+            onClick={() => toggleScreenMirroring(screenNumber, targetScreen)}
+          >
+            Mirror screen: {targetScreen}
+          </MenuItem>
+        ))}
+    </MenuList>
+  </Menu>
+)
+
 // Component for rendering the screen toggle buttons
 const ScreenToggleButtons = ({ screens, toggleScreenVisibility, toggleScreenMirroring, mirroring }) => (
-  <Box>
+  <Box display="flex" flexWrap="wrap" gap={2}>
     {Object.keys(screens).map((screenNumber) => (
-      <Menu key={screenNumber}>
-        <MenuButton
-          as={Button}
-          rightIcon={<ChevronDownIcon />}
+      <Box
+        key={screenNumber}>
+        <Button
           colorScheme={screens[screenNumber] ? "pink" : "purple"}
-          onClick={(event) => {
-            if (event.target.tagName !== "BUTTON") return
-            toggleScreenVisibility(screenNumber)}
-          }
+          onClick={() => toggleScreenVisibility(screenNumber)}
           m={2}
+          flexDirection="column"
         >
-          {mirroring[screenNumber]
-            ? `Mirroring screen: ${mirroring[screenNumber]}`
-            : screens[screenNumber]
-            ? `Close screen: ${screenNumber}`
-            : `Open screen: ${screenNumber}`}
-        </MenuButton>
-        <MenuList>
-          <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
-            No mirroring
-          </MenuItem>
-          {Object.keys(screens)
-            .filter((targetScreen) => targetScreen !== screenNumber)
-            .map((targetScreen) => (
-              <MenuItem
-                key={targetScreen}
-                onClick={() => toggleScreenMirroring(screenNumber, targetScreen)}
-              >
-                Mirror screen: {targetScreen}
-              </MenuItem>
-            ))}
-        </MenuList>
-      </Menu>
+          <Box>
+            {screens[screenNumber]
+              ? `Close screen: ${screenNumber}`
+              : `Open screen: ${screenNumber}`}
+          </Box>
+
+          {mirroring[screenNumber] && (
+            <Box fontSize="sm">
+              (Mirroring screen: {mirroring[screenNumber]})
+            </Box>
+          )}
+      </Button>
+      <DropdownButton
+        screenNumber={screenNumber}
+        screens={screens}
+        toggleScreenMirroring={toggleScreenMirroring}
+    />
+      </Box>
     ))}
   </Box>
 )
