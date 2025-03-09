@@ -40,12 +40,12 @@ const IAMSettings = () => {
                 AWS IAM role settings
             </Heading>
             <Text color="gray.600" mb={4}>
-                Enter your IAM role ARN to link your AWS account.
+                Enter your IAM Role ARN to link your AWS account.
             </Text>
 
             <VStack spacing={4}>
                 <Input placeholder="IAM Role ARN" value={iamRoleArn} onChange={(event) => setIamRoleArn(event.target.value)} />
-                <Button colorScheme="blue" width="full" onClick={saveSettings}>
+                <Button colorScheme="purple" width="full" onClick={saveSettings}>
                     Save settings
                 </Button>
             </VStack>
