@@ -18,6 +18,8 @@ const ShowMode = ({ cues }) => {
     }, {})
   })
 
+  const [mirroring, setMirroring] = useState({})
+
   useEffect(() => {
     const preloadImage = (url) => {
       return new Promise((resolve) => {
@@ -73,6 +75,18 @@ const ShowMode = ({ cues }) => {
     }))
   }
 
+  const toggleScreenMirroring = (screenNumber, targetScreen) => {
+    setMirroring((prevMirroring) => {
+      const updatedMirroring = { ...prevMirroring }
+      if (targetScreen) {
+        updatedMirroring[screenNumber] = targetScreen
+      } else {
+        delete updatedMirroring[screenNumber]
+      }
+      return updatedMirroring
+    })
+  }
+
   const handleScreenClose = useCallback((screenNumber) => {
     setScreenVisibility((prevVisibility) => ({
       ...prevVisibility,
@@ -94,20 +108,28 @@ const ShowMode = ({ cues }) => {
       <ShowModeButtons
         screens={screenVisibility}
         toggleScreenVisibility={toggleScreenVisibility}
+        toggleScreenMirroring={toggleScreenMirroring}
+        mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}
       />
 
       {/* Render screens based on visibility and cue index */}
-      {Object.keys(preloadedCues).map((screenNumber) => (
-        <Screen
-          key={screenNumber}
-          screenData={preloadedCues[screenNumber][cueIndex]}
-          screenNumber={screenNumber}
-          isVisible={screenVisibility[screenNumber]}
-          onClose={handleScreenClose}
-        />
-      ))}
+      {Object.keys(preloadedCues).map((screenNumber) => {
+        // Check if this screen is mirroring another
+        const mirroredScreen = mirroring[screenNumber]
+        const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
+
+        return (
+          <Screen
+            key={screenNumber}
+            screenData={preloadedCues[sourceScreen]?.[cueIndex]}
+            screenNumber={screenNumber}
+            isVisible={screenVisibility[screenNumber]}
+            onClose={handleScreenClose}
+          />
+        )
+      })}
     </div>
   )
 }
