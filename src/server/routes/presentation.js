@@ -100,8 +100,24 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { id } = req.params
     const fileId = generateFileId()
     const { file, user } = req
-    if (!id || !req.body.index || !req.body.cueName || !req.body.screen) {
+    const { cueName, image } = req.body
+    const index = Number(req.body.index)
+    const screen = Number(req.body.screen)
+
+    if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
+    }
+
+    if (screen < 1 || screen > 4) {
+      return res.status(400).json({
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+      })
+    }
+
+    if (index < 0 || index > 100) {
+      return res.status(400).json({
+        error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
+      })
     }
 
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
@@ -159,13 +175,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       {
         $push: {
           cues: {
-            index: req.body.index,
-            name: req.body.cueName,
-            screen: req.body.screen,
+            index: index,
+            name: cueName,
+            screen: screen,
             file: {
               id: fileId,
               name: req.body.fileName,
-              url: req.body.image === "/blank.png" ? null : "",
+              url: image === "/blank.png" ? null : "",
             },
           },
         },
@@ -199,10 +215,24 @@ router.put(
     try {
       const { id, cueId } = req.params
       const { file } = req
-      const { index, screen, cueName, image } = req.body
+      const { cueName, image } = req.body
+      const index = Number(req.body.index)
+      const screen = Number(req.body.screen)
 
-      if (!id || !index || !screen || !cueId || !cueName) {
+      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (screen < 1 || screen > 4) {
+        return res.status(400).json({
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+        })
+      }
+
+      if (index < 0 || index > 100) {
+        return res.status(400).json({
+          error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
+        })
       }
 
       const presentation = await Presentation.findById(id)

@@ -7,6 +7,7 @@ import {
 } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
+import { useCustomToast } from "../utils/toastUtils"
 
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
@@ -16,6 +17,7 @@ const PresentationPage = () => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const showToast = useCustomToast()
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
