@@ -86,13 +86,17 @@ describe("test presentation", () => {
   })
   describe("Test error handling", () => {
     it("GET /api/presentation/:id with invalid ID should return 401", async () => {
-      const response = await api.get("/api/presentation/invalid_id")
+      const response = await api.get(
+        "/api/presentation/000000000000000000000000"
+      )
 
       expect(response.status).toBe(401)
     })
 
     it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
-      const response = await api.delete("/api/presentation/invalid_id")
+      const response = await api.delete(
+        "/api/presentation/000000000000000000000000"
+      )
 
       expect(response.status).toBe(500)
     })
