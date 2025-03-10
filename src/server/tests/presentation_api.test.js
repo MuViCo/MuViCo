@@ -34,10 +34,21 @@ describe("test presentation", () => {
     const presentation = await Presentation.findOne({
       name: "Test presentation",
     })
+
+    if (!presentation) {
+      throw new Error(
+        "Error in beforeEach: Test presentation not found after creation"
+      )
+    }
+
     testPresentationId = presentation._id
   })
 
   const createCue = async (index, cueName, screen) => {
+    if (!testPresentationId) {
+      throw new Error("Error in createCue: testPresentationId is undefined")
+    }
+
     const imageFilePath = path.join(__dirname, "mock_image.png")
     const image = fs.readFileSync(imageFilePath)
 
