@@ -40,8 +40,6 @@ Once the user enters 'Show mode' the cues can be activated. Each cue is linked t
 
 The cues are differentiated by their 'screen' and 'index' values. Cues with the same 'screen' are shown in the same pop up window, while cues with the same 'index' are activated simultaneously. This allows the user to control media on several screens independently. A user can delete a presentation or cue, which also deletes the media of said presentation / cue.
 
-Currently the application is running on a staging server, which, for security reasons is not made public. The deployment server will be publicly available soon.
-
 ### Documentation
 
 For detailed instructions on how to use the application check out the [User Guide](https://github.com/MuViCo/MuViCo/blob/3fa0f45fdeec4fe03a244c961004a385991dd78b/documentation/userguide.md)
