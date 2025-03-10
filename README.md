@@ -25,7 +25,6 @@ With MuViCo you can easily add, assemble and edit video and image cues on an int
 #### Testing
 
 - [Jest](https://jestjs.io/docs/tutorial-react)
-- [Cypress](https://docs.cypress.io/guides/overview/why-cypress)
 
 #### Database
 
