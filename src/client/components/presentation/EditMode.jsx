@@ -229,13 +229,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       gap
     )
 
-    // Stop if cue screen is not within valid range
     if (yIndex < 1 || yIndex > 4) {
       return
     }
 
-    // Stop if cue index is not within valid range
-    if (xIndex < 1 || xIndex > 100) {
+    if (xIndex < 0 || xIndex > 100) {
       return
     }
 
