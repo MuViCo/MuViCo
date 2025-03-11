@@ -66,6 +66,24 @@ describe("presentationReducer reducer", () => {
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
 
+  it("should handle addCue", () => {
+    const initialStateWithCues = {
+      ...initialState,
+      cues: [{ _id: 1, name: "Test Cue" }],
+    }
+    const addedCue = { _id: 2, name: "Another Cue" }
+    const action = { type: addCue.type, payload: addedCue }
+    const expectedState = {
+      ...initialStateWithCues,
+      cues: [
+        { _id: 1, name: "Test Cue" },
+        { _id: 2, name: "Another Cue" },
+      ],
+    }
+
+    expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
+  })
+
   it("should handle deleteCue", () => {
     const initialStateWithCues = {
       ...initialState,
