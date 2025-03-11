@@ -4,12 +4,12 @@ import reducer, {
   addCue,
   removePresentation,
   editCue,
-} from '../../redux/presentationReducer.js'
+} from "../../redux/presentationReducer.js"
 
 // Test Synchronous Actions
-describe('presentationReducer actions', () => {
-  it('should create an action to set presentation info', () => {
-    const presentationInfo = { id: 1, name: 'Test Presentation' }
+describe("presentationReducer actions", () => {
+  it("should create an action to set presentation info", () => {
+    const presentationInfo = { id: 1, name: "Test Presentation" }
     const expectedAction = {
       type: setPresentationInfo.type,
       payload: presentationInfo,
@@ -17,7 +17,7 @@ describe('presentationReducer actions', () => {
     expect(setPresentationInfo(presentationInfo)).toEqual(expectedAction)
   })
 
-  it('should create an action to delete a cue', () => {
+  it("should create an action to delete a cue", () => {
     const cueId = 1
     const expectedAction = {
       type: deleteCue.type,
@@ -26,8 +26,8 @@ describe('presentationReducer actions', () => {
     expect(deleteCue(cueId)).toEqual(expectedAction)
   })
 
-  it('should create an action to add a cue', () => {
-    const cue = { id: 1, name: 'Test Cue' }
+  it("should create an action to add a cue", () => {
+    const cue = { id: 1, name: "Test Cue" }
     const expectedAction = {
       type: addCue.type,
       payload: cue,
@@ -35,15 +35,15 @@ describe('presentationReducer actions', () => {
     expect(addCue(cue)).toEqual(expectedAction)
   })
 
-  it('should create an action to remove a presentation', () => {
+  it("should create an action to remove a presentation", () => {
     const expectedAction = {
       type: removePresentation.type,
     }
     expect(removePresentation()).toEqual(expectedAction)
   })
 
-  it('should create an action to update a cue', () => {
-    const updatedCue = { id: 1, name: 'Updated Cue' }
+  it("should create an action to update a cue", () => {
+    const updatedCue = { id: 1, name: "Updated Cue" }
     const expectedAction = {
       type: editCue.type,
       payload: updatedCue,
@@ -53,61 +53,70 @@ describe('presentationReducer actions', () => {
 })
 
 // Test Reducer Logic
-describe('presentationReducer reducer', () => {
+describe("presentationReducer reducer", () => {
   const initialState = {
     cues: null,
   }
 
-  it('should handle setPresentationInfo', () => {
-    const cues = [{ _id: 1, name: 'Test Cue' }]
+  it("should handle setPresentationInfo", () => {
+    const cues = [{ _id: 1, name: "Test Cue" }]
     const action = { type: setPresentationInfo.type, payload: cues }
     const expectedState = { ...initialState, cues }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
 
-  it('should handle deleteCue', () => {
+  it("should handle deleteCue", () => {
     const initialStateWithCues = {
       ...initialState,
-      cues: [{ _id: 1, name: 'Test Cue' }, { _id: 2, name: 'Another Cue' }],
+      cues: [
+        { _id: 1, name: "Test Cue" },
+        { _id: 2, name: "Another Cue" },
+      ],
     }
     const action = { type: deleteCue.type, payload: 1 }
     const expectedState = {
       ...initialStateWithCues,
-      cues: [{ _id: 2, name: 'Another Cue' }],
+      cues: [{ _id: 2, name: "Another Cue" }],
     }
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })
 
-  it('should handle removePresentation when state is already null', () => {
+  it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
     const expectedState = { ...initialState, cues: null }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
 
-  it('should handle removePresentation when state is not null', () => {
+  it("should handle removePresentation when state is not null", () => {
     const initialStateWithCues = {
       ...initialState,
-      cues: [{ _id: 1, name: 'Test Cue' }, { _id: 2, name: 'Another Cue' }],
+      cues: [
+        { _id: 1, name: "Test Cue" },
+        { _id: 2, name: "Another Cue" },
+      ],
     }
     const action = { type: removePresentation.type }
     const expectedState = { ...initialState, cues: null }
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
-    })
+  })
 
-  it('should handle editCue', () => {
+  it("should handle editCue", () => {
     const initialStateWithCues = {
       ...initialState,
-      cues: [{ _id: 1, name: 'Test Cue' }, { _id: 2, name: 'Another Cue' }],
+      cues: [
+        { _id: 1, name: "Test Cue" },
+        { _id: 2, name: "Another Cue" },
+      ],
     }
-    const updatedCue = { _id: 1, name: 'Updated Cue' }
+    const updatedCue = { _id: 1, name: "Updated Cue" }
     const action = { type: editCue.type, payload: updatedCue }
     const expectedState = {
       ...initialStateWithCues,
-      cues: [updatedCue, { _id: 2, name: 'Another Cue' }],
+      cues: [updatedCue, { _id: 2, name: "Another Cue" }],
     }
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
