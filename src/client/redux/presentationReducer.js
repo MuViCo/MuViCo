@@ -19,11 +19,12 @@ const presentationSlice = createSlice({
     addCue(state, action) {
       state.cues.push(action.payload)
     },
+    // prettier-ignore
     editCue(state, action) {
       const cueToChange = action.payload
       const updatedCues = state.cues.map((cue) =>
-        cue._id !== cueToChange._id ? cue : cueToChange
-      )
+          cue._id !== cueToChange._id ? cue : cueToChange,
+        )
       state.cues = updatedCues
     },
     removePresentation(state) {
@@ -67,10 +68,9 @@ export const removeCue = (presentationId, cueId) => async (dispatch) => {
 export const createCue = (id, formData) => async (dispatch) => {
   try {
     const updatedPresentation = await presentationService.addCue(id, formData)
+    // prettier-ignore
     const newCue = updatedPresentation.cues.find(
-      (cue) =>
-        cue.index === Number(formData.get("index")) &&
-        cue.screen === Number(formData.get("screen"))
+      (cue) => cue.index === Number(formData.get("index")) && cue.screen === Number(formData.get("screen"))
     )
     dispatch(addCue(newCue))
   } catch (error) {
@@ -91,26 +91,22 @@ export const deletePresentation = (id) => async (dispatch) => {
   }
 }
 
-export const updatePresentation =
-  (presentationId, updatedCueData, cueId) => async (dispatch) => {
-    try {
-      const formData = createFormData(
-        updatedCueData.index,
-        updatedCueData.cueName,
-        updatedCueData.screen,
-        updatedCueData.file,
-        updatedCueData.cueId || cueId
-      )
-
-      const updatedCue = await presentationService.updateCue(
-        presentationId,
-        updatedCueData.cueId || cueId,
-        formData
-      )
-      dispatch(editCue(updatedCue))
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || "An error occurred"
-      console.error(errorMessage)
-      throw new Error(errorMessage)
-    }
+// prettier-ignore
+export const updatePresentation = (presentationId, updatedCueData, cueId) => async (dispatch) => {
+  try {
+    const formData = createFormData(
+      updatedCueData.index,
+      updatedCueData.cueName,
+      updatedCueData.screen,
+      updatedCueData.file,
+      updatedCueData.cueId || cueId
+    )
+    
+    const updatedCue = await presentationService.updateCue(presentationId, updatedCueData.cueId || cueId, formData)
+    dispatch(editCue(updatedCue))
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
   }
+}
