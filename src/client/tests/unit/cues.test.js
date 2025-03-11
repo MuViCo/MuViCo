@@ -12,7 +12,7 @@ describe("CuesForm new element", () => {
       </MemoryRouter>
     )
     expect(screen.getByText("Add element")).toBeInTheDocument()
-    expect(screen.getByText("Index 1-100*")).toBeInTheDocument()
+    expect(screen.getByText("Index 0-100*")).toBeInTheDocument()
     expect(screen.getByText("Name*")).toBeInTheDocument()
     expect(screen.getByText("Screen 1-4*")).toBeInTheDocument()
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
