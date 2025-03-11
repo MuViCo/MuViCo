@@ -25,7 +25,6 @@ With MuViCo you can easily add, assemble and edit video and image cues on an int
 #### Testing
 
 - [Jest](https://jestjs.io/docs/tutorial-react)
-- [Cypress](https://docs.cypress.io/guides/overview/why-cypress)
 
 #### Database
 
@@ -40,8 +39,6 @@ Cues are slots in which singular pieces of media are stored. On the presentation
 Once the user enters 'Show mode' the cues can be activated. Each cue is linked to a screen on which the media will be presented. The presentation can also be edited during Show mode and changes will be saved.
 
 The cues are differentiated by their 'screen' and 'index' values. Cues with the same 'screen' are shown in the same pop up window, while cues with the same 'index' are activated simultaneously. This allows the user to control media on several screens independently. A user can delete a presentation or cue, which also deletes the media of said presentation / cue.
-
-Currently the application is running on a staging server, which, for security reasons is not made public. The deployment server will be publicly available soon.
 
 ### Documentation
 
