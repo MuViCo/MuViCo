@@ -111,6 +111,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       index,
       screen,
       file,
+      fileName,
     }
 
     if (file !== "/blank.png") {
