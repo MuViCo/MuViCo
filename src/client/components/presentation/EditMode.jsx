@@ -396,10 +396,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             ))}
           </Box>
 
-          <Box position="relative">
+          <Box position="relative" overflow="auto">
             <Box
               height="600px"
-              overflow="auto"
               width="100%"
               position="relative"
               ref={containerRef}
