@@ -196,6 +196,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             updatedCue.file.url,
             updatedCue.file.name
           ),
+          fileName: updatedCue.fileName,
         }
         await dispatch(removeCue(id, cueId))
         await dispatchUpdateCue(cueExists._id, updatedDataCue)
