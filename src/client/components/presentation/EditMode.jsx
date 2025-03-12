@@ -1,5 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from "react"
-import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
+import {
+  Box,
+  Text,
+  ChakraProvider,
+  extendTheme,
+  useColorModeValue,
+} from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
@@ -18,6 +24,10 @@ import { useCustomToast } from "../utils/toastUtils"
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
+  const bgColor = useColorModeValue(
+    "rgba(255, 181, 181, 0.8)",
+    "rgba(72, 26, 35, 0.8)"
+  )
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
@@ -453,7 +463,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                   top={`${hoverPosition.screen * (rowHeight + gap)}px`}
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
-                  bg="rgba(72, 26, 35, 0.8)"
+                  bg={bgColor}
                   borderRadius="16"
                   transition="0"
                   zIndex={-1}
