@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
 import { isImage } from "../utils/fileTypeUtils"
+import { keyframes } from "@emotion/react"
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
   <Box
@@ -48,6 +54,8 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       position="absolute"
       width="100vw"
       zIndex={0}
+      animation={`${fadeIn} 500ms ease-in-out forwards`}
+      key={screenData?.file?.url}
     >
       {screenData?.file?.url ? (
         // If data is an image
