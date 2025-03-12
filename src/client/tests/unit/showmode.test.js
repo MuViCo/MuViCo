@@ -96,4 +96,22 @@ describe('ShowMode', () => {
         expect(screen.queryByRole('button', { name: 'Open screen: 1' })).not.toBeInTheDocument()
         expect(screen.queryByRole('button', { name: 'Open screen: 2' })).not.toBeInTheDocument()
     })
+
+    test('mirrors one screen to another', async () => {
+        if (!window.HTMLElement.prototype.scrollTo) {
+            window.HTMLElement.prototype.scrollTo = () => {}
+          }
+
+        await act(async () => {
+          render(<ShowMode cues={mockCues} />)
+        })
+
+        const dropdownButton = screen.getByRole("button", { name: 'Dropdown for screen 1' })
+        fireEvent.click(dropdownButton)
+
+        fireEvent.click(screen.getByText('Mirror screen: 2'))
+
+        const button = screen.getByRole('button', { name: /Open screen: 1/i })
+        expect(button).toHaveTextContent(/Mirroring screen: 2/)
+    })
 })
