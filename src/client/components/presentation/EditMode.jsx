@@ -371,7 +371,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             display="grid"
             gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
             gap={`${gap}px`}
-            position="sticky"
             left={0}
             zIndex={2}
             bg={"transparent"}
