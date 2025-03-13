@@ -180,7 +180,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
             screen: screen,
             file: {
               id: fileId,
-              name: req.body.fileName,
+              name: file && file.originalname ? file.originalname : "blank.png",
               url: image === "/blank.png" ? null : "",
             },
           },

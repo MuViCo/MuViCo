@@ -111,6 +111,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       index,
       screen,
       file,
+      fileName,
     }
 
     if (file !== "/blank.png") {
@@ -163,14 +164,14 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
             <NumberDecrementStepper />
           </NumberInputStepper>
         </NumberInput>
-        <FormHelperText mb={2}>Index 1-100*</FormHelperText>
+        <FormHelperText mb={2}>Index 0-100*</FormHelperText>
         <NumberInput
           value={index}
           mb={4}
-          min={1}
+          min={0}
           max={100}
           onChange={handleNumericInputChange(setIndex)}
-          onBlur={validateAndSetNumber(setIndex, 1, 100)}
+          onBlur={validateAndSetNumber(setIndex, 0, 100)}
           required
         >
           <NumberInputField data-testid="index-number" />
