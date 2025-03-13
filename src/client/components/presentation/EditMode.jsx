@@ -370,7 +370,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             display="grid"
             gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
             gap={`${gap}px`}
-            position="sticky"
             left={0}
             zIndex={2}
             bg={"transparent"}
@@ -396,10 +395,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             ))}
           </Box>
 
-          <Box position="relative">
+          <Box position="relative" overflow="auto">
             <Box
               height="600px"
-              overflow="auto"
               width="100%"
               position="relative"
               ref={containerRef}
