@@ -24,10 +24,11 @@ import { useCustomToast } from "../utils/toastUtils"
 const theme = extendTheme({})
 
 const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
-  const bgColor = useColorModeValue(
+  const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
     "rgba(72, 26, 35, 0.8)"
   )
+  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const containerRef = useRef(null)
@@ -433,7 +434,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    bg="gray.200"
+                    bg={bgColorIndex}
                     borderRadius="md"
                     h={`${rowHeight}px`}
                     width={`${columnWidth}px`}
@@ -463,7 +464,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                   top={`${hoverPosition.screen * (rowHeight + gap)}px`}
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
-                  bg={bgColor}
+                  bg={bgColorHover}
                   borderRadius="16"
                   transition="0"
                   zIndex={-1}
