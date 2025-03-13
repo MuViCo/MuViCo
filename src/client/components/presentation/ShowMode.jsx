@@ -102,6 +102,17 @@ const ShowMode = ({ cues }) => {
     }
   }
 
+  // Get the last available cue if the current cueIndex is missing
+  const getLastValidCue = (screen, index) => {
+    while (index >= 0) {
+      if (preloadedCues[screen]?.[index]) {
+        return preloadedCues[screen][index]
+      }
+      index -= 1
+    }
+    return {}
+  }
+
   return (
     <div className="show-mode">
       {/* Pass screen visibility and cue navigation to ShowModeButtons */}
@@ -120,10 +131,12 @@ const ShowMode = ({ cues }) => {
         const mirroredScreen = mirroring[screenNumber]
         const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
 
+        const screenData = getLastValidCue(sourceScreen, cueIndex)
+
         return (
           <Screen
             key={screenNumber}
-            screenData={preloadedCues[sourceScreen]?.[cueIndex]}
+            screenData={screenData}
             screenNumber={screenNumber}
             isVisible={screenVisibility[screenNumber]}
             onClose={handleScreenClose}
