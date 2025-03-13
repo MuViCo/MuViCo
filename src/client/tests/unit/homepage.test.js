@@ -4,10 +4,8 @@ import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
 import HomePage from "../../components/homepage/index"
-import {
-  AdminControls,
-  PresentationsGrid,
-} from "../../components/homepage/index"
+import PresentationsGrid from "../../components/homepage/PresentationsGrid"
+import AdminControls from "../../components/homepage/AdminControls"
 import PresentationFormWrapper from "../../components/homepage/PresentationFormWrapper"
 import PresentationForm from "../../components/homepage/PresentationForm"
 import presentationService from "../../services/presentations"
@@ -135,7 +133,7 @@ describe("PresentationForm", () => {
 })
 
 describe("AdminControls", () => {
-  test("renders the component", () => {
+  test("Renders the AdminControls component", () => {
     render(<AdminControls isAdmin={true} />)
     expect(screen.getByText("Admin controls")).toBeInTheDocument()
   })
@@ -165,7 +163,7 @@ const mock_data = [
 ]
 
 describe("PresentationsGrid", () => {
-  test("renders the component", () => {
+  test("Renders the PresentationsGrid component", () => {
     render(
       <PresentationsGrid
         presentations={[]}
