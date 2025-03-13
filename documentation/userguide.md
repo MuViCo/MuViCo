@@ -84,7 +84,7 @@ You can add an element in three ways:
 3. **Select the index**
     - The index determines the element's position on the selected screen.
     - The default index will be the first available index on the selected screen.
-    - You can choose any index between 1-100.
+    - You can choose any index between 0-100.
 
 4. **Name the new element**
     - Enter a descriptive name for the element to easily identify it later.
@@ -103,7 +103,7 @@ You can add an element in three ways:
 
 You can modify an element in three ways:
 
-- Click the **"Add Element"** button and select the screen (1-4) and index (1-100) of the element you want to change.
+- Click the **"Add Element"** button and select the screen (1-4) and index (0-100) of the element you want to change.
 - **Drag and drop** a new file on top of the existing element to replace it.
 - **Double-click** on the element to open it for editing.
 
