@@ -11,10 +11,11 @@ const api = supertest(app)
 
 let authHeader
 let testPresentationId
-let testCueId
+
+const mockImageBuffer = fs.readFileSync(path.join(__dirname, "mock_image.png"))
 
 describe("test presentation", () => {
-  beforeEach(async () => {
+  beforeAll(async () => {
     await User.deleteMany({})
     await Presentation.deleteMany({})
     await api
@@ -26,7 +27,9 @@ describe("test presentation", () => {
       .send({ username: "testuser", password: "testpassword" })
 
     authHeader = `Bearer ${response.body.token}`
+  })
 
+  beforeEach(async () => {
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
@@ -34,18 +37,26 @@ describe("test presentation", () => {
     const presentation = await Presentation.findOne({
       name: "Test presentation",
     })
+
+    if (!presentation) {
+      throw new Error(
+        "Error in beforeEach: Test presentation not found after creation"
+      )
+    }
+
     testPresentationId = presentation._id
   })
 
   const createCue = async (index, cueName, screen) => {
-    const imageFilePath = path.join(__dirname, "mock_image.png")
-    const image = fs.readFileSync(imageFilePath)
+    if (!testPresentationId) {
+      throw new Error("Error in createCue: testPresentationId is undefined")
+    }
 
     const url = `/api/presentation/${testPresentationId}`
 
     const response = await api
       .put(url)
-      .attach("image", image, "mock_image.png")
+      .attach("image", mockImageBuffer, "mock_image.png")
       .field("index", index)
       .field("cueName", cueName)
       .field("screen", screen)
@@ -69,30 +80,19 @@ describe("test presentation", () => {
     })
   })
 
-  describe("PUT /api/presentation/:id", () => {
-    test("update presentation", async () => {
-      const imageFilePath = path.join(__dirname, "mock_image.png")
-      const image = fs.readFileSync(imageFilePath)
-
-      await api
-        .put(`/api/presentation/${testPresentationId}`)
-        .attach("image", image, "mock_image.png")
-        .field("index", "1") // Add other form fields as needed
-        .field("cueName", "Test Cue")
-        .field("screen", "1")
-        .field("fileName", "")
-        .expect(200)
-    })
-  })
   describe("Test error handling", () => {
     it("GET /api/presentation/:id with invalid ID should return 401", async () => {
-      const response = await api.get("/api/presentation/invalid_id")
+      const response = await api.get(
+        "/api/presentation/000000000000000000000000"
+      )
 
       expect(response.status).toBe(401)
     })
 
     it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
-      const response = await api.delete("/api/presentation/invalid_id")
+      const response = await api.delete(
+        "/api/presentation/000000000000000000000000"
+      )
 
       expect(response.status).toBe(500)
     })
@@ -104,88 +104,102 @@ describe("test presentation", () => {
     })
   })
 
-  describe("Cue creation tests", () => {
-    test("PUT /api/presentation/:id with valid inputs should return 200", async () => {
-      const response = await createCue(1, "Test Cue", 1)
-      expect(response.status).toBe(200)
-    })
+  describe("PUT /api/presentation/:id", () => {
+    const validCases = [
+      [0, 1],
+      [50, 2],
+      [100, 4],
+    ]
 
-    test("PUT /api/presentation/:id with invalid screen should return 400", async () => {
-      const response = await createCue(1, "Test Cue", 5)
-      expect(response.status).toBe(400)
-      expect(response.body.error).toBe(
-        "Invalid cue screen: 5. Screen must be between 1 and 4."
-      )
-    })
+    test.each(validCases)(
+      "creates cue with valid data (index=%i, screen=%i)",
+      async (index, screen) => {
+        const response = await createCue(index, "Test Cue", screen)
+        expect(response.status).toBe(200)
+      },
+      10000
+    )
 
-    test("PUT /api/presentation/:id with invalid index should return 400", async () => {
-      const response = await createCue(101, "Test Cue", 4)
-      expect(response.status).toBe(400)
-      expect(response.body.error).toBe(
-        "Invalid cue index: 101. Index must be between 0 and 100."
-      )
-    })
+    const invalidCases = [
+      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
+      [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
+      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 4."],
+      [100, 5, "Invalid cue screen: 5. Screen must be between 1 and 4."],
+    ]
 
-    test("PUT /api/presentation/:id with missing screen should return 400", async () => {
+    test.each(invalidCases)(
+      "throws error with invalid data (index=%i, screen=%i)",
+      async (index, screen, error) => {
+        const res = await createCue(index, "Test Cue", screen)
+        expect(res.status).toBe(400)
+        expect(res.body.error).toBe(error)
+      },
+      10000
+    )
+
+    test("throws error with missing fields", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
         .field("index", "1")
-        .field("cueName", "Test Cue")
         .field("fileName", "")
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
-    })
+    }, 10000)
   })
 
-  describe("Cue updation tests", () => {
-    test("PUT /api/presentation/:id/:cueId with valid inputs should return 200", async () => {
-      testCueId = (await createCue(1, "Test Cue", 2)).body.cues[0]._id
+  describe("PUT /api/presentation/:id/:cueId", () => {
+    let testCueId
 
-      await api
-        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "100")
-        .field("cueName", "Test Cue")
-        .field("screen", "4")
-        .field("fileName", "")
-        .expect(200)
+    beforeEach(async () => {
+      const response = await createCue(1, "Test Cue", 2)
+      testCueId = response.body.cues[0]._id
     })
 
-    test("PUT /api/presentation/:id/:cueId with invalid screen should return 400", async () => {
-      testCueId = (await createCue(1, "Test Cue", 2)).body.cues[0]._id
+    const validCases = [
+      [0, 1],
+      [50, 2],
+      [100, 4],
+    ]
 
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "1")
-        .field("cueName", "Test Cue")
-        .field("screen", "5")
-        .field("fileName", "")
-        .expect(400)
+    test.each(validCases)(
+      "updates cue with valid data (index=%i, screen=%i)",
+      async (index, screen) => {
+        await api
+          .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+          .field("index", index)
+          .field("cueName", "Updated Test Cue")
+          .field("screen", screen)
+          .field("fileName", "")
+          .expect(200)
+      },
+      10000
+    )
 
-      expect(response.body.error).toBe(
-        "Invalid cue screen: 5. Screen must be between 1 and 4."
-      )
-    })
+    const invalidCases = [
+      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
+      [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
+      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 4."],
+      [100, 5, "Invalid cue screen: 5. Screen must be between 1 and 4."],
+    ]
 
-    test("PUT /api/presentation/:id/:cueId with invalid index should return 400", async () => {
-      testCueId = (await createCue(1, "Test Cue", 2)).body.cues[0]._id
+    test.each(invalidCases)(
+      "throws error with invalid data (index=%i, screen=%i)",
+      async (index, screen, error) => {
+        const response = await api
+          .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+          .field("index", index)
+          .field("cueName", "Updated Test Cue")
+          .field("screen", screen)
+          .field("fileName", "")
+          .expect(400)
 
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
-        .field("index", "-1")
-        .field("cueName", "Test Cue")
-        .field("screen", "4")
-        .field("fileName", "")
-        .expect(400)
+        expect(response.body.error).toBe(error)
+      },
+      10000
+    )
 
-      expect(response.body.error).toBe(
-        "Invalid cue index: -1. Index must be between 0 and 100."
-      )
-    })
-
-    test("PUT /api/presentation/:id/:cueId with missing fields should return 400", async () => {
-      testCueId = (await createCue(1, "Test Cue", 2)).body.cues[0]._id
-
+    test("throws error with missing fields", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
         .field("index", "1")
@@ -193,6 +207,6 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
-    })
+    }, 10000)
   })
 })

@@ -230,13 +230,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       gap
     )
 
-    // Stop if cue screen is not within valid range
     if (yIndex < 1 || yIndex > 4) {
       return
     }
 
-    // Stop if cue index is not within valid range
-    if (xIndex < 1 || xIndex > 100) {
+    if (xIndex < 0 || xIndex > 100) {
       return
     }
 
@@ -372,7 +370,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             display="grid"
             gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
             gap={`${gap}px`}
-            position="sticky"
             left={0}
             zIndex={2}
             bg={"transparent"}
@@ -398,10 +395,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
             ))}
           </Box>
 
-          <Box position="relative">
+          <Box position="relative" overflow="auto">
             <Box
               height="600px"
-              overflow="auto"
               width="100%"
               position="relative"
               ref={containerRef}
