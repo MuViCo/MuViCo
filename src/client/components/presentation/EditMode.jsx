@@ -86,6 +86,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       rowHeight,
       gap
     )
+
+    const cueExists = cues.some(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+
     if (
       !cueExists &&
       xIndex >= 0 &&
