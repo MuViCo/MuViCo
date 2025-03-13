@@ -4,7 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/i
 
 const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
   <Menu>
-    <MenuButton as={Button} colorScheme="gray" p={1}>
+    <MenuButton as={Button} colorScheme="gray" p={1} aria-label={`Dropdown for screen ${screenNumber}`}>
       <ChevronDownIcon />
     </MenuButton>
     <MenuList>
