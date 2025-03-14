@@ -5,14 +5,14 @@ import "@testing-library/jest-dom"
 
 const mockCues = [
   {
-    file: { url: "http://example.com/image1.jpg" },
+    file: { url: "http://example.com/image1.jpg", type: "image/jpg" },
     index: 0,
     name: "testtt",
     screen: 1,
     _id: "123456789",
   },
   {
-    file: { url: "http://example.com/image2.jpg" },
+    file: { url: "http://example.com/image2.jpg", type: "image/jpg" },
     index: 1,
     name: "testtt2",
     screen: 2,
@@ -34,11 +34,25 @@ describe("ShowMode", () => {
         }, 0)
       }
     }
+
+    window.open = jest.fn(() => {
+      const fakeWindow = {
+        document: {
+          body: document.createElement("body"),
+          head: document.createElement("head"),
+        },
+        close: jest.fn(),
+        addEventListener: jest.fn(() => {}),
+        removeEventListener: jest.fn(),
+      }
+      return fakeWindow
+    })
   })
 
   afterAll(() => {
-    // clean up the global image mock
+    // clean up the global image and window mock
     delete global.Image
+    delete window.open
   })
 
   test("renders without crashing", async () => {
@@ -59,7 +73,7 @@ describe("ShowMode", () => {
       render(<ShowMode cues={mockCues} />)
     })
 
-    expect(screen.getByRole("heading", { name: "Cue 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
 
     expect(
       screen.getByRole("button", { name: "Open screen: 1" })
@@ -77,12 +91,12 @@ describe("ShowMode", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Next Cue" }))
     })
-    expect(screen.getByRole("heading", { name: "Cue 1" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
 
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Previous Cue" }))
     })
-    expect(screen.getByRole("heading", { name: "Cue 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
   })
 
   test("toggles screen visibility", async () => {
