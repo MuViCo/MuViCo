@@ -7,6 +7,7 @@ import {
   updatePresentation,
   createCue,
   removeCue,
+  updatePresentationSwappedCues,
 } from "../../redux/presentationReducer"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
@@ -51,6 +52,20 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }, [isToolboxOpen])
 
   const handleMouseDown = (event) => {
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (cueExists(xIndex, yIndex)) {
+      const movingCue = cues.find(
+        (cue) => cue.index === xIndex && cue.screen === yIndex
+      )
+      setSelectedCue(movingCue)
+    }
     if (event.target.closest(".react-grid-item")) {
       setIsDragging(true)
       setHoverPosition(null)
@@ -71,9 +86,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       rowHeight,
       gap
     )
+
     const cueExists = cues.some(
       (cue) => cue.index === xIndex && cue.screen === yIndex
     )
+
     if (
       !cueExists &&
       xIndex >= 0 &&
@@ -89,6 +106,23 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
   const handleMouseUp = (event) => {
     setIsDragging(false)
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (cueExists(xIndex, yIndex)) {
+      const targetCue = cues.find(
+        (cue) => cue.index === xIndex && cue.screen === yIndex
+      )
+      if (selectedCue && targetCue && selectedCue !== targetCue) {
+        handleElementPositionChange(selectedCue, targetCue)
+      }
+    }
+
     if (!isDragging) {
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
@@ -273,6 +307,23 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }
 
+  const dispatchUpdateSwappedCues = async (newTargetCue, newSelectedCue) => {
+    setStatus("loading")
+    try {
+      await dispatch(
+        updatePresentationSwappedCues(id, newTargetCue, newSelectedCue)
+      )
+      setStatus("saved")
+    } catch (error) {
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
+    }
+  }
+
   const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
     const dropX = event.clientX
     const containerRect = containerRef.current.getBoundingClientRect()
@@ -289,6 +340,24 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
     return { xIndex, yIndex }
+  }
+
+  const handleElementPositionChange = async (selectedCue, targetCue) => {
+    const newTargetCue = {
+      ...targetCue,
+      index: selectedCue.index,
+      screen: selectedCue.screen,
+    }
+
+    const newSelectedCue = {
+      ...selectedCue,
+      index: targetCue.index,
+      screen: targetCue.screen,
+    }
+
+    await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+
+    setSelectedCue(null)
   }
 
   const handleDrop = useCallback(
