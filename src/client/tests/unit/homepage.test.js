@@ -4,12 +4,10 @@ import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
 import HomePage from "../../components/homepage/index"
-import {
-  AdminControls,
-  PresentationsGrid,
-  CreatePresentation,
-} from "../../components/homepage/index"
-import PresentationForm from "../../components/homepage/CreatePresentation"
+import PresentationsGrid from "../../components/homepage/PresentationsGrid"
+import AdminControls from "../../components/homepage/AdminControls"
+import PresentationFormWrapper from "../../components/homepage/PresentationFormWrapper"
+import PresentationForm from "../../components/homepage/PresentationForm"
 import presentationService from "../../services/presentations"
 import addInitialElements from "../../components/utils/addInitialElements"
 
@@ -85,13 +83,23 @@ describe("HomePage", () => {
 })
 
 describe("PresentationForm", () => {
+  test("Renders the 'New presentation'-button", () => {
+    render(
+      <PresentationFormWrapper
+        createPresentation={() => {}}
+        togglableRef={() => {}}
+        handleCancel={() => {}}
+      />
+    )
+    expect(screen.getByText("New presentation")).toBeInTheDocument()
+  })
   test("renders the form with name input field and buttons", () => {
     render(<PresentationForm />)
 
     expect(screen.getByRole("button", { name: /create/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument()
     expect(screen.getByTestId("presentation-name")).toBeInTheDocument()
-    expect(screen.getByLabelText("Name")).toBeInTheDocument()
+    expect(screen.getByLabelText("Name*")).toBeInTheDocument()
   })
 
   test("calls createPresentation function when create button is clicked", () => {
@@ -103,7 +111,7 @@ describe("PresentationForm", () => {
       />
     )
 
-    const nameInput = screen.getByLabelText("Name")
+    const nameInput = screen.getByLabelText("Name*")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.click(screen.getByText("create"))
 
@@ -125,7 +133,7 @@ describe("PresentationForm", () => {
 })
 
 describe("AdminControls", () => {
-  test("renders the component", () => {
+  test("Renders the AdminControls component", () => {
     render(<AdminControls isAdmin={true} />)
     expect(screen.getByText("Admin controls")).toBeInTheDocument()
   })
@@ -155,7 +163,7 @@ const mock_data = [
 ]
 
 describe("PresentationsGrid", () => {
-  test("renders the component", () => {
+  test("Renders the PresentationsGrid component", () => {
     render(
       <PresentationsGrid
         presentations={[]}
@@ -184,45 +192,5 @@ describe("PresentationsGrid", () => {
     )
     fireEvent.click(screen.getByText("Test Presentation"))
     expect(handlePresentationClickMock).toHaveBeenCalledWith("123")
-  })
-})
-
-describe("Create presentation form", () => {
-  test("renders the component", () => {
-    render(
-      <CreatePresentation
-        createPresentation={() => {}}
-        handleCancel={() => {}}
-        handleConnectionsClick={() => {}}
-      />
-    )
-    expect(screen.getByText("New presentation")).toBeInTheDocument()
-  })
-  test("renders the component with buttons", () => {
-    render(
-      <CreatePresentation
-        createPresentation={() => {}}
-        handleCancel={() => {}}
-        handleConnectionsClick={() => {}}
-      />
-    )
-    expect(screen.getByText("New presentation")).toBeInTheDocument()
-  })
-  test("calls createPresentation function when create button is clicked", () => {
-    const createPresentationMock = jest.fn()
-    render(
-      <CreatePresentation
-        createPresentation={createPresentationMock}
-        handleCancel={() => {}}
-        handleConnectionsClick={() => {}}
-      />
-    )
-    fireEvent.click(screen.getByText("New presentation"))
-    const nameInput = screen.getByLabelText("Name")
-    fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
-    fireEvent.click(screen.getByText("create"))
-    expect(createPresentationMock).toHaveBeenCalledWith({
-      name: "Test Presentation",
-    })
   })
 })
