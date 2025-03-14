@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import presentationService from "../../services/presentations"
 import AdminControls from "./AdminControls"
 import PresentationsGrid from "./PresentationsGrid"
-import CreatePresentationContainer from "./CreatePresentationContainer"
+import PresentationFormWrapper from "./PresentationFormWrapper"
 import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
 
@@ -56,7 +56,7 @@ const HomePage = ({ user }) => {
   return (
     <Container maxW="container.lg">
       <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
-      <CreatePresentationContainer
+      <PresentationFormWrapper
         createPresentation={createPresentation}
         togglableRef={togglableRef}
         handleCancel={handleCancel}
