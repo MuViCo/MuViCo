@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
+import KeyboardHandler from "../utils/keyboardHandler"
 
 // ShowMode component
 const ShowMode = ({ cues }) => {
@@ -116,6 +117,11 @@ const ShowMode = ({ cues }) => {
   return (
     <div className="show-mode">
       {/* Pass screen visibility and cue navigation to ShowModeButtons */}
+      <KeyboardHandler
+        onNext={() => updateCue("Next")}
+        onPrevious={() => updateCue("Previous")}
+      />
+
       <ShowModeButtons
         screens={screenVisibility}
         toggleScreenVisibility={toggleScreenVisibility}
