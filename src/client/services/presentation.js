@@ -35,6 +35,8 @@ const addCue = async (id, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
+  console.log("formData", formData)
+  console.log("id in presentationService", id)
   const response = await axios.put(`${baseUrl}${id}`, formData, config)
   return response.data
 }

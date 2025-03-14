@@ -42,6 +42,9 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   )
 
   const [isDragging, setIsDragging] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+  const [copiedCue, setCopiedCue] = useState(null)
+
   const clickTimeout = useRef(null)
 
   useEffect(() => {
@@ -51,12 +54,59 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }, [isToolboxOpen])
 
   const handleMouseDown = (event) => {
+    console.log("isCopied", isCopied)
+
+    if (isCopied) {
+      console.log("HELLOOO cue", isCopied)
+      return
+    }
     if (event.target.closest(".react-grid-item")) {
       setIsDragging(true)
       setHoverPosition(null)
     } else {
       setIsDragging(false)
     }
+  }
+
+  useEffect(() => {
+    if (isCopied) {
+      const event = new Event("onClick")
+      containerRef.current.dispatchEvent(event)
+    }
+  }, [isCopied])
+
+  const handlePaste = (event) => {
+    console.log("Paste triggered")
+    console.log("iscopied", isCopied)
+
+    //if (!isCopied || !copiedCue) return
+
+    if (!containerRef?.current) {
+      console.error("Container ref is not available")
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    console.log("New position:", xIndex, yIndex)
+
+    const cueData = {
+      index: xIndex,
+      cueName: copiedCue.name,
+      screen: yIndex,
+      file: copiedCue.file,
+      fileName: copiedCue.fileName || "blank.png",
+    }
+
+    console.log("Cue data to add:", cueData)
+
+    addCue(cueData)
+    setIsCopied(false)
   }
 
   const handleMouseMove = (event) => {
@@ -120,12 +170,13 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file, fileName } = cueData
+    console.log("cueData in addcue", cueData)
 
     //Check if cue with same index and screen already exists
     const cueExists = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
-    if (cueExists) {
+    if (cueExists && !isCopied) {
       setConfirmMessage(
         `Index ${index} element already exists on screen ${screen}. Do you want to replace it?`
       )
@@ -138,6 +189,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
           file,
           fileName,
         }
+
         await dispatchUpdateCue(cueExists._id, updatedCue)
         setIsConfirmOpen(false)
       })
@@ -151,6 +203,8 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       screen,
       file || "/blank.png"
     )
+    console.log("formData in addcue", formData)
+    console.log("id in addcue", id)
 
     try {
       await dispatch(createCue(id, formData))
@@ -176,6 +230,8 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }
 
   const updateCue = async (cueId, updatedCue) => {
+    console.log("updatedcue", updatedCue)
+
     const cueExists = cues.find(
       (cue) =>
         cue.index === Number(updatedCue.index) &&
@@ -405,6 +461,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onClick={handlePaste}
             >
               <Box
                 display="grid"
@@ -443,6 +500,8 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                 rowHeight={rowHeight}
                 gap={gap}
                 setStatus={setStatus}
+                setIsCopied={setIsCopied}
+                setCopiedCue={setCopiedCue}
                 id={id}
               />
 
