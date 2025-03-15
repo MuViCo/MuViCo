@@ -85,14 +85,6 @@ const GridLayoutComponent = ({
     }
   }
 
-  const handleCopyItem = (cueId) => {
-    const cue = cues.find((cue) => cue._id === cueId)
-    setCopiedCue(cue)
-    setIsCopied(true)
-    console.log("handlecopyitem", cue)
-    console.log("isCopied", isCopied)
-  }
-
   return (
     <GridLayout
       className="layout"
@@ -154,7 +146,6 @@ const GridLayoutComponent = ({
                 e.stopPropagation()
                 setIsCopied(true)
                 setCopiedCue(cue)
-                console.log(cue._id)
               }}
             />
 
