@@ -54,8 +54,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     ref: containerRef,
     handler: () => (setIsCopied(false), setCopiedCue(null)),
   })
-  console.log("copiedcue", copiedCue)
-  console.log("isCopied", isCopied)
 
   const clickTimeout = useRef(null)
 
