@@ -4,6 +4,7 @@ import "@testing-library/jest-dom"
 import userEvent from "@testing-library/user-event"
 
 import { SignUpForm } from "../../components/navbar/SignUp"
+import { describe } from "node:test"
 
 describe("SignUp", () => {
   test("renders content", () => {
@@ -66,7 +67,9 @@ describe("SignUp", () => {
     await userEvent.click(screen.getByText("Sign up"))
     expect(screen.getByText("Passwords must match")).toBeDefined()
   })
+})
 
+describe("HandleKeyDown", () => {
   test("handleKeyDown shifts focus correctly", () => {
     const onSubmit = jest.fn()
     const { getByPlaceholderText } = render(<SignUpForm onSubmit={onSubmit} />)
