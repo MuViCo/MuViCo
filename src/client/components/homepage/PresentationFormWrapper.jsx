@@ -1,8 +1,8 @@
 import { SimpleGrid, GridItem } from "@chakra-ui/react"
 import Togglable from "../utils/Togglable"
-import CreatePresentation from "./CreatePresentation"
+import PresentationForm from "./PresentationForm"
 
-const CreatePresentationContainer = ({
+const PresentationFormWrapper = ({
   createPresentation,
   togglableRef,
   handleCancel,
@@ -14,7 +14,7 @@ const CreatePresentationContainer = ({
         exitLabel="cancel"
         ref={togglableRef}
       >
-        <CreatePresentation
+        <PresentationForm
           createPresentation={createPresentation}
           onCancel={handleCancel}
         />
@@ -22,4 +22,4 @@ const CreatePresentationContainer = ({
     </GridItem>
   </SimpleGrid>
 )
-export default CreatePresentationContainer
+export default PresentationFormWrapper
