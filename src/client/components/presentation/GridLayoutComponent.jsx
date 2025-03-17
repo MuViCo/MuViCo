@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
-import { CloseIcon } from "@chakra-ui/icons"
+import { DeleteIcon, CopyIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -14,6 +14,8 @@ const GridLayoutComponent = ({
   layout,
   cues,
   setStatus,
+  setCopiedCue,
+  setIsCopied,
   columnWidth,
   rowHeight,
   gap,
@@ -114,7 +116,7 @@ const GridLayoutComponent = ({
         >
           <Box position="relative" h="100%">
             <IconButton
-              icon={<CloseIcon />}
+              icon={<DeleteIcon />}
               size="xs"
               position="absolute"
               _hover={{ bg: "red.500", color: "white" }}
@@ -127,6 +129,29 @@ const GridLayoutComponent = ({
               onMouseDown={(e) => {
                 e.stopPropagation()
                 handleRemoveItem(cue._id)
+              }}
+            />
+            <IconButton
+              icon={<CopyIcon />}
+              size="xs"
+              position="absolute"
+              _hover={{ bg: "gray.600", color: "white" }}
+              backgroundColor="gray.500"
+              draggable={false}
+              zIndex="10"
+              top="25px"
+              right="0px"
+              aria-label={`Copy ${cue.name}`}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                setIsCopied(true)
+                setCopiedCue(cue)
+                showToast({
+                  title: `Element ${cue.name} copied`,
+                  description:
+                    "Click on available places on the grid to paste. Click outside the grid to cancel",
+                  status: "success",
+                })
               }}
             />
 
