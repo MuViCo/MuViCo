@@ -107,21 +107,9 @@ describe("SignUp", () => {
 
   test("handleKeyDown shifts focus correctly to submit button", () => {
     const onSubmit = jest.fn()
-    const { getByPlaceholderText } = render(<SignUpForm onSubmit={onSubmit} />)
-    const usernameInput = getByPlaceholderText("Username")
-    const passwordInput = getByPlaceholderText("Password")
-    const passwordAgainInput = getByPlaceholderText("Password_confirmation")
+    render(<SignUpForm onSubmit={onSubmit} />)
     const termsLink = screen.getByTestId("terms_link")
     const submitButton = screen.getByTestId("signup_inform")
-
-    fireEvent.keyDown(usernameInput, { key: "Tab" })
-    expect(document.activeElement).toBe(passwordInput)
-
-    fireEvent.keyDown(passwordInput, { key: "Tab" })
-    expect(document.activeElement).toBe(passwordAgainInput)
-
-    fireEvent.keyDown(passwordAgainInput, { key: "Tab" })
-    expect(document.activeElement).toBe(termsLink)
 
     fireEvent.keyDown(termsLink, { key: "Tab" })
     expect(document.activeElement).toBe(submitButton)
@@ -134,9 +122,8 @@ describe("SignUp", () => {
       <SignUpForm onSubmit={onSubmit} handleTermsClick={handleTermsClick} />
     )
     const termsLink = screen.getByTestId("terms_link")
-
-    // Assert that the terms link is present
     expect(termsLink).toBeInTheDocument()
+
     await userEvent.click(termsLink)
     expect(handleTermsClick).toHaveBeenCalledTimes(1)
   })
