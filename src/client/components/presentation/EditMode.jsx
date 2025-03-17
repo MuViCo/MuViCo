@@ -1,5 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from "react"
-import { Box, Text, ChakraProvider, extendTheme } from "@chakra-ui/react"
+import {
+  Box,
+  Text,
+  ChakraProvider,
+  extendTheme,
+  useOutsideClick,
+} from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
@@ -44,6 +50,12 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const [isDragging, setIsDragging] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
+  useOutsideClick({
+    ref: containerRef,
+    handler: () => (setIsCopied(false), setCopiedCue(null)),
+  })
+  console.log("copiedcue", copiedCue)
+  console.log("isCopied", isCopied)
 
   const clickTimeout = useRef(null)
 
@@ -99,6 +111,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
     await addCue(newCueData)
     setIsCopied(false)
+    setCopiedCue(null)
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {

@@ -146,6 +146,12 @@ const GridLayoutComponent = ({
                 e.stopPropagation()
                 setIsCopied(true)
                 setCopiedCue(cue)
+                showToast({
+                  title: `Element ${cue.name} copied`,
+                  description:
+                    "Click on the grid to paste. Click outside the grid to cancel",
+                  status: "success",
+                })
               }}
             />
 
