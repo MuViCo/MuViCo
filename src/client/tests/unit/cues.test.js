@@ -238,6 +238,7 @@ describe("CuesForm update element", () => {
       index: 1,
       screen: 2,
       file: "/blank.png",
+      fileName: "blank.png",
     })
     await waitFor(
       () => {
