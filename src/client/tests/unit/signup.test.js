@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import userEvent from "@testing-library/user-event"
 
@@ -129,5 +129,64 @@ describe("HandleKeyDown", () => {
 
     await userEvent.click(termsLink)
     expect(handleTermsClick).toHaveBeenCalledTimes(1)
+  })
+
+  test("handleKeyDown shifts focus correctly to username from submit button", () => {
+    const onSubmit = jest.fn()
+    const { getByPlaceholderText, getByTestId } = render(
+      <SignUpForm onSubmit={onSubmit} />
+    )
+    const submitButton = getByTestId("signup_inform")
+    const usernameInput = getByPlaceholderText("Username")
+
+    fireEvent.keyDown(submitButton, { key: "Tab" })
+    expect(document.activeElement).toBe(usernameInput)
+  })
+
+  test("handleKeyDown calls handleSubmit when pressing enter when focus on password confirmation", async () => {
+    const onSubmit = jest.fn()
+    const { getByTestId } = render(<SignUpForm onSubmit={onSubmit} />)
+    const usernameInput = getByTestId("username_signup")
+    const passwordInput = getByTestId("password_signup")
+    const passwordAgainInput = getByTestId("password_signup_confirmation")
+
+    fireEvent.change(usernameInput, { target: { value: "testuser" } })
+    fireEvent.change(passwordInput, { target: { value: "testpassword" } })
+    fireEvent.change(passwordAgainInput, { target: { value: "testpassword" } })
+
+    fireEvent.keyDown(passwordAgainInput, { key: "Enter" })
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(onSubmit).toHaveBeenCalledWith({
+        username: "testuser",
+        password: "testpassword",
+        password_confirmation: "testpassword",
+      })
+    })
+  })
+
+  test("handleKeyDown calls handleSubmit when pressing enter when focus on submit button", async () => {
+    const onSubmit = jest.fn()
+    const { getByTestId } = render(<SignUpForm onSubmit={onSubmit} />)
+    const usernameInput = getByTestId("username_signup")
+    const passwordInput = getByTestId("password_signup")
+    const passwordAgainInput = getByTestId("password_signup_confirmation")
+    const submitButton = getByTestId("signup_inform")
+
+    fireEvent.change(usernameInput, { target: { value: "testuser" } })
+    fireEvent.change(passwordInput, { target: { value: "testpassword" } })
+    fireEvent.change(passwordAgainInput, { target: { value: "testpassword" } })
+
+    fireEvent.keyDown(submitButton, { key: "Enter" })
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(onSubmit).toHaveBeenCalledWith({
+        username: "testuser",
+        password: "testpassword",
+        password_confirmation: "testpassword",
+      })
+    })
   })
 })
