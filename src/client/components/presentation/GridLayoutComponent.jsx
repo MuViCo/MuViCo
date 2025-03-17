@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
-import { DeleteIcon, CopyIcon, CloseIcon } from "@chakra-ui/icons"
+import { DeleteIcon, CopyIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
@@ -149,7 +149,7 @@ const GridLayoutComponent = ({
                 showToast({
                   title: `Element ${cue.name} copied`,
                   description:
-                    "Click on the grid to paste. Click outside the grid to cancel",
+                    "Click on available places on the grid to paste. Click outside the grid to cancel",
                   status: "success",
                 })
               }}

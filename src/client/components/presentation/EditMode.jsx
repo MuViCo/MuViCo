@@ -79,13 +79,6 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }
 
-  useEffect(() => {
-    if (isCopied) {
-      const event = new Event("onClick")
-      containerRef.current.dispatchEvent(event)
-    }
-  }, [isCopied])
-
   const handlePaste = async (event) => {
     if (!isCopied || !copiedCue) return
 
