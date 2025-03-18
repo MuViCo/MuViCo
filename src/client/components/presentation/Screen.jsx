@@ -19,11 +19,8 @@ const ScreenContent = ({
   currentScreenData,
   previousScreenData,
   showText,
-  shouldAnimatePrevious,
-  handleFadeOutEnd,
 }) => (
   <Box
-    zIndex={3}
     bg="black"
     color="white"
     width="100vw"
@@ -58,9 +55,44 @@ const ScreenContent = ({
         </Text>
       )}
     </Box>
-
+    {/* Fade out previous cue media, if any */}
+    {previousScreenData && (
+      <Box
+        key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}`}
+        flex="1"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        position="absolute"
+        width="100vw"
+        zIndex={1}
+        animation={`${fadeOut} 500ms ease-in-out forwards`}
+      >
+        {previousScreenData.file?.url &&
+          (isImage(previousScreenData.file) ? (
+            <Image
+              src={previousScreenData.file.url}
+              alt={previousScreenData.name}
+              width="100%"
+              height="100vh"
+              objectFit="contain"
+            />
+          ) : (
+            <video
+              src={previousScreenData.file.url}
+              width="100%"
+              height="100%"
+              autoPlay
+              loop
+              muted
+              style={{ objectFit: "contain" }}
+            />
+          ))}
+      </Box>
+    )}
     {/* Fade in current cue media */}
     <Box
+      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
       flex="1"
       display="flex"
       justifyContent="center"
@@ -69,10 +101,8 @@ const ScreenContent = ({
       width="100vw"
       zIndex={1}
       animation={`${fadeIn} 500ms ease-in-out forwards`}
-      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
     >
       {currentScreenData?.file?.url ? (
-        // If data is an image
         isImage(currentScreenData.file) ? (
           <Image
             src={currentScreenData.file.url}
@@ -82,7 +112,6 @@ const ScreenContent = ({
             objectFit="contain"
           />
         ) : (
-          // If data is a video
           <video
             src={currentScreenData.file.url}
             width="100%"
@@ -94,64 +123,19 @@ const ScreenContent = ({
           />
         )
       ) : (
-        // If no data
         <Text>No media available for this cue.</Text>
       )}
     </Box>
-
-    {/* Fade out previous cue media, if applicable */}
-    {shouldAnimatePrevious && (
-      <Box
-        flex="1"
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        position="absolute"
-        width="100vw"
-        zIndex={0}
-        animation={`${fadeOut} 500ms ease-in-out forwards`}
-        key={`${previousScreenData?._id}-${previousScreenData?.index}-${previousScreenData?.screen}`}
-        onAnimationEnd={handleFadeOutEnd}
-      >
-        {previousScreenData?.file?.url ? (
-          // If data is an image
-          isImage(previousScreenData.file) ? (
-            <Image
-              src={previousScreenData.file.url}
-              alt={previousScreenData.name}
-              width="100%"
-              height="100vh"
-              objectFit="contain"
-            />
-          ) : (
-            // If data is a video
-            <video
-              src={previousScreenData.file.url}
-              width="100%"
-              height="100%"
-              autoPlay
-              loop
-              muted
-              style={{ objectFit: "contain" }}
-            />
-          )
-        ) : (
-          // If no data
-          <Text>No media available for this cue.</Text>
-        )}
-      </Box>
-    )}
   </Box>
 )
 
 const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
+  const fadeOutTimerRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
   const [currentScreenData, setCurrentScreenData] = useState(null)
   const [previousScreenData, setPreviousScreenData] = useState(null)
   const [showText, setShowText] = useState(false)
-  const [shouldAnimatePrevious, setShouldAnimatePrevious] = useState(false)
-  const [hasBeenOpened, setHasBeenOpened] = useState(false)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -174,21 +158,11 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
         windowRef.current = newWindow
         setIsWindowReady(true)
 
-        // Set `shouldAnimatePrevious` only if the screen has been opened before
-        if (hasBeenOpened) {
-          setShouldAnimatePrevious(true)
-        } else {
-          setShouldAnimatePrevious(false)
-          setHasBeenOpened(true) // Mark the screen as opened
-        }
-
         // Handle window close event to reset the reference
         newWindow.addEventListener("beforeunload", () => {
           windowRef.current = null
           onClose(screenNumber)
           setIsWindowReady(false)
-          setHasBeenOpened(false)
-          setShouldAnimatePrevious(false)
         })
       }
     }
@@ -197,8 +171,6 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
       windowRef.current.close()
       windowRef.current = null
       setIsWindowReady(false)
-      setHasBeenOpened(false)
-      setShouldAnimatePrevious(false)
     }
 
     // Cleanup on unmount
@@ -207,8 +179,6 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
         windowRef.current.close()
         windowRef.current = null
         setIsWindowReady(false)
-        setHasBeenOpened(false)
-        setShouldAnimatePrevious(false)
         onClose(screenNumber)
       }
     }
@@ -221,36 +191,46 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [isWindowReady])
 
+  /**
+   * Updates screen data and indirectly triggers crossfades in `ScreenContent`.
+   * - If there is current media, it moves to `previousScreenData` and fades out as new media fades in.
+   * - If there is no current media, new media simply fades in without a crossfade effect.
+   */
   useEffect(() => {
-    if (screenData && screenData !== currentScreenData) {
+    if (screenData) {
       if (!currentScreenData) {
         setCurrentScreenData(screenData)
-        setPreviousScreenData(null)
+        setPreviousScreenData(null) // No previous media to fade out
       } else {
-        setPreviousScreenData(currentScreenData)
-        setCurrentScreenData(screenData)
-        console.log("")
-        console.log("screendata", screenData)
-        console.log("current screen data", currentScreenData)
-        console.log("previous screen data", previousScreenData)
-        // Only animate transition if the screen has been opened before
-        setShouldAnimatePrevious(true)
+        // Skip update if media (URL and name) hasn't changed
+        const currentMediaUrl = currentScreenData?.file?.url
+        const newMediaUrl = screenData?.file?.url
+        const currentMediaName = currentScreenData?.name
+        const newMediaName = screenData?.name
+        if (
+          currentMediaUrl === newMediaUrl &&
+          currentMediaName === newMediaName
+        ) {
+          return
+        }
 
-        // Fallback timeout to remove previous screen if onAnimationEnd doesn't fire
-        setTimeout(() => {
+        // Store current media as previous for crossfade effect
+        setPreviousScreenData(currentScreenData)
+        // Store new media
+        setCurrentScreenData(screenData)
+
+        // Prevent overlapping fade-out timers
+        if (fadeOutTimerRef.current) {
+          clearTimeout(fadeOutTimerRef.current)
+        }
+        // Clear previous media after fade-out animation (500ms)
+        fadeOutTimerRef.current = setTimeout(() => {
           setPreviousScreenData(null)
-          setShouldAnimatePrevious(false)
-        }, 100) // Match animation duration
+          fadeOutTimerRef.current = null
+        }, 500)
       }
     }
-  }, [screenData])
-
-  // Function to handle fade-out completion
-  const handleFadeOutEnd = () => {
-    console.log("handle fade out end")
-    setPreviousScreenData(null) // Remove previous screen data after fade-out
-    setShouldAnimatePrevious(false) // Stop animation flag
-  }
+  }, [screenData, currentScreenData])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
@@ -285,8 +265,6 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           currentScreenData={currentScreenData}
           previousScreenData={previousScreenData}
           showText={showText}
-          shouldAnimatePrevious={shouldAnimatePrevious}
-          handleFadeOutEnd={handleFadeOutEnd}
         />,
         windowRef.current.document.body // render to new window's document.body
       )
