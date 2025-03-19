@@ -11,6 +11,8 @@ import {
   Heading,
   Divider,
   Tooltip,
+  ChakraProvider,
+  extendTheme,
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect } from "react"
@@ -20,6 +22,8 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
+
+const theme = extendTheme({})
 
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [file, setFile] = useState("/blank.png")
@@ -141,127 +145,129 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   }
 
   return (
-    <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
-      <FormControl as="fieldset">
-        {cueData ? (
-          <Heading size="md">Edit Element</Heading>
-        ) : (
-          <Heading size="md">Add element</Heading>
-        )}
-        <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
-        <NumberInput
-          value={screen}
-          mb={4}
-          min={1}
-          max={4}
-          onChange={handleNumericInputChange(setScreen)}
-          onBlur={validateAndSetNumber(setScreen, 1, 4)}
-          required
-        >
-          <NumberInputField data-testid="screen-number" />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-        <FormHelperText mb={2}>Index 0-100*</FormHelperText>
-        <NumberInput
-          value={index}
-          mb={4}
-          min={0}
-          max={100}
-          onChange={handleNumericInputChange(setIndex)}
-          onBlur={validateAndSetNumber(setIndex, 0, 100)}
-          required
-        >
-          <NumberInputField data-testid="index-number" />
-          <NumberInputStepper>
-            <NumberIncrementStepper />
-            <NumberDecrementStepper />
-          </NumberInputStepper>
-        </NumberInput>
-        <FormHelperText mb={2}>Name*</FormHelperText>
-        <Input
-          data-testid="cue-name"
-          value={cueName}
-          placeholder="Element name"
-          mb={2}
-          onChange={(e) => setCueName(e.target.value)}
-          required
-        />
-        <Divider orientation="horizontal" my={4} />
-        <FormHelperText mb={2}>
-          Upload media
-          <Tooltip
-            label={
-              <>
-                <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
-                .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
-                <br />
-                <strong>Valid video types: </strong> .mp4 and .3gp
-              </>
-            }
-            placement="right-end"
-            p={2}
-            fontSize="sm"
-          >
-            <Button variant="ghost" size="xs" marginLeft={2}>
-              <InfoOutlineIcon />
-            </Button>
-          </Tooltip>
-        </FormHelperText>
-        <label htmlFor="file-upload">
-          <Button as="span" cursor="pointer" w={40} mr={2}>
-            Upload media
-          </Button>
-        </label>
-        <Input
-          type="file"
-          id="file-upload"
-          data-testid="file-name"
-          style={{ display: "none" }}
-          onChange={fileSelected}
-          accept={allowedTypes}
-        />{" "}
-        {fileName &&
-          fileName !== "blank.png" &&
-          fileName !== "undefined" &&
-          (!allowedTypes.includes(file.type) ? (
-            <>
-              {" "}
-              <CloseIcon color="#D2042D" />
-              <FormHelperText>{fileName}</FormHelperText>
-            </>
+    <ChakraProvider theme={theme}>
+      <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
+        <FormControl as="fieldset">
+          {cueData ? (
+            <Heading size="md">Edit Element</Heading>
           ) : (
+            <Heading size="md">Add element</Heading>
+          )}
+          <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
+          <NumberInput
+            value={screen}
+            mb={4}
+            min={1}
+            max={4}
+            onChange={handleNumericInputChange(setScreen)}
+            onBlur={validateAndSetNumber(setScreen, 1, 4)}
+            required
+          >
+            <NumberInputField data-testid="screen-number" />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+          <FormHelperText mb={2}>Index 0-100*</FormHelperText>
+          <NumberInput
+            value={index}
+            mb={4}
+            min={0}
+            max={100}
+            onChange={handleNumericInputChange(setIndex)}
+            onBlur={validateAndSetNumber(setIndex, 0, 100)}
+            required
+          >
+            <NumberInputField data-testid="index-number" />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+          <FormHelperText mb={2}>Name*</FormHelperText>
+          <Input
+            data-testid="cue-name"
+            value={cueName}
+            placeholder="Element name"
+            mb={2}
+            onChange={(e) => setCueName(e.target.value)}
+            required
+          />
+          <Divider orientation="horizontal" my={4} />
+          <FormHelperText mb={2}>
+            Upload media
+            <Tooltip
+              label={
+                <>
+                  <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                  .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
+                  <br />
+                  <strong>Valid video types: </strong> .mp4 and .3gp
+                </>
+              }
+              placement="right-end"
+              p={2}
+              fontSize="sm"
+            >
+              <Button variant="ghost" size="xs" marginLeft={2}>
+                <InfoOutlineIcon />
+              </Button>
+            </Tooltip>
+          </FormHelperText>
+          <label htmlFor="file-upload">
+            <Button as="span" cursor="pointer" w={40} mr={2}>
+              Upload media
+            </Button>
+          </label>
+          <Input
+            type="file"
+            id="file-upload"
+            data-testid="file-name"
+            style={{ display: "none" }}
+            onChange={fileSelected}
+            accept={allowedTypes}
+          />{" "}
+          {fileName &&
+            fileName !== "blank.png" &&
+            fileName !== "undefined" &&
+            (!allowedTypes.includes(file.type) ? (
+              <>
+                {" "}
+                <CloseIcon color="#D2042D" />
+                <FormHelperText>{fileName}</FormHelperText>
+              </>
+            ) : (
+              <>
+                <CheckIcon color="#03C03C" />
+                <FormHelperText>{fileName}</FormHelperText>
+              </>
+            ))}
+          {error && <Error error={error} />}
+          <FormHelperText mb={2}>or add blank element</FormHelperText>
+          <Button
+            w={40}
+            mr={2}
+            onClick={() => {
+              setFile("/blank.png")
+              setFileName("blank.png")
+            }}
+          >
+            Add blank
+          </Button>{" "}
+          {fileName === "blank.png" && (
             <>
               <CheckIcon color="#03C03C" />
               <FormHelperText>{fileName}</FormHelperText>
             </>
-          ))}
-        {error && <Error error={error} />}
-        <FormHelperText mb={2}>or add blank element</FormHelperText>
-        <Button
-          w={40}
-          mr={2}
-          onClick={() => {
-            setFile("/blank.png")
-            setFileName("blank.png")
-          }}
-        >
-          Add blank
-        </Button>{" "}
-        {fileName === "blank.png" && (
-          <>
-            <CheckIcon color="#03C03C" />
-            <FormHelperText>{fileName}</FormHelperText>
-          </>
-        )}{" "}
-        <Divider orientation="horizontal" my={4} />
-      </FormControl>
-      <Button mb={4} type="submit" colorScheme="purple">
-        Submit
-      </Button>
-    </form>
+          )}{" "}
+          <Divider orientation="horizontal" my={4} />
+        </FormControl>
+        <Button mb={4} type="submit" colorScheme="purple">
+          Submit
+        </Button>
+      </form>
+    </ChakraProvider>
   )
 }
 
