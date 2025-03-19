@@ -87,6 +87,7 @@
     "@babel/eslint-parser": "^7.26.10",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
+    "@eslint/compat": "^1.2.7",
     "@playwright/test": "^1.51.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
