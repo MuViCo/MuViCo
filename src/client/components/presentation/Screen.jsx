@@ -14,6 +14,12 @@ const fadeOut = keyframes`
   to { opacity: 0; }
 `
 
+/**
+ * Manages the visual presentation and transitions of media on a screen.
+ * - The current media always fades in.
+ * - If there was previous media, it fades out before being removed.
+ * - When these transitions overlap, they create a crossfade effect.
+ */
 const ScreenContent = ({
   screenNumber,
   currentScreenData,
@@ -192,15 +198,15 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   }, [isWindowReady])
 
   /**
-   * Updates screen data and indirectly triggers crossfades in `ScreenContent`.
-   * - If there is current media, it moves to `previousScreenData` and fades out as new media fades in.
-   * - If there is no current media, new media simply fades in without a crossfade effect.
+   * Updates stored screen data to trigger transitions in `ScreenContent`.
+   * - If no current media exists, simply stores the new media.
+   * - Otherwise, moves current media to `previousScreenData` before updating `currentScreenData`.
    */
   useEffect(() => {
     if (screenData) {
       if (!currentScreenData) {
-        setCurrentScreenData(screenData)
-        setPreviousScreenData(null) // No previous media to fade out
+        setPreviousScreenData(null) // No previous media to transition from
+        setCurrentScreenData(screenData) // Store new media
       } else {
         // Skip update if media (URL and name) hasn't changed
         const currentMediaUrl = currentScreenData?.file?.url
@@ -214,16 +220,13 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           return
         }
 
-        // Store current media as previous for crossfade effect
-        setPreviousScreenData(currentScreenData)
-        // Store new media
-        setCurrentScreenData(screenData)
+        setPreviousScreenData(currentScreenData) // Preserve current media as previous for transition
+        setCurrentScreenData(screenData) // Store new media
 
-        // Prevent overlapping fade-out timers
+        // Remove previous media after fade-out animation completes (500ms)
         if (fadeOutTimerRef.current) {
           clearTimeout(fadeOutTimerRef.current)
         }
-        // Clear previous media after fade-out animation (500ms)
         fadeOutTimerRef.current = setTimeout(() => {
           setPreviousScreenData(null)
           fadeOutTimerRef.current = null
