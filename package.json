@@ -21,6 +21,9 @@
   "jest": {
     "globalTeardown": "./src/server/tests/teardown.js",
     "collectCoverage": true,
+    "setupFilesAfterEnv": [
+      "<rootDir>/setup-jest.js"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/cypress/",
