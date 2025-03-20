@@ -53,7 +53,17 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
     ref: containerRef,
-    handler: () => (setIsCopied(false), setCopiedCue(null)),
+    handler: () => {
+      if (isCopied) {
+        showToast({
+          title: `Cancelled copying`,
+          description: "Copying element has been cancelled.",
+          status: "info",
+        })
+      }
+      setIsCopied(false)
+      setCopiedCue(null)
+    },
   })
 
   const clickTimeout = useRef(null)
