@@ -15,7 +15,7 @@ let testPresentationId
 const mockImageBuffer = fs.readFileSync(path.join(__dirname, "mock_image.png"))
 
 describe("test presentation", () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     await User.deleteMany({})
     await Presentation.deleteMany({})
     await api
@@ -27,9 +27,6 @@ describe("test presentation", () => {
       .send({ username: "testuser", password: "testpassword" })
 
     authHeader = `Bearer ${response.body.token}`
-  })
-
-  beforeEach(async () => {
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
