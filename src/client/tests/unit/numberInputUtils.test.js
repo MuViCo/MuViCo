@@ -11,7 +11,7 @@ describe("handleNumericInputChange", () => {
       state = newState
     }
 
-    handleNumericInputChange(setState)("41")
+    handleNumericInputChange(setState)("42")
     expect(state).toBe(42)
 
     handleNumericInputChange(setState)("abc")
