@@ -1,4 +1,5 @@
 const supertest = require("supertest")
+const mongoose = require("mongoose")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
 
@@ -113,8 +114,7 @@ describe("test presentation", () => {
       async (index, screen) => {
         const response = await createCue(index, "Test Cue", screen)
         expect(response.status).toBe(200)
-      },
-      10000
+      }
     )
 
     const invalidCases = [
@@ -130,8 +130,7 @@ describe("test presentation", () => {
         const res = await createCue(index, "Test Cue", screen)
         expect(res.status).toBe(400)
         expect(res.body.error).toBe(error)
-      },
-      10000
+      }
     )
 
     test("throws error with missing fields", async () => {
@@ -142,7 +141,7 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
-    }, 10000)
+    })
   })
 
   describe("PUT /api/presentation/:id/:cueId", () => {
@@ -169,8 +168,7 @@ describe("test presentation", () => {
           .field("screen", screen)
           .field("fileName", "")
           .expect(200)
-      },
-      10000
+      }
     )
 
     const invalidCases = [
@@ -192,8 +190,7 @@ describe("test presentation", () => {
           .expect(400)
 
         expect(response.body.error).toBe(error)
-      },
-      10000
+      }
     )
 
     test("throws error with missing fields", async () => {
@@ -204,6 +201,10 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
-    }, 10000)
+    })
   })
+})
+
+afterAll(async () => {
+  await mongoose.connection.close()
 })
