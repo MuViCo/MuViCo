@@ -56,7 +56,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     handler: () => {
       if (isCopied) {
         showToast({
-          title: `Cancelled copying`,
+          title: "Cancelled copying",
           description: "Copying element has been cancelled.",
           status: "info",
         })
