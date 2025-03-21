@@ -6,11 +6,13 @@ const KeyboardHandler = ({ onNext, onPrevious }) => {
       switch (e.key) {
         case "ArrowRight":
         case "PageDown":
+        case "ArrowUp":
           e.preventDefault()
           onNext()
           break
         case "ArrowLeft":
         case "PageUp":
+        case "ArrowDown":
           e.preventDefault()
           onPrevious()
           break
