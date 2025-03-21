@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
 import { isImage } from "../utils/fileTypeUtils"
-import { keyframes } from "@emotion/react"
+import createCache from "@emotion/cache"
+import { keyframes, CacheProvider } from "@emotion/react"
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -142,6 +143,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const [currentScreenData, setCurrentScreenData] = useState(null)
   const [previousScreenData, setPreviousScreenData] = useState(null)
   const [showText, setShowText] = useState(false)
+  const [emotionCache, setEmotionCache] = useState(null)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -191,6 +193,17 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   }, [isVisible, screenNumber, onClose])
 
   useEffect(() => {
+    if (windowRef.current && !emotionCache) {
+      // Set up a cache to inject Emotion's styles to portal (e.g. fadeOut and fadeIn effects)
+      const cache = createCache({
+        key: "new-window",
+        container: windowRef.current.document.head,
+      })
+      setEmotionCache(cache)
+    }
+  }, [windowRef.current, emotionCache])
+
+  useEffect(() => {
     // After the window is ready, copy the Chakra styles
     if (isWindowReady && windowRef.current) {
       copyChakraStyles()
@@ -222,15 +235,6 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
 
         setPreviousScreenData(currentScreenData) // Preserve current media as previous for transition
         setCurrentScreenData(screenData) // Store new media
-
-        // Remove previous media after fade-out animation completes (500ms)
-        if (fadeOutTimerRef.current) {
-          clearTimeout(fadeOutTimerRef.current)
-        }
-        fadeOutTimerRef.current = setTimeout(() => {
-          setPreviousScreenData(null)
-          fadeOutTimerRef.current = null
-        }, 500)
       }
     }
   }, [screenData, currentScreenData])
@@ -261,14 +265,18 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   // Only render the portal when the window is ready
   return windowRef.current &&
     isWindowReady &&
+    emotionCache &&
     (currentScreenData || previousScreenData)
     ? ReactDOM.createPortal(
-        <ScreenContent
-          screenNumber={screenNumber}
-          currentScreenData={currentScreenData}
-          previousScreenData={previousScreenData}
-          showText={showText}
-        />,
+        //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
+        <CacheProvider value={emotionCache}>
+          <ScreenContent
+            screenNumber={screenNumber}
+            currentScreenData={currentScreenData}
+            previousScreenData={previousScreenData}
+            showText={showText}
+          />
+        </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
       )
     : null
