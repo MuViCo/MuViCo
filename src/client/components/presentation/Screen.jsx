@@ -138,7 +138,6 @@ const ScreenContent = ({
 
 const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
-  const fadeOutTimerRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
   const [currentScreenData, setCurrentScreenData] = useState(null)
   const [previousScreenData, setPreviousScreenData] = useState(null)
@@ -171,6 +170,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           windowRef.current = null
           onClose(screenNumber)
           setIsWindowReady(false)
+          setEmotionCache(null)
+          setCurrentScreenData(null)
+          setPreviousScreenData(null)
         })
       }
     }
@@ -179,6 +181,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
       windowRef.current.close()
       windowRef.current = null
       setIsWindowReady(false)
+      setEmotionCache(null)
+      setCurrentScreenData(null)
+      setPreviousScreenData(null)
     }
 
     // Cleanup on unmount
@@ -187,6 +192,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
         windowRef.current.close()
         windowRef.current = null
         setIsWindowReady(false)
+        setEmotionCache(null)
+        setCurrentScreenData(null)
+        setPreviousScreenData(null)
         onClose(screenNumber)
       }
     }
