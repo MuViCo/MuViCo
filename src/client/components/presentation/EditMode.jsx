@@ -4,6 +4,7 @@ import {
   Text,
   ChakraProvider,
   extendTheme,
+  useOutsideClick,
   useColorModeValue,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
@@ -53,7 +54,28 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   )
 
   const [isDragging, setIsDragging] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+  const [copiedCue, setCopiedCue] = useState(null)
+  useOutsideClick({
+    ref: containerRef,
+    handler: () => {
+      if (isCopied) {
+        showToast({
+          title: "Cancelled copying",
+          description: "Copying element has been cancelled.",
+          status: "info",
+        })
+      }
+      setIsCopied(false)
+      setCopiedCue(null)
+    },
+  })
+
   const clickTimeout = useRef(null)
+
+  const columnWidth = 150
+  const rowHeight = 100
+  const gap = 10
 
   useEffect(() => {
     if (!isToolboxOpen) {
@@ -62,6 +84,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   }, [isToolboxOpen])
 
   const handleMouseDown = (event) => {
+    if (isCopied) {
+      return
+    }
+
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -75,12 +101,49 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
         (cue) => cue.index === xIndex && cue.screen === yIndex
       )
       setSelectedCue(movingCue)
+
+      if (event.target.closest(".react-grid-item")) {
+        setIsDragging(true)
+        setHoverPosition(null)
+      } else {
+        setIsDragging(false)
+      }
     }
-    if (event.target.closest(".react-grid-item")) {
-      setIsDragging(true)
-      setHoverPosition(null)
-    } else {
-      setIsDragging(false)
+  }
+
+  const handlePaste = async (event) => {
+    if (!isCopied || !copiedCue) return
+
+    if (!containerRef?.current) {
+      console.error("Container ref is not available")
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
+      return
+    }
+
+    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
+    await addCue(newCueData)
+    setIsCopied(false)
+    setCopiedCue(null)
+  }
+
+  const createNewCueData = async (xIndex, yIndex, copiedCue) => {
+    return {
+      index: xIndex,
+      cueName: `${copiedCue.name} copy`,
+      screen: yIndex,
+      file: await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name),
+      fileName: copiedCue.file.name || "blank.png",
     }
   }
 
@@ -158,34 +221,16 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     return position
   })
 
-  const columnWidth = 150
-  const rowHeight = 100
-  const gap = 10
-
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, fileName } = cueData
+    const { index, cueName, screen, file } = cueData
 
     //Check if cue with same index and screen already exists
-    const cueExists = cues.find(
+    const existingCue = cues.find(
       (cue) => cue.index === Number(index) && cue.screen === Number(screen)
     )
-    if (cueExists) {
-      setConfirmMessage(
-        `Index ${index} element already exists on screen ${screen}. Do you want to replace it?`
-      )
-      setConfirmAction(() => async () => {
-        const updatedCue = {
-          ...cueExists,
-          index,
-          cueName,
-          screen,
-          file,
-          fileName,
-        }
-        await dispatchUpdateCue(cueExists._id, updatedCue)
-        setIsConfirmOpen(false)
-      })
-      setIsConfirmOpen(true)
+
+    if (existingCue) {
+      await handleCueExists(existingCue, cueData)
       return
     }
 
@@ -213,44 +258,68 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     }
   }
 
+  const handleCueExists = async (existingCue, newCueData) => {
+    setConfirmMessage(
+      `Index ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
+    )
+    setConfirmAction(() => async () => {
+      const updatedCue = {
+        ...existingCue,
+        ...newCueData,
+      }
+      await dispatchUpdateCue(existingCue._id, updatedCue)
+      setIsConfirmOpen(false)
+    })
+    setIsConfirmOpen(true)
+  }
+
   const fetchFileFromUrl = async (url, fileName) => {
     const response = await fetch(url)
     const blob = await response.blob()
     return new File([blob], fileName, { type: blob.type })
   }
 
-  const updateCue = async (cueId, updatedCue) => {
-    const cueExists = cues.find(
+  const updateCue = async (previousCueId, updatedCue) => {
+    const existingCue = cues.find(
       (cue) =>
         cue.index === Number(updatedCue.index) &&
         cue.screen === Number(updatedCue.screen)
     )
 
-    if (cueExists && cueExists._id !== cueId) {
-      setConfirmMessage(
-        `Index ${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to replace it?`
-      )
-      setConfirmAction(() => async () => {
-        const updatedDataCue = {
-          ...cueExists,
-          index: updatedCue.index,
-          cueName: updatedCue.cueName,
-          screen: updatedCue.screen,
-          file: await fetchFileFromUrl(
-            updatedCue.file.url,
-            updatedCue.file.name
-          ),
-          fileName: updatedCue.fileName,
-        }
-        await dispatch(removeCue(id, cueId))
-        await dispatchUpdateCue(cueExists._id, updatedDataCue)
-
-        setIsConfirmOpen(false)
-      })
-      setIsConfirmOpen(true)
+    if (existingCue && existingCue._id !== previousCueId) {
+      await handleExistingCueUpdate(existingCue, updatedCue, previousCueId)
       return
     }
-    await dispatchUpdateCue(cueId, updatedCue)
+    await dispatchUpdateCue(previousCueId, updatedCue)
+  }
+
+  const handleExistingCueUpdate = async (
+    existingCue,
+    updatedCue,
+    previousCueId
+  ) => {
+    setConfirmMessage(
+      `${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to replace it?`
+    )
+
+    setConfirmAction(() => async () => {
+      const updatedCueData = await createUpdatedCueData(existingCue, updatedCue)
+      await dispatch(removeCue(id, previousCueId))
+      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      setIsConfirmOpen(false)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const createUpdatedCueData = async (existingCue, updatedCue) => {
+    return {
+      ...existingCue,
+      index: updatedCue.index,
+      cueName: updatedCue.cueName,
+      screen: updatedCue.screen,
+      file: await fetchFileFromUrl(updatedCue.file.url, updatedCue.file.name),
+      fileName: updatedCue.fileName,
+    }
   }
 
   const cueExists = (xIndex, yIndex) => {
@@ -484,6 +553,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onClick={handlePaste}
             >
               <Box
                 display="grid"
@@ -522,6 +592,8 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                 rowHeight={rowHeight}
                 gap={gap}
                 setStatus={setStatus}
+                setIsCopied={setIsCopied}
+                setCopiedCue={setCopiedCue}
                 id={id}
               />
 
@@ -580,4 +652,5 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
     </ChakraProvider>
   )
 }
+
 export default EditMode
