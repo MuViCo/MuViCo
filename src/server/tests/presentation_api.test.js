@@ -4,7 +4,6 @@ const Presentation = require("../models/presentation")
 const User = require("../models/user")
 
 const app = require("../app")
-const { describe } = require("node:test")
 const fs = require("fs")
 const path = require("path")
 
