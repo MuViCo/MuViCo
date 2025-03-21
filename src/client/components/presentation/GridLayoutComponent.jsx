@@ -3,7 +3,6 @@ import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text
 import { DeleteIcon, CopyIcon } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
-import "react-resizable/css/styles.css"
 import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
