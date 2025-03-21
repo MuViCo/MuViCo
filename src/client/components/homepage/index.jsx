@@ -8,6 +8,7 @@ import PresentationsGrid from "./PresentationsGrid"
 import CreatePresentationContainer from "./CreatePresentationContainer"
 import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
+import GoogleDrive from "./GoogleDrive"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
@@ -61,6 +62,7 @@ const HomePage = ({ user }) => {
         togglableRef={togglableRef}
         handleCancel={handleCancel}
       />
+      <GoogleDrive/>
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
