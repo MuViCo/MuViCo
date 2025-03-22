@@ -119,6 +119,7 @@ const PresentationPage = () => {
               cues={presentationInfo}
               isToolboxOpen={isToolboxOpen}
               setIsToolboxOpen={setIsToolboxOpen}
+              isShowMode={showMode === true}
             />
           </Box>
           <Dialog

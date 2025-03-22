@@ -18,6 +18,7 @@ const GridLayoutComponent = ({
   columnWidth,
   rowHeight,
   gap,
+  isShowMode,
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -114,45 +115,49 @@ const GridLayoutComponent = ({
           }}
         >
           <Box position="relative" h="100%">
-            <IconButton
-              icon={<DeleteIcon />}
-              size="xs"
-              position="absolute"
-              _hover={{ bg: "red.500", color: "white" }}
-              backgroundColor="red.300"
-              draggable={false}
-              zIndex="10"
-              top="0px"
-              right="0px"
-              aria-label={`Delete ${cue.name}`}
-              onMouseDown={(e) => {
-                e.stopPropagation()
-                handleRemoveItem(cue._id)
-              }}
-            />
-            <IconButton
-              icon={<CopyIcon />}
-              size="xs"
-              position="absolute"
-              _hover={{ bg: "gray.600", color: "white" }}
-              backgroundColor="gray.500"
-              draggable={false}
-              zIndex="10"
-              top="25px"
-              right="0px"
-              aria-label={`Copy ${cue.name}`}
-              onMouseDown={(e) => {
-                e.stopPropagation()
-                setIsCopied(true)
-                setCopiedCue(cue)
-                showToast({
-                  title: `Element ${cue.name} copied`,
-                  description:
-                    "Click on available places on the grid to paste. Click outside the grid to cancel",
-                  status: "success",
-                })
-              }}
-            />
+            {!isShowMode && (
+              <>
+                <IconButton
+                  icon={<DeleteIcon />}
+                  size="xs"
+                  position="absolute"
+                  _hover={{ bg: "red.500", color: "white" }}
+                  backgroundColor="red.300"
+                  draggable={false}
+                  zIndex="10"
+                  top="0px"
+                  right="0px"
+                  aria-label={`Delete ${cue.name}`}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    handleRemoveItem(cue._id)
+                  }}
+                />
+                <IconButton
+                  icon={<CopyIcon />}
+                  size="xs"
+                  position="absolute"
+                  _hover={{ bg: "gray.600", color: "white" }}
+                  backgroundColor="gray.500"
+                  draggable={false}
+                  zIndex="10"
+                  top="25px"
+                  right="0px"
+                  aria-label={`Copy ${cue.name}`}
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    setIsCopied(true)
+                    setCopiedCue(cue)
+                    showToast({
+                      title: `Element ${cue.name} copied`,
+                      description:
+                        "Click on available places on the grid to paste. Click outside the grid to cancel",
+                      status: "success",
+                    })
+                  }}
+                />
+              </>
+            )}
 
             {cue.file.type.startsWith("video/") ? ( // Thumbail for video
               <video
@@ -197,9 +202,7 @@ const GridLayoutComponent = ({
                 display="inline-block"
                 maxWidth="80%"
                 textAlign="center"
-                style={{
-                  textShadow: "2px 2px 4px rgba(0,0,0,1)",
-                }}
+                style={{ textShadow: "2px 2px 4px rgba(0,0,0,1)" }}
               >
                 {cue.name}
               </Text>
