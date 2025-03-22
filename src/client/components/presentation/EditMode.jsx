@@ -24,7 +24,13 @@ import { useCustomToast } from "../utils/toastUtils"
 
 const theme = extendTheme({})
 
-const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
+const EditMode = ({
+  id,
+  cues,
+  isToolboxOpen,
+  setIsToolboxOpen,
+  isShowMode,
+}) => {
   const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
     "rgba(72, 26, 35, 0.8)"
@@ -250,11 +256,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       })
     } catch (error) {
       const errorMessage = error.message
-      showToast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-      })
+      showToast({ title: "Error", description: errorMessage, status: "error" })
     }
   }
 
@@ -263,10 +265,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
       `Index ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
     )
     setConfirmAction(() => async () => {
-      const updatedCue = {
-        ...existingCue,
-        ...newCueData,
-      }
+      const updatedCue = { ...existingCue, ...newCueData }
       await dispatchUpdateCue(existingCue._id, updatedCue)
       setIsConfirmOpen(false)
     })
@@ -442,6 +441,10 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
   const handleDrop = useCallback(
     async (event) => {
       event.preventDefault()
+
+      if (isShowMode) {
+        return
+      }
       const files = Array.from(event.dataTransfer.files)
       const mediaFiles = files.filter(
         (file) =>
@@ -542,8 +545,11 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
               </Box>
             ))}
           </Box>
-
-          <Box position="relative" overflow="auto">
+          <Box
+            position="relative"
+            overflow="auto"
+            pointerEvents={isShowMode ? "none" : "auto"}
+          >
             <Box
               height="600px"
               width="100%"
@@ -595,6 +601,7 @@ const EditMode = ({ id, cues, isToolboxOpen, setIsToolboxOpen }) => {
                 setIsCopied={setIsCopied}
                 setCopiedCue={setCopiedCue}
                 id={id}
+                isShowMode={isShowMode}
               />
 
               {hoverPosition && !isDragging && (
