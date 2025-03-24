@@ -15,12 +15,6 @@ const fadeOut = keyframes`
   to { opacity: 0; }
 `
 
-/**
- * Manages the visual presentation and transitions of media on a screen.
- * - The current media always fades in.
- * - If there was previous media, it fades out before being removed.
- * - When these transitions overlap, they create a crossfade effect.
- */
 const ScreenContent = ({
   screenNumber,
   currentScreenData,
@@ -62,6 +56,7 @@ const ScreenContent = ({
         </Text>
       )}
     </Box>
+
     {/* Fade out previous cue media, if any */}
     {previousScreenData && (
       <Box
@@ -97,6 +92,7 @@ const ScreenContent = ({
           ))}
       </Box>
     )}
+
     {/* Fade in current cue media */}
     <Box
       key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
@@ -218,18 +214,14 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [isWindowReady])
 
-  /**
-   * Updates stored screen data to trigger transitions in `ScreenContent`.
-   * - If no current media exists, simply stores the new media.
-   * - Otherwise, moves current media to `previousScreenData` before updating `currentScreenData`.
-   */
+  // Update media states when screenData changes
   useEffect(() => {
     if (screenData) {
       if (!currentScreenData) {
-        setPreviousScreenData(null) // No previous media to transition from
-        setCurrentScreenData(screenData) // Store new media
+        setPreviousScreenData(null) // No media to be stored as previous
+        setCurrentScreenData(screenData) // Store new media as current
       } else {
-        // Skip update if media (URL and name) hasn't changed
+        // Skip update if media URL and name hasn't changed
         const currentMediaUrl = currentScreenData?.file?.url
         const newMediaUrl = screenData?.file?.url
         const currentMediaName = currentScreenData?.name
@@ -241,8 +233,8 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           return
         }
 
-        setPreviousScreenData(currentScreenData) // Preserve current media as previous for transition
-        setCurrentScreenData(screenData) // Store new media
+        setPreviousScreenData(currentScreenData) // Store current media as previous
+        setCurrentScreenData(screenData) // Store new media as current
       }
     }
   }, [screenData, currentScreenData])
