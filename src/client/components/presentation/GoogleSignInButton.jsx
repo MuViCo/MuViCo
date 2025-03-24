@@ -1,14 +1,34 @@
-import React from "react"
-import { auth, googleProvider } from "../utils/firebase"
-import { signInWithPopup } from "firebase/auth"
-import { Button, Box, Text } from "@chakra-ui/react"
-import axios from "axios"
+// src/client/components/presentations/GoogleSignInButton.jsx
+import React from "react";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { Button, Box, Text } from "@chakra-ui/react";
+import axios from "axios";
+
+// Assuming your Firebase app is already initialized and exported in ../utils/firebase
+import { auth } from "../utils/firebase";
 
 const GoogleSignInButton = ({ onLogin }) => {
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const idToken = await result.user.getIdToken(true)
+      // Create a new Google provider and include both basic and Drive scopes:
+      const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      // Add the Drive scope – adjust this to the level of access you need:
+      provider.addScope("https://www.googleapis.com/auth/drive.file");
+
+      // Sign in with a popup; the consent screen will now include Drive permissions
+      const result = await signInWithPopup(auth, provider);
+
+      // Retrieve the OAuth credential which includes the Drive access token:
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const driveAccessToken = credential.accessToken;
+      console.log("Drive Access Token:", driveAccessToken);
+      await axios.post("/api/save-token", { driveAccessToken })
+      window.localStorage.setItem("driveAccessToken", driveAccessToken)
+
+      // Optionally, retrieve the Firebase ID token for your backend:
+      const idToken = await result.user.getIdToken(true);
       const response = await axios.post(
         "/api/login/firebase",
         {},
@@ -17,15 +37,15 @@ const GoogleSignInButton = ({ onLogin }) => {
             Authorization: `Bearer ${idToken}`,
           },
         }
-      )
+      );
 
-      const user = response.data
-      window.localStorage.setItem("user", JSON.stringify(user) ?? "No user")
-      onLogin(user)
+      const user = response.data;
+      window.localStorage.setItem("user", JSON.stringify(user) ?? "No user");
+      onLogin(user);
     } catch (error) {
-      console.error("Error signing in with Google:", error)
+      console.error("Error signing in with Google:", error);
     }
-  }
+  };
 
   return (
     <Button
@@ -70,9 +90,9 @@ const GoogleSignInButton = ({ onLogin }) => {
           <path fill="none" d="M0 0h48v48H0z"></path>
         </svg>
       </Box>
-      <Text colorscheme="purple">Sign in with Google</Text>
+      <Text>Sign in with Google</Text>
     </Button>
-  )
-}
+  );
+};
 
-export default GoogleSignInButton
+export default GoogleSignInButton;

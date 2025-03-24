@@ -14,6 +14,7 @@ const presentationsRouter = require("./routes/presentations")
 const presentationRouter = require("./routes/presentation")
 const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
+const driveRouter = require("./routes/drive")
 const middleware = require("./utils/middleware")
 
 const app = express()
@@ -49,6 +50,7 @@ app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
 app.use("/api/terms", termsRouter)
 app.use("/api/admin", adminRouter)
+app.use("/api/save-token", driveRouter.router)
 
 if (process.env.NODE_ENV === "production") {
   const DIST_PATH = path.resolve(__dirname, "../../dist/")
