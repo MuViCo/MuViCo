@@ -2,7 +2,8 @@ const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
 const { type } = require("os")
-const { uploadFile, deleteFile } = require("../utils/s3")
+// const { uploadFile, deleteFile } = require("../utils/s3")
+const { uploadFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
@@ -10,11 +11,14 @@ const { generateSignedUrlForCue } = require("../utils/helper")
 const logger = require("../utils/logger")
 const { processCueFiles } = require("../utils/helper")
 const router = express.Router()
+const { getStoredDriveToken } = require("./drive")
+
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
+const driveToken = getStoredDriveToken() 
 
 const deletObject = async (id, cueId) => {
   const cue = await Presentation.findOne(
@@ -192,7 +196,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     if (file) {
       const fileName = `${id}/${fileId}`
 
-      await uploadFile(file.buffer, fileName, file.mimetype)
+      await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
     }
 
     updatedPresentation.cues = await processCueFiles(
@@ -268,7 +272,7 @@ router.put(
         }
         try {
           const fileName = `${id}/${newFileId}`
-          await uploadFile(file.buffer, fileName, file.mimetype)
+          await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
           cue.file = {
             id: newFileId,
             name: file.originalname,
