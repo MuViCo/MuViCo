@@ -138,12 +138,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         "image/avif",
         "image/x-win-bitmap",
       ]
+      const validAudioTypes = ["audio/mpeg", "audio/wav"]
 
       let fileType = ""
       if (file.mimetype.startsWith("image/")) {
         fileType = "image"
       } else if (file.mimetype.startsWith("video/")) {
         fileType = "video"
+      } else if (file.mimetype.startsWith("audio/")) {
+        fileType = "audio"
       }
 
       switch (fileType) {
@@ -157,6 +160,14 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           }
         case "video":
           if (!validVideoTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        case "audio":
+          if (!validAudioTypes.includes(file.mimetype)) {
             return res
               .status(400)
               .json({ error: `Invalid filetype: ${file.originalname}` })
