@@ -214,30 +214,31 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
     }
   }, [isWindowReady])
 
-  // Update media states when screenData changes
   useEffect(() => {
+    // Update media states when screenData changes
     if (screenData) {
+      // Skip update if screen is closed
+      if (!isWindowReady && !windowRef.current) {
+        return
+      }
+
       if (!currentScreenData) {
-        setPreviousScreenData(null) // No media to be stored as previous
-        setCurrentScreenData(screenData) // Store new media as current
+        setPreviousScreenData(null)
+        setCurrentScreenData(screenData)
       } else {
         // Skip update if media URL and name hasn't changed
-        const currentMediaUrl = currentScreenData?.file?.url
-        const newMediaUrl = screenData?.file?.url
-        const currentMediaName = currentScreenData?.name
-        const newMediaName = screenData?.name
         if (
-          currentMediaUrl === newMediaUrl &&
-          currentMediaName === newMediaName
+          currentScreenData?.file?.url === screenData?.file?.url &&
+          currentScreenData?.name === screenData?.name
         ) {
           return
         }
 
-        setPreviousScreenData(currentScreenData) // Store current media as previous
-        setCurrentScreenData(screenData) // Store new media as current
+        setPreviousScreenData(currentScreenData)
+        setCurrentScreenData(screenData)
       }
     }
-  }, [screenData, currentScreenData])
+  }, [screenData, currentScreenData, isWindowReady])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
