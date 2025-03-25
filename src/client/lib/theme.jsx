@@ -5,7 +5,14 @@ const styles = {
   global: (props) => ({
     body: {
       bg: mode("#ffffff", "#000000")(props),
-      // bgGradient: "radial(circle, rgba(118,31,78,1) 0%, rgba(0,0,0,0) 61%)",
+      backgroundImage: mode(
+        "radial-gradient(circle at 50% 50%, rgb(236, 130, 255) 0%, rgba(255, 255, 255, 0) 70%)",
+        "radial-gradient(circle at 50% 50%, rgb(121, 39, 144) 0%, rgba(0, 0, 0, 0) 70%)"
+      )(props),
+      backgroundSize: "100% 100%",
+      backgroundRepeat: "no-repeat",
+      backgroundAttachment: "fixed",
+      backgroundPosition: "center center",
       transition: "background-color 1s ease-in-out",
     },
   }),
@@ -26,7 +33,6 @@ const components = {
     },
   },
 }
-
 
 const fonts = {
   heading: "'Poppins', sans-serif",
