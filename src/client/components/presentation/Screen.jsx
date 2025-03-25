@@ -1,7 +1,44 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
-import { isImage } from "../utils/fileTypeUtils"
+import { isType } from "../utils/fileTypeUtils"
+
+//conditional rendering helper function based on file type
+const renderMedia = (file, name) => {
+  if (isType.image(file)) {
+    return (
+      <Image
+        src={file.url}
+        alt={name}
+        width="100%"
+        height="100vh"
+        objectFit="contain"
+      />
+    )
+  }
+  if (isType.video(file)) {
+    return (
+      <video
+        src={file.url}
+        width="100%"
+        height="100%"
+        autoPlay
+        loop
+        muted
+        style={{ objectFit: "contain" }}
+      />
+    )
+  }
+  if (isType.audio(file)) {
+    return (
+      <audio autoPlay loop controls style={{ width: "100%" }}>
+        <source src={file.url} type={file.mimeType || "audio/mpeg"} />
+        Your browser does not support the audio element.
+      </audio>
+    )
+  }
+  return <Text>Unsupported media type.</Text>
+}
 
 const ScreenContent = ({ screenNumber, screenData, showText }) => (
   <Box
@@ -50,29 +87,8 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       zIndex={0}
     >
       {screenData?.file?.url ? (
-        // If data is an image
-        isImage(screenData.file) ? (
-          <Image
-            src={screenData.file.url}
-            alt={screenData.name}
-            width="100%"
-            height="100vh"
-            objectFit="contain"
-          />
-        ) : (
-          // If data is a video
-          <video
-            src={screenData.file.url}
-            width="100%"
-            height="100%"
-            autoPlay
-            loop
-            muted
-            style={{ objectFit: "contain" }}
-          />
-        )
+        renderMedia(screenData.file, screenData.name)
       ) : (
-        // If no data
         <Text>No media available for this cue.</Text>
       )}
     </Box>

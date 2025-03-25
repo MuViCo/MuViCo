@@ -48,6 +48,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     "image/svg+xml",
     "video/mp4",
     "video/3gpp",
+    "audio/mpeg",
+    "audio/wav",
   ]
 
   useEffect(() => {
@@ -204,6 +206,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
                   .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
                   <br />
                   <strong>Valid video types: </strong> .mp4 and .3gp
+                  <br />
+                  <strong>Valid audio types: </strong> .mp3 and .wav
                 </>
               }
               placement="right-end"
