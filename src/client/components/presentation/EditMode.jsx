@@ -59,6 +59,8 @@ const EditMode = ({
     (_, index) => `Screen ${index + 1}`
   )
 
+  yLabels[4] = "Audio files"
+
   const [isDragging, setIsDragging] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
@@ -170,7 +172,7 @@ const EditMode = ({
       !cueExists &&
       xIndex >= 0 &&
       xIndex <= 101 &&
-      yIndex <= 4 &&
+      yIndex <= 5 &&
       yIndex >= 1
     ) {
       setHoverPosition({ index: xIndex, screen: yIndex })
@@ -509,7 +511,7 @@ const EditMode = ({
       >
         <Box
           display="flex"
-          height="600px"
+          height="680px"
           width="100%"
           marginTop={`${gap * 2}px`}
         >
