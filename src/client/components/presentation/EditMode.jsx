@@ -531,7 +531,9 @@ const EditMode = ({
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                bg="purple.200"
+                bg={
+                  label === "Audio files" ? "rgb(209, 118, 254)" : "purple.200"
+                }
                 borderRadius="md"
                 marginRight={`${gap}px`}
                 h={`${rowHeight}px`}
