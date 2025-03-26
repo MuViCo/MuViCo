@@ -168,28 +168,17 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
             id="screen-number"
             value={screen}
             mb={4}
-            min={1}
-            max={5}
+            min={isAudioFile() ? 5 : 1}
+            max={isAudioFile() || file === "/blank.png" ? 5 : 4}
             onChange={handleNumericInputChange(setScreen)}
             onBlur={validateAndSetNumber(setScreen, 1, 5)}
             readOnly={isAudioFile()}
             required
           >
-            <NumberInputField
-              data-testid="screen-number"
-              readOnly={isAudioFile()}
-            />
+            <NumberInputField data-testid="screen-number" />
             <NumberInputStepper>
-              <NumberIncrementStepper
-                disabled={isAudioFile()}
-                opacity={isAudioFile() ? 0.4 : 1}
-                cursor={isAudioFile() ? "not-allowed" : "pointer"}
-              />
-              <NumberDecrementStepper
-                disabled={isAudioFile()}
-                opacity={isAudioFile() ? 0.4 : 1}
-                cursor={isAudioFile() ? "not-allowed" : "pointer"}
-              />
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
             </NumberInputStepper>
           </NumberInput>
           <FormHelperText mb={2}>Index 0-100*</FormHelperText>
