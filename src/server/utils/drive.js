@@ -36,6 +36,15 @@ async function uploadFile(fileBuffer, fileName, mimeType, accessToken) {
         body: bufferStream,
       },
     });
+
+    await drive.permissions.create({
+      fileId: response.data.id,
+      requestBody: {
+        role: "reader",
+        type: "anyone"
+      }
+    });
+
     return response.data;
   } catch (error) {
     console.error("Drive upload error:", error);
