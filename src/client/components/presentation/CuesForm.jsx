@@ -52,6 +52,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     "audio/wav",
   ]
 
+  const isAudioFile = () => file?.type?.includes("audio/")
+
   useEffect(() => {
     if (position) {
       setIndex(position.index)
@@ -139,6 +141,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     if (selected) {
       setFile(selected)
       setFileName(selected.name)
+
+      if (selected.type && selected.type.includes("audio")) {
+        setScreen(5)
+      }
     } else {
       setFile("")
       setFileName("")
@@ -166,12 +172,24 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
             max={5}
             onChange={handleNumericInputChange(setScreen)}
             onBlur={validateAndSetNumber(setScreen, 1, 5)}
+            readOnly={isAudioFile()}
             required
           >
-            <NumberInputField data-testid="screen-number" />
+            <NumberInputField
+              data-testid="screen-number"
+              readOnly={isAudioFile()}
+            />
             <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
+              <NumberIncrementStepper
+                disabled={isAudioFile()}
+                opacity={isAudioFile() ? 0.4 : 1}
+                cursor={isAudioFile() ? "not-allowed" : "pointer"}
+              />
+              <NumberDecrementStepper
+                disabled={isAudioFile()}
+                opacity={isAudioFile() ? 0.4 : 1}
+                cursor={isAudioFile() ? "not-allowed" : "pointer"}
+              />
             </NumberInputStepper>
           </NumberInput>
           <FormHelperText mb={2}>Index 0-100*</FormHelperText>
