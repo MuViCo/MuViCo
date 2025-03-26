@@ -108,9 +108,9 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (screen < 1 || screen > 4) {
+    if (screen < 1 || screen > 5) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
       })
     }
 
@@ -234,9 +234,9 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (screen < 1 || screen > 4) {
+      if (screen < 1 || screen > 5) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
         })
       }
 

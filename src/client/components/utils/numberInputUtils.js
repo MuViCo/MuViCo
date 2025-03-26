@@ -18,10 +18,10 @@ export const validateAndSetNumber = (setState, min, max) => (event) => {
 
 /**
  * Finds the next available index for a given screen.
- * Only runs if the screen number is between 1 and 4.
+ * Only runs if the screen number is between 1 and 5.
  */
 export const getNextAvailableIndex = (screen, cues) => {
-  if (screen < 1 || screen > 4 || isNaN(screen)) {
+  if (screen < 1 || screen > 5 || isNaN(screen)) {
     return 1 // Return defaut index 1 if the screen is invalid
   }
 

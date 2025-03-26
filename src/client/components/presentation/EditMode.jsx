@@ -344,7 +344,7 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > 4) {
+    if (yIndex < 1 || yIndex > 5) {
       return
     }
 
