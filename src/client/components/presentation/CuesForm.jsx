@@ -155,14 +155,17 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           ) : (
             <Heading size="md">Add element</Heading>
           )}
-          <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
+          <FormHelperText mb={2}>
+            Screen 1-4 for images and videos and screen 5 for audio only*
+          </FormHelperText>
           <NumberInput
+            id="screen-number"
             value={screen}
             mb={4}
             min={1}
-            max={4}
+            max={5}
             onChange={handleNumericInputChange(setScreen)}
-            onBlur={validateAndSetNumber(setScreen, 1, 4)}
+            onBlur={validateAndSetNumber(setScreen, 1, 5)}
             required
           >
             <NumberInputField data-testid="screen-number" />
@@ -173,6 +176,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           </NumberInput>
           <FormHelperText mb={2}>Index 0-100*</FormHelperText>
           <NumberInput
+            id="index-number"
             value={index}
             mb={4}
             min={0}
@@ -190,6 +194,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           <FormHelperText mb={2}>Name*</FormHelperText>
           <Input
             data-testid="cue-name"
+            id="cue-name"
             value={cueName}
             placeholder="Element name"
             mb={2}
