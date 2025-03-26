@@ -229,6 +229,7 @@ const EditMode = ({
 
   const addCue = async (cueData) => {
     const { index, cueName, screen, file } = cueData
+    console.log(cueData)
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
