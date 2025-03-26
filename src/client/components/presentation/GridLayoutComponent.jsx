@@ -100,7 +100,7 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), 4)}
+      maxRows={Math.max(...cues.map((cue) => cue.screen), 5)}
     >
       {cues.map((cue) => (
         <div
