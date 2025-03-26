@@ -8,7 +8,7 @@ const addInitialElements = async (presentationId, showToast) => {
       if (screen === 5) {
         const formData = createFormData(
           0,
-          `initial element for audio`,
+          "initial element for audio",
           screen,
           "/blank.png"
         )
