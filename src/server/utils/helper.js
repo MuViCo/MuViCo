@@ -1,35 +1,29 @@
-const { getObjectSignedUrl } = require("./s3")
-const { getFileSize, getFileType } = require("../utils/s3")
-
-const generateSignedUrlForCue = async (cue, presentationId) => {
-  if (typeof cue.file.url === "string") {
-    const key = `${presentationId}/${cue.file.id.toString()}`
-    cue.file.url = await getObjectSignedUrl(key)
+const generateDriveFileUrlForCue = async (cue) => {
+  // Assumes that cue.file.driveId is set after upload
+  console.log("cue file:", cue.file, "cue file id:" , cue.file.id)
+  if (cue.file && cue.file.driveId) {
+    // Construct a URL that allows direct viewing
+    cue.file.url = `https://drive.google.com/file/d/${cue.file.driveId}/view`;
   } else {
-    if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
-      cue.file.url = "/src/server/public/blank.png"
-    } else if (process.env.NODE_ENV === "production") {
-      cue.file.url = "/blank.png"
-    }
+    // Fallback to a default image if needed
+    cue.file.url = process.env.NODE_ENV === "production" ? "/blank.png" : "/src/server/public/blank.png";
   }
-  return cue
-}
+  console.log("file url:", cue.file.url)
+  return cue;
+};
 
-const processCueFiles = async (cues, presentationId) => {
+const processCueFiles = async (cues) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
-      await generateSignedUrlForCue(cue, presentationId)
-      if (cue.file.url !== "/src/server/public/blank.png" && cue.file.url !== "/blank.png") {
-        await getFileType(cue, presentationId)
-        await getFileSize(cue, presentationId)
-      }
-      return cue
+      await generateDriveFileUrlForCue(cue);
+      // Optionally, you can add a call here to get the file size/type from Drive if needed:
+      // e.g., await getDriveFileMetadata(cue)
+      return cue;
     })
-  )
-  return processedCues
-}
+  );
+  return processedCues;
+};
 
 module.exports = {
-  generateSignedUrlForCue,
   processCueFiles,
 }

@@ -18,7 +18,6 @@ const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
-const driveToken = getStoredDriveToken() 
 
 const deletObject = async (id, cueId) => {
   const cue = await Presentation.findOne(
@@ -208,14 +207,22 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     if (file) {
       const fileName = `${id}/${fileId}`
-
-      await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
+      const driveToken = getStoredDriveToken() 
+      console.log("driveToken", driveToken)
+      // Capture the drive upload response
+      const driveResponse = await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
+    
+      // Update the specific cue in the updatedPresentation with the driveId
+      updatedPresentation.cues = updatedPresentation.cues.map(cue => {
+        if (cue.file.id === fileId) {
+          cue.file.driveId = driveResponse.id;
+        }
+        return cue;
+      });
     }
-
-    updatedPresentation.cues = await processCueFiles(
-      updatedPresentation.cues,
-      id
-    )
+    
+    // Now call processCueFiles to generate the URL from the driveId
+    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
     res.json(updatedPresentation)
     return res.status(204).end()
   } catch (error) {
