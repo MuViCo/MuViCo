@@ -18,6 +18,7 @@ const PresentationPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const showToast = useCustomToast()
+  const [cueIndex, setCueIndex] = useState(0)
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
@@ -113,13 +114,20 @@ const PresentationPage = () => {
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
             {" "}
             {/* Adjust marginLeft to move the grid to the left */}
-            {showMode && <ShowMode cues={presentationInfo} />}
+            {showMode && (
+              <ShowMode
+                cues={presentationInfo}
+                cueIndex={cueIndex}
+                setCueIndex={setCueIndex}
+              />
+            )}
             <EditMode
               id={id}
               cues={presentationInfo}
               isToolboxOpen={isToolboxOpen}
               setIsToolboxOpen={setIsToolboxOpen}
               isShowMode={showMode === true}
+              cueIndex={cueIndex}
             />
           </Box>
           <Dialog

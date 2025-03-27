@@ -4,11 +4,9 @@ import ShowModeButtons from "./ShowModeButtons"
 import KeyboardHandler from "../utils/keyboardHandler"
 
 // ShowMode component
-const ShowMode = ({ cues }) => {
+const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
-
-  const [cueIndex, setCueIndex] = useState(0)
 
   const [screenVisibility, setScreenVisibility] = useState(() => {
     const initialScreenVisibility = [...new Set(cues.map((cue) => cue.screen))]

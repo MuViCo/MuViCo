@@ -30,6 +30,7 @@ const EditMode = ({
   isToolboxOpen,
   setIsToolboxOpen,
   isShowMode,
+  cueIndex,
 }) => {
   const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
@@ -602,6 +603,7 @@ const EditMode = ({
                 setCopiedCue={setCopiedCue}
                 id={id}
                 isShowMode={isShowMode}
+                cueIndex={cueIndex}
               />
 
               {hoverPosition && !isDragging && (
