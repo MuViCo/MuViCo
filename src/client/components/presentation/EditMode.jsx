@@ -90,10 +90,6 @@ const EditMode = ({
   }, [isToolboxOpen])
 
   const handleMouseDown = (event) => {
-    if (isCopied) {
-      return
-    }
-
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
