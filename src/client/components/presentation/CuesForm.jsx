@@ -144,6 +144,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
 
       if (selected.type && selected.type.includes("audio")) {
         setScreen(5)
+      } else if (
+        selected.type &&
+        !selected.type.includes("audio") &&
+        screen === 5
+      ) {
+        setScreen(1)
       }
     } else {
       setFile("")
