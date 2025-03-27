@@ -62,6 +62,17 @@ const GridLayoutComponent = ({
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
+    // y is 4 because screen 1 is 0 in y axis.
+    if (oldItem.y === 4 || newItem.y === 4) {
+      if (!(oldItem.y === 4 && newItem.y === 4)) {
+        showToast({
+          title: "Cannot move audio files to or from the audio row",
+          description: "Audio files are only meant to be in the audio row.",
+          status: "error",
+        })
+        return
+      }
+    }
     const movedCue = {
       cueId: newItem.i,
       index: newItem.x,
