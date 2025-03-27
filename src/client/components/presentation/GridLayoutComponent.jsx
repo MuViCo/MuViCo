@@ -8,6 +8,76 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 
+// This function needs the following
+// 1. Knowledge about the current index
+// 2. Cues array filtered and sorted so that it only has cue's indexes
+// 3. Finally, check that there exists an element before current index
+
+const hasAudioFileBeforeIndex = (currentIndex, cues) => {
+  const modifiedArray = cues
+    .sort((a, b) => b.index - a.index)
+    .filter((c) => c.screen === 5)
+    .map((c) => c.index)
+  // This should be the part 3. which is the actual check
+  // const returnValue = modifiedArray[0] <= currentIndex
+
+  // Placeholder returnvalue
+  const returnValue = true
+
+  // logs to help debug the part 3. condition check
+  console.log("modifiedArray: ", modifiedArray)
+  console.log("returnValue: ", returnValue)
+  console.log("index: ", currentIndex)
+
+  return returnValue
+}
+
+const renderMedia = (cue, cueIndex, cues) => {
+  console.log("cues", cues)
+  if (cue.file.type.startsWith("video/")) {
+    return (
+      <video
+        src={cue.file.url}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          borderRadius: "10px",
+        }}
+        muted
+        playsInline
+        controls={false}
+      />
+    )
+  } else if (cue.file.type.startsWith("image/")) {
+    return (
+      <img // Thumbail for image
+        src={cue.file.url}
+        alt={cue.name}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          borderRadius: "10px",
+        }}
+      />
+    )
+  } else if (
+    cue.file.type.startsWith("audio/") &&
+    hasAudioFileBeforeIndex(cueIndex, cues)
+  ) {
+    return (
+      <audio
+        src={cue.file.url}
+        autoPlay
+        loop
+        controls
+        style={{ width: "100%" }}
+      />
+    )
+  }
+}
+
 const GridLayoutComponent = ({
   id,
   layout,
@@ -19,7 +89,9 @@ const GridLayoutComponent = ({
   rowHeight,
   gap,
   isShowMode,
+  cueIndex,
 }) => {
+  console.log("GirdLayoutcOMPONEN  render")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
 
@@ -170,31 +242,7 @@ const GridLayoutComponent = ({
               </>
             )}
 
-            {cue.file.type.startsWith("video/") ? ( // Thumbail for video
-              <video
-                src={cue.file.url}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "10px",
-                }}
-                muted
-                playsInline
-                controls={false}
-              />
-            ) : (
-              <img // Thumbail for image
-                src={cue.file.url}
-                alt={cue.name}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: "10px",
-                }}
-              />
-            )}
+            {renderMedia(cue, cueIndex, cues)}
 
             <Tooltip label={cue.name} placement="top" hasArrow>
               <Text
