@@ -8,32 +8,31 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 
-// This function needs the following
-// 1. Knowledge about the current index
-// 2. Cues array filtered and sorted so that it only has cue's indexes
-// 3. Finally, check that there exists an element before current index
-
-const hasAudioFileBeforeIndex = (currentIndex, cues) => {
-  const modifiedArray = cues
-    .sort((a, b) => b.index - a.index)
-    .filter((c) => c.screen === 5)
-    .map((c) => c.index)
-  // This should be the part 3. which is the actual check
-  // const returnValue = modifiedArray[0] <= currentIndex
-
-  // Placeholder returnvalue
-  const returnValue = true
-
-  // logs to help debug the part 3. condition check
-  console.log("modifiedArray: ", modifiedArray)
-  console.log("returnValue: ", returnValue)
-  console.log("index: ", currentIndex)
-
-  return returnValue
+const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
+  if (cue.index > currentIndex) {
+    return false
+  } else if (cue.index === currentIndex) {
+    return true
+  } else if (cue.index < currentIndex) {
+    const audioElementIndexes = cues
+      .filter((c) => c.screen === 5)
+      .map((c) => c.index)
+      .sort((a, b) => a - b)
+    console.log(audioElementIndexes)
+    if (
+      // the element is the last element in audio row
+      cue.index === audioElementIndexes.at(-1) ||
+      // or the next element's index is bigger that current index
+      audioElementIndexes[audioElementIndexes.indexOf(cue.index) + 1] >
+        currentIndex
+    ) {
+      return true
+    }
+    return false
+  }
 }
 
 const renderMedia = (cue, cueIndex, cues) => {
-  console.log("cues", cues)
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -64,7 +63,7 @@ const renderMedia = (cue, cueIndex, cues) => {
     )
   } else if (
     cue.file.type.startsWith("audio/") &&
-    hasAudioFileBeforeIndex(cueIndex, cues)
+    renderElementBasedOnIndex(cueIndex, cues, cue)
   ) {
     return (
       <audio
@@ -91,7 +90,6 @@ const GridLayoutComponent = ({
   isShowMode,
   cueIndex,
 }) => {
-  console.log("GirdLayoutcOMPONEN  render")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
 
