@@ -2,8 +2,25 @@ import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
 import { isImage } from "../utils/fileTypeUtils"
+import createCache from "@emotion/cache"
+import { keyframes, CacheProvider } from "@emotion/react"
 
-const ScreenContent = ({ screenNumber, screenData, showText }) => (
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`
+
+const fadeOut = keyframes`
+  from { opacity: 1; }
+  to { opacity: 0; }
+`
+
+const ScreenContent = ({
+  screenNumber,
+  currentScreenData,
+  previousScreenData,
+  showText,
+}) => (
   <Box
     bg="black"
     color="white"
@@ -20,7 +37,7 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       position="absolute"
       width="90vw"
       left="5vw"
-      zIndex={1}
+      zIndex={2}
     >
       <Text
         fontSize="xl"
@@ -29,40 +46,77 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
       >
         Screen {screenNumber}
       </Text>
-      {screenData && (
+      {currentScreenData && (
         <Text
           fontSize="xl"
           textShadow="1px 0 2px #000000"
           style={{ visibility: showText ? "visible" : "hidden" }}
         >
-          Element Name: {screenData.name}
+          Element Name: {currentScreenData.name}
         </Text>
       )}
     </Box>
 
+    {/* Fade out previous cue media, if any */}
+    {previousScreenData && (
+      <Box
+        key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}`}
+        flex="1"
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        position="absolute"
+        width="100vw"
+        zIndex={1}
+        animation={`${fadeOut} 500ms ease-in-out forwards`}
+      >
+        {previousScreenData.file?.url &&
+          (isImage(previousScreenData.file) ? (
+            <Image
+              src={previousScreenData.file.url}
+              alt={previousScreenData.name}
+              width="100%"
+              height="100vh"
+              objectFit="contain"
+            />
+          ) : (
+            <video
+              src={previousScreenData.file.url}
+              width="100%"
+              height="100%"
+              autoPlay
+              loop
+              muted
+              style={{ objectFit: "contain" }}
+            />
+          ))}
+      </Box>
+    )}
+
+    {/* Fade in current cue media */}
     <Box
+      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
       flex="1"
       display="flex"
       justifyContent="center"
       alignItems="center"
       position="absolute"
       width="100vw"
-      zIndex={0}
+      zIndex={1}
+      animation={`${fadeIn} 500ms ease-in-out forwards`}
     >
-      {screenData?.file?.url ? (
-        // If data is an image
-        isImage(screenData.file) ? (
+      {currentScreenData?.file?.url ? (
+        isImage(currentScreenData.file) ? (
           <Image
-            src={screenData.file.url}
-            alt={screenData.name}
+            src={currentScreenData.file.url}
+            alt={currentScreenData.name}
             width="100%"
             height="100vh"
             objectFit="contain"
           />
         ) : (
-          // If data is a video
           <video
-            src={screenData.file.url}
+            src={currentScreenData.file.url}
             width="100%"
             height="100%"
             autoPlay
@@ -72,7 +126,6 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
           />
         )
       ) : (
-        // If no data
         <Text>No media available for this cue.</Text>
       )}
     </Box>
@@ -82,8 +135,10 @@ const ScreenContent = ({ screenNumber, screenData, showText }) => (
 const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
+  const [currentScreenData, setCurrentScreenData] = useState(null)
   const [previousScreenData, setPreviousScreenData] = useState(null)
   const [showText, setShowText] = useState(false)
+  const [emotionCache, setEmotionCache] = useState(null)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -103,7 +158,6 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           `Screen ${screenNumber}`,
           "width=800,height=600"
         )
-
         windowRef.current = newWindow
         setIsWindowReady(true)
 
@@ -112,6 +166,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           windowRef.current = null
           onClose(screenNumber)
           setIsWindowReady(false)
+          setEmotionCache(null)
+          setCurrentScreenData(null)
+          setPreviousScreenData(null)
         })
       }
     }
@@ -120,6 +177,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
       windowRef.current.close()
       windowRef.current = null
       setIsWindowReady(false)
+      setEmotionCache(null)
+      setCurrentScreenData(null)
+      setPreviousScreenData(null)
     }
 
     // Cleanup on unmount
@@ -128,10 +188,24 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
         windowRef.current.close()
         windowRef.current = null
         setIsWindowReady(false)
+        setEmotionCache(null)
+        setCurrentScreenData(null)
+        setPreviousScreenData(null)
         onClose(screenNumber)
       }
     }
   }, [isVisible, screenNumber, onClose])
+
+  useEffect(() => {
+    if (windowRef.current && !emotionCache) {
+      // Set up a cache to inject Emotion's styles to portal (e.g. fadeOut and fadeIn effects)
+      const cache = createCache({
+        key: "new-window",
+        container: windowRef.current.document.head,
+      })
+      setEmotionCache(cache)
+    }
+  }, [windowRef.current, emotionCache])
 
   useEffect(() => {
     // After the window is ready, copy the Chakra styles
@@ -141,11 +215,30 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   }, [isWindowReady])
 
   useEffect(() => {
-    // Update the previous screen data if new screen data is available
+    // Update media states when screenData changes
     if (screenData) {
-      setPreviousScreenData(screenData)
+      // Skip update if screen is closed
+      if (!isWindowReady && !windowRef.current) {
+        return
+      }
+
+      if (!currentScreenData) {
+        setPreviousScreenData(null)
+        setCurrentScreenData(screenData)
+      } else {
+        // Skip update if media URL and name hasn't changed
+        if (
+          currentScreenData?.file?.url === screenData?.file?.url &&
+          currentScreenData?.name === screenData?.name
+        ) {
+          return
+        }
+
+        setPreviousScreenData(currentScreenData)
+        setCurrentScreenData(screenData)
+      }
     }
-  }, [screenData])
+  }, [screenData, currentScreenData, isWindowReady])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
@@ -173,13 +266,18 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
   // Only render the portal when the window is ready
   return windowRef.current &&
     isWindowReady &&
-    (screenData || previousScreenData)
+    emotionCache &&
+    (currentScreenData || previousScreenData)
     ? ReactDOM.createPortal(
-        <ScreenContent
-          screenNumber={screenNumber}
-          screenData={screenData || previousScreenData}
-          showText={showText}
-        />,
+        //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
+        <CacheProvider value={emotionCache}>
+          <ScreenContent
+            screenNumber={screenNumber}
+            currentScreenData={currentScreenData}
+            previousScreenData={previousScreenData}
+            showText={showText}
+          />
+        </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
       )
     : null
