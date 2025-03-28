@@ -4,7 +4,7 @@ import ShowModeButtons from "./ShowModeButtons"
 import KeyboardHandler from "../utils/keyboardHandler"
 
 // ShowMode component
-const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
+const ShowMode = ({ cues, cueIndex, setCueIndex, toggleAudioMute }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
@@ -127,6 +127,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
         mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}
+        toggleAudioMute={toggleAudioMute}
       />
 
       {/* Render screens based on visibility and cue index */}

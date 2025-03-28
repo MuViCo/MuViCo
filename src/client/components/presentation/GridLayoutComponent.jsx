@@ -32,7 +32,7 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isShowMode) => {
+const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted) => {
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -72,6 +72,7 @@ const renderMedia = (cue, cueIndex, cues, isShowMode) => {
         autoPlay
         loop
         controls
+        muted={isAudioMuted}
         style={{ width: "100%", pointerEvents: "auto" }}
       />
     )
@@ -90,6 +91,7 @@ const GridLayoutComponent = ({
   gap,
   isShowMode,
   cueIndex,
+  isAudioMuted,
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -241,7 +243,7 @@ const GridLayoutComponent = ({
               </>
             )}
 
-            {renderMedia(cue, cueIndex, cues, isShowMode)}
+            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted)}
 
             <Tooltip label={cue.name} placement="top" hasArrow>
               <Text

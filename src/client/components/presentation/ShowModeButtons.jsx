@@ -1,10 +1,28 @@
 import React from "react"
-import { Button, Box, IconButton, Heading, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react"
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons"
+import {
+  Button,
+  Box,
+  IconButton,
+  Heading,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+} from "@chakra-ui/react"
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+} from "@chakra-ui/icons"
 
 const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
   <Menu>
-    <MenuButton as={Button} colorScheme="gray" p={1} aria-label={`Dropdown for screen ${screenNumber}`}>
+    <MenuButton
+      as={Button}
+      colorScheme="gray"
+      p={1}
+      aria-label={`Dropdown for screen ${screenNumber}`}
+    >
       <ChevronDownIcon />
     </MenuButton>
     <MenuList>
@@ -25,37 +43,63 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
   </Menu>
 )
 
-// Component for rendering the screen toggle buttons
-const ScreenToggleButtons = ({ screens, toggleScreenVisibility, toggleScreenMirroring, mirroring }) => (
-  <Box display="flex" flexWrap="wrap" gap={2}>
-    {Object.keys(screens).map((screenNumber) => (
-      <Box
-        key={screenNumber}>
+const AudioPlaybackToggleButton = ({ toggleAudioMute }) => {
+  return (
+    <Box display="flex" flexWrap="wrap" gap={2}>
+      <Box>
         <Button
-          colorScheme={screens[screenNumber] ? "pink" : "purple"}
-          onClick={() => toggleScreenVisibility(screenNumber)}
+          colorScheme={"pink"}
+          onClick={() => toggleAudioMute()}
           m={2}
           flexDirection="column"
         >
-          <Box>
-            {screens[screenNumber]
-              ? `Close screen: ${screenNumber}`
-              : `Open screen: ${screenNumber}`}
-          </Box>
-
-          {mirroring[screenNumber] && (
-            <Box fontSize="sm">
-              (Mirroring screen: {mirroring[screenNumber]})
-            </Box>
-          )}
-      </Button>
-      <DropdownButton
-        screenNumber={screenNumber}
-        screens={screens}
-        toggleScreenMirroring={toggleScreenMirroring}
-    />
+          <Box>Toggle mute</Box>
+        </Button>
       </Box>
-    ))}
+    </Box>
+  )
+}
+
+// Component for rendering the screen toggle buttons
+const ScreenToggleButtons = ({
+  screens,
+  toggleScreenVisibility,
+  toggleScreenMirroring,
+  mirroring,
+}) => (
+  <Box display="flex" flexWrap="wrap" gap={2}>
+    {Object.keys(screens).map((screenNumber, index, screensArray) => {
+      if (index === screensArray.length - 1) {
+        return
+      }
+      return (
+        <Box key={screenNumber}>
+          <Button
+            colorScheme={screens[screenNumber] ? "pink" : "purple"}
+            onClick={() => toggleScreenVisibility(screenNumber)}
+            m={2}
+            flexDirection="column"
+          >
+            <Box>
+              {screens[screenNumber]
+                ? `Close screen: ${screenNumber}`
+                : `Open screen: ${screenNumber}`}
+            </Box>
+
+            {mirroring[screenNumber] && (
+              <Box fontSize="sm">
+                (Mirroring screen: {mirroring[screenNumber]})
+              </Box>
+            )}
+          </Button>
+          <DropdownButton
+            screenNumber={screenNumber}
+            screens={screens}
+            toggleScreenMirroring={toggleScreenMirroring}
+          />
+        </Box>
+      )
+    })}
   </Box>
 )
 
@@ -87,6 +131,7 @@ const ShowModeButtons = ({
   mirroring,
   cueIndex,
   updateCue,
+  toggleAudioMute,
 }) => (
   <Box display="flex" flexDirection="column" alignItems="center" gap={4} mt={4}>
     <ScreenToggleButtons
@@ -95,6 +140,7 @@ const ShowModeButtons = ({
       toggleScreenMirroring={toggleScreenMirroring}
       mirroring={mirroring}
     />
+    <AudioPlaybackToggleButton toggleAudioMute={toggleAudioMute} />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
   </Box>
 )

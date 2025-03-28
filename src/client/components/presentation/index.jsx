@@ -25,6 +25,7 @@ const PresentationPage = () => {
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
+  const [isAudioMuted, setIsAudioMuted] = useState(false)
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
@@ -35,6 +36,10 @@ const PresentationPage = () => {
 
   const handleShowMode = () => {
     setShowMode(!showMode)
+  }
+
+  const toggleAudioMute = () => {
+    setIsAudioMuted((prevMuted) => !prevMuted)
   }
 
   useEffect(() => {
@@ -119,6 +124,7 @@ const PresentationPage = () => {
                 cues={presentationInfo}
                 cueIndex={cueIndex}
                 setCueIndex={setCueIndex}
+                toggleAudioMute={toggleAudioMute}
               />
             )}
             <EditMode
@@ -128,6 +134,7 @@ const PresentationPage = () => {
               setIsToolboxOpen={setIsToolboxOpen}
               isShowMode={showMode === true}
               cueIndex={cueIndex}
+              isAudioMuted={isAudioMuted}
             />
           </Box>
           <Dialog
