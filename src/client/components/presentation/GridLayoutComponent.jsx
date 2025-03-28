@@ -71,7 +71,7 @@ const renderMedia = (cue, cueIndex, cues) => {
         autoPlay
         loop
         controls
-        style={{ width: "100%" }}
+        style={{ width: "100%", pointerEvents: "auto" }}
       />
     )
   }
