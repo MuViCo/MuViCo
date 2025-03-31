@@ -50,7 +50,7 @@ app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
 app.use("/api/terms", termsRouter)
 app.use("/api/admin", adminRouter)
-app.use("/api/save-token", driveRouter.router)
+app.use("/api/drive", driveRouter.router)
 
 if (process.env.NODE_ENV === "production") {
   const DIST_PATH = path.resolve(__dirname, "../../dist/")

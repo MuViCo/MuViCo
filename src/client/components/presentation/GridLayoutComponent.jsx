@@ -341,7 +341,9 @@ const GridLayoutComponent = ({
                   e.stopPropagation()
                   handleLoopToggle(cue)
                 }}
-              />
+                allow="autoplay">
+              </img>
+            </>
             )}
 
             {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted)}

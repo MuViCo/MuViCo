@@ -18,6 +18,7 @@ function driveAuth(accessToken, refreshToken = null) {
     // Optionally include a refresh token if available.
     refresh_token: refreshToken,
   });
+
   // Create a Drive API service instance with the authenticated client.
   return google.drive({ version: "v3", auth: oauth2Client });
 }
@@ -52,4 +53,36 @@ async function uploadFile(fileBuffer, fileName, mimeType, accessToken) {
   }
 }
 
-module.exports = { driveAuth, uploadFile };
+async function deleteFile(fileId, accessToken) {
+  try {
+    const drive = driveAuth(accessToken);
+    await drive.files.delete({ fileId });
+    console.log(`File ${fileId} deleted successfully.`);
+    return { success: true, message: "File deleted successfully" };
+  } catch (error) {
+    console.error("Drive delete error:", error);
+    throw error;
+  }
+}
+
+async function getFileMetadata(fileId, accessToken) {
+  try {
+    const drive = driveAuth(accessToken);
+    const response = await drive.files.get({
+      fileId: fileId,
+      fields: "id, name, mimeType, size"
+    });
+
+    return {
+      id: response.data.id,
+      name: response.data.name,
+      mimeType: response.data.mimeType,
+      size: response.data.size
+    };
+  } catch (error) {
+    console.error("Drive metadata error:", error);
+    throw error;
+  }
+}
+
+module.exports = { driveAuth, uploadFile, deleteFile, getFileMetadata };

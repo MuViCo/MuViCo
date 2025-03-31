@@ -24,7 +24,7 @@ const GoogleSignInButton = ({ onLogin }) => {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const driveAccessToken = credential.accessToken;
       console.log("Drive Access Token:", driveAccessToken);
-      await axios.post("/api/save-token", { driveAccessToken })
+      await axios.post("/api/drive", { driveAccessToken })
       window.localStorage.setItem("driveAccessToken", driveAccessToken)
 
       // Optionally, retrieve the Firebase ID token for your backend:
