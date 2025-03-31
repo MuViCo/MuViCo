@@ -23,7 +23,6 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
       .filter((c) => c.screen === 5)
       .map((c) => c.index)
       .sort((a, b) => a - b)
-    console.log(audioElementIndexes)
     if (
       // the element is the last element in audio row
       cue.index === audioElementIndexes.at(-1) ||
@@ -37,15 +36,7 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (
-  cue,
-  cueIndex,
-  cues,
-  isShowMode,
-  isAudioMuted,
-  audioCues,
-  isLoop
-) => {
+const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted) => {
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -79,13 +70,11 @@ const renderMedia = (
     cue.file.type.startsWith("audio/") &&
     renderElementBasedOnIndex(cueIndex, cues, cue)
   ) {
-    const audioCueIndex = audioCues.findIndex((c) => c._id === cue._id)
-    const shouldLoop = audioCueIndex !== -1 ? isLoop[audioCueIndex] : false
     return (
       <audio
         src={cue.file.url}
         autoPlay
-        loop={shouldLoop}
+        loop={cue.loop}
         controls
         muted={isAudioMuted}
         style={{ width: "100%", pointerEvents: "auto" }}
@@ -113,39 +102,31 @@ const GridLayoutComponent = ({
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState(null)
-  const audioCues = cues
-    .filter((c) => c.screen === 5)
-    .sort((a, b) => a.index - b.index)
 
-  const [isLoop, setIsLoop] = useState(audioCues.map(() => false))
-  // const prevCuesRef = useRef()
+  const handleLoopToggle = async (cue) => {
+    const updatedCue = {
+      cueId: cue._id,
+      cueName: cue.name,
+      index: cue.index,
+      screen: cue.screen,
+      file: cue.file,
+      loop: !cue.loop,
+    }
 
-  // useEffect(() => {
-  //   // alustetaan isLoop käyttäen prevCueRef ja cueRef
+    const result = await dispatch(updatePresentation(id, updatedCue))
 
-  //   prevCueRef.map((c) => c.index)
-  //   cues.map((c) => c.index)
+    const updatedCueFromRedux = result?.payload
 
-  //   for (let i = 0; i < cues.length; i++) {
-  //     prevCueRef[i].index
-  //   }
-  //   //if (prevCueRef !== cueRef)
-  // })
-
-  const handleIsLoop = (cue) => {
-    const audioCueIndex = audioCues.findIndex((c) => c._id === cue._id)
-
-    const newLoopState = [...isLoop]
-    newLoopState[audioCueIndex] = !newLoopState[audioCueIndex]
-
-    setIsLoop(newLoopState)
-
-    showToast({
-      title: newLoopState[audioCueIndex] ? "Loop enabled" : "Loop disabled",
-      description: `${cue.name} will ${newLoopState[audioCueIndex] ? "loop" : "play once"}`,
-      status: "info",
-      duration: 2000,
-    })
+    try {
+      showToast({
+        title: updatedCueFromRedux.loop ? "Loop enabled" : "Loop disabled",
+        description: `${updatedCueFromRedux.name} will ${updatedCueFromRedux.loop ? "loop" : "play once"}`,
+        status: "info",
+        duration: 2000,
+      })
+    } catch (e) {
+      console.log("Error printing toast about loop toggle: ", e)
+    }
   }
 
   const handleRemoveItem = (cueId) => {
@@ -291,44 +272,29 @@ const GridLayoutComponent = ({
                     })
                   }}
                 />
-                {cue.file.type.startsWith("audio/") &&
-                  (() => {
-                    const isCueLooped =
-                      isLoop[audioCues.findIndex((c) => c._id === cue._id)]
-                    return (
-                      <IconButton
-                        icon={
-                          isCueLooped ? <RepeatIcon /> : <ArrowForwardIcon />
-                        }
-                        size="xs"
-                        position="absolute"
-                        _hover={{ bg: "gray.600", color: "white" }}
-                        backgroundColor="gray.500"
-                        draggable={false}
-                        zIndex="10"
-                        top="50px"
-                        right="0px"
-                        aria-label={`Loop audio ${cue.name}`}
-                        title={isCueLooped ? "Disable loop" : "Enable loop"}
-                        onMouseDown={(e) => {
-                          e.stopPropagation()
-                          handleIsLoop(cue)
-                        }}
-                      />
-                    )
-                  })()}
+                {cue.file.type.startsWith("audio/") && (
+                  <IconButton
+                    icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
+                    size="xs"
+                    position="absolute"
+                    _hover={{ bg: "gray.600", color: "white" }}
+                    backgroundColor="gray.500"
+                    draggable={false}
+                    zIndex="10"
+                    top="50px"
+                    right="0px"
+                    aria-label={`Loop audio ${cue.name}`}
+                    title={cue.loop ? "Disable loop" : "Enable loop"}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      handleLoopToggle(cue)
+                    }}
+                  />
+                )}
               </>
             )}
 
-            {renderMedia(
-              cue,
-              cueIndex,
-              cues,
-              isShowMode,
-              isAudioMuted,
-              audioCues,
-              isLoop
-            )}
+            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted)}
 
             <Tooltip label={cue.name} placement="top" hasArrow>
               <Text
