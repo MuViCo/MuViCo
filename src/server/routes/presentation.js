@@ -3,7 +3,7 @@ const multer = require("multer")
 const crypto = require("crypto")
 const { type } = require("os")
 // const { uploadFile, deleteFile } = require("../utils/s3")
-const { uploadFile } = require("../utils/drive")
+const { uploadFile,deleteFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
@@ -12,6 +12,7 @@ const logger = require("../utils/logger")
 const { processCueFiles } = require("../utils/helper")
 const router = express.Router()
 const { getStoredDriveToken } = require("./drive")
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3")
 
 
 const storage = multer.memoryStorage()
@@ -39,8 +40,12 @@ const deletObject = async (id, cueId) => {
   const fileName = cue.cues[0].file.id
   const key = `${id}/${fileName}`
 
-  await deleteFile(key)
-
+  const driveToken = getStoredDriveToken()
+  console.log("IDDDDDDDDDDDDDDDDDDDDDDDD",fileName)
+  const driveFileId = cue.cues[0].file.driveId
+  if (driveFileId) {
+    await deleteFile(driveFileId, driveToken)
+  }
   return updatedPresentation
 }
 
@@ -61,7 +66,9 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       // processCueFiles parces cues and gets them their file size and type
-      presentation.cues = await processCueFiles(presentation.cues, id)
+      const driveToken = getStoredDriveToken()
+      presentation.cues = await processCueFiles(presentation.cues, driveToken)
+      console.log("presentation.cues", presentation.cues)
       res.json(presentation)
     } else {
       res.status(404).end()
@@ -222,7 +229,9 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     }
     
     // Now call processCueFiles to generate the URL from the driveId
-    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, id)
+    const driveToken = getStoredDriveToken()
+    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, driveToken)
+    await updatedPresentation.save()
     res.json(updatedPresentation)
     return res.status(204).end()
   } catch (error) {
@@ -289,18 +298,23 @@ router.put(
         const newFileId = generateFileId()
 
         if (cue.file && cue.file.url) {
-          const oldFileName = cue.file.url.split("/").pop()
-          await deleteFile(`${id}/${oldFileName}`)
+          const driveToken = getStoredDriveToken()
+          await deleteFile(cue.file.driveId, driveToken)
         }
         try {
           const fileName = `${id}/${newFileId}`
-          await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
+          const driveToken = getStoredDriveToken()
+          const driveResponse = await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
+
           cue.file = {
             id: newFileId,
             name: file.originalname,
-            url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+            url: `https://lh3.googleusercontent.com/d/${driveResponse.id}`,
+            driveId: driveResponse.id
           }
-          await generateSignedUrlForCue(cue, id)
+
+          console.log("FILEEEEEEEEEEEEEEEEE", cue.file)
+                
         } catch (error) {
           console.error("File upload error:", error)
           return res.status(500).json({ error: "File upload failed" })
@@ -308,7 +322,8 @@ router.put(
       }
       await presentation.save()
 
-      const updatedCue = await processCueFiles([cue], id)
+      const driveToken = getStoredDriveToken()
+      const updatedCue = await processCueFiles([cue], driveToken)
       res.json(updatedCue[0])
     } catch (error) {
       console.error("Error:", error)

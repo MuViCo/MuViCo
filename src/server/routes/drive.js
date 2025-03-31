@@ -20,13 +20,33 @@ router.post("/", (req, res) => {
   res.json({ message: "Token received successfully" });
 });
 
-// Example route where you might use the token
-router.get("/", (req, res) => {
+router.get("/image/:fileId", async (req, res) => {
   if (!storedDriveAccessToken) {
-    return res.status(404).json({ error: "No token stored" });
+    return res.status(401).json({ error: "No access token stored" });
   }
-  res.json({ driveAccessToken: storedDriveAccessToken });
-});
+
+  const fileId = req.params.fileId;
+  const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+
+  try {
+    const response = await fetch(driveUrl, {
+      headers: {
+        Authorization: `Bearer ${storedDriveAccessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({ error: errorText });
+    }
+
+    res.set("Content-Type", response.headers.get("content-type"));
+    response.body.pipe(res);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch image from Google Drive" });
+  }
+})
+
 
 module.exports = {
     router,
