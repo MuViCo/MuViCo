@@ -32,6 +32,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
   const [cueId, setCueId] = useState("")
+  const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const allowedTypes = [
     "image/png",
@@ -78,6 +79,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setCueId(cueData._id)
       setFile(cueData.file)
       setFileName(cueData.file.name ? cueData.file.name : "")
+      setLoop(cueData.loop)
     }
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
@@ -100,8 +102,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
         return
       }
     }
-
-    addCue({ file, index, cueName, screen, fileName })
+    addCue({ file, index, cueName, screen, fileName, loop })
     setError(null)
     setFile("/blank.png")
     setFileName("")

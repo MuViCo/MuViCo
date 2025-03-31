@@ -103,6 +103,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { cueName, image } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
+    const loop = req.body.loop
 
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -194,6 +195,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
               name: file && file.originalname ? file.originalname : "blank.png",
               url: image === "/blank.png" ? null : "",
             },
+            loop: loop,
           },
         },
       },
@@ -229,6 +231,7 @@ router.put(
       const { cueName, image } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
+      const loop = req.body.loop
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
@@ -259,6 +262,7 @@ router.put(
       cue.index = index
       cue.screen = screen
       cue.name = cueName
+      cue.loop = loop
 
       if (image === "/blank.png") {
         const newFileId = generateFileId()

@@ -8,7 +8,7 @@
  * @param {string} cueId - The ID of the cue. (optional)
  * @returns {FormData} - The populated FormData object.
  */
-export const createFormData = (index, name, screen, file, cueId) => {
+export const createFormData = (index, name, screen, file, cueId, loop) => {
   const formData = new FormData()
   formData.append("index", index)
   formData.append("cueName", name)
@@ -18,6 +18,11 @@ export const createFormData = (index, name, screen, file, cueId) => {
   }
   if (cueId) {
     formData.append("cueId", cueId)
+  }
+  if (loop === undefined) {
+    formData.append("loop", false)
+  } else {
+    formData.append("loop", loop)
   }
   return formData
 }

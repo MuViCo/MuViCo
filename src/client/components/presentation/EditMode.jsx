@@ -228,7 +228,7 @@ const EditMode = ({
   })
 
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file } = cueData
+    const { index, cueName, screen, file, loop } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -244,7 +244,8 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "/blank.png"
+      file || "/blank.png",
+      loop || false
     )
 
     try {
@@ -482,7 +483,7 @@ const EditMode = ({
         }
 
         const file = mediaFiles[0]
-        const formData = createFormData(xIndex, file.name, yIndex, file)
+        const formData = createFormData(xIndex, file.name, yIndex, file, loop)
 
         try {
           await dispatch(createCue(id, formData))
