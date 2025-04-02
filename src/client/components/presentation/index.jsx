@@ -124,7 +124,6 @@ const PresentationPage = () => {
                 cues={presentationInfo}
                 cueIndex={cueIndex}
                 setCueIndex={setCueIndex}
-                toggleAudioMute={toggleAudioMute}
               />
             )}
             <EditMode
@@ -135,6 +134,7 @@ const PresentationPage = () => {
               isShowMode={showMode === true}
               cueIndex={cueIndex}
               isAudioMuted={isAudioMuted}
+              toggleAudioMute={toggleAudioMute}
             />
           </Box>
           <Dialog
