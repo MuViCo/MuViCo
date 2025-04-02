@@ -30,7 +30,10 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
         No mirroring
       </MenuItem>
       {Object.keys(screens)
-        .filter((targetScreen) => targetScreen !== screenNumber)
+        .filter(
+          (targetScreen) =>
+            targetScreen !== screenNumber && targetScreen !== "5"
+        )
         .map((targetScreen) => (
           <MenuItem
             key={targetScreen}
@@ -42,23 +45,6 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
     </MenuList>
   </Menu>
 )
-
-const AudioPlaybackToggleButton = ({ toggleAudioMute }) => {
-  return (
-    <Box display="flex" flexWrap="wrap" gap={2}>
-      <Box>
-        <Button
-          colorScheme={"pink"}
-          onClick={() => toggleAudioMute()}
-          m={2}
-          flexDirection="column"
-        >
-          <Box>Toggle mute</Box>
-        </Button>
-      </Box>
-    </Box>
-  )
-}
 
 // Component for rendering the screen toggle buttons
 const ScreenToggleButtons = ({
@@ -131,7 +117,6 @@ const ShowModeButtons = ({
   mirroring,
   cueIndex,
   updateCue,
-  toggleAudioMute,
 }) => (
   <Box display="flex" flexDirection="column" alignItems="center" gap={4} mt={4}>
     <ScreenToggleButtons
@@ -140,7 +125,6 @@ const ShowModeButtons = ({
       toggleScreenMirroring={toggleScreenMirroring}
       mirroring={mirroring}
     />
-    <AudioPlaybackToggleButton toggleAudioMute={toggleAudioMute} />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
   </Box>
 )
