@@ -6,6 +6,7 @@ import {
   extendTheme,
   useOutsideClick,
   useColorModeValue,
+  IconButton,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch } from "react-redux"
@@ -21,6 +22,7 @@ import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
+import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 
 const theme = extendTheme({})
 
@@ -32,6 +34,7 @@ const EditMode = ({
   isShowMode,
   cueIndex,
   isAudioMuted,
+  toggleAudioMute,
 }) => {
   const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
@@ -535,16 +538,52 @@ const EditMode = ({
                 alignItems="center"
                 justifyContent="center"
                 bg={
-                  label === "Audio files" ? "rgb(209, 118, 254)" : "purple.200"
+                  label === "Audio files" ? "rgb(204, 46, 252)" : "purple.200"
                 }
                 borderRadius="md"
                 marginRight={`${gap}px`}
                 h={`${rowHeight}px`}
                 width={`${columnWidth}px`}
+                position="relative"
               >
                 <Text fontWeight="bold" color="black">
                   {label}
                 </Text>
+                {label === "Audio files" && (
+                  <IconButton
+                    icon={
+                      isAudioMuted ? (
+                        <SpeakerMutedIcon boxSize="32px" />
+                      ) : (
+                        <SpeakerIcon boxSize="32px" />
+                      )
+                    }
+                    disabled={isShowMode}
+                    _disabled={{
+                      opacity: 0.7,
+                      cursor: "not-allowed",
+                    }}
+                    sx={{
+                      width: "48px",
+                      height: "48px",
+                      padding: "10px",
+                    }}
+                    _hover={{ color: "rgb(99, 76, 107)" }}
+                    textColor={"black"}
+                    variant="ghost"
+                    draggable={false}
+                    position="absolute"
+                    zIndex="10"
+                    top="0px"
+                    right="0px"
+                    aria-label="Mute/unmute audio"
+                    title={isAudioMuted ? "Unmute audio" : "Mute audio"}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      toggleAudioMute()
+                    }}
+                  />
+                )}
               </Box>
             ))}
           </Box>
