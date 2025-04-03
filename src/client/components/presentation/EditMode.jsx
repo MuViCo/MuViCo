@@ -437,9 +437,23 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
-
-    setSelectedCue(null)
+    if (newTargetCue.screen === 5 || newSelectedCue.screen === 5) {
+      if (!(newTargetCue.screen === 5 && newSelectedCue.screen === 5)) {
+        showToast({
+          title: "Error",
+          description: "You cannot swap elements with audio files",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      } else {
+        await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+        setSelectedCue(null)
+      }
+    } else {
+      await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+      setSelectedCue(null)
+    }
   }
 
   const handleDrop = useCallback(
