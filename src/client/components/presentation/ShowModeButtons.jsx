@@ -54,11 +54,9 @@ const ScreenToggleButtons = ({
   mirroring,
 }) => (
   <Box display="flex" flexWrap="wrap" gap={2}>
-    {Object.keys(screens).map((screenNumber, index, screensArray) => {
-      if (index === screensArray.length - 1) {
-        return
-      }
-      return (
+    {Object.keys(screens)
+      .filter((screenNumber) => screenNumber !== "5")
+      .map((screenNumber) => (
         <Box key={screenNumber}>
           <Button
             colorScheme={screens[screenNumber] ? "pink" : "purple"}
@@ -84,8 +82,7 @@ const ScreenToggleButtons = ({
             toggleScreenMirroring={toggleScreenMirroring}
           />
         </Box>
-      )
-    })}
+      ))}
   </Box>
 )
 
