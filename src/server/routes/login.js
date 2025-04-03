@@ -12,17 +12,22 @@ router.post("/", async (req, res) => {
 
   const user = await User.findOne({ username })
   /**
-	 * Checks if the entered password is correct for the given user.
-	 *
-	 * @type {boolean}
-	 */
+   * Checks if the entered password is correct for the given user.
+   *
+   * @type {boolean}
+   */
   const passwordCorrect =
-		user === null ? false : await bcrypt.compare(password, user.passwordHash)
+    user === null ? false : await bcrypt.compare(password, user.passwordHash)
 
   if (!(user && passwordCorrect)) {
     return res.status(401).json({
       error: "invalid username or password",
     })
+  }
+
+  if (user.authMethod !== "manual") {
+    user.authMethod = "manual"
+    await user.save()
   }
 
   const userForToken = {
@@ -46,14 +51,15 @@ router.post("/", async (req, res) => {
 router.post("/firebase", verifyToken, async (req, res) => {
   const { uid, email, name } = req.user
 
-
   try {
-    const username = email ? email.split("@")[0] : `user_${uid}` 
+    const username = email ? email.split("@")[0] : `user_${uid}`
     let user = await User.findOne({ username })
-   
-   
+
     if (!user) {
       user = new User({ uid, email, name, username })
+      await user.save()
+    } else {
+      user.authMethod = "google"
       await user.save()
     }
 
@@ -62,23 +68,21 @@ router.post("/firebase", verifyToken, async (req, res) => {
       id: user._id,
     }
 
-  
     const token = jwt.sign(userForToken, config.SECRET, {
       expiresIn: 60 * 60,
     })
 
-  
     return res.status(200).send({
       token,
       username: user.username,
       name: user.name,
       isAdmin: user.isAdmin,
       id: user._id,
+      authMethod: "google",
     })
-    } catch (error) {
+  } catch (error) {
     res.status(500).json({ error: error.message })
-    }
-    })
-
+  }
+})
 
 module.exports = router

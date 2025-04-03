@@ -1,32 +1,26 @@
-// src/server/utils/drive.js
-const { google } = require("googleapis");
-const { OAuth2Client } = require("google-auth-library");
-const { Readable } = require("stream");
+const { google } = require("googleapis")
+const { OAuth2Client } = require("google-auth-library")
+const { Readable } = require("stream")
 
-// Replace these with your actual credentials (or load from environment variables)
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI; // e.g., "http://localhost:3000/auth/google/callback"
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
 
-// Create a reusable OAuth2 client instance
-const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
 
 function driveAuth(accessToken, refreshToken = null) {
-  // Set the credentials on the OAuth2Client instance.
   oauth2Client.setCredentials({
     access_token: accessToken,
-    // Optionally include a refresh token if available.
     refresh_token: refreshToken,
-  });
+  })
 
-  // Create a Drive API service instance with the authenticated client.
-  return google.drive({ version: "v3", auth: oauth2Client });
+  return google.drive({ version: "v3", auth: oauth2Client })
 }
 
-async function uploadFile(fileBuffer, fileName, mimeType, accessToken) {
+async function uploadDriveFile(fileBuffer, fileName, mimeType, accessToken) {
   try {
-    const drive = driveAuth(accessToken);
-    const bufferStream = Readable.from(fileBuffer);
+    const drive = driveAuth(accessToken)
+    const bufferStream = Readable.from(fileBuffer)
     const response = await drive.files.create({
       requestBody: {
         name: fileName,
@@ -36,53 +30,58 @@ async function uploadFile(fileBuffer, fileName, mimeType, accessToken) {
         mimeType: mimeType,
         body: bufferStream,
       },
-    });
+    })
 
     await drive.permissions.create({
       fileId: response.data.id,
       requestBody: {
         role: "reader",
-        type: "anyone"
-      }
-    });
+        type: "anyone",
+      },
+    })
 
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error("Drive upload error:", error);
-    throw error;
+    console.error("Drive upload error:", error)
+    throw error
   }
 }
 
-async function deleteFile(fileId, accessToken) {
+async function deleteDriveFile(fileId, accessToken) {
   try {
-    const drive = driveAuth(accessToken);
-    await drive.files.delete({ fileId });
-    console.log(`File ${fileId} deleted successfully.`);
-    return { success: true, message: "File deleted successfully" };
+    const drive = driveAuth(accessToken)
+    await drive.files.delete({ fileId })
+    console.log(`File ${fileId} deleted successfully.`)
+    return { success: true, message: "File deleted successfully" }
   } catch (error) {
-    console.error("Drive delete error:", error);
-    throw error;
+    console.error("Drive delete error:", error)
+    throw error
   }
 }
 
-async function getFileMetadata(fileId, accessToken) {
+async function getDriveFileMetadata(fileId, accessToken) {
   try {
-    const drive = driveAuth(accessToken);
+    const drive = driveAuth(accessToken)
     const response = await drive.files.get({
       fileId: fileId,
-      fields: "id, name, mimeType, size"
-    });
+      fields: "id, name, mimeType, size",
+    })
 
     return {
       id: response.data.id,
       name: response.data.name,
       mimeType: response.data.mimeType,
-      size: response.data.size
-    };
+      size: response.data.size,
+    }
   } catch (error) {
-    console.error("Drive metadata error:", error);
-    throw error;
+    console.error("Drive metadata error:", error)
+    throw error
   }
 }
 
-module.exports = { driveAuth, uploadFile, deleteFile, getFileMetadata };
+module.exports = {
+  driveAuth,
+  uploadDriveFile,
+  deleteDriveFile,
+  getDriveFileMetadata,
+}

@@ -2,25 +2,26 @@ const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
 const { type } = require("os")
-// const { uploadFile, deleteFile } = require("../utils/s3")
-const { uploadFile,deleteFile } = require("../utils/drive")
+const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
+const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
 const { userExtractor } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
-const { generateSignedUrlForCue } = require("../utils/helper")
-const logger = require("../utils/logger")
-const { processCueFiles } = require("../utils/helper")
-const router = express.Router()
+const {
+  generateSignedUrlForS3,
+  processS3Files,
+  processDriveCueFiles,
+} = require("../utils/helper")
 const { getStoredDriveToken } = require("./drive")
-const { DeleteObjectCommand } = require("@aws-sdk/client-s3")
-
+const logger = require("../utils/logger")
+const router = express.Router()
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
-const deletObject = async (id, cueId) => {
+const deletObject = async (id, cueId, authMethod) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
     { "cues.$": 1 }
@@ -38,14 +39,19 @@ const deletObject = async (id, cueId) => {
   )
 
   const fileName = cue.cues[0].file.id
-  const key = `${id}/${fileName}`
 
-  const driveToken = getStoredDriveToken()
-  console.log("IDDDDDDDDDDDDDDDDDDDDDDDD",fileName)
-  const driveFileId = cue.cues[0].file.driveId
-  if (driveFileId) {
-    await deleteFile(driveFileId, driveToken)
+  if (authMethod === "google") {
+    const driveToken = getStoredDriveToken()
+    console.log("IDDDDDDDDDDDDDDDDDDDDDDDD", fileName)
+    const driveFileId = cue.cues[0].file.driveId
+    if (driveFileId) {
+      await deleteDriveFile(driveFileId, driveToken)
+    }
+  } else {
+    const key = `${id}/${fileName}`
+    await deleteFileS3(key)
   }
+
   return updatedPresentation
 }
 
@@ -66,10 +72,18 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       // processCueFiles parces cues and gets them their file size and type
-      const driveToken = getStoredDriveToken()
-      presentation.cues = await processCueFiles(presentation.cues, driveToken)
-      console.log("presentation.cues", presentation.cues)
-      res.json(presentation)
+      if (user.authMethod === "google") {
+        const driveToken = getStoredDriveToken()
+        presentation.cues = await processDriveCueFiles(
+          presentation.cues,
+          driveToken
+        )
+        console.log("presentation.cues", presentation.cues)
+        res.json(presentation)
+      } else {
+        presentation.cues = await processS3Files(presentation.cues, id)
+        res.json(presentation)
+      }
     } else {
       res.status(404).end()
     }
@@ -80,16 +94,17 @@ router.get("/:id", userExtractor, async (req, res) => {
   }
 })
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", userExtractor, async (req, res) => {
   try {
     const { id } = req.params
+    const { user } = req
 
     const presentation = await Presentation.findById(id)
 
     // eslint-disable-next-line no-restricted-syntax
     for (const cue of presentation.cues) {
       // eslint-disable-next-line no-await-in-loop
-      await deletObject(id, cue._id)
+      await deletObject(id, cue._id, user.authMethod)
     }
 
     await Presentation.findByIdAndDelete(id)
@@ -212,28 +227,50 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       { new: true }
     )
 
-    if (file) {
-      const fileName = `${id}/${fileId}`
-      const driveToken = getStoredDriveToken() 
-      console.log("driveToken", driveToken)
-      // Capture the drive upload response
-      const driveResponse = await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
-    
-      // Update the specific cue in the updatedPresentation with the driveId
-      updatedPresentation.cues = updatedPresentation.cues.map(cue => {
-        if (cue.file.id === fileId) {
-          cue.file.driveId = driveResponse.id;
-        }
-        return cue;
-      });
+    if (user.authMethod === "google") {
+      if (file) {
+        const fileName = `${id}/${fileId}`
+        const driveToken = getStoredDriveToken()
+        console.log("driveToken", driveToken)
+        // Capture the drive upload response
+        const driveResponse = await uploadDriveFile(
+          file.buffer,
+          fileName,
+          file.mimetype,
+          driveToken
+        )
+
+        // Update the specific cue in the updatedPresentation with the driveId
+        updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
+          if (cue.file.id === fileId) {
+            cue.file.driveId = driveResponse.id
+          }
+          return cue
+        })
+      }
+
+      // Now call processCueFiles to generate the URL from the driveId
+      const driveToken = getStoredDriveToken()
+      updatedPresentation.cues = await processDriveCueFiles(
+        updatedPresentation.cues,
+        driveToken
+      )
+      await updatedPresentation.save()
+      res.json(updatedPresentation)
+    } else {
+      if (file) {
+        const fileName = `${id}/${fileId}`
+
+        await uploadFileS3(file.buffer, fileName, file.mimetype)
+      }
+
+      updatedPresentation.cues = await processS3Files(
+        updatedPresentation.cues,
+        id
+      )
+      res.json(updatedPresentation)
+      return res.status(204).end()
     }
-    
-    // Now call processCueFiles to generate the URL from the driveId
-    const driveToken = getStoredDriveToken()
-    updatedPresentation.cues = await processCueFiles(updatedPresentation.cues, driveToken)
-    await updatedPresentation.save()
-    res.json(updatedPresentation)
-    return res.status(204).end()
   } catch (error) {
     logger.info("Error:", error)
     return res.status(500).json({ error: "Internal server error" })
@@ -247,7 +284,7 @@ router.put(
   async (req, res) => {
     try {
       const { id, cueId } = req.params
-      const { file } = req
+      const { file, user } = req
       const { cueName, image } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
@@ -294,37 +331,69 @@ router.put(
         }
       }
 
-      if (file) {
-        const newFileId = generateFileId()
+      if (user.authMethod === "google") {
+        if (file) {
+          const newFileId = generateFileId()
 
-        if (cue.file && cue.file.url) {
-          const driveToken = getStoredDriveToken()
-          await deleteFile(cue.file.driveId, driveToken)
-        }
-        try {
-          const fileName = `${id}/${newFileId}`
-          const driveToken = getStoredDriveToken()
-          const driveResponse = await uploadFile(file.buffer, fileName, file.mimetype, driveToken)
-
-          cue.file = {
-            id: newFileId,
-            name: file.originalname,
-            url: `https://lh3.googleusercontent.com/d/${driveResponse.id}`,
-            driveId: driveResponse.id
+          if (cue.file && cue.file.url) {
+            const driveToken = getStoredDriveToken()
+            await deleteDriveFile(cue.file.driveId, driveToken)
           }
+          try {
+            const fileName = `${id}/${newFileId}`
+            const driveToken = getStoredDriveToken()
+            const driveResponse = await uploadDriveFile(
+              file.buffer,
+              fileName,
+              file.mimetype,
+              driveToken
+            )
 
-          console.log("FILEEEEEEEEEEEEEEEEE", cue.file)
-                
-        } catch (error) {
-          console.error("File upload error:", error)
-          return res.status(500).json({ error: "File upload failed" })
+            cue.file = {
+              id: newFileId,
+              name: file.originalname,
+              url: `https://lh3.googleusercontent.com/d/${driveResponse.id}`,
+              driveId: driveResponse.id,
+            }
+
+            console.log("FILEEEEEEEEEEEEEEEEE", cue.file)
+          } catch (error) {
+            console.error("File upload error:", error)
+            return res.status(500).json({ error: "File upload failed" })
+          }
         }
-      }
-      await presentation.save()
+        await presentation.save()
 
-      const driveToken = getStoredDriveToken()
-      const updatedCue = await processCueFiles([cue], driveToken)
-      res.json(updatedCue[0])
+        const driveToken = getStoredDriveToken()
+        const updatedCue = await processDriveCueFiles([cue], driveToken)
+        res.json(updatedCue[0])
+      } else {
+        if (file) {
+          const newFileId = generateFileId()
+
+          if (cue.file && cue.file.url) {
+            const oldFileName = cue.file.url.split("/").pop()
+            await deleteFileS3(`${id}/${oldFileName}`)
+          }
+          try {
+            const fileName = `${id}/${newFileId}`
+            await uploadFileS3(file.buffer, fileName, file.mimetype)
+            cue.file = {
+              id: newFileId,
+              name: file.originalname,
+              url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+            }
+            await generateSignedUrlForS3(cue, id)
+          } catch (error) {
+            console.error("File upload error:", error)
+            return res.status(500).json({ error: "File upload failed" })
+          }
+        }
+        await presentation.save()
+
+        const updatedCue = await processS3Files([cue], id)
+        res.json(updatedCue[0])
+      }
     } catch (error) {
       console.error("Error:", error)
       res.status(500).json({ error: "Internal server error" })
