@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
@@ -102,6 +102,11 @@ const GridLayoutComponent = ({
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState(null)
+  const [currentLayout, setCurrentLayout] = useState(layout)
+
+  useEffect(() => {
+    setCurrentLayout(layout)
+  }, [layout])
 
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
@@ -161,7 +166,7 @@ const GridLayoutComponent = ({
    * Do not remove the `layout` parameter from the `handlePositionChange` function.
    * It is required for the function to work correctly.
    */
-  const handlePositionChange = async (layout, oldItem, newItem) => {
+  const handlePositionChange = async (newLayout, oldItem, newItem) => {
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
@@ -173,6 +178,20 @@ const GridLayoutComponent = ({
           description: "Audio files are only meant to be in the audio row.",
           status: "error",
         })
+
+        const updatedLayout = currentLayout.map((item) => {
+          // find the item that was moved with its ID and revert it to its old position
+          if (item.i === newItem.i) {
+            return {
+              ...item,
+              x: oldItem.x,
+              y: oldItem.y,
+            }
+          }
+          return item
+        })
+
+        setCurrentLayout(updatedLayout)
         return
       }
     }
@@ -190,11 +209,35 @@ const GridLayoutComponent = ({
       setStatus("loading")
       try {
         await dispatch(updatePresentation(id, movedCue))
+        setCurrentLayout(newLayout)
+
         setTimeout(() => {
           setStatus("saved")
         }, 300)
       } catch (error) {
         console.error(error)
+
+        // additional error handling for if something goes wrong with the API call to update the cue in database
+        // revert the layout to the state that was before the error happened
+        const revertedLayout = currentLayout.map((item) => {
+          if (item.i === newItem.i) {
+            return {
+              ...item,
+              x: oldItem.x,
+              y: oldItem.y,
+            }
+          }
+          return item
+        })
+
+        setCurrentLayout(revertedLayout)
+
+        showToast({
+          title: "Error updating position",
+          description:
+            "The element has been returned to its previous position.",
+          status: "error",
+        })
       }
     }
   }
@@ -202,7 +245,7 @@ const GridLayoutComponent = ({
   return (
     <GridLayout
       className="layout"
-      layout={layout}
+      layout={currentLayout}
       cols={101}
       rowHeight={rowHeight}
       width={101 * columnWidth + (101 - 1) * gap}
