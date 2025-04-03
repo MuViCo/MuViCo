@@ -106,6 +106,7 @@ describe("test presentation", () => {
       [0, 1],
       [50, 2],
       [100, 4],
+      [100, 5],
     ]
 
     test.each(validCases)(
@@ -119,8 +120,8 @@ describe("test presentation", () => {
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
       [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
-      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 4."],
-      [100, 5, "Invalid cue screen: 5. Screen must be between 1 and 4."],
+      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 5."],
+      [1, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
     ]
 
     test.each(invalidCases)(
@@ -155,6 +156,7 @@ describe("test presentation", () => {
       [0, 1],
       [50, 2],
       [100, 4],
+      [100, 5],
     ]
 
     test.each(validCases)(
@@ -173,8 +175,8 @@ describe("test presentation", () => {
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
       [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
-      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 4."],
-      [100, 5, "Invalid cue screen: 5. Screen must be between 1 and 4."],
+      [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 5."],
+      [100, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
     ]
 
     test.each(invalidCases)(

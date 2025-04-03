@@ -14,7 +14,11 @@ describe("CuesForm new element", () => {
     expect(screen.getByText("Add element")).toBeInTheDocument()
     expect(screen.getByText("Index 0-100*")).toBeInTheDocument()
     expect(screen.getByText("Name*")).toBeInTheDocument()
-    expect(screen.getByText("Screen 1-4*")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Screen 1-4 for images and videos and screen 5 for audio only*"
+      )
+    ).toBeInTheDocument()
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
     expect(screen.getByText("or add blank element")).toBeInTheDocument()
     expect(screen.getByText("Add blank")).toBeInTheDocument()
@@ -53,6 +57,7 @@ describe("CuesForm new element", () => {
       cueName: "test cue",
       screen: 2,
       fileName: "",
+      loop: false,
     })
     expect(onClose).toHaveBeenCalled()
   })
@@ -90,6 +95,7 @@ describe("CuesForm new element", () => {
       cueName: "test cue",
       screen: 2,
       fileName: "testfile.png",
+      loop: false,
     })
     expect(onClose).toHaveBeenCalled()
   })
