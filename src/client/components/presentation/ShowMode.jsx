@@ -31,6 +31,46 @@ const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
         }
       })
     }
+    const preloadVideo = (url) => {
+      return new Promise((resolve) => {
+        const video = document.createElement("video")
+        video.src = url
+        video.preload = "auto"
+        video.oncanplaythrough = () => resolve(true)
+        video.onerror = () => {
+          console.error(`Error loading video: ${url}`)
+          resolve(false)
+        }
+        // Force load in some browsers
+        video.load()
+      })
+    }
+    const preloadAudio = (url) => {
+      return new Promise((resolve) => {
+        const audio = new Audio()
+        audio.src = url
+        audio.preload = "auto"
+        audio.oncanplaythrough = () => resolve(true)
+        audio.onerror = () => {
+          console.error(`Error loading audio: ${url}`)
+          resolve(false)
+        }
+        // Force load in some browsers
+        audio.load()
+      })
+    }
+
+    const preloadFile = (url, fileType) => {
+      if (!url) return Promise.resolve(false)
+
+      if (fileType?.startsWith("image/")) {
+        return preloadImage(url)
+      } else if (fileType?.startsWith("audio/")) {
+        return preloadAudio(url)
+      } else if (fileType?.startsWith("video/")) {
+        return preloadVideo(url)
+      }
+    }
 
     const preloadCueData = async () => {
       const preloaded = {}
@@ -50,7 +90,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
 
           return Object.entries(cues).map(async ([cueId, cue]) => {
             if (cue.file?.url) {
-              await preloadImage(cue.file.url)
+              await preloadFile(cue.file.url, cue.file.type)
             }
             preloaded[screen][cueId] = cue
           })
