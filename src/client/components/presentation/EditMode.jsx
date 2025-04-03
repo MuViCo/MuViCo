@@ -138,6 +138,16 @@ const EditMode = ({
 
     if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
       return
+    } else if (
+      (yIndex === 5 && copiedCue.screen !== 5) ||
+      (copiedCue.screen === 5 && yIndex !== 5)
+    ) {
+      showToast({
+        title: "Only audio files on the audio row",
+        description: "Click on an appropriate row to paste the element.",
+        status: "info",
+      })
+      return
     }
 
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
