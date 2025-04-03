@@ -21,6 +21,12 @@ import { isTokenExpired } from "../../auth"
 
 const handleLogout = (navigate, setUser) => {
   window.localStorage.removeItem("user")
+  console.log(window.localStorage.getItem("driveAccessToken"))
+
+  window.localStorage.removeItem("driveAccessToken")
+
+  console.log(window.localStorage.getItem("driveAccessToken"))
+
   setUser(null)
   navigate("/home")
 }

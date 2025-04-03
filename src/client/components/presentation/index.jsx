@@ -112,9 +112,15 @@ const PresentationPage = () => {
                 </Button>
               </>
             )}
-            <Text alignSelf="center" data-testid="presentationSize">
-              {presentationSize} MB / 50 MB
-            </Text>
+            {window.localStorage.getItem("authMethod") === "manual" ? (
+              <Text alignSelf="center" data-testid="presentationSize">
+                {presentationSize} MB / 50 MB
+              </Text>
+            ) : (
+              <Text alignSelf="center" data-testid="presentationSize">
+                {presentationSize} MB
+              </Text>
+            )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
             {" "}

@@ -16,6 +16,7 @@ const userSchema = mongoose.Schema({
     },
   ],
   isAdmin: { type: Boolean, default: false },
+  authMethod: { type: String, enum: ["google", "manual"], required: true },
 })
 
 userSchema.set("toJSON", {
