@@ -29,7 +29,7 @@ describe("verifyToken middleware", () => {
   test("should return 401 if no token is provided", async () => {
     await verifyToken(req, res, next)
     expect(res.status).toHaveBeenCalledWith(401)
-    expect(res.json).toHaveBeenCalledWith({ error: "no token" })
+    expect(res.json).toHaveBeenCalledWith({ error: "Token missing" })
   })
 
   test("should call next if token is valid", async () => {
