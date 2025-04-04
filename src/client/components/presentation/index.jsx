@@ -112,7 +112,7 @@ const PresentationPage = () => {
                 </Button>
               </>
             )}
-            {window.localStorage.getItem("authMethod") === "manual" ? (
+            {window.localStorage.getItem("driveToken") === null ? (
               <Text alignSelf="center" data-testid="presentationSize">
                 {presentationSize} MB / 50 MB
               </Text>

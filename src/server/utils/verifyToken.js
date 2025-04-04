@@ -44,12 +44,7 @@ const verifyToken = async (req, res, next) => {
   try {
     await initializeFirebase()
     const decodedToken = await admin.auth().verifyIdToken(token)
-    req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      name: decodedToken.name,
-      authMethod: "google",
-    }
+    req.user = decodedToken
     next()
   } catch (error) {
     res.status(401).json({ error: "Token verification failed" })

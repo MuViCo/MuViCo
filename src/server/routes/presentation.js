@@ -12,8 +12,8 @@ const {
   processS3Files,
   processDriveCueFiles,
 } = require("../utils/helper")
-const { getStoredDriveToken } = require("./drive")
 const logger = require("../utils/logger")
+const { use } = require("react")
 const router = express.Router()
 
 const storage = multer.memoryStorage()
@@ -21,7 +21,7 @@ const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
-const deletObject = async (id, cueId, authMethod) => {
+const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
     { "cues.$": 1 }
@@ -40,8 +40,7 @@ const deletObject = async (id, cueId, authMethod) => {
 
   const fileName = cue.cues[0].file.id
 
-  if (authMethod === "google") {
-    const driveToken = getStoredDriveToken()
+  if (driveToken) {
     console.log("IDDDDDDDDDDDDDDDDDDDDDDDD", fileName)
     const driveFileId = cue.cues[0].file.driveId
     if (driveFileId) {
@@ -62,6 +61,8 @@ const deletObject = async (id, cueId, authMethod) => {
 router.get("/:id", userExtractor, async (req, res) => {
   try {
     const { user } = req
+    console.log(user.driveToken)
+    console.log("USER:", user)
     const { id } = req.params
     if (!user) {
       return res.status(401).json({ error: "operation not permitted" })
@@ -72,8 +73,8 @@ router.get("/:id", userExtractor, async (req, res) => {
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
       // processCueFiles parces cues and gets them their file size and type
-      if (user.authMethod === "google") {
-        const driveToken = getStoredDriveToken()
+      if (user.driveToken) {
+        const driveToken = user.driveToken
         presentation.cues = await processDriveCueFiles(
           presentation.cues,
           driveToken
@@ -104,7 +105,7 @@ router.delete("/:id", userExtractor, async (req, res) => {
     // eslint-disable-next-line no-restricted-syntax
     for (const cue of presentation.cues) {
       // eslint-disable-next-line no-await-in-loop
-      await deletObject(id, cue._id, user.authMethod)
+      await deletObject(id, cue._id, user.driveToken)
     }
 
     await Presentation.findByIdAndDelete(id)
@@ -227,10 +228,10 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       { new: true }
     )
 
-    if (user.authMethod === "google") {
+    if (user.driveToken) {
       if (file) {
         const fileName = `${id}/${fileId}`
-        const driveToken = getStoredDriveToken()
+        const driveToken = user.driveToken
         console.log("driveToken", driveToken)
         // Capture the drive upload response
         const driveResponse = await uploadDriveFile(
@@ -250,7 +251,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       }
 
       // Now call processCueFiles to generate the URL from the driveId
-      const driveToken = getStoredDriveToken()
+      const driveToken = user.driveToken
       updatedPresentation.cues = await processDriveCueFiles(
         updatedPresentation.cues,
         driveToken
@@ -331,17 +332,17 @@ router.put(
         }
       }
 
-      if (user.authMethod === "google") {
+      if (user.driveToken) {
         if (file) {
           const newFileId = generateFileId()
 
           if (cue.file && cue.file.url) {
-            const driveToken = getStoredDriveToken()
+            const driveToken = user.driveToken
             await deleteDriveFile(cue.file.driveId, driveToken)
           }
           try {
             const fileName = `${id}/${newFileId}`
-            const driveToken = getStoredDriveToken()
+            const driveToken = user.driveToken
             const driveResponse = await uploadDriveFile(
               file.buffer,
               fileName,
@@ -364,7 +365,7 @@ router.put(
         }
         await presentation.save()
 
-        const driveToken = getStoredDriveToken()
+        const driveToken = user.driveToken
         const updatedCue = await processDriveCueFiles([cue], driveToken)
         res.json(updatedCue[0])
       } else {
@@ -404,10 +405,12 @@ router.put(
 /**
  * Update the presentation by removing a file from the files array.
  */
-router.delete("/:id/:cueId", async (req, res) => {
+router.delete("/:id/:cueId", userExtractor, async (req, res) => {
   try {
     const { id, cueId } = req.params
-    const updatedPresentation = await deletObject(id, cueId)
+    const { user } = req
+    console.log("USERR", req)
+    const updatedPresentation = await deletObject(id, cueId, user.driveToken)
     res.json(updatedPresentation)
     res.status(204).end()
   } catch (error) {

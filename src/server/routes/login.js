@@ -25,11 +25,6 @@ router.post("/", async (req, res) => {
     })
   }
 
-  if (user.authMethod !== "manual") {
-    user.authMethod = "manual"
-    await user.save()
-  }
-
   const userForToken = {
     username: user.username,
     id: user._id,
@@ -49,6 +44,7 @@ router.post("/", async (req, res) => {
 })
 
 router.post("/firebase", verifyToken, async (req, res) => {
+  const { driveAccessToken } = req.body
   const { uid, email, name } = req.user
 
   try {
@@ -58,8 +54,10 @@ router.post("/firebase", verifyToken, async (req, res) => {
     if (!user) {
       user = new User({ uid, email, name, username })
       await user.save()
-    } else {
-      user.authMethod = "google"
+    }
+
+    if (!user.driveToken) {
+      user.driveToken = driveAccessToken
       await user.save()
     }
 
@@ -78,7 +76,7 @@ router.post("/firebase", verifyToken, async (req, res) => {
       name: user.name,
       isAdmin: user.isAdmin,
       id: user._id,
-      authMethod: "google",
+      driveToken: user.driveToken
     })
   } catch (error) {
     res.status(500).json({ error: error.message })

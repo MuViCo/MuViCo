@@ -141,7 +141,6 @@ const Login = ({ onLogin }) => {
     try {
       const user = await loginService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))
-      window.localStorage.setItem("authMethod", "manual")
       onLogin(user)
     } catch (err) {
       console.log(err)

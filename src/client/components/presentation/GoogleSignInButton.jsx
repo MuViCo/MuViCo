@@ -19,15 +19,13 @@ const GoogleSignInButton = ({ onLogin }) => {
       const credential = GoogleAuthProvider.credentialFromResult(result)
       const driveAccessToken = credential.accessToken
 
-      await axios.post("/api/drive", { driveAccessToken })
-
       window.localStorage.setItem("driveAccessToken", driveAccessToken)
       window.localStorage.setItem("authMethod", "google")
 
       const idToken = await result.user.getIdToken(true)
       const response = await axios.post(
         "/api/login/firebase",
-        {},
+        {driveAccessToken},
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
