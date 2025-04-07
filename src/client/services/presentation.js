@@ -14,7 +14,13 @@ const get = async (id) => {
 }
 
 const remove = async (id) => {
-  const response = await axios.delete(`${baseUrl}${id}`)
+  const config = {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.delete(`${baseUrl}${id}`, config)
   return response.data
 }
 

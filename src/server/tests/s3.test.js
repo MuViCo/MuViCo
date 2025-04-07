@@ -1,6 +1,6 @@
 const AWSMock = require('aws-sdk-mock')
 const AWS = require('aws-sdk')
-const { uploadFile, deleteFile, getObjectSignedUrl } = require('../utils/s3')
+const { uploadFileS3, deleteFileS3, getObjectSignedUrl } = require('../utils/s3')
 
 describe('S3 operations', () => {
   beforeAll(() => {
@@ -16,7 +16,7 @@ describe('S3 operations', () => {
       callback(null, { ETag: "\"e283c504365c76c53a7807ba6c8d86c3\"", ServerSideEncryption: "AES256" })
     })
 
-    const response = await uploadFile('fileBuffer', 'fileName', 'mimetype')
+    const response = await uploadFileS3('fileBuffer', 'fileName', 'mimetype')
     expect(response).toHaveProperty('ETag')
     expect(response).toHaveProperty('ServerSideEncryption')
   })
@@ -26,7 +26,7 @@ describe('S3 operations', () => {
       callback(null, { $metadata: { attempts: 1, httpStatusCode: 204 } })
     })
 
-    const response = await deleteFile('fileName')
+    const response = await deleteFileS3('fileName')
     expect(response).toHaveProperty('$metadata')
     expect(response.$metadata).toHaveProperty('attempts')
     expect(response.$metadata).toHaveProperty('httpStatusCode', 204)

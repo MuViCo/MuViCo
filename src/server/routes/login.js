@@ -56,10 +56,8 @@ router.post("/firebase", verifyToken, async (req, res) => {
       await user.save()
     }
 
-    if (!user.driveToken) {
-      user.driveToken = driveAccessToken
-      await user.save()
-    }
+    user.driveToken = driveAccessToken
+    await user.save()
 
     const userForToken = {
       username: user.username,
