@@ -74,7 +74,7 @@ router.post("/firebase", verifyToken, async (req, res) => {
       name: user.name,
       isAdmin: user.isAdmin,
       id: user._id,
-      driveToken: user.driveToken
+      driveToken: user.driveToken,
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
