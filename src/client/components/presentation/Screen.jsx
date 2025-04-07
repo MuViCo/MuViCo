@@ -108,7 +108,7 @@ const ScreenContent = ({
         animation={`${fadeOut} 500ms ease-in-out forwards`}
       >
         {previousScreenData.file?.url &&
-          (isImage(previousScreenData.file) ? (
+          (isType.image(previousScreenData.file) ? (
             <Image
               src={previousScreenData.file.url}
               alt={previousScreenData.name}
