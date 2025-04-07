@@ -4,11 +4,11 @@ const { getFileSize, getFileType } = require("../utils/s3")
 
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (cue.file && cue.file.driveId) {
-    cue.file.url = `https://lh3.googleusercontent.com/d/${cue.file.driveId}`
     try {
       const metadata = await getDriveFileMetadata(cue.file.driveId, accessToken)
       cue.file.type = metadata.mimeType
       cue.file.size = metadata.size
+      cue.file.url = `http://localhost:3000/api/media/${cue.file.driveId}?access_token=${accessToken}`
     } catch (error) {
       console.error("Error fetching file metadata:", error)
     }
