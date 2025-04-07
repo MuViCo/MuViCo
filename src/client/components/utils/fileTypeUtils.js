@@ -1,7 +1,5 @@
-export const isImage = (file) => {
-    if (file.type.includes("image")) {
-      return true
-    } else {
-      return false
-    }
-  }
+export const isType = {
+  image: (file) => file?.type?.includes("image"),
+  video: (file) => file?.type?.includes("video"),
+  audio: (file) => file?.type?.includes("audio"),
+}

@@ -103,14 +103,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { cueName, image } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
+    const loop = req.body.loop
 
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (screen < 1 || screen > 4) {
+    if (screen < 1 || screen > 5) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
       })
     }
 
@@ -138,12 +139,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         "image/avif",
         "image/x-win-bitmap",
       ]
+      const validAudioTypes = ["audio/mpeg", "audio/wav"]
 
       let fileType = ""
       if (file.mimetype.startsWith("image/")) {
         fileType = "image"
       } else if (file.mimetype.startsWith("video/")) {
         fileType = "video"
+      } else if (file.mimetype.startsWith("audio/")) {
+        fileType = "audio"
       }
 
       switch (fileType) {
@@ -157,6 +161,14 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           }
         case "video":
           if (!validVideoTypes.includes(file.mimetype)) {
+            return res
+              .status(400)
+              .json({ error: `Invalid filetype: ${file.originalname}` })
+          } else {
+            break
+          }
+        case "audio":
+          if (!validAudioTypes.includes(file.mimetype)) {
             return res
               .status(400)
               .json({ error: `Invalid filetype: ${file.originalname}` })
@@ -183,6 +195,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
               name: file && file.originalname ? file.originalname : "blank.png",
               url: image === "/blank.png" ? null : "",
             },
+            loop: loop,
           },
         },
       },
@@ -218,14 +231,15 @@ router.put(
       const { cueName, image } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
+      const loop = req.body.loop
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (screen < 1 || screen > 4) {
+      if (screen < 1 || screen > 5) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 4.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
         })
       }
 
@@ -248,6 +262,7 @@ router.put(
       cue.index = index
       cue.screen = screen
       cue.name = cueName
+      cue.loop = loop
 
       if (image === "/blank.png") {
         const newFileId = generateFileId()

@@ -5,26 +5,27 @@ import "@testing-library/jest-dom"
 
 const mockCues = [
   {
-
     file: { url: "http://example.com/image1.jpg", type: "image/jpg" },
 
     index: 0,
     name: "testtt",
     screen: 1,
     _id: "123456789",
+    loop: false,
   },
   {
-
     file: { url: "http://example.com/image2.jpg", type: "image/jpg" },
 
     index: 1,
     name: "testtt2",
     screen: 2,
     _id: "987654321",
+    loop: false,
   },
 ]
 
 const mockemptyCues = []
+const mockCueIndex = 0
 
 describe("ShowMode", () => {
   // simulate image loading behavior
@@ -38,7 +39,6 @@ describe("ShowMode", () => {
         }, 0)
       }
     }
-
 
     window.open = jest.fn(() => {
       const fakeWindow = {
@@ -58,7 +58,6 @@ describe("ShowMode", () => {
     // clean up the global image and window mock
     delete global.Image
     delete window.open
-
   })
 
   test("renders without crashing", async () => {
@@ -76,12 +75,10 @@ describe("ShowMode", () => {
 
   test("initializes state correctly", async () => {
     await act(async () => {
-      render(<ShowMode cues={mockCues} />)
+      render(<ShowMode cues={mockCues} cueIndex={mockCueIndex} />)
     })
 
-
     expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
-
 
     expect(
       screen.getByRole("button", { name: "Open screen: 1" })
@@ -92,9 +89,29 @@ describe("ShowMode", () => {
   })
 
   test("navigates to next and previous cues", async () => {
-    await act(async () => {
-      render(<ShowMode cues={mockCues} />)
+    let testCueIndex = mockCueIndex
+    const mockSetCueIndex = jest.fn((updater) => {
+      if (typeof updater === "function") {
+        testCueIndex = updater(testCueIndex)
+      } else {
+        testCueIndex = updater
+      }
+      rerender(
+        <ShowMode
+          cues={mockCues}
+          cueIndex={testCueIndex}
+          setCueIndex={mockSetCueIndex}
+        />
+      )
     })
+
+    const { rerender } = render(
+      <ShowMode
+        cues={mockCues}
+        cueIndex={mockCueIndex}
+        setCueIndex={mockSetCueIndex}
+      />
+    )
 
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Next Cue" }))
@@ -102,13 +119,11 @@ describe("ShowMode", () => {
 
     expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
 
-
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Previous Cue" }))
     })
 
     expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
-
   })
 
   test("toggles screen visibility", async () => {
@@ -177,21 +192,40 @@ describe("ShowMode", () => {
     ).not.toBeInTheDocument()
   })
 
-
   test("handles keyboard arrow keys", async () => {
-    await act(async () => {
-      render(<ShowMode cues={mockCues} />)
+    let testCueIndex = mockCueIndex
+    const mockSetCueIndex = jest.fn((updater) => {
+      if (typeof updater === "function") {
+        testCueIndex = updater(testCueIndex)
+      } else {
+        testCueIndex = updater
+      }
+      rerender(
+        <ShowMode
+          cues={mockCues}
+          cueIndex={testCueIndex}
+          setCueIndex={mockSetCueIndex}
+        />
+      )
     })
 
-    // Simuloidaan "ArrowRight" (seuraava)
+    const { rerender } = render(
+      <ShowMode
+        cues={mockCues}
+        cueIndex={mockCueIndex}
+        setCueIndex={mockSetCueIndex}
+      />
+    )
+
+    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
     fireEvent.keyDown(window, { key: "ArrowRight" })
+    expect(mockSetCueIndex).toHaveBeenCalled()
     expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
 
-    // Simuloidaan "ArrowLeft" (edellinen)
     fireEvent.keyDown(window, { key: "ArrowLeft" })
+    expect(mockSetCueIndex).toHaveBeenCalledTimes(2)
     expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
   })
-
 
   test("mirrors one screen to another", async () => {
     if (!window.HTMLElement.prototype.scrollTo) {

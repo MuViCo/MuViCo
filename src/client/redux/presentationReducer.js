@@ -99,7 +99,8 @@ export const updatePresentation =
         updatedCueData.cueName,
         updatedCueData.screen,
         updatedCueData.file,
-        updatedCueData.cueId || cueId
+        updatedCueData.cueId || cueId,
+        updatedCueData.loop
       )
 
       const updatedCue = await presentationService.updateCue(
@@ -123,7 +124,8 @@ export const updatePresentationSwappedCues =
         firstUpdatedCue.name,
         firstUpdatedCue.screen,
         firstUpdatedCue.file,
-        firstUpdatedCue._id
+        firstUpdatedCue._id,
+        firstUpdatedCue.loop
       )
 
       const secondFormData = createFormData(
@@ -131,7 +133,8 @@ export const updatePresentationSwappedCues =
         secondUpdatedCue.name,
         secondUpdatedCue.screen,
         secondUpdatedCue.file,
-        secondUpdatedCue._id
+        secondUpdatedCue._id,
+        secondUpdatedCue.loop
       )
 
       const [updatedFirstCue, updatedSecondCue] = await Promise.all([

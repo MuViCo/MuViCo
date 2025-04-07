@@ -51,7 +51,7 @@ describe("validateAndSetNumber", () => {
 describe("getNextAvailableIndex", () => {
   test("should return 1 if screen is invalid", () => {
     expect(getNextAvailableIndex(0, [])).toBe(1)
-    expect(getNextAvailableIndex(5, [])).toBe(1)
+    expect(getNextAvailableIndex(6, [])).toBe(1)
     expect(getNextAvailableIndex(NaN, [])).toBe(1)
   })
 

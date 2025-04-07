@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
-import { isImage } from "../utils/fileTypeUtils"
+import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import { keyframes, CacheProvider } from "@emotion/react"
 
@@ -14,6 +14,43 @@ const fadeOut = keyframes`
   from { opacity: 1; }
   to { opacity: 0; }
 `
+
+//conditional rendering helper function based on file type
+const renderMedia = (file, name) => {
+  if (isType.image(file)) {
+    return (
+      <Image
+        src={file.url}
+        alt={name}
+        width="100%"
+        height="100vh"
+        objectFit="contain"
+      />
+    )
+  }
+  if (isType.video(file)) {
+    return (
+      <video
+        src={file.url}
+        width="100%"
+        height="100%"
+        autoPlay
+        loop
+        muted
+        style={{ objectFit: "contain" }}
+      />
+    )
+  }
+  if (isType.audio(file)) {
+    return (
+      <audio autoPlay loop controls style={{ width: "100%" }}>
+        <source src={file.url} type={file.mimeType || "audio/mpeg"} />
+        Your browser does not support the audio element.
+      </audio>
+    )
+  }
+  return <Text>Unsupported media type.</Text>
+}
 
 const ScreenContent = ({
   screenNumber,
@@ -71,7 +108,7 @@ const ScreenContent = ({
         animation={`${fadeOut} 500ms ease-in-out forwards`}
       >
         {previousScreenData.file?.url &&
-          (isImage(previousScreenData.file) ? (
+          (isType.image(previousScreenData.file) ? (
             <Image
               src={previousScreenData.file.url}
               alt={previousScreenData.name}
@@ -106,25 +143,7 @@ const ScreenContent = ({
       animation={`${fadeIn} 500ms ease-in-out forwards`}
     >
       {currentScreenData?.file?.url ? (
-        isImage(currentScreenData.file) ? (
-          <Image
-            src={currentScreenData.file.url}
-            alt={currentScreenData.name}
-            width="100%"
-            height="100vh"
-            objectFit="contain"
-          />
-        ) : (
-          <video
-            src={currentScreenData.file.url}
-            width="100%"
-            height="100%"
-            autoPlay
-            loop
-            muted
-            style={{ objectFit: "contain" }}
-          />
-        )
+        renderMedia(currentScreenData.file, currentScreenData.name)
       ) : (
         <Text>No media available for this cue.</Text>
       )}
