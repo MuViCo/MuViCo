@@ -229,7 +229,7 @@ flowchart TD
     ALB -->|"step 7: Encrypted HTTPS response"| IGW
     IGW -->|"step 8: Response to browser"| User
 
-    subgraph VPC
+    subgraph VPC - Virtual Private Cloud
         IGW
         subgraph Public Subnet
             ALB
@@ -287,7 +287,7 @@ flowchart TD
     ALB -->|"step 7: Encrypted HTTPS response"| IGW
     IGW -->|"step 8: Response to user"| User
 
-    subgraph VPC
+    subgraph VPC - Virtual Private Cloud
         IGW
         subgraph Public Subnet
             ALB
