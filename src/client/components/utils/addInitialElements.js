@@ -2,9 +2,20 @@ import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
 
 const addInitialElements = async (presentationId, showToast) => {
-  const screens = [1, 2, 3, 4]
+  const screens = [1, 2, 3, 4, 5]
   try {
     for (const screen of screens) {
+      if (screen === 5) {
+        const formData = createFormData(
+          0,
+          "initial element for audio",
+          screen,
+          "/blank.png"
+        )
+        await presentation.addCue(presentationId, formData)
+        return
+      }
+
       const formData = createFormData(
         0,
         `initial element for screen ${screen}`,

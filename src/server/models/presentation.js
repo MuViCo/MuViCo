@@ -13,19 +13,19 @@ const presentationSchema = mongoose.Schema({
 
   cues: [
     {
-      index: { type: Number, required: true, },
-      name: { type: String, required: true, },
-      screen: { type: Number, required: true, },
+      index: { type: Number, required: true },
+      name: { type: String, required: true },
+      screen: { type: Number, required: true },
       file: {
         id: String,
         name: String,
         url: String,
-        size: {type: String, default: "0"},
-        type: {type: String, default: "image/jpeg"}
+        size: { type: String, default: "0" },
+        type: { type: String, default: "image/jpeg" },
       },
+      loop: { type: Boolean, default: false },
     },
   ],
-
 })
 
 presentationSchema.set("toJSON", {

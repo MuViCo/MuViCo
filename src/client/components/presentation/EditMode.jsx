@@ -6,6 +6,7 @@ import {
   extendTheme,
   useOutsideClick,
   useColorModeValue,
+  IconButton,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch } from "react-redux"
@@ -21,6 +22,7 @@ import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
+import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 
 const theme = extendTheme({})
 
@@ -30,6 +32,9 @@ const EditMode = ({
   isToolboxOpen,
   setIsToolboxOpen,
   isShowMode,
+  cueIndex,
+  isAudioMuted,
+  toggleAudioMute,
 }) => {
   const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
@@ -58,6 +63,8 @@ const EditMode = ({
     { length: maxScreen },
     (_, index) => `Screen ${index + 1}`
   )
+
+  yLabels[4] = "Audio files"
 
   const [isDragging, setIsDragging] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
@@ -98,7 +105,7 @@ const EditMode = ({
       gap
     )
 
-    if (cueExists(xIndex, yIndex)) {
+    if (cueExists(xIndex, yIndex) && isDragging) {
       const movingCue = cues.find(
         (cue) => cue.index === xIndex && cue.screen === yIndex
       )
@@ -130,6 +137,16 @@ const EditMode = ({
     )
 
     if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
+      return
+    } else if (
+      (yIndex === 5 && copiedCue.screen !== 5) ||
+      (copiedCue.screen === 5 && yIndex !== 5)
+    ) {
+      showToast({
+        title: "Only audio files on the audio row",
+        description: "Click on an appropriate row to paste the element.",
+        status: "info",
+      })
       return
     }
 
@@ -170,7 +187,7 @@ const EditMode = ({
       !cueExists &&
       xIndex >= 0 &&
       xIndex <= 101 &&
-      yIndex <= 4 &&
+      yIndex <= 5 &&
       yIndex >= 1
     ) {
       setHoverPosition({ index: xIndex, screen: yIndex })
@@ -224,7 +241,7 @@ const EditMode = ({
   })
 
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file } = cueData
+    const { index, cueName, screen, file, loop } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -240,7 +257,8 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "/blank.png"
+      file || "/blank.png",
+      loop || false
     )
 
     try {
@@ -338,7 +356,7 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > 4) {
+    if (yIndex < 1 || yIndex > 5) {
       return
     }
 
@@ -429,9 +447,23 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
-
-    setSelectedCue(null)
+    if (newTargetCue.screen === 5 || newSelectedCue.screen === 5) {
+      if (!(newTargetCue.screen === 5 && newSelectedCue.screen === 5)) {
+        showToast({
+          title: "Error",
+          description: "You cannot swap elements with audio files",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      } else {
+        await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+        setSelectedCue(null)
+      }
+    } else {
+      await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+      setSelectedCue(null)
+    }
   }
 
   const handleDrop = useCallback(
@@ -478,7 +510,7 @@ const EditMode = ({
         }
 
         const file = mediaFiles[0]
-        const formData = createFormData(xIndex, file.name, yIndex, file)
+        const formData = createFormData(xIndex, file.name, yIndex, file, loop)
 
         try {
           await dispatch(createCue(id, formData))
@@ -509,7 +541,7 @@ const EditMode = ({
       >
         <Box
           display="flex"
-          height="600px"
+          height="680px"
           width="100%"
           marginTop={`${gap * 2}px`}
         >
@@ -529,15 +561,53 @@ const EditMode = ({
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                bg="purple.200"
+                bg={
+                  label === "Audio files" ? "rgb(204, 46, 252)" : "purple.200"
+                }
                 borderRadius="md"
                 marginRight={`${gap}px`}
                 h={`${rowHeight}px`}
                 width={`${columnWidth}px`}
+                position="relative"
               >
                 <Text fontWeight="bold" color="black">
                   {label}
                 </Text>
+                {label === "Audio files" && (
+                  <IconButton
+                    icon={
+                      isAudioMuted ? (
+                        <SpeakerMutedIcon boxSize="32px" />
+                      ) : (
+                        <SpeakerIcon boxSize="32px" />
+                      )
+                    }
+                    disabled={isShowMode}
+                    _disabled={{
+                      opacity: 0.7,
+                      cursor: "not-allowed",
+                    }}
+                    sx={{
+                      width: "48px",
+                      height: "48px",
+                      padding: "10px",
+                    }}
+                    _hover={{ color: "rgb(99, 76, 107)" }}
+                    textColor={"black"}
+                    variant="ghost"
+                    draggable={false}
+                    position="absolute"
+                    zIndex="10"
+                    top="0px"
+                    right="0px"
+                    aria-label="Mute/unmute audio"
+                    title={isAudioMuted ? "Unmute audio" : "Mute audio"}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      toggleAudioMute()
+                    }}
+                  />
+                )}
               </Box>
             ))}
           </Box>
@@ -598,6 +668,8 @@ const EditMode = ({
                 setCopiedCue={setCopiedCue}
                 id={id}
                 isShowMode={isShowMode}
+                cueIndex={cueIndex}
+                isAudioMuted={isAudioMuted}
               />
 
               {hoverPosition && !isDragging && (

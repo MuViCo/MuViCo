@@ -32,6 +32,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
   const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(position?.screen || 0)
   const [cueId, setCueId] = useState("")
+  const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const allowedTypes = [
     "image/png",
@@ -48,7 +49,11 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     "image/svg+xml",
     "video/mp4",
     "video/3gpp",
+    "audio/mpeg",
+    "audio/wav",
   ]
+
+  const isAudioFile = () => file?.type?.includes("audio/")
 
   useEffect(() => {
     if (position) {
@@ -74,6 +79,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setCueId(cueData._id)
       setFile(cueData.file)
       setFileName(cueData.file.name ? cueData.file.name : "")
+      setLoop(cueData.loop)
     }
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
@@ -96,8 +102,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
         return
       }
     }
-
-    addCue({ file, index, cueName, screen, fileName })
+    addCue({ file, index, cueName, screen, fileName, loop })
     setError(null)
     setFile("/blank.png")
     setFileName("")
@@ -137,6 +142,16 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
     if (selected) {
       setFile(selected)
       setFileName(selected.name)
+
+      if (selected.type && selected.type.includes("audio")) {
+        setScreen(5)
+      } else if (
+        selected.type &&
+        !selected.type.includes("audio") &&
+        screen === 5
+      ) {
+        setScreen(1)
+      }
     } else {
       setFile("")
       setFileName("")
@@ -153,14 +168,18 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           ) : (
             <Heading size="md">Add element</Heading>
           )}
-          <FormHelperText mb={2}>Screen 1-4*</FormHelperText>
+          <FormHelperText mb={2}>
+            Screen 1-4 for images and videos and screen 5 for audio only*
+          </FormHelperText>
           <NumberInput
+            id="screen-number"
             value={screen}
             mb={4}
-            min={1}
-            max={4}
+            min={isAudioFile() ? 5 : 1}
+            max={isAudioFile() || file === "/blank.png" ? 5 : 4}
             onChange={handleNumericInputChange(setScreen)}
-            onBlur={validateAndSetNumber(setScreen, 1, 4)}
+            onBlur={validateAndSetNumber(setScreen, 1, 5)}
+            readOnly={isAudioFile()}
             required
           >
             <NumberInputField data-testid="screen-number" />
@@ -171,6 +190,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           </NumberInput>
           <FormHelperText mb={2}>Index 0-100*</FormHelperText>
           <NumberInput
+            id="index-number"
             value={index}
             mb={4}
             min={0}
@@ -188,6 +208,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
           <FormHelperText mb={2}>Name*</FormHelperText>
           <Input
             data-testid="cue-name"
+            id="cue-name"
             value={cueName}
             placeholder="Element name"
             mb={2}
@@ -204,6 +225,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
                   .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
                   <br />
                   <strong>Valid video types: </strong> .mp4 and .3gp
+                  <br />
+                  <strong>Valid audio types: </strong> .mp3 and .wav
                 </>
               }
               placement="right-end"

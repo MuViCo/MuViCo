@@ -18,12 +18,14 @@ const PresentationPage = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const showToast = useCustomToast()
+  const [cueIndex, setCueIndex] = useState(0)
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [presentationToDelete, setPresentationToDelete] = useState(null)
+  const [isAudioMuted, setIsAudioMuted] = useState(false)
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
@@ -34,6 +36,10 @@ const PresentationPage = () => {
 
   const handleShowMode = () => {
     setShowMode(!showMode)
+  }
+
+  const toggleAudioMute = () => {
+    setIsAudioMuted((prevMuted) => !prevMuted)
   }
 
   useEffect(() => {
@@ -113,13 +119,22 @@ const PresentationPage = () => {
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
             {" "}
             {/* Adjust marginLeft to move the grid to the left */}
-            {showMode && <ShowMode cues={presentationInfo} />}
+            {showMode && (
+              <ShowMode
+                cues={presentationInfo}
+                cueIndex={cueIndex}
+                setCueIndex={setCueIndex}
+              />
+            )}
             <EditMode
               id={id}
               cues={presentationInfo}
               isToolboxOpen={isToolboxOpen}
               setIsToolboxOpen={setIsToolboxOpen}
               isShowMode={showMode === true}
+              cueIndex={cueIndex}
+              isAudioMuted={isAudioMuted}
+              toggleAudioMute={toggleAudioMute}
             />
           </Box>
           <Dialog
