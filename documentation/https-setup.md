@@ -124,7 +124,8 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 - Integrates with **AWS Certificate Manager (ACM)** for automatic SSL certificate management
 - Works with **Amazon Route 53** to route traffic from a custom domain (e.g. `https://muvico.fi`)
 
-> [!TIP] > **TLS termination** means that the ALB decrypts incoming HTTPS traffic and forwards it to ECS containers over plain HTTP.
+> [!TIP]
+> **TLS termination** means that the ALB decrypts incoming HTTPS traffic and forwards it to ECS containers over plain HTTP.
 
 ---
 
@@ -364,10 +365,12 @@ flowchart TD
 
 The only potential change is tightening **CORS settings** in order to control which frontend origins are allowed to access the backend.
 
-> [!NOTE] > **What is CORS?**  
+> [!NOTE]
+> **What is CORS?**  
 > CORS (Cross-Origin Resource Sharing) is a browser security feature that blocks frontend apps from accessing backends on different origins (protocol + domain + port), unless explicitly allowed.
 
-> [!WARNING] > `app.use(cors())` allows all origins — it's fine for development, but insecure in production.  
+> [!WARNING]
+> `app.use(cors())` allows all origins — it's fine for development, but insecure in production.  
 > It allows **any website** to make requests to the app backend, including those controlled by **malicious actors**.
 
 #### Recommended CORS configuration (`src/server/app.js`):
@@ -410,7 +413,8 @@ app.use(cors(corsOptions))
 
 ## 6. ...ok, but how much is this going to cost us?
 
-> [!IMPORTANT] > **To better convey the cost impact of the HTTPS setup**, this table assumes AWS Free Tier discounts continue as they are now.  
+> [!IMPORTANT]
+> **To better convey the cost impact of the HTTPS setup**, this table assumes AWS Free Tier discounts continue as they are now.  
 > In reality, most core services (ECS, EC2, S3, ECR, etc.) will no longer be free after April 2025 — but that’s a broader billing change unrelated to HTTPS.
 
 | Service                        | Current (USD)                | With HTTPS (USD)             |
