@@ -105,7 +105,7 @@ const EditMode = ({
       gap
     )
 
-    if (cueExists(xIndex, yIndex) && isDragging) {
+    if (cueExists(xIndex, yIndex)) {
       const movingCue = cues.find(
         (cue) => cue.index === xIndex && cue.screen === yIndex
       )
@@ -206,7 +206,7 @@ const EditMode = ({
       gap
     )
 
-    if (cueExists(xIndex, yIndex)) {
+    if (cueExists(xIndex, yIndex) && isDragging) {
       const targetCue = cues.find(
         (cue) => cue.index === xIndex && cue.screen === yIndex
       )
