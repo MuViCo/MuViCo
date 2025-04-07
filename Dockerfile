@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/nodejs-18:latest
+FROM node:20-alpine
 
 # Define build arguments
 ARG VITE_FIREBASE_API_KEY

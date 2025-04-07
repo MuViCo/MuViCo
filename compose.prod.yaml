@@ -1,0 +1,28 @@
+services:
+  app:
+    image: prod
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
+    environment:
+      PORT: ${PORT}
+      SECRET: ${SECRET}
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL}
+      MONGODB_URI: ${MONGODB_URI}
+      BUCKET_NAME: ${BUCKET_NAME}
+      BUCKET_REGION: ${BUCKET_REGION}
+      ACCESS_KEY: ${ACCESS_KEY}
+      SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY}
+    ports:
+      - ${PORT}:${PORT}
+    container_name: prod_app
+    networks:
+      - prod_net
+
+networks:
+  prod_net:

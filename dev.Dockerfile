@@ -1,11 +1,12 @@
-from docker.io/node:18-alpine
+FROM node:20-alpine
 
 ENV TZ="Europe/Helsinki"
 
-WORKDIR /opt/app-root/src
+WORKDIR /app
 
-COPY package* ./ 
-RUN npm i
+COPY package.json package-lock.json* ./
+RUN npm ci
+COPY . .
 
 EXPOSE 3000
 
