@@ -16,22 +16,54 @@ function driveAuth(accessToken, refreshToken = null) {
 
   return google.drive({ version: "v3", auth: oauth2Client })
 }
+async function getOrCreateMuViCoFolder(drive) {
+  // Search for a folder named "MuViCo"
+  const folderQuery =
+    "mimeType = 'application/vnd.google-apps.folder' and name = 'MuViCo' and trashed = false"
+  const listResponse = await drive.files.list({
+    q: folderQuery,
+    fields: "files(id, name)",
+    spaces: "drive",
+  })
+
+  if (listResponse.data.files && listResponse.data.files.length > 0) {
+    // Return the first matching folder
+    return listResponse.data.files[0].id
+  } else {
+    // Folder not found, create it
+    const fileMetadata = {
+      name: "MuViCo",
+      mimeType: "application/vnd.google-apps.folder",
+    }
+    const createResponse = await drive.files.create({
+      requestBody: fileMetadata,
+      fields: "id",
+    })
+    return createResponse.data.id
+  }
+}
 
 async function uploadDriveFile(fileBuffer, fileName, mimeType, accessToken) {
   try {
     const drive = driveAuth(accessToken)
+    // Ensure the file is uploaded to the MuViCo folder
+    const folderId = await getOrCreateMuViCoFolder(drive)
+
     const bufferStream = Readable.from(fileBuffer)
     const response = await drive.files.create({
       requestBody: {
         name: fileName,
         mimeType: mimeType,
+        parents: [folderId], // Specify the MuViCo folder as parent
       },
       media: {
         mimeType: mimeType,
         body: bufferStream,
       },
+      fields: "id",
     })
 
+    // Make the file publicly readable
     await drive.permissions.create({
       fileId: response.data.id,
       requestBody: {
@@ -84,8 +116,8 @@ async function getDriveFileStream(fileId, accessToken) {
     const drive = driveAuth(accessToken)
     // Request the file as a stream using alt=media
     const response = await drive.files.get(
-      { fileId, alt: 'media' },
-      { responseType: 'stream' }
+      { fileId, alt: "media" },
+      { responseType: "stream" }
     )
     return response.data // this is a readable stream
   } catch (error) {
