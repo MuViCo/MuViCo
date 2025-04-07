@@ -79,9 +79,25 @@ async function getDriveFileMetadata(fileId, accessToken) {
   }
 }
 
+async function getDriveFileStream(fileId, accessToken) {
+  try {
+    const drive = driveAuth(accessToken)
+    // Request the file as a stream using alt=media
+    const response = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'stream' }
+    )
+    return response.data // this is a readable stream
+  } catch (error) {
+    console.error("Drive fetch file error:", error)
+    throw error
+  }
+}
+
 module.exports = {
   driveAuth,
   uploadDriveFile,
   deleteDriveFile,
   getDriveFileMetadata,
+  getDriveFileStream,
 }
