@@ -65,11 +65,9 @@ const getFileSize = async (cue, presentationId) => {
   const command = new HeadObjectCommand(params)
   const seconds = 3 * 60 * 60
   const url = await getSignedUrl(s3, command, { expiresIn: seconds })
-  console.log("URL: ", url)
   try {
     const response = await fetch(url, { method: "HEAD" })
     const contentLength = response.headers.get("Content-Length")
-    console.log("CONTENT LENGTH: ", contentLength)
     if (contentLength) {
       cue.file.size = parseInt(contentLength, 10)
       return cue

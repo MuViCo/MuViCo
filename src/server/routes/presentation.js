@@ -1,7 +1,6 @@
 const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
-const { type } = require("os")
 const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
 const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
@@ -13,7 +12,6 @@ const {
   processDriveCueFiles,
 } = require("../utils/helper")
 const logger = require("../utils/logger")
-const { use } = require("react")
 const router = express.Router()
 
 const storage = multer.memoryStorage()
@@ -41,7 +39,6 @@ const deletObject = async (id, cueId, driveToken) => {
   const fileName = cue.cues[0].file.id
 
   if (driveToken) {
-    console.log("IDDDDDDDDDDDDDDDDDDDDDDDD", fileName)
     const driveFileId = cue.cues[0].file.driveId
     if (driveFileId) {
       await deleteDriveFile(driveFileId, driveToken)
@@ -61,8 +58,6 @@ const deletObject = async (id, cueId, driveToken) => {
 router.get("/:id", userExtractor, async (req, res) => {
   try {
     const { user } = req
-    console.log(user.driveToken)
-    console.log("USER:", user)
     const { id } = req.params
     if (!user) {
       return res.status(401).json({ error: "operation not permitted" })
@@ -72,14 +67,12 @@ router.get("/:id", userExtractor, async (req, res) => {
       presentation &&
       (presentation.user.toString() === user._id.toString() || user.isAdmin)
     ) {
-      // processCueFiles parces cues and gets them their file size and type
       if (user.driveToken) {
         const driveToken = user.driveToken
         presentation.cues = await processDriveCueFiles(
           presentation.cues,
           driveToken
         )
-        console.log("presentation.cues", presentation.cues)
         res.json(presentation)
       } else {
         presentation.cues = await processS3Files(presentation.cues, id)
@@ -102,9 +95,7 @@ router.delete("/:id", userExtractor, async (req, res) => {
 
     const presentation = await Presentation.findById(id)
 
-    // eslint-disable-next-line no-restricted-syntax
     for (const cue of presentation.cues) {
-      // eslint-disable-next-line no-await-in-loop
       await deletObject(id, cue._id, user.driveToken)
     }
 
@@ -232,8 +223,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       if (file) {
         const fileName = `${id}/${fileId}`
         const driveToken = user.driveToken
-        console.log("driveToken", driveToken)
-        // Capture the drive upload response
         const driveResponse = await uploadDriveFile(
           file.buffer,
           fileName,
@@ -241,7 +230,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           driveToken
         )
 
-        // Update the specific cue in the updatedPresentation with the driveId
         updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
           if (cue.file.id === fileId) {
             cue.file.driveId = driveResponse.id
@@ -250,7 +238,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         })
       }
 
-      // Now call processCueFiles to generate the URL from the driveId
       const driveToken = user.driveToken
       updatedPresentation.cues = await processDriveCueFiles(
         updatedPresentation.cues,
@@ -356,8 +343,6 @@ router.put(
               url: `https://lh3.googleusercontent.com/d/${driveResponse.id}`,
               driveId: driveResponse.id,
             }
-
-            console.log("FILEEEEEEEEEEEEEEEEE", cue.file)
           } catch (error) {
             console.error("File upload error:", error)
             return res.status(500).json({ error: "File upload failed" })
@@ -409,7 +394,6 @@ router.delete("/:id/:cueId", userExtractor, async (req, res) => {
   try {
     const { id, cueId } = req.params
     const { user } = req
-    console.log("USERR", req)
     const updatedPresentation = await deletObject(id, cueId, user.driveToken)
     res.json(updatedPresentation)
     res.status(204).end()
