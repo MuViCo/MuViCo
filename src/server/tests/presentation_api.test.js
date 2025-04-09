@@ -27,6 +27,7 @@ describe("test presentation", () => {
       .send({ username: "testuser", password: "testpassword" })
 
     authHeader = `Bearer ${response.body.token}`
+
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
@@ -64,7 +65,20 @@ describe("test presentation", () => {
   }
 
   describe("GET /api/presentation/:id", () => {
-    test("presentation is returned as json", async () => {
+    test("presentation is returned as json when using amazon s3", async () => {
+      await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+        .expect("Content-Type", /application\/json/)
+    })
+    test("presentation is returned as json when using google drive", async () => {
+      const user = await User.findOne({
+        username: "testuser",
+      })
+      user.driveToken = "test-drive-token"
+      await user.save()
+
       await api
         .get(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
@@ -82,12 +96,28 @@ describe("test presentation", () => {
   })
 
   describe("Test error handling", () => {
+    it("GET /api/presentation/:id with no user should return 401", async () => {
+      const response = await api.get(
+        "/api/presentation/000000000000000000000000"
+      )
+
+      expect(response.status).toBe(401)
+    })
+
     it("GET /api/presentation/:id with invalid ID should return 404", async () => {
       const response = await api
         .get("/api/presentation/000000000000000000000000")
         .set("Authorization", authHeader)
 
       expect(response.status).toBe(404)
+    })
+
+    it("GET /api/presentation/:id with invalid path should return 500", async () => {
+      const response = await api
+        .get("/api/presentation/invalid-id-format")
+        .set("Authorization", authHeader)
+
+      expect(response.status).toBe(500)
     })
 
     it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
