@@ -8,12 +8,20 @@ import PresentationsGrid from "./PresentationsGrid"
 import PresentationFormWrapper from "./PresentationFormWrapper"
 import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
+import useDeletePresentation from "../utils/useDeletePresentation"
+import Dialog from "../utils/AlertDialog"
 
 const HomePage = ({ user }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
   const showToast = useCustomToast()
+  const {
+    isDialogOpen,
+    handleDeletePresentation,
+    handleConfirmDelete,
+    handleCancelDelete,
+  } = useDeletePresentation()
 
   useEffect(() => {
     const getPresentationData = async () => {
@@ -64,6 +72,13 @@ const HomePage = ({ user }) => {
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
+        handleDeletePresentation={handleDeletePresentation}
+      />
+      <Dialog
+        isOpen={isDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        message="Are you sure you want to delete this presentation?"
       />
     </Container>
   )
