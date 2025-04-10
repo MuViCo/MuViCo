@@ -50,6 +50,7 @@ const useDeletePresentation = () => {
     handleDeletePresentation,
     handleConfirmDelete,
     handleCancelDelete,
+    presentationToDelete,
   }
 }
 

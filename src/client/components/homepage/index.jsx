@@ -21,6 +21,7 @@ const HomePage = ({ user }) => {
     handleDeletePresentation,
     handleConfirmDelete,
     handleCancelDelete,
+    presentationToDelete,
   } = useDeletePresentation()
 
   useEffect(() => {
@@ -61,6 +62,17 @@ const HomePage = ({ user }) => {
     togglableRef.current.toggleVisibility()
   }
 
+  const handleDialogConfirm = async () => {
+    try {
+      await handleConfirmDelete()
+      setPresentations(
+        presentations.filter((p) => p.id !== presentationToDelete)
+      )
+    } catch (e) {
+      console.log("Error deleting presentation: ", e)
+    }
+  }
+
   return (
     <Container maxW="container.lg">
       <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
@@ -77,7 +89,7 @@ const HomePage = ({ user }) => {
       <Dialog
         isOpen={isDialogOpen}
         onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
+        onConfirm={handleDialogConfirm}
         message="Are you sure you want to delete this presentation?"
       />
     </Container>
