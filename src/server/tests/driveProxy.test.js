@@ -1,11 +1,12 @@
 jest.mock("../utils/drive", () => ({
   getDriveFileStream: jest.fn(),
+  getDriveFileMetadata: jest.fn(),
 }))
 
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const app = require("../app")
-const { getDriveFileStream } = require("../utils/drive")
+const { getDriveFileStream, getDriveFileMetadata } = require("../utils/drive")
 const { beforeEach } = require("node:test")
 
 const api = supertest(app)
@@ -28,6 +29,11 @@ describe("Drive API", () => {
       }),
     }
 
+    const mockMetadata = {
+      mimeType: "video/mp4",
+    }
+
+    getDriveFileMetadata.mockResolvedValue(mockMetadata)
     getDriveFileStream.mockResolvedValue(mockFileStream)
 
     await api
@@ -35,6 +41,7 @@ describe("Drive API", () => {
       .query({ access_token: "valid_token" })
       .expect(200)
 
+    expect(getDriveFileMetadata).toHaveBeenCalledWith("123456", "valid_token")
     expect(getDriveFileStream).toHaveBeenCalledWith("123456", "valid_token")
     expect(mockFileStream.pipe).toHaveBeenCalled()
   })

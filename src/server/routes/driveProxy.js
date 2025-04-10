@@ -1,6 +1,6 @@
 const express = require("express")
 const router = express.Router()
-const { getDriveFileStream } = require("../utils/drive")
+const { getDriveFileStream, getDriveFileMetadata } = require("../utils/drive")
 
 router.get("/:fileId", async (req, res) => {
   const { fileId } = req.params
@@ -10,8 +10,11 @@ router.get("/:fileId", async (req, res) => {
   }
 
   try {
+    const metadata = await getDriveFileMetadata(fileId, accessToken)
+    const mimeType = metadata.mimeType
+
     const fileStream = await getDriveFileStream(fileId, accessToken)
-    res.setHeader("Content-Type", "application/octet-stream")
+    res.setHeader("Content-Type", mimeType)
     fileStream.pipe(res)
   } catch (error) {
     console.error("Error streaming file:", error)
