@@ -25,6 +25,17 @@ jest.mock("../../services/presentations", () => ({
 
 jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 
+jest.mock("../../components/utils/useDeletePresentation", () => ({
+  __esModule: true,
+  default: () => ({
+    isDialogOpen: false,
+    handleDeletePresentation: jest.fn(),
+    handleConfirmDelete: jest.fn(),
+    handleCancelDelete: jest.fn(),
+    presentationToDelete: null,
+  }),
+}))
+
 describe("HomePage", () => {
   beforeEach(() => {
     useNavigate.mockClear()
