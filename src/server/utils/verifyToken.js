@@ -30,7 +30,6 @@ const initializeFirebase = async () => {
     admin.initializeApp({
       credential: admin.credential.cert(secret),
     })
-    console.log("Firebase initialized successfully.")
   }
 }
 

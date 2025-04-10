@@ -15,7 +15,7 @@ const presentationRouter = require("./routes/presentation")
 const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
 const middleware = require("./utils/middleware")
-const driveProxy = require('./routes/driveProxy')
+const driveProxy = require("./routes/driveProxy")
 
 const app = express()
 
@@ -62,7 +62,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 if (process.env.NODE_ENV === "test") {
-  // eslint-disable-next-line global-require
   const testingRouter = require("./routes/testing")
   app.use("/api/testing", testingRouter)
 }

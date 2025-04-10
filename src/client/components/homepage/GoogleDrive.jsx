@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react"
 import { Box, Heading, Text, VStack, Button } from "@chakra-ui/react"
 
-const CLIENT_ID = "1084292903724-jpd3ivkrfjjc66o1c8q7nsb2jhf28ikk.apps.googleusercontent.com"
+const CLIENT_ID =
+  "1084292903724-jpd3ivkrfjjc66o1c8q7nsb2jhf28ikk.apps.googleusercontent.com"
 const API_KEY = "AIzaSyBp3YmS2kptNpV5G1xuE6UzYdxrRUAWyZQ"
 
-// Include openid, email, and profile scopes to retrieve user info.
-const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.metadata.readonly"
-const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
+const SCOPES =
+  "openid email profile https://www.googleapis.com/auth/drive.metadata.readonly"
+const DISCOVERY_DOC =
+  "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
 
 function GoogleDriveAuth() {
   const [gapiLoaded, setGapiLoaded] = useState(false)
@@ -49,8 +51,8 @@ function GoogleDriveAuth() {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
-      callback: (resp) => handleAuthResponse(resp), 
-      access_type: "offline", 
+      callback: (resp) => handleAuthResponse(resp),
+      access_type: "offline",
       prompt: "consent",
     })
     setTokenClient(client)
@@ -72,18 +74,21 @@ function GoogleDriveAuth() {
       return
     }
     try {
-        localStorage.setItem("googleToken", resp.access_token)
-        const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      localStorage.setItem("googleToken", resp.access_token)
+      const userInfoResponse = await fetch(
+        "https://www.googleapis.com/oauth2/v3/userinfo",
+        {
           headers: { Authorization: `Bearer ${resp.access_token}` },
-        });    
+        }
+      )
       const userInfo = await userInfoResponse.json()
-      setGoogleUser(userInfo);
+      setGoogleUser(userInfo)
       // Save the complete token object to your backend
       await googleDriveService.saveGoogleSettings(resp)
     } catch (error) {
       console.error("Failed to fetch user info:", error)
     }
-  };
+  }
 
   const handleSignoutClick = () => {
     const token = window.gapi.client.getToken()
@@ -96,7 +101,15 @@ function GoogleDriveAuth() {
   }
 
   return (
-    <Box maxW="lg" mx="auto" mt={6} p={6} borderWidth="1px" borderRadius="lg" boxShadow="md">
+    <Box
+      maxW="lg"
+      mx="auto"
+      mt={6}
+      p={6}
+      borderWidth="1px"
+      borderRadius="lg"
+      boxShadow="md"
+    >
       <Heading as="h2" size="lg" mb={4}>
         Google Drive Account Settings
       </Heading>
@@ -113,16 +126,24 @@ function GoogleDriveAuth() {
             </Button>
           </>
         ) : (
-          <Button colorScheme="purple" onClick={handleAuthClick} disabled={!gapiLoaded || !gisLoaded}>
+          <Button
+            colorScheme="purple"
+            onClick={handleAuthClick}
+            disabled={!gapiLoaded || !gisLoaded}
+          >
             Sign in with Google
           </Button>
         )}
       </VStack>
       {files.length > 0 && (
         <Box mt={4}>
-          <Heading as="h4" size="md">Files:</Heading>
+          <Heading as="h4" size="md">
+            Files:
+          </Heading>
           {files.map((file) => (
-            <Text key={file.id}>{file.name} ({file.id})</Text>
+            <Text key={file.id}>
+              {file.name} ({file.id})
+            </Text>
           ))}
         </Box>
       )}
