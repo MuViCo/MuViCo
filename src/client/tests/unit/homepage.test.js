@@ -107,6 +107,21 @@ describe("HomePage", () => {
 
     useRefSpy.mockRestore()
   })
+
+  test("navigates to / on 401 Unauthorized error", async () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    presentationService.getAll.mockRejectedValue({
+      response: { status: 401 },
+    })
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
+
+    expect(navigate).toHaveBeenCalledWith("/")
+  })
 })
 
 describe("PresentationForm", () => {
