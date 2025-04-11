@@ -118,6 +118,7 @@ flowchart TD
 
 > [!NOTE] 
 > **Internet Gateway**: A component of the VPC that enables communication between resources in the VPC and the internet. This includes both user traffic and outbound connections to external services like MongoDB, Firebase, and S3. For simplicity, the diagram doesn’t show this routing explicitly.
+> 
 > **Public Subnet**: A subnet whose resources (like an EC2 instance) can send and receive traffic to and from the internet.
 
 ---
@@ -175,7 +176,9 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 
 ### 4.2. Proposed HTTPS architecture
 
-To clearly show how the new HTTPS setup will work in AWS, the following diagrams are provided:
+To clearly show how the new HTTPS setup will work in AWS, the following diagrams are provided.
+
+Note: The diagrams use `muvico.fi` as a domain name example for the sake of consistency. The domain name is yet to be decided at the time of writing.
 
 #### 4.2.1. HTTP request redirection
 
@@ -223,8 +226,7 @@ flowchart TD
     IGW["Internet Gateway
     (IGW)"]
     ALB["Application Load Balancer (ALB)"]
-    ECS["Elastic Cloud Compute
-    (EC2) instance running application"]
+    ECS["EC2 instance running MuViCo app"]
 
     classDef alb stroke:green,stroke-width:2px
     classDef external stroke-dasharray: 5 5
