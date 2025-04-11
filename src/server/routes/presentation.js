@@ -40,8 +40,17 @@ const deletObject = async (id, cueId, driveToken) => {
 
   if (driveToken) {
     const driveFileId = cue.cues[0].file.driveId
+    console.log(driveFileId)
     if (driveFileId) {
-      await deleteDriveFile(driveFileId, driveToken)
+      const presentation = await Presentation.findById(id)
+
+      const sameFileCount = presentation.cues.filter(
+        (c) => c.file.driveId === driveFileId
+      ).length
+
+      if (sameFileCount === 0) {
+        await deleteDriveFile(driveFileId, driveToken)
+      }
     }
   } else {
     const key = `${id}/${fileName}`
@@ -117,7 +126,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const { id } = req.params
     const fileId = generateFileId()
     const { file, user } = req
-    const { cueName, image } = req.body
+    const { cueName, image, driveId } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
@@ -211,6 +220,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
               id: fileId,
               name: file && file.originalname ? file.originalname : "blank.png",
               url: image === "/blank.png" ? null : "",
+              ...(driveId && { driveId }),
             },
             loop: loop,
           },
@@ -221,21 +231,30 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
 
     if (user.driveToken) {
       if (file) {
-        const fileName = `${id}/${fileId}`
-        const driveToken = user.driveToken
-        const driveResponse = await uploadDriveFile(
-          file.buffer,
-          fileName,
-          file.mimetype,
-          driveToken
-        )
+        if (driveId) {
+          updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
+            if (cue.file.id === fileId) {
+              cue.file.driveId = driveId
+            }
+            return cue
+          })
+        } else {
+          const fileName = `${id}/${fileId}`
+          const driveToken = user.driveToken
+          const driveResponse = await uploadDriveFile(
+            file.buffer,
+            fileName,
+            file.mimetype,
+            driveToken
+          )
 
-        updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
-          if (cue.file.id === fileId) {
-            cue.file.driveId = driveResponse.id
-          }
-          return cue
-        })
+          updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
+            if (cue.file.id === fileId) {
+              cue.file.driveId = driveResponse.id
+            }
+            return cue
+          })
+        }
       }
 
       const driveToken = user.driveToken
@@ -243,6 +262,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         updatedPresentation.cues,
         driveToken
       )
+
       await updatedPresentation.save()
       res.json(updatedPresentation)
     } else {
@@ -257,7 +277,6 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         id
       )
       res.json(updatedPresentation)
-      return res.status(204).end()
     }
   } catch (error) {
     logger.info("Error:", error)
@@ -325,7 +344,17 @@ router.put(
 
           if (cue.file && cue.file.url) {
             const driveToken = user.driveToken
-            await deleteDriveFile(cue.file.driveId, driveToken)
+            if (cue.file.driveId) {
+              const presentation = await Presentation.findById(id)
+
+              const sameFileCount = presentation.cues.filter(
+                (c) => c.file.driveId === cue.file.driveId
+              ).length
+
+              if (sameFileCount === 0) {
+                await deleteDriveFile(cue.file.driveId, driveToken)
+              }
+            }
           }
           try {
             const fileName = `${id}/${newFileId}`
@@ -337,12 +366,7 @@ router.put(
               driveToken
             )
 
-            cue.file = {
-              id: newFileId,
-              name: file.originalname,
-              url: `https://lh3.googleusercontent.com/d/${driveResponse.id}`,
-              driveId: driveResponse.id,
-            }
+            cue.file.driveId = driveResponse.id
           } catch (error) {
             console.error("File upload error:", error)
             return res.status(500).json({ error: "File upload failed" })

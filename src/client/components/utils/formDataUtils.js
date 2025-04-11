@@ -16,6 +16,10 @@ export const createFormData = (index, name, screen, file, cueId, loop) => {
   if (file) {
     formData.append("image", file)
   }
+  if (file && file.driveId) {
+    formData.append("driveId", file.driveId)
+    formData.append("isCopy", "true")
+  }
   if (cueId) {
     formData.append("cueId", cueId)
   }

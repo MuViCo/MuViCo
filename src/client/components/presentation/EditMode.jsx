@@ -157,11 +157,23 @@ const EditMode = ({
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
+    const fileObj = await fetchFileFromUrl(
+      copiedCue.file.url,
+      copiedCue.file.name
+    )
+
+    if (copiedCue.file.driveId) {
+      fileObj.driveId = copiedCue.file.driveId
+    }
+
+    console.log("copied cue", copiedCue)
+    console.log("file object", fileObj)
+
     return {
       index: xIndex,
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
-      file: await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name),
+      file: fileObj,
       fileName: copiedCue.file.name || "blank.png",
     }
   }
@@ -325,12 +337,24 @@ const EditMode = ({
   }
 
   const createUpdatedCueData = async (existingCue, updatedCue) => {
+    const fileObj = await fetchFileFromUrl(
+      updatedCue.file.url,
+      updatedCue.file.name
+    )
+
+    if (updatedCue.file.driveId) {
+      fileObj.driveId = updatedCue.file.driveId
+    }
+
+    console.log("copied cue", updatedCue)
+    console.log("file object", fileObj)
+
     return {
       ...existingCue,
       index: updatedCue.index,
       cueName: updatedCue.cueName,
       screen: updatedCue.screen,
-      file: await fetchFileFromUrl(updatedCue.file.url, updatedCue.file.name),
+      file: fileObj,
       fileName: updatedCue.fileName,
     }
   }
