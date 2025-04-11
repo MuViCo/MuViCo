@@ -13,7 +13,7 @@ import {
   MenuItem,
 } from "@chakra-ui/react"
 import {
-  QuestionOutlineIcon,
+  QuestionIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
@@ -129,10 +129,10 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
     >
       <IconButton
         aria-label="Keyboard Shortcuts"
-        icon={<QuestionOutlineIcon />}
-        size="sm"
+        icon={<QuestionIcon />}
+        size="lg"
         variant="ghost"
-        colorScheme="white"
+        colorScheme="purple"
       />
     </Tooltip>
   </Box>
