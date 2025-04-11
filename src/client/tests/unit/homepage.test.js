@@ -122,6 +122,44 @@ describe("HomePage", () => {
 
     expect(navigate).toHaveBeenCalledWith("/")
   })
+
+  test("handles error when presentationService.create fails", async () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    const mockPresentations = [
+      { id: 1, name: "Presentation 1" },
+      { id: 2, name: "Presentation 2" },
+      { id: 3, name: "Presentation 3" },
+    ]
+    presentationService.getAll.mockResolvedValue(mockPresentations)
+
+    const errorMessage = "Creation failed"
+    presentationService.create.mockRejectedValue(new Error(errorMessage))
+
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    fireEvent.click(screen.getByText("New presentation"))
+    fireEvent.change(screen.getByTestId("presentation-name"), {
+      target: { value: "Faulty Presentation" },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /create/i }))
+
+    await waitFor(() => {
+      expect(navigate).not.toHaveBeenCalled()
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error creating presentation:",
+        expect.any(Error)
+      )
+    })
+    consoleErrorSpy.mockRestore()
+  })
 })
 
 describe("PresentationForm", () => {
