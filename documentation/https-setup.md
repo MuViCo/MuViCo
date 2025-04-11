@@ -83,36 +83,42 @@ The instance is directly accessible through its public IP: [http://16.16.127.119
 
 ```mermaid
 flowchart TD
-    User(User)
-    IGW[Internet Gateway - entry point to VPC]
-    ECS[ECS Service on EC2 Instance]
+    User(["User makes HTTP request to 16.16.127.119:8000"])
+    IGW["Internet Gateway"]
+    EC2["EC2 Instance running MuViCo app"]
 
     classDef external stroke-dasharray: 5 5
+    classDef request stroke-dasharray: 5 5
 
-    User -->|"step 1: HTTP request to 16.16.127.119:8000"| IGW
-    IGW -->|"step 2: Forwarded via Internet Gateway"| ECS
-    ECS -->|"step 3: HTTP response"| IGW
-    IGW -->|"step 4: Response to user"| User
+    User:::external -->|"**Step 1.**
+    HTTP request"| IGW
+    IGW -->|"**Step 2.**
+    Request routed to EC2"| EC2
+    EC2 -->|"**Step 3.**
+    HTTP response"| IGW:::response
+    IGW -->|"**Step 4.**
+    Response routed to user"| User:::response
 
-    subgraph VPC - Virtual Private Cloud
+    subgraph "AWS Virtual Private Cloud"
         IGW
-        subgraph Public Subnet
-            ECS
+        subgraph "Public Subnet"
+            EC2
         end
     end
 
     subgraph External Services
-        ECS --> D[(MongoDB Atlas)]:::external
-        D -.-> ECS
-        ECS --> E[Firebase Auth]:::external
-        E -.-> ECS
-        ECS --> F[(Amazon S3)]:::external
-        F -.-> ECS
+        EC2 -.-> D[(MongoDB Atlas)]:::external
+        D -.-> EC2
+        EC2 -.-> E[Firebase Auth]:::external
+        E -.-> EC2
+        EC2 -.-> F[(Amazon S3)]:::external
+        F -.-> EC2
     end
 ```
 
-> [!NOTE]
-> The Internet Gateway handles all traffic entering and leaving the Virtual Private Cloud.
+> [!NOTE] 
+> **Internet Gateway**: A component of the VPC that enables communication between resources in the VPC and the internet. This includes both user traffic and outbound connections to external services like MongoDB, Firebase, and S3. For simplicity, the diagram doesn’t show this routing explicitly.
+> **Public Subnet**: A subnet whose resources (like an EC2 instance) can send and receive traffic to and from the internet.
 
 ---
 
@@ -124,7 +130,7 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 - Integrates with **AWS Certificate Manager (ACM)** for automatic SSL certificate management
 - Works with **Amazon Route 53** to route traffic from a custom domain (e.g. `https://muvico.fi`)
 
-> [!TIP]
+> [!TIP] 
 > **TLS termination** means that the ALB decrypts incoming HTTPS traffic and forwards it to ECS containers over plain HTTP.
 
 ---
@@ -167,140 +173,93 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 
 ---
 
-### 4.2. Proposed HTTPS architecture diagrams
+### 4.2. Proposed HTTPS architecture
 
 To clearly show how the new HTTPS setup will work in AWS, the following diagrams are provided:
 
-#### 4.2.1. HTTP redirection handled by ALB (optional path)
-
-_Handles the scenario where a user enters an insecure HTTP address. The ALB automatically redirects the request to HTTPS._
+#### 4.2.1. HTTP request redirection
 
 > [!TIP]
-> See this diagram to understand how HTTP redirection is handled separately from HTTPS request flow.
-> The request is stubbornly taking the scenic route by trying to use HTTP, getting promptly redirected by the ALB.
+> See this diagram to understand how HTTP requests are handled and redirected.
 
 ```mermaid
 flowchart TD
-    User(User makes HTTP request for muvico.fi)
-    IGW[Internet Gateway - entry point to VPC]
-    ALB[Application Load Balancer]
+    User(["User makes HTTP request to muvico.fi"])
+    IGW["Internet Gateway"]
+    ALB["ALB (Application Load Balancer)"]:::alb
 
     classDef alb stroke:green,stroke-width:2px
+    classDef external stroke-dasharray: 5 5
 
-    User -->|"step 1: HTTP request (port 80)"| IGW
-    IGW -->|"step 2: Routed to ALB"| ALB:::alb
-    ALB -->|"step 3: 301 redirect to HTTPS"| IGW
-    IGW -->|"step 4: Redirect response to browser"| User
-    User -->|"step 5: Retries with HTTPS request for muvico.fi"| IGW
+    User:::external -->|"**1.** HTTP request"| IGW
+    IGW -->|"**2.** Request routed to ALB"| ALB
+    ALB -->|"**3.** ''301 redirect'' response"| IGW
+    IGW -->|"**4.** Response routed to user"| User
+
+    subgraph "AWS Virtual Private Cloud"
+        IGW
+        subgraph Public Subnet
+            ALB
+        end
+    end
 
 ```
 
 > [!NOTE]
 > A 301 redirect is a permanent redirect that tells browsers to retry the request using HTTPS.
+> It is considered a best practice for upgrading users from HTTP to HTTPS.
 
 ---
 
-#### 4.2.2. Primary HTTPS request flow with Route 53, ALB, and ECS
-
-_Happens after a possible HTTP to HTTPS redirection._
-
-_Shows the complete HTTPS lifecycle, from DNS lookup to backend responses and external service communication._
+#### 4.2.2. HTTPS request flow
 
 > [!TIP]
-> See this diagram to understand how the secure HTTPS request flow works after redirection.
+> See this diagram to understand how HTTPS requests to a domain are handled.
 
 ```mermaid
 flowchart TD
-    User(User makes HTTPS request for muvico.fi)
-    DNS[Route 53 - DNS lookup for muvico.fi]
-    IGW[Internet Gateway - entry point to VPC]
-    ALB[Application Load Balancer]
-    ECS[ECS Service on EC2 Instance]
-
-    classDef alb stroke:green,stroke-width:2px
-    classDef external stroke-dasharray: 5 5
-
-    User -->|"step 1: DNS query for muvico.fi"| DNS
-    DNS -->|"step 2: Returns ALB IP"| User
-    User -->|"step 3: HTTPS request (port 443)"| IGW
-    IGW -->|"step 4: Routed to ALB"| ALB:::alb
-    ALB -->|"step 5: Decrypted request forwarded (HTTP)"| ECS
-    ECS -->|"step 6: Application response"| ALB
-    ALB -->|"step 7: Encrypted HTTPS response"| IGW
-    IGW -->|"step 8: Response to browser"| User
-
-    subgraph VPC - Virtual Private Cloud
-        IGW
-        subgraph Public Subnet
-            ALB
-            ECS
-        end
-    end
-
-    subgraph External Services
-        ECS --> D[(MongoDB Atlas)]:::external
-        D -.-> ECS
-        ECS --> E[Firebase Auth]:::external
-        E -.-> ECS
-        ECS --> F[(Amazon S3)]:::external
-        F -.-> ECS
-    end
-
-```
-
----
-
-#### 4.2.3. Full diagram
-
-To avoid overwhelming the reader, these diagrams are separated by purpose. For full accuracy and step-by-step context, the complete version is included below.
-
-> [!TIP]
-> See this diagram to understand the full picture – how the two previous diagrams tie together.
-
-```mermaid
-flowchart TD
-    User(User)
-    DNS[Route 53 - DNS lookup for muvico.fi]
-    IGW[Internet Gateway - entry point to VPC]
-    ALB[Application Load Balancer]
-    ECS[ECS Service on EC2 Instance]
+    User("User makes HTTPS request to muvico.fi")
+    DNS["Route 53"]
+    IGW["Internet Gateway
+    (IGW)"]
+    ALB["Application Load Balancer (ALB)"]
+    ECS["Elastic Cloud Compute
+    (EC2) instance running application"]
 
     classDef alb stroke:green,stroke-width:2px
     classDef external stroke-dasharray: 5 5
 
     %% DNS resolution
-    User -->|"step 1: DNS query for muvico.fi"| DNS
-    DNS -->|"step 2: Returns IP address of ALB"| User
+    User:::external -->|"**Step 1.**
+    DNS query for muvico.fi"| DNS
+    DNS -->|"**Step 2.**
+    IP address of ALB attached to muvico.fi"| User
 
     %% HTTPS and HTTP flows
-    User -->|"step 3: HTTPS request (port 443)"| IGW
-    User -->|"step 3a: HTTP request (port 80)"| IGW
+    User -->|"**Step 3.**
+    HTTPS request"| IGW
 
-    IGW -->|"step 4: Routed to ALB"| ALB
-    IGW -->|"step 3b: Routed to ALB"| ALB
+    IGW -->|"**4.** HTTPS request routed to ALB"| ALB
 
-    ALB -->|"step 3c: 301 redirect to HTTPS"| IGW
-    IGW -->|"step 3d: Redirect response to browser"| User
+    ALB -->|"**5.** Decrypted HTTP request forwarded to EC2"| ECS
+    ECS -->|"**6.** HTTP response"| ALB
+    ALB -->|"**7.** Encrypted HTTPS response forwarded to IGW"| IGW
+    IGW -->|"**8.** HTTPS response routed to user"| User
 
-    ALB -->|"step 5: Decrypted request forwarded (HTTP)"| ECS
-    ECS -->|"step 6: Application response"| ALB
-    ALB -->|"step 7: Encrypted HTTPS response"| IGW
-    IGW -->|"step 8: Response to user"| User
-
-    subgraph VPC - Virtual Private Cloud
+    subgraph "AWS Virtual Private Cloud"
         IGW
         subgraph Public Subnet
-            ALB
+            ALB:::alb
             ECS
         end
     end
 
     subgraph External Services
-        ECS --> D[(MongoDB Atlas)]:::external
+        ECS -.-> D[(MongoDB Atlas)]:::external
         D -.-> ECS
-        ECS --> E[Firebase Auth]:::external
+        ECS -.-> E[Firebase Auth]:::external
         E -.-> ECS
-        ECS --> F[(Amazon S3)]:::external
+        ECS -.-> F[(Amazon S3)]:::external
         F -.-> ECS
     end
 ```
@@ -369,7 +328,7 @@ The only potential change is tightening **CORS settings** in order to control wh
 > **What is CORS?**  
 > CORS (Cross-Origin Resource Sharing) is a browser security feature that blocks frontend apps from accessing backends on different origins (protocol + domain + port), unless explicitly allowed.
 
-> [!WARNING]
+> [!WARNING] 
 > `app.use(cors())` allows all origins — it's fine for development, but insecure in production.  
 > It allows **any website** to make requests to the app backend, including those controlled by **malicious actors**.
 
@@ -413,7 +372,7 @@ app.use(cors(corsOptions))
 
 ## 6. ...ok, but how much is this going to cost us?
 
-> [!IMPORTANT]
+> [!IMPORTANT] 
 > **To better convey the cost impact of the HTTPS setup**, this table assumes AWS Free Tier discounts continue as they are now.  
 > In reality, most core services (ECS, EC2, S3, ECR, etc.) will no longer be free after April 2025 — but that’s a broader billing change unrelated to HTTPS.
 
