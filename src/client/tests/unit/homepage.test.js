@@ -91,6 +91,22 @@ describe("HomePage", () => {
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
+
+  test("calls toggleVisibility when handleCancel is invoked", async () => {
+    const toggleVisibilityMock = jest.fn()
+    const fakeRef = { current: { toggleVisibility: toggleVisibilityMock } }
+    const useRefSpy = jest.spyOn(React, "useRef").mockReturnValue(fakeRef)
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    fireEvent.click(screen.getByText("New presentation"))
+    const cancelButton = screen.getByRole("button", { name: /cancel/i })
+    fireEvent.click(cancelButton)
+
+    expect(toggleVisibilityMock).toHaveBeenCalled()
+
+    useRefSpy.mockRestore()
+  })
 })
 
 describe("PresentationForm", () => {
