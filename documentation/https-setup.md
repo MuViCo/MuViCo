@@ -7,7 +7,7 @@
 #### Why HTTPS?
 
 - Secure user data transmission. No tea spilled.
-- User-friendly and trustworthy URL (e.g., `https://muvico.fi`)
+- User-friendly, memorable URL (e.g., `https://muvico.live`)
 
 #### Why AWS services?
 
@@ -50,20 +50,19 @@ The instance is directly accessible through its public IP: [http://16.16.127.119
 
 ### What services are used?
 
-- [Amazon ECS](https://aws.amazon.com/ecs): Manages containerized applications
+- [Amazon ECS](https://aws.amazon.com/ecs): Orchestrates containerized applications
 - [Amazon EC2](https://aws.amazon.com/ec2): Provides the virtual machine that runs the container
 - [Amazon ECR](https://aws.amazon.com/ecr): Stores the built container image
 - [AWS Secrets Manager](https://aws.amazon.com/secrets-manager): Secures environment variables like database URIs and Firebase keys
 - [Amazon S3](https://aws.amazon.com/s3): Stores presentation media
-- [Amazon VPC](https://aws.amazon.com/vpc): Provides networking and isolation for the instance
+- [Amazon VPC](https://aws.amazon.com/vpc): A virtual network that provides networking and isolation for the instance
 - [NLB (Network Load Balancer)](https://aws.amazon.com/elasticloadbalancing/network-load-balancer): Exists in the setup but is not in use (no listeners or targets configured)
 
 > [!TIP]
-> Confused about the difference between ECS and EC2?
+> Confused about the terminology?
 >
-> - Amazon ECS (Elastic Container Service) is the container orchestrator — it handles deploying, starting, stopping, and monitoring containers.
-> - Amazon EC2 (Elastic Compute Cloud) is the virtual machine (VM) that runs those containers executing the MuViCo application.
-
+> - ECS (Elastic Container Service) is the container orchestrator — it handles deploying, starting, stopping, and monitoring containers.
+> - EC2 (Elastic Compute Cloud) is the virtual machine (VM) that runs those containers executing the MuViCo application.
 ---
 
 ### How does traffic get in and out of this thing?
@@ -84,7 +83,7 @@ The instance is directly accessible through its public IP: [http://16.16.127.119
 ```mermaid
 flowchart TD
     User(["User makes HTTP request to 16.16.127.119:8000"])
-    IGW["Internet Gateway"]
+    IGW["Internet Gateway (IGW)"]
     EC2["EC2 Instance running MuViCo app"]
 
     classDef external stroke-dasharray: 5 5
@@ -99,11 +98,13 @@ flowchart TD
     IGW -->|"**Step 4.**
     Response routed to user"| User:::response
 
-    subgraph "AWS Virtual Private Cloud"
-        IGW
-        subgraph "Public Subnet"
-            EC2
-        end
+    subgraph "AWS Cloud"
+      subgraph "Virtual Private Cloud (VPC)"
+          IGW
+          subgraph "Public Subnet"
+              EC2
+          end
+      end
     end
 
     subgraph External Services
@@ -116,9 +117,9 @@ flowchart TD
     end
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > **Internet Gateway**: A component of the VPC that enables communication between resources in the VPC and the internet. This includes both user traffic and outbound connections to external services like MongoDB, Firebase, and S3. For simplicity, the diagram doesn’t show this routing explicitly.
-> 
+>
 > **Public Subnet**: A subnet whose resources (like an EC2 instance) can send and receive traffic to and from the internet.
 
 ---
@@ -129,9 +130,9 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 
 - Handles **TLS termination** and redirects all HTTP traffic to HTTPS
 - Integrates with **AWS Certificate Manager (ACM)** for automatic SSL certificate management
-- Works with **Amazon Route 53** to route traffic from a custom domain (e.g. `https://muvico.fi`)
+- Works with **Amazon Route 53** to route traffic from a custom domain (e.g. `https://muvico.live`)
 
-> [!TIP] 
+> [!TIP]
 > **TLS termination** means that the ALB decrypts incoming HTTPS traffic and forwards it to ECS containers over plain HTTP.
 
 ---
@@ -140,17 +141,17 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 
 - Incoming traffic no longer hits the EC2 public IP directly — it first passes through the ALB.
 - HTTPS traffic is handled at the ALB level; the backend only sees HTTP requests forwarded from the ALB.
-- Route 53 provides DNS routing from a custom domain (e.g. `muvico.fi`) to the ALB.
+- Route 53 provides DNS routing from a custom domain (e.g. `muvico.live`) to the ALB.
 - ACM issues and renews SSL certificates automatically — no manual management needed.
 
 ---
 
 ### What stays the same?
 
-- ECS containers and the ALB remain inside the **existing VPC**, in **public subnets**.
-- The **Internet Gateway** continues to handle all inbound and outbound traffic.
+- ECS containers and the ALB remain inside the existing Virtual Private Cloud (VPC) network, in public subnets.
+- The Internet Gateway (IGW) continues to handle all inbound and outbound traffic.
 - Outbound connections from the backend (e.g. to MongoDB Atlas, Firebase, or Amazon S3) remain unchanged.
-- Backend services still listen on port **8000 over plain HTTP** inside the VPC — only the entry point becomes HTTPS.
+- Backend services still listen on port 8000 over plain HTTP inside the VPC — only the entry point becomes HTTPS.
 
 ---
 
@@ -178,50 +179,18 @@ To enable secure HTTPS access, it's recommended to deploy an **Application Load 
 
 To clearly show how the new HTTPS setup will work in AWS, the following diagrams are provided.
 
-Note: The diagrams use `muvico.fi` as a domain name example for the sake of consistency. The domain name is yet to be decided at the time of writing.
-
-#### 4.2.1. HTTP request redirection
-
-> [!TIP]
-> See this diagram to understand how HTTP requests are handled and redirected.
-
-```mermaid
-flowchart TD
-    User(["User makes HTTP request to muvico.fi"])
-    IGW["Internet Gateway"]
-    ALB["ALB (Application Load Balancer)"]:::alb
-
-    classDef alb stroke:green,stroke-width:2px
-    classDef external stroke-dasharray: 5 5
-
-    User:::external -->|"**1.** HTTP request"| IGW
-    IGW -->|"**2.** Request routed to ALB"| ALB
-    ALB -->|"**3.** ''301 redirect'' response"| IGW
-    IGW -->|"**4.** Response routed to user"| User
-
-    subgraph "AWS Virtual Private Cloud"
-        IGW
-        subgraph Public Subnet
-            ALB
-        end
-    end
-
-```
-
-> [!NOTE]
-> A 301 redirect is a permanent redirect that tells browsers to retry the request using HTTPS.
-> It is considered a best practice for upgrading users from HTTP to HTTPS.
+Note: The diagrams use `muvico.live` as a domain name example for the sake of consistency. The domain name is yet to be decided at the time of writing.
 
 ---
 
-#### 4.2.2. HTTPS request flow
+#### 4.2.1. HTTPS request flow
 
 > [!TIP]
 > See this diagram to understand how HTTPS requests to a domain are handled.
 
 ```mermaid
 flowchart TD
-    User("User makes HTTPS request to muvico.fi")
+    User(["User makes HTTPS request to muvico.live"])
     DNS["Route 53"]
     IGW["Internet Gateway
     (IGW)"]
@@ -233,30 +202,40 @@ flowchart TD
 
     %% DNS resolution
     User:::external -->|"**Step 1.**
-    DNS query for muvico.fi"| DNS
+    DNS query for muvico.live"| DNS
     DNS -->|"**Step 2.**
-    IP address of ALB attached to muvico.fi"| User
+    IP address of ALB attached to muvico.live"| User
 
     %% HTTPS and HTTP flows
     User -->|"**Step 3.**
-    HTTPS request"| IGW
+    HTTPS request to ALB"| IGW
 
-    IGW -->|"**4.** HTTPS request routed to ALB"| ALB
+    IGW -->|"**Step 4.**
+    HTTPS request routed to ALB"| ALB
 
-    ALB -->|"**5.** Decrypted HTTP request forwarded to EC2"| ECS
-    ECS -->|"**6.** HTTP response"| ALB
-    ALB -->|"**7.** Encrypted HTTPS response forwarded to IGW"| IGW
-    IGW -->|"**8.** HTTPS response routed to user"| User
+    ALB -->|"**Step 5.**
+    Decrypted HTTP request forwarded to EC2"| ECS
 
-    subgraph "AWS Virtual Private Cloud"
-        IGW
-        subgraph Public Subnet
-            ALB:::alb
-            ECS
-        end
+    ECS -->|"**Step 6.**
+    HTTP response"| ALB
+
+    ALB -->|"**Step 7.**
+    Encrypted HTTPS response forwarded to IGW"| IGW
+
+    IGW -->|"**Step 8.**
+    HTTPS response routed to user"| User
+
+    subgraph "AWS Cloud"
+      subgraph "VPC network"
+          IGW
+          ALB:::alb
+          subgraph "Public Subnet"
+              ECS
+          end
+      end
     end
 
-    subgraph External Services
+    subgraph "External Services"
         ECS -.-> D[(MongoDB Atlas)]:::external
         D -.-> ECS
         ECS -.-> E[Firebase Auth]:::external
@@ -266,17 +245,49 @@ flowchart TD
     end
 ```
 
+#### 4.2.2. HTTP request redirection
+
+> [!TIP]
+> See this diagram to understand how HTTP requests are redirected.
+
+```mermaid
+flowchart TD
+    User(["User makes HTTP request to muvico.live"])
+    IGW["Internet Gateway"]
+    ALB["ALB (Application Load Balancer)"]:::alb
+
+    classDef alb stroke:green,stroke-width:2px
+    classDef external stroke-dasharray: 5 5
+
+    User:::external -->|"**Step 1.**
+    HTTP request to ALB"| IGW
+    IGW -->|"**Step 2.**
+    HTTP request routed to ALB"| ALB
+    ALB -->|"**Step 3.**
+    '301 redirect' response"| IGW
+    IGW -->|"**Step 4.**
+    Response routed to user"| User
+
+    subgraph "AWS Cloud"
+      subgraph "Virtual Private Cloud (VPC)"
+          IGW
+          ALB
+      end
+    end
+```
+
+> [!NOTE]
+> A 301 redirect is a permanent redirect telling the user's browser to retry the request using HTTPS.
+> It is considered a best practice for upgrading users from HTTP to HTTPS.
+
 ---
 
 ## 5. What do we need to do, step by step?
 
 ### 5.1. Purchase domain (Route 53):
 
-- Register a domain via AWS Route 53.
-- Examples:
-  - `muvico.fi`, ~$24/year
-  - `muvico.net`, ~$14/year  
-    🔗 [Registering and managing domains using Amazon Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/registrar.html)
+- Register a domain, e.g. `muvico.live`, via AWS Route 53.
+  🔗 [Registering and managing domains using Amazon Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/registrar.html)
 
 ### 5.2. Obtain TLS certificate (AWS ACM):
 
@@ -311,12 +322,12 @@ flowchart TD
 
 ### 5.5. Configure DNS in Route 53:
 
-- Create an alias record pointing the domain (e.g., `muvico.fi`) to the ALB.  
+- Create an alias record pointing the domain (e.g., `muvico.live`) to the ALB.  
   🔗 [Routing traffic to an ELB load balancer](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-to-elb-load-balancer.html)
 - Verify that the domain correctly resolves to the ALB.
 
 > [!TIP]
-> Alias records in Route 53 allow for mapping a domain (like `muvico.fi`) directly to AWS resources such as an ALB, without needing an external IP.
+> Alias records in Route 53 allow for mapping a domain (like `muvico.live`) directly to AWS resources such as an ALB, without needing an external IP.
 
 ### 5.6. Update application settings:
 
@@ -330,7 +341,7 @@ The only potential change is tightening **CORS settings** in order to control wh
 > **What is CORS?**  
 > CORS (Cross-Origin Resource Sharing) is a browser security feature that blocks frontend apps from accessing backends on different origins (protocol + domain + port), unless explicitly allowed.
 
-> [!WARNING] 
+> [!WARNING]
 > `app.use(cors())` allows all origins — it's fine for development, but insecure in production.  
 > It allows **any website** to make requests to the app backend, including those controlled by **malicious actors**.
 
@@ -340,7 +351,7 @@ The only potential change is tightening **CORS settings** in order to control wh
 const allowedOrigins = [
   "http://localhost:3000", // dev
   "http://localhost:8000", // local prod
-  "https://muvico.fi", // live prod
+  "https://muvico.live", // live prod
 ]
 
 const corsOptions = { origin: allowedOrigins }
@@ -355,7 +366,7 @@ app.use(cors(corsOptions))
 
 ### 5.8. Test and validate deployment:
 
-- Open `https://muvico.fi` and confirm a secure connection.
+- Open `https://muvico.live` and confirm a secure connection.
 - Test automatic redirection from HTTP to HTTPS.
 - Verify that the SSL certificate is valid and set to auto-renew.  
   🔗 [Check a certificate's renewal status](https://docs.aws.amazon.com/acm/latest/userguide/check-certificate-renewal-status.html)
@@ -374,7 +385,7 @@ app.use(cors(corsOptions))
 
 ## 6. ...ok, but how much is this going to cost us?
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > **To better convey the cost impact of the HTTPS setup**, this table assumes AWS Free Tier discounts continue as they are now.  
 > In reality, most core services (ECS, EC2, S3, ECR, etc.) will no longer be free after April 2025 — but that’s a broader billing change unrelated to HTTPS.
 
@@ -382,9 +393,9 @@ app.use(cors(corsOptions))
 | ------------------------------ | ---------------------------- | ---------------------------- |
 | ELB: Network Load Balancer     | $0.00 (covered by Free Tier) | None                         |
 | ELB: Application Load Balancer | None                         | $0.00 (covered by Free Tier) |
-| Route 53: Domain               | None                         | $1.17–2.00                   |
+| Route 53: Domain               | None                         | $~1.08                       |
 | ACM: SSL Certificate           | None                         | Free                         |
-| **HTTPS-specific change**      |                              | **+$1.17–2.00**              |
+| **HTTPS-specific change**      |                              | **+~$1.08**                  |
 
 > [!NOTE]
 > This view shows the **incremental cost of HTTPS only**, not the total future AWS bill.
@@ -396,7 +407,7 @@ app.use(cors(corsOptions))
 Once the Free Tier period ends (estimated April 2025), the actual monthly cost will include:
 
 - $17.81 for ALB uptime
-- Ongoing domain cost (~$1.17–2/month)
+- Ongoing domain cost $13/year, for `muvico.live` = ~$1.08/month
 - Standard pricing for EC2, ECR, S3, Secrets Manager, data transfer, etc.
 
 ---
@@ -421,4 +432,4 @@ Switching to HTTPS using AWS-native services will:
 - Pave the way for a production-ready setup with a real domain and SSL certificate
 - Add ~\$1–2/month in costs for the domain (while Free Tier lasts)
 
-The setup plays nicely with existing AWS services and needs minimal changes to application code. We keep our dev workflow intact. We just... gain HTTPS.
+The setup plays nicely with existing AWS services and needs minimal changes to application code. We keep our dev workflow intact. We just... gain HTTPS and a cool domain.
