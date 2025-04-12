@@ -23,7 +23,7 @@ const UserManualModal = ({
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Help page</ModalHeader>
+        <ModalHeader fontSize="3xl">Help page</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           {isHomepage && <HomepageManual></HomepageManual>}
