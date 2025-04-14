@@ -1,6 +1,9 @@
 import React from "react"
+
 import {
   Button,
+  Tooltip,
+  Icon,
   Box,
   IconButton,
   Heading,
@@ -10,6 +13,7 @@ import {
   MenuItem,
 } from "@chakra-ui/react"
 import {
+  QuestionIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDownIcon,
@@ -89,20 +93,48 @@ const ScreenToggleButtons = ({
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue }) => (
   <Box display="flex" gap={4} alignItems="center">
-    {/* Cue Navigation Buttons */}
     <IconButton
       aria-label="Previous Cue"
       icon={<ChevronLeftIcon />}
       onClick={() => updateCue("Previous")}
       colorScheme="purple"
     />
+
     <Heading size="md">Index {cueIndex}</Heading>
+
     <IconButton
       aria-label="Next Cue"
       icon={<ChevronRightIcon />}
       onClick={() => updateCue("Next")}
       colorScheme="purple"
     />
+
+    <Tooltip
+      label={
+        <>
+          Make sure this window is in focus!
+          <br />
+          <br />
+          You can use the following keyboard shortcuts:
+          <br />
+          <br />
+          Next index: → ArrowRight, ↑ ArrowUp, PageDown
+          <br />
+          <br />
+          Previous index: ← ArrowLeft, ↓ ArrowDown, PageUp
+        </>
+      }
+      placement="top"
+      fontSize="sm"
+    >
+      <IconButton
+        aria-label="Keyboard Shortcuts"
+        icon={<QuestionIcon />}
+        size="lg"
+        variant="ghost"
+        colorScheme="purple"
+      />
+    </Tooltip>
   </Box>
 )
 
