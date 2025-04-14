@@ -4,7 +4,7 @@ import {
   stepsToAddElementData,
   editingElementData,
   showModeFeaturesData,
-} from "./presentationPageData"
+} from "../data/presentationPageData"
 import FeatureSection from "../utils/FeatureSection"
 
 const PresentationManual = () => {
