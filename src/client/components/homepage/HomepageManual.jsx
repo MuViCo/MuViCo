@@ -1,5 +1,5 @@
 import { Text } from "@chakra-ui/react"
-import { homefeaturesData } from "./homepageData"
+import { homefeaturesData } from "../data/homepageData"
 import FeatureSection from "../utils/FeatureSection"
 
 const HomepageManual = () => {
