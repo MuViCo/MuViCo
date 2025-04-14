@@ -109,6 +109,8 @@ const EditMode = ({
       const movingCue = cues.find(
         (cue) => cue.index === xIndex && cue.screen === yIndex
       )
+      console.log(movingCue)
+
       setSelectedCue(movingCue)
 
       if (event.target.closest(".react-grid-item")) {

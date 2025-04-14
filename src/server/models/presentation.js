@@ -11,6 +11,12 @@ const presentationSchema = mongoose.Schema({
     ref: "User",
   },
 
+  driveLinked: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
+
   cues: [
     {
       index: { type: Number, required: true },

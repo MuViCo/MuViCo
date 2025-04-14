@@ -40,6 +40,7 @@ router.post("/", async (req, res) => {
     name: user.name,
     isAdmin: user.isAdmin,
     id: user._id,
+    driveToken: user.driveToken || null,
   })
 })
 

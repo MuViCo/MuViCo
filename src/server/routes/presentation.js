@@ -131,6 +131,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const screen = Number(req.body.screen)
     const loop = req.body.loop
 
+    console.log("USER", user)
+
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
