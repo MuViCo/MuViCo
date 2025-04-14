@@ -11,8 +11,19 @@ const router = express.Router()
 router.get("/", userExtractor, async (req, res) => {
   const { user } = req
   if (user) {
-    const presentations = await Presentation.find({ user: user._id })
-    res.json(presentations.map((presentation) => presentation.toJSON()))
+    if (user.driveToken) {
+      const presentations = await Presentation.find({
+        user: user._id,
+        driveLinked: true,
+      })
+      res.json(presentations.map((presentation) => presentation.toJSON()))
+    } else {
+      const presentations = await Presentation.find({
+        user: user._id,
+        driveLinked: false,
+      })
+      res.json(presentations.map((presentation) => presentation.toJSON()))
+    }
   } else {
     res.status(401).json({ error: "operation not permitted" })
   }
@@ -32,6 +43,10 @@ router.post("/", userExtractor, async (req, res) => {
   const presentation = new Presentation({
     name,
   })
+
+  if (user.driveToken) {
+    presentation.driveLinked = true
+  }
 
   presentation.user = user._id
 
