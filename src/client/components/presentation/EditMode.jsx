@@ -253,6 +253,7 @@ const EditMode = ({
   })
 
   const addCue = async (cueData) => {
+    setStatus("loading")
     const { index, cueName, screen, file, loop } = cueData
 
     //Check if cue with same index and screen already exists
@@ -275,11 +276,15 @@ const EditMode = ({
 
     try {
       await dispatch(createCue(id, formData))
-      showToast({
-        title: "Element added",
-        description: `Element ${cueName} added to screen ${screen}`,
-        status: "success",
-      })
+
+      setTimeout(() => {
+        setStatus("saved")
+        showToast({
+          title: "Element added",
+          description: `Element ${cueName} added to screen ${screen}`,
+          status: "success",
+        })
+      }, 300)
     } catch (error) {
       const errorMessage = error.message
       showToast({ title: "Error", description: errorMessage, status: "error" })
