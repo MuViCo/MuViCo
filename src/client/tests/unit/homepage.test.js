@@ -37,24 +37,17 @@ jest.mock("../../components/utils/useDeletePresentation", () => ({
 }))
 
 describe("HomePage", () => {
+  let navigate = jest.fn()
+
   beforeEach(() => {
+    navigate.mockClear()
+    navigate = jest.fn()
     useNavigate.mockClear()
+    useNavigate.mockReturnValue(navigate)
+
     presentationService.create.mockClear()
     presentationService.getAll.mockClear()
     addInitialElements.mockClear()
-  })
-
-  test('navigates to /users when "All users" button is clicked', async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
-    render(<HomePage user={{ isAdmin: true }} />)
-    fireEvent.click(screen.getByText("All users"))
-    expect(navigate).toHaveBeenCalledWith("/users")
-  })
-
-  test("creates a presentation and navigates to the new presentation", async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
 
     const mockPresentations = [
       { id: 1, name: "Presentation 1" },
@@ -62,6 +55,15 @@ describe("HomePage", () => {
       { id: 3, name: "Presentation 3" },
     ]
     presentationService.getAll.mockResolvedValue(mockPresentations)
+  })
+
+  test("navigates to /users when All users -button is clicked", async () => {
+    render(<HomePage user={{ isAdmin: true }} />)
+    fireEvent.click(screen.getByText("All users"))
+    expect(navigate).toHaveBeenCalledWith("/users")
+  })
+
+  test("creates a presentation and navigates to the new presentation", async () => {
     presentationService.create.mockResolvedValue({
       id: 3,
       name: "Presentation 3",
@@ -109,9 +111,6 @@ describe("HomePage", () => {
   })
 
   test("navigates to / on 401 Unauthorized error", async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
-
     presentationService.getAll.mockRejectedValue({
       response: { status: 401 },
     })
@@ -124,16 +123,6 @@ describe("HomePage", () => {
   })
 
   test("handles error when presentationService.create fails", async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
-
-    const mockPresentations = [
-      { id: 1, name: "Presentation 1" },
-      { id: 2, name: "Presentation 2" },
-      { id: 3, name: "Presentation 3" },
-    ]
-    presentationService.getAll.mockResolvedValue(mockPresentations)
-
     const errorMessage = "Creation failed"
     presentationService.create.mockRejectedValue(new Error(errorMessage))
 
@@ -162,16 +151,6 @@ describe("HomePage", () => {
   })
 
   test("navigates to /presentation/presentationId on presentation click", async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
-
-    const mockPresentations = [
-      { id: 1, name: "Presentation 1" },
-      { id: 2, name: "Presentation 2" },
-      { id: 3, name: "Presentation 3" },
-    ]
-    presentationService.getAll.mockResolvedValue(mockPresentations)
-
     render(<HomePage user={{ isAdmin: true }} />)
 
     const presentationElement = await waitFor(() =>
