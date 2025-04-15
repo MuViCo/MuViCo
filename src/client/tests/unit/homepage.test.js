@@ -160,6 +160,28 @@ describe("HomePage", () => {
     })
     consoleErrorSpy.mockRestore()
   })
+
+  test("navigates to /presentation/presentationId on presentation click", async () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    const mockPresentations = [
+      { id: 1, name: "Presentation 1" },
+      { id: 2, name: "Presentation 2" },
+      { id: 3, name: "Presentation 3" },
+    ]
+    presentationService.getAll.mockResolvedValue(mockPresentations)
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    const presentationElement = await waitFor(() =>
+      screen.getByText("Presentation 3")
+    )
+
+    fireEvent.click(presentationElement)
+
+    expect(navigate).toHaveBeenCalledWith("/presentation/3")
+  })
 })
 
 describe("PresentationForm", () => {
