@@ -2,7 +2,7 @@
 
 ## Instructions for using the application
 
-Website URL: http://16.16.127.119:8000/
+Website URL: https://muvico.live/
 
 ## Login page
 

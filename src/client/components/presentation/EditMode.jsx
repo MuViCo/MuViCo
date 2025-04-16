@@ -575,6 +575,7 @@ const EditMode = ({
           height="680px"
           width="100%"
           marginTop={`${gap * 2}px`}
+          overflow="auto"
         >
           <Box
             display="grid"
@@ -644,7 +645,6 @@ const EditMode = ({
           </Box>
           <Box
             position="relative"
-            overflow="auto"
             pointerEvents={isShowMode ? "none" : "auto"}
           >
             <Box

@@ -109,6 +109,8 @@ export const updatePresentation =
         formData
       )
       dispatch(editCue(updatedCue))
+
+      return { payload: updatedCue }
     } catch (error) {
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
