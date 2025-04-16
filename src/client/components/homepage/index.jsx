@@ -50,7 +50,7 @@ const HomePage = ({ user }) => {
       await addInitialElements(presentationId, showToast)
       navigate(`/presentation/${presentationId}`)
     } catch (error) {
-      console.error("Error creating presentation:", error)
+      console.error("Error creating presentation: ", error)
     }
   }
 
@@ -69,7 +69,7 @@ const HomePage = ({ user }) => {
         presentations.filter((p) => p.id !== presentationToDelete)
       )
     } catch (e) {
-      console.log("Error deleting presentation: ", e)
+      console.error("Error deleting presentation: ", e)
     }
   }
 
