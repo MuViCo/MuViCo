@@ -13,8 +13,9 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  IconButton,
 } from "@chakra-ui/react"
-import { InfoOutlineIcon } from "@chakra-ui/icons"
+import { QuestionIcon } from "@chakra-ui/icons"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
 import axios from "axios"
@@ -144,15 +145,20 @@ const HomePage = ({ user, setUser }) => {
         />
 
         {/* Right side: Drive/AWS button and Info button */}
-        <Box display="flex" alignItems="center" gap={3}>
+        <Box display="flex" alignItems="center" gap={1}>
           {user.driveToken ? (
             <Button onClick={handleDriveOff}>Link AWS</Button>
           ) : (
             <LinkGoogleDriveButton onDriveLinked={handleDriveLinked} />
           )}
-          <Button variant="ghost" size="sm" onClick={onOpen}>
-            <InfoOutlineIcon />
-          </Button>
+          <IconButton
+            icon={<QuestionIcon />}
+            variant="ghost"
+            size="lg"
+            ml={1}
+            onClick={onOpen}
+            colorScheme="purple"
+          />
         </Box>
       </Box>
 

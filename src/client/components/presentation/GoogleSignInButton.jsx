@@ -13,11 +13,10 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  ListItem,
-  UnorderedList,
+  IconButton,
   useDisclosure,
 } from "@chakra-ui/react"
-import { InfoOutlineIcon } from "@chakra-ui/icons"
+import { QuestionIcon } from "@chakra-ui/icons"
 import axios from "axios"
 
 import { auth } from "../utils/firebase"
@@ -106,9 +105,15 @@ const GoogleSignInButton = ({ onLogin }) => {
         </Button>
 
         {/* Single Info Button that opens a modal */}
-        <Button variant="ghost" size="sm" ml={2} onClick={onOpen}>
-          <InfoOutlineIcon />
-        </Button>
+
+        <IconButton
+          icon={<QuestionIcon />}
+          variant="ghost"
+          size="lg"
+          ml={1}
+          onClick={onOpen}
+          colorScheme="purple"
+        />
       </Box>
 
       {/* Modal using same style as HomePage modal */}
