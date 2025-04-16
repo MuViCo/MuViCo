@@ -8,7 +8,12 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
       const metadata = await getDriveFileMetadata(cue.file.driveId, accessToken)
       cue.file.type = metadata.mimeType
       cue.file.size = metadata.size
-      cue.file.url = `http://localhost:3000/api/media/${cue.file.driveId}?access_token=${accessToken}`
+      const baseUrl =
+        process.env.NODE_ENV === "production"
+          ? "https://muvico.live/"
+          : "http://localhost:3000"
+
+      cue.file.url = `${baseUrl}/api/media/${cue.file.driveId}?access_token=${accessToken}`
     } catch (error) {
       console.error("Error fetching file metadata:", error)
     }
