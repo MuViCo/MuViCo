@@ -40,6 +40,7 @@ describe("HomePage", () => {
     presentationService.create.mockClear()
     presentationService.getAll.mockClear()
     addInitialElements.mockClear()
+    useDeletePresentation.mockClear()
 
     const mockPresentations = [
       { id: 1, name: "Presentation 1" },
@@ -143,7 +144,7 @@ describe("HomePage", () => {
       expect(navigate).not.toHaveBeenCalled()
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error creating presentation:",
+        "Error creating presentation: ",
         expect.any(Error)
       )
     })
@@ -194,6 +195,42 @@ describe("HomePage", () => {
     await waitFor(() => {
       expect(screen.queryByText("Presentation 2")).not.toBeInTheDocument()
     })
+  })
+
+  test("handleDialogConfirm catches error on failed deletion", async () => {
+    const errorMessage = "Deletion failed"
+    const handleConfirmDeleteMock = jest.fn()
+    handleConfirmDeleteMock.mockRejectedValue(new Error(errorMessage))
+
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: true,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: handleConfirmDeleteMock,
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: 2,
+    }))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/are you sure you want to delete/i)
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText("Yes"))
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error deleting presentation: ",
+        expect.any(Error)
+      )
+    })
+    consoleErrorSpy.mockRestore()
   })
 })
 
