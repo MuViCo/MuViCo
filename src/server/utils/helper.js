@@ -10,7 +10,7 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
       cue.file.size = metadata.size
       const baseUrl =
         process.env.NODE_ENV === "production"
-          ? "https://muvico.live/"
+          ? "https://muvico.live"
           : "http://localhost:3000"
 
       cue.file.url = `${baseUrl}/api/media/${cue.file.driveId}?access_token=${accessToken}`

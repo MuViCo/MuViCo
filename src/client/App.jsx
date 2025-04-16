@@ -56,7 +56,11 @@ const App = () => {
               path="/presentation/:id"
               element={
                 user ? (
-                  <PresentationPage userId={user.id} setUser={setUser} />
+                  <PresentationPage
+                    user={user}
+                    userId={user.id}
+                    setUser={setUser}
+                  />
                 ) : (
                   <Navigate to="/" />
                 )
