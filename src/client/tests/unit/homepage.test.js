@@ -10,6 +10,7 @@ import PresentationFormWrapper from "../../components/homepage/PresentationFormW
 import PresentationForm from "../../components/homepage/PresentationForm"
 import presentationService from "../../services/presentations"
 import addInitialElements from "../../components/utils/addInitialElements"
+import useDeletePresentation from "../../components/utils/useDeletePresentation"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
@@ -25,16 +26,7 @@ jest.mock("../../services/presentations", () => ({
 
 jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 
-jest.mock("../../components/utils/useDeletePresentation", () => ({
-  __esModule: true,
-  default: () => ({
-    isDialogOpen: false,
-    handleDeletePresentation: jest.fn(),
-    handleConfirmDelete: jest.fn(),
-    handleCancelDelete: jest.fn(),
-    presentationToDelete: null,
-  }),
-}))
+jest.mock("../../components/utils/useDeletePresentation")
 
 describe("HomePage", () => {
   let navigate = jest.fn()
@@ -55,6 +47,14 @@ describe("HomePage", () => {
       { id: 3, name: "Presentation 3" },
     ]
     presentationService.getAll.mockResolvedValue(mockPresentations)
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: false,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: jest.fn(),
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: null,
+    }))
   })
 
   test("navigates to /users when All users -button is clicked", async () => {
@@ -160,6 +160,40 @@ describe("HomePage", () => {
     fireEvent.click(presentationElement)
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
+  })
+
+  test("calls handleConfirmDelete and filters presentations on presentation deletion", async () => {
+    const handleConfirmDeleteMock = jest.fn()
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: true,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: handleConfirmDeleteMock,
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: 2,
+    }))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => {
+      expect(screen.getByText("Presentation 2")).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/are you sure you want to delete/i)
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText("Yes"))
+
+    await waitFor(() => {
+      expect(handleConfirmDeleteMock).toHaveBeenCalled()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText("Presentation 2")).not.toBeInTheDocument()
+    })
   })
 })
 
