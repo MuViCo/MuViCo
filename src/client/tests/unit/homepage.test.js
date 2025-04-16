@@ -123,6 +123,16 @@ describe("HomePage", () => {
     expect(navigate).toHaveBeenCalledWith("/")
   })
 
+  test("does not navigate to / on non-401 error", async () => {
+    presentationService.getAll.mockRejectedValue(new Error("Random error"))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
+
+    expect(navigate).not.toHaveBeenCalledWith("/")
+  })
+
   test("handles error when presentationService.create fails", async () => {
     const errorMessage = "Creation failed"
     presentationService.create.mockRejectedValue(new Error(errorMessage))
