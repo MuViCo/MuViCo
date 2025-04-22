@@ -129,4 +129,7 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 
 - **Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)**
     - You can display a specific screen by clicking the **"Open screen"** button
+      - Next to the **"Open screen"** button is an arrow that opens a dropdown menu.
+          - There you can choose to mirror another screen's elements.
+          - This is done to ensure that if during a presentation a monitor were to crash it is possible to show these elements on another screen. 
     - Note that the audio row cannot be opened. Audio in the presentation will start playing on its index on the speaker that has been selected as the output device in the computer that the presentation is controlled on.
