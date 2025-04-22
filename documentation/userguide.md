@@ -8,7 +8,7 @@ Website URL: https://muvico.live/
 
 When you open MuViCo, the first thing you will see is the login page:
 
-![Login page](./images/loginpage.png "Login page")
+![Login page](./images/frontpage.png "Login page")
 
 ### Features on this page:
 
@@ -31,13 +31,13 @@ After signing in, you will see the **home page** where you manage your presentat
 
 After creating a new presentation it will show up on the home page:
 
-![Home page](./images/presentationspage.png "Home page")
+![Home page](./images/homepage_with_presentation.png "Home page")
 
 ## Presentation editor
 
 When you click on the presentation you want to edit you will be directed to the editing page of the presentation:
 
-![Edit page](./images/editpage.png "Edit page")
+![Edit page](./images/editmode.png "Edit page")
 
 ### Features on this page:
 
@@ -71,7 +71,7 @@ You can add an element in three ways:
 - **Double-click** anywhere on the screen to open the panel. This will automatically set the screen and index based on where you clicked.
 - **Drag and drop** a file directly to the screen.
 
-![Add element](./images/addelement.png "Add element")
+![Add element](./images/add_element.png "Add element")
 
 ### Steps to add an element
 
