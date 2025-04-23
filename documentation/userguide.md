@@ -133,3 +133,7 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
           - There you can choose to mirror another screen's elements.
           - This is done to ensure that if during a presentation a monitor were to crash it is possible to show these elements on another screen. 
     - Note that the audio row cannot be opened. Audio in the presentation will start playing on its index on the speaker that has been selected as the output device in the computer that the presentation is controlled on.
+ 
+- **Question mark info button**
+    - Hovering your mouse on the question mark shows instructions on using keybinds in Show Mode.
+    - Detailed instructions on keybinds [here](./Keybindings%20instructions.md "Instructions on keybinds")
