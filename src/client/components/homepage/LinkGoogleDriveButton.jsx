@@ -1,10 +1,9 @@
 import React from "react"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { Button, Box, Text } from "@chakra-ui/react"
-import axios from "axios"
 import { auth } from "../utils/firebase"
-import getToken from "../../auth"
 import { useCustomToast } from "../utils/toastUtils"
+import userService from "../../services/users"
 
 const LinkGoogleDriveButton = ({ onDriveLinked }) => {
   const showToast = useCustomToast()
@@ -22,18 +21,9 @@ const LinkGoogleDriveButton = ({ onDriveLinked }) => {
 
       window.localStorage.setItem("driveAccessToken", driveAccessToken)
 
-      const userToken = getToken()
-      const response = await axios.post(
-        "/api/users/link-drive",
-        { driveAccessToken },
-        {
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-          },
-        }
-      )
+      const response = await userService.linkDrive({ driveAccessToken })
 
-      const updatedUser = response.data
+      const updatedUser = response
 
       const currentUser = JSON.parse(window.localStorage.getItem("user"))
       const mergedUser = { ...currentUser, driveToken: driveAccessToken }
