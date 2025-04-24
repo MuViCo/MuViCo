@@ -14,7 +14,13 @@ const get = async (id) => {
 }
 
 const remove = async (id) => {
-  const response = await axios.delete(`${baseUrl}${id}`)
+  const config = {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.delete(`${baseUrl}${id}`, config)
   return response.data
 }
 
@@ -40,7 +46,13 @@ const addCue = async (id, formData) => {
 }
 
 const removeCue = async (id, cueId) => {
-  const response = await axios.delete(`${baseUrl}${id}/${cueId}`)
+  const config = {
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.delete(`${baseUrl}${id}/${cueId}`, config)
   return response.data
 }
 
