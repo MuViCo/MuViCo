@@ -72,7 +72,12 @@ describe("presentation services api tests", () => {
 
     const result = await remove(id)
     expect(result).toEqual(response)
-    expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}`)
+    expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}`, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: token,
+      },
+    })
   })
 
   test("addCue in presentation api call behaves as expected", async () => {
@@ -105,7 +110,12 @@ describe("presentation services api tests", () => {
     axios.delete.mockResolvedValue({ data: response })
     const result = await removeCue(id, cueId)
     expect(result).toEqual(response)
-    expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}/${cueId}`)
+    expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}/${cueId}`, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: token,
+      },
+    })
   })
 
   test("updateCue in presentation api call behaves as expected", async () => {
