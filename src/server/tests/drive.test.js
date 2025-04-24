@@ -189,7 +189,7 @@ describe("Drive API Utilities", () => {
 
       expect(result).toEqual({
         success: true,
-        message: "File deleted successfully",
+        message: "File test-file-id deleted successfully.",
       })
     })
     it("should throw error when delete fails", async () => {
