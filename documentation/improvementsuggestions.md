@@ -71,7 +71,7 @@
 
 ### **Introduce effect features**
 
-- Currently there is the default crossfade effect when changing index from image to image. Consider adding more effects that could be both audio and visual, such as sound- and transition effects to enrich the user experience.
+- Currently there is a default crossfade effect when changing index from image to image. Consider adding more effects that could be both audio and visual, such as sound- and transition effects to enrich the user experience.
 
 ### **Random element**
 
