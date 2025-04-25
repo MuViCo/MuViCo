@@ -110,16 +110,18 @@ const NavBar = ({ user, setUser }) => {
                     Logout
                   </Button>
                 </Box>
-                <Box ml={4} display={{ base: "inline-block" }}>
-                  <IconButton
-                    variant="ghost"
-                    size="lg"
-                    colorScheme="purple"
-                    icon={<QuestionIcon />}
-                    title="Help"
-                    onClick={() => setIsManualOpen(true)}
-                  ></IconButton>
-                </Box>
+                {(isHomepage || isPresentationPage) && (
+                  <Box ml={4} display={{ base: "inline-block" }}>
+                    <IconButton
+                      variant="ghost"
+                      size="lg"
+                      colorScheme="purple"
+                      icon={<QuestionIcon />}
+                      title="Help"
+                      onClick={() => setIsManualOpen(true)}
+                    ></IconButton>
+                  </Box>
+                )}
               </>
             )}
             {!user && (

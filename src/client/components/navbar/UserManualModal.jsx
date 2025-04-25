@@ -30,9 +30,6 @@ const UserManualModal = ({
           {isPresentationPage && <PresentationManual></PresentationManual>}
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="purple" mr={1}>
-            Start tutorial
-          </Button>
           <Button colorScheme="purple" onClick={onClose}>
             Close
           </Button>

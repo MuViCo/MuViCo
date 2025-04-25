@@ -108,7 +108,7 @@ export const showModeFeaturesData = [
     title:
       "Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)",
     items: [
-      "You can display a specific screen by clicking the Open screen button",
+      "You can display a specific screen by clicking the Open screen button.",
     ],
   },
 ]
