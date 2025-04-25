@@ -18,7 +18,6 @@ import {
 import { QuestionIcon } from "@chakra-ui/icons"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
-import axios from "axios"
 
 import presentationService from "../../services/presentations"
 import userService from "../../services/users"
