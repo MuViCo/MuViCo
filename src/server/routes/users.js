@@ -13,7 +13,9 @@ router.post("/link-drive", userExtractor, async (req, res) => {
     res.status(200).json({
       message: "Google Drive linked successfully",
       username: user.username,
+      isAdmin: user.isAdmin,
       driveToken: user.driveToken,
+      id: user.id,
     })
   } catch (error) {
     console.error("Error linking Drive:", error)
@@ -31,7 +33,9 @@ router.post("/unlink-drive", userExtractor, async (req, res) => {
     res.status(200).json({
       message: "Google Drive unlinked successfully",
       username: user.username,
+      isAdmin: user.isAdmin,
       driveToken: user.driveToken,
+      id: user.id,
     })
   } catch (error) {
     console.error("Error unlinking Drive:", error)
