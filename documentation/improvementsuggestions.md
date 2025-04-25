@@ -54,10 +54,13 @@
 ### Tutorial Integration
 
 - Consider using libraries such as Reactour or React Joyride for nice in-depth UI tutorial.
+
   - **Compatibility Issue:**  
     MuViCo currently uses React 19.0.0, while these libraries require older versions of React.
   - **Recommendation:**  
     Wait for these libraries to update their React dependency before integrating them.
+
+- More information and documentation [here](https://github.com/orgs/MuViCo/projects/9/views/7?pane=issue&itemId=107909158&issue=MuViCo%7CMuViCo%7C395)
 
 ## Suggestions from earlier teams
 
