@@ -49,11 +49,111 @@ For more information check out the [documentation folder](https://github.com/MuV
 
 ## Development
 
-1. Install npm, docker and docker compose
-2. Clone repository to local machine `git clone git@github.com:MuViCo/MuViCo.git`
-3. Change directory to project root `cd MuViCo`
-4. Copy .env-template as .env and fill the required values
-5. Install depedencies `npm i`
-6. Run `npm start`
+### Getting Started with Development
 
-Note: You can also start developing by just running `npm run dev` after all dependencies are installed and .env is configured
+Follow these steps to set up the project on your local machine:
+
+1. **Install Required Tools**  
+   Ensure you have the following installed on your system:
+
+   - [Node.js and npm](https://nodejs.org/)
+   - [Docker](https://www.docker.com/)
+   - [Docker Compose](https://docs.docker.com/compose/)
+
+2. **Clone the Repository**  
+   Clone the project repository to your local machine:
+
+   ```bash
+   git clone git@github.com:MuViCo/MuViCo.git
+   ```
+
+3. **Navigate to the Project Directory**  
+   Change to the project root directory:
+
+   ```bash
+   cd MuViCo
+   ```
+
+4. **Set Up Environment Variables**  
+   Copy the `.env-template` file to `.env` and fill in the required values:
+
+   ```bash
+   cp .env-template .env
+   ```
+
+5. **Install Dependencies**  
+   Install the required npm dependencies:
+
+   ```bash
+   npm install
+   ```
+
+6. **Run the Application in Development Mode**  
+    Start the application in development mode with hot-reloading:
+   ```bash
+   npm run dev
+   ```
+   This will start the backend server and the frontend development server with live updates.
+
+### Developing the Application in Docker
+
+If you prefer to develop inside a Docker container (to match the production environment), follow these steps:
+
+1. **Reset the Docker Environment**  
+   Clean up any existing Docker containers and volumes:
+
+   ```bash
+   npm run reset
+   ```
+
+2. **Install Dependencies**  
+   Install dependencies inside the container:
+
+   ```bash
+   npm ci
+   ```
+
+3. **Cleaning Up Docker Environment**
+
+   To free up space and avoid conflicts with old Docker artifacts, you can remove all unused Docker data, including stopped containers, unused images, and networks, by running:
+
+   ```bash
+   docker system prune -a
+   ```
+
+4. **Start the Application**  
+   Start the application in development mode using Docker:
+
+   ```bash
+   npm start
+   ```
+
+   This will spin up the necessary containers for the backend, frontend, and database.
+
+### Running the Application in Production Mode
+
+To simulate the production environment locally, follow these steps:
+
+1. **Reset the Production Docker Environment**  
+   Clean up any existing production containers and volumes:
+
+   ```bash
+   npm run reset-prod
+   ```
+
+2. **Start the Application in Production Mode**  
+   Start the application using the production Docker configuration:
+
+   ```bash
+   npm run start-prod
+   ```
+
+   This will build and run the application in a production-like environment.
+
+### Note on Branch Switching
+
+When switching to a new branch, it is recommended to run the following command to ensure that the dependencies are consistent with the branch you are switching to:
+
+```bash
+npm ci
+```
