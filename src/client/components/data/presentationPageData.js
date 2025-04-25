@@ -85,7 +85,7 @@ export const editingElementData = [
   {
     title: "You can modify an element in three ways:",
     items: [
-      "Click the Add Element button and select the screen (1-4) or audio(5) and index (0-100) of the element you want to change.",
+      "Click the Add Element button and select the screen (1-4) or audio (5) and index (0-100) of the element you want to change.",
       "Drag and drop a new file on top of the existing element to replace it.",
       "Double-click on the element to open it for editing.",
     ],
@@ -100,7 +100,7 @@ export const showModeFeaturesData = [
   {
     title: "Index navigation (middle section)",
     items: [
-      "Index display (e.g., Index 0 ): Shows the current index being played.",
+      "Index display (e.g., Index 0): Shows the current index being played.",
       "Left and right arrows: Navigate between indexes to control the presentation flow.",
     ],
   },

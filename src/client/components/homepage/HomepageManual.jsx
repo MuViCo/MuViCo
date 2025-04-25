@@ -24,7 +24,7 @@ const HomepageManual = () => {
         All created presentations will show here
       </Text>
       <Text mb={3}>
-        When you click on the presentation you want to edit you will be directed
+        When you click on the presentation you want to edit, you will be directed
         to the editing page of the presentation.
       </Text>
     </>
