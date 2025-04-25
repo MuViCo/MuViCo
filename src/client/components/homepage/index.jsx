@@ -31,7 +31,6 @@ import { useCustomToast } from "../utils/toastUtils"
 
 const HomePage = ({ user, setUser }) => {
   const [presentations, setPresentations] = useState([])
-  const [driveLinked, setDriveLinked] = useState(false)
   const navigate = useNavigate()
   const togglableRef = useRef(null)
   const showToast = useCustomToast()
@@ -50,10 +49,6 @@ const HomePage = ({ user, setUser }) => {
     }
     getPresentationData()
   }, [navigate])
-
-  useEffect(() => {
-    setDriveLinked(!!user.driveToken)
-  }, [user.driveToken])
 
   const createPresentation = async (presentationObject) => {
     try {
@@ -80,7 +75,6 @@ const HomePage = ({ user, setUser }) => {
 
   const handleDriveLinked = async (updatedUser) => {
     setUser(updatedUser)
-    setDriveLinked(true)
 
     const updatedPresentations = await presentationService.getAll()
     setPresentations(updatedPresentations)
@@ -97,7 +91,6 @@ const HomePage = ({ user, setUser }) => {
       await userService.unlinkDrive()
 
       setUser(updatedUser)
-      setDriveLinked(false)
 
       const updatedPresentations = await presentationService.getAll()
       setPresentations(updatedPresentations)
