@@ -1,6 +1,6 @@
 # Keyboard Navigation Guide
 
-MuViCo presentations support convenient keyboard navigation, allowing you to seamlessly move between cues during presentations.
+MuViCo presentations support convenient keyboard navigation, allowing you to seamlessly move between indexes during presentations.
 
 ## Keyboard Controls
 
