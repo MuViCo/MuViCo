@@ -10,6 +10,7 @@ import PresentationFormWrapper from "../../components/homepage/PresentationFormW
 import PresentationForm from "../../components/homepage/PresentationForm"
 import presentationService from "../../services/presentations"
 import addInitialElements from "../../components/utils/addInitialElements"
+import useDeletePresentation from "../../components/utils/useDeletePresentation"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
@@ -25,25 +26,21 @@ jest.mock("../../services/presentations", () => ({
 
 jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 
+jest.mock("../../components/utils/useDeletePresentation")
+
 describe("HomePage", () => {
+  let navigate = jest.fn()
+
   beforeEach(() => {
+    navigate.mockClear()
+    navigate = jest.fn()
     useNavigate.mockClear()
+    useNavigate.mockReturnValue(navigate)
+
     presentationService.create.mockClear()
     presentationService.getAll.mockClear()
     addInitialElements.mockClear()
-  })
-
-  test('navigates to /users when "All users" button is clicked', async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
-    render(<HomePage user={{ isAdmin: true }} />)
-    fireEvent.click(screen.getByText("All users"))
-    expect(navigate).toHaveBeenCalledWith("/users")
-  })
-
-  test("creates a presentation and navigates to the new presentation", async () => {
-    const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
+    useDeletePresentation.mockClear()
 
     const mockPresentations = [
       { id: 1, name: "Presentation 1" },
@@ -51,6 +48,23 @@ describe("HomePage", () => {
       { id: 3, name: "Presentation 3" },
     ]
     presentationService.getAll.mockResolvedValue(mockPresentations)
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: false,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: jest.fn(),
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: null,
+    }))
+  })
+
+  test("navigates to /users when All users -button is clicked", async () => {
+    render(<HomePage user={{ isAdmin: true }} />)
+    fireEvent.click(screen.getByText("All users"))
+    expect(navigate).toHaveBeenCalledWith("/users")
+  })
+
+  test("creates a presentation and navigates to the new presentation", async () => {
     presentationService.create.mockResolvedValue({
       id: 3,
       name: "Presentation 3",
@@ -79,6 +93,154 @@ describe("HomePage", () => {
     expect(addInitialElements).toHaveBeenCalledWith(3, expect.any(Function))
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
+  })
+
+  test("calls toggleVisibility when handleCancel is invoked", async () => {
+    const toggleVisibilityMock = jest.fn()
+    const fakeRef = { current: { toggleVisibility: toggleVisibilityMock } }
+    const useRefSpy = jest.spyOn(React, "useRef").mockReturnValue(fakeRef)
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    fireEvent.click(screen.getByText("New presentation"))
+    const cancelButton = screen.getByRole("button", { name: /cancel/i })
+    fireEvent.click(cancelButton)
+
+    expect(toggleVisibilityMock).toHaveBeenCalled()
+
+    useRefSpy.mockRestore()
+  })
+
+  test("navigates to / on 401 Unauthorized error", async () => {
+    presentationService.getAll.mockRejectedValue({
+      response: { status: 401 },
+    })
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
+
+    expect(navigate).toHaveBeenCalledWith("/")
+  })
+
+  test("does not navigate to / on non-401 error", async () => {
+    presentationService.getAll.mockRejectedValue(new Error("Random error"))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
+
+    expect(navigate).not.toHaveBeenCalledWith("/")
+  })
+
+  test("handles error when presentationService.create fails", async () => {
+    const errorMessage = "Creation failed"
+    presentationService.create.mockRejectedValue(new Error(errorMessage))
+
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    fireEvent.click(screen.getByText("New presentation"))
+    fireEvent.change(screen.getByTestId("presentation-name"), {
+      target: { value: "Faulty Presentation" },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /create/i }))
+
+    await waitFor(() => {
+      expect(navigate).not.toHaveBeenCalled()
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error creating presentation: ",
+        expect.any(Error)
+      )
+    })
+    consoleErrorSpy.mockRestore()
+  })
+
+  test("navigates to /presentation/presentationId on presentation click", async () => {
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    const presentationElement = await waitFor(() =>
+      screen.getByText("Presentation 3")
+    )
+
+    fireEvent.click(presentationElement)
+
+    expect(navigate).toHaveBeenCalledWith("/presentation/3")
+  })
+
+  test("calls handleConfirmDelete and filters presentations on presentation deletion", async () => {
+    const handleConfirmDeleteMock = jest.fn()
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: true,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: handleConfirmDeleteMock,
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: 2,
+    }))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => {
+      expect(screen.getByText("Presentation 2")).toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/are you sure you want to delete/i)
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText("Yes"))
+
+    await waitFor(() => {
+      expect(handleConfirmDeleteMock).toHaveBeenCalled()
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText("Presentation 2")).not.toBeInTheDocument()
+    })
+  })
+
+  test("handleDialogConfirm catches error on failed deletion", async () => {
+    const errorMessage = "Deletion failed"
+    const handleConfirmDeleteMock = jest.fn()
+    handleConfirmDeleteMock.mockRejectedValue(new Error(errorMessage))
+
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {})
+
+    useDeletePresentation.mockImplementation(() => ({
+      isDialogOpen: true,
+      handleDeletePresentation: jest.fn(),
+      handleConfirmDelete: handleConfirmDeleteMock,
+      handleCancelDelete: jest.fn(),
+      presentationToDelete: 2,
+    }))
+
+    render(<HomePage user={{ isAdmin: true }} />)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/are you sure you want to delete/i)
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText("Yes"))
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error deleting presentation: ",
+        expect.any(Error)
+      )
+    })
+    consoleErrorSpy.mockRestore()
   })
 })
 
