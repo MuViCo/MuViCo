@@ -1,30 +1,30 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
-import {
-  fetchPresentationInfo,
-  deletePresentation,
-} from "../../redux/presentationReducer"
+import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
-import { useCustomToast } from "../utils/toastUtils"
 
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import Dialog from "../utils/AlertDialog"
+import useDeletePresentation from "../utils/useDeletePresentation"
 
 const PresentationPage = ({ user }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const showToast = useCustomToast()
   const [cueIndex, setCueIndex] = useState(0)
+  const {
+    isDialogOpen,
+    handleDeletePresentation,
+    handleConfirmDelete,
+    handleCancelDelete,
+  } = useDeletePresentation()
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [presentationToDelete, setPresentationToDelete] = useState(null)
   const [isAudioMuted, setIsAudioMuted] = useState(false)
 
   // Fetch presentation info from Redux state
@@ -54,32 +54,6 @@ const PresentationPage = ({ user }) => {
       }
     }
   }, [presentationInfo, presentationSize])
-
-  const handleDeletePresentation = (presentationId) => {
-    setPresentationToDelete(presentationId)
-    setIsDialogOpen(true)
-  }
-
-  const handleConfirmDelete = async () => {
-    if (presentationToDelete) {
-      try {
-        await dispatch(deletePresentation(presentationToDelete))
-        showToast({
-          title: "Presentation deleted",
-          description: "The presentation has been deleted successfully.",
-          status: "success",
-        })
-        navigate("/home")
-      } catch (error) {
-        showToast({
-          title: "Error",
-          description: error.message || "An error occurred",
-          status: "error",
-        })
-      }
-    }
-    setIsDialogOpen(false)
-  }
 
   return (
     <>
@@ -145,7 +119,7 @@ const PresentationPage = ({ user }) => {
           </Box>
           <Dialog
             isOpen={isDialogOpen}
-            onClose={() => setIsDialogOpen(false)}
+            onClose={handleCancelDelete}
             onConfirm={handleConfirmDelete}
             message="Are you sure you want to delete this presentation?"
           />

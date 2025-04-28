@@ -1,8 +1,19 @@
-import { SimpleGrid, Card, CardHeader, Heading } from "@chakra-ui/react"
+import {
+  SimpleGrid,
+  Card,
+  CardHeader,
+  Heading,
+  IconButton,
+} from "@chakra-ui/react"
+import { DeleteIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
 
-const PresentationsGrid = ({ presentations, handlePresentationClick }) => (
+const PresentationsGrid = ({
+  presentations,
+  handlePresentationClick,
+  handleDeletePresentation,
+}) => (
   <>
     <Heading style={{ textAlign: "center", padding: "30px" }}>
       Presentations
@@ -33,7 +44,23 @@ const PresentationsGrid = ({ presentations, handlePresentationClick }) => (
                 {presentation.name}
               </Heading>
             </CardHeader>
-            {/* <CardBody>{assertImage(index)}</CardBody> */}
+            <IconButton
+              icon={<DeleteIcon />}
+              size="md"
+              position="absolute"
+              _hover={{ bg: "red.500", color: "white" }}
+              backgroundColor="red.300"
+              draggable={false}
+              zIndex="10"
+              top="4px"
+              right="4px"
+              aria-label={"Delete presentation"}
+              title="Delete presentation"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeletePresentation(presentation.id)
+              }}
+            />
           </Card>
         </motion.div>
       ))}

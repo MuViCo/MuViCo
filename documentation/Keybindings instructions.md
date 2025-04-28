@@ -1,19 +1,19 @@
-Keyboard Navigation Guide
+# Keyboard Navigation Guide
 
-MuViCo presentations support convenient keyboard navigation, allowing you to seamlessly move between cues during presentations.
+MuViCo presentations support convenient keyboard navigation, allowing you to seamlessly move between indexes during presentations.
 
-Keyboard Controls
+## Keyboard Controls
 
-Ensure the MuViCo presentation window is active (focused) when using these keyboard shortcuts:
+Ensure the MuViCo presentation window is **active** (focused) when using these keyboard shortcuts:
 
-Action
+### Action
 
-Keyboard Shortcut
+ - Keyboard Shortcut
 
-Next Cue
+### Next Cue
 
-→ (Arrow Right), PageDown, ↑ (Arrow Up)
+- → (Arrow Right), PageDown, ↑ (Arrow Up)
 
-Previous Cue
+### Previous Cue
 
-← (Arrow Left), PageUp, ↓ (Arrow Down)
+- ← (Arrow Left), PageUp, ↓ (Arrow Down)

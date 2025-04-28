@@ -17,12 +17,21 @@ import PresentationFormWrapper from "./PresentationFormWrapper"
 import LinkGoogleDriveButton from "./LinkGoogleDriveButton"
 import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
+import useDeletePresentation from "../utils/useDeletePresentation"
+import Dialog from "../utils/AlertDialog"
 
 const HomePage = ({ user, setUser }) => {
   const [presentations, setPresentations] = useState([])
   const navigate = useNavigate()
   const togglableRef = useRef(null)
   const showToast = useCustomToast()
+  const {
+    isDialogOpen,
+    handleDeletePresentation,
+    handleConfirmDelete,
+    handleCancelDelete,
+    presentationToDelete,
+  } = useDeletePresentation()
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
@@ -50,7 +59,7 @@ const HomePage = ({ user, setUser }) => {
       await addInitialElements(presentationId, showToast)
       navigate(`/presentation/${presentationId}`)
     } catch (error) {
-      console.error("Error creating presentation:", error)
+      console.error("Error creating presentation: ", error)
     }
   }
 
@@ -60,6 +69,17 @@ const HomePage = ({ user, setUser }) => {
 
   const handleCancel = () => {
     togglableRef.current.toggleVisibility()
+  }
+
+  const handleDialogConfirm = async () => {
+    try {
+      await handleConfirmDelete()
+      setPresentations(
+        presentations.filter((p) => p.id !== presentationToDelete)
+      )
+    } catch (e) {
+      console.error("Error deleting presentation: ", e)
+    }
   }
 
   const handleDriveLinked = async (updatedUser) => {
@@ -136,6 +156,13 @@ const HomePage = ({ user, setUser }) => {
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
+        handleDeletePresentation={handleDeletePresentation}
+      />
+      <Dialog
+        isOpen={isDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleDialogConfirm}
+        message="Are you sure you want to delete this presentation?"
       />
     </Container>
   )
