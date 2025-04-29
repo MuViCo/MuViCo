@@ -61,8 +61,8 @@ When you click on the presentation you want to edit you will be directed to the 
   - You can use up to four screens in your presentation.
   - Audio files row where only audio media can be uploaded onto.
   - Audio files have a few extra features:
-    - Loop button: click on the loop button on an audio element to have the audio tape play continuously in your presentation
-    - Speaker icon: click on the Audio files box's speaker icon to mute the audio in your presentation
+    - Loop button: click on the loop button on an audio element to have the audio tape play continuously in your presentation.
+    - Speaker icon: click on the Audio files box's speaker icon to mute the audio in your presentation.
 
 - **Initial elements (black boxes labeled as initial elements)**
   - When creating a new presentation, five initial elements are added to all screens at index 0.
@@ -71,11 +71,12 @@ When you click on the presentation you want to edit you will be directed to the 
 
 ## Adding an element
 
-You can add an element in three ways:
+You can add an element in different ways:
 
 - Click the **"Add Element"** button to open the element creation panel.
 - **Double-click** anywhere on the screen to open the panel. This will automatically set the screen and index based on where you clicked.
 - **Drag and drop** a file directly to the screen.
+- You can copy an existing element by clicking its **copy button**, and then click the desired position to paste it.
 
 ![Add element](./images/add_element.png "Add element")
 
@@ -114,11 +115,13 @@ You can add an element in three ways:
 
 ## Editing an existing element
 
-You can modify an element in three ways:
+You can modify an element in different ways:
 
 - Click the **"Add Element"** button and select the screen (1-5) and index (0-100) of the element you want to change.
 - **Drag and drop** a new file on top of the existing element to replace it.
 - **Double-click** on the element to open it for editing.
+- Click the **delete button** to remove the element.
+- **Drag and drop** the element to insert it into a new position. If there is already an element in that position, the two elements will swap places.
 
 ## Show mode page
 
@@ -145,4 +148,4 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 
 - **Question mark info button**
   - Hovering your mouse on the question mark shows instructions on using keybinds in Show Mode.
-  - Detailed instructions on keybinds [here](./Keybindings%20instructions.md "Instructions on keybinds")
+  - Detailed instructions on keybinds [here](./Keybindings%20instructions.md "Instructions on keybinds").
