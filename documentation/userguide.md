@@ -42,30 +42,32 @@ When you click on the presentation you want to edit you will be directed to the 
 ### Features on this page:
 
 - **Navigation bar (top menu)**
-    - **MuViCo button on the top left**: Go back to the home page.
-    - **Show Mode**: Preview your presentation.
-    - **Delete Presentation**: Remove the current presentation.
-    - **Add Element**: Insert new elements into your slides.
-    - **Storage indicator**: Displays how much space has been used (e.g., 0.00 MB / 50 MB). The maximum allowed space is 50 MB.
-    - **Save status icon** (✔️): This is marked when your changes are successfully saved.
 
+  - **MuViCo button on the top left**: Go back to the home page.
+  - **Show Mode**: Preview your presentation.
+  - **Delete Presentation**: Remove the current presentation.
+  - **Add Element**: Insert new elements into your slides.
+  - **Storage indicator**: Displays how much space has been used (e.g., 0.00 MB / 50 MB). The maximum allowed space is 50 MB.
+  - **Save status icon** (✔️): This is marked when your changes are successfully saved.
 
 - **Slides section (top row with white boxes labeled Index 0, Index 1, etc.)**
-    - This shows the order in which your elements will be displayed on the selected screen.
-    - You can add up to 100 slides per screen.
+
+  - This shows the order in which your elements will be displayed on the selected screen.
+  - You can add up to 100 slides per screen.
 
 - **Screens section (left side with purple boxes labeled Screen 1, Screen 2, etc. and Audio files)**
-    - Displays all the screens you can use for your presentation.
-    - You can use up to four screens in your presentation.
-    - Audio files row where only audio media can be uploaded onto.
-    - Audio files have a few extra features:
-        - Loop button: click on the loop button on an audio element to have the audio tape play continuously in your presentation
-        - Speaker icon: click on the Audio files box's speaker icon to mute the audio in your presentation 
+
+  - Displays all the screens you can use for your presentation.
+  - You can use up to four screens in your presentation.
+  - Audio files row where only audio media can be uploaded onto.
+  - Audio files have a few extra features:
+    - Loop button: click on the loop button on an audio element to have the audio tape play continuously in your presentation
+    - Speaker icon: click on the Audio files box's speaker icon to mute the audio in your presentation
 
 - **Initial elements (black boxes labeled as initial elements)**
-    - When creating a new presentation, five initial elements are added to all screens at index 0.
-    - These elements can be deleted by clicking the red "X" button or modified by double-clicking on the element you want to edit.
-    - These elements are added to ensure that the screens start black by default at the beginning of the presentation.
+  - When creating a new presentation, five initial elements are added to all screens at index 0.
+  - These elements can be deleted by clicking the red "X" button or modified by double-clicking on the element you want to edit.
+  - These elements are added to ensure that the screens start black by default at the beginning of the presentation.
 
 ## Adding an element
 
@@ -80,30 +82,35 @@ You can add an element in three ways:
 ### Steps to add an element
 
 1. **Open the "Add Element" panel**
-    - Click on the **"Add Element"** button to open the element creation panel.
+
+   - Click on the **"Add Element"** button to open the element creation panel.
 
 2. **Select the screen**
-    - Choose a screen from 1 to 4 where the new image or video element will be placed.
-    - Choose screen 5 for audio elements.
+
+   - Choose a screen from 1 to 4 where the new image or video element will be placed.
+   - Choose screen 5 for audio elements.
 
 3. **Select the index**
-    - The index determines the element's position on the selected screen.
-    - The default index will be the first available index on the selected screen.
-    - You can choose any index between 0-100.
+
+   - The index determines the element's position on the selected screen.
+   - The default index will be the first available index on the selected screen.
+   - You can choose any index between 0-100.
 
 4. **Name the new element**
-    - Enter a descriptive name for the element to easily identify it later.
+
+   - Enter a descriptive name for the element to easily identify it later.
 
 5. **Upload media or select "Add blank"**:
-    - Click **"Upload media"** to add an image or video.
-    - The information button (ℹ️) will show you the **allowed file types**:
-        - **Images:** .png, .bmp, .jpeg, .jpg, .jpe, .jfif, .gif, .cur, and .ico
-        - **Videos:** .mp4, .webm, and ogg
-        - **Audio:** .mp3 and .wav
-    - You can also click **"Add blank"** to create an empty placeholder.
+
+   - Click **"Upload media"** to add an image or video.
+   - The information button (ℹ️) will show you the **allowed file types**:
+     - **Images:** .png, .bmp, .jpeg, .jpg, .jpe, .jfif, .gif, .cur, and .ico
+     - **Videos:** .mp4, .webm, and ogg
+     - **Audio:** .mp3 and .wav
+   - You can also click **"Add blank"** to create an empty placeholder.
 
 6. **Submit the Element**
-    - Click **"Submit"** to confirm the addition of your new element to the screen.
+   - Click **"Submit"** to confirm the addition of your new element to the screen.
 
 ## Editing an existing element
 
@@ -124,16 +131,18 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 - **Edit Mode button (top left)**: Go back to the editing screen.
 
 - **Index navigation (middle section)**
-    - **Index display (e.g., "Index 0")**: Shows the current index being played.
-    - **Left ("<") and right (">") arrows**: Navigate between indexes to control the presentation flow.
+
+  - **Index display (e.g., "Index 0")**: Shows the current index being played.
+  - **Left ("<") and right (">") arrows**: Navigate between indexes to control the presentation flow.
 
 - **Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)**
-    - You can display a specific screen by clicking the **"Open screen"** button
-      - Next to the **"Open screen"** button is an arrow that opens a dropdown menu.
-          - There you can choose to mirror another screen's elements.
-          - This is done to ensure that if during a presentation a monitor were to crash it is possible to show these elements on another screen. 
-    - Note that the audio row cannot be opened. Audio in the presentation will start playing on its index on the speaker that has been selected as the output device in the computer that the presentation is controlled on.
- 
+
+  - You can display a specific screen by clicking the **"Open screen"** button
+    - Next to the **"Open screen"** button is an arrow that opens a dropdown menu.
+      - There you can choose to mirror another screen's elements.
+      - This is done to ensure that if during a presentation a monitor were to crash it is possible to show these elements on another screen.
+  - Note that the audio row cannot be opened. Audio in the presentation will start playing on its index on the speaker that has been selected as the output device in the computer that the presentation is controlled on.
+
 - **Question mark info button**
-    - Hovering your mouse on the question mark shows instructions on using keybinds in Show Mode.
-    - Detailed instructions on keybinds [here](./Keybindings%20instructions.md "Instructions on keybinds")
+  - Hovering your mouse on the question mark shows instructions on using keybinds in Show Mode.
+  - Detailed instructions on keybinds [here](./Keybindings%20instructions.md "Instructions on keybinds")
