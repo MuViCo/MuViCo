@@ -28,6 +28,7 @@ After signing in, you will see the **home page** where you manage your presentat
 
 - **New presentation button**: Click this to create a new presentation.
 - **Logout button**: Click this to log out of your account.
+- **Delete button**: Click this to delete the presentation.
 
 After creating a new presentation it will show up on the home page:
 

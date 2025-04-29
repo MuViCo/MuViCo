@@ -12,4 +12,5 @@ export const homefeaturesData = [
       "Theme button (🌙/☀️): Adjust the theme between light and dark modes.",
     items: [],
   },
+  { title: "Delete button: click this to remove the presentation.", items: [] },
 ]
