@@ -476,7 +476,9 @@ const EditMode = ({
       const files = Array.from(event.dataTransfer.files)
       const mediaFiles = files.filter(
         (file) =>
-          file.type.startsWith("image/") || file.type.startsWith("video/")
+          file.type.startsWith("image/") ||
+          file.type.startsWith("video/") ||
+          file.type.startsWith("audio/")
       )
 
       if (mediaFiles.length > 0 && containerRef.current) {
@@ -487,6 +489,7 @@ const EditMode = ({
           rowHeight,
           gap
         )
+
         if (cueExists(xIndex, yIndex)) {
           setConfirmMessage(
             `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
@@ -510,7 +513,7 @@ const EditMode = ({
         }
 
         const file = mediaFiles[0]
-        const formData = createFormData(xIndex, file.name, yIndex, file, loop)
+        const formData = createFormData(xIndex, file.name, yIndex, file)
 
         try {
           await dispatch(createCue(id, formData))
@@ -612,10 +615,7 @@ const EditMode = ({
               </Box>
             ))}
           </Box>
-          <Box
-            position="relative"
-            pointerEvents={isShowMode ? "none" : "auto"}
-          >
+          <Box position="relative" pointerEvents={isShowMode ? "none" : "auto"}>
             <Box
               height="600px"
               width="100%"
