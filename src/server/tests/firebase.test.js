@@ -1,35 +1,46 @@
 const admin = require("firebase-admin")
 const verifyToken = require("../utils/verifyToken")
 
+jest.mock("firebase-admin", () => {
+  return {
+    auth: jest.fn(),
+    credential: {
+      cert: jest.fn(),
+    },
+    initializeApp: jest.fn(),
+    apps: [],
+  }
+})
 
-jest.mock("firebase-admin", () => ({
-  auth: jest.fn()
+jest.mock("@aws-sdk/client-secrets-manager", () => ({
+  SecretsManagerClient: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({ SecretString: "{}" }),
+  })),
+  GetSecretValueCommand: jest.fn(),
 }))
-
-jest.mock("@aws-sdk/client-secrets-manager")
 
 describe("verifyToken middleware", () => {
   let req, res, next
 
   beforeEach(() => {
     req = {
-      headers: {}
+      headers: {},
     }
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     }
     next = jest.fn()
 
     admin.auth.mockReturnValue({
-      verifyIdToken: jest.fn()
+      verifyIdToken: jest.fn(),
     })
   })
 
   test("should return 401 if no token is provided", async () => {
     await verifyToken(req, res, next)
     expect(res.status).toHaveBeenCalledWith(401)
-    expect(res.json).toHaveBeenCalledWith({ error: "no token" })
+    expect(res.json).toHaveBeenCalledWith({ error: "Token missing" })
   })
 
   test("should call next if token is valid", async () => {
@@ -47,7 +58,8 @@ describe("verifyToken middleware", () => {
 
     await verifyToken(req, res, next)
     expect(res.status).toHaveBeenCalledWith(401)
-    expect(res.json).toHaveBeenCalledWith({ error: "Token verification failed" })
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Token verification failed",
+    })
   })
 })
-
