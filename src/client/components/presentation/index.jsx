@@ -10,7 +10,7 @@ import EditMode from "./EditMode"
 import Dialog from "../utils/AlertDialog"
 import useDeletePresentation from "../utils/useDeletePresentation"
 
-const PresentationPage = () => {
+const PresentationPage = ({ user }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -86,9 +86,15 @@ const PresentationPage = () => {
                 </Button>
               </>
             )}
-            <Text alignSelf="center" data-testid="presentationSize">
-              {presentationSize} MB / 50 MB
-            </Text>
+            {user.driveToken === null ? (
+              <Text alignSelf="center" data-testid="presentationSize">
+                {presentationSize} MB / 50 MB
+              </Text>
+            ) : (
+              <Text alignSelf="center" data-testid="presentationSize">
+                {presentationSize} MB
+              </Text>
+            )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
             {" "}

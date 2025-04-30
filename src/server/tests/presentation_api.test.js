@@ -27,6 +27,7 @@ describe("test presentation", () => {
       .send({ username: "testuser", password: "testpassword" })
 
     authHeader = `Bearer ${response.body.token}`
+
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
@@ -53,6 +54,7 @@ describe("test presentation", () => {
 
     const response = await api
       .put(url)
+      .set("Authorization", authHeader)
       .attach("image", mockImageBuffer, "mock_image.png")
       .field("index", index)
       .field("cueName", cueName)
@@ -63,7 +65,20 @@ describe("test presentation", () => {
   }
 
   describe("GET /api/presentation/:id", () => {
-    test("presentation is returned as json", async () => {
+    test("presentation is returned as json when using amazon s3", async () => {
+      await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+        .expect("Content-Type", /application\/json/)
+    })
+    test("presentation is returned as json when using google drive", async () => {
+      const user = await User.findOne({
+        username: "testuser",
+      })
+      user.driveToken = "test-drive-token"
+      await user.save()
+
       await api
         .get(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
@@ -73,12 +88,15 @@ describe("test presentation", () => {
   })
   describe("DELETE", () => {
     test(" /api/presentation/:id", async () => {
-      await api.delete(`/api/presentation/${testPresentationId}`).expect(204)
+      await api
+        .delete(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(204)
     })
   })
 
   describe("Test error handling", () => {
-    it("GET /api/presentation/:id with invalid ID should return 401", async () => {
+    it("GET /api/presentation/:id with no user should return 401", async () => {
       const response = await api.get(
         "/api/presentation/000000000000000000000000"
       )
@@ -86,16 +104,34 @@ describe("test presentation", () => {
       expect(response.status).toBe(401)
     })
 
+    it("GET /api/presentation/:id with invalid ID should return 404", async () => {
+      const response = await api
+        .get("/api/presentation/000000000000000000000000")
+        .set("Authorization", authHeader)
+
+      expect(response.status).toBe(404)
+    })
+
+    it("GET /api/presentation/:id with invalid path should return 500", async () => {
+      const response = await api
+        .get("/api/presentation/invalid-id-format")
+        .set("Authorization", authHeader)
+
+      expect(response.status).toBe(500)
+    })
+
     it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
-      const response = await api.delete(
-        "/api/presentation/000000000000000000000000"
-      )
+      const response = await api
+        .delete("/api/presentation/000000000000000000000000")
+        .set("Authorization", authHeader)
 
       expect(response.status).toBe(500)
     })
 
     it("PUT /api/presentation/:id with missing required fields should return 400", async () => {
-      const response = await api.put("/api/presentation/:id")
+      const response = await api
+        .put("/api/presentation/:id")
+        .set("Authorization", authHeader)
 
       expect(response.status).toBe(400)
     })
@@ -136,6 +172,7 @@ describe("test presentation", () => {
     test("throws error with missing fields", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
         .field("index", "1")
         .field("fileName", "")
         .expect(400)
@@ -164,6 +201,7 @@ describe("test presentation", () => {
       async (index, screen) => {
         await api
           .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+          .set("Authorization", authHeader)
           .field("index", index)
           .field("cueName", "Updated Test Cue")
           .field("screen", screen)
@@ -184,6 +222,7 @@ describe("test presentation", () => {
       async (index, screen, error) => {
         const response = await api
           .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+          .set("Authorization", authHeader)
           .field("index", index)
           .field("cueName", "Updated Test Cue")
           .field("screen", screen)
@@ -197,6 +236,7 @@ describe("test presentation", () => {
     test("throws error with missing fields", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
         .field("index", "1")
         .field("fileName", "")
         .expect(400)

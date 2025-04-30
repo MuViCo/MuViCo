@@ -12,12 +12,11 @@ router.post("/", async (req, res) => {
 
   const user = await User.findOne({ username })
   /**
-	 * Checks if the entered password is correct for the given user.
-	 *
-	 * @type {boolean}
-	 */
+   
+Checks if the entered password is correct for the given user.*
+@type {boolean}*/
   const passwordCorrect =
-		user === null ? false : await bcrypt.compare(password, user.passwordHash)
+    user === null ? false : await bcrypt.compare(password, user.passwordHash)
 
   if (!(user && passwordCorrect)) {
     return res.status(401).json({
@@ -39,46 +38,47 @@ router.post("/", async (req, res) => {
     username: user.username,
     name: user.name,
     isAdmin: user.isAdmin,
-    id: user._id,
+    id: user.id,
+    driveToken: user.driveToken || null,
   })
 })
 
 router.post("/firebase", verifyToken, async (req, res) => {
+  const { driveAccessToken } = req.body
   const { uid, email, name } = req.user
 
-
   try {
-    const username = email ? email.split("@")[0] : `user_${uid}` 
+    const username = email ? email.split("@")[0] : `user${uid}`
     let user = await User.findOne({ username })
-   
-   
+
     if (!user) {
       user = new User({ uid, email, name, username })
       await user.save()
     }
+
+    user.driveToken = driveAccessToken
+    await user.save()
 
     const userForToken = {
       username: user.username,
       id: user._id,
     }
 
-  
     const token = jwt.sign(userForToken, config.SECRET, {
       expiresIn: 60 * 60,
     })
 
-  
     return res.status(200).send({
       token,
       username: user.username,
       name: user.name,
       isAdmin: user.isAdmin,
       id: user._id,
+      driveToken: user.driveToken,
     })
-    } catch (error) {
+  } catch (error) {
     res.status(500).json({ error: error.message })
-    }
-    })
-
+  }
+})
 
 module.exports = router

@@ -28,6 +28,18 @@ jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 
 jest.mock("../../components/utils/useDeletePresentation")
 
+jest.mock("@chakra-ui/react", () => {
+  const originalModule = jest.requireActual("@chakra-ui/react")
+  return {
+    ...originalModule,
+    useDisclosure: () => ({
+      isOpen: false,
+      onOpen: jest.fn(),
+      onClose: jest.fn(),
+    }),
+  }
+})
+
 describe("HomePage", () => {
   let navigate = jest.fn()
 

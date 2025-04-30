@@ -1,12 +1,51 @@
+const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
 
-const generateSignedUrlForCue = async (cue, presentationId) => {
+const generateDriveFileUrlForCue = async (cue, accessToken) => {
+  if (cue.file && cue.file.driveId) {
+    try {
+      const metadata = await getDriveFileMetadata(cue.file.driveId, accessToken)
+      cue.file.type = metadata.mimeType
+      cue.file.size = metadata.size
+      const baseUrl =
+        process.env.NODE_ENV === "production"
+          ? "https://muvico.live"
+          : "http://localhost:3000"
+
+      cue.file.url = `${baseUrl}/api/media/${cue.file.driveId}?access_token=${accessToken}`
+    } catch (error) {
+      console.error("Error fetching file metadata:", error)
+    }
+  } else {
+    cue.file.url =
+      process.env.NODE_ENV === "production"
+        ? "/blank.png"
+        : "/src/server/public/blank.png"
+  }
+  return cue
+}
+
+const processDriveCueFiles = async (cues, accessToken) => {
+  const processedCues = await Promise.all(
+    cues.map(async (cue) => {
+      await generateDriveFileUrlForCue(cue, accessToken)
+      return cue
+    })
+  )
+
+  return processedCues
+}
+
+const generateSignedUrlForS3 = async (cue, presentationId) => {
   if (typeof cue.file.url === "string") {
     const key = `${presentationId}/${cue.file.id.toString()}`
     cue.file.url = await getObjectSignedUrl(key)
   } else {
-    if (process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") {
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "test"
+    ) {
       cue.file.url = "/src/server/public/blank.png"
     } else if (process.env.NODE_ENV === "production") {
       cue.file.url = "/blank.png"
@@ -15,11 +54,14 @@ const generateSignedUrlForCue = async (cue, presentationId) => {
   return cue
 }
 
-const processCueFiles = async (cues, presentationId) => {
+const processS3Files = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
-      await generateSignedUrlForCue(cue, presentationId)
-      if (cue.file.url !== "/src/server/public/blank.png" && cue.file.url !== "/blank.png") {
+      await generateSignedUrlForS3(cue, presentationId)
+      if (
+        cue.file.url !== "/src/server/public/blank.png" &&
+        cue.file.url !== "/blank.png"
+      ) {
         await getFileType(cue, presentationId)
         await getFileSize(cue, presentationId)
       }
@@ -30,6 +72,7 @@ const processCueFiles = async (cues, presentationId) => {
 }
 
 module.exports = {
-  generateSignedUrlForCue,
-  processCueFiles,
+  processDriveCueFiles,
+  generateSignedUrlForS3,
+  processS3Files,
 }

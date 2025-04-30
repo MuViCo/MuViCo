@@ -15,6 +15,8 @@ const presentationRouter = require("./routes/presentation")
 const termsRouter = require("./routes/terms")
 const adminRouter = require("./routes/admin")
 const middleware = require("./utils/middleware")
+const driveProxy = require("./routes/driveProxy")
+const usersRouter = require("./routes/users")
 
 const app = express()
 
@@ -49,6 +51,8 @@ app.use("/api/home", presentationsRouter)
 app.use("/api/presentation", presentationRouter)
 app.use("/api/terms", termsRouter)
 app.use("/api/admin", adminRouter)
+app.use("/api/media", driveProxy)
+app.use("/api/users", usersRouter)
 
 if (process.env.NODE_ENV === "production") {
   const DIST_PATH = path.resolve(__dirname, "../../dist/")
@@ -60,7 +64,6 @@ if (process.env.NODE_ENV === "production") {
 }
 
 if (process.env.NODE_ENV === "test") {
-  // eslint-disable-next-line global-require
   const testingRouter = require("./routes/testing")
   app.use("/api/testing", testingRouter)
 }
