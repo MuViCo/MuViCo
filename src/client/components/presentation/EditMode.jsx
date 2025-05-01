@@ -143,9 +143,9 @@ const EditMode = ({
       (copiedCue.screen === 5 && yIndex !== 5)
     ) {
       showToast({
-        title: "Only audio files on the audio row",
+        title: "Only audio files on the audio row.",
         description: "Click on an appropriate row to paste the element.",
-        status: "info",
+        status: "error",
       })
       return
     }
@@ -489,6 +489,28 @@ const EditMode = ({
     }
   }
 
+  const isImageOrVideo = (file) =>
+    file.type.startsWith("image/") || file.type.startsWith("video/")
+  const isAudio = (file) => file.type.startsWith("audio/")
+
+  const handleCueReplace = async (xIndex, yIndex, file) => {
+    const existingCue = cues.find(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+    if (!existingCue) return
+
+    const updatedCue = {
+      ...existingCue,
+      index: xIndex,
+      cueName: file.name,
+      screen: yIndex,
+      file: file,
+    }
+
+    await dispatchUpdateCue(existingCue._id, updatedCue)
+    setIsConfirmOpen(false)
+  }
+
   const handleDrop = useCallback(
     async (event) => {
       event.preventDefault()
@@ -498,58 +520,66 @@ const EditMode = ({
       }
       const files = Array.from(event.dataTransfer.files)
       const mediaFiles = files.filter(
-        (file) =>
-          file.type.startsWith("image/") || file.type.startsWith("video/")
+        (file) => isImageOrVideo(file) || isAudio(file)
       )
 
-      if (mediaFiles.length > 0 && containerRef.current) {
-        const { xIndex, yIndex } = getPosition(
-          event,
-          containerRef,
-          columnWidth,
-          rowHeight,
-          gap
+      if (mediaFiles.length === 0 || !containerRef.current) {
+        return
+      }
+
+      const { xIndex, yIndex } = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
+
+      const file = mediaFiles[0]
+
+      if (isImageOrVideo(file) && xIndex < 101 && yIndex > 4) {
+        showToast({
+          title: "Only audio files on the audio row.",
+          description: "Click on an appropriate row to paste the element.",
+          status: "error",
+        })
+        return
+      }
+      if (isAudio(file) && yIndex !== 5 && xIndex < 101) {
+        showToast({
+          title: "Only images/videos on screen rows.",
+          description: "Click on an appropriate row to paste the element.",
+          status: "error",
+        })
+        return
+      }
+
+      if (cueExists(xIndex, yIndex)) {
+        setConfirmMessage(
+          `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
         )
-        if (cueExists(xIndex, yIndex)) {
-          setConfirmMessage(
-            `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
-          )
-          setConfirmAction(() => async () => {
-            const existingCue = cues.find(
-              (cue) => cue.index === xIndex && cue.screen === yIndex
-            )
-            const updatedCue = {
-              ...existingCue,
-              index: xIndex,
-              cueName: mediaFiles[0].name,
-              screen: yIndex,
-              file: mediaFiles[0],
-            }
-            await dispatchUpdateCue(existingCue._id, updatedCue)
-            setIsConfirmOpen(false)
-          })
-          setIsConfirmOpen(true)
-          return
-        }
+        setConfirmAction(() => async () => {
+          handleCueReplace(xIndex, yIndex, file)
+        })
+        setIsConfirmOpen(true)
+        return
+      }
+      const formData = createFormData(xIndex, file.name, yIndex, file)
 
-        const file = mediaFiles[0]
-        const formData = createFormData(xIndex, file.name, yIndex, file, loop)
-
-        try {
-          await dispatch(createCue(id, formData))
-          showToast({
-            title: "Element added",
-            description: `Element ${file.name} added to screen ${yIndex}`,
-            status: "success",
-          })
-        } catch (error) {
-          const errorMessage = error.message || "An error occurred"
-          showToast({
-            title: "Error",
-            description: errorMessage,
-            status: "error",
-          })
-        }
+      try {
+        await dispatch(createCue(id, formData))
+        showToast({
+          title: "Element added",
+          description: `Element ${file.name} added to screen ${yIndex}`,
+          status: "success",
+        })
+      } catch (error) {
+        const errorMessage = error.message || "An error occurred"
+        showToast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+        })
       }
     },
     [dispatch, gap, rowHeight, columnWidth, id, cues]
