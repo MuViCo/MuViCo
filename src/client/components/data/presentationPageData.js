@@ -20,11 +20,18 @@ export const editModeFeaturesData = [
   },
   {
     title:
-      "Screens section (left side with purple boxes labeled Screen 1, Screen 2, etc.)",
+      "Screens section (left side with purple boxes labeled Screen 1, Screen 2, etc. and Audio files)",
     items: [
       "Displays all the screens you can use for your presentation.",
       "You can use up to four screens in your presentation.",
-      "You can also add an audio file for each slide index.",
+      "Audio files row where only audio media can be uploaded onto.",
+    ],
+  },
+  {
+    title: "Audio files have a few extra features:",
+    items: [
+      "Loop button: Click the button to play the audio continuously.",
+      "Speaker icon: Click the icon to mute the audio.",
     ],
   },
   {
@@ -36,11 +43,12 @@ export const editModeFeaturesData = [
     ],
   },
   {
-    title: "You can add an element in three ways:",
+    title: "You can add an element in four ways:",
     items: [
       "Click the Add Element button to open the element creation panel.",
       "Double-click anywhere on the screen to open the panel. This will automatically set the screen and index based on where you clicked.",
       "Drag and drop a file directly to the screen.",
+      "You can copy an existing element by clicking its copy button, and then click the desired position to paste it.",
     ],
   },
 ]
@@ -69,7 +77,7 @@ export const stepsToAddElementData = [
     title: "Upload media or select Add blank:",
     items: [
       "Click Upload media to add an image or video.",
-      "The information button (ℹ️) will show you the allowed file types",
+      "The information button (ℹ️) will show you the allowed file types.",
       "You can also click Add blank to create an empty placeholder.",
     ],
   },
@@ -83,11 +91,13 @@ export const stepsToAddElementData = [
 
 export const editingElementData = [
   {
-    title: "You can modify an element in three ways:",
+    title: "You can modify an element in different ways:",
     items: [
       "Click the Add Element button and select the screen (1-4) or audio (5) and index (0-100) of the element you want to change.",
       "Drag and drop a new file on top of the existing element to replace it.",
       "Double-click on the element to open it for editing.",
+      "Click the delete button to remove the element.",
+      "Drag and drop the element to insert it into a new position. If there is already an element in that position, the two elements will swap places.",
     ],
   },
 ]
@@ -108,7 +118,14 @@ export const showModeFeaturesData = [
     title:
       "Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)",
     items: [
-      "You can display a specific screen by clicking the Open screen button.",
+      "You can display a specific screen by clicking the Open screen button. An adjacent arrow opens a dropdown where you can mirror another screen's elements, ensuring that if a monitor fails during a presentation, those elements remain visible on another screen.",
+      "Note that the audio row cannot be opened. The presentation's audio will play on the speaker corresponding to its index, as specified on the controlling computer's output device.",
+    ],
+  },
+  {
+    title: "Help button",
+    items: [
+      "Hovering your mouse on the question mark shows instructions on using keybinds in Show Mode.",
     ],
   },
 ]
