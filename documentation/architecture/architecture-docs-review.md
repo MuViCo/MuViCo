@@ -50,6 +50,7 @@
 - Missing files:
   - src/client/services/admin.js
   - src/client/services/presentation.js
+  - src/client/services/users.js
 
 `src/client/components/frontpage/`
 - Missing files:
@@ -66,6 +67,8 @@
   - src/client/components/homepage/PresentationForm.jsx
   - src/client/components/homepage/PresentationFormWrapper.jsx
   - src/client/components/homepage/PresentationsGrid.jsx
+  - src/client/components/homepage/LinkGoogleDriveButton.jsx
+  - src/client/components/homepage/StorageInfoModal.jsx
 - Files that no longer exist:
   - src/client/components/homepage/Body.jsx
   - src/client/components/homepage/Togglable.jsx
@@ -88,6 +91,7 @@
   - src/client/components/presentation/ShowModeButtons.jsx
   - src/client/components/presentation/StatusToolTip.jsx
   - src/client/components/presentation/ToolBox.jsx
+  - src/client/components/presentation/SignInInfoModal.jsx
 - Files that no longer exist:
   - src/client/components/presentation/image.jsx
   - src/client/components/presentation/pdfviewer.jsx
@@ -102,9 +106,12 @@
   - src/server/routes/admin.js
   - src/server/routes/presentation.js
   - src/server/routes/terms.js
+  - src/server/routes/driveProxy.js
+  - src/server/routes/users.js
 
 `src/server/utils/`
 - Missing files:
   - src/server/utils/helper.js
   - src/server/utils/s3.js
   - src/server/utils/verifyToken.js
+  - src/server/utils/drive.js
