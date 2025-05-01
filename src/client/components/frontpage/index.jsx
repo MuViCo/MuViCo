@@ -46,14 +46,14 @@ const FrontPage = () => {
             title="Ease of use"
             description="Create a presentation in just a few clicks"
             modalTitle="Ease of use"
-            modalDesc="Add your own images or gifs to the presentation and decide the order of the cues. It's that simple!"
+            modalDesc="Add your own images or gifs to the presentation and decide the order of the elements! It's that simple!"
             modalSvg={<Upload />}
           />
           <InfoCard
             title="Multiple screens"
             description="Control multiple screens at once"
             modalTitle="Multiple screens"
-            modalDesc="Traverse through multiple screens at once using the unique cue system. Control the visuals on the fly with just one device!"
+            modalDesc="Traverse through multiple screens at once using the unique index system. Control the elements on the fly with just one device!"
             modalSvg={<Desktop />}
           />
           <InfoCard
