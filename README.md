@@ -43,7 +43,7 @@ The elements are differentiated by their 'screen' and 'index' values. Elements w
 
 ### Documentation
 
-For detailed instructions on how to use the application check out the [User Guide](https://github.com/MuViCo/MuViCo/blob/3fa0f45fdeec4fe03a244c961004a385991dd78b/documentation/userguide.md)
+For detailed instructions on how to use the application check out the [User Guide](https://github.com/MuViCo/MuViCo/blob/main/documentation/userguide.md)
 
 For more information check out the [documentation folder](https://github.com/MuViCo/MuViCo/tree/main/documentation).
 
