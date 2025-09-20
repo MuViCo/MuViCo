@@ -293,6 +293,22 @@ const GridLayoutComponent = ({
                   }}
                 />
                 <IconButton
+                  icon={<EditIcon />}
+                  size="xs"
+                  position="absolute"
+                  _hover={{ bg: "orange.500", color: "white" }}
+                  backgroundColor="orange.300"
+                  draggable={false}
+                  zIndex="10"
+                  top="25px"
+                  right="0px"
+                  aria-label={`Edit ${cue.name}`}
+                  title="Edit element"
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                  }}
+                />
+                <IconButton
                   icon={<CopyIcon />}
                   size="xs"
                   position="absolute"
@@ -300,7 +316,7 @@ const GridLayoutComponent = ({
                   backgroundColor="gray.500"
                   draggable={false}
                   zIndex="10"
-                  top="25px"
+                  top="50px"
                   right="0px"
                   aria-label={`Copy ${cue.name}`}
                   title="Copy element"
@@ -314,22 +330,6 @@ const GridLayoutComponent = ({
                         "Click on available places on the grid to paste. Click outside the grid to cancel",
                       status: "success",
                     })
-                  }}
-                />
-                <IconButton
-                  icon={<EditIcon />}
-                  size="xs"
-                  position="absolute"
-                  _hover={{ bg: "orange.500", color: "white" }}
-                  backgroundColor="orange.300"
-                  draggable={false}
-                  zIndex="10"
-                  top="50px"
-                  right="0px"
-                  aria-label={`Edit ${cue.name}`}
-                  title="Edit element"
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
                   }}
                 />
               </>
@@ -350,7 +350,7 @@ const GridLayoutComponent = ({
                 backgroundColor="gray.500"
                 draggable={false}
                 zIndex="10"
-                top="50px"
+                top="75px"
                 right="0px"
                 aria-label={`Loop audio ${cue.name}`}
                 title={cue.loop ? "Disable loop" : "Enable loop"}
