@@ -720,6 +720,8 @@ const EditMode = ({
                 isShowMode={isShowMode}
                 cueIndex={cueIndex}
                 isAudioMuted={isAudioMuted}
+                setSelectedCue = {setSelectedCue}
+                setIsToolboxOpen = {setIsToolboxOpen}
               />
 
               {hoverPosition && !isDragging && (

@@ -97,6 +97,8 @@ const GridLayoutComponent = ({
   isShowMode,
   cueIndex,
   isAudioMuted,
+  setSelectedCue,
+  setIsToolboxOpen
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -161,6 +163,14 @@ const GridLayoutComponent = ({
       }
     }
     setIsDialogOpen(false)
+  }
+
+  const handleEditItem= (cueId) => {
+    const cue = cues.find(
+      (cue) => cue._id === cueId
+    )
+    setSelectedCue(cue)
+    setIsToolboxOpen(true)
   }
 
   /**
@@ -306,6 +316,7 @@ const GridLayoutComponent = ({
                   title="Edit element"
                   onMouseDown={(e) => {
                     e.stopPropagation()
+                    handleEditItem(cue._id)
                   }}
                 />
                 <IconButton
