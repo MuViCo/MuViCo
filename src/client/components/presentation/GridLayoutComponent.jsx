@@ -5,6 +5,7 @@ import {
   CopyIcon,
   RepeatIcon,
   ArrowForwardIcon,
+  EditIcon
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -313,6 +314,22 @@ const GridLayoutComponent = ({
                         "Click on available places on the grid to paste. Click outside the grid to cancel",
                       status: "success",
                     })
+                  }}
+                />
+                <IconButton
+                  icon={<EditIcon />}
+                  size="xs"
+                  position="absolute"
+                  _hover={{ bg: "orange.500", color: "white" }}
+                  backgroundColor="orange.300"
+                  draggable={false}
+                  zIndex="10"
+                  top="50px"
+                  right="0px"
+                  aria-label={`Edit ${cue.name}`}
+                  title="Edit element"
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
                   }}
                 />
               </>
