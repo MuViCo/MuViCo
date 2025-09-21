@@ -5,6 +5,7 @@ import {
   CopyIcon,
   RepeatIcon,
   ArrowForwardIcon,
+  EditIcon
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -96,6 +97,8 @@ const GridLayoutComponent = ({
   isShowMode,
   cueIndex,
   isAudioMuted,
+  setSelectedCue,
+  setIsToolboxOpen
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -160,6 +163,14 @@ const GridLayoutComponent = ({
       }
     }
     setIsDialogOpen(false)
+  }
+
+  const handleEditItem= (cueId) => {
+    const cue = cues.find(
+      (cue) => cue._id === cueId
+    )
+    setSelectedCue(cue)
+    setIsToolboxOpen(true)
   }
 
   /**
@@ -292,6 +303,23 @@ const GridLayoutComponent = ({
                   }}
                 />
                 <IconButton
+                  icon={<EditIcon />}
+                  size="xs"
+                  position="absolute"
+                  _hover={{ bg: "orange.500", color: "white" }}
+                  backgroundColor="orange.300"
+                  draggable={false}
+                  zIndex="10"
+                  top="25px"
+                  right="0px"
+                  aria-label={`Edit ${cue.name}`}
+                  title="Edit element"
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                    handleEditItem(cue._id)
+                  }}
+                />
+                <IconButton
                   icon={<CopyIcon />}
                   size="xs"
                   position="absolute"
@@ -299,7 +327,7 @@ const GridLayoutComponent = ({
                   backgroundColor="gray.500"
                   draggable={false}
                   zIndex="10"
-                  top="25px"
+                  top="50px"
                   right="0px"
                   aria-label={`Copy ${cue.name}`}
                   title="Copy element"
@@ -333,7 +361,7 @@ const GridLayoutComponent = ({
                 backgroundColor="gray.500"
                 draggable={false}
                 zIndex="10"
-                top="50px"
+                top="75px"
                 right="0px"
                 aria-label={`Loop audio ${cue.name}`}
                 title={cue.loop ? "Disable loop" : "Enable loop"}
