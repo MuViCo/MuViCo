@@ -100,11 +100,11 @@ Follow these steps to set up the project on your local machine:
 If you prefer to develop inside a Docker container (to match the production environment), follow these steps:
 
 1. **Reset the Docker Environment**  
-   Clean up any existing Docker containers and volumes:
+   Clean up any existing Docker containers and volumes, depending on your docker installation:
 
-   ```bash
-   npm run reset
-   ```
+   | Docker v1 | <pre>npm run reset</pre>    |
+   |-----------|-------------------------|
+   | Docker v2 | <pre>npm run reset-v2</pre> |
 
 2. **Install Dependencies**  
    Install dependencies inside the container:
@@ -122,11 +122,11 @@ If you prefer to develop inside a Docker container (to match the production envi
    ```
 
 4. **Start the Application**  
-   Start the application in development mode using Docker:
+   Start the application in development mode using Docker, depending on your docker installation:
 
-   ```bash
-   npm start
-   ```
+   | Docker v1 | <pre>npm run start</pre>    |
+   |-----------|-------------------------|
+   | Docker v2 | <pre>npm run start-v2</pre> |
 
    This will spin up the necessary containers for the backend, frontend, and database.
 
@@ -135,18 +135,18 @@ If you prefer to develop inside a Docker container (to match the production envi
 To simulate the production environment locally, follow these steps:
 
 1. **Reset the Production Docker Environment**  
-   Clean up any existing production containers and volumes:
+   Clean up any existing production containers and volumes, depending on your docker installation:
 
-   ```bash
-   npm run reset-prod
-   ```
+   | Docker v1 | <pre>npm run reset-prod</pre>    |
+   |-----------|-------------------------|
+   | Docker v2 | <pre>npm run reset-prod-v2</pre> |
 
 2. **Start the Application in Production Mode**  
-   Start the application using the production Docker configuration:
+   Start the application using the production Docker configuration, depending on your docker installation:
 
-   ```bash
-   npm run start-prod
-   ```
+   | Docker v1 | <pre>npm run start-prod</pre>    |
+   |-----------|-------------------------|
+   | Docker v2 | <pre>npm run start-prod-v2</pre> |
 
    This will build and run the application in a production-like environment.
 
