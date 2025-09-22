@@ -29,8 +29,11 @@ const PresentationPage = ({ user }) => {
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
+  const presentationName = useSelector((state) => state.presentation.name)
 
   document.body.style.overflowX = "hidden"
+
+  document.title = `Viewing ${presentationName} | MuViCo`
 
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
@@ -59,6 +62,11 @@ const PresentationPage = ({ user }) => {
 
   return (
     <>
+      <h2 style={{
+      textAlign: "center",
+      fontSize: "2em",
+      fontWeight: 700
+      }}>{presentationName}</h2>
       {presentationInfo && (
         <Box
           width="100vw"

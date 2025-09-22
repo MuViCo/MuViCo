@@ -82,12 +82,14 @@ describe("presentationReducer actions", () => {
 describe("presentationReducer reducer", () => {
   const initialState = {
     cues: null,
+    name: "",
   }
 
   it("should handle setPresentationInfo", () => {
     const cues = [{ _id: 1, name: "Test Cue" }]
-    const action = { type: setPresentationInfo.type, payload: cues }
-    const expectedState = { ...initialState, cues }
+    const name = "My Presentation"
+    const action = { type: setPresentationInfo.type, payload: { cues, name } }
+    const expectedState = { ...initialState, cues, name }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -96,6 +98,7 @@ describe("presentationReducer reducer", () => {
     const initialStateWithCues = {
       ...initialState,
       cues: [{ _id: 1, name: "Test Cue" }],
+      name: "My Presentation"
     }
     const addedCue = { _id: 2, name: "Another Cue" }
     const action = { type: addCue.type, payload: addedCue }
@@ -117,6 +120,7 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
+      name: "My Presentation"
     }
     const action = { type: deleteCue.type, payload: 1 }
     const expectedState = {
@@ -129,7 +133,7 @@ describe("presentationReducer reducer", () => {
 
   it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null }
+    const expectedState = { ...initialState, cues: null, name: "" }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -141,6 +145,7 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
+      name: "My Presentation"
     }
     const action = { type: removePresentation.type }
     const expectedState = { ...initialState, cues: null }
@@ -193,10 +198,13 @@ describe("presentationReducer asynchronous actions", () => {
 
   it("should remove cue", async () => {
     const store = makeStore()
-    const initialState = [
-      { _id: 1, name: "Cue 1" },
-      { _id: 2, name: "Cue 2" },
-    ]
+    const initialState = {
+    cues: [
+        { _id: 1, name: "Cue 1" },
+        { _id: 2, name: "Cue 2" },
+      ],
+      name: "My Presentation"
+    }
     store.dispatch(setPresentationInfo(initialState))
 
     const updatedCues = [{ _id: 2, name: "Cue 2" }]
@@ -280,17 +288,20 @@ describe("presentationReducer asynchronous actions", () => {
   it("should update presentation cue", async () => {
     const store = makeStore()
 
-    const initialState = [
-      { _id: 1, name: "Cue 1", index: 1, screen: 1 },
-      { _id: 2, name: "Cue 2", index: 2, screen: 2 },
-    ]
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1 },
+        { _id: 2, name: "Cue 2", index: 2, screen: 2 },
+      ],
+      name: "My Presentation"
+    }
 
     store.dispatch(setPresentationInfo(initialState))
 
     const updatedCueData = { cueName: "Updated Cue", index: 1, screen: 1 }
 
     presentationService.updateCue.mockResolvedValue({
-      ...initialState[0],
+      ...initialState.cues[0],
       ...updatedCueData,
     })
 
@@ -303,7 +314,7 @@ describe("presentationReducer asynchronous actions", () => {
     )
 
     expect(store.getState().presentation.cues).toContainEqual({
-      ...initialState[0],
+      ...initialState.cues[0],
       ...updatedCueData,
     })
   })
@@ -325,10 +336,13 @@ describe("presentationReducer asynchronous actions", () => {
   it("should update presentation cues swapped", async () => {
     const store = makeStore()
 
-    const initialState = [
-      { _id: 1, name: "Cue 1", index: 1, screen: 1 },
-      { _id: 2, name: "Cue 2", index: 2, screen: 2 },
-    ]
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1 },
+        { _id: 2, name: "Cue 2", index: 2, screen: 2 },
+      ],
+      name: "My Presentation"
+    }
 
     store.dispatch(setPresentationInfo(initialState))
 
