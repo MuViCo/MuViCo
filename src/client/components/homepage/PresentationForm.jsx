@@ -10,17 +10,14 @@ import {
 
 const PresentationForm = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
-  const [screenCount, setScreenCount] = useState(1)
 
   const addPresentation = (event) => {
     event.preventDefault()
     createPresentation({
       name,
-      screenCount
     })
 
     setName("")
-    setScreenCount(1)
   }
 
   return (
@@ -35,18 +32,6 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             id="name"
             value={name}
             onChange={({ target }) => setName(target.value)}
-          />
-          
-          <FormLabel htmlFor="screen-count" fontWeight="bold">
-            Screen Count
-          </FormLabel>
-          <Input
-            data-testid="presentation-screen-count"
-            id="screen-count"
-            type="number"
-            min="1"
-            value={screenCount}
-            onChange={({ target }) => setScreenCount(target.value)}
           />
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
