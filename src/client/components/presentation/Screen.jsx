@@ -255,8 +255,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
 
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(screenData)
+      
       }
-    }
+    } windowRef.current.document.title =   `Screen ${screenNumber}` 
   }, [screenData, currentScreenData, isWindowReady])
 
   // Listeners for shift-press to show screen data on screens
@@ -298,6 +299,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
+        
       )
     : null
 }
