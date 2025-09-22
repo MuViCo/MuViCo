@@ -33,7 +33,7 @@ router.get("/", userExtractor, async (req, res) => {
  * Creates a new presentation for the user
  */
 router.post("/", userExtractor, async (req, res) => {
-  const { name } = req.body
+  const { name, screenCount} = req.body
   const { user } = req
 
   if (!user || !name) {
@@ -42,6 +42,7 @@ router.post("/", userExtractor, async (req, res) => {
 
   const presentation = new Presentation({
     name,
+    screenCount
   })
 
   if (user.driveToken) {

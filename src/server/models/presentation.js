@@ -17,6 +17,13 @@ const presentationSchema = mongoose.Schema({
     default: "aws",
   },
 
+  screenCount: {
+    type: Number,
+    required: true,
+    default: 1,
+    min: 1,
+  },
+
   cues: [
     {
       index: { type: Number, required: true },
