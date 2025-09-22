@@ -30,6 +30,8 @@ const PresentationPage = ({ user }) => {
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
 
+  document.body.style.overflowX = "hidden"
+
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, navigate, dispatch])
