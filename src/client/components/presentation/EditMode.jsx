@@ -153,8 +153,6 @@ const EditMode = ({
 
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
     await addCue(newCueData)
-    setIsCopied(false)
-    setCopiedCue(null)
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
