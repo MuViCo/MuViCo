@@ -1,5 +1,5 @@
 import { ChakraProvider, Box, Container } from "@chakra-ui/react"
-import { Route, Routes, Navigate } from "react-router-dom"
+import { Route, Routes, Navigate, useLocation } from "react-router-dom"
 
 import { useState, useEffect } from "react"
 
@@ -21,6 +21,8 @@ const App = () => {
 
   const [isInitialized, setIsInitialized] = useState(false)
 
+  const isPresentation = useLocation().pathname.startsWith("/presentation")
+
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
     if (loggedUserJSON) {
@@ -39,7 +41,7 @@ const App = () => {
       <Fonts />
       <Box>
         <NavBar user={user} setUser={setUser} />
-        <Container pt={20} maxW="container.xl">
+        <Container pt={20} maxW={isPresentation ? "none" : "container.xl"}>
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route
