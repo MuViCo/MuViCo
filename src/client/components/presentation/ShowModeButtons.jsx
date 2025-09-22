@@ -55,8 +55,17 @@ const ScreenToggleButtons = ({
   screens,
   toggleScreenVisibility,
   toggleScreenMirroring,
+  showAllScreens,
   mirroring,
 }) => (
+  <Box display="flex" flexDirection="column" gap={2}>
+    <Button
+      colorScheme="blue"
+      onClick={showAllScreens}
+      size="md"
+    >
+      Open all screens:
+    </Button>
   <Box display="flex" flexWrap="wrap" gap={2}>
     {Object.keys(screens)
       .filter((screenNumber) => screenNumber !== "5")
@@ -87,6 +96,7 @@ const ScreenToggleButtons = ({
           />
         </Box>
       ))}
+  </Box>
   </Box>
 )
 
@@ -143,6 +153,7 @@ const ShowModeButtons = ({
   screens,
   toggleScreenVisibility,
   toggleScreenMirroring,
+  showAllScreens,
   mirroring,
   cueIndex,
   updateCue,
@@ -152,6 +163,7 @@ const ShowModeButtons = ({
       screens={screens}
       toggleScreenVisibility={toggleScreenVisibility}
       toggleScreenMirroring={toggleScreenMirroring}
+      showAllScreens={showAllScreens}
       mirroring={mirroring}
     />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
