@@ -117,7 +117,7 @@ describe("ShowMode", () => {
       fireEvent.click(screen.getByRole("button", { name: "Next Cue" }))
     })
 
-    expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Frame 1" })).toBeInTheDocument()
 
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Previous Cue" }))
@@ -220,7 +220,7 @@ describe("ShowMode", () => {
     expect(screen.getByRole("heading", { name: "Starting Frame" })).toBeInTheDocument()
     fireEvent.keyDown(window, { key: "ArrowRight" })
     expect(mockSetCueIndex).toHaveBeenCalled()
-    expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Frame 1" })).toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: "ArrowLeft" })
     expect(mockSetCueIndex).toHaveBeenCalledTimes(2)
