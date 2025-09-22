@@ -126,6 +126,18 @@ const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
     })
   }
 
+  const showAllScreens = () => {
+    setScreenVisibility((prevVisibility) => {
+      const updatedVisibility = { ...prevVisibility }
+      Object.keys(updatedVisibility)
+      .filter((screenNumber) => screenNumber !== "5")
+      .forEach((screenNumber) => {
+        updatedVisibility[screenNumber] = true
+      })
+      return updatedVisibility
+    })
+  }
+
   const handleScreenClose = useCallback((screenNumber) => {
     setScreenVisibility((prevVisibility) => ({
       ...prevVisibility,
@@ -164,6 +176,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex }) => {
         screens={screenVisibility}
         toggleScreenVisibility={toggleScreenVisibility}
         toggleScreenMirroring={toggleScreenMirroring}
+        showAllScreens={showAllScreens}
         mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}
