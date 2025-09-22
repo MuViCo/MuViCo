@@ -99,8 +99,8 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
       onClick={() => updateCue("Previous")}
       colorScheme="purple"
     />
-
-    <Heading size="md">Index {cueIndex}</Heading>
+    
+    <Heading size="md">{cueIndex === 0 ? "Starting Frame" : `Index ${cueIndex}`}</Heading>
 
     <IconButton
       aria-label="Next Cue"

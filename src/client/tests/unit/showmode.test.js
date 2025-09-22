@@ -78,7 +78,7 @@ describe("ShowMode", () => {
       render(<ShowMode cues={mockCues} cueIndex={mockCueIndex} />)
     })
 
-    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Starting Frame" })).toBeInTheDocument()
 
     expect(
       screen.getByRole("button", { name: "Open screen: 1" })
@@ -123,7 +123,7 @@ describe("ShowMode", () => {
       fireEvent.click(screen.getByRole("button", { name: "Previous Cue" }))
     })
 
-    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Starting Frame" })).toBeInTheDocument()
   })
 
   test("toggles screen visibility", async () => {
@@ -217,14 +217,14 @@ describe("ShowMode", () => {
       />
     )
 
-    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Starting Frame" })).toBeInTheDocument()
     fireEvent.keyDown(window, { key: "ArrowRight" })
     expect(mockSetCueIndex).toHaveBeenCalled()
     expect(screen.getByRole("heading", { name: "Index 1" })).toBeInTheDocument()
 
     fireEvent.keyDown(window, { key: "ArrowLeft" })
     expect(mockSetCueIndex).toHaveBeenCalledTimes(2)
-    expect(screen.getByRole("heading", { name: "Index 0" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Starting Frame" })).toBeInTheDocument()
   })
 
   test("mirrors one screen to another", async () => {

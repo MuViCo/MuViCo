@@ -57,7 +57,8 @@ const EditMode = ({
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
 
-  const xLabels = Array.from({ length: 101 }, (_, index) => `Index ${index}`)
+  const xLabels = Array.from({ length: 101 }, (_, index) => 
+    index === 0 ? "Starting Frame" : `Frame ${index}`)
   const maxScreen = Math.max(...cues.map((cue) => cue.screen), 4)
   const yLabels = Array.from(
     { length: maxScreen },
