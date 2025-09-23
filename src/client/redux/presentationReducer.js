@@ -4,6 +4,7 @@ import { createFormData } from "../components/utils/formDataUtils"
 
 const initialState = {
   cues: [],
+  name: "",
 }
 
 const presentationSlice = createSlice({
@@ -11,7 +12,8 @@ const presentationSlice = createSlice({
   initialState,
   reducers: {
     setPresentationInfo(state, action) {
-      state.cues = action.payload
+      state.cues = action.payload.cues
+      state.name = action.payload.name
     },
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
@@ -28,6 +30,7 @@ const presentationSlice = createSlice({
     },
     removePresentation(state) {
       state.cues = null
+      state.name = ""
     },
   },
 })
@@ -45,7 +48,7 @@ export default presentationSlice.reducer
 export const fetchPresentationInfo = (id) => async (dispatch) => {
   try {
     const presentation = await presentationService.get(id)
-    dispatch(setPresentationInfo(presentation.cues))
+    dispatch(setPresentationInfo(presentation))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
