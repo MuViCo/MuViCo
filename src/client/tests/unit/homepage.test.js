@@ -104,7 +104,7 @@ describe("HomePage", () => {
       expect(presentationService.getAll).toHaveBeenCalledTimes(2)
     ) //one call in useEffect and one call in createPresentation
 
-    expect(addInitialElements).toHaveBeenCalledWith(3, expect.any(Function))
+    expect(addInitialElements).toHaveBeenCalledWith(3, expect.any(Function), 1)
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })

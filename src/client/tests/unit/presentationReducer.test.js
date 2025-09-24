@@ -133,7 +133,7 @@ describe("presentationReducer reducer", () => {
 
   it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, name: "" }
+    const expectedState = { ...initialState, cues: null, name: "", screenCount: null }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -145,10 +145,11 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
+      screenCount: 3
     }
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null }
+    const expectedState = { ...initialState, cues: null, screenCount: null}
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })
