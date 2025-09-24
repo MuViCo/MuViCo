@@ -32,7 +32,7 @@ describe("CuesForm new element", () => {
 
     render(
       <MemoryRouter>
-        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} />
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
       </MemoryRouter>
     )
 
@@ -53,7 +53,7 @@ describe("CuesForm new element", () => {
 
     expect(addCue).toHaveBeenCalledWith({
       file: "/blank.png",
-      index: 5,
+      index: 0,
       cueName: "test cue",
       screen: 2,
       fileName: "",
@@ -69,7 +69,7 @@ describe("CuesForm new element", () => {
 
     render(
       <MemoryRouter>
-        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} />
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
       </MemoryRouter>
     )
 
@@ -91,7 +91,7 @@ describe("CuesForm new element", () => {
 
     expect(addCue).toHaveBeenCalledWith({
       file: file,
-      index: 4,
+      index: 0,
       cueName: "test cue",
       screen: 2,
       fileName: "testfile.png",
@@ -107,7 +107,7 @@ describe("CuesForm new element", () => {
 
     render(
       <MemoryRouter>
-        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} />
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
       </MemoryRouter>
     )
 
@@ -140,7 +140,7 @@ describe("CuesForm new element", () => {
 
     expect(
       screen.queryByText(
-        "Invalid file type. Please see the info button for valid types."
+        "Invalid file type. Please see the info button for valid visual file types."
       )
     ).toBeInTheDocument()
 
@@ -148,7 +148,7 @@ describe("CuesForm new element", () => {
       () => {
         expect(
           screen.queryByText(
-            "Invalid file type. Please see the info button for valid types."
+            "Invalid file type. Please see the info button for valid visual file types."
           )
         ).not.toBeInTheDocument()
       },
@@ -179,6 +179,7 @@ describe("CuesForm update element", () => {
           onClose={onClose}
           cues={mockCues}
           cueData={cueData}
+          screenCount={4}
         />
       </MemoryRouter>
     )
@@ -219,6 +220,7 @@ describe("CuesForm update element", () => {
           cues={mockCues}
           cueData={cueData}
           onClose={onClose}
+          screenCount={4}
         />
       </MemoryRouter>
     )
@@ -273,6 +275,7 @@ describe("CuesForm update element", () => {
           cues={mockCues}
           cueData={cueData}
           onClose={onClose}
+          screenCount={4}
         />
       </MemoryRouter>
     )
@@ -297,7 +300,7 @@ describe("CuesForm update element", () => {
 
     expect(
       screen.queryByText(
-        "Invalid file type. Please see the info button for valid types."
+        "Invalid file type. Please see the info button for valid visual file types."
       )
     ).toBeInTheDocument()
   })

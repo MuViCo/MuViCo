@@ -288,7 +288,7 @@ describe("PresentationForm", () => {
     )
 
     const nameInput = screen.getByLabelText("Name*")
-    const screenCountInput = screen.getByLabelText("Screen Count*")
+    const screenCountInput = screen.getByTestId("presentation-screen-count")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.change(screenCountInput, { target: { value: 1 } })
     fireEvent.click(screen.getByText("create"))

@@ -31,7 +31,7 @@ describe("test presentation", () => {
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
-      .send({ name: "Test presentation" })
+      .send({ name: "Test presentation", screenCount: 4 })
     const presentation = await Presentation.findOne({
       name: "Test presentation",
     })
