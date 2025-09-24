@@ -60,13 +60,16 @@ const EditMode = ({
 
   const xLabels = Array.from({ length: 101 }, (_, index) => 
     index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const maxScreen = Math.max(...cues.map((cue) => cue.screen), presentation.screenCount)
+  const visualCues = cues.filter(cue => cue.screen <= presentation.screenCount)
+  const maxVisualScreen = Math.max(...visualCues.map((cue) => cue.screen), presentation.screenCount)
+  
   const yLabels = Array.from(
-    { length: maxScreen },
+    { length: maxVisualScreen },
     (_, index) => `Screen ${index + 1}`
   )
 
-  yLabels[4] = "Audio files"
+  // Add audio row separately (always at the end)
+  yLabels.push("Audio files")
 
   const [isDragging, setIsDragging] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
@@ -196,7 +199,7 @@ const EditMode = ({
       !cueExists &&
       xIndex >= 0 &&
       xIndex <= 101 &&
-      yIndex <= 5 &&
+      yIndex <= presentation.screenCount + 1 &&
       yIndex >= 1
     ) {
       setHoverPosition({ index: xIndex, screen: yIndex })
@@ -379,7 +382,7 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > 5) {
+    if (yIndex < 1 || yIndex > presentation.screenCount + 1) {
       return
     }
 
@@ -536,8 +539,9 @@ const EditMode = ({
       )
 
       const file = mediaFiles[0]
+      const audioRowIndex = presentation.screenCount + 1
 
-      if (isImageOrVideo(file) && xIndex < 101 && yIndex > 4) {
+      if (isImageOrVideo(file) && xIndex < 101 && yIndex === audioRowIndex) {
         showToast({
           title: "Only audio files on the audio row.",
           description: "Click on an appropriate row to paste the element.",
@@ -545,7 +549,7 @@ const EditMode = ({
         })
         return
       }
-      if (isAudio(file) && yIndex !== 5 && xIndex < 101) {
+      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < 101) {
         showToast({
           title: "Only images/videos on screen rows.",
           description: "Click on an appropriate row to paste the element.",

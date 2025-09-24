@@ -22,6 +22,7 @@ const presentationSchema = mongoose.Schema({
     required: true,
     default: 1,
     min: 1,
+    max: 4,
   },
 
   cues: [
@@ -36,6 +37,22 @@ const presentationSchema = mongoose.Schema({
         driveId: String,
         size: { type: String, default: "0" },
         type: { type: String, default: "image/jpeg" },
+      },
+      loop: { type: Boolean, default: false },
+    },
+  ],
+
+  audioCues: [
+    {
+      index: { type: Number, required: true },
+      name: { type: String, required: true },
+      file: {
+        id: String,
+        name: String,
+        url: String,
+        driveId: String,
+        size: { type: String, default: "0" },
+        type: { type: String, default: "audio/mpeg" },
       },
       loop: { type: Boolean, default: false },
     },

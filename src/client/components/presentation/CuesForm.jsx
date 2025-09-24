@@ -25,16 +25,16 @@ import {
 
 const theme = extendTheme({})
 
-const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount }) => {
+const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(position?.screen || 0)
+  const [screen, setScreen] = useState(isAudioMode ? 0 : (position?.screen || 0))
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
-  const allowedTypes = [
+  const visualTypes = [
     "image/png",
     "image/jpeg",
     "image/jpg",
@@ -49,9 +49,14 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     "image/svg+xml",
     "video/mp4",
     "video/3gpp",
+  ]
+
+  const audioTypes = [
     "audio/mpeg",
     "audio/wav",
   ]
+
+  const allowedTypes = screen === screenCount + 1 ? audioTypes : visualTypes
 
   const isAudioFile = () => file?.type?.includes("audio/")
 
@@ -63,13 +68,18 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   }, [position])
 
   useEffect(() => {
-    if (screen > 0 && !cueData) {
-      setIndex((prevIndex) => {
-        const newIndex = getNextAvailableIndex(screen, cues)
-        return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
-      })
+    if (!cueData) {
+      if (isAudioMode) {
+        const newIndex = getNextAvailableIndex(0, audioCues)
+        setIndex(newIndex)
+      } else if (screen > 0) {
+        setIndex((prevIndex) => {
+          const newIndex = getNextAvailableIndex(screen, cues)
+          return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
+        })
+      }
     }
-  }, [screen, cues, cueData])
+  }, [screen, cues, audioCues, cueData, isAudioMode])
 
   useEffect(() => {
     if (cueData) {
@@ -84,13 +94,24 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
   const checkFileType = (file) => {
-    if (!allowedTypes.includes(file.type)) {
-      setError("Invalid file type. Please see the info button for valid types.")
-      setTimeout(() => {
-        setError(null)
-      }, 5000)
+    const isAudio = file.type.includes("audio/")
+    const currentScreen = screen
+    
+    // For audio files, check if they'll be placed correctly (auto-assigned to audio screen)
+    const effectiveScreen = isAudio ? screenCount + 1 : currentScreen
+    
+    // Check if the file type is allowed for the effective screen
+    const effectiveAllowedTypes = effectiveScreen === screenCount + 1 ? audioTypes : visualTypes
+    
+    if (!effectiveAllowedTypes.includes(file.type)) {
+      const errorMsg = effectiveScreen === screenCount + 1
+        ? "Invalid file type. Only audio files (.mp3, .wav) are allowed on the audio screen."
+        : "Invalid file type. Please see the info button for valid visual file types."
+      setError(errorMsg)
+      setTimeout(() => setError(null), 5000)
       return false
     }
+    
     return true
   }
 
@@ -102,7 +123,13 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         return
       }
     }
-    addCue({ file, index, cueName, screen, fileName, loop })
+
+    if (isAudioMode && addAudioCue) {
+      addAudioCue({ file, index, cueName, fileName, loop })
+    } else {
+      addCue({ file, index, cueName, screen, fileName, loop })
+    }
+    
     setError(null)
     setFile("/blank.png")
     setFileName("")
@@ -144,13 +171,13 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       setFileName(selected.name)
 
       if (selected.type && selected.type.includes("audio")) {
-        setScreen(screenCount + 1)
-      } else if (
-        selected.type &&
-        !selected.type.includes("audio") &&
-        screen === screenCount + 1
-      ) {
-        setScreen(1)
+        if (screen !== screenCount + 1) {
+          setScreen(screenCount + 1)
+        }
+      } else {
+        if (screen === screenCount + 1) {
+          setScreen(1)
+        }
       }
     } else {
       setFile("")
@@ -168,26 +195,35 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           ) : (
             <Heading size="md">Add element</Heading>
           )}
-          <FormHelperText mb={2}>
-            Screen 1-4 for images and videos and screen 5 for audio only*
-          </FormHelperText>
-          <NumberInput
-            id="screen-number"
-            value={screen}
-            mb={4}
-            min={isAudioFile() ? screenCount + 1 : 1}
-            max={isAudioFile() || file === "/blank.png" ? screenCount + 1 : screenCount}
-            onChange={handleNumericInputChange(setScreen)}
-            onBlur={validateAndSetNumber(setScreen, 1, screenCount + 1)}
-            readOnly={isAudioFile()}
-            required
-          >
-            <NumberInputField data-testid="screen-number" />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
+          {!isAudioMode && (
+            <>
+              <FormHelperText mb={2}>
+                Screen 1-4 for images and videos and screen 5 for audio only*
+              </FormHelperText>
+              <NumberInput
+                id="screen-number"
+                value={screen}
+                mb={4}
+                min={1}
+                max={screenCount + 1}
+                onChange={handleNumericInputChange(setScreen)}
+                onBlur={validateAndSetNumber(setScreen, 1, screenCount + 1)}
+                required
+              >
+                <NumberInputField data-testid="screen-number" />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </>
+          )}
+          
+          {isAudioMode && (
+            <FormHelperText mb={4} color="purple.600">
+              Adding audio cue (screen not applicable)
+            </FormHelperText>
+          )}
           <FormHelperText mb={2}>Index 0-100*</FormHelperText>
           <NumberInput
             id="index-number"
@@ -217,17 +253,19 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           />
           <Divider orientation="horizontal" my={4} />
           <FormHelperText mb={2}>
-            Upload media
+            {isAudioMode ? "Upload audio file" : "Upload media"}
             <Tooltip
               label={
-                <>
-                  <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
-                  .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
-                  <br />
-                  <strong>Valid video types: </strong> .mp4 and .3gp
-                  <br />
-                  <strong>Valid audio types: </strong> .mp3 and .wav
-                </>
+                isAudioMode || screen === screenCount + 1 ? (
+                  <><strong>Valid audio types: </strong> .mp3 and .wav</>
+                ) : (
+                  <>
+                    <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                    .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
+                    <br />
+                    <strong>Valid video types: </strong> .mp4 and .3gp
+                  </>
+                )
               }
               placement="right-end"
               p={2}
@@ -249,7 +287,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             data-testid="file-name"
             style={{ display: "none" }}
             onChange={fileSelected}
-            accept={allowedTypes}
+            accept={allowedTypes.join(',')}
           />{" "}
           {fileName &&
             fileName !== "blank.png" &&
