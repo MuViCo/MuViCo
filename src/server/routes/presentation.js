@@ -134,9 +134,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (screen < 1 || screen > 5) {
+    // Get presentation to check screenCount for dynamic validation
+    const presentationForValidation = await Presentation.findById(id)
+    if (!presentationForValidation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    if (screen < 1 || screen > presentationForValidation.screenCount + 1) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationForValidation.screenCount + 1}.`,
       })
     }
 
@@ -204,6 +210,27 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           return res
             .status(400)
             .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
+    }
+
+    const isAudioScreen = screen === presentationForValidation.screenCount + 1
+    
+    if (isAudioScreen) {
+      if (image === "/blank.png") {
+        return res.status(400).json({ 
+          error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
+        })
+      }
+      if (file && !file.mimetype.startsWith("audio/")) {
+        return res.status(400).json({ 
+          error: "Only audio files are allowed on the audio screen." 
+        })
+      }
+    } else {
+      if (file && file.mimetype.startsWith("audio/")) {
+        return res.status(400).json({ 
+          error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+        })
       }
     }
 
@@ -300,9 +327,15 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (screen < 1 || screen > 5) {
+      // Get presentation to check screenCount for dynamic validation
+      const presentationData = await Presentation.findById(id)
+      if (!presentationData) {
+        return res.status(404).json({ error: "Presentation not found" })
+      }
+
+      if (screen < 1 || screen > presentationData.screenCount + 1) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationData.screenCount + 1}.`,
         })
       }
 
@@ -310,6 +343,27 @@ router.put(
         return res.status(400).json({
           error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
         })
+      }
+
+      const isAudioScreen = screen === presentationData.screenCount + 1
+      
+      if (isAudioScreen) {
+        if (image === "/blank.png") {
+          return res.status(400).json({ 
+            error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
+          })
+        }
+        if (file && !file.mimetype.startsWith("audio/")) {
+          return res.status(400).json({ 
+            error: "Only audio files are allowed on the audio screen." 
+          })
+        }
+      } else {
+        if (file && file.mimetype.startsWith("audio/")) {
+          return res.status(400).json({ 
+            error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+          })
+        }
       }
 
       const presentation = await Presentation.findById(id)
