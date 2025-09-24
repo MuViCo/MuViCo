@@ -21,6 +21,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
 
     setName("")
     setScreenCount(1)
+    onCancel()
   }
 
   return (
@@ -37,7 +38,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setName(target.value)}
           />
           
-          <FormLabel htmlFor="screen-count" fontWeight="bold">
+          <FormLabel htmlFor="screen-count" fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
             Screen Count (max 4)
           </FormLabel>
           <Input
