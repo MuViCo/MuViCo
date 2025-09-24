@@ -391,6 +391,7 @@ const GridLayoutComponent = ({
                 display="inline-block"
                 maxWidth="80%"
                 textAlign="center"
+                cursor="default"
                 style={{ textShadow: "2px 2px 4px rgba(0,0,0,1)" }}
               >
                 {cue.name}
