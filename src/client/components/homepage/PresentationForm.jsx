@@ -16,7 +16,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
     event.preventDefault()
     createPresentation({
       name,
-      screenCount
+      screenCount: parseInt(screenCount, 10)
     })
 
     setName("")
@@ -38,13 +38,14 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
           />
           
           <FormLabel htmlFor="screen-count" fontWeight="bold">
-            Screen Count
+            Screen Count (max 4)
           </FormLabel>
           <Input
             data-testid="presentation-screen-count"
             id="screen-count"
             type="number"
             min="1"
+            max="4"
             value={screenCount}
             onChange={({ target }) => setScreenCount(target.value)}
           />
