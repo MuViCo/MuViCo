@@ -287,7 +287,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             data-testid="file-name"
             style={{ display: "none" }}
             onChange={fileSelected}
-            accept={allowedTypes.join(',')}
+            accept={allowedTypes.join(",")}
           />{" "}
           {fileName &&
             fileName !== "blank.png" &&
