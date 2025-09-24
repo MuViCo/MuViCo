@@ -1,21 +1,14 @@
 import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
+import presentations from "../../services/presentations"
 
 const addInitialElements = async (presentationId, showToast) => {
-  const screens = [1, 2, 3, 4, 5]
+  const presentationInfo = await presentations.getById(presentationId)
+  const screenCount = presentationInfo.screenCount
+  
   try {
-    for (const screen of screens) {
-      if (screen === 5) {
-        const formData = createFormData(
-          0,
-          "initial element for audio",
-          screen,
-          "/blank.png"
-        )
-        await presentation.addCue(presentationId, formData)
-        return
-      }
-
+    // Create initial elements for visual screens (1 to screenCount)
+    for (let screen = 1; screen <= screenCount; screen++) {
       const formData = createFormData(
         0,
         `initial element for screen ${screen}`,
@@ -25,9 +18,18 @@ const addInitialElements = async (presentationId, showToast) => {
       await presentation.addCue(presentationId, formData)
     }
 
+    const audioScreen = screenCount + 1
+    const audioFormData = createFormData(
+      0,
+      "initial element for audio",
+      audioScreen,
+      "/blank.png"
+    )
+    await presentation.addCue(presentationId, audioFormData)
+
     showToast({
       title: "Elements added",
-      description: "Four initial elements added to screens",
+      description: "Initial elements added to screens",
       status: "success",
     })
   } catch (error) {

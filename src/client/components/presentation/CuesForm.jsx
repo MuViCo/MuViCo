@@ -25,7 +25,7 @@ import {
 
 const theme = extendTheme({})
 
-const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
+const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
@@ -144,11 +144,11 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
       setFileName(selected.name)
 
       if (selected.type && selected.type.includes("audio")) {
-        setScreen(5)
+        setScreen(screenCount + 1)
       } else if (
         selected.type &&
         !selected.type.includes("audio") &&
-        screen === 5
+        screen === screenCount + 1
       ) {
         setScreen(1)
       }
@@ -169,16 +169,16 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue }) => {
             <Heading size="md">Add element</Heading>
           )}
           <FormHelperText mb={2}>
-            Screen 1-4 for images and videos and screen 5 for audio only*
+            Screen 1-{screenCount} for images and videos and screen {screenCount + 1} for audio only*
           </FormHelperText>
           <NumberInput
             id="screen-number"
             value={screen}
             mb={4}
-            min={isAudioFile() ? 5 : 1}
-            max={isAudioFile() || file === "/blank.png" ? 5 : 4}
+            min={isAudioFile() ? screenCount + 1 : 1}
+            max={isAudioFile() || file === "/blank.png" ? screenCount + 1 : screenCount}
             onChange={handleNumericInputChange(setScreen)}
-            onBlur={validateAndSetNumber(setScreen, 1, 5)}
+            onBlur={validateAndSetNumber(setScreen, 1, screenCount + 1)}
             readOnly={isAudioFile()}
             required
           >

@@ -5,6 +5,7 @@ import { createFormData } from "../components/utils/formDataUtils"
 const initialState = {
   cues: [],
   name: "",
+  screenCount: null,
 }
 
 const presentationSlice = createSlice({
@@ -14,6 +15,7 @@ const presentationSlice = createSlice({
     setPresentationInfo(state, action) {
       state.cues = action.payload.cues
       state.name = action.payload.name
+      state.screenCount = action.payload.screenCount
     },
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
@@ -31,6 +33,7 @@ const presentationSlice = createSlice({
     removePresentation(state) {
       state.cues = null
       state.name = ""
+      state.screenCount = null
     },
   },
 })

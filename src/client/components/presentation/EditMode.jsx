@@ -9,7 +9,7 @@ import {
   IconButton,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import {
   updatePresentation,
   createCue,
@@ -43,6 +43,7 @@ const EditMode = ({
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
+  const presentation = useSelector((state) => state.presentation)
   const containerRef = useRef(null)
 
   const [status, setStatus] = useState("saved")
@@ -59,7 +60,7 @@ const EditMode = ({
 
   const xLabels = Array.from({ length: 101 }, (_, index) => 
     index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const maxScreen = Math.max(...cues.map((cue) => cue.screen), 4)
+  const maxScreen = Math.max(...cues.map((cue) => cue.screen), presentation.screenCount)
   const yLabels = Array.from(
     { length: maxScreen },
     (_, index) => `Screen ${index + 1}`
@@ -748,6 +749,7 @@ const EditMode = ({
             cues={cues}
             cueData={selectedCue || null}
             updateCue={updateCue}
+            screenCount={presentation.screenCount}
           />
         </Box>
         <Box
