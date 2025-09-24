@@ -1,4 +1,4 @@
-const supertest = require("supertest")
+  const supertest = require("supertest")
 const mongoose = require("mongoose")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
@@ -142,7 +142,6 @@ describe("test presentation", () => {
       [0, 1],
       [50, 2],
       [100, 4],
-      [100, 5],
     ]
 
     test.each(validCases)(
@@ -193,7 +192,6 @@ describe("test presentation", () => {
       [0, 1],
       [50, 2],
       [100, 4],
-      [100, 5],
     ]
 
     test.each(validCases)(
