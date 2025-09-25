@@ -25,6 +25,13 @@ const presentationSchema = mongoose.Schema({
     max: 4,
   },
 
+  indexCount: {
+    type: Number,
+    default: 5,
+    min: 1,
+    max: 101,
+  },
+
   cues: [
     {
       index: { type: Number, required: true },

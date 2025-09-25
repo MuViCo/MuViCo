@@ -35,6 +35,7 @@ const EditMode = ({
   cueIndex,
   isAudioMuted,
   toggleAudioMute,
+  indexCount,
 }) => {
   const bgColorHover = useColorModeValue(
     "rgba(255, 181, 181, 0.8)",
@@ -58,7 +59,7 @@ const EditMode = ({
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
 
-  const xLabels = Array.from({ length: 101 }, (_, index) => 
+  const xLabels = Array.from({ length: indexCount }, (_, index) => 
     index === 0 ? "Starting Frame" : `Frame ${index}`)
   const visualCues = cues.filter(cue => cue.screen <= presentation.screenCount)
   const maxVisualScreen = Math.max(...visualCues.map((cue) => cue.screen), presentation.screenCount)
@@ -198,7 +199,7 @@ const EditMode = ({
     if (
       !cueExists &&
       xIndex >= 0 &&
-      xIndex <= 101 &&
+      xIndex <= indexCount + 1 &&
       yIndex <= presentation.screenCount + 1 &&
       yIndex >= 1
     ) {
@@ -386,7 +387,7 @@ const EditMode = ({
       return
     }
 
-    if (xIndex < 0 || xIndex > 100) {
+    if (xIndex < 0 || xIndex > indexCount) {
       return
     }
 
@@ -541,7 +542,7 @@ const EditMode = ({
       const file = mediaFiles[0]
       const audioRowIndex = presentation.screenCount + 1
 
-      if (isImageOrVideo(file) && xIndex < 101 && yIndex === audioRowIndex) {
+      if (isImageOrVideo(file) && xIndex < indexCount + 1 && yIndex === audioRowIndex) {
         showToast({
           title: "Only audio files on the audio row.",
           description: "Click on an appropriate row to paste the element.",
@@ -549,7 +550,7 @@ const EditMode = ({
         })
         return
       }
-      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < 101) {
+      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount + 1) {
         showToast({
           title: "Only images/videos on screen rows.",
           description: "Click on an appropriate row to paste the element.",
@@ -754,6 +755,7 @@ const EditMode = ({
             cueData={selectedCue || null}
             updateCue={updateCue}
             screenCount={presentation.screenCount}
+            indexCount={indexCount}
           />
         </Box>
         <Box

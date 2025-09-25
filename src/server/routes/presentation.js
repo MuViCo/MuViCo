@@ -115,6 +115,32 @@ router.delete("/:id", userExtractor, async (req, res) => {
   }
 })
 
+router.put("/:id/indexCount", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { indexCount } = req.body
+
+    if (typeof indexCount !== "number") {
+      return res.status(400).json({ error: "indexCount must be a number" })
+    }
+
+    const updated = await Presentation.findByIdAndUpdate(
+      id,
+      { indexCount },
+      { new: true }
+    )
+
+    if (!updated) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    res.json({ indexCount: updated.indexCount })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
 /**
  * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
  * and aws bucket. Can upload any kind of image or pdf.

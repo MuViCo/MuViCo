@@ -67,10 +67,23 @@ const updateCue = async (id, cueId, formData) => {
   return response.data
 }
 
+const saveIndexCountApi = async (id, indexCount) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const body = { indexCount }
+  const response = await axios.put(`${baseUrl}${id}/indexCount`, body, config)
+  return response.data
+}
+
 export default {
   get,
   remove,
   addCue,
   removeCue,
   updateCue,
+  saveIndexCountApi,
 }

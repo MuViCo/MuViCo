@@ -25,7 +25,7 @@ import {
 
 const theme = extendTheme({})
 
-const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false }) => {
+const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState("/blank.png")
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
@@ -224,15 +224,15 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               Adding audio cue (screen not applicable)
             </FormHelperText>
           )}
-          <FormHelperText mb={2}>Index 0-100*</FormHelperText>
+          <FormHelperText mb={2}>Frame 0-{indexCount}*</FormHelperText>
           <NumberInput
             id="index-number"
             value={index}
             mb={4}
             min={0}
-            max={100}
+            max={indexCount + 1}
             onChange={handleNumericInputChange(setIndex)}
-            onBlur={validateAndSetNumber(setIndex, 0, 100)}
+            onBlur={validateAndSetNumber(setIndex, 0, indexCount + 1)}
             required
           >
             <NumberInputField data-testid="index-number" />

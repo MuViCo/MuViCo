@@ -1,12 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
+import { saveIndexCount } from "./presentationThunks"
 
 const initialState = {
   cues: [],
   audioCues: [],
   name: "",
   screenCount: null,
+  indexCount: 5,
+  saving: false,
 }
 
 const presentationSlice = createSlice({
@@ -18,6 +21,7 @@ const presentationSlice = createSlice({
       state.audioCues = action.payload.audioCues
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
+      state.indexCount = action.payload.indexCount
     },
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
@@ -50,7 +54,29 @@ const presentationSlice = createSlice({
       state.audioCues = []
       state.name = ""
       state.screenCount = null
+      state.indexCount = null
     },
+    incrementIndexCount(state) {
+      state.indexCount += 1
+    },
+    decrementIndexCount(state) {
+      state.indexCount -= 1
+    }
+  },
+  extraReducers: builder => {
+    builder
+      .addCase(saveIndexCount.pending, state => {
+        state.saving = true
+      })
+      .addCase(saveIndexCount.fulfilled, (state, action) => {
+        state.saving = false
+        if (action.payload.indexCount !== undefined) {
+          state.indexCount = action.payload.indexCount
+        }
+      })
+      .addCase(saveIndexCount.rejected, state => {
+        state.saving = false
+      })
   },
 })
 
@@ -63,6 +89,8 @@ export const {
   editCue,
   editAudioCue,
   removePresentation,
+  incrementIndexCount,
+  decrementIndexCount,
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
