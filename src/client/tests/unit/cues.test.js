@@ -8,11 +8,11 @@ describe("CuesForm new element", () => {
   test("render form elements", () => {
     render(
       <MemoryRouter>
-        <CuesForm />
+        <CuesForm indexCount={5}/>
       </MemoryRouter>
     )
     expect(screen.getByText("Add element")).toBeInTheDocument()
-    expect(screen.getByText("Index 0-100*")).toBeInTheDocument()
+    expect(screen.getByText(/Frame\s*0-4/i)).toBeInTheDocument()
     expect(screen.getByText("Name*")).toBeInTheDocument()
     expect(
       screen.getByText(

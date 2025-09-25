@@ -224,15 +224,15 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               Adding audio cue (screen not applicable)
             </FormHelperText>
           )}
-          <FormHelperText mb={2}>Frame 0-{indexCount}*</FormHelperText>
+          <FormHelperText mb={2}>Frame 0-{indexCount-1}*</FormHelperText>
           <NumberInput
             id="index-number"
             value={index}
             mb={4}
             min={0}
-            max={indexCount + 1}
+            max={indexCount}
             onChange={handleNumericInputChange(setIndex)}
-            onBlur={validateAndSetNumber(setIndex, 0, indexCount + 1)}
+            onBlur={validateAndSetNumber(setIndex, 0, indexCount)}
             required
           >
             <NumberInputField data-testid="index-number" />
