@@ -64,6 +64,21 @@ describe("test presentation", () => {
     return response
   }
 
+  const setIndexCount = async (id, indexCount) => {
+    if (!testPresentationId) {
+      throw new Error("Error in setIndexCount: testPresentationId is undefined")
+    }
+
+    const url = `/api/presentation/${id}/indexCount`
+
+    const response = await api
+      .put(url)
+      .set("Authorization", authHeader)
+      .send({ id: id, indexCount: indexCount })
+
+    return response
+  }
+
   describe("GET /api/presentation/:id", () => {
     test("presentation is returned as json when using amazon s3", async () => {
       await api
@@ -240,6 +255,39 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
+    })
+  })
+
+  describe("PUT /api/presentation/:id/indexCount", () => {
+    const validCases = [1, 5, 10, 100]
+
+    test.each(validCases)(
+      "updates indexCount with valid count %i",
+      async (indexCount) => {
+        const response = await setIndexCount(testPresentationId, indexCount)
+        expect(response.status).toBe(200)
+      }
+    )
+
+    const invalidCases = [
+      [0, "indexCount must be between 1 and 100"],
+      [101, "indexCount must be between 1 and 100"],
+      ["asdf", "indexCount must be a number"]
+    ]
+
+    test.each(invalidCases)(
+      "throws error with invalid index count %s",
+      async (indexCount, error) => {
+        const response = await setIndexCount(testPresentationId, indexCount)
+        expect(response.status).toBe(400)
+        expect(response.body.error).toBe(error)
+      }
+    )
+
+    test("throws error with missing id", async () => {
+      const response = await setIndexCount(null, 5)
+      expect(response.status).toBe(500)
+      expect(response.body.error).toBe("Internal server error")
     })
   })
 })

@@ -115,6 +115,9 @@ router.delete("/:id", userExtractor, async (req, res) => {
   }
 })
 
+/**
+ * Updates presentation by ID, setting the new index count and adding them to mongoDB
+ */
 router.put("/:id/indexCount", userExtractor, async (req, res) => {
   try {
     const { id } = req.params
@@ -122,6 +125,10 @@ router.put("/:id/indexCount", userExtractor, async (req, res) => {
 
     if (typeof indexCount !== "number") {
       return res.status(400).json({ error: "indexCount must be a number" })
+    }
+
+    if (indexCount < 1 || indexCount > 100) {
+      return res.status(400).json({ error: "indexCount must be between 1 and 100"})
     }
 
     const updated = await Presentation.findByIdAndUpdate(

@@ -199,7 +199,7 @@ const EditMode = ({
     if (
       !cueExists &&
       xIndex >= 0 &&
-      xIndex <= indexCount + 1 &&
+      xIndex <= indexCount &&
       yIndex <= presentation.screenCount + 1 &&
       yIndex >= 1
     ) {
@@ -542,7 +542,7 @@ const EditMode = ({
       const file = mediaFiles[0]
       const audioRowIndex = presentation.screenCount + 1
 
-      if (isImageOrVideo(file) && xIndex < indexCount + 1 && yIndex === audioRowIndex) {
+      if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
         showToast({
           title: "Only audio files on the audio row.",
           description: "Click on an appropriate row to paste the element.",
@@ -550,7 +550,7 @@ const EditMode = ({
         })
         return
       }
-      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount + 1) {
+      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount) {
         showToast({
           title: "Only images/videos on screen rows.",
           description: "Click on an appropriate row to paste the element.",
