@@ -149,6 +149,65 @@ router.put("/:id/indexCount", userExtractor, async (req, res) => {
 })
 
 /**
+ * Update presentation screenCount by ID
+ */
+router.put("/:id/screenCount", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { screenCount } = req.body
+
+    if (typeof screenCount !== "number") {
+      return res.status(400).json({ error: "screenCount must be a number" })
+    }
+
+    if (screenCount < 1 || screenCount > 8) {
+      return res.status(400).json({ error: "screenCount must be between 1 and 8" })
+    }
+
+    // Get current presentation to check for cues on screens being removed
+    const currentPresentation = await Presentation.findById(id)
+    if (!currentPresentation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    // If reducing screen count, remove cues from screens that will be removed
+    let removedCuesCount = 0
+    if (screenCount < currentPresentation.screenCount) {
+      const cuesToRemove = currentPresentation.cues.filter(
+        cue => cue.screen > screenCount && cue.screen <= currentPresentation.screenCount
+      )
+      removedCuesCount = cuesToRemove.length
+
+      // Remove cues from screens being deleted
+      await Presentation.findByIdAndUpdate(
+        id,
+        {
+          $pull: {
+            cues: {
+              screen: { $gt: screenCount, $lte: currentPresentation.screenCount }
+            }
+          }
+        }
+      )
+    }
+    
+    const updated = await Presentation.findByIdAndUpdate(
+      id,
+      { screenCount },
+      { new: true }
+    )
+
+    res.json({ 
+      screenCount: updated.screenCount,
+      removedCuesCount: removedCuesCount
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
+/**
  * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache

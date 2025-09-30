@@ -15,14 +15,19 @@ import {
   createCue,
   removeCue,
   updatePresentationSwappedCues,
+  incrementScreenCount,
+  decrementScreenCount,
 } from "../../redux/presentationReducer"
+import { saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
+import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
+import { AddIcon, MinusIcon } from "@chakra-ui/icons"
 
 const theme = extendTheme({})
 
@@ -101,6 +106,89 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [isToolboxOpen])
+
+  const handleIncreaseScreenCount = async () => {
+    if (presentation.screenCount >= 8) {
+      showToast({
+        title: "Maximum screens reached",
+        description: "Cannot add more than 8 screens",
+        status: "warning",
+      })
+      return
+    }
+
+    try {
+      const newScreenNumber = presentation.screenCount + 1
+      
+      // First, update the screen count
+      dispatch(incrementScreenCount())
+      await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
+      
+      // Then add an initial element to the new screen
+      const formData = createFormData(
+        0, // index
+        `initial element for screen ${newScreenNumber}`,
+        newScreenNumber, // screen
+        null // file (no file for blank element)
+      )
+      // Add image field for blank elements
+      formData.append("image", "/blank.png")
+      
+      await dispatch(createCue(id, formData))
+      
+      showToast({
+        title: "Screen added",
+        description: `Screen ${newScreenNumber} has been added with initial element`,
+        status: "success",
+      })
+    } catch (error) {
+      dispatch(decrementScreenCount()) // Revert on error
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to add screen",
+        status: "error",
+      })
+    }
+  }
+
+  const handleDecreaseScreenCount = async () => {
+    if (presentation.screenCount <= 1) {
+      showToast({
+        title: "Minimum screens required",
+        description: "Cannot have less than 1 screen",
+        status: "warning",
+      })
+      return
+    }
+
+    try {
+      dispatch(decrementScreenCount())
+      const result = await dispatch(saveScreenCount({ id, screenCount: presentation.screenCount - 1 }))
+      
+      // Show appropriate message based on whether cues were removed
+      const removedCuesCount = result.payload?.removedCuesCount || 0
+      if (removedCuesCount > 0) {
+        showToast({
+          title: "Screen removed",
+          description: `Screen ${presentation.screenCount} removed along with ${removedCuesCount} cue(s)`,
+          status: "success",
+        })
+      } else {
+        showToast({
+          title: "Screen removed",
+          description: `Screen ${presentation.screenCount} has been removed`,
+          status: "success",
+        })
+      }
+    } catch (error) {
+      dispatch(incrementScreenCount()) // Revert on error
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove screen",
+        status: "error",
+      })
+    }
+  }
 
   const handleMouseDown = (event) => {
     const { xIndex, yIndex } = getPosition(
@@ -614,7 +702,7 @@ const EditMode = ({
           >
             <Box h={`${rowHeight}px`} bg="transparent" />
 
-            {yLabels.map((label) => (
+            {yLabels.map((label, index) => (
               <Box
                 key={label}
                 display="flex"
@@ -632,6 +720,61 @@ const EditMode = ({
                 <Text fontWeight="bold" color="black">
                   {label}
                 </Text>
+                
+                {/* Screen count controls for visual screens */}
+                {label !== "Audio files" && !isShowMode && (
+                  <>
+                    {/* Add screen button - show on last visual screen only */}
+                    {index === presentation.screenCount - 1 && presentation.screenCount < 8 && (
+                      <IconButton
+                        icon={<AddIcon />}
+                        size="sm"
+                        colorScheme="green"
+                        variant="solid"
+                        bg="white"
+                        color="green.600"
+                        border="2px solid"
+                        borderColor="green.500"
+                        position="absolute"
+                        bottom="4px"
+                        right="4px"
+                        aria-label="Add screen"
+                        title="Add screen"
+                        onClick={handleIncreaseScreenCount}
+                        _hover={{ bg: "green.50", borderColor: "green.600", transform: "scale(1.1)" }}
+                        _active={{ bg: "green.100" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
+                      />
+                    )}
+                    
+                    {/* Remove screen button - show on last visual screen only if more than 1 screen */}
+                    {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
+                      <IconButton
+                        icon={<MinusIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        variant="solid"
+                        bg="white"
+                        color="red.600"
+                        border="2px solid"
+                        borderColor="red.500"
+                        position="absolute"
+                        top="4px"
+                        right="4px"
+                        aria-label="Remove screen"
+                        title="Remove screen"
+                        onClick={handleDecreaseScreenCount}
+                        _hover={{ bg: "red.50", borderColor: "red.600", transform: "scale(1.1)" }}
+                        _active={{ bg: "red.100" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
+                      />
+                    )}
+                  </>
+                )}
+                
+                {/* Audio mute button */}
                 {label === "Audio files" && (
                   <IconButton
                     icon={
