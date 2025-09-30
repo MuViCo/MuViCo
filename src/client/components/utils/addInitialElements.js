@@ -2,7 +2,7 @@ import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
 
 const addInitialElements = async (presentationId, screenCount, showToast) => {
-  if (!presentationId || typeof screenCount !== 'number' || typeof showToast !== 'function') {
+  if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {
     return
   }
   
