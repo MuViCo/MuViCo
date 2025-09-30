@@ -98,7 +98,8 @@ const GridLayoutComponent = ({
   cueIndex,
   isAudioMuted,
   setSelectedCue,
-  setIsToolboxOpen
+  setIsToolboxOpen,
+  indexCount
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -257,9 +258,9 @@ const GridLayoutComponent = ({
     <GridLayout
       className="layout"
       layout={currentLayout}
-      cols={101}
+      cols={indexCount}
       rowHeight={rowHeight}
-      width={101 * columnWidth + (101 - 1) * gap}
+      width={indexCount * columnWidth + (indexCount - 1) * gap}
       isResizable={false}
       compactType={null}
       isBounded={false}

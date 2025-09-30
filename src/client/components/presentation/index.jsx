@@ -27,6 +27,7 @@ const PresentationPage = ({ user }) => {
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isAudioMuted, setIsAudioMuted] = useState(false)
+  const [status, setStatus] = useState("saved")
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
@@ -51,15 +52,19 @@ const PresentationPage = ({ user }) => {
 
   const handleAddFrame = () => {
     if (indexCount < 101) {
+      setStatus("loading")
       dispatch(incrementIndexCount())
       dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+      setStatus("saved")
     }
   }
 
   const handleRemoveFrame = () => {
     if (indexCount > 1) {
+      setStatus("loading")
       dispatch(decrementIndexCount())
       dispatch(saveIndexCount({ id, indexCount: indexCount - 1 }))
+      setStatus("saved")
     }
   }
 

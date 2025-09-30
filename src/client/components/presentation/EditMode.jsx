@@ -727,6 +727,7 @@ const EditMode = ({
                 isAudioMuted={isAudioMuted}
                 setSelectedCue = {setSelectedCue}
                 setIsToolboxOpen = {setIsToolboxOpen}
+                indexCount={indexCount}
               />
 
               {hoverPosition && !isDragging && (
