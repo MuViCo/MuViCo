@@ -39,14 +39,14 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
           />
           
           <FormLabel htmlFor="screen-count" fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
-            Screen Count (max 4)
+            Screen Count (max 8)
           </FormLabel>
           <Input
             data-testid="presentation-screen-count"
             id="screen-count"
             type="number"
             min="1"
-            max="4"
+            max="8"
             value={screenCount}
             onChange={({ target }) => setScreenCount(target.value)}
           />
