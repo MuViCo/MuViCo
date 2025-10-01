@@ -347,14 +347,7 @@ const GridLayoutComponent = ({
                   {cue.file.type.startsWith("audio/") && (
                     <IconButton
                       icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-                      disabled={isShowMode}
-                      _disabled={{
-                        backgroundColor: "gray.500",
-                        opacity: 0.9,
-                        cursor: "not-allowed",
-                        pointerEvents: "auto",
-                      }}
-                      size={isShowMode ? "lg" : "xs"}
+                      size="xs"
                       position="absolute"
                       _hover={{ bg: "gray.600", color: "white" }}
                       backgroundColor="gray.500"
@@ -377,27 +370,23 @@ const GridLayoutComponent = ({
                 {cue.file.type.startsWith("audio/") && (
                   <IconButton
                     icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-                    disabled={isShowMode}
+                    disabled={true}
                     _disabled={{
                       backgroundColor: "gray.500",
                       opacity: 0.9,
-                      cursor: "not-allowed",
+                      cursor: "default",
                       pointerEvents: "auto",
                     }}
-                    size={isShowMode ? "lg" : "xs"}
+                    size="md"
                     position="absolute"
-                    _hover={{ bg: "gray.600", color: "white" }}
+                    _hover={{}}
                     backgroundColor="gray.500"
                     draggable={false}
                     zIndex="10"
-                    top="75px"
+                    top="50px"
                     right="0px"
                     aria-label={`Loop audio ${cue.name}`}
-                    title={cue.loop ? "Disable loop" : "Enable loop"}
-                    onMouseDown={(e) => {
-                      e.stopPropagation()
-                      handleLoopToggle(cue)
-                    }}
+                    title={cue.loop ? "Loop enabled" : "Plays once"}
                   />
                 )}
               </>
