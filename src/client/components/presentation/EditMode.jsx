@@ -7,6 +7,7 @@ import {
   useOutsideClick,
   useColorModeValue,
   IconButton,
+  Button
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -15,10 +16,12 @@ import {
   createCue,
   removeCue,
   updatePresentationSwappedCues,
+  incrementIndexCount,
+  decrementIndexCount
   incrementScreenCount,
   decrementScreenCount,
 } from "../../redux/presentationReducer"
-import { saveScreenCount } from "../../redux/presentationThunks"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
@@ -106,6 +109,24 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [isToolboxOpen])
+
+  const handleAddIndex = () => {
+    if (indexCount < 101) {
+      setStatus("loading")
+      dispatch(incrementIndexCount())
+      dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+      setStatus("saved")
+    }
+  }
+
+  const handleRemoveIndex = () => {
+    if (indexCount > 1) {
+      setStatus("loading")
+      dispatch(decrementIndexCount())
+      dispatch(saveIndexCount({ id, indexCount: indexCount - 1 }))
+      setStatus("saved")
+    } 
+  }
 
   const handleIncreaseScreenCount = async () => {
     if (presentation.screenCount >= 8) {
@@ -680,6 +701,20 @@ const EditMode = ({
 
   return (
     <ChakraProvider theme={theme}>
+      <Button
+            colorScheme="gray"
+            onClick={handleAddIndex}
+            isDisabled={indexCount >= 100}
+          >
+            + Add Frame (to end)
+          </Button>
+          <Button
+            colorScheme="gray"
+            onClick={handleRemoveIndex}
+            isDisabled={indexCount <= 1}
+          >
+            - Remove Frame (from end)
+          </Button>
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
@@ -826,8 +861,9 @@ const EditMode = ({
               onClick={handlePaste}
             >
               <Box
+                className="index-boxes"
                 display="grid"
-                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
+                gridTemplateColumns={`repeat(${xLabels.length + 1}, ${columnWidth}px)`}
                 gap={`${gap}px`}
                 position="sticky"
                 top={0}

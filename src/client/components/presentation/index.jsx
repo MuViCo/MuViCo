@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
-import { fetchPresentationInfo, incrementIndexCount, decrementIndexCount } from "../../redux/presentationReducer"
-import { saveIndexCount } from "../../redux/presentationThunks"
+import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
@@ -27,7 +26,6 @@ const PresentationPage = ({ user }) => {
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isAudioMuted, setIsAudioMuted] = useState(false)
-  const [status, setStatus] = useState("saved")
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
@@ -48,24 +46,6 @@ const PresentationPage = ({ user }) => {
 
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
-  }
-
-  const handleAddFrame = () => {
-    if (indexCount < 101) {
-      setStatus("loading")
-      dispatch(incrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
-      setStatus("saved")
-    }
-  }
-
-  const handleRemoveFrame = () => {
-    if (indexCount > 1) {
-      setStatus("loading")
-      dispatch(decrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount - 1 }))
-      setStatus("saved")
-    }
   }
 
   useEffect(() => {
@@ -114,20 +94,6 @@ const PresentationPage = ({ user }) => {
                   onClick={() => setIsToolboxOpen(true)}
                 >
                   Add Element
-                </Button>
-                <Button
-                  colorScheme="gray"
-                  onClick={handleAddFrame}
-                  isDisabled={indexCount >= 100}
-                >
-                  + Add Frame (to end)
-                </Button>
-                <Button
-                  colorScheme="gray"
-                  onClick={handleRemoveFrame}
-                  isDisabled={indexCount <= 1}
-                >
-                  - Remove Frame (from end)
                 </Button>
               </>
             )}
