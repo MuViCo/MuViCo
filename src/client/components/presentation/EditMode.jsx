@@ -17,7 +17,7 @@ import {
   removeCue,
   updatePresentationSwappedCues,
   incrementIndexCount,
-  decrementIndexCount
+  decrementIndexCount,
   incrementScreenCount,
   decrementScreenCount,
 } from "../../redux/presentationReducer"
