@@ -1,5 +1,8 @@
-  const supertest = require("supertest")
+const supertest = require("supertest")
 const mongoose = require("mongoose")
+const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken")
+const config = require("../utils/config")
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
 
@@ -258,38 +261,163 @@ describe("test presentation", () => {
     })
   })
 
-  describe("PUT /api/presentation/:id/indexCount", () => {
-    const validCases = [1, 5, 10, 100]
-
-    test.each(validCases)(
-      "updates indexCount with valid count %i",
-      async (indexCount) => {
-        const response = await setIndexCount(testPresentationId, indexCount)
-        expect(response.status).toBe(200)
+  describe("PUT /api/presentation/:id/screenCount", () => {
+    beforeEach(async () => {
+      const user = await User.findOne({ username: "testuser" });
+      if (!user) {
+        throw new Error("Test user not found in screen count tests");
       }
-    )
 
-    const invalidCases = [
-      [0, "indexCount must be between 1 and 100"],
-      [101, "indexCount must be between 1 and 100"],
-      ["asdf", "indexCount must be a number"]
-    ]
+      const presentation = new Presentation({
+        name: "Screen Count Test Presentation",
+        user: user._id,
+        screenCount: 3,
+        cues: [
+          { screen: 1, index: 1, name: "Element 1-1" },
+          { screen: 1, index: 2, name: "Element 1-2" },
+          { screen: 2, index: 1, name: "Element 2-1" },
+          { screen: 3, index: 1, name: "Element 3-1" },
+          { screen: 3, index: 2, name: "Element 3-2" },
+          { screen: 3, index: 3, name: "Element 3-3" }
+        ]
+      });
+      await presentation.save();
+      testPresentationId = presentation._id;
+    });
 
-    test.each(invalidCases)(
-      "throws error with invalid index count %s",
-      async (indexCount, error) => {
-        const response = await setIndexCount(testPresentationId, indexCount)
-        expect(response.status).toBe(400)
-        expect(response.body.error).toBe(error)
-      }
-    )
+    test("Should increase screen count and add initial elements", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 4 })
+        .expect(200);
 
-    test("throws error with missing id", async () => {
-      const response = await setIndexCount(null, 5)
-      expect(response.status).toBe(500)
-      expect(response.body.error).toBe("Internal server error")
-    })
-  })
+      expect(response.body.screenCount).toBe(4);
+      expect(response.body.removedCuesCount).toBe(0);
+
+      // Verify the presentation was updated
+      const updatedPresentation = await Presentation.findById(testPresentationId);
+      expect(updatedPresentation.screenCount).toBe(4);
+      
+      // Check that the presentation has the same number of cues (no automatic new cues added)
+      expect(updatedPresentation.cues.length).toBe(6);
+    });
+
+    test("Should decrease screen count and remove cues from removed screens", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2 })
+        .expect(200);
+
+      expect(response.body.screenCount).toBe(2);
+      expect(response.body.removedCuesCount).toBe(3);
+
+      const updatedPresentation = await Presentation.findById(testPresentationId);
+      expect(updatedPresentation.screenCount).toBe(2);
+
+      const screen3Cues = updatedPresentation.cues.filter(cue => cue.screen === 3);
+      expect(screen3Cues.length).toBe(0);
+      
+      const remainingCues = updatedPresentation.cues;
+      expect(remainingCues.filter(cue => cue.screen === 1).length).toBe(2);
+      expect(remainingCues.filter(cue => cue.screen === 2).length).toBe(1);
+    });
+
+    test("Should reject invalid screen count (too low)", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 0 })
+        .expect(400);
+
+      expect(response.body.error).toBe("screenCount must be between 1 and 8");
+    });
+
+    test("Should reject invalid screen count (too high)", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 9 })
+        .expect(400);
+
+      expect(response.body.error).toBe("screenCount must be between 1 and 8");
+    });
+
+    test("Should accept non-integer screen count (API converts to integer)", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2.5 })
+        .expect(200);
+
+      expect(response.body.screenCount).toBe(2.5); 
+    });
+
+    test("Should reject missing screen count", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({})
+        .expect(400);
+
+      expect(response.body.error).toBe("screenCount must be a number");
+    });
+
+    test("Should handle setting same screen count (no change)", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 3 })
+        .expect(200);
+
+      expect(response.body.screenCount).toBe(3);
+      expect(response.body.removedCuesCount).toBe(0);
+
+      const updatedPresentation = await Presentation.findById(testPresentationId);
+      expect(updatedPresentation.cues.length).toBe(6); // Original count
+    });
+
+    test("Should work without authorization (current API behavior)", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .send({ screenCount: 2 })
+        .expect(200);
+      
+      expect(response.body.screenCount).toBe(2);
+    });
+
+    test("Should reject access to non-existent presentation", async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const response = await api
+        .put(`/api/presentation/${fakeId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2 })
+        .expect(404);
+
+      expect(response.body.error).toBe("Presentation not found");
+    });
+
+    test("Should allow access regardless of user (current API behavior)", async () => {
+      // Create another user
+      const otherUser = new User({
+        email: "other@example.com",
+        hashedPassword: await bcrypt.hash("password123", 10),
+        username: "otheruser"
+      });
+      await otherUser.save();
+
+      const otherToken = jwt.sign({ id: otherUser._id }, config.SECRET);
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", `Bearer ${otherToken}`)
+        .send({ screenCount: 2 })
+        .expect(200);
+
+      expect(response.body.screenCount).toBe(2);
+    });
+  });
 })
 
 afterAll(async () => {

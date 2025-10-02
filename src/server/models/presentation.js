@@ -22,7 +22,7 @@ const presentationSchema = mongoose.Schema({
     required: true,
     default: 1,
     min: 1,
-    max: 4,
+    max: 8,
   },
 
   indexCount: {
