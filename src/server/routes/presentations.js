@@ -30,10 +30,37 @@ router.get("/", userExtractor, async (req, res) => {
 })
 
 /**
+ * Retrieves a specific presentation by ID for the user.
+ */
+router.get("/:id", userExtractor, async (req, res) => {
+  const { id } = req.params
+  const { user } = req
+
+  if (!user) {
+    return res.status(401).json({ error: "operation not permitted" })
+  }
+
+  try {
+    const presentation = await Presentation.findOne({
+      _id: id,
+      user: user._id
+    })
+
+    if (!presentation) {
+      return res.status(404).json({ error: "presentation not found" })
+    }
+
+    res.json(presentation.toJSON())
+  } catch (error) {
+    res.status(400).json({ error: "invalid presentation id" })
+  }
+})
+
+/**
  * Creates a new presentation for the user
  */
 router.post("/", userExtractor, async (req, res) => {
-  const { name } = req.body
+  const { name, screenCount} = req.body
   const { user } = req
 
   if (!user || !name) {
@@ -42,6 +69,7 @@ router.post("/", userExtractor, async (req, res) => {
 
   const presentation = new Presentation({
     name,
+    screenCount
   })
 
   if (user.driveToken) {
@@ -55,7 +83,7 @@ router.post("/", userExtractor, async (req, res) => {
   user.presentations = user.presentations.concat(createdPresentation._id)
   await user.save()
 
-  return res.status(201).json()
+  return res.status(201).json(createdPresentation.toJSON())
 })
 
 module.exports = router

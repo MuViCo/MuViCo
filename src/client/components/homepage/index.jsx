@@ -50,14 +50,12 @@ const HomePage = ({ user, setUser }) => {
 
   const createPresentation = async (presentationObject) => {
     try {
-      await presentationService.create(presentationObject)
+      const createdPresentation = await presentationService.create(presentationObject)
       const updatedPresentations = await presentationService.getAll()
       setPresentations(updatedPresentations)
-      const presentationId =
-        updatedPresentations[updatedPresentations.length - 1].id
-
-      await addInitialElements(presentationId, showToast)
-      navigate(`/presentation/${presentationId}`)
+      
+      await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast)
+      navigate(`/presentation/${createdPresentation.id}`)
     } catch (error) {
       console.error("Error creating presentation: ", error)
     }

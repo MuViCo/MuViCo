@@ -11,7 +11,10 @@ import reducer, {
   deletePresentation,
   updatePresentation,
   updatePresentationSwappedCues,
+  incrementScreenCount,
+  decrementScreenCount,
 } from "../../redux/presentationReducer.js"
+import { saveScreenCount } from "../../redux/presentationThunks.js"
 import presentationService from "../../services/presentation.js"
 import { configureStore } from "@reduxjs/toolkit"
 
@@ -21,6 +24,7 @@ jest.mock("../../services/presentation.js", () => ({
   addCue: jest.fn(),
   remove: jest.fn(),
   updateCue: jest.fn(),
+  saveScreenCountApi: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -76,20 +80,41 @@ describe("presentationReducer actions", () => {
     }
     expect(editCue(updatedCue)).toEqual(expectedAction)
   })
+
+  it("should create an action to increment screen count", () => {
+    const expectedAction = {
+      type: incrementScreenCount.type,
+    }
+    expect(incrementScreenCount()).toEqual(expectedAction)
+  })
+
+  it("should create an action to decrement screen count", () => {
+    const expectedAction = {
+      type: decrementScreenCount.type,
+    }
+    expect(decrementScreenCount()).toEqual(expectedAction)
+  })
 })
 
 // Test Reducer Logic
 describe("presentationReducer reducer", () => {
   const initialState = {
-    cues: null,
+    cues: [],
+    audioCues: [],
     name: "",
+    screenCount: 3,
+    indexCount: 5,
+    saving: false,
   }
 
   it("should handle setPresentationInfo", () => {
     const cues = [{ _id: 1, name: "Test Cue" }]
+    const audioCues = [{ _id: 2, name: "Audio Cue" }]
     const name = "My Presentation"
-    const action = { type: setPresentationInfo.type, payload: { cues, name } }
-    const expectedState = { ...initialState, cues, name }
+    const screenCount = 3
+    const indexCount = 5
+    const action = { type: setPresentationInfo.type, payload: { cues, audioCues, name, screenCount, indexCount } }
+    const expectedState = { ...initialState, cues, audioCues, name, screenCount, indexCount }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -133,7 +158,7 @@ describe("presentationReducer reducer", () => {
 
   it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, name: "" }
+    const expectedState = { ...initialState, cues: null, audioCues: [], name: "", screenCount: null, indexCount: null }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -145,10 +170,14 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
-      name: "My Presentation"
+      audioCues: [
+        { _id: 3, name: "Audio Cue" }
+      ],
+      name: "My Presentation",
+      screenCount: 3
     }
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null }
+    const expectedState = { ...initialState, cues: null, audioCues: [], screenCount: null, indexCount: null}
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })

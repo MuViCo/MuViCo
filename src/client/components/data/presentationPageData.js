@@ -23,7 +23,7 @@ export const editModeFeaturesData = [
       "Screens section (left side with purple boxes labeled Screen 1, Screen 2, etc. and Audio files)",
     items: [
       "Displays all the screens you can use for your presentation.",
-      "You can use up to four screens in your presentation.",
+      "You can use multiple screens in your presentation.",
       "Audio files row where only audio media can be uploaded onto.",
     ],
   },

@@ -13,6 +13,15 @@ const getAll = () => {
   return request.then((response) => response.data)
 }
 
+const getById = async (id) => {
+  const config = {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  }
+
+  const response = await axios.get(baseUrl + id, config)
+  return response.data
+}
+
 const create = async (newObject) => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -22,4 +31,4 @@ const create = async (newObject) => {
   return response.data
 }
 
-export default { getAll, create }
+export default { getAll, getById, create }

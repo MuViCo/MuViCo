@@ -116,6 +116,98 @@ router.delete("/:id", userExtractor, async (req, res) => {
 })
 
 /**
+ * Updates presentation by ID, setting the new index count and adding them to mongoDB
+ */
+router.put("/:id/indexCount", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { indexCount } = req.body
+
+    if (typeof indexCount !== "number") {
+      return res.status(400).json({ error: "indexCount must be a number" })
+    }
+
+    if (indexCount < 1 || indexCount > 100) {
+      return res.status(400).json({ error: "indexCount must be between 1 and 100"})
+    }
+
+    const updated = await Presentation.findByIdAndUpdate(
+      id,
+      { indexCount },
+      { new: true }
+    )
+
+    if (!updated) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    res.json({ indexCount: updated.indexCount })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
+/**
+ * Update presentation screenCount by ID
+ */
+router.put("/:id/screenCount", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { screenCount } = req.body
+
+    if (typeof screenCount !== "number") {
+      return res.status(400).json({ error: "screenCount must be a number" })
+    }
+
+    if (screenCount < 1 || screenCount > 8) {
+      return res.status(400).json({ error: "screenCount must be between 1 and 8" })
+    }
+
+    // Get current presentation to check for cues on screens being removed
+    const currentPresentation = await Presentation.findById(id)
+    if (!currentPresentation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    // If reducing screen count, remove cues from screens that will be removed
+    let removedCuesCount = 0
+    if (screenCount < currentPresentation.screenCount) {
+      const cuesToRemove = currentPresentation.cues.filter(
+        cue => cue.screen > screenCount && cue.screen <= currentPresentation.screenCount
+      )
+      removedCuesCount = cuesToRemove.length
+
+      // Remove cues from screens being deleted
+      await Presentation.findByIdAndUpdate(
+        id,
+        {
+          $pull: {
+            cues: {
+              screen: { $gt: screenCount, $lte: currentPresentation.screenCount }
+            }
+          }
+        }
+      )
+    }
+    
+    const updated = await Presentation.findByIdAndUpdate(
+      id,
+      { screenCount },
+      { new: true }
+    )
+
+    res.json({ 
+      screenCount: updated.screenCount,
+      removedCuesCount: removedCuesCount
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
+/**
  * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
@@ -134,9 +226,15 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (screen < 1 || screen > 5) {
+    // Get presentation to check screenCount for dynamic validation
+    const presentationForValidation = await Presentation.findById(id)
+    if (!presentationForValidation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    if (screen < 1 || screen > presentationForValidation.screenCount + 1) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationForValidation.screenCount + 1}.`,
       })
     }
 
@@ -204,6 +302,27 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
           return res
             .status(400)
             .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
+    }
+
+    const isAudioScreen = screen === presentationForValidation.screenCount + 1
+    
+    if (isAudioScreen) {
+      if (image === "/blank.png") {
+        return res.status(400).json({ 
+          error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
+        })
+      }
+      if (file && !file.mimetype.startsWith("audio/")) {
+        return res.status(400).json({ 
+          error: "Only audio files are allowed on the audio screen." 
+        })
+      }
+    } else {
+      if (file && file.mimetype.startsWith("audio/")) {
+        return res.status(400).json({ 
+          error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+        })
       }
     }
 
@@ -300,9 +419,15 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (screen < 1 || screen > 5) {
+      // Get presentation to check screenCount for dynamic validation
+      const presentationData = await Presentation.findById(id)
+      if (!presentationData) {
+        return res.status(404).json({ error: "Presentation not found" })
+      }
+
+      if (screen < 1 || screen > presentationData.screenCount + 1) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and 5.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationData.screenCount + 1}.`,
         })
       }
 
@@ -310,6 +435,27 @@ router.put(
         return res.status(400).json({
           error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
         })
+      }
+
+      const isAudioScreen = screen === presentationData.screenCount + 1
+      
+      if (isAudioScreen) {
+        if (image === "/blank.png") {
+          return res.status(400).json({ 
+            error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
+          })
+        }
+        if (file && !file.mimetype.startsWith("audio/")) {
+          return res.status(400).json({ 
+            error: "Only audio files are allowed on the audio screen." 
+          })
+        }
+      } else {
+        if (file && file.mimetype.startsWith("audio/")) {
+          return res.status(400).json({ 
+            error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+          })
+        }
       }
 
       const presentation = await Presentation.findById(id)

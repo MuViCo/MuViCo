@@ -1,10 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
+import { saveIndexCount, saveScreenCount } from "./presentationThunks"
 
 const initialState = {
   cues: [],
+  audioCues: [],
   name: "",
+  screenCount: null,
+  indexCount: 5,
+  saving: false,
 }
 
 const presentationSlice = createSlice({
@@ -13,13 +18,22 @@ const presentationSlice = createSlice({
   reducers: {
     setPresentationInfo(state, action) {
       state.cues = action.payload.cues
+      state.audioCues = action.payload.audioCues
       state.name = action.payload.name
+      state.screenCount = action.payload.screenCount
+      state.indexCount = action.payload.indexCount
     },
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
     },
+    deleteAudioCue(state, action) {
+      state.audioCues = state.audioCues.filter((cue) => cue._id !== action.payload)
+    },
     addCue(state, action) {
       state.cues.push(action.payload)
+    },
+    addAudioCue(state, action) {
+      state.audioCues.push(action.payload)
     },
     editCue(state, action) {
       const cueToChange = action.payload
@@ -28,19 +42,83 @@ const presentationSlice = createSlice({
       )
       state.cues = updatedCues
     },
+    editAudioCue(state, action) {
+      const cueToChange = action.payload
+      const updatedCues = state.audioCues.map((cue) =>
+        cue._id !== cueToChange._id ? cue : cueToChange
+      )
+      state.audioCues = updatedCues
+    },
     removePresentation(state) {
       state.cues = null
+      state.audioCues = []
       state.name = ""
+      state.screenCount = null
+      state.indexCount = null
     },
+    incrementIndexCount(state) {
+      state.indexCount += 1
+    },
+    decrementIndexCount(state) {
+      state.indexCount -= 1
+    },
+    incrementScreenCount(state) {
+      state.screenCount += 1
+    },
+    decrementScreenCount(state) {
+      state.screenCount -= 1
+    },
+  },
+  extraReducers: builder => {
+    builder
+      .addCase(saveIndexCount.pending, state => {
+        state.saving = true
+      })
+      .addCase(saveIndexCount.fulfilled, (state, action) => {
+        state.saving = false
+        if (action.payload.indexCount !== undefined) {
+          state.indexCount = action.payload.indexCount
+        }
+      })
+      .addCase(saveIndexCount.rejected, state => {
+        state.saving = false
+      })
+      .addCase(saveScreenCount.pending, state => {
+        state.saving = true
+      })
+      .addCase(saveScreenCount.fulfilled, (state, action) => {
+        state.saving = false
+        
+        if (action.payload.screenCount !== undefined) {
+          const newScreenCount = action.payload.screenCount
+          const removedCuesCount = action.payload.removedCuesCount
+          
+          state.screenCount = newScreenCount
+          
+          if (removedCuesCount > 0) {
+            state.cues = state.cues.filter(cue => cue.screen <= newScreenCount)
+          }
+        }
+      })
+      .addCase(saveScreenCount.rejected, state => {
+        state.saving = false
+      })
   },
 })
 
 export const {
   setPresentationInfo,
   deleteCue,
+  deleteAudioCue,
   addCue,
+  addAudioCue,
   editCue,
+  editAudioCue,
   removePresentation,
+  incrementIndexCount,
+  decrementIndexCount,
+  incrementScreenCount,
+  decrementScreenCount,
 } = presentationSlice.actions
 
 export default presentationSlice.reducer

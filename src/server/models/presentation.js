@@ -17,6 +17,21 @@ const presentationSchema = mongoose.Schema({
     default: "aws",
   },
 
+  screenCount: {
+    type: Number,
+    required: true,
+    default: 1,
+    min: 1,
+    max: 8,
+  },
+
+  indexCount: {
+    type: Number,
+    default: 5,
+    min: 1,
+    max: 101,
+  },
+
   cues: [
     {
       index: { type: Number, required: true },
@@ -29,6 +44,22 @@ const presentationSchema = mongoose.Schema({
         driveId: String,
         size: { type: String, default: "0" },
         type: { type: String, default: "image/jpeg" },
+      },
+      loop: { type: Boolean, default: false },
+    },
+  ],
+
+  audioCues: [
+    {
+      index: { type: Number, required: true },
+      name: { type: String, required: true },
+      file: {
+        id: String,
+        name: String,
+        url: String,
+        driveId: String,
+        size: { type: String, default: "0" },
+        type: { type: String, default: "audio/mpeg" },
       },
       loop: { type: Boolean, default: false },
     },
