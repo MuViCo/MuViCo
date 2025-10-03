@@ -255,9 +255,9 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
 
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(screenData)
-      
+        
       }
-    } windowRef.current.document.title =   `Screen ${screenNumber}` 
+    } windowRef.current.document.title = `Screen ${screenNumber}, ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}` 
   }, [screenData, currentScreenData, isWindowReady])
 
   // Listeners for shift-press to show screen data on screens

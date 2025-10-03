@@ -41,7 +41,7 @@ describe("GridLayout", () => {
         page.reload()
 
         await addBlankCue(page, "testcue_ver", "2", "2")
-        await expect(page.getByText("Element already exists on screen 2. Do you want to update it?").first()).toBeVisible()
+        await expect(page.getByText("Index 2 element already exists on screen 2. Do you want to replace it?").first()).toBeVisible()
     })
 
     test("user can delete cue", async ({ page }) => {

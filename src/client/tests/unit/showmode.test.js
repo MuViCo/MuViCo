@@ -43,6 +43,7 @@ describe("ShowMode", () => {
     window.open = jest.fn(() => {
       const fakeWindow = {
         document: {
+          title: "",
           body: document.createElement("body"),
           head: document.createElement("head"),
         },
@@ -256,5 +257,16 @@ describe("ShowMode", () => {
 
     const button = screen.getByRole("button", { name: /Open screen: 1/i })
     expect(button).toHaveTextContent(/Mirroring screen: 2/)
+  })
+
+  test("when opening screen the title shows the screen and the frame number", async () => {
+    render(<ShowMode cues={mockCues} cueIndex={mockCueIndex} />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+
+    await waitFor(() => {
+      const fakeWindow = window.open.mock.results[0].value
+      expect(fakeWindow.document.title).toMatch(/Screen 1/)
+    })
   })
 })
