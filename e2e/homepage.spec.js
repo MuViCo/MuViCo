@@ -56,6 +56,10 @@ describe("Homepage", () => {
     const deleteButton = await page.locator('button:has-text("Delete presentation")')
     await expect(deleteButton).toBeVisible()
     await deleteButton.click()
+
+    const confirmYes = page.getByRole("button", { name: "Yes" })
+    await expect(confirmYes).toBeVisible()
+    await confirmYes.click()
     await expect(card).not.toBeVisible()
   })
   

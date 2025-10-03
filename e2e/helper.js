@@ -13,9 +13,14 @@ const addPresentation = async (page, name) => {
 
 const addBlankCue = async (page, name, index, screen) => {
   await page.getByRole("button", { name: "Add element" }).click()
-  await page.getByTestId("index-number").fill(index)
+  await page.getByTestId("screen-number").fill("") 
+  await page.getByTestId("screen-number").type(screen.toString())
+
+  await page.getByTestId("index-number").fill("")
+  await page.getByTestId("index-number").type(index.toString())
+
   await page.getByTestId("cue-name").fill(name)
-  await page.getByTestId("screen-number").fill(screen)
+
   await page.getByRole("button", { name: "Submit" }).click()
 }
 
