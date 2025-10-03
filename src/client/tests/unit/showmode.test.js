@@ -1,6 +1,7 @@
 import React from "react"
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import ShowMode from "../../components/presentation/ShowMode"
+import Screen from "../../components/presentation/Screen"
 import "@testing-library/jest-dom"
 
 const mockCues = [
@@ -32,26 +33,22 @@ describe("ShowMode", () => {
   beforeAll(() => {
     global.Image = class {
       constructor() {
-        setTimeout(() => {
-          if (this.onload) {
-            this.onload()
-          }
-        }, 0)
+        setTimeout(() => this.onload && this.onload(), 0)
       }
     }
 
     window.open = jest.fn(() => {
-      const fakeWindow = {
-        document: {
-          title: "",
-          body: document.createElement("body"),
-          head: document.createElement("head"),
-        },
+      const fakeDoc = {
+        title: "",
+        body: document.createElement("body"),
+        head: document.createElement("head"),
+      }
+      return {
+        document: fakeDoc,
         close: jest.fn(),
-        addEventListener: jest.fn(() => {}),
+        addEventListener: jest.fn(),
         removeEventListener: jest.fn(),
       }
-      return fakeWindow
     })
   })
 
@@ -259,14 +256,96 @@ describe("ShowMode", () => {
     expect(button).toHaveTextContent(/Mirroring screen: 2/)
   })
 
-  test("when opening screen the title shows the screen and the frame number", async () => {
-    render(<ShowMode cues={mockCues} cueIndex={mockCueIndex} />)
+ test("title shows 'Starting Frame' when index=0", async () => {
+  const cues = [
+    {
+      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      index: 0,
+      name: "cue-start",
+      screen: 1,
+      _id: "id-start",
+      loop: false,
+    },
+  ]
 
+  await act(async () => {
+    render(<ShowMode cues={cues} cueIndex={mockCueIndex} />)
+  })
+
+  await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+  })
+
+  await waitFor(() => {
+    const fakeWindow = window.open.mock.results.at(-1).value
+    expect(fakeWindow.document.title).toBe("Screen 1, Starting Frame")
+  })
+})
+
+ test("title does not contain 'Starting Frame' when index is not 0", async () => {
+  const cues = [
+    {
+      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      index: 4,
+      name: "cue-start",
+      screen: 1,
+      _id: "id-start",
+      loop: false,
+    },
+  ]
+
+  await act(async () => {
+    render(<ShowMode cues={cues} cueIndex={mockCueIndex} />)
+  })
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+  })
+
+  await waitFor(() => {
+    const fakeWindow = window.open.mock.results.at(-1).value
+    expect(fakeWindow.document.title).not.toBe("Screen 1, Starting Frame")
+  })
+})
+
+  test("Screen sets window title when index is 4", async () => {
+    const screenData = {
+      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      index: 4,
+      name: "cue-4",
+      screen: 1,
+      _id: "id-4",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
 
     await waitFor(() => {
-      const fakeWindow = window.open.mock.results[0].value
-      expect(fakeWindow.document.title).toMatch(/Screen 1/)
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1, Frame 4")
+    })
+  })
+
+  test("Screen sets window title when index is 7", async () => {
+    const screenData = {
+      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      index: 7,
+      name: "cue-4",
+      screen: 1,
+      _id: "id-4",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1, Frame 7")
     })
   })
 })
+
