@@ -261,7 +261,7 @@ describe("test presentation", () => {
     })
   })
 
-  describe.only("PUT /api/presentation/:id/indexCount", () => {
+  describe("PUT /api/presentation/:id/indexCount", () => {
     const validCases = [1, 5, 10, 100]
 
     test.each(validCases)(
