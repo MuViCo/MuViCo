@@ -110,22 +110,45 @@ const EditMode = ({
     }
   }, [isToolboxOpen])
 
-  const handleAddIndex = () => {
+  const handleIndexHasData = async (index) => {
+    setConfirmMessage(
+      `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
+    )
+    setConfirmAction(() => async () => {
+      setIsConfirmOpen(false)
+      await performRemoveIndex(index)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const handleAddIndex = async () => {
     if (indexCount < 101) {
       setStatus("loading")
       dispatch(incrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+      await dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
       setStatus("saved")
     }
   }
 
-  const handleRemoveIndex = () => {
+  const handleRemoveIndex = async () => {
+    const lastIndex = indexCount - 1
+    const cuesInIndex = cues.filter(cue => cue.index === lastIndex)
+
+    if (cuesInIndex.length > 0) {
+      handleIndexHasData(lastIndex)
+      return
+    }
+
+    await performRemoveIndex(lastIndex)
+  }
+
+  const performRemoveIndex = async (indexToRemove) => {
     if (indexCount > 1) {
       setStatus("loading")
       dispatch(decrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount - 1 }))
+      await dispatch(saveIndexCount({ id, indexCount: indexToRemove }))
       setStatus("saved")
-    } 
+    }
   }
 
   const handleIncreaseScreenCount = async () => {
@@ -944,6 +967,7 @@ const EditMode = ({
             cueData={selectedCue || null}
             updateCue={updateCue}
             screenCount={presentation.screenCount}
+            indexCount={indexCount}
           />
         </Box>
         <Box
