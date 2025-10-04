@@ -115,6 +115,7 @@ const PresentationPage = ({ user }) => {
                 cues={presentationInfo}
                 cueIndex={cueIndex}
                 setCueIndex={setCueIndex}
+                indexCount={indexCount}
               />
             )}
             <EditMode

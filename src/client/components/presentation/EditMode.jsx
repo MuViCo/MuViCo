@@ -701,20 +701,6 @@ const EditMode = ({
 
   return (
     <ChakraProvider theme={theme}>
-      <Button
-            colorScheme="gray"
-            onClick={handleAddIndex}
-            isDisabled={indexCount >= 100}
-          >
-            + Add Frame (to end)
-          </Button>
-          <Button
-            colorScheme="gray"
-            onClick={handleRemoveIndex}
-            isDisabled={indexCount <= 1}
-          >
-            - Remove Frame (from end)
-          </Button>
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
@@ -863,7 +849,7 @@ const EditMode = ({
               <Box
                 className="index-boxes"
                 display="grid"
-                gridTemplateColumns={`repeat(${xLabels.length + 1}, ${columnWidth}px)`}
+                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
                 gap={`${gap}px`}
                 position="sticky"
                 top={0}
@@ -889,7 +875,30 @@ const EditMode = ({
                   </Box>
                 ))}
               </Box>
-
+            <Button
+              colorScheme="gray"
+              onClick={handleAddIndex}
+              isDisabled={indexCount >= 100}
+              position="absolute"
+              right="-50px"
+              top="5px"
+              paddingTop="20px"
+              paddingBottom="20px"
+            >
+              +
+            </Button>
+            <Button
+              colorScheme="gray"
+              onClick={handleRemoveIndex}
+              isDisabled={indexCount >= 100}
+              position="absolute"
+              right="-50px"
+              top="55px"
+              paddingTop="20px"
+              paddingBottom="20px"
+            >
+              -
+            </Button>
               <GridLayoutComponent
                 layout={layout}
                 cues={cues}
@@ -935,7 +944,6 @@ const EditMode = ({
             cueData={selectedCue || null}
             updateCue={updateCue}
             screenCount={presentation.screenCount}
-            indexCount={indexCount}
           />
         </Box>
         <Box
