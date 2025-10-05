@@ -372,20 +372,18 @@ const GridLayoutComponent = ({
                     icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
                     disabled={true}
                     _disabled={{
-                      backgroundColor: "gray.500",
-                      opacity: 0.9,
                       cursor: "default",
                       pointerEvents: "auto",
                     }}
-                    size="md"
+                    size="lg"
                     position="absolute"
                     _hover={{}}
-                    backgroundColor="gray.500"
+                    backgroundColor="transparent"
                     draggable={false}
                     zIndex="10"
-                    top="50px"
-                    right="0px"
-                    aria-label={`Loop audio ${cue.name}`}
+                    top="60px"
+                    right="50px"
+                    aria-label={cue.loop ? `${cue.name} loops` : `${cue.name} plays once`}
                     title={cue.loop ? "Loop enabled" : "Plays once"}
                   />
                 )}
