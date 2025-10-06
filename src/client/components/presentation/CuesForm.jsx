@@ -13,6 +13,7 @@ import {
   Tooltip,
   ChakraProvider,
   extendTheme,
+  Select
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect } from "react"
@@ -328,20 +329,25 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             ))}
           {error && <Error error={error} />}
           <FormHelperText mb={2}>or add blank element</FormHelperText>
-          <Button
-            w={40}
-            mr={2}
-            onClick={() => {
-              setFile("/blank.png")
-              setFileName("blank.png")
-            }}
+          <Select
+            data-testid="add-blank"
+            value={file}
+            onChange={(e) => setFile(e.target.value)}
+            placeholder="Add blank"
           >
-            Add blank
-          </Button>{" "}
-          {fileName === "blank.png" && (
+            <option value="/blank.png">Black</option>
+            <option value="/blank-white.png">White</option>
+            <option value="/blank-indigo.png">Indigo</option>
+          </Select>
+          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png") && (
             <>
               <CheckIcon color="#03C03C" />
-              <FormHelperText>{fileName}</FormHelperText>
+              <FormHelperText>
+                {file === "/blank.png" ? "Black blank element" : 
+                 file === "/blank-white.png" ? "White blank element" : 
+                 file === "/blank-indigo.png" ? "Indigo blank element" : 
+                 ""}
+              </FormHelperText>
             </>
           )}{" "}
           <Divider orientation="horizontal" my={4} />
