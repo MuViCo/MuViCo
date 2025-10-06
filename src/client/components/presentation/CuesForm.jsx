@@ -230,7 +230,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             value={index}
             mb={4}
             min={0}
-            max={indexCount}
+            max={indexCount-1}
             onChange={handleNumericInputChange(setIndex)}
             onBlur={validateAndSetNumber(setIndex, 0, indexCount)}
             required
