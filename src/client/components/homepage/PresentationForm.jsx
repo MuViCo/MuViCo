@@ -66,6 +66,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
           >
             <option value="black">Black</option>
             <option value="white">White</option>
+            <option value="indigo">Indigo</option>
           </Select>
         </FormControl>
         <Flex align="center" mt={2} mb={4}>

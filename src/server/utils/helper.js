@@ -43,7 +43,7 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
     cue.file.url = await getObjectSignedUrl(key)
   } else {
     // Handle blank images by using the correct filename
-    const filename = cue.file.name === "blank-white.png" ? "blank-white.png" : "blank.png"
+    const filename = cue.file.name || "blank.png"
     
     if (
       process.env.NODE_ENV === "development" ||
@@ -65,7 +65,9 @@ const processS3Files = async (cues, presentationId) => {
         cue.file.url !== "/src/server/public/blank.png" &&
         cue.file.url !== "/blank.png" &&
         cue.file.url !== "/src/server/public/blank-white.png" &&
-        cue.file.url !== "/blank-white.png"
+        cue.file.url !== "/blank-white.png" &&
+        cue.file.url !== "/src/server/public/blank-indigo.png" &&
+        cue.file.url !== "/blank-indigo.png"
       ) {
         await getFileType(cue, presentationId)
         await getFileSize(cue, presentationId)

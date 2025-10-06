@@ -26,7 +26,7 @@ import {
 const theme = extendTheme({})
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState("/blank.png")
+  const [file, setFile] = useState("")
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
@@ -94,6 +94,14 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
   const checkFileType = (file) => {
+    if (typeof file === 'string') {
+      return true
+    }
+
+    if (!file || !file.type) {
+      return false
+    }
+    
     const isAudio = file.type.includes("audio/")
     const currentScreen = screen
     
@@ -118,10 +126,19 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const onAddCue = (event) => {
     event.preventDefault()
 
-    if (file !== "/blank.png") {
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png"
+    
+    if (!isBlankImage && file !== "") {
       if (checkFileType(file) == false) {
         return
       }
+    }
+
+    // Don't allow submission if no file is selected
+    if (file === "") {
+      setError("Please select a file or blank element")
+      setTimeout(() => setError(null), 5000)
+      return
     }
 
     if (isAudioMode && addAudioCue) {
@@ -131,7 +148,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     }
     
     setError(null)
-    setFile("/blank.png")
+    setFile("")
     setFileName("")
     setCueName("")
     setIndex(0)
@@ -150,7 +167,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       fileName,
     }
 
-    if (file !== "/blank.png") {
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png"
+    
+    if (!isBlankImage) {
       if (checkFileType(file) == false) {
         return
       }
