@@ -913,7 +913,7 @@ const EditMode = ({
             <Button
               colorScheme="gray"
               onClick={handleRemoveIndex}
-              isDisabled={indexCount >= 100}
+              isDisabled={indexCount <= 1}
               position="absolute"
               right="-50px"
               top="55px"
