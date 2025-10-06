@@ -76,9 +76,9 @@ const presentationSlice = createSlice({
       })
       .addCase(saveIndexCount.fulfilled, (state, action) => {
         state.saving = false
-        if (action.payload.indexCount !== undefined) {
-          state.indexCount = action.payload.indexCount
-        }
+        const newIndexCount = action.payload.indexCount
+        state.indexCount = newIndexCount
+        state.cues = state.cues.filter(cue => cue.index < newIndexCount)
       })
       .addCase(saveIndexCount.rejected, state => {
         state.saving = false

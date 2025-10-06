@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button, Flex, Box, Text } from "@chakra-ui/react"
-import { fetchPresentationInfo, incrementIndexCount, decrementIndexCount } from "../../redux/presentationReducer"
-import { saveIndexCount } from "../../redux/presentationThunks"
+import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
@@ -47,20 +46,6 @@ const PresentationPage = ({ user }) => {
 
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
-  }
-
-  const handleAddFrame = () => {
-    if (indexCount < 101) {
-      dispatch(incrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
-    }
-  }
-
-  const handleRemoveFrame = () => {
-    if (indexCount > 1) {
-      dispatch(decrementIndexCount())
-      dispatch(saveIndexCount({ id, indexCount: indexCount - 1 }))
-    }
   }
 
   useEffect(() => {
@@ -110,22 +95,6 @@ const PresentationPage = ({ user }) => {
                 >
                   Add Element
                 </Button>
-                <Button
-                  display="none"
-                  colorScheme="gray"
-                  onClick={handleAddFrame}
-                  isDisabled={indexCount >= 100}
-                >
-                  + Add Frame (to end)
-                </Button>
-                <Button
-                  display="none"
-                  colorScheme="gray"
-                  onClick={handleRemoveFrame}
-                  isDisabled={indexCount <= 1}
-                >
-                  - Remove Frame (from end)
-                </Button>
               </>
             )}
             {user.driveToken === null ? (
@@ -146,6 +115,7 @@ const PresentationPage = ({ user }) => {
                 cues={presentationInfo}
                 cueIndex={cueIndex}
                 setCueIndex={setCueIndex}
+                indexCount={indexCount}
               />
             )}
             <EditMode

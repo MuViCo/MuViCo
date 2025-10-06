@@ -131,17 +131,43 @@ router.put("/:id/indexCount", userExtractor, async (req, res) => {
       return res.status(400).json({ error: "indexCount must be between 1 and 100"})
     }
 
+    // Get current presentation to check for cues on indexes being removed
+    const currentPresentation = await Presentation.findById(id)
+    if (!currentPresentation) {
+      return res.status(404).json({ error: "Presentation not found" })
+    }
+
+    // If reducing index count, remove cues from indexes that will be removed
+    let removedCuesCount = 0
+    if (indexCount < currentPresentation.indexCount) {
+      const cuesToRemove = currentPresentation.cues.filter(
+        cue => cue.index >= indexCount && cue.index < currentPresentation.indexCount
+      )
+      removedCuesCount = cuesToRemove.length
+
+      // Remove cues from screens being deleted
+      await Presentation.findByIdAndUpdate(
+        id,
+        {
+          $pull: {
+            cues: {
+              index: { $gt: indexCount }
+            }
+          }
+        }
+      )
+    }
+
     const updated = await Presentation.findByIdAndUpdate(
       id,
       { indexCount },
       { new: true }
     )
 
-    if (!updated) {
-      return res.status(404).json({ error: "Presentation not found" })
-    }
-
-    res.json({ indexCount: updated.indexCount })
+    res.json({
+      indexCount: updated.indexCount,
+      removedCuesCount: removedCuesCount
+    })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: "Internal server error" })
