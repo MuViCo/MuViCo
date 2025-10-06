@@ -175,8 +175,12 @@ const EditMode = ({
         newScreenNumber, // screen
         null // file (no file for blank element)
       )
-      // Add image field for blank elements
-      formData.append("image", "/blank.png")
+      // Add image field for blank elements - use the original starting color
+      const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
+      const imageFile = storedColor === "white" ? "/blank-white.png"
+        : storedColor === "indigo" ? "/blank-indigo.png" 
+        : "/blank.png"
+      formData.append("image", imageFile)
       
       await dispatch(createCue(id, formData))
       
