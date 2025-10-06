@@ -60,4 +60,22 @@ describe("services tests", () => {
     const response = await presentation.updateCue("1", "1", formData)
     expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
   })
+
+  test("presentation service calls saveScreenCountApi", async () => {
+    const saveScreenCountApi = jest.fn()
+    presentation.saveScreenCountApi = saveScreenCountApi
+    saveScreenCountApi.mockResolvedValueOnce({ screenCount: 5, removedCuesCount: 0 })
+    const response = await presentation.saveScreenCountApi("presentation-id", 5)
+    expect(response).toEqual({ screenCount: 5, removedCuesCount: 0 })
+    expect(saveScreenCountApi).toHaveBeenCalledWith("presentation-id", 5)
+  })
+
+  test("presentation service calls saveScreenCountApi with cue removal", async () => {
+    const saveScreenCountApi = jest.fn()
+    presentation.saveScreenCountApi = saveScreenCountApi
+    saveScreenCountApi.mockResolvedValueOnce({ screenCount: 2, removedCuesCount: 3 })
+    const response = await presentation.saveScreenCountApi("presentation-id", 2)
+    expect(response).toEqual({ screenCount: 2, removedCuesCount: 3 })
+    expect(saveScreenCountApi).toHaveBeenCalledWith("presentation-id", 2)
+  })
 })

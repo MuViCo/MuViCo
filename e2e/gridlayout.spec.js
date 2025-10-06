@@ -41,7 +41,7 @@ describe("GridLayout", () => {
         page.reload()
 
         await addBlankCue(page, "testcue_ver", "2", "2")
-        await expect(page.getByText("Element already exists on screen 2. Do you want to update it?").first()).toBeVisible()
+        await expect(page.getByText("Index 2 element already exists on screen 2. Do you want to replace it?").first()).toBeVisible()
     })
 
     test("user can delete cue", async ({ page }) => {
@@ -129,5 +129,87 @@ describe("GridLayout", () => {
   
       await expect(page.getByText("Element test.png updated on screen 1").first()).toBeVisible()
       await expect(page.locator('[data-testid="cue-test.png"]')).toBeVisible()
+    })
+
+    test("user can add new screen", async ({ page }) => {
+        await page.getByText("testi").click()
+
+        await expect(page.getByText("Screen 1")).toBeVisible()
+        await expect(page.getByText("Screen 2")).toBeVisible()
+        await expect(page.getByText("Screen 3")).toBeVisible()
+        await expect(page.getByText("Audio files")).toBeVisible()
+        await expect(page.getByText("Screen 4")).not.toBeVisible()
+
+        const addButton = page.getByRole("button", { name: "Add screen" })
+        await expect(addButton).toBeVisible()
+        await addButton.click()
+
+        await expect(page.getByText("Screen added")).toBeVisible()
+        await expect(page.getByText("Screen 4")).toBeVisible()
+
+        const screen4Area = page.getByText("Screen 4").locator("..")
+        await expect(screen4Area.getByRole("button", { name: "Add screen" })).toBeVisible()
+    })
+
+    test("user can remove screen", async ({ page }) => {
+        await page.getByText("testi").click()
+        
+        const addButton = page.getByRole("button", { name: "Add screen" })
+        await addButton.click()
+        await expect(page.getByText("Screen 4")).toBeVisible()
+
+        const removeButton = page.getByRole("button", { name: "Remove screen" })
+        await expect(removeButton).toBeVisible()
+        await removeButton.click()
+
+        await expect(page.getByText("Screen removed")).toBeVisible()
+        await expect(page.getByText("Screen 4")).not.toBeVisible()
+        await expect(page.getByText("Screen 3")).toBeVisible()
+    })
+
+    test("user can remove screen with cues", async ({ page }) => {
+        await page.getByText("testi").click()
+        
+        await addBlankCue(page, "testcue", "0", "3")
+        await expect(page.getByText("Element testcue added to screen 3")).toBeVisible()
+        
+        const removeButton = page.getByRole("button", { name: "Remove screen" })
+        await removeButton.click()
+
+        await expect(page.getByText("removed along with")).toBeVisible()
+        await expect(page.getByText("Screen 3")).not.toBeVisible()
+        
+        await expect(page.locator('[data-testid="cue-testcue"]')).not.toBeVisible()
+    })
+
+    test("new screen gets initial element", async ({ page }) => {
+        await page.getByText("testi").click()
+        
+        const addButton = page.getByRole("button", { name: "Add screen" })
+        await addButton.click()
+        await expect(page.getByText("Screen 4")).toBeVisible()
+
+        await expect(page.getByText("Screen added")).toBeVisible()
+        await expect(page.getByText("with initial element")).toBeVisible()
+        
+        const screen4Row = page.getByText("Screen 4").locator("../..")
+        const initialElement = screen4Row.locator(".react-grid-item").first()
+        await expect(initialElement).toBeVisible()
+    })
+
+    test("screen management buttons only show on last screen", async ({ page }) => {
+        await page.getByText("testi").click()
+        
+        const screen1Area = page.getByText("Screen 1").locator("..")
+        const screen2Area = page.getByText("Screen 2").locator("..")
+        const screen3Area = page.getByText("Screen 3").locator("..")
+        
+        await expect(screen1Area.getByRole("button", { name: "Add screen" })).not.toBeVisible()
+        await expect(screen2Area.getByRole("button", { name: "Add screen" })).not.toBeVisible()
+        await expect(screen3Area.getByRole("button", { name: "Add screen" })).toBeVisible()
+        
+        await expect(screen1Area.getByRole("button", { name: "Remove screen" })).not.toBeVisible()
+        await expect(screen2Area.getByRole("button", { name: "Remove screen" })).not.toBeVisible()
+        await expect(screen3Area.getByRole("button", { name: "Remove screen" })).toBeVisible()
     })
 })

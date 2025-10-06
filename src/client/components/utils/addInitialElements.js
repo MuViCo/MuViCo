@@ -1,38 +1,33 @@
 import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
 
-const addInitialElements = async (presentationId, showToast) => {
-  const screens = [1, 2, 3, 4, 5]
+const addInitialElements = async (presentationId, screenCount, showToast) => {
+  if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {
+    return
+  }
+  
   try {
-    for (const screen of screens) {
-      if (screen === 5) {
-        const formData = createFormData(
-          0,
-          "initial element for audio",
-          screen,
-          "/blank.png"
-        )
-        await presentation.addCue(presentationId, formData)
-        return
-      }
-
+    for (let screen = 1; screen <= screenCount; screen++) {
       const formData = createFormData(
         0,
         `initial element for screen ${screen}`,
         screen,
-        "/blank.png"
+        null
       )
+
+      formData.append("image", "/blank.png")
       await presentation.addCue(presentationId, formData)
     }
 
     showToast({
       title: "Elements added",
-      description: "Four initial elements added to screens",
+      description: "Initial elements added to screens",
       status: "success",
     })
+  
   } catch (error) {
     const errorMessage = error.message || "An error occurred"
-    console.error("Error adding initial elements:", error)
+    
     showToast({
       title: "Error",
       description: errorMessage,

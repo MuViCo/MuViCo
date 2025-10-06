@@ -16,6 +16,8 @@ const Toolbox = ({
   cues,
   cueData,
   updateCue,
+  screenCount,
+  indexCount,
 }) => {
   return (
     <>
@@ -35,6 +37,8 @@ const Toolbox = ({
               cues={cues}
               cueData={cueData || null}
               updateCue={updateCue}
+              screenCount={screenCount}
+              indexCount={indexCount}
             />
           </DrawerBody>
         </DrawerContent>
