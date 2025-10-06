@@ -111,6 +111,7 @@ const PresentationPage = ({ user }) => {
                   Add Element
                 </Button>
                 <Button
+                  display="none"
                   colorScheme="gray"
                   onClick={handleAddFrame}
                   isDisabled={indexCount >= 100}
@@ -118,6 +119,7 @@ const PresentationPage = ({ user }) => {
                   + Add Frame (to end)
                 </Button>
                 <Button
+                  display="none"
                   colorScheme="gray"
                   onClick={handleRemoveFrame}
                   isDisabled={indexCount <= 1}
