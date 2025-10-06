@@ -54,7 +54,7 @@ const HomePage = ({ user, setUser }) => {
       const updatedPresentations = await presentationService.getAll()
       setPresentations(updatedPresentations)
       
-      await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast)
+      await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast, presentationObject.startingFrameColor)
       navigate(`/presentation/${createdPresentation.id}`)
     } catch (error) {
       console.error("Error creating presentation: ", error)

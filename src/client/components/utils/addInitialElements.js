@@ -1,10 +1,13 @@
 import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
 
-const addInitialElements = async (presentationId, screenCount, showToast) => {
+const addInitialElements = async (presentationId, screenCount, showToast, startingFrameColor = "black") => {
   if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {
     return
   }
+  
+  // Determine the image file based on color choice
+  const imageFile = startingFrameColor === "white" ? "/blank-white.png" : "/blank.png"
   
   try {
     for (let screen = 1; screen <= screenCount; screen++) {
@@ -15,13 +18,13 @@ const addInitialElements = async (presentationId, screenCount, showToast) => {
         null
       )
 
-      formData.append("image", "/blank.png")
+      formData.append("image", imageFile)
       await presentation.addCue(presentationId, formData)
     }
 
     showToast({
       title: "Elements added",
-      description: "Initial elements added to screens",
+      description: `Initial ${startingFrameColor} elements added to screens`,
       status: "success",
     })
   
