@@ -101,13 +101,14 @@ const ScreenToggleButtons = ({
 )
 
 // Component for rendering the cue navigation buttons
-const CueNavigationButtons = ({ cueIndex, updateCue }) => (
+const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
   <Box display="flex" gap={4} alignItems="center">
     <IconButton
       aria-label="Previous Cue"
       icon={<ChevronLeftIcon />}
       onClick={() => updateCue("Previous")}
       colorScheme="purple"
+      isDisabled={cueIndex === 0}
     />
     
     <Heading size="md">{cueIndex === 0 ? "Starting Frame" : `Frame ${cueIndex}`}</Heading>
@@ -117,6 +118,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue }) => (
       icon={<ChevronRightIcon />}
       onClick={() => updateCue("Next")}
       colorScheme="purple"
+      isDisabled={cueIndex === indexCount - 1}
     />
 
     <Tooltip
@@ -157,6 +159,7 @@ const ShowModeButtons = ({
   mirroring,
   cueIndex,
   updateCue,
+  indexCount,
 }) => (
   <Box display="flex" flexDirection="column" alignItems="center" gap={4} mt={4}>
     <ScreenToggleButtons
@@ -166,7 +169,7 @@ const ShowModeButtons = ({
       showAllScreens={showAllScreens}
       mirroring={mirroring}
     />
-    <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
+    <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
   </Box>
 )
 

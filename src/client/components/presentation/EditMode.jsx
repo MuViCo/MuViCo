@@ -7,6 +7,7 @@ import {
   useOutsideClick,
   useColorModeValue,
   IconButton,
+  Button
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -15,10 +16,12 @@ import {
   createCue,
   removeCue,
   updatePresentationSwappedCues,
+  incrementIndexCount,
+  decrementIndexCount,
   incrementScreenCount,
   decrementScreenCount,
 } from "../../redux/presentationReducer"
-import { saveScreenCount } from "../../redux/presentationThunks"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
@@ -106,6 +109,47 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [isToolboxOpen])
+
+  const handleIndexHasData = async (index) => {
+    setConfirmMessage(
+      `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
+    )
+    setConfirmAction(() => async () => {
+      setIsConfirmOpen(false)
+      await performRemoveIndex(index)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const handleAddIndex = async () => {
+    if (indexCount < 101) {
+      setStatus("loading")
+      dispatch(incrementIndexCount())
+      await dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+      setStatus("saved")
+    }
+  }
+
+  const handleRemoveIndex = async () => {
+    const lastIndex = indexCount - 1
+    const cuesInIndex = cues.filter(cue => cue.index === lastIndex)
+
+    if (cuesInIndex.length > 0) {
+      handleIndexHasData(lastIndex)
+      return
+    }
+
+    await performRemoveIndex(lastIndex)
+  }
+
+  const performRemoveIndex = async (indexToRemove) => {
+    if (indexCount > 1) {
+      setStatus("loading")
+      dispatch(decrementIndexCount())
+      await dispatch(saveIndexCount({ id, indexCount: indexToRemove }))
+      setStatus("saved")
+    }
+  }
 
   const handleIncreaseScreenCount = async () => {
     if (presentation.screenCount >= 8) {
@@ -826,6 +870,7 @@ const EditMode = ({
               onClick={handlePaste}
             >
               <Box
+                className="index-boxes"
                 display="grid"
                 gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
                 gap={`${gap}px`}
@@ -853,7 +898,30 @@ const EditMode = ({
                   </Box>
                 ))}
               </Box>
-
+            <Button
+              colorScheme="gray"
+              onClick={handleAddIndex}
+              isDisabled={indexCount >= 100}
+              position="absolute"
+              right="-50px"
+              top="5px"
+              paddingTop="20px"
+              paddingBottom="20px"
+            >
+              +
+            </Button>
+            <Button
+              colorScheme="gray"
+              onClick={handleRemoveIndex}
+              isDisabled={indexCount >= 100}
+              position="absolute"
+              right="-50px"
+              top="55px"
+              paddingTop="20px"
+              paddingBottom="20px"
+            >
+              -
+            </Button>
               <GridLayoutComponent
                 layout={layout}
                 cues={cues}
@@ -870,6 +938,7 @@ const EditMode = ({
                 isAudioMuted={isAudioMuted}
                 setSelectedCue = {setSelectedCue}
                 setIsToolboxOpen = {setIsToolboxOpen}
+                indexCount={indexCount}
               />
 
               {hoverPosition && !isDragging && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Box, IconButton, Tooltip, Text } from "@chakra-ui/react" // Ensure Text is imported
+import { Box, IconButton, Tooltip, Text, Button } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
   CopyIcon,
@@ -98,7 +98,8 @@ const GridLayoutComponent = ({
   cueIndex,
   isAudioMuted,
   setSelectedCue,
-  setIsToolboxOpen
+  setIsToolboxOpen,
+  indexCount
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -257,9 +258,9 @@ const GridLayoutComponent = ({
     <GridLayout
       className="layout"
       layout={currentLayout}
-      cols={101}
+      cols={indexCount}
       rowHeight={rowHeight}
-      width={101 * columnWidth + (101 - 1) * gap}
+      width={indexCount * columnWidth + (indexCount - 1) * gap}
       isResizable={false}
       compactType={null}
       isBounded={false}
