@@ -198,7 +198,10 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
           {!isAudioMode && (
             <>
               <FormHelperText mb={2}>
-                Screen 1-4 for images and videos and screen 5 for audio only*
+                {screenCount === 1
+                  ? "Screen 1 for images and videos and screen 2 for audio only*"
+                  : `Screens 1-${screenCount} for images and videos and screen ${screenCount + 1} for audio only*`
+                }
               </FormHelperText>
               <NumberInput
                 id="screen-number"
