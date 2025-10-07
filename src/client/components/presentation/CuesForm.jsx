@@ -106,7 +106,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     const isAudio = file.type.includes("audio/")
     const currentScreen = screen
     
-    // For audio files, check if they'll be placed correctly (auto-assigned to audio screen)
+    // For audio files, check if they"ll be placed correctly (auto-assigned to audio screen)
     const effectiveScreen = isAudio ? screenCount + 1 : currentScreen
     
     // Check if the file type is allowed for the effective screen
@@ -135,7 +135,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       }
     }
 
-    // Don't allow submission if no file is selected
+    // Don"t allow submission if no file is selected
     if (file === "") {
       setError("Please select a file or blank element")
       setTimeout(() => setError(null), 5000)
@@ -335,10 +335,10 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             onChange={(e) => setFile(e.target.value)}
             placeholder="Add blank"
           >
-            <option value="/blank.png" style={{backgroundColor: 'black', color: 'white'}}>Black</option>
-            <option value="/blank-white.png" style={{backgroundColor: 'white', color: 'black'}}>White</option>
-            <option value="/blank-indigo.png" style={{backgroundColor: '#560D6A', color: 'white'}}>Indigo</option>
-            <option value="/blank-tropicalindigo.png" style={{backgroundColor: '#9F9FED', color: 'black'}}>Tropical indigo</option>
+            <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
+            <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
+            <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
+            <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
           </Select>
           {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png") && (
             <>
