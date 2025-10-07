@@ -179,6 +179,7 @@ const EditMode = ({
       const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
       const imageFile = storedColor === "white" ? "/blank-white.png"
         : storedColor === "indigo" ? "/blank-indigo.png" 
+        : storedColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
         : "/blank.png"
       formData.append("image", imageFile)
       

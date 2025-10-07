@@ -127,7 +127,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const onAddCue = (event) => {
     event.preventDefault()
 
-    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png"
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
     
     if (!isBlankImage && file !== "") {
       if (checkFileType(file) == false) {
@@ -168,7 +168,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       fileName,
     }
 
-    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png"
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
     
     if (!isBlankImage) {
       if (checkFileType(file) == false) {
@@ -335,9 +335,10 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             onChange={(e) => setFile(e.target.value)}
             placeholder="Add blank"
           >
-            <option value="/blank.png">Black</option>
-            <option value="/blank-white.png">White</option>
-            <option value="/blank-indigo.png">Indigo</option>
+            <option value="/blank.png" style={{backgroundColor: 'black', color: 'white'}}>Black</option>
+            <option value="/blank-white.png" style={{backgroundColor: 'white', color: 'black'}}>White</option>
+            <option value="/blank-indigo.png" style={{backgroundColor: '#560D6A', color: 'white'}}>Indigo</option>
+            <option value="/blank-tropicalindigo.png" style={{backgroundColor: '#9F9FED', color: 'black'}}>Tropical indigo</option>
           </Select>
           {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png") && (
             <>
@@ -346,6 +347,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
                 {file === "/blank.png" ? "Black blank element" : 
                  file === "/blank-white.png" ? "White blank element" : 
                  file === "/blank-indigo.png" ? "Indigo blank element" : 
+                 file === "/blank-tropicalindigo.png" ? "Tropical indigo blank element" :
                  ""}
               </FormHelperText>
             </>

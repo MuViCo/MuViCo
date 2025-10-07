@@ -9,6 +9,7 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
   // Determine the image file based on color choice
   const imageFile = startingFrameColor === "white" ? "/blank-white.png" 
     : startingFrameColor === "indigo" ? "/blank-indigo.png" 
+    : startingFrameColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
     : "/blank.png"
   
   try {
