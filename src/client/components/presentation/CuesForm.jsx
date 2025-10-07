@@ -95,7 +95,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
   const checkFileType = (file) => {
-    if (typeof file === 'string') {
+    if (typeof file === "string") {
       return true
     }
 
