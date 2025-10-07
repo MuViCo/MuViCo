@@ -340,7 +340,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
             <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
           </Select>
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png") && (
+          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && (
             <>
               <CheckIcon color="#03C03C" />
               <FormHelperText>
