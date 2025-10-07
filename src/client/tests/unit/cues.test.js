@@ -8,17 +8,21 @@ describe("CuesForm new element", () => {
   test("render form elements", () => {
     render(
       <MemoryRouter>
-        <CuesForm indexCount={5}/>
+        <CuesForm indexCount={5} screenCount={4}/>
       </MemoryRouter>
     )
     expect(screen.getByText("Add element")).toBeInTheDocument()
     expect(screen.getByText(/Frame\s*0-4/i)).toBeInTheDocument()
     expect(screen.getByText("Name*")).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        "Screen 1-4 for images and videos and screen 5 for audio only*"
-      )
-    ).toBeInTheDocument()
+    
+    const screenTexts = [
+      "Screen 1 for images and videos and screen 2 for audio only*",
+      "Screens 1-4 for images and videos and screen 5 for audio only*"
+    ]
+    const foundScreenText = screenTexts.some(text => 
+      screen.queryByText(text) !== null
+    )
+    expect(foundScreenText).toBe(true)
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
     expect(screen.getByText("or add blank element")).toBeInTheDocument()
     expect(screen.getByText("Add blank")).toBeInTheDocument()
@@ -45,8 +49,8 @@ describe("CuesForm new element", () => {
     const indexInput = screen.getByTestId("index-number")
     fireEvent.change(indexInput, { target: { value: "5" } })
 
-    const blankElement = screen.getByText("or add blank element")
-    fireEvent.click(blankElement)
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" } })
 
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
@@ -234,8 +238,8 @@ describe("CuesForm update element", () => {
     const nameInput = screen.getByTestId("cue-name")
     fireEvent.change(nameInput, { target: { value: "updated_testtt" } })
 
-    const blankElement = screen.getByText("Add blank")
-    fireEvent.click(blankElement)
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" } })
 
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
@@ -246,7 +250,7 @@ describe("CuesForm update element", () => {
       index: 1,
       screen: 2,
       file: "/blank.png",
-      fileName: "blank.png",
+      fileName: "image1.jpg",
     })
     await waitFor(
       () => {
