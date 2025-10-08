@@ -284,93 +284,111 @@ const GridLayoutComponent = ({
           }}
         >
           <Box position="relative" h="100%">
-            {!isShowMode && (
-              <>
-                <IconButton
-                  icon={<DeleteIcon />}
-                  size="xs"
-                  position="absolute"
-                  _hover={{ bg: "red.500", color: "white" }}
-                  backgroundColor="red.300"
-                  draggable={false}
-                  zIndex="10"
-                  top="0px"
-                  right="0px"
-                  aria-label={`Delete ${cue.name}`}
-                  title="Delete element"
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    handleRemoveItem(cue._id)
-                  }}
-                />
-                <IconButton
-                  icon={<EditIcon />}
-                  size="xs"
-                  position="absolute"
-                  _hover={{ bg: "orange.500", color: "white" }}
-                  backgroundColor="orange.300"
-                  draggable={false}
-                  zIndex="10"
-                  top="25px"
-                  right="0px"
-                  aria-label={`Edit ${cue.name}`}
-                  title="Edit element"
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    handleEditItem(cue._id)
-                  }}
-                />
-                <IconButton
-                  icon={<CopyIcon />}
-                  size="xs"
-                  position="absolute"
-                  _hover={{ bg: "gray.600", color: "white" }}
-                  backgroundColor="gray.500"
-                  draggable={false}
-                  zIndex="10"
-                  top="50px"
-                  right="0px"
-                  aria-label={`Copy ${cue.name}`}
-                  title="Copy element"
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    setIsCopied(true)
-                    setCopiedCue(cue)
-                    showToast({
-                      title: `Element ${cue.name} copied`,
-                      description:
-                        "Click on available places on the grid to paste. Click outside the grid to cancel",
-                      status: "success",
-                    })
-                  }}
-                />
+            {!isShowMode
+              ? (
+                <>
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    size="xs"
+                    position="absolute"
+                    _hover={{ bg: "red.500", color: "white" }}
+                    backgroundColor="red.300"
+                    draggable={false}
+                    zIndex="10"
+                    top="0px"
+                    right="0px"
+                    aria-label={`Delete ${cue.name}`}
+                    title="Delete element"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      handleRemoveItem(cue._id)
+                    }}
+                  />
+                  <IconButton
+                    icon={<EditIcon />}
+                    size="xs"
+                    position="absolute"
+                    _hover={{ bg: "orange.500", color: "white" }}
+                    backgroundColor="orange.300"
+                    draggable={false}
+                    zIndex="10"
+                    top="25px"
+                    right="0px"
+                    aria-label={`Edit ${cue.name}`}
+                    title="Edit element"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      handleEditItem(cue._id)
+                    }}
+                  />
+                  <IconButton
+                    icon={<CopyIcon />}
+                    size="xs"
+                    position="absolute"
+                    _hover={{ bg: "gray.600", color: "white" }}
+                    backgroundColor="gray.500"
+                    draggable={false}
+                    zIndex="10"
+                    top="50px"
+                    right="0px"
+                    aria-label={`Copy ${cue.name}`}
+                    title="Copy element"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      setIsCopied(true)
+                      setCopiedCue(cue)
+                      showToast({
+                        title: `Element ${cue.name} copied`,
+                        description:
+                          "Click on available places on the grid to paste. Click outside the grid to cancel",
+                        status: "success",
+                      })
+                    }}
+                  />
+                  {cue.file.type.startsWith("audio/") && (
+                    <IconButton
+                      icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
+                      size="xs"
+                      position="absolute"
+                      _hover={{ bg: "gray.600", color: "white" }}
+                      backgroundColor="gray.500"
+                      draggable={false}
+                      zIndex="10"
+                      top="75px"
+                      right="0px"
+                      aria-label={`Loop audio ${cue.name}`}
+                      title={cue.loop ? "Disable loop" : "Enable loop"}
+                      onMouseDown={(e) => {
+                        e.stopPropagation()
+                        handleLoopToggle(cue)
+                      }}
+                    />
+                  )}
+                </>
+              )
+            : (
+                <>
+                {cue.file.type.startsWith("audio/") && (
+                  <IconButton
+                    icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
+                    disabled={true}
+                    _disabled={{
+                      cursor: "default",
+                      pointerEvents: "auto",
+                    }}
+                    size="lg"
+                    position="absolute"
+                    _hover={{}}
+                    backgroundColor="transparent"
+                    draggable={false}
+                    zIndex="10"
+                    top="60px"
+                    right="50px"
+                    aria-label={cue.loop ? `${cue.name} loops` : `${cue.name} plays once`}
+                    title={cue.loop ? "Loop enabled" : "Plays once"}
+                  />
+                )}
               </>
-            )}
-            {cue.file.type.startsWith("audio/") && (
-              <IconButton
-                icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-                disabled={isShowMode}
-                _disabled={{
-                  backgroundColor: "gray.500",
-                  opacity: 0.9,
-                  cursor: "not-allowed",
-                  pointerEvents: "auto",
-                }}
-                size={isShowMode ? "lg" : "xs"}
-                position="absolute"
-                _hover={{ bg: "gray.600", color: "white" }}
-                backgroundColor="gray.500"
-                draggable={false}
-                zIndex="10"
-                top="75px"
-                right="0px"
-                aria-label={`Loop audio ${cue.name}`}
-                title={cue.loop ? "Disable loop" : "Enable loop"}
-                onMouseDown={(e) => {
-                  e.stopPropagation()
-                  handleLoopToggle(cue)
-                }}
-              />
             )}
 
             {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted)}
