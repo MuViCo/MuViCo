@@ -389,4 +389,37 @@ describe("PresentationsGrid", () => {
     fireEvent.click(screen.getByText("Test Presentation"))
     expect(handlePresentationClickMock).toHaveBeenCalledWith("123")
   })
+  
+  test("calls handleDeletePresentation when delete button is clicked", () => {
+    const handleDeletePresentationMock = jest.fn()
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={handleDeletePresentationMock}
+      />
+    )
+
+    const deleteButtons = screen.getAllByLabelText("Delete presentation")
+    fireEvent.click(deleteButtons[0])
+    expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
+  })
+
+  test("prevents event propagation when delete button is clicked", () => {
+    const handlePresentationClickMock = jest.fn()
+    const handleDeletePresentationMock = jest.fn()
+    
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={handlePresentationClickMock}
+        handleDeletePresentation={handleDeletePresentationMock}
+      />
+    )
+
+    fireEvent.click(screen.getAllByLabelText("Delete presentation")[0])
+    
+    expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
+    expect(handlePresentationClickMock).not.toHaveBeenCalled()
+  })
 })
