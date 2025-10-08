@@ -307,12 +307,12 @@ describe("PresentationForm", () => {
     const nameInput = screen.getByLabelText("Name*")
     const screenCountInput = screen.getByTestId("presentation-screen-count")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
-    fireEvent.change(screenCountInput, { target: { value: 1 } })
+    fireEvent.change(screenCountInput, { target: { value: "3" } })
     fireEvent.click(screen.getByText("create"))
 
     expect(createPresentationMock).toHaveBeenCalledWith({
       name: "Test Presentation",
-      screenCount: 1
+      screenCount: 3 // Updated expected value
     })
   })
 
