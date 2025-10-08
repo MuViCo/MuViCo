@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
 import HomePage from "../../components/homepage/index"
+import UserManualModal from "../../components/navbar/UserManualModal"
 import PresentationsGrid from "../../components/homepage/PresentationsGrid"
 import AdminControls from "../../components/homepage/AdminControls"
 import PresentationFormWrapper from "../../components/homepage/PresentationFormWrapper"
@@ -256,6 +257,22 @@ describe("HomePage", () => {
     })
     consoleErrorSpy.mockRestore()
   })
+
+  test("shows user manual when clicking info button", async () => {
+    render(
+      <UserManualModal 
+        isOpen={true} 
+        onClose={() => {}} 
+        isHomepage={true}
+        isPresentationPage={false}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("Welcome to the user manual. This modal provides guidance on how to use the application.")).toBeInTheDocument()
+    })
+  })
+
 })
 
 describe("PresentationForm", () => {
