@@ -50,23 +50,28 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
   </Menu>
 )
 
-// Component for rendering the screen toggle buttons
 const ScreenToggleButtons = ({
   screens,
   toggleScreenVisibility,
   toggleScreenMirroring,
-  showAllScreens,
+  toggleAllScreens,
   mirroring,
-}) => (
-  <Box display="flex" flexDirection="column" gap={2}>
-    <Button
-      colorScheme="blue"
-      onClick={showAllScreens}
-      size="md"
-    >
-      Open all screens:
-    </Button>
-  <Box display="flex" flexWrap="wrap" gap={2}>
+}) => {
+
+  const hasOpenScreen = Object.keys(screens)
+    .filter((screenNumber) => screenNumber !== "5")
+    .some((screenNumber) => screens[screenNumber])
+
+  return (
+    <Box display="flex" flexDirection="column" gap={2}>
+      <Button
+        colorScheme={hasOpenScreen ? "red" : "blue"}
+        onClick={toggleAllScreens}
+        size="md"
+      >
+        {hasOpenScreen ? "Close all screens" : "Open all screens"}
+      </Button>
+      <Box display="flex" flexWrap="wrap" gap={2}>
     {Object.keys(screens)
       .filter((screenNumber) => screenNumber !== "5")
       .map((screenNumber) => (
@@ -96,9 +101,10 @@ const ScreenToggleButtons = ({
           />
         </Box>
       ))}
+    </Box>
   </Box>
-  </Box>
-)
+  )
+}
 
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue }) => (
@@ -153,7 +159,7 @@ const ShowModeButtons = ({
   screens,
   toggleScreenVisibility,
   toggleScreenMirroring,
-  showAllScreens,
+  toggleAllScreens,
   mirroring,
   cueIndex,
   updateCue,
@@ -163,7 +169,7 @@ const ShowModeButtons = ({
       screens={screens}
       toggleScreenVisibility={toggleScreenVisibility}
       toggleScreenMirroring={toggleScreenMirroring}
-      showAllScreens={showAllScreens}
+      toggleAllScreens={toggleAllScreens}
       mirroring={mirroring}
     />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} />
