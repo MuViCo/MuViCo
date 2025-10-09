@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react"
-import { Box, IconButton, Tooltip, Text, Button } from "@chakra-ui/react" // Ensure Text is imported
+import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuItem, MenuList } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
   CopyIcon,
   RepeatIcon,
   ArrowForwardIcon,
-  EditIcon
+  EditIcon,
+  ChevronDownIcon
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -177,88 +178,6 @@ const GridLayoutComponent = ({
     setIsToolboxOpen(true)
   }
 
-  const EditModeCueButtons = (cue) => (
-    <>
-      <IconButton
-        icon={<DeleteIcon />}
-        size="xs"
-        position="absolute"
-        _hover={{ bg: "red.500", color: "white" }}
-        backgroundColor="red.300"
-        draggable={false}
-        zIndex="10"
-        top="0px"
-        right="0px"
-        aria-label={`Delete ${cue.name}`}
-        title="Delete element"
-        onMouseDown={(e) => {
-          e.stopPropagation()
-          handleRemoveItem(cue._id)
-        }}
-      />
-      <IconButton
-        icon={<EditIcon />}
-        size="xs"
-        position="absolute"
-        _hover={{ bg: "orange.500", color: "white" }}
-        backgroundColor="orange.300"
-        draggable={false}
-        zIndex="10"
-        top="25px"
-        right="0px"
-        aria-label={`Edit ${cue.name}`}
-        title="Edit element"
-        onMouseDown={(e) => {
-          e.stopPropagation()
-          handleEditItem(cue._id)
-        }}
-      />
-      <IconButton
-        icon={<CopyIcon />}
-        size="xs"
-        position="absolute"
-        _hover={{ bg: "gray.600", color: "white" }}
-        backgroundColor="gray.500"
-        draggable={false}
-        zIndex="10"
-        top="50px"
-        right="0px"
-        aria-label={`Copy ${cue.name}`}
-        title="Copy element"
-        onMouseDown={(e) => {
-            e.stopPropagation()
-            setIsCopied(true)
-            setCopiedCue(cue)
-            setShowAlert(true)
-            setAlertData({
-              title: `Copying in progress for element "${cue.name}".`,
-              description:
-                "Click on available places on the grid to paste. Click outside the grid to cancel.",
-              status: "info",
-          })
-        }}
-      />
-      {cue.file.type.startsWith("audio/") && (
-        <IconButton
-          icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-          size="xs"
-          position="absolute"
-          _hover={{ bg: "gray.600", color: "white" }}
-          backgroundColor="gray.500"
-          draggable={false}
-          zIndex="10"
-          top="75px"
-          right="0px"
-          aria-label={`Loop audio ${cue.name}`}
-          title={cue.loop ? "Disable loop" : "Enable loop"}
-          onMouseDown={(e) => {
-            e.stopPropagation()
-            handleLoopToggle(cue)
-          }}
-        />
-      )}
-    </>
-  )
   const ShowModeCueButtons = (cue) => (
     <>
       {cue.file.type.startsWith("audio/") && (
@@ -282,6 +201,107 @@ const GridLayoutComponent = ({
         />
       )}
     </>
+  )
+  const EditModeCueButtons = (cue) => (
+    <Menu>
+      <MenuButton
+        as={IconButton}
+        aria-label='Options'
+        icon={<ChevronDownIcon />}
+        variant='outline'
+        position="absolute"
+        top="0px"
+        right="0px"
+      />
+      <MenuList>
+        <MenuItem>
+          <IconButton
+            icon={<DeleteIcon />}
+            size="xs"
+            position="absolute"
+            _hover={{ bg: "red.500", color: "white" }}
+            backgroundColor="red.300"
+            draggable={false}
+            zIndex="10"
+            top="0px"
+            right="0px"
+            aria-label={`Delete ${cue.name}`}
+            title="Delete element"
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              handleRemoveItem(cue._id)
+            }}
+          />
+        </MenuItem>
+        <MenuItem>
+          <IconButton
+            icon={<EditIcon />}
+            size="xs"
+            position="absolute"
+            _hover={{ bg: "orange.500", color: "white" }}
+            backgroundColor="orange.300"
+            draggable={false}
+            zIndex="10"
+            top="25px"
+            right="0px"
+            aria-label={`Edit ${cue.name}`}
+            title="Edit element"
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              handleEditItem(cue._id)
+            }}
+          />
+        </MenuItem>
+        <MenuItem>
+          <IconButton
+            icon={<CopyIcon />}
+            size="xs"
+            position="absolute"
+            _hover={{ bg: "gray.600", color: "white" }}
+            backgroundColor="gray.500"
+            draggable={false}
+            zIndex="10"
+            top="50px"
+            right="0px"
+            aria-label={`Copy ${cue.name}`}
+            title="Copy element"
+            onMouseDown={(e) => {
+              e.stopPropagation()
+              setIsCopied(true)
+              setCopiedCue(cue)
+              setShowAlert(true)
+              setAlertData({
+                title: `Copying in progress for element "${cue.name}".`,
+                description:
+                  "Click on available places on the grid to paste. Click outside the grid to cancel.",
+                status: "info",
+              })
+            }}
+          />
+        </MenuItem>
+        {cue.file.type.startsWith("audio/") && (
+          <MenuItem>
+            <IconButton
+              icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
+              size="xs"
+              position="absolute"
+              _hover={{ bg: "gray.600", color: "white" }}
+              backgroundColor="gray.500"
+              draggable={false}
+              zIndex="10"
+              top="75px"
+              right="0px"
+              aria-label={`Loop audio ${cue.name}`}
+              title={cue.loop ? "Disable loop" : "Enable loop"}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                handleLoopToggle(cue)
+              }}
+            />
+          </MenuItem>
+        )}
+      </MenuList>
+    </Menu>
   )
 
   /**
