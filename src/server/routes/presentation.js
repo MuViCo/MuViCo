@@ -334,7 +334,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const isAudioScreen = screen === presentationForValidation.screenCount + 1
     
     if (isAudioScreen) {
-      if (image === "/blank.png") {
+      if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         return res.status(400).json({ 
           error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
         })
@@ -362,8 +362,8 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
             screen: screen,
             file: {
               id: fileId,
-              name: file && file.originalname ? file.originalname : "blank.png",
-              url: image === "/blank.png" ? null : "",
+              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank.png"),
+              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
               ...(driveId && { driveId }),
             },
             loop: loop,
@@ -466,7 +466,7 @@ router.put(
       const isAudioScreen = screen === presentationData.screenCount + 1
       
       if (isAudioScreen) {
-        if (image === "/blank.png") {
+        if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
           return res.status(400).json({ 
             error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
           })
@@ -499,11 +499,11 @@ router.put(
       cue.name = cueName
       cue.loop = loop
 
-      if (image === "/blank.png") {
+      if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         const newFileId = generateFileId()
         cue.file = {
           id: newFileId,
-          name: "blank.png",
+          name: image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank.png",
           url: null,
           type: "image/png",
         }

@@ -6,21 +6,25 @@ import {
   Button,
   Box,
   Flex,
+  Select,
 } from "@chakra-ui/react"
 
 const PresentationForm = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
   const [screenCount, setScreenCount] = useState(1)
+  const [startingFrameColor, setStartingFrameColor] = useState("black")
 
   const addPresentation = (event) => {
     event.preventDefault()
     createPresentation({
       name,
-      screenCount: parseInt(screenCount, 10)
+      screenCount: parseInt(screenCount, 10),
+      startingFrameColor
     })
 
     setName("")
     setScreenCount(1)
+    setStartingFrameColor("black")
     onCancel()
   }
 
@@ -50,6 +54,21 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             value={screenCount}
             onChange={({ target }) => setScreenCount(target.value)}
           />
+          
+          <FormLabel fontWeight="bold" style={{ marginTop: ".5em" }}>
+            Starting Frame Color
+          </FormLabel>
+          <Select 
+            data-testid="starting-frame-color"
+            value={startingFrameColor} 
+            onChange={(e) => setStartingFrameColor(e.target.value)}
+            placeholder="Select color"
+          >
+            <option value="black" style={{backgroundColor: "black", color: "white"}}>Black</option>
+            <option value="white" style={{backgroundColor: "white", color: "black"}}>White</option>
+            <option value="indigo" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
+            <option value="tropical-indigo" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
+          </Select>
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
           <Button id="create-button" type="submit" colorScheme="purple">
