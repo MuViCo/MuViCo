@@ -210,6 +210,23 @@ const EditMode = ({
       return
     }
 
+    const screenToRemove = presentation.screenCount
+    const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
+    
+    if (cuesOnScreen.length > 0) {
+      setConfirmMessage(
+        `Screen ${screenToRemove} has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?`
+      )
+      setConfirmAction(() => async () => {
+        setIsConfirmOpen(false)
+        await performScreenRemoval()
+      })
+      setIsConfirmOpen(true)
+      return
+    }
+  }
+
+  const performScreenRemoval = async () => {
     try {
       dispatch(decrementScreenCount())
       const result = await dispatch(saveScreenCount({ id, screenCount: presentation.screenCount - 1 }))
