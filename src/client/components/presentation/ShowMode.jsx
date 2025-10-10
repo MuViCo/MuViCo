@@ -126,17 +126,14 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
     })
   }
 
-  const toggleAllScreens = () => {
+  const showAllScreens = () => {
     setScreenVisibility((prevVisibility) => {
       const updatedVisibility = { ...prevVisibility }
-      const screenNumbers = Object.keys(updatedVisibility).filter((screenNumber) => screenNumber !== "5")
-      
-      const hasOpenScreen = screenNumbers.some((screenNumber) => updatedVisibility[screenNumber])
-      
-      screenNumbers.forEach((screenNumber) => {
-        updatedVisibility[screenNumber] = !hasOpenScreen
+      Object.keys(updatedVisibility)
+      .filter((screenNumber) => screenNumber !== "5")
+      .forEach((screenNumber) => {
+        updatedVisibility[screenNumber] = true
       })
-      
       return updatedVisibility
     })
   }
@@ -179,7 +176,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
         screens={screenVisibility}
         toggleScreenVisibility={toggleScreenVisibility}
         toggleScreenMirroring={toggleScreenMirroring}
-        toggleAllScreens={toggleAllScreens}
+        showAllScreens={showAllScreens}
         mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}

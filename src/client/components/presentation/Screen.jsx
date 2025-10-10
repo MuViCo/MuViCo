@@ -18,16 +18,13 @@ const fadeOut = keyframes`
 //conditional rendering helper function based on file type
 const renderMedia = (file, name) => {
   if (isType.image(file)) {
-    // Handle blank images by using local file path when URL is null
-    const imageSrc = file.url || `/${file.name}`
-    
     return (
       <Image
-        src={imageSrc}
+        src={file.url}
         alt={name}
         width="100%"
         height="100vh"
-        objectFit="cover"
+        objectFit="contain"
       />
     )
   }
@@ -110,10 +107,10 @@ const ScreenContent = ({
         zIndex={1}
         animation={`${fadeOut} 500ms ease-in-out forwards`}
       >
-        {(previousScreenData.file?.url || previousScreenData.file?.name) &&
+        {previousScreenData.file?.url &&
           (isType.image(previousScreenData.file) ? (
             <Image
-              src={previousScreenData.file.url || `/${previousScreenData.file.name}`}
+              src={previousScreenData.file.url}
               alt={previousScreenData.name}
               width="100%"
               height="100vh"

@@ -50,7 +50,6 @@ const EditMode = ({
     "rgba(72, 26, 35, 0.8)"
   )
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
-  const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
@@ -176,13 +175,8 @@ const EditMode = ({
         newScreenNumber, // screen
         null // file (no file for blank element)
       )
-      // Add image field for blank elements - use the original starting color
-      const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
-      const imageFile = storedColor === "white" ? "/blank-white.png"
-        : storedColor === "indigo" ? "/blank-indigo.png" 
-        : storedColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
-        : "/blank.png"
-      formData.append("image", imageFile)
+      // Add image field for blank elements
+      formData.append("image", "/blank.png")
       
       await dispatch(createCue(id, formData))
       
@@ -211,23 +205,6 @@ const EditMode = ({
       return
     }
 
-    const screenToRemove = presentation.screenCount
-    const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
-    
-    if (cuesOnScreen.length > 0) {
-      setConfirmMessage(
-        `Screen ${screenToRemove} has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?`
-      )
-      setConfirmAction(() => async () => {
-        setIsConfirmOpen(false)
-        await performScreenRemoval()
-      })
-      setIsConfirmOpen(true)
-      return
-    }
-  }
-
-  const performScreenRemoval = async () => {
     try {
       dispatch(decrementScreenCount())
       const result = await dispatch(saveScreenCount({ id, screenCount: presentation.screenCount - 1 }))
@@ -903,14 +880,14 @@ const EditMode = ({
                 bg={"transparent"}
                 mb={`${gap}px`}
               >
-                {xLabels.map((label, index) => (
+                {xLabels.map((label) => (
                   <Box
                     key={label}
                     className="x-index-label"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
+                    bg={bgColorIndex}
                     borderRadius="md"
                     h={`${rowHeight}px`}
                     width={`${columnWidth}px`}
