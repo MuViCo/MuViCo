@@ -13,6 +13,7 @@ import {
   Tooltip,
   ChakraProvider,
   extendTheme,
+  Select
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect } from "react"
@@ -26,7 +27,7 @@ import {
 const theme = extendTheme({})
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState("/blank.png")
+  const [file, setFile] = useState("")
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
@@ -94,10 +95,18 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
 
   const checkFileType = (file) => {
+    if (typeof file === "string") {
+      return true
+    }
+
+    if (!file || !file.type) {
+      return false
+    }
+    
     const isAudio = file.type.includes("audio/")
     const currentScreen = screen
     
-    // For audio files, check if they'll be placed correctly (auto-assigned to audio screen)
+    // For audio files, check if they"ll be placed correctly (auto-assigned to audio screen)
     const effectiveScreen = isAudio ? screenCount + 1 : currentScreen
     
     // Check if the file type is allowed for the effective screen
@@ -118,10 +127,19 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const onAddCue = (event) => {
     event.preventDefault()
 
-    if (file !== "/blank.png") {
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
+    
+    if (!isBlankImage && file !== "") {
       if (checkFileType(file) == false) {
         return
       }
+    }
+
+    // Don"t allow submission if no file is selected
+    if (file === "") {
+      setError("Please select a file or blank element")
+      setTimeout(() => setError(null), 5000)
+      return
     }
 
     if (isAudioMode && addAudioCue) {
@@ -131,7 +149,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     }
     
     setError(null)
-    setFile("/blank.png")
+    setFile("")
     setFileName("")
     setCueName("")
     setIndex(0)
@@ -150,7 +168,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       fileName,
     }
 
-    if (file !== "/blank.png") {
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
+    
+    if (!isBlankImage) {
       if (checkFileType(file) == false) {
         return
       }
@@ -198,7 +218,10 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
           {!isAudioMode && (
             <>
               <FormHelperText mb={2}>
-                Screen 1-4 for images and videos and screen 5 for audio only*
+                {screenCount === 1
+                  ? "Screen 1 for images and videos and screen 2 for audio only*"
+                  : `Screens 1-${screenCount} for images and videos and screen ${screenCount + 1} for audio only*`
+                }
               </FormHelperText>
               <NumberInput
                 id="screen-number"
@@ -306,20 +329,27 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             ))}
           {error && <Error error={error} />}
           <FormHelperText mb={2}>or add blank element</FormHelperText>
-          <Button
-            w={40}
-            mr={2}
-            onClick={() => {
-              setFile("/blank.png")
-              setFileName("blank.png")
-            }}
+          <Select
+            data-testid="add-blank"
+            value={file}
+            onChange={(e) => setFile(e.target.value)}
+            placeholder="Add blank"
           >
-            Add blank
-          </Button>{" "}
-          {fileName === "blank.png" && (
+            <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
+            <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
+            <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
+            <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
+          </Select>
+          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && (
             <>
               <CheckIcon color="#03C03C" />
-              <FormHelperText>{fileName}</FormHelperText>
+              <FormHelperText>
+                {file === "/blank.png" ? "Black blank element" : 
+                 file === "/blank-white.png" ? "White blank element" : 
+                 file === "/blank-indigo.png" ? "Indigo blank element" : 
+                 file === "/blank-tropicalindigo.png" ? "Tropical indigo blank element" :
+                 ""}
+              </FormHelperText>
             </>
           )}{" "}
           <Divider orientation="horizontal" my={4} />
