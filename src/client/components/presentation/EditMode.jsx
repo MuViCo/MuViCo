@@ -50,6 +50,7 @@ const EditMode = ({
     "rgba(72, 26, 35, 0.8)"
   )
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
+  const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
@@ -880,14 +881,14 @@ const EditMode = ({
                 bg={"transparent"}
                 mb={`${gap}px`}
               >
-                {xLabels.map((label) => (
+                {xLabels.map((label, index) => (
                   <Box
                     key={label}
                     className="x-index-label"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    bg={bgColorIndex}
+                    bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
                     borderRadius="md"
                     h={`${rowHeight}px`}
                     width={`${columnWidth}px`}
