@@ -731,7 +731,6 @@ const EditMode = ({
       >
         <Box
           display="flex"
-          height="680px"
           width="100%"
           marginTop={`${gap * 2}px`}
           overflow="auto"
