@@ -147,7 +147,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
 
   const updateCue = (direction) => {
     if (direction === "Next") {
-      setCueIndex((prevCueIndex) => prevCueIndex + 1)
+      setCueIndex((prevCueIndex) => Math.min(indexCount - 1, prevCueIndex + 1))
     } else {
       setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1))
     }
