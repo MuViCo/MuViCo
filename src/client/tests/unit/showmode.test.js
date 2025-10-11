@@ -99,6 +99,7 @@ describe("ShowMode", () => {
           cues={mockCues}
           cueIndex={testCueIndex}
           setCueIndex={mockSetCueIndex}
+          indexCount={100}
         />
       )
     })
@@ -108,6 +109,7 @@ describe("ShowMode", () => {
         cues={mockCues}
         cueIndex={mockCueIndex}
         setCueIndex={mockSetCueIndex}
+        indexCount={100}
       />
     )
 
@@ -126,7 +128,7 @@ describe("ShowMode", () => {
 
   test("toggles screen visibility", async () => {
     await act(async () => {
-      render(<ShowMode cues={mockCues} />)
+      render(<ShowMode cues={mockCues} indexCount={100} />)
     })
 
     act(() => {
@@ -146,7 +148,7 @@ describe("ShowMode", () => {
 
   test("toggles visibility for multiple screens", async () => {
     await act(async () => {
-      render(<ShowMode cues={mockCues} />)
+      render(<ShowMode cues={mockCues} indexCount={100} />)
     })
 
     act(() => {
@@ -180,7 +182,7 @@ describe("ShowMode", () => {
 
   test("handles empty cues", async () => {
     await act(async () => {
-      render(<ShowMode cues={mockemptyCues} />)
+      render(<ShowMode cues={mockemptyCues} indexCount={100}/>)
     })
     expect(
       screen.queryByRole("button", { name: "Open screen: 1" })
@@ -203,6 +205,7 @@ describe("ShowMode", () => {
           cues={mockCues}
           cueIndex={testCueIndex}
           setCueIndex={mockSetCueIndex}
+          indexCount={100}
         />
       )
     })
@@ -212,6 +215,7 @@ describe("ShowMode", () => {
         cues={mockCues}
         cueIndex={mockCueIndex}
         setCueIndex={mockSetCueIndex}
+        indexCount={100}
       />
     )
 
@@ -230,7 +234,7 @@ describe("ShowMode", () => {
       window.HTMLElement.prototype.scrollTo = () => {}
     }
 
-    render(<ShowMode cues={mockCues} />)
+    render(<ShowMode cues={mockCues} indexCount={100}/>)
 
     await waitFor(() => {
       expect(
@@ -269,7 +273,7 @@ describe("ShowMode", () => {
   ]
 
   await act(async () => {
-    render(<ShowMode cues={cues} cueIndex={mockCueIndex} />)
+    render(<ShowMode cues={cues} cueIndex={mockCueIndex} indexCount={100}/>)
   })
 
   await act(async () => {
@@ -295,7 +299,7 @@ describe("ShowMode", () => {
   ]
 
   await act(async () => {
-    render(<ShowMode cues={cues} cueIndex={mockCueIndex} />)
+    render(<ShowMode cues={cues} cueIndex={mockCueIndex} indexCount={100}/>)
   })
 
   await act(async () => {
