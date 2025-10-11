@@ -56,7 +56,7 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted) => {
   } else if (cue.file.type.startsWith("image/")) {
     return (
       <img // Thumbail for image
-        src={cue.file.url || `/${cue.file.name}`}
+        src={cue.file.url}
         alt={cue.name}
         style={{
           width: "100%",
