@@ -4,18 +4,20 @@ export const editModeFeaturesData = [
     items: [
       "Muvico button: Go back to the home page.",
       "Show Mode: Preview your presentation.",
-      "Delete Presentation: Remove the current presentation.",
-      "Add Element: Insert new elements into your slides.",
+      "Delete Presentation: Delete the current presentation.",
+      "Add Element: Insert new elements into your presentation.",
       "Storage indicator: Displays how much space has been used. The maximum allowed space is 50 MB.",
-      "Save status icon (✔️): This is marked when your changes are successfully saved.",
+      "Save status icon (✔️): This is marked when your changes have been successfully saved.",
     ],
   },
   {
     title:
-      "Slides section (top row with white boxes labeled Index 0, Index 1, etc.)",
+      "Frames section (top row with white boxes labeled Starting Frame, Frame 1, Frame 2, etc.)",
     items: [
       "This shows the order in which your elements will be displayed on the selected screen.",
-      "You can add up to 100 slides per screen.",
+      "Initially starts with 1 starting frame and 4 extra frames.",
+      "Additional frames can be added or removed by clicking the +/- buttons.",
+      "You can have anywhere from 1 to 100 frames per screen.",
     ],
   },
   {
@@ -24,7 +26,8 @@ export const editModeFeaturesData = [
     items: [
       "Displays all the screens you can use for your presentation.",
       "You can use multiple screens in your presentation.",
-      "Audio files row where only audio media can be uploaded onto.",
+      "Additional screens can be added or removed by clicking the +/- buttons.",
+      "The \"Audio files\" row is used only for audio files. Only audio files can be uploaded on this row.",
     ],
   },
   {
@@ -37,18 +40,18 @@ export const editModeFeaturesData = [
   {
     title: "Initial elements (black boxes labeled as initial elements)",
     items: [
-      "When creating a new presentation, initial elements are added to all screens at index 0.",
-      "These elements can be deleted by clicking the red X button or modified by double-clicking on the element you want to edit.",
+      "When creating a new presentation, initial elements are added to all screens at the starting frame.",
+      "These elements can be deleted by clicking the red X button or modified by either double-clicking on the element or clicking the pencil icon.",
       "These elements are added to ensure that the screens start black by default at the beginning of the presentation.",
     ],
   },
   {
-    title: "You can add an element in four ways:",
+    title: "You can add an element in four different ways:",
     items: [
       "Click the Add Element button to open the element creation panel.",
-      "Double-click anywhere on the screen to open the panel. This will automatically set the screen and index based on where you clicked.",
+      "Double-click anywhere on the screen to open the panel. This will automatically set the screen and frame based on where you clicked.",
       "Drag and drop a file directly to the screen.",
-      "You can copy an existing element by clicking its copy button, and then click the desired position to paste it.",
+      "You can copy an existing element by clicking its copy button, and then click on desired positions to paste it.",
     ],
   },
 ]
@@ -62,9 +65,9 @@ export const stepsToAddElementData = [
   {
     title: "Select the screen",
     items: [
-      "The index determines the element's position on the selected screen.",
-      "The default index will be the first available index on the selected screen.",
-      "You can choose any index between 0-100.",
+      "The frame determines the element's position on the selected screen.",
+      "The default frame will be the first available index on the selected screen.",
+      "You can choose any index between 0 (starting frame) and the highest frame number on your project.",
     ],
   },
   {
@@ -78,7 +81,7 @@ export const stepsToAddElementData = [
     items: [
       "Click Upload media to add an image or video.",
       "The information button (ℹ️) will show you the allowed file types.",
-      "You can also click Add blank to create an empty placeholder.",
+      "You can also click \"Add blank\" to create an empty placeholder.",
     ],
   },
   {
@@ -93,9 +96,9 @@ export const editingElementData = [
   {
     title: "You can modify an element in different ways:",
     items: [
-      "Click the Add Element button and select the screen (1-4) or audio (5) and index (0-100) of the element you want to change.",
+      "Click the Add Element button and select the screen (min 1, up to 8) or audio (highest screen number) and index (min 0, up to highest frame number) of the element you want to change.",
       "Drag and drop a new file on top of the existing element to replace it.",
-      "Double-click on the element to open it for editing.",
+      "Double-click on the element or click the pencil icon to open it for editing.",
       "Click the delete button to remove the element.",
       "Drag and drop the element to insert it into a new position. If there is already an element in that position, the two elements will swap places.",
     ],
@@ -108,10 +111,10 @@ export const showModeFeaturesData = [
     items: [],
   },
   {
-    title: "Index navigation (middle section)",
+    title: "Frame navigation (middle section)",
     items: [
-      "Index display (e.g., Index 0): Shows the current index being played.",
-      "Left and right arrows: Navigate between indexes to control the presentation flow.",
+      "Frame display (e.g., Starting Frame, Frame 1, etc): Shows the current frame being played.",
+      "Left and right arrows: Navigate between frames to control the presentation flow.",
     ],
   },
   {
