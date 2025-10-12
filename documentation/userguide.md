@@ -47,16 +47,16 @@ When you click on the presentation you want to edit you will be directed to the 
   - **MuViCo button on the top left**: Go back to the home page.
   - **Show Mode**: Preview your presentation.
   - **Delete Presentation**: Delete the current presentation.
-  - **Add Element**: Insert new elements into your slides.
+  - **Add Element**: Insert new elements into your presentation.
   - **Storage indicator**: Displays how much space has been used (e.g., 0.00 MB / 50 MB). The maximum allowed space is 50 MB.
   - **Save status icon** (✔️): This is marked when your changes have been successfully saved.
 
-- **Slides section (top row with white boxes labeled Starting Frame, Frame 1, Frame 2, etc.)**
+- **Frames section (top row with white boxes labeled Starting Frame, Frame 1, Frame 2, etc.)**
 
   - This shows the order in which your elements will be displayed on the selected screen.
-  - Initially starts with 1 starting slide and 4 extra slides.
-  - Additional slides can be added or removed by clicking the +/- buttons.
-  - You can have anywhere from 1 to 100 slides per screen.
+  - Initially starts with 1 starting frame and 4 extra frames.
+  - Additional frames can be added or removed by clicking the +/- buttons.
+  - You can have anywhere from 1 to 100 frames per screen.
 
 - **Screens section (left side with purple boxes labeled Screen 1, Screen 2, etc. and Audio files)**
 
@@ -129,7 +129,7 @@ You can modify an element in different ways:
 
 ## Show mode page
 
-When you click on the **"Show mode"** button on the **edit presentation** page you will be directed to the show mode page which allows you to preview and control your presentation in real-time. Here, you can navigate through different screens and slides (indexes).
+When you click on the **"Show mode"** button on the **edit presentation** page you will be directed to the show mode page which allows you to view and control your presentation in real-time. Here you can open your screens and manually navigate between frames.
 
 ![Show mode](./images/showmode.png "Show mode")
 

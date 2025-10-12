@@ -5,19 +5,19 @@ export const editModeFeaturesData = [
       "Muvico button: Go back to the home page.",
       "Show Mode: Preview your presentation.",
       "Delete Presentation: Delete the current presentation.",
-      "Add Element: Insert new elements into your slides.",
+      "Add Element: Insert new elements into your presentation.",
       "Storage indicator: Displays how much space has been used. The maximum allowed space is 50 MB.",
       "Save status icon (✔️): This is marked when your changes have been successfully saved.",
     ],
   },
   {
     title:
-      "Slides section (top row with white boxes labeled Starting Frame, Frame 1, Frame 2, etc.)",
+      "Frames section (top row with white boxes labeled Starting Frame, Frame 1, Frame 2, etc.)",
     items: [
       "This shows the order in which your elements will be displayed on the selected screen.",
-      "Initially starts with 1 starting slide and 4 extra slides.",
-      "Additional slides can be added or removed by clicking the +/- buttons.",
-      "You can have anywhere from 1 to 100 slides per screen.",
+      "Initially starts with 1 starting frame and 4 extra frames.",
+      "Additional frames can be added or removed by clicking the +/- buttons.",
+      "You can have anywhere from 1 to 100 frames per screen.",
     ],
   },
   {
