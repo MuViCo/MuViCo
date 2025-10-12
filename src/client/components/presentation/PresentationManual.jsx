@@ -47,7 +47,7 @@ const PresentationManual = () => {
         When you click on the Show mode button on the edit presentation page, you
         will be directed to the show mode page, which allows you to preview and
         control your presentation in real-time. Here, you can navigate through
-        different screens and slides (indexes).
+        different screens and slides (frames).
       </Text>
       <FeatureSection
         title="Features on this page:"
