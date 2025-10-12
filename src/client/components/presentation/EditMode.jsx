@@ -27,6 +27,7 @@ import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import StatusTooltip from "./StatusToolTip"
+import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
@@ -66,6 +67,8 @@ const EditMode = ({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => {})
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertData, setAlertData] = useState({})
 
   const xLabels = Array.from({ length: indexCount }, (_, index) => 
     index === 0 ? "Starting Frame" : `Frame ${index}`)
@@ -86,15 +89,17 @@ const EditMode = ({
   useOutsideClick({
     ref: containerRef,
     handler: () => {
-      if (isCopied) {
+      if (isCopied && !isConfirmOpen) {
         showToast({
           title: "Cancelled copying",
-          description: "Copying element has been cancelled.",
+          description: "Copying has been cancelled.",
           status: "info",
         })
+        setIsCopied(false)
+        setCopiedCue(null)
+        setShowAlert(false)
+        setAlertData({})
       }
-      setIsCopied(false)
-      setCopiedCue(null)
     },
   })
 
@@ -724,6 +729,10 @@ const EditMode = ({
 
   return (
     <ChakraProvider theme={theme}>
+      <CustomAlert
+        showAlert={showAlert}
+        alertData={alertData}
+      />
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
@@ -938,6 +947,8 @@ const EditMode = ({
                 setSelectedCue = {setSelectedCue}
                 setIsToolboxOpen = {setIsToolboxOpen}
                 indexCount={indexCount}
+                setShowAlert={setShowAlert}
+                setAlertData={setAlertData}
               />
 
               {hoverPosition && !isDragging && (
