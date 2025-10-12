@@ -219,13 +219,9 @@ const GridLayoutComponent = ({
           <IconButton
             icon={<DeleteIcon />}
             size="xs"
-            position="absolute"
             _hover={{ bg: "red.500", color: "white" }}
             backgroundColor="red.300"
             draggable={false}
-            zIndex="10"
-            top="0px"
-            right="0px"
             aria-label={`Delete ${cue.name}`}
             title="Delete element"
             onMouseDown={(e) => {
@@ -238,13 +234,9 @@ const GridLayoutComponent = ({
           <IconButton
             icon={<EditIcon />}
             size="xs"
-            position="absolute"
             _hover={{ bg: "orange.500", color: "white" }}
             backgroundColor="orange.300"
             draggable={false}
-            zIndex="10"
-            top="25px"
-            right="0px"
             aria-label={`Edit ${cue.name}`}
             title="Edit element"
             onMouseDown={(e) => {
@@ -257,13 +249,9 @@ const GridLayoutComponent = ({
           <IconButton
             icon={<CopyIcon />}
             size="xs"
-            position="absolute"
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
-            zIndex="10"
-            top="50px"
-            right="0px"
             aria-label={`Copy ${cue.name}`}
             title="Copy element"
             onMouseDown={(e) => {
@@ -285,13 +273,9 @@ const GridLayoutComponent = ({
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
-              position="absolute"
               _hover={{ bg: "gray.600", color: "white" }}
               backgroundColor="gray.500"
               draggable={false}
-              zIndex="10"
-              top="75px"
-              right="0px"
               aria-label={`Loop audio ${cue.name}`}
               title={cue.loop ? "Disable loop" : "Enable loop"}
               onMouseDown={(e) => {
