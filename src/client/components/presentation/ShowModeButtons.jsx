@@ -64,7 +64,7 @@ const ScreenToggleButtons = ({
       onClick={showAllScreens}
       size="md"
     >
-      Open all screens:
+      Open all screens
     </Button>
   <Box display="flex" flexWrap="wrap" gap={2}>
     {Object.keys(screens)

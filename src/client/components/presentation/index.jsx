@@ -71,7 +71,6 @@ const PresentationPage = ({ user }) => {
       {presentationInfo && (
         <Box
           width="100vw"
-          height="95vh"
           margin={0}
           padding={0}
           display="flex"

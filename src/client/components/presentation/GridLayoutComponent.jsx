@@ -99,7 +99,9 @@ const GridLayoutComponent = ({
   isAudioMuted,
   setSelectedCue,
   setIsToolboxOpen,
-  indexCount
+  indexCount,
+  setShowAlert,
+  setAlertData
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -337,11 +339,12 @@ const GridLayoutComponent = ({
                       e.stopPropagation()
                       setIsCopied(true)
                       setCopiedCue(cue)
-                      showToast({
-                        title: `Element ${cue.name} copied`,
+                      setShowAlert(true)
+                      setAlertData({
+                        title: `Copying in progress for element "${cue.name}".`,
                         description:
-                          "Click on available places on the grid to paste. Click outside the grid to cancel",
-                        status: "success",
+                          "Click on available places on the grid to paste. Click outside the grid to cancel.",
+                        status: "info",
                       })
                     }}
                   />
