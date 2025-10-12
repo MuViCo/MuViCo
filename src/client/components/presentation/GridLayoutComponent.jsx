@@ -210,6 +210,7 @@ const GridLayoutComponent = ({
         icon={<ChevronDownIcon />}
         variant='outline'
         position="absolute"
+        zIndex="10"
         top="0px"
         right="0px"
       />
