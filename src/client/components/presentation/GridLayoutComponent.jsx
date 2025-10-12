@@ -213,6 +213,7 @@ const GridLayoutComponent = ({
         zIndex="10"
         top="0px"
         right="0px"
+        size="xs"
       />
       <Portal>
         <MenuList>
