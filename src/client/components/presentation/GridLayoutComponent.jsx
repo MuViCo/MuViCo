@@ -216,7 +216,7 @@ const GridLayoutComponent = ({
         size="xs"
       />
       <Portal>
-        <MenuList>
+        <MenuList background={"transparent"} margin={"-3"}>
           <MenuItem>
             <IconButton
               icon={<DeleteIcon />}
