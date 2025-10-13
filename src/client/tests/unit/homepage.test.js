@@ -80,7 +80,8 @@ describe("HomePage", () => {
     presentationService.create.mockResolvedValue({
       id: 3,
       name: "Presentation 3",
-      screenCount: 1
+      screenCount: 1,
+      startingFrameColor: "black"
     })
 
     render(<HomePage user={{ isAdmin: true }} />)
@@ -96,7 +97,8 @@ describe("HomePage", () => {
     await waitFor(() =>
       expect(presentationService.create).toHaveBeenCalledWith({
         name: "Presentation 3",
-        screenCount: 1
+        screenCount: 1,
+        startingFrameColor: "black"
       })
     )
 
@@ -104,7 +106,7 @@ describe("HomePage", () => {
       expect(presentationService.getAll).toHaveBeenCalledTimes(2)
     ) //one call in useEffect and one call in createPresentation
 
-    expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function))
+    expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function), "black")
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
@@ -289,13 +291,16 @@ describe("PresentationForm", () => {
 
     const nameInput = screen.getByLabelText("Name*")
     const screenCountInput = screen.getByTestId("presentation-screen-count")
+    const startingFrameColorInput = screen.getByTestId("starting-frame-color")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.change(screenCountInput, { target: { value: 1 } })
+    fireEvent.change(startingFrameColorInput, { target: { value: "black" } })
     fireEvent.click(screen.getByText("create"))
 
     expect(createPresentationMock).toHaveBeenCalledWith({
       name: "Test Presentation",
-      screenCount: 1
+      screenCount: 1,
+      startingFrameColor: "black"
     })
   })
 
