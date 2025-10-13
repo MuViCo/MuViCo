@@ -29,7 +29,6 @@ const mockemptyCues = []
 const mockCueIndex = 0
 
 describe("ShowMode", () => {
-  // simulate image loading behavior
   beforeAll(() => {
     global.Image = class {
       constructor() {
@@ -53,7 +52,6 @@ describe("ShowMode", () => {
   })
 
   afterAll(() => {
-    // clean up the global image and window mock
     delete global.Image
     delete window.open
   })
@@ -350,6 +348,198 @@ describe("ShowMode", () => {
       const popup = window.open.mock.results.at(-1).value
       expect(popup.document.title).toBe("Screen 1, Frame 7")
     })
+  })
+
+  test("toggleAllScreens opens all screens when none are open", async () => {
+    await act(async () => {
+      render(<ShowMode cues={mockCues} indexCount={100} />)
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 2" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Close screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 2" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+  })
+
+  test("toggleAllScreens closes all screens when at least one is open", async () => {
+    await act(async () => {
+      render(<ShowMode cues={mockCues} indexCount={100} />)
+    })
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Close screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 2" })
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Close all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 2" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+  })
+
+  test("toggleAllScreens closes all screens when multiple screens are open", async () => {
+    await act(async () => {
+      render(<ShowMode cues={mockCues} indexCount={100} />)
+    })
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+    })
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open screen: 2" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Close screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 2" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Close all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 2" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+  })
+
+  test("toggleAllScreens can be used multiple times to toggle all screens on and off", async () => {
+    await act(async () => {
+      render(<ShowMode cues={mockCues} indexCount={100} />)
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 2" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Close all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open screen: 2" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open all screens" }))
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 1" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close screen: 2" })
+    ).toBeInTheDocument()
+  })
+
+  test("toggleAllScreens button text updates correctly based on screen states", async () => {
+    await act(async () => {
+      render(<ShowMode cues={mockCues} indexCount={100} />)
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open screen: 1" }))
+    })
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Open screen: 2" }))
+    })
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Close screen: 1" }))
+    })
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
+
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Close screen: 2" }))
+    })
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
   })
 })
 
