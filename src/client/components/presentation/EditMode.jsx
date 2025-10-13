@@ -890,7 +890,7 @@ const EditMode = ({
           </Box>
           <Box position="relative" pointerEvents={isShowMode ? "none" : "auto"}>
             <Box
-              height="600px"
+              height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
               width="100%"
               position="relative"
               ref={containerRef}
