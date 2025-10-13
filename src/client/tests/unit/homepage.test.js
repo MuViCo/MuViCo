@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
 import HomePage from "../../components/homepage/index"
+import UserManualModal from "../../components/navbar/UserManualModal"
 import PresentationsGrid from "../../components/homepage/PresentationsGrid"
 import AdminControls from "../../components/homepage/AdminControls"
 import PresentationFormWrapper from "../../components/homepage/PresentationFormWrapper"
@@ -258,6 +259,22 @@ describe("HomePage", () => {
     })
     consoleErrorSpy.mockRestore()
   })
+
+  test("shows user manual when clicking info button", async () => {
+    render(
+      <UserManualModal 
+        isOpen={true} 
+        onClose={() => {}} 
+        isHomepage={true}
+        isPresentationPage={false}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText("Welcome to the user manual. This modal provides guidance on how to use the application.")).toBeInTheDocument()
+    })
+  })
+
 })
 
 describe("PresentationForm", () => {
@@ -376,5 +393,38 @@ describe("PresentationsGrid", () => {
     )
     fireEvent.click(screen.getByText("Test Presentation"))
     expect(handlePresentationClickMock).toHaveBeenCalledWith("123")
+  })
+  
+  test("calls handleDeletePresentation when delete button is clicked", () => {
+    const handleDeletePresentationMock = jest.fn()
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={handleDeletePresentationMock}
+      />
+    )
+
+    const deleteButtons = screen.getAllByLabelText("Delete presentation")
+    fireEvent.click(deleteButtons[0])
+    expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
+  })
+
+  test("prevents event propagation when delete button is clicked", () => {
+    const handlePresentationClickMock = jest.fn()
+    const handleDeletePresentationMock = jest.fn()
+    
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={handlePresentationClickMock}
+        handleDeletePresentation={handleDeletePresentationMock}
+      />
+    )
+
+    fireEvent.click(screen.getAllByLabelText("Delete presentation")[0])
+    
+    expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
+    expect(handlePresentationClickMock).not.toHaveBeenCalled()
   })
 })
