@@ -215,12 +215,30 @@ const GridLayoutComponent = ({
         right="0px"
         size="xs"
       />
-      <Portal>
-        <MenuList background={"transparent"} margin={"-3"}>
-          <MenuItem>
+      <Portal disablePortal>
+        <MenuList
+          background="transparent"
+          margin="-5px 0 0 -13px"
+          w="50px"
+          paddingTop={0}
+          paddingBottom={0}
+          minW="none"
+        >
+          <MenuItem
+            p={0}
+            m={0}
+            justifyContent="center"
+            alignItems="center"
+            background="transparent"
+            _hover={{ bg: "transparent" }}
+            overflow="hidden"
+          >
             <IconButton
               icon={<DeleteIcon />}
               size="xs"
+              w="100%"
+              h="30px"
+              borderRadius="0.375rem 0.375rem 0 0"
               _hover={{ bg: "red.500", color: "white" }}
               backgroundColor="red.300"
               draggable={false}
@@ -232,10 +250,21 @@ const GridLayoutComponent = ({
               }}
             />
           </MenuItem>
-          <MenuItem>
+          <MenuItem
+            p={0}
+            m={0}
+            justifyContent="center"
+            alignItems="center"
+            background="transparent"
+            _hover={{ bg: "transparent" }}
+            overflow="hidden"
+          >
             <IconButton
               icon={<EditIcon />}
               size="xs"
+              w="100%"
+              h="30px"
+              borderRadius={0}
               _hover={{ bg: "orange.500", color: "white" }}
               backgroundColor="orange.300"
               draggable={false}
@@ -247,10 +276,21 @@ const GridLayoutComponent = ({
               }}
             />
           </MenuItem>
-          <MenuItem>
+          <MenuItem
+            p={0}
+            m={0}
+            justifyContent="center"
+            alignItems="center"
+            background="transparent"
+            _hover={{ bg: "transparent" }}
+            overflow="hidden"
+          >
             <IconButton
               icon={<CopyIcon />}
               size="xs"
+              w="100%"
+              h="30px"
+              borderRadius="0 0 0.375rem 0.375rem"
               _hover={{ bg: "gray.600", color: "white" }}
               backgroundColor="gray.500"
               draggable={false}
