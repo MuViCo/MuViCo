@@ -296,7 +296,7 @@ const GridLayoutComponent = ({
               draggable={false}
               aria-label={`Copy ${cue.name}`}
               title="Copy element"
-              onMouseDown={(e) => {
+              onMouseUp={(e) => {
                 e.stopPropagation()
                 setIsCopied(true)
                 setCopiedCue(cue)
