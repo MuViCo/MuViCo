@@ -253,25 +253,53 @@ const EditMode = ({
       setIsConfirmOpen(true)
       return
     }
+
+    await performScreenRemoval()
   }
 
   const performScreenRemoval = async () => {
     try {
+      const currentScreenCount = presentation.screenCount
+      const audioCues = cues.filter(cue => cue.screen === currentScreenCount + 1)
+      
       dispatch(decrementScreenCount())
-      const result = await dispatch(saveScreenCount({ id, screenCount: presentation.screenCount - 1 }))
+      const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
+
+      for (const audioCue of audioCues) {
+        const updatedCue = {
+          cueId: audioCue._id,
+          cueName: audioCue.name,
+          index: audioCue.index,
+          screen: (currentScreenCount - 1) + 1,
+          file: audioCue.file,
+          loop: audioCue.loop
+        }
+
+        await dispatch(updatePresentation(id, updatedCue))
+        
+        const updatedCueForState = { 
+          ...audioCue, 
+          screen: updatedCue.screen 
+        }
+        dispatch(editCue(updatedCueForState))
+      }
+
+      if (audioCues.length > 0) {
+        await dispatch(fetchPresentationInfo(id))
+      }
       
       // Show appropriate message based on whether cues were removed
       const removedCuesCount = result.payload?.removedCuesCount || 0
       if (removedCuesCount > 0) {
         showToast({
           title: "Screen removed",
-          description: `Screen ${presentation.screenCount} removed along with ${removedCuesCount} cue(s)`,
+          description: `Screen ${currentScreenCount} removed along with ${removedCuesCount} cue(s)`,
           status: "success",
         })
       } else {
         showToast({
           title: "Screen removed",
-          description: `Screen ${presentation.screenCount} has been removed`,
+          description: `Screen ${currentScreenCount} has been removed`,
           status: "success",
         })
       }
