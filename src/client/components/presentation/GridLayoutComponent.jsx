@@ -14,14 +14,14 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 
-const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
+const renderElementBasedOnIndex = (currentIndex, cues, cue, screenCount) => {
   if (cue.index > currentIndex) {
     return false
   } else if (cue.index === currentIndex) {
     return true
   } else if (cue.index < currentIndex) {
     const audioElementIndexes = cues
-      .filter((c) => c.screen === 5)
+      .filter((c) => c.screen === screenCount + 1)
       .map((c) => c.index)
       .sort((a, b) => a - b)
     if (
@@ -185,9 +185,9 @@ const GridLayoutComponent = ({
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
-    // y is 4 because screen 1 is 0 in y axis.
-    if (oldItem.y === 4 || newItem.y === 4) {
-      if (!(oldItem.y === 4 && newItem.y === 4)) {
+    
+    if (oldItem.y === screenCount || newItem.y === screenCount) {
+      if (!(oldItem.y === screenCount && newItem.y === screenCount)) {
         showToast({
           title: "Cannot move audio files to or from the audio row",
           description: "Audio files are only meant to be in the audio row.",
@@ -272,7 +272,7 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), 5)}
+      maxRows={Math.max(...cues.map((cue) => cue.screen), screenCount + 1)}
     >
       {cues.map((cue) => (
         <div
