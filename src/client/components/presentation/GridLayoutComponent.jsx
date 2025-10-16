@@ -37,7 +37,7 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted) => {
+const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount) => {
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -69,7 +69,7 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted) => {
   } else if (
     isShowMode &&
     cue.file.type.startsWith("audio/") &&
-    renderElementBasedOnIndex(cueIndex, cues, cue)
+    renderElementBasedOnIndex(cueIndex, cues, cue, screenCount)
   ) {
     return (
       <audio
@@ -101,7 +101,8 @@ const GridLayoutComponent = ({
   setIsToolboxOpen,
   indexCount,
   setShowAlert,
-  setAlertData
+  setAlertData,
+  screenCount
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -394,7 +395,7 @@ const GridLayoutComponent = ({
               </>
             )}
 
-            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted)}
+            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
 
             <Tooltip label={cue.name} placement="top" hasArrow>
               <Text
