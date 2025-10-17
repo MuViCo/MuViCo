@@ -20,6 +20,8 @@ import {
   decrementIndexCount,
   incrementScreenCount,
   decrementScreenCount,
+  editCue,
+  fetchPresentationInfo,
 } from "../../redux/presentationReducer"
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
@@ -169,17 +171,38 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      
-      // First, update the screen count
+      const audioCues = cues.filter(cue => cue.screen === presentation.screenCount + 1)
+
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
       
-      // Then add an initial element to the new screen
+      for (const audioCue of audioCues) {
+        const updatedCue = {
+          cueId: audioCue._id,
+          cueName: audioCue.name,
+          index: audioCue.index,
+          screen: newScreenNumber + 1,
+          file: audioCue.file,
+          loop: audioCue.loop
+        }
+        await dispatch(updatePresentation(id, updatedCue))
+
+        const updatedCueForState = { 
+          ...audioCue, 
+          screen: updatedCue.screen 
+        }
+        dispatch(editCue(updatedCueForState))
+      }
+
+      if (audioCues.length > 0) {
+        await dispatch(fetchPresentationInfo(id))
+      }
+      
       const formData = createFormData(
-        0, // index
+        0,
         `initial element for screen ${newScreenNumber}`,
-        newScreenNumber, // screen
-        null // file (no file for blank element)
+        newScreenNumber,
+        null
       )
       // Add image field for blank elements - use the original starting color
       const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
@@ -230,25 +253,53 @@ const EditMode = ({
       setIsConfirmOpen(true)
       return
     }
+
+    await performScreenRemoval()
   }
 
   const performScreenRemoval = async () => {
     try {
+      const currentScreenCount = presentation.screenCount
+      const audioCues = cues.filter(cue => cue.screen === currentScreenCount + 1)
+      
       dispatch(decrementScreenCount())
-      const result = await dispatch(saveScreenCount({ id, screenCount: presentation.screenCount - 1 }))
+      const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
+
+      for (const audioCue of audioCues) {
+        const updatedCue = {
+          cueId: audioCue._id,
+          cueName: audioCue.name,
+          index: audioCue.index,
+          screen: (currentScreenCount - 1) + 1,
+          file: audioCue.file,
+          loop: audioCue.loop
+        }
+
+        await dispatch(updatePresentation(id, updatedCue))
+        
+        const updatedCueForState = { 
+          ...audioCue, 
+          screen: updatedCue.screen 
+        }
+        dispatch(editCue(updatedCueForState))
+      }
+
+      if (audioCues.length > 0) {
+        await dispatch(fetchPresentationInfo(id))
+      }
       
       // Show appropriate message based on whether cues were removed
       const removedCuesCount = result.payload?.removedCuesCount || 0
       if (removedCuesCount > 0) {
         showToast({
           title: "Screen removed",
-          description: `Screen ${presentation.screenCount} removed along with ${removedCuesCount} cue(s)`,
+          description: `Screen ${currentScreenCount} removed along with ${removedCuesCount} cue(s)`,
           status: "success",
         })
       } else {
         showToast({
           title: "Screen removed",
-          description: `Screen ${presentation.screenCount} has been removed`,
+          description: `Screen ${currentScreenCount} has been removed`,
           status: "success",
         })
       }
@@ -972,6 +1023,7 @@ const EditMode = ({
                 indexCount={indexCount}
                 setShowAlert={setShowAlert}
                 setAlertData={setAlertData}
+                screenCount={presentation.screenCount}
               />
 
               {hoverPosition && !isDragging && (
