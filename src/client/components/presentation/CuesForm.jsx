@@ -147,10 +147,17 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       return
     }
 
-    if (isAudioMode && !isAudioFile() || isBlankImage) {
-      setError("Please select a valid audio file for the audio cue")
-      setTimeout(() => setError(null), 5000)
-      return
+    if (isAudioMode || screen === screenCount + 1) {
+      if (isBlankImage) {
+        setError("Blank elements are not allowed on the audio screen")
+        setTimeout(() => setError(null), 5000)
+        return
+      }
+      if (!isAudioFile()) {
+        setError("Please select a valid audio file for the audio cue")
+        setTimeout(() => setError(null), 5000)
+        return
+      }
     }
 
     if (isAudioMode && addAudioCue) {
