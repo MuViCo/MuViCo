@@ -135,9 +135,19 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       }
     }
 
-    // Don"t allow submission if no file is selected
+    // Don't allow submission if no file is selected
     if (file === "") {
-      setError("Please select a file or blank element")
+      if (isAudioMode || screen === screenCount + 1) {
+        setError("Please select an audio file")
+      } else {
+        setError("Please select a file or blank element")
+      }
+      setTimeout(() => setError(null), 5000)
+      return
+    }
+
+    if (isAudioMode && !isAudioFile() || isBlankImage) {
+      setError("Please select a valid audio file for the audio cue")
       setTimeout(() => setError(null), 5000)
       return
     }
@@ -340,7 +350,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
             <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
           </Select>
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && (
+          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen !== screenCount + 1 && (
             <>
               <CheckIcon color="#03C03C" />
               <FormHelperText>
@@ -349,6 +359,14 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
                  file === "/blank-indigo.png" ? "Indigo blank element" : 
                  file === "/blank-tropicalindigo.png" ? "Tropical indigo blank element" :
                  ""}
+              </FormHelperText>
+            </>
+          )}
+          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen === screenCount + 1 && (
+            <>
+              <CloseIcon color="#D2042D" />
+              <FormHelperText color="red.500">
+                Blank elements are not allowed on the audio screen. Please select an audio file instead.
               </FormHelperText>
             </>
           )}{" "}
