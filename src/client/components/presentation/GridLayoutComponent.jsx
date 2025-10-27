@@ -215,7 +215,7 @@ const GridLayoutComponent = ({
         right="0px"
         size="xs"
       />
-      <Portal disablePortal>
+      <Portal>
         <MenuList
           background="transparent"
           margin="-5px 0 0 -13px"
