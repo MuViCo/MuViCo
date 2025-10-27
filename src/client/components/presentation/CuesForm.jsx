@@ -16,7 +16,7 @@ import {
   Select
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
 import {
   handleNumericInputChange,
@@ -35,6 +35,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
   const visualTypes = [
     "image/png",
     "image/jpeg",
@@ -342,7 +343,15 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
           <Select
             data-testid="add-blank"
             value={file}
-            onChange={(e) => setFile(e.target.value)}
+            onChange={(e) => {
+              setFile(e.target.value)
+              if (e.target.value === "" || e.target.value.startsWith("/blank")) {
+                if (!cueData) {
+                  setFileName("")
+                  if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
+                }
+              }
+            }}
             placeholder="Add blank"
           >
             <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
