@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuItem, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
+import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
   CopyIcon,
