@@ -375,6 +375,85 @@ describe("CuesForm new element", () => {
       screen.queryByText("Please select a file or blank element")
     ).toBeInTheDocument()
   })
+
+  test("prevent adding blank element to audio screen", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "5" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" } })
+
+    expect(
+      screen.queryByText("Blank elements are not allowed on the audio screen. Please select an audio file instead.")
+    ).toBeInTheDocument()
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+
+    expect(
+      screen.queryByText("Blank elements are not allowed on the audio screen")
+    ).toBeInTheDocument()
+  })
+
+  test("clear file input when switching from choosing file to choosing blank", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "5" } })
+
+    const indexInput = screen.getByTestId("index-number") 
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const fileInput = screen.getByLabelText("Upload media")
+    const audioFile = new File([""], "test.mp3", { type: "audio/mpeg" })
+    fireEvent.change(fileInput, { target: { files: [audioFile] } })
+
+    expect(screen.queryByText("test.mp3")).toBeInTheDocument()
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" }  })
+
+    expect(screen.queryByText("Blank elements are not allowed on the audio screen. Please select an audio file instead.")).toBeInTheDocument()
+    expect(screen.queryByText("test.mp3")).not.toBeInTheDocument()
+
+    const file2Input = screen.getByLabelText("Upload media")
+    const audio2File = new File([""], "test2.mp3", { type: "audio/mpeg" })
+    fireEvent.change(file2Input, { target: { files: [audio2File] } })
+
+    expect(screen.queryByText("test2.mp3")).toBeInTheDocument()
+    expect(screen.queryByText("test.mp3")).not.toBeInTheDocument()
+    expect(screen.queryByText("Blank elements are not allowed on the audio screen. Please select an audio file instead.")).not.toBeInTheDocument()
+  })
 })
 
 describe("CuesForm update element", () => {
