@@ -241,3 +241,15 @@ export const updatePresentationSwappedCues =
       throw new Error(errorMessage)
     }
   }
+
+export const shiftPresentationIndexes = (presentationId, startIndex, direction) => async (dispatch) => {
+  try {
+    const result = await presentationService.shiftIndexes(presentationId, startIndex, direction)
+    await dispatch(fetchPresentationInfo(presentationId))
+    return result
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
+  }
+}

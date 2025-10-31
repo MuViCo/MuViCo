@@ -91,6 +91,18 @@ const saveScreenCountApi = async (id, screenCount) => {
   return response.data
 }
 
+const shiftIndexes = async (id, startIndex, direction) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const body = { startIndex, direction }
+  const response = await axios.put(`${baseUrl}${id}/shiftIndexes`, body, config)
+  return response.data
+}
+
 export default {
   get,
   remove,
@@ -99,4 +111,5 @@ export default {
   updateCue,
   saveIndexCountApi,
   saveScreenCountApi,
+  shiftIndexes,
 }
