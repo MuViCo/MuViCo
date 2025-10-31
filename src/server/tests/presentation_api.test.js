@@ -452,7 +452,7 @@ describe("test presentation", () => {
     });
   });
 
-  describe.only("PUT /api/presentation/:id/shiftIndexes", () => {
+  describe("PUT /api/presentation/:id/shiftIndexes", () => {
     beforeEach(async () => {
       // Create test cues for shifting
       await createCue(0, "First Cue", 1);
