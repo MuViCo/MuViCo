@@ -437,22 +437,22 @@ router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
     const { id } = req.params
     const { startIndex, direction } = req.body
 
-    if (typeof startIndex !== 'number' || !['left', 'right'].includes(direction)) {
-      return res.status(400).json({ error: 'Invalid parameters' })
+    if (typeof startIndex !== "number" || !["left", "right"].includes(direction)) {
+      return res.status(400).json({ error: "Invalid parameters" })
     }
 
     const presentation = await Presentation.findById(id)
     if (!presentation) {
-      return res.status(404).json({ error: 'Presentation not found' })
+      return res.status(404).json({ error: "Presentation not found" })
     }
 
     let modified = false
     for (const cue of presentation.cues) {
       if (cue.index > startIndex) {
-        if (direction === 'left') {
+        if (direction === "left") {
           cue.index = Number(cue.index) - 1
           modified = true
-        } else if (direction === 'right') {
+        } else if (direction === "right") {
           cue.index = Number(cue.index) + 1
           modified = true
         }
@@ -466,7 +466,7 @@ router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
     res.json({ shifted: modified })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ error: 'Internal server error' })
+    res.status(500).json({ error: "Internal server error" })
   }
 })
 
