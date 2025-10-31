@@ -428,6 +428,48 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
   }
 })
 
+/**
+ * Shift cue indices in bulk starting after startIndex.
+ * body: { startIndex: number, direction: 'left'|'right' }
+ */
+router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { startIndex, direction } = req.body
+
+    if (typeof startIndex !== 'number' || !['left', 'right'].includes(direction)) {
+      return res.status(400).json({ error: 'Invalid parameters' })
+    }
+
+    const presentation = await Presentation.findById(id)
+    if (!presentation) {
+      return res.status(404).json({ error: 'Presentation not found' })
+    }
+
+    let modified = false
+    for (const cue of presentation.cues) {
+      if (cue.index > startIndex) {
+        if (direction === 'left') {
+          cue.index = Number(cue.index) - 1
+          modified = true
+        } else if (direction === 'right') {
+          cue.index = Number(cue.index) + 1
+          modified = true
+        }
+      }
+    }
+
+    if (modified) {
+      await presentation.save()
+    }
+
+    res.json({ shifted: modified })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 router.put(
   "/:id/:cueId",
   userExtractor,
