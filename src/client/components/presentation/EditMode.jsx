@@ -338,6 +338,7 @@ const EditMode = ({
   }
 
   const handlePaste = async (event) => {
+    if (event.target.closest("button")) return
     if (!isCopied || !copiedCue) return
 
     if (!containerRef?.current) {
