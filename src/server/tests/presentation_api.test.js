@@ -451,6 +451,118 @@ describe("test presentation", () => {
       expect(response.body.screenCount).toBe(2);
     });
   });
+
+  describe.only("PUT /api/presentation/:id/shiftIndexes", () => {
+    beforeEach(async () => {
+      // Create test cues for shifting
+      await createCue(0, "First Cue", 1);
+      await createCue(2, "Second Cue", 1);
+      await createCue(4, "Third Cue", 1);
+      await setIndexCount(testPresentationId, 6);
+    });
+
+    test("Should shift indices right successfully", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 0, direction: "right" })
+        .expect(200);
+
+      expect(response.body.shifted).toBe(true);
+
+      const presentation = await Presentation.findById(testPresentationId);
+      const cues = presentation.cues;
+      const first = cues.find(c => c.name === "First Cue");
+      const second = cues.find(c => c.name === "Second Cue");
+      const third = cues.find(c => c.name === "Third Cue");
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      expect(third).toBeDefined();
+      expect(first.index).toBe(0);
+      expect(second.index).toBe(3);
+      expect(third.index).toBe(5);
+    });
+
+    test("Should shift indices left successfully", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 2, direction: "left" })
+        .expect(200);
+
+      expect(response.body.shifted).toBe(true);
+
+      const presentation = await Presentation.findById(testPresentationId);
+      const cues = presentation.cues;
+      const first = cues.find(c => c.name === "First Cue");
+      const second = cues.find(c => c.name === "Second Cue");
+      const third = cues.find(c => c.name === "Third Cue");
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      expect(third).toBeDefined();
+      expect(first.index).toBe(0);
+      expect(second.index).toBe(2);
+      expect(third.index).toBe(3);
+    });
+
+    test("Should fail with invalid direction", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 1, direction: "invalid" })
+        .expect(400);
+
+      expect(response.body.error).toBe("Invalid parameters");
+    });
+
+    test("Should fail with missing startIndex", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ direction: "right" })
+        .expect(400);
+
+      expect(response.body.error).toBe("Invalid parameters");
+    });
+
+    test("Should fail with missing direction", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 1 })
+        .expect(400);
+
+      expect(response.body.error).toBe("Invalid parameters");
+    });
+
+    test("Should handle invalid presentation ID", async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const response = await api
+        .put(`/api/presentation/${fakeId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 1, direction: "right" })
+        .expect(404);
+
+      expect(response.body.error).toBe("Presentation not found");
+    });
+
+    test("Should work without without authorization (current API behavior)", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .send({ startIndex: 1, direction: "right" })
+        .expect(200);
+    });
+
+    test("Should catch some error and respond with 500", async () => {
+      const response = await api
+        .put(`/api/presentation/invalid-id/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send({ startIndex: 1, direction: "right" })
+        .expect(500);
+
+      expect(response.body.error).toBe("Internal server error");
+    });
+  });
 })
 
 afterAll(async () => {
