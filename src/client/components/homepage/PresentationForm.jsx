@@ -67,7 +67,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             <option value="black" style={{backgroundColor: "black", color: "white"}}>Black</option>
             <option value="white" style={{backgroundColor: "white", color: "black"}}>White</option>
             <option value="indigo" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
-            <option value="tropical-indigo" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
+            <option value="tropicalindigo" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
           </Select>
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
