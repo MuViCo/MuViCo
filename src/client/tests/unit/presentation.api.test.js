@@ -143,4 +143,34 @@ describe("presentation services api tests", () => {
       }
     )
   })
+
+  test("shiftIndexes in presentation api call behaves as expected", async () => {
+    const response = {
+      shifted: true,
+      cues: [
+        { ...mockCues[0] },
+        { ...mockCues[1], index: 2 }
+      ]
+    }
+
+    axios.put.mockResolvedValue({ data: response })
+
+    const startIndex = 1
+    const direction = "right"
+    const body = { startIndex, direction }
+
+    const result = await presentation.default.shiftIndexes(id, startIndex, direction)
+    
+    expect(result).toEqual(response)
+    expect(axios.put).toHaveBeenCalledWith(
+      `${baseUrl}${id}/shiftIndexes`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token
+        }
+      }
+    )
+  })
 })

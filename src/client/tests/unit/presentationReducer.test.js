@@ -13,6 +13,7 @@ import reducer, {
   updatePresentationSwappedCues,
   incrementScreenCount,
   decrementScreenCount,
+  shiftPresentationIndexes,
 } from "../../redux/presentationReducer.js"
 import { saveScreenCount } from "../../redux/presentationThunks.js"
 import presentationService from "../../services/presentation.js"
@@ -25,6 +26,7 @@ jest.mock("../../services/presentation.js", () => ({
   remove: jest.fn(),
   updateCue: jest.fn(),
   saveScreenCountApi: jest.fn(),
+  shiftIndexes: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -410,6 +412,33 @@ describe("presentationReducer asynchronous actions", () => {
 
     expect(store.getState().presentation.cues).toContainEqual(firstUpdatedCue)
     expect(store.getState().presentation.cues).toContainEqual(secondUpdatedCue)
+  })
+
+  it("should handle error in shift presentation indices", async () => {
+    const store = makeStore()
+
+    presentationService.shiftIndexes.mockRejectedValue({
+      response: { data: { error: "Invalid parameters" } }
+    })
+
+    await expect(
+      store.dispatch(shiftPresentationIndexes("123", 1, "right"))
+    ).rejects.toThrow("Invalid parameters")
+
+    // State should remain unchanged
+    expect(store.getState().presentation).toEqual(store.getState().presentation)
+  })
+
+  it("should handle invalid direction in shift presentation indices", async () => {
+    const store = makeStore()
+
+    presentationService.shiftIndexes.mockRejectedValue({
+      response: { data: { error: "Invalid direction" } }
+    })
+
+    await expect(
+      store.dispatch(shiftPresentationIndexes("123", 1, "invalid"))
+    ).rejects.toThrow("Invalid direction")
   })
 
   it("should handle error in update presentation cues swapped", async () => {
