@@ -454,11 +454,24 @@ describe("test presentation", () => {
 
   describe("PUT /api/presentation/:id/shiftIndexes", () => {
     beforeEach(async () => {
-      // Create test cues for shifting
+      const user = await User.findOne({ username: "testuser" });
+      if (!user) {
+        throw new Error("Test user not found in screen count tests");
+      }
+
+      const presentation = new Presentation({
+        name: "Screen Count Test Presentation",
+        user: user._id,
+        screenCount: 3,
+        cues: []
+      });
+      await presentation.save();
+      testPresentationId = presentation._id;
+      await setIndexCount(testPresentationId, 6);
+      
       await createCue(0, "First Cue", 1);
       await createCue(2, "Second Cue", 1);
       await createCue(4, "Third Cue", 1);
-      await setIndexCount(testPresentationId, 6);
     });
 
     test("Should shift indices right successfully", async () => {

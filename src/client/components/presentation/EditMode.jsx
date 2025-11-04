@@ -469,6 +469,19 @@ const EditMode = ({
     if (event.target.closest("button")) return
     if (!isCopied || !copiedCue) return
 
+    if (event.target.closest(".x-index-label")) {
+      setIsCopied(false)
+      setCopiedCue(null)
+      setShowAlert(false)
+      setAlertData({})
+      showToast({
+        title: "Cancelled copying",
+        description: "Copying has been cancelled.",
+        status: "info",
+      })
+      return
+    }
+
     if (!containerRef?.current) {
       console.error("Container ref is not available")
       return
@@ -482,11 +495,27 @@ const EditMode = ({
       gap
     )
 
+    if (yIndex < 1 || yIndex > presentation.screenCount + 1 || xIndex < 0 || xIndex >= indexCount) {
+      setIsCopied(false)
+      setCopiedCue(null)
+      setShowAlert(false)
+      setAlertData({})
+      showToast({
+        title: "Cancelled copying",
+        description: "Copying has been cancelled.",
+        status: "info",
+      })
+      return
+    }
+
     if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
       return
-    } else if (
-      (yIndex === 5 && copiedCue.screen !== 5) ||
-      (copiedCue.screen === 5 && yIndex !== 5)
+    } 
+    
+    const audioRowIndex = presentation.screenCount + 1
+    if (
+      (yIndex === audioRowIndex && copiedCue.screen !== audioRowIndex) ||
+      (copiedCue.screen === audioRowIndex && yIndex !== audioRowIndex)
     ) {
       showToast({
         title: "Only audio files on the audio row.",
@@ -539,7 +568,7 @@ const EditMode = ({
     if (
       !cueExists &&
       xIndex >= 0 &&
-      xIndex <= indexCount &&
+      xIndex < indexCount &&
       yIndex <= presentation.screenCount + 1 &&
       yIndex >= 1
     ) {
@@ -727,7 +756,7 @@ const EditMode = ({
       return
     }
 
-    if (xIndex < 0 || xIndex > indexCount) {
+    if (xIndex < 0 || xIndex >= indexCount) {
       return
     }
 
