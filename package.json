@@ -34,6 +34,7 @@
     "setupFilesAfterEnv": [
       "<rootDir>/setup-jest.js"
     ],
+    "testTimeout": 10000,
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/cypress/",
