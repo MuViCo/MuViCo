@@ -663,7 +663,7 @@ const EditMode = ({
 
   const handleCueExists = async (existingCue, newCueData) => {
     setConfirmMessage(
-      `Index ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
+      `Frame ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
     )
     setConfirmAction(() => async () => {
       const updatedCue = { ...existingCue, ...newCueData }
