@@ -7,7 +7,12 @@ import {
   useOutsideClick,
   useColorModeValue,
   IconButton,
-  Button
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Portal
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -21,6 +26,7 @@ import {
   incrementScreenCount,
   decrementScreenCount,
   editCue,
+  shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
@@ -33,7 +39,7 @@ import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
-import { AddIcon, MinusIcon } from "@chakra-ui/icons"
+import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
 
 const theme = extendTheme({})
 
@@ -124,30 +130,152 @@ const EditMode = ({
     )
     setConfirmAction(() => async () => {
       setIsConfirmOpen(false)
-      await performRemoveIndex(index)
+
+      // Remove all cues that are on the selected index
+      const cuesOnIndex = cues.filter((c) => Number(c.index) === Number(index))
+      for (const cue of cuesOnIndex) {
+        try {
+          await dispatch(removeCue(id, cue._id))
+        } catch (err) {
+          console.error("Failed to remove cue on index during confirm:", err)
+        }
+      }
+
+      // Get all cues after this index, shift them to the left
+      const cuesToShift = cues.filter((c) => Number(c.index) > Number(index))
+      if (index !== indexCount - 1) {
+        try {
+          await dispatch(shiftPresentationIndexes(id, index, "left"))
+          showToast({
+            title: "Removed frame in between and its elements",
+            description: `Removed old Frame ${index} and all its elements.${cuesToShift.length > 0 ? ` Moved ${cuesToShift.length} element(s) backwards.` : ""}`,
+            status: "success",
+          })
+        } catch (err) {
+          console.error("Failed to shift cues after deleting index:", err)
+        }
+      }
+
+      // Remove last index
+      await performRemoveIndex(indexCount - 1)
     })
     setIsConfirmOpen(true)
   }
 
-  const handleAddIndex = async () => {
-    if (indexCount < 101) {
+  const handleAddIndex = async (index) => {
+    const originalIndexCount = indexCount
+    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+
+    if (originalIndexCount < 101) {
       setStatus("loading")
-      dispatch(incrementIndexCount())
-      await dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
-      setStatus("saved")
+      try {
+        dispatch(incrementIndexCount())
+        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount + 1 }))
+
+        const cuesToShift = cuesAfter.slice().sort((a, b) => Number(b.index) - Number(a.index))
+
+        // Create new data for the elements in the new positions
+        const updatePromises = cuesToShift.map((cue) => {
+          const formData = createFormData(
+            Number(cue.index) + 1,
+            cue.name,
+            cue.screen,
+            cue.file,
+            cue._id,
+            cue.loop
+          )
+
+          return presentationService.updateCue(id, cue._id, formData)
+        })
+
+        // We wait for all the promises to resolve
+        const updatedCues = await Promise.all(updatePromises)
+
+        // Then update cues
+        for (const updated of updatedCues) {
+          dispatch(editCue(updated))
+        }
+
+        setStatus("saved")
+        if (cuesToShift.length > 0) {
+          showToast({
+            title: "Frame added in between",
+            description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesToShift.length} element(s) forward.`,
+            status: "success",
+          })
+        }
+      } catch (error) {
+        console.error("Error shifting cues when adding index:", error)
+        dispatch(decrementIndexCount())
+        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount }))
+        setStatus("saved")
+        showToast({ title: "Error", description: error.message || "Failed to add index", status: "error" })
+      }
     }
   }
 
-  const handleRemoveIndex = async () => {
-    const lastIndex = indexCount - 1
-    const cuesInIndex = cues.filter(cue => cue.index === lastIndex)
-
-    if (cuesInIndex.length > 0) {
-      handleIndexHasData(lastIndex)
+  const handleRemoveIndex = async (index) => {
+    if (indexCount <= 1) {
+      showToast({
+        title: "Minimum indexes required",
+        description: "Cannot have less than 1 index",
+        status: "warning",
+      })
       return
     }
 
-    await performRemoveIndex(lastIndex)
+    const cuesInIndex = cues.filter((cue) => Number(cue.index) === Number(index))
+    if (cuesInIndex.length > 0) {
+      handleIndexHasData(index)
+      return
+    }
+
+   // Get all cues after this index, shift them to the left
+    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+
+    if (cuesAfter.length === 0) {
+      // Just remove last index if no cues to move
+      await performRemoveIndex(indexCount - 1)
+      return
+    }
+
+    setStatus("loading")
+    try {
+      const cuesToShift = cuesAfter.slice().sort((a, b) => Number(a.index) - Number(b.index))
+
+      // Create new data for the elements in the new positions
+      const updatePromises = cuesToShift.map((cue) => {
+        const formData = createFormData(
+          Number(cue.index) - 1,
+          cue.name,
+          cue.screen,
+          cue.file,
+          cue._id,
+          cue.loop
+        )
+
+        return presentationService.updateCue(id, cue._id, formData)
+      })
+
+      const updatedCues = await Promise.all(updatePromises)
+
+      for (const updated of updatedCues) {
+        dispatch(editCue(updated))
+      }
+
+      await performRemoveIndex(indexCount - 1)
+      setStatus("saved")
+      // We never reach here if there were existing elements on the removed index, as handleIndexHasData handles that case (so different toast)
+      showToast({
+        title: "Removed frame in between",
+        description: `Removed old Frame ${index}. Moved ${cuesToShift.length} element(s) backwards.`,
+        status: "success",
+      })
+    } catch (error) {
+      console.error("Error shifting cues when removing index:", error)
+      showToast({ title: "Error", description: error.message || "Failed to remove index", status: "error" })
+      setStatus("saved")
+    }
   }
 
   const performRemoveIndex = async (indexToRemove) => {
@@ -992,9 +1120,15 @@ const EditMode = ({
                 bg={"transparent"}
                 mb={`${gap}px`}
               >
-                {xLabels.map((label, index) => (
+              {xLabels.map((label, index) => (
+                <Box
+                  key={label}
+                  position="relative"
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
                   <Box
-                    key={label}
                     className="x-index-label"
                     display="flex"
                     alignItems="center"
@@ -1007,12 +1141,69 @@ const EditMode = ({
                     <Text fontWeight="bold" color="black">
                       {label}
                     </Text>
+                    <Menu>
+                      <MenuButton
+                        isDisabled={isShowMode}
+                        as={IconButton}
+                        aria-label="Options"
+                        icon={<ChevronDownIcon />}
+                        variant="outline"
+                        position="absolute"
+                        zIndex="10"
+                        top="2px"
+                        right="2px"
+                        size="xs"
+                        backgroundColor="var(--chakra-colors-gray-700)" 
+                        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}  
+                        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}                       
+                      />
+                      <Portal>
+                        <MenuList
+                          backgroundColor="var(--chakra-colors-gray-700)"
+                          margin="-5px 0 0 -166px"
+                          padding="10px 10px 0 10px"
+                          minW="none"
+                          display="flex"
+                          flexDirection="column"
+                        >
+                          <MenuItem
+                            onClick={() => { handleRemoveIndex(index) }}
+                            isDisabled={indexCount <= 1 || index === 0}
+                            backgroundColor="var(--chakra-colors-red-600)"
+                            color="white"
+                            _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
+                            borderRadius="5px"
+                            fontWeight={700}
+                            display="block"
+                            textAlign="center"
+                          >
+                            Delete Frame
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => { handleAddIndex(index) }}
+                            isDisabled={indexCount >= 100}
+                            marginTop="10px"
+                            marginBottom="10px"
+                            backgroundColor="var(--chakra-colors-green-600)"
+                            color="white"
+                            _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
+                            borderRadius="5px"
+                            fontWeight={700}                            
+                            display="block"
+                            textAlign="center"
+                            >
+                            Add Frame After
+                          </MenuItem>
+                        </MenuList>
+                      </Portal>
+                    </Menu>
                   </Box>
-                ))}
-              </Box>
+                </Box>
+              ))}
+            </Box>
             <Button
               colorScheme="gray"
-              onClick={handleAddIndex}
+              onClick={() => {handleAddIndex(indexCount - 1)}}
               isDisabled={indexCount >= 100}
               position="absolute"
               right="-50px"
@@ -1024,7 +1215,7 @@ const EditMode = ({
             </Button>
             <Button
               colorScheme="gray"
-              onClick={handleRemoveIndex}
+              onClick={() => {handleRemoveIndex(indexCount - 1)}}
               isDisabled={indexCount <= 1}
               position="absolute"
               right="-50px"
