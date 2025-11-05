@@ -202,7 +202,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const fileSelected = (event) => {
     const selected = event.target.files[0]
     if (selected) {
-      if (cueName === "" || cueName === fileName) {
+      if (cueName === "" || cueName === fileName || cueName === "Blank") {
         setCueName(selected.name)
       }
       setFile(selected)
