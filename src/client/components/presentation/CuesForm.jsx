@@ -225,6 +225,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }
 
   const blankSelected = (event) => {
+    if (cueName === "" || cueName === fileName) {
+      setCueName("Blank")
+    }
     setFile(event.target.value)
     if (event.target.value === "" || event.target.value.startsWith("/blank")) {
       if (!cueData) {
