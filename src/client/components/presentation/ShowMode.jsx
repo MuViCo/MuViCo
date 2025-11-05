@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import Screen from "./Screen"
 import ShowModeButtons from "./ShowModeButtons"
 import KeyboardHandler from "../utils/keyboardHandler"
@@ -18,6 +18,9 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
   })
 
   const [mirroring, setMirroring] = useState({})
+  const [isAutoplaying, setIsAutoplaying] = useState(false)
+  const [autoplayInterval, setAutoplayInterval] = useState(5)
+  const autoplayTimerRef = useRef(null)
 
   useEffect(() => {
     const preloadImage = (url) => {
@@ -167,6 +170,46 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
     return {}
   }
 
+  useEffect(() => {
+    if (isAutoplaying) {
+      autoplayTimerRef.current = setInterval(() => {
+        setCueIndex((prevIndex) => {
+          if (prevIndex < indexCount - 1) {
+            return prevIndex + 1
+          } else {
+            setIsAutoplaying(false)
+            return prevIndex
+          }
+        })
+      }, autoplayInterval * 1000)
+    } else {
+      if (autoplayTimerRef.current) {
+        clearInterval(autoplayTimerRef.current)
+      }
+    }
+    return () => {
+      if (autoplayTimerRef.current) {
+        clearInterval(autoplayTimerRef.current)
+      }
+    }
+  }, [isAutoplaying, autoplayInterval, indexCount, setCueIndex])
+
+
+  const toggleAutoplay = () => {
+    setIsAutoplaying(prev => {
+      const next = !prev
+      if (next) {
+        setCueIndex(0)
+      }
+      return next
+    })
+  }
+
+  const toggleAutoplayInterval = (valueString) => {
+      setAutoplayInterval(Number(valueString))
+  }
+
+
   return (
     <div className="show-mode">
       {/* Pass screen visibility and cue navigation to ShowModeButtons */}
@@ -184,6 +227,10 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
         cueIndex={cueIndex}
         updateCue={updateCue}
         indexCount={indexCount}
+        autoplayInterval={autoplayInterval}
+        toggleAutoplay={toggleAutoplay}
+        isAutoplaying={isAutoplaying}
+        toggleAutoplayInterval={toggleAutoplayInterval}
       />
 
       {/* Render screens based on visibility and cue index */}

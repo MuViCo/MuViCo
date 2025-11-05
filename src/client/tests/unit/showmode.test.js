@@ -3,6 +3,12 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import ShowMode from "../../components/presentation/ShowMode"
 import Screen from "../../components/presentation/Screen"
 import "@testing-library/jest-dom"
+import {
+  preloadImage,
+  preloadVideo,
+  preloadAudio,
+  preloadFile,
+} from "../../components/presentation/ShowMode"
 
 const mockCues = [
   {
@@ -280,7 +286,7 @@ describe("ShowMode", () => {
 
   await waitFor(() => {
     const fakeWindow = window.open.mock.results.at(-1).value
-    expect(fakeWindow.document.title).toBe("Screen 1, Starting Frame")
+    expect(fakeWindow.document.title).toBe("Screen 1 • Starting Frame")
   })
 })
 
@@ -306,7 +312,7 @@ describe("ShowMode", () => {
 
   await waitFor(() => {
     const fakeWindow = window.open.mock.results.at(-1).value
-    expect(fakeWindow.document.title).not.toBe("Screen 1, Starting Frame")
+    expect(fakeWindow.document.title).not.toBe("Screen 1 • Starting Frame")
   })
 })
 
@@ -326,7 +332,7 @@ describe("ShowMode", () => {
 
     await waitFor(() => {
       const popup = window.open.mock.results.at(-1).value
-      expect(popup.document.title).toBe("Screen 1, Frame 4")
+      expect(popup.document.title).toBe("Screen 1 • Frame 4")
     })
   })
 
@@ -346,7 +352,7 @@ describe("ShowMode", () => {
 
     await waitFor(() => {
       const popup = window.open.mock.results.at(-1).value
-      expect(popup.document.title).toBe("Screen 1, Frame 7")
+      expect(popup.document.title).toBe("Screen 1 • Frame 7")
     })
   })
 
@@ -541,5 +547,151 @@ describe("ShowMode", () => {
       screen.getByRole("button", { name: "Open all screens" })
     ).toBeInTheDocument()
   })
+
+    describe("Autoplay", () => {
+    test("Autoplay button works", async () => {
+      const mockSetCueIndex = jest.fn()
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={0}
+            setCueIndex={mockSetCueIndex}
+            indexCount={100}
+          />
+        )
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+      })
+      expect(
+        screen.getByRole("button", { name: "Stop Autoplay" })
+      ).toBeInTheDocument()
+    
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Stop Autoplay" }))
+      })
+      expect(
+        screen.getByRole("button", { name: "Start Autoplay" })
+      ).toBeInTheDocument()
+    })
+
+    test("autoplay advances frames at the configured interval", async () => {
+      jest.useFakeTimers()
+      const mockSetCueIndex = jest.fn((updater) => {
+        if (typeof updater === "function") {
+          updater(0)
+        }
+      })
+
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={0}
+            setCueIndex={mockSetCueIndex}
+            indexCount={3}
+          />
+        )
+      })
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+      })
+      expect(mockSetCueIndex).toHaveBeenCalled()
+
+      act(() => {
+        jest.advanceTimersByTime(5000)
+      })
+      const calls = mockSetCueIndex.mock.calls
+      expect(calls.length).toBeGreaterThanOrEqual(2)
+      expect(typeof calls[1][0]).toBe("function")
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Stop Autoplay" }))
+      })
+      jest.useRealTimers()
+    })
+
+    test("changing interval updates autoplay speed", async () => {
+      jest.useFakeTimers()
+      const mockSetCueIndex = jest.fn((updater) => {
+        if (typeof updater === "function") {
+          updater(0)
+        }
+      })
+
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={0}
+            setCueIndex={mockSetCueIndex}
+            indexCount={5}
+          />
+        )
+      })
+
+      const spin = screen.getByRole("spinbutton")
+      expect(spin).toBeInTheDocument()
+
+      act(() => {
+        fireEvent.change(spin, { target: { value: "1" } })
+      })
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+      })
+
+      act(() => {
+        jest.advanceTimersByTime(1000)
+      })
+
+      const calls = mockSetCueIndex.mock.calls
+      const functionCalls = calls.filter(c => typeof c[0] === "function")
+      expect(functionCalls.length).toBeGreaterThanOrEqual(1)
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Stop Autoplay" }))
+      })
+      jest.useRealTimers()
+    })
+
+    test("autoplay stops when reaching last frame and does not advance further", async () => {
+      jest.useFakeTimers()
+    
+      let testCueIndex = 0
+      const mockSetCueIndex = jest.fn((updater) => {
+        if (typeof updater === "function") {
+          testCueIndex = updater(testCueIndex)
+        } else {
+          testCueIndex = updater
+        }
+      })
+    
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={testCueIndex}
+            setCueIndex={mockSetCueIndex}
+            indexCount={3}
+          />
+        )
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+      })
+    
+      act(() => {
+        jest.advanceTimersByTime(5000 * 4)
+      })
+    
+      expect(screen.getByRole("button", { name: "Start Autoplay" })).toBeInTheDocument()
+      expect(testCueIndex).toBe(2)
+    
+      jest.useRealTimers()
+    })
+  })
 })
+
 

@@ -33,3 +33,6 @@ dist-ssr
 /playwright/.cache/
 
 /src/server/utils/serviceAccountKey.json
+
+# Playwright
+/playwright/.auth/

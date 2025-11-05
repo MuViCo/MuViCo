@@ -1,4 +1,7 @@
+import { render, screen } from "@testing-library/react"
+import { ChakraProvider } from "@chakra-ui/react"
 import presentation from "../../services/presentation"
+import PresentationManual from "../../components/presentation/PresentationManual"
 import "@testing-library/jest-dom"
 
 
@@ -78,4 +81,16 @@ describe("services tests", () => {
     expect(response).toEqual({ screenCount: 2, removedCuesCount: 3 })
     expect(saveScreenCountApi).toHaveBeenCalledWith("presentation-id", 2)
   })
+  describe("PresentationManual", () => {
+  test("Checks that the presentation returns first sentence", () => {
+    render(
+      <ChakraProvider>
+        <PresentationManual />
+      </ChakraProvider>
+    )
+
+    expect(screen.getByText(/Welcome to the user manual/i)).toBeInTheDocument()
+ 
+  })
+})
 })
