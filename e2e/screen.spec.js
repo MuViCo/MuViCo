@@ -15,7 +15,7 @@ describe("Screen", () => {
     await loginWith(page, "screentestuser", "screentest")
   })
 
-  describe("Screen titles")
+  describe("Screen titles", () => {
 
     test("screen window title shows screen number and starting frame", async ({ page, context }) => {
       await addPresentation(page, "title-test")
@@ -89,4 +89,5 @@ describe("Screen", () => {
 
       await expect(popup).toHaveTitle("Screen 2, Frame 4")
     })
+})
 })

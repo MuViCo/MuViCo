@@ -121,9 +121,21 @@ export const showModeFeaturesData = [
     title:
       "Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)",
     items: [
-      "You can display a specific screen by clicking the Open screen button. An adjacent arrow opens a dropdown where you can mirror another screen's elements, ensuring that if a monitor fails during a presentation, those elements remain visible on another screen.",
+      "You can display a specific screen by clicking the Open screen button or open them all at the same time clicking Open all Screens button. An adjacent arrow opens a dropdown where you can mirror another screen's elements, ensuring that if a monitor fails during a presentation, those elements remain visible on another screen.",
       "Note that the audio row cannot be opened. The presentation's audio will play on the speaker corresponding to its index, as specified on the controlling computer's output device.",
     ],
+  },
+  {
+    title:
+      "Autoplay",
+    items: [
+      "Autoplay allows you to automatically progress through the frames at a set interval.",
+      "Each frame is displayed for the number of seconds you enter in the box.",
+      "Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically.  Autoplay always starts from the Starting Frame.",
+      "You can also switch the frames manually and change the sec/frame during the Autoplay.",
+      "Autoplay stops automatically after the last frame.",
+      "You can stop it manually at anytime by clicking “Stop Autoplay.”"
+    ]
   },
   {
     title: "Help button",

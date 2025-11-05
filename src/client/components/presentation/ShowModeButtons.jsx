@@ -11,6 +11,12 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Text,
 } from "@chakra-ui/react"
 import {
   QuestionIcon,
@@ -50,6 +56,61 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
   </Menu>
 )
 
+
+const AutoplayControls = ({
+  autoplayInterval, 
+  toggleAutoplay,
+  isAutoplaying,
+  toggleAutoplayInterval,
+}) => {
+
+  return (
+    <Box display="flex" alignItems="center" gap="10px">
+      <Button colorScheme={isAutoplaying ? "red" : "blue"} onClick={toggleAutoplay}>
+        {isAutoplaying ? "Stop Autoplay" : "Start Autoplay"}
+      </Button>
+      <NumberInput id="autoplaytime"
+       value={autoplayInterval} width="70px" onChange={(valueString) => toggleAutoplayInterval(valueString)} >
+        <NumberInputField placeholder="sec" />
+        <NumberInputStepper>
+          <NumberIncrementStepper />
+          <NumberDecrementStepper />
+        </NumberInputStepper>
+      </NumberInput>
+    <Text fontSize="sm" fontWeight="bold">sec / frame</Text>
+    <Tooltip
+      label={
+          <>
+            <b>Autoplay</b>
+            <br /><br />
+            Each frame is displayed for the number of seconds you enter in the box.
+            <br /><br />
+            Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically.  
+            Autoplay always starts from the Starting Frame.
+            <br /><br />
+            You can also switch the frames manually and change the sec/frame during the Autoplay.
+            <br /><br />
+            Autoplay stops automatically after the last frame.
+            You can stop it manually at anytime by clicking “Stop Autoplay.”
+            </>
+      }
+      placement="top"
+      fontSize="sm"
+    >
+      <IconButton
+        aria-label="Keyboard Shortcuts"
+        icon={<QuestionIcon />}
+        size="lg"
+        variant="ghost"
+        colorScheme="purple"
+      />
+    </Tooltip>
+
+
+    </Box>
+  )
+}
+
 const ScreenToggleButtons = ({
   screens,
   toggleScreenVisibility,
@@ -71,7 +132,7 @@ const ScreenToggleButtons = ({
       >
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
-      <Box display="flex" flexWrap="wrap" gap={2}>
+    <Box display="flex" flexWrap="wrap" gap={2}>
     {Object.keys(screens)
       .filter((screenNumber) => screenNumber !== "5")
       .map((screenNumber) => (
@@ -109,6 +170,7 @@ const ScreenToggleButtons = ({
 // Component for rendering the cue navigation buttons
 const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
   <Box display="flex" gap={4} alignItems="center">
+
     <IconButton
       aria-label="Previous Cue"
       icon={<ChevronLeftIcon />}
@@ -126,6 +188,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
       colorScheme="purple"
       isDisabled={cueIndex === indexCount - 1}
     />
+
 
     <Tooltip
       label={
@@ -156,6 +219,8 @@ const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
   </Box>
 )
 
+
+
 // ShowModeButtons component to handle screen visibility and cue navigation
 const ShowModeButtons = ({
   screens,
@@ -166,6 +231,10 @@ const ShowModeButtons = ({
   cueIndex,
   updateCue,
   indexCount,
+  autoplayInterval,
+  toggleAutoplay,
+  isAutoplaying,
+  toggleAutoplayInterval
 }) => (
   <Box display="flex" flexDirection="column" alignItems="center" gap={4} mt={4}>
     <ScreenToggleButtons
@@ -174,6 +243,12 @@ const ShowModeButtons = ({
       toggleScreenMirroring={toggleScreenMirroring}
       toggleAllScreens={toggleAllScreens}
       mirroring={mirroring}
+    />
+    <AutoplayControls
+      autoplayInterval={autoplayInterval}
+      toggleAutoplay={toggleAutoplay}
+      isAutoplaying={isAutoplaying}
+      toggleAutoplayInterval={toggleAutoplayInterval}
     />
     <CueNavigationButtons cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
   </Box>
