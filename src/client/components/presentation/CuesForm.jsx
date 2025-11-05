@@ -224,6 +224,16 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     setError(null)
   }
 
+  const blankSelected = (event) => {
+    setFile(event.target.value)
+    if (event.target.value === "" || event.target.value.startsWith("/blank")) {
+      if (!cueData) {
+        setFileName("")
+        if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
+      }
+    }
+  }
+
   return (
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
@@ -349,15 +359,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
           <Select
             data-testid="add-blank"
             value={file}
-            onChange={(e) => {
-              setFile(e.target.value)
-              if (e.target.value === "" || e.target.value.startsWith("/blank")) {
-                if (!cueData) {
-                  setFileName("")
-                  if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
-                }
-              }
-            }}
+            onChange={blankSelected}
             placeholder="Add blank"
           >
             <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
