@@ -2,8 +2,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react"
 import {
   Box,
   Text,
-  ChakraProvider,
-  extendTheme,
   useOutsideClick,
   useColorModeValue,
   IconButton,
@@ -41,7 +39,7 @@ import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
 
-const theme = extendTheme({})
+
 
 const EditMode = ({
   id,
@@ -960,7 +958,7 @@ const EditMode = ({
   )
 
   return (
-    <ChakraProvider theme={theme}>
+    <>
       <CustomAlert
         showAlert={showAlert}
         alertData={alertData}
@@ -1301,7 +1299,7 @@ const EditMode = ({
           message={confirmMessage}
         />
       </div>
-    </ChakraProvider>
+    </>
   )
 }
 
