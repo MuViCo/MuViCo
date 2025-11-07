@@ -5,9 +5,14 @@ const loginWith = async (page, username, password) => {
   await page.getByTestId("login_inform").click()
 }
 
-const addPresentation = async (page, name) => {
+const addPresentation = async (page, name, screenCount = 2, startingFrameColor = "black") => {
   await page.getByRole("button", { name: "New presentation" }).click()
   await page.getByTestId("presentation-name").fill(name)
+  const screenInput = page.getByTestId("presentation-screen-count")
+  await screenInput.fill("")
+  await screenInput.type(screenCount.toString())
+  await page.getByTestId("starting-frame-color").selectOption(startingFrameColor)
+
   await page.getByRole("button", { name: "create" }).click()
 }
 
@@ -20,6 +25,8 @@ const addBlankCue = async (page, name, index, screen) => {
   await page.getByTestId("index-number").type(index.toString())
 
   await page.getByTestId("cue-name").fill(name)
+
+  await page.getByTestId("add-blank").selectOption("/blank.png")
 
   await page.getByRole("button", { name: "Submit" }).click()
 }
