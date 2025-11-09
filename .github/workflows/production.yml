@@ -1,9 +1,8 @@
 name: Deploy to Amazon ECS
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -33,7 +32,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.event.release.tag_name }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
