@@ -194,7 +194,7 @@ const NavBar = ({ user, setUser }) => {
                         onClick={() => setShowHint(false)}
                         cursor="pointer"
                         _after={{
-                          content: '""',
+                          content: "''",
                           position: "absolute",
                           left: "0px",
                           top: "40%",
