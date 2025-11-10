@@ -2,7 +2,7 @@
 
 # MuViCo
 
-![CI Badge](https://github.com/MuViCo/MuViCo/workflows/CI/badge.svg)
+[![Test and deploy to staging](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml)
 [![codecov](https://codecov.io/github/MuViCo/MuViCo/graph/badge.svg?token=B5NR45ODV2)](https://codecov.io/github/MuViCo/MuViCo)
 
 ### Introduction
@@ -100,11 +100,11 @@ Follow these steps to set up the project on your local machine:
 If you prefer to develop inside a Docker container (to match the production environment), follow these steps:
 
 1. **Reset the Docker Environment**  
-   Clean up any existing Docker containers and volumes, depending on your docker installation:
+   Clean up any existing Docker containers and volumes:
 
-   | Docker v1 | <pre>npm run reset</pre>    |
-   |-----------|-------------------------|
-   | Docker v2 | <pre>npm run reset-v2</pre> |
+   ```bash
+   npm run reset
+   ```
 
 2. **Install Dependencies**  
    Install dependencies inside the container:
@@ -122,12 +122,11 @@ If you prefer to develop inside a Docker container (to match the production envi
    ```
 
 4. **Start the Application**  
-   Start the application in development mode using Docker, depending on your docker installation:
+   Start the application in development mode using Docker:
 
-   | Docker v1 | <pre>npm run start</pre>    |
-   |-----------|-------------------------|
-   | Docker v2 | <pre>npm run start-v2</pre> |
-
+   ```bash
+   npm run start
+   ```
    This will spin up the necessary containers for the backend, frontend, and database.
 
 ### Running the Application in Production Mode
@@ -135,19 +134,18 @@ If you prefer to develop inside a Docker container (to match the production envi
 To simulate the production environment locally, follow these steps:
 
 1. **Reset the Production Docker Environment**  
-   Clean up any existing production containers and volumes, depending on your docker installation:
+   Clean up any existing production containers and volumes:
 
-   | Docker v1 | <pre>npm run reset-prod</pre>    |
-   |-----------|-------------------------|
-   | Docker v2 | <pre>npm run reset-prod-v2</pre> |
+   ```bash
+   npm run reset-prod
+   ```
 
 2. **Start the Application in Production Mode**  
-   Start the application using the production Docker configuration, depending on your docker installation:
+   Start the application using the production Docker configuration:
 
-   | Docker v1 | <pre>npm run start-prod</pre>    |
-   |-----------|-------------------------|
-   | Docker v2 | <pre>npm run start-prod-v2</pre> |
-
+   ```bash
+   npm run start-prod
+   ```
    This will build and run the application in a production-like environment.
 
 ### Note on Branch Switching
