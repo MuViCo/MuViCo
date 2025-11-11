@@ -7,7 +7,7 @@ export const editModeFeaturesData = [
       "Delete Presentation: Delete the current presentation.",
       "Add Element: Insert new elements into your presentation.",
       "Storage indicator: Displays how much space has been used. The maximum allowed space is 50 MB.",
-      "Save status icon (✔️): This is marked when your changes have been successfully saved.",
+      "Save status icon (✓): This is marked when your changes have been successfully saved.",
     ],
   },
   {
@@ -16,7 +16,9 @@ export const editModeFeaturesData = [
     items: [
       "This shows the order in which your elements will be displayed on the selected screen.",
       "Initially starts with 1 starting frame and 4 extra frames.",
-      "Additional frames can be added or removed by clicking the +/- buttons.",
+      "Additional frames at the end can be added or removed by clicking the +/- buttons.",
+      "You can also add frames in between existing frames by clicking the dropdown arrow on the top right of a frame box and selecting 'Add Frame After'.",
+      "You can also remove specific frames (except the Starting Frame) by clicking the dropdown arrow and selecting 'Delete Frame'.",
       "You can have anywhere from 1 to 100 frames per screen.",
     ],
   },
@@ -66,8 +68,8 @@ export const stepsToAddElementData = [
     title: "Select the screen",
     items: [
       "The frame determines the element's position on the selected screen.",
-      "The default frame will be the first available index on the selected screen.",
-      "You can choose any index between 0 (starting frame) and the highest frame number on your project.",
+      "The default frame will be the first available frame on the selected screen.",
+      "You can choose any frame between 0 (starting frame) and the highest frame number on your project.",
     ],
   },
   {
@@ -96,7 +98,7 @@ export const editingElementData = [
   {
     title: "You can modify an element in different ways:",
     items: [
-      "Click the Add Element button and select the screen (min 1, up to 8) or audio (highest screen number) and index (min 0, up to highest frame number) of the element you want to change.",
+      "Click the Add Element button and select the screen (min 1, up to 8) or audio (highest screen number) and frame (min 0, up to highest frame number) of the element you want to change.",
       "Drag and drop a new file on top of the existing element to replace it.",
       "Double-click on the element or click the pencil icon to open it for editing.",
       "Click the delete button to remove the element.",
@@ -122,7 +124,7 @@ export const showModeFeaturesData = [
       "Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)",
     items: [
       "You can display a specific screen by clicking the Open screen button or open them all at the same time clicking Open all Screens button. An adjacent arrow opens a dropdown where you can mirror another screen's elements, ensuring that if a monitor fails during a presentation, those elements remain visible on another screen.",
-      "Note that the audio row cannot be opened. The presentation's audio will play on the speaker corresponding to its index, as specified on the controlling computer's output device.",
+      "Note that the audio row cannot be opened. The presentation's audio will play on the speaker corresponding to its frame, as specified on the controlling computer's output device.",
     ],
   },
   {

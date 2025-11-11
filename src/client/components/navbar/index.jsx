@@ -12,7 +12,10 @@ import {
   MenuList,
   Text,
   IconButton,
+  usePrefersReducedMotion,
+  useColorMode,
 } from "@chakra-ui/react"
+import { keyframes } from "@emotion/react"
 import { QuestionIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
@@ -26,9 +29,30 @@ const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [isManualOpen, setIsManualOpen] = useState(false)
+  const [highlight, setHighlight] = useState(false)
+  const [showHint, setShowHint] = useState(false)
 
   const isHomepage = location.pathname === "/home"
   const isPresentationPage = location.pathname.startsWith("/presentation")
+  const prefersReducedMotion = usePrefersReducedMotion()
+
+  const { colorMode } = useColorMode()
+
+  const pulse = colorMode === "dark"
+  ? keyframes`
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  `
+  : keyframes`
+    0% { box-shadow: 0 0 0 0 rgba(128, 90, 213, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(128, 90, 213, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(128, 90, 213, 0); }
+  `
+
+  const animation = prefersReducedMotion
+    ? undefined
+    : `${pulse} 2s infinite`
 
   const handleLogout = (navigate, setUser) => {
     window.localStorage.removeItem("user")
@@ -46,6 +70,17 @@ const NavBar = ({ user, setUser }) => {
     navigate("/home")
   }
 
+  const handleOpenManual = () => {
+    const key = isHomepage
+      ? "hasSeenHelp_homepage"
+      : "hasSeenHelp_presentation"
+
+    localStorage.setItem(key, "true")
+    setHighlight(false)
+    setShowHint(false)
+    setIsManualOpen(true)
+  }
+
   // Check token expiration
   useEffect(() => {
     const token = getToken()
@@ -53,6 +88,21 @@ const NavBar = ({ user, setUser }) => {
       handleLogout(navigate, setUser)
     }
   }, []) //run only once
+
+
+  useEffect(() => {
+    // Unique key depending on the page
+    const key = isHomepage
+      ? "hasSeenHelp_homepage"
+      : "hasSeenHelp_presentation"
+
+    const hasSeen = localStorage.getItem(key)
+
+    if (!hasSeen) {
+      setHighlight(true) // show highlight on first visit
+      setShowHint(true)
+    }
+  }, [isHomepage, isPresentationPage])
 
   return (
     <>
@@ -112,15 +162,51 @@ const NavBar = ({ user, setUser }) => {
                   </Button>
                 </Box>
                 {(isHomepage || isPresentationPage) && (
-                  <Box ml={4} display={{ base: "inline-block" }}>
+                  <Box ml={4} display="inline-block" position="relative">
                     <IconButton
                       variant="ghost"
                       size="lg"
                       colorScheme="purple"
                       icon={<QuestionIcon />}
                       title="Help"
-                      onClick={() => setIsManualOpen(true)}
+                      onClick={handleOpenManual}
+                      animation={highlight ? animation : "none"}
+                      borderRadius="full"
+                      transition="transform 0.2s ease"
                     ></IconButton>
+
+                    {showHint && (
+                      <Box
+                        position="absolute"
+                        top="5px"
+                        left="165px"
+                        transform="translateX(-50%)"
+                        bg="purple.600"
+                        color="white"
+                        px={3}
+                        py={2}
+                        borderRadius="md"
+                        fontSize="sm"
+                        boxShadow="lg"
+                        whiteSpace="nowrap"
+                        zIndex="10"
+                        align="right"
+                        onClick={() => setShowHint(false)}
+                        cursor="pointer"
+                        _after={{
+                          content: "''",
+                          position: "absolute",
+                          left: "0px",
+                          top: "40%",
+                          transform: "translateX(-50%) rotate(45deg)",
+                          width: "12px",
+                          height: "12px",
+                          bg: "purple.600",
+                        }}
+                      >
+                        View the help page here!
+                      </Box>
+                    )}
                   </Box>
                 )}
               </>
