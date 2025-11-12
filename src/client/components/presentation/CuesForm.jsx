@@ -358,12 +358,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </>
             ))}
           {error && <Error error={error} />}
-          <FormHelperText mb={2}>or add blank element</FormHelperText>
+          <FormHelperText mb={2}>or select a blank element</FormHelperText>
           <Select
             data-testid="add-blank"
             value={file}
             onChange={blankSelected}
-            placeholder="Add blank"
+            placeholder="Select blank"
           >
             <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
             <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>

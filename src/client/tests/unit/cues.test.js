@@ -24,8 +24,8 @@ describe("CuesForm new element", () => {
     )
     expect(foundScreenText).toBe(true)
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
-    expect(screen.getByText("or add blank element")).toBeInTheDocument()
-    expect(screen.getByText("Add blank")).toBeInTheDocument()
+    expect(screen.getByText("or select a blank element")).toBeInTheDocument()
+    expect(screen.getByText("Select blank")).toBeInTheDocument()
     expect(screen.getByText("Submit")).toBeInTheDocument()
   })
 
