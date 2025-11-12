@@ -17,24 +17,78 @@ describe("Screen", () => {
 
   describe("Screen titles", () => {
 
-    test("screen window title shows screen number and starting frame", async ({ page, context }) => {
+
+    test("user can see in the screen window title the screen number and the current frame number", async ({ page, context }) => {
       await addPresentation(page, "title-test")
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "0", "1")
+      await addBlankCue(page, "test cue", "4", "2")
       await page.getByRole("button", { name: "Show mode" }).click()
+      for (let i = 0; i < 4; i++) {
+        await page.keyboard.press("ArrowRight")
+      }
 
       const [popup] = await Promise.all([
         context.waitForEvent("page"),
-        page.getByRole("button", { name: "Open screen: 1" }).click(),
+        page.getByRole("button", { name: "Open screen: 2" }).click(),
       ])
 
-      await expect(popup).toHaveTitle("Screen 1, Starting Frame")
+      await expect(popup).toHaveTitle("Screen 2 • Frame 4")
     })
 
-    test("screen window title shows screen number and the last frame number that has an element", async ({ page, context }) => {
-      await addPresentation(page, "title-test")
+    test("user can see the window title to show the last frame number that has an element", async ({ page, context }) => {
+      await addPresentation(page, "title-test", 4)
+
+      await page.goto("http://localhost:3000/home")
+      await page.getByText("title-test").click()
+      await addBlankCue(page, "test cue", "0", "2")
+      await page.getByRole("button", { name: "Show mode" }).click()
+      //Goes to frame 4
+      for (let i = 0; i < 4; i++) {
+        await page.keyboard.press("ArrowRight")
+      }
+      const [popup] = await Promise.all([
+        context.waitForEvent("page"),
+        page.getByRole("button", { name: "Open Screen: 2" }).click(),
+      ]);
+
+      //Title shows starting frame because there the last element
+      await expect(popup).toHaveTitle("Screen 2 • Starting Frame");
+    })
+  })
+  describe("Open screens", () => {
+    test("user can open all screens that have content", async ({ page, context }) => {
+      await addPresentation(page, "title-test", 4)
+
+      await page.goto("http://localhost:3000/home")
+      await page.getByText("title-test").click()
+      await addBlankCue(page, "test cue", "0", "2")
+      await addBlankCue(page, "test cue2", "4", "3")
+      await addBlankCue(page, "test cue2", "4", "4")
+      await page.getByRole("button", { name: "Show mode" }).click()
+      for (let i = 0; i < 4; i++) {
+        await page.keyboard.press("ArrowRight")
+      }
+
+      //Opens three screen because there are elements in three different screens
+      const [popup] = await Promise.all([
+        context.waitForEvent("page"),
+        page.getByRole("button", { name: "Open all screens" }).click(),
+      ])
+
+      await page.waitForFunction(
+        () => window.contextPagesCount === undefined,
+        { timeout: 100 }
+      );
+    
+      const pages = context.pages();
+      expect(pages.length).toBe(4);
+    
+    })
+
+    test("user can open screen and close it", async ({ page, context }) => {
+      await addPresentation(page, "title-test", 4)
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
@@ -43,51 +97,24 @@ describe("Screen", () => {
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
       }
-
       const [popup] = await Promise.all([
         context.waitForEvent("page"),
-        page.getByRole("button", { name: "Open screen: 2" }).click(),
-      ])
+        page.getByRole("button", { name: "Open Screen: 2" }).click(),
+      ]);
 
-      await expect(popup).toHaveTitle("Screen 2, Starting Frame")
-    })
+      await expect(popup).toHaveTitle("Screen 2 • Starting Frame");
 
-    test("screen window title shows screen number and the current frame number", async ({ page, context }) => {
-      await addPresentation(page, "title-test")
+      const closePromise = popup.waitForEvent("close").catch(() => null);
+      await page.getByRole("button", { name: "Close Screen: 2" }).click();
 
-      await page.goto("http://localhost:3000/home")
-      await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "4", "2")
-      await page.getByRole("button", { name: "Show mode" }).click()
-      for (let i = 0; i < 4; i++) {
-        await page.keyboard.press("ArrowRight")
-      }
+      // Wait a bit and check if the page actually closed
+      await Promise.race([
+        closePromise,
+        page.waitForTimeout(2000)
+      ]);
 
-      const [popup] = await Promise.all([
-        context.waitForEvent("page"),
-        page.getByRole("button", { name: "Open screen: 2" }).click(),
-      ])
-
-      await expect(popup).toHaveTitle("Screen 2, Frame 4")
-    })
-
-    test("open all screens and check titles", async ({ page, context }) => {
-      await addPresentation(page, "title-test")
-
-      await page.goto("http://localhost:3000/home")
-      await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "4", "2")
-      await page.getByRole("button", { name: "Show mode" }).click()
-      for (let i = 0; i < 4; i++) {
-        await page.keyboard.press("ArrowRight")
-      }
-
-      const [popup] = await Promise.all([
-        context.waitForEvent("page"),
-        page.getByRole("button", { name: "Open screen: 2" }).click(),
-      ])
-
-      await expect(popup).toHaveTitle("Screen 2, Frame 4")
+      const pages = context.pages();
+      expect(pages.includes(popup)).toBeFalsy();
     })
 })
 })
