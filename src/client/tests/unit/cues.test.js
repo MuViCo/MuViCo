@@ -706,8 +706,7 @@ describe("CuesForm new element", () => {
     })
     expect(onClose).toHaveBeenCalled()
   })
-})
-
+  
 describe("CuesForm update element", () => {
   test("render form elements with existing elements", async () => {
     const addCue = jest.fn()
