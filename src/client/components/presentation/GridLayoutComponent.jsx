@@ -315,8 +315,8 @@ const GridLayoutComponent = ({
     if (oldItem.y === screenCount || newItem.y === screenCount) {
       if (!(oldItem.y === screenCount && newItem.y === screenCount)) {
         showToast({
-          title: "Cannot move audio files to or from the audio row",
-          description: "Audio files are only meant to be in the audio row.",
+          title: "Cannot move this file type here",
+          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
           status: "error",
         })
 
