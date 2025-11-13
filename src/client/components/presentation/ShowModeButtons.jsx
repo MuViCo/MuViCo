@@ -25,26 +25,30 @@ import {
   ChevronDownIcon,
 } from "@chakra-ui/icons"
 
-const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
-  <Menu>
-    <MenuButton
-      as={Button}
-      colorScheme="gray"
-      p={1}
-      aria-label={`Dropdown for screen ${screenNumber}`}
-    >
-      <ChevronDownIcon />
-    </MenuButton>
-    <MenuList>
-      <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
-        No mirroring
-      </MenuItem>
-      {Object.keys(screens)
-        .filter(
-          (targetScreen) =>
-            targetScreen !== screenNumber && targetScreen !== "5"
-        )
-        .map((targetScreen) => (
+const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => {
+  const allScreenNumbers = Object.keys(screens)
+  const maxScreenNumber = Math.max(...allScreenNumbers.map(Number)).toString()
+  
+  return (
+    <Menu>
+      <MenuButton
+        as={Button}
+        colorScheme="gray"
+        p={1}
+        aria-label={`Dropdown for screen ${screenNumber}`}
+      >
+        <ChevronDownIcon />
+      </MenuButton>
+      <MenuList>
+        <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
+          No mirroring
+        </MenuItem>
+        {allScreenNumbers
+          .filter(
+            (targetScreen) =>
+              targetScreen !== screenNumber && targetScreen !== maxScreenNumber
+          )
+          .map((targetScreen) => (
           <MenuItem
             key={targetScreen}
             onClick={() => toggleScreenMirroring(screenNumber, targetScreen)}
@@ -52,9 +56,10 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => (
             Mirror screen: {targetScreen}
           </MenuItem>
         ))}
-    </MenuList>
-  </Menu>
-)
+      </MenuList>
+    </Menu>
+  )
+}
 
 
 const AutoplayControls = ({
@@ -119,8 +124,11 @@ const ScreenToggleButtons = ({
   mirroring,
 }) => {
 
-  const hasOpenScreen = Object.keys(screens)
-    .filter((screenNumber) => screenNumber !== "5")
+  const allScreenNumbers = Object.keys(screens)
+  const maxScreenNumber = Math.max(...allScreenNumbers.map(Number)).toString()
+  
+  const hasOpenScreen = allScreenNumbers
+    .filter((screenNumber) => screenNumber !== maxScreenNumber)
     .some((screenNumber) => screens[screenNumber])
 
   return (
@@ -133,8 +141,8 @@ const ScreenToggleButtons = ({
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
     <Box display="flex" flexWrap="wrap" gap={2}>
-    {Object.keys(screens)
-      .filter((screenNumber) => screenNumber !== "5")
+    {allScreenNumbers
+      .filter((screenNumber) => screenNumber !== maxScreenNumber)
       .map((screenNumber) => (
         <Box key={screenNumber}>
           <Button
