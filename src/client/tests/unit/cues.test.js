@@ -28,6 +28,7 @@ describe("CuesForm new element", () => {
     expect(screen.getByText("Select blank")).toBeInTheDocument()
     expect(screen.getByText("Submit")).toBeInTheDocument()
   })
+})
 
   test("add cues form with black blank element", async () => {
     const addCue = jest.fn()
@@ -351,7 +352,7 @@ describe("CuesForm new element", () => {
     ).toBeInTheDocument()
   })
 
-  test("handle file without type property", async () => {
+  test("handle file without type property on visual screen", async () => {
     const addCue = jest.fn()
     const onClose = jest.fn()
     const mockCues = []
@@ -365,6 +366,9 @@ describe("CuesForm new element", () => {
     const cueNameInput = screen.getByTestId("cue-name")
     fireEvent.change(cueNameInput, { target: { value: "test cue" } })
 
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "4" } })
+
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
 
@@ -372,7 +376,35 @@ describe("CuesForm new element", () => {
     expect(onClose).not.toHaveBeenCalled()
 
     expect(
-      screen.queryByText("Please select a file or blank element")
+      await screen.findByText("Please select a file or blank element")
+    ).toBeInTheDocument()
+  })
+
+  test("handle file without type property on audio screen", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "5" } })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+
+    expect(
+      await screen.findByText("Please select an audio file")
     ).toBeInTheDocument()
   })
 
@@ -411,6 +443,37 @@ describe("CuesForm new element", () => {
 
     expect(
       screen.queryByText("Blank elements are not allowed on the audio screen")
+    ).toBeInTheDocument()
+  })
+
+  test("prevent adding empty element to audio screen", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4} />
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "5" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+    
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    
+    expect(
+      screen.queryByText("Please select an audio file")
     ).toBeInTheDocument()
   })
 
@@ -643,8 +706,7 @@ describe("CuesForm new element", () => {
     })
     expect(onClose).toHaveBeenCalled()
   })
-})
-
+  
 describe("CuesForm update element", () => {
   test("render form elements with existing elements", async () => {
     const addCue = jest.fn()

@@ -297,6 +297,28 @@ describe("PresentationForm", () => {
     expect(screen.getByLabelText("Name*")).toBeInTheDocument()
   })
 
+  test("updates input field values on change", () => {
+    render(<PresentationForm />)
+
+    const nameInput = screen.getByLabelText("Name*")
+    const screenCountInput = screen.getByTestId("presentation-screen-count")
+    const startingFrameColorInput = screen.getByTestId("starting-frame-color")
+
+    expect(nameInput.value).toBe("")
+    expect(screenCountInput.value).toBe("1")
+    expect(startingFrameColorInput.value).toBe("black") 
+
+    fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
+    fireEvent.change(screenCountInput, { target: { value: 3 } })
+    fireEvent.change(startingFrameColorInput, { target: { value: "white" } })
+
+    expect(nameInput.value).toBe("Test Presentation")
+    expect(screenCountInput.value).toBe("3")
+    expect(startingFrameColorInput.value).toBe("white")
+  })
+
+
+
   test("calls createPresentation function when create button is clicked", () => {
     const createPresentationMock = jest.fn()
     render(

@@ -173,4 +173,48 @@ describe("presentation services api tests", () => {
       }
     )
   })
+
+  test("saveIndexCountApi in presentation api call behaves as expected", async () => {
+    const response = {
+      indexCount: 5,
+    }
+
+    axios.put.mockResolvedValue({ data: response })
+
+    const indexCount = 5
+
+    const result = await presentation.default.saveIndexCountApi(id, indexCount)
+    expect(result).toEqual(response)
+    expect(axios.put).toHaveBeenCalledWith(
+      `${baseUrl}${id}/indexCount`,
+      { indexCount },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      })
+  })
+
+  test("saveScreenCountApi in presentation api call behaves as expected", async () => {
+    const response = {
+      screenCount: 3,
+    }
+
+    axios.put.mockResolvedValue({ data: response })
+
+    const screenCount = 3
+
+    const result = await presentation.default.saveScreenCountApi(id, screenCount)
+    expect(result).toEqual(response)
+    expect(axios.put).toHaveBeenCalledWith(
+      `${baseUrl}${id}/screenCount`,
+      { screenCount },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      })
+  })
 })
