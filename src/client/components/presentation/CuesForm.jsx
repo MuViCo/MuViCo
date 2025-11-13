@@ -11,6 +11,8 @@ import {
   Heading,
   Divider,
   Tooltip,
+  ChakraProvider,
+  extendTheme,
   Select
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
@@ -22,6 +24,7 @@ import {
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 
+const theme = extendTheme({})
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState("")
@@ -238,6 +241,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }
 
   return (
+    <ChakraProvider theme={theme}>
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
@@ -396,6 +400,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
           Submit
         </Button>
       </form>
+    </ChakraProvider>
   )
 }
 
