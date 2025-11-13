@@ -24,8 +24,8 @@ describe("CuesForm new element", () => {
     )
     expect(foundScreenText).toBe(true)
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
-    expect(screen.getByText("or add blank element")).toBeInTheDocument()
-    expect(screen.getByText("Add blank")).toBeInTheDocument()
+    expect(screen.getByText("or select a blank element")).toBeInTheDocument()
+    expect(screen.getByText("Select blank")).toBeInTheDocument()
     expect(screen.getByText("Submit")).toBeInTheDocument()
   })
 
@@ -453,6 +453,195 @@ describe("CuesForm new element", () => {
     expect(screen.queryByText("test2.mp3")).toBeInTheDocument()
     expect(screen.queryByText("test.mp3")).not.toBeInTheDocument()
     expect(screen.queryByText("Blank elements are not allowed on the audio screen. Please select an audio file instead.")).not.toBeInTheDocument()
+  })
+
+  test("upload file automatically updates untouched element name", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "3" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const fileInput = screen.getByLabelText("Upload media")
+    const file = new File([""], "testfile.png", { type: "image/png" })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: file,
+      index: 0,
+      cueName: "testfile.png",
+      screen: 3,
+      fileName: "testfile.png",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("upload file does not change custom element name", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "3" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const fileInput = screen.getByLabelText("Upload media")
+    const file = new File([""], "testfile.png", { type: "image/png" })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: file,
+      index: 0,
+      cueName: "test cue",
+      screen: 3,
+      fileName: "testfile.png",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("choosing blank automatically updates untouched element name", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "3" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" }  })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: "/blank.png",
+      index: 0,
+      cueName: "Blank",
+      screen: 3,
+      fileName: "",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("choosing blank does not change custom element name", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    fireEvent.change(cueNameInput, { target: { value: "test cue" } })
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "3" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" }  })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: "/blank.png",
+      index: 0,
+      cueName: "test cue",
+      screen: 3,
+      fileName: "",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("upload file updates automatically applied element name", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "3" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const fileInput = screen.getByLabelText("Upload media")
+    const file = new File([""], "testfile.png", { type: "image/png" })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    expect(screen.getByTestId("cue-name", { target: { value: "testfile.png" } })).toBeInTheDocument()
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "/blank.png" }  })
+
+    expect(screen.getByTestId("cue-name", { target: { value: "Blank" } })).toBeInTheDocument()
+
+    const file2 = new File([""], "testfile2.png", { type: "image/png" })
+    fireEvent.change(fileInput, { target: { files: [file2] } })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: file,
+      index: 0,
+      cueName: "testfile2.png",
+      screen: 3,
+      fileName: "testfile2.png",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
   })
 })
 

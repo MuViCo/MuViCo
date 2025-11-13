@@ -202,6 +202,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const fileSelected = (event) => {
     const selected = event.target.files[0]
     if (selected) {
+      if (cueName === "" || cueName === fileName || cueName === "Blank") {
+        setCueName(selected.name)
+      }
       setFile(selected)
       setFileName(selected.name)
 
@@ -219,6 +222,19 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setFileName("")
     }
     setError(null)
+  }
+
+  const blankSelected = (event) => {
+    if (cueName === "" || cueName === fileName) {
+      setCueName("Blank")
+    }
+    setFile(event.target.value)
+    if (event.target.value === "" || event.target.value.startsWith("/blank")) {
+      if (!cueData) {
+        setFileName("")
+        if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
+      }
+    }
   }
 
   return (
@@ -342,20 +358,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </>
             ))}
           {error && <Error error={error} />}
-          <FormHelperText mb={2}>or add blank element</FormHelperText>
+          <FormHelperText mb={2}>or select a blank element</FormHelperText>
           <Select
             data-testid="add-blank"
             value={file}
-            onChange={(e) => {
-              setFile(e.target.value)
-              if (e.target.value === "" || e.target.value.startsWith("/blank")) {
-                if (!cueData) {
-                  setFileName("")
-                  if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
-                }
-              }
-            }}
-            placeholder="Add blank"
+            onChange={blankSelected}
+            placeholder="Select blank"
           >
             <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
             <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
