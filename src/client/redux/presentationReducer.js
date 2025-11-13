@@ -60,13 +60,17 @@ const presentationSlice = createSlice({
       state.indexCount += 1
     },
     decrementIndexCount(state) {
-      state.indexCount -= 1
+      if (state.indexCount > 1) {
+        state.indexCount -= 1
+      }
     },
     incrementScreenCount(state) {
       state.screenCount += 1
     },
     decrementScreenCount(state) {
-      state.screenCount -= 1
+       if (state.screenCount > 1) {
+         state.screenCount -= 1
+       }
     },
   },
   extraReducers: builder => {
