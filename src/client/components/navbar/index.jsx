@@ -127,7 +127,14 @@ const NavBar = ({ user, setUser }) => {
           >
             <Flex align="center" mr={7}>
               <Tooltip label="to Frontpage" aria-label="A tooltip">
-                <Heading as="h3" size="lg" letterSpacing={"tighter"}>
+                <Heading
+                  as="h3"
+                  size="lg"
+                  letterSpacing={"tighter"}
+                  fontWeight={600}
+                  fontFamily={"'Poppins', sans-serif"}
+                  style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
+                >
                   <Link to={"/home"} style={{ position: "relative" }}>
                     <Text as="span" color="inherit">
                       MuViCo
@@ -154,6 +161,9 @@ const NavBar = ({ user, setUser }) => {
                   <Button
                     colorScheme="purple"
                     variant="ghost"
+                    fontWeight={600}
+                    fontFamily={"'Poppins', sans-serif"}
+                    style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
                     onClick={() => {
                       setTimeout(() => handleLogout(navigate, setUser), 0) // Trigger logout after current render cycle
                     }}
