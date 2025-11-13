@@ -208,11 +208,14 @@ const GridLayoutComponent = ({
         as={IconButton}
         aria-label='Options'
         icon={<ChevronDownIcon />}
+        backgroundColor="var(--chakra-colors-gray-700)" 
+        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}  
+        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }} 
         variant='outline'
         position="absolute"
         zIndex="10"
-        top="0px"
-        right="0px"
+        top="3px"
+        right="3px"
         size="xs"
       />
       <Portal>
