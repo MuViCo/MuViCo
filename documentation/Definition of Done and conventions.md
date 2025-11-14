@@ -25,10 +25,10 @@
 
 ### Merging new code to main branch
 
-1. When a new feature is complete (working as expected, and CI/CD is green), create a pull request (PR) from the feature branch to the _main_ branch. In this PR, include details about the new functionalities.
+1. When a new feature is complete (working as expected, and CI (Test and deploy to staging) is green), create a pull request (PR) from the feature branch to the _main_ branch. In this PR, include details about the new functionalities.
 2. Move the corresponding user story to IN REVIEW section in sprint backlog
 3. Some other team member(s) must review this PR.
-4. Once the PR is reviewed, the reviewer should verify that the _main_ branch is functioning correctly, and CI/CD is green
+4. Once the PR is reviewed, the reviewer should verify that the _main_ branch is functioning correctly, and CI is green
 5. The reviewer moves corresponding user story to DONE section in sprint backlog
 
 ### Creating a new release
@@ -43,6 +43,7 @@
       - Example: `v1.5.3` -> `v1.5.4`
 3. Set a title for the release in the format `MuViCo vX.Y.Z`, where `X.Y.Z` is the version of the release being made.
 4. Create release notes for the release and set it as the latest, then publish it.
+5. Ensure that the CD (Deploy to Amazon ECS) is green.
 
 ### User story size estimates
 

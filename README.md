@@ -4,6 +4,7 @@
 
 [![Test and deploy to staging](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml)
 [![codecov](https://codecov.io/github/MuViCo/MuViCo/graph/badge.svg?token=B5NR45ODV2)](https://codecov.io/github/MuViCo/MuViCo)
+[![Deploy to Amazon ECS](https://github.com/MuViCo/MuViCo/actions/workflows/production.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/production.yml)
 
 ### Introduction
 
