@@ -132,7 +132,10 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
   const toggleAllScreens = () => {
     setScreenVisibility((prevVisibility) => {
       const updatedVisibility = { ...prevVisibility }
-      const screenNumbers = Object.keys(updatedVisibility).filter((screenNumber) => screenNumber !== "5")
+      const allScreenNumbers = Object.keys(updatedVisibility)
+      
+      const maxScreenNumber = Math.max(...allScreenNumbers.map(Number)).toString()
+      const screenNumbers = allScreenNumbers.filter((screenNumber) => screenNumber !== maxScreenNumber)
       
       const hasOpenScreen = screenNumbers.some((screenNumber) => updatedVisibility[screenNumber])
       
