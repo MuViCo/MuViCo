@@ -70,7 +70,126 @@ describe("Login API", () => {
     expect(response.body.username).toBe("testuser")
   })
 
-})
+  test("saves drive access token for existing user", async () => {
+    const driveAccessToken = "test-drive-token-123"
+    
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken })
+      .expect(200)
+
+    expect(response.body.driveToken).toBe(driveAccessToken)
+
+    // Verify it was saved to the database
+    const user = await User.findOne({ username: "testuser" })
+    expect(user.driveToken).toBe(driveAccessToken)
+  })
+
+  test("saves drive access token for new Firebase user", async () => {
+    const driveAccessToken = "new-user-drive-token-456"
+    
+    // Mock verifyToken to return a new user
+    verifyToken.mockImplementationOnce((req, res, next) => {
+      req.user = {
+        uid: "newuid",
+        email: "newuser@example.com",
+        name: "New User",
+      }
+      next()
+    })
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken })
+      .expect(200)
+
+    expect(response.body.driveToken).toBe(driveAccessToken)
+    expect(response.body.username).toBe("newuser")
+
+    // Verify new user was created with drive token
+    const user = await User.findOne({ username: "newuser" })
+    expect(user).toBeDefined()
+    expect(user.driveToken).toBe(driveAccessToken)
+  })
+
+  test("updates drive token when logging in with Firebase again", async () => {
+    const firstToken = "first-drive-token"
+    const secondToken = "second-drive-token"
+    
+    // First login
+    await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken: firstToken })
+      .expect(200)
+
+    // Verify first token is saved
+    let user = await User.findOne({ username: "testuser" })
+    expect(user.driveToken).toBe(firstToken)
+
+    // Second login with different token
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken: secondToken })
+      .expect(200)
+
+    expect(response.body.driveToken).toBe(secondToken)
+
+    // Verify token was updated in database
+    user = await User.findOne({ username: "testuser" })
+    expect(user.driveToken).toBe(secondToken)
+  })
+
+  test("returns 500 error when user creation fails", async () => {
+    // Mock User.save to throw an error
+    jest.spyOn(User.prototype, "save").mockRejectedValueOnce(new Error("Database error"))
+
+    verifyToken.mockImplementationOnce((req, res, next) => {
+      req.user = {
+        uid: "erroruid",
+        email: "error@example.com",
+        name: "Error User",
+      }
+      next()
+    })
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken: "test-token" })
+      .expect(500)
+
+    expect(response.body.error).toBe("Database error")
+
+    // Restore the original implementation
+    User.prototype.save.mockRestore()
+  })
+
+  test("returns 500 error when token update fails", async () => {
+    // First, create a user successfully
+    await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken: "initial-token" })
+      .expect(200)
+
+    // Mock User.save to throw an error on the second call
+    jest.spyOn(User.prototype, "save").mockRejectedValueOnce(new Error("Save failed"))
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .send({ driveAccessToken: "failing-token" })
+      .expect(500)
+
+    expect(response.body.error).toBe("Save failed")
+
+    // Restore the original implementation
+    User.prototype.save.mockRestore()
+  })})
 
 afterAll(async () => {
   await mongoose.connection.close()

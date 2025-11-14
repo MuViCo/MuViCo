@@ -24,6 +24,9 @@ router.delete("/user/:id", userExtractor, async (req, res) => {
 router.put("/makeadmin/:id", userExtractor, async (req, res) => {
   if (req.user && req.user.isAdmin) {
     const user = await User.findById(req.params.id)
+    if (!user) {
+      return res.status(404).json({ error: "user not found" })
+    }
     user.isAdmin = true
     await user.save()
     return res.status(200).json(user.toJSON())
