@@ -979,6 +979,7 @@ const EditMode = ({
           overflow="auto"
         >
           <Box
+            className="screen-boxes"
             display="grid"
             gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
             gap={`${gap}px`}
