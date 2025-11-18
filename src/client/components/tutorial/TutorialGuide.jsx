@@ -1,14 +1,9 @@
 import React, { useEffect, useState, useRef } from "react"
 import { createPortal } from "react-dom"
 import { Box, Button, Text, VStack, HStack } from "@chakra-ui/react"
-import { useLocation } from "react-router-dom"
 import { keyframes } from "@emotion/react"
 
 const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storageKey }) => {
-  const location = useLocation()
-  if (location.pathname === "/" ) {
-    return null
-  }
   const [open, setOpen] = useState(isOpen)
   const [index, setIndex] = useState(0)
   const [pos, setPos] = useState(null)
@@ -181,6 +176,7 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
           pointerEvents="auto"
           textAlign="center"
           zIndex={1600}
+          data-testid={`tutorial-centered-${index}`}
         >
           <VStack alignItems="stretch" spacing={4}>
             <Box>
@@ -214,6 +210,7 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
           animation={`${fadeIn} 240ms ease`}
           pointerEvents="auto"
           zIndex={1600}
+          data-testid={`tutorial-step-${index}`}
         >
           <VStack alignItems="stretch" spacing={3}>
             <Box>
@@ -249,6 +246,7 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
           boxShadow="0 0 0 6px rgba(128, 90, 213, 0.12)"
           transition="box-shadow 220ms ease, transform 220ms ease"
           pointerEvents="none"
+          data-testid="tutorial-highlight"
         />
       )}
     </Box>,
