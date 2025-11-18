@@ -19,7 +19,13 @@ const PresentationsGrid = ({
       Presentations
     </Heading>
 
-    <SimpleGrid columns={[1, 2, 3]} gap={5}>
+    {presentations.length === 0 && (
+      <Heading size="md" textAlign="center" color="gray.500" mt="50px">
+        No presentations found. Create a new presentation to get started!
+      </Heading>
+    )}
+
+    <SimpleGrid columns={[1, 2, 3]} gap={5} id="presentations-grid" minH="400px">
       {presentations.map((presentation, index) => (
         <motion.div
           key={presentation.id}
