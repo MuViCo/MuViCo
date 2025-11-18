@@ -4,7 +4,7 @@ const presentationTutorialSteps = [
     
 Click "Next" to continue the tutorial.
 
-You can also press the left and right arrow keys on your keyboard to go forward and backward.
+You can also press Enter or the right arrow key on your keyboard to go forward, and the left arrow key to go backward.
 
 Click "Quit Tutorial" or Esc to end the tutorial.` },
     { id: "help", selector: ".help-button", title: "Help Button", posLeftNeeded: true,
@@ -38,7 +38,7 @@ const homePageTutorialSteps = [
     
 Click "Next" to continue the tutorial.
 
-You can also press the left and right arrow keys on your keyboard to go forward and backward.
+You can also press Enter or the right arrow key on your keyboard to go forward, and the left arrow key to go backward.
 
 Click "Quit Tutorial" or Esc to end the tutorial.` },
     { id: "help", selector: ".help-button", title: "Help Button", posLeftNeeded: true,
