@@ -414,6 +414,7 @@ const GridLayoutComponent = ({
             h: 1,
             static: false,
           }}
+          id={`cue-screen-${cue.screen}-index-${cue.index}`}
         >
           <Box position="relative" h="100%">
             {isShowMode

@@ -60,6 +60,7 @@ const LinkGoogleDriveButton = ({ onDriveLinked }) => {
       gap={2}
       px={4}
       py={2}
+      id="link-google-drive-button"
     >
       <Box width="20px" height="20px" mr={3} bg="transparent">
         <svg
