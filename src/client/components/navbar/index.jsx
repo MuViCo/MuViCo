@@ -58,7 +58,7 @@ const NavBar = ({ user, setUser }) => {
     window.localStorage.removeItem("user")
     window.localStorage.removeItem("driveAccessToken")
     setUser(null)
-    navigate("/home")
+    navigate("/")
   }
   const onLogin = (userJSON) => {
     setUser(userJSON)
@@ -120,12 +120,8 @@ const NavBar = ({ user, setUser }) => {
           align="center"
           justify="space-between"
         >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            onHoverStart={(e) => {}}
-            onHoverEnd={(e) => {}}
-          >
-            <Flex align="center" mr={7}>
+
+            <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
               <Tooltip label="to Frontpage" aria-label="A tooltip">
                 <Heading
                   as="h3"
@@ -135,7 +131,7 @@ const NavBar = ({ user, setUser }) => {
                   fontFamily={"'Poppins', sans-serif"}
                   style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
                 >
-                  <Link to={"/home"} style={{ position: "relative" }}>
+                  <Link to={"/"} style={{ position: "relative" }}>
                     <Text as="span" color="inherit">
                       MuViCo
                     </Text>
@@ -152,7 +148,35 @@ const NavBar = ({ user, setUser }) => {
                 </Heading>
               </Tooltip>
             </Flex>
-          </motion.div>
+            <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
+              { user && (
+              <Tooltip label="to Presentation Page" aria-label="A tooltip">
+                <Heading
+                  as="h3"
+                  size="lg"
+                  letterSpacing={"tighter"}
+                  fontWeight={600}
+                  fontFamily={"'Poppins', sans-serif"}
+                  style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
+                >
+                  <Link to={"/home"} style={{ position: "relative" }}>
+                    <Text as="span" color="inherit">
+                      Presentations
+                    </Text>
+                    <Text
+                      as="span"
+                      position="absolute"
+                      bottom="-2px"
+                      left="0"
+                      w="100%"
+                      h="1px"
+                      bg="purple.200"
+                    />
+                  </Link>
+                </Heading>
+              </Tooltip>
+            )}
+            </Flex>
           <Box flex={3} align="right">
             <ThemeToggleButton />
             {user && (
