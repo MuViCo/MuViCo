@@ -19,9 +19,12 @@ import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
 import useDeletePresentation from "../utils/useDeletePresentation"
 import Dialog from "../utils/AlertDialog"
+import TutorialGuide from "../tutorial/TutorialGuide"
+import { homePageTutorialSteps } from "../data/tutorialSteps"
 
 const HomePage = ({ user, setUser }) => {
   const [presentations, setPresentations] = useState([])
+  const [showHint, setShowHint] = useState(false)
   const navigate = useNavigate()
   const togglableRef = useRef(null)
   const showToast = useCustomToast()
@@ -47,6 +50,14 @@ const HomePage = ({ user, setUser }) => {
     }
     getPresentationData()
   }, [navigate])
+
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("hasSeenHelp_homepage")
+
+    if (!hasSeen) {
+      setShowHint(true)
+    }
+  }, [])
 
   const createPresentation = async (presentationObject) => {
     try {
@@ -162,6 +173,12 @@ const HomePage = ({ user, setUser }) => {
         onClose={handleCancelDelete}
         onConfirm={handleDialogConfirm}
         message="Are you sure you want to delete this presentation?"
+      />
+      <TutorialGuide
+        steps={homePageTutorialSteps}
+        isOpen={showHint}
+        onClose={() => setShowHint(false)}
+        storageKey={"hasSeenHelp_homepage"}
       />
     </Container>
   )

@@ -30,7 +30,6 @@ const NavBar = ({ user, setUser }) => {
   const location = useLocation()
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
-  const [showHint, setShowHint] = useState(false)
 
   const isHomepage = location.pathname === "/home"
   const isPresentationPage = location.pathname.startsWith("/presentation")
@@ -77,7 +76,6 @@ const NavBar = ({ user, setUser }) => {
 
     localStorage.setItem(key, "true")
     setHighlight(false)
-    setShowHint(false)
     setIsManualOpen(true)
   }
 
@@ -100,7 +98,6 @@ const NavBar = ({ user, setUser }) => {
 
     if (!hasSeen) {
       setHighlight(true) // show highlight on first visit
-      setShowHint(true)
     }
   }, [isHomepage, isPresentationPage])
 
@@ -128,6 +125,7 @@ const NavBar = ({ user, setUser }) => {
             <Flex align="center" mr={7}>
               <Tooltip label="to Frontpage" aria-label="A tooltip">
                 <Heading
+                  id="navbar-title"
                   as="h3"
                   size="lg"
                   letterSpacing={"tighter"}
@@ -183,40 +181,9 @@ const NavBar = ({ user, setUser }) => {
                       animation={highlight ? animation : "none"}
                       borderRadius="full"
                       transition="transform 0.2s ease"
+                      className="help-button"
                     ></IconButton>
-
-                    {showHint && (
-                      <Box
-                        position="absolute"
-                        top="5px"
-                        left="165px"
-                        transform="translateX(-50%)"
-                        bg="purple.600"
-                        color="white"
-                        px={3}
-                        py={2}
-                        borderRadius="md"
-                        fontSize="sm"
-                        boxShadow="lg"
-                        whiteSpace="nowrap"
-                        zIndex="10"
-                        align="right"
-                        onClick={() => setShowHint(false)}
-                        cursor="pointer"
-                        _after={{
-                          content: "''",
-                          position: "absolute",
-                          left: "0px",
-                          top: "40%",
-                          transform: "translateX(-50%) rotate(45deg)",
-                          width: "12px",
-                          height: "12px",
-                          bg: "purple.600",
-                        }}
-                      >
-                        View the help page here!
-                      </Box>
-                    )}
+                    {/* TutorialGuide will present a guided highlight/tooltip pointing to this button */}
                   </Box>
                 )}
               </>
