@@ -1,4 +1,4 @@
-import { Text } from "@chakra-ui/react"
+import { Text, Button } from "@chakra-ui/react"
 import { homefeaturesData } from "../data/homepageData"
 import FeatureSection from "../utils/FeatureSection"
 
@@ -8,6 +8,17 @@ const HomepageManual = () => {
       <Text mb={4}>
         Welcome to the user manual. This modal provides guidance on how to use
         the application.
+        <br/>
+        <br/>
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            localStorage.removeItem("hasSeenHelp_homepage")
+            window.location.reload()
+          }}
+        >
+          Restart the tutorial
+        </Button>
       </Text>
       <Text fontWeight="bold" mb={1} fontSize="2xl">
         Home page

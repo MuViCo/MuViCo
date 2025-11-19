@@ -6,6 +6,7 @@ import {
   AccordionPanel,
   AccordionIcon,
   Box,
+  Button,
 } from "@chakra-ui/react"
 
 import {
@@ -23,6 +24,17 @@ const PresentationManual = () => {
       <Text mb={4}>
         Welcome to the user manual. This modal provides guidance on how to use
         the edit and show mode.
+        <br/>
+        <br/>
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            localStorage.removeItem("hasSeenHelp_presentation")
+            window.location.reload()
+          }}
+        >
+          Restart the tutorial
+        </Button>
       </Text>
 
       <Accordion allowMultiple>

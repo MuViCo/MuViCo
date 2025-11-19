@@ -9,12 +9,15 @@ import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
 import Dialog from "../utils/AlertDialog"
 import useDeletePresentation from "../utils/useDeletePresentation"
+import TutorialGuide from "../tutorial/TutorialGuide"
+import { presentationTutorialSteps } from "../data/tutorialSteps"
 
 const PresentationPage = ({ user }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [cueIndex, setCueIndex] = useState(0)
+  const [showHint, setShowHint] = useState(false)
   const {
     isDialogOpen,
     handleDeletePresentation,
@@ -43,6 +46,13 @@ const PresentationPage = ({ user }) => {
   const handleShowMode = () => {
     setShowMode(!showMode)
   }
+
+  useEffect(() => {
+    const hasSeen = localStorage.getItem("hasSeenHelp_presentation")
+    if (!hasSeen) {
+      setShowHint(true)
+    }
+  }, [])
 
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
@@ -77,19 +87,25 @@ const PresentationPage = ({ user }) => {
           flexDirection="column"
         >
           <Flex flexDirection="row" flexWrap="wrap" gap={4} padding={4}>
-            <Button colorScheme="gray" onClick={handleShowMode}>
+            <Button
+              colorScheme="gray"
+              onClick={handleShowMode}
+              id="toggle-show-mode-button"
+            >
               {showMode ? "Edit mode" : "Show mode"}
             </Button>
             {!showMode && (
               <>
                 <Button
                   colorScheme="gray"
+                  id="delete-presentation-button"
                   onClick={() => handleDeletePresentation(id)}
                 >
                   Delete Presentation
                 </Button>
                 <Button
                   colorScheme="gray"
+                  id="add-element-button"
                   onClick={() => setIsToolboxOpen(true)}
                 >
                   Add Element
@@ -97,16 +113,16 @@ const PresentationPage = ({ user }) => {
               </>
             )}
             {user.driveToken === null ? (
-              <Text alignSelf="center" data-testid="presentationSize">
+              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
                 {presentationSize} MB / 50 MB
               </Text>
             ) : (
-              <Text alignSelf="center" data-testid="presentationSize">
+              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
                 {presentationSize} MB
               </Text>
             )}
           </Flex>
-          <Box flex="1" padding={4} marginLeft="0px" overflow="auto">
+          <Box flex="1" padding={4} marginLeft="0px" overflow="auto" id="presentations-grid">
             {" "}
             {/* Adjust marginLeft to move the grid to the left */}
             {showMode && (
@@ -137,6 +153,12 @@ const PresentationPage = ({ user }) => {
           />
         </Box>
       )}
+      <TutorialGuide
+        steps={presentationTutorialSteps}
+        isOpen={showHint}
+        onClose={() => setShowHint(false)}
+        storageKey={"hasSeenHelp_presentation"}
+      />
     </>
   )
 }

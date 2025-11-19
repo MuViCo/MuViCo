@@ -13,6 +13,7 @@ const PresentationFormWrapper = ({
         buttonLabel="New presentation"
         exitLabel="cancel"
         ref={togglableRef}
+        buttonId="presentation-form-togglable"
       >
         <PresentationForm
           createPresentation={createPresentation}
