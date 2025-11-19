@@ -150,6 +150,7 @@ const NavBar = ({ user, setUser }) => {
               { user && (
               <Tooltip label="to Presentation Page" aria-label="A tooltip">
                 <Heading
+                  id="navbar-presentations-link"
                   as="h3"
                   size="lg"
                   letterSpacing={"tighter"}
@@ -207,7 +208,6 @@ const NavBar = ({ user, setUser }) => {
                       transition="transform 0.2s ease"
                       className="help-button"
                     ></IconButton>
-                    {/* TutorialGuide will present a guided highlight/tooltip pointing to this button */}
                   </Box>
                 )}
               </>

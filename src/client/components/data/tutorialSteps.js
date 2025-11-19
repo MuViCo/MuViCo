@@ -28,7 +28,7 @@ click the dropdown arrow on the top right of it." },
     description: "These are the screens of your presentation. To add/remove screens, click the +/- buttons." },
     { id: "specific-cue", selector: "#cue-screen-1-index-0", title: "Editing an Element",
     description: "You can also double-click a specific empty cue to add an element to it. If it already has an element, you can double-click it to edit it." },
-    { id: "navbar-title", selector: "#navbar-title", title: "Return",
+    { id: "navbar-title", selector: "#navbar-presentations-link", title: "Return",
     description: "Click here to return to your presentations." },
 ]
 
