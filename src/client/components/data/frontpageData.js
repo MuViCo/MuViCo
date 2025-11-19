@@ -1,6 +1,6 @@
 export const frontpageFeaturesData = [
     {
-        title: "Presentations button: click this to go to the presentations page.",
+        title: "Presentations button: click this to go to the homepage where you can see your presentations.",
         items: [],
     },
     {

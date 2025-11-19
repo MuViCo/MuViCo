@@ -152,6 +152,7 @@ const HomePage = ({ user, setUser }) => {
             <LinkGoogleDriveButton onDriveLinked={handleDriveLinked} />
           )}
           <IconButton
+            className="help-button"
             icon={<QuestionIcon />}
             variant="ghost"
             size="lg"
