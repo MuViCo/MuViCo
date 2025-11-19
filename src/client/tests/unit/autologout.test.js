@@ -33,7 +33,7 @@ describe('autologout', () => {
 
     await waitFor(() => {
       expect(setUser).toHaveBeenCalledWith(null)
-      expect(navigate).toHaveBeenCalledWith('/home')
+      expect(navigate).toHaveBeenCalledWith('/')
     })
   })
 })
