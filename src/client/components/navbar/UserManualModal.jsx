@@ -10,12 +10,14 @@ import {
   ModalFooter,
   Button,
 } from "@chakra-ui/react"
+import FrontpageManual from "../frontpage/FrontpageManual"
 import HomepageManual from "../homepage/HomepageManual"
 import PresentationManual from "../presentation/PresentationManual"
 
 const UserManualModal = ({
   isOpen,
   onClose,
+  isFrontpage,
   isHomepage,
   isPresentationPage,
 }) => {
@@ -26,6 +28,7 @@ const UserManualModal = ({
         <ModalHeader fontSize="3xl">Help page</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
+          {isFrontpage && <FrontpageManual></FrontpageManual>}
           {isHomepage && <HomepageManual></HomepageManual>}
           {isPresentationPage && <PresentationManual></PresentationManual>}
         </ModalBody>

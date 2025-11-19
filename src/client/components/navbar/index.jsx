@@ -31,6 +31,7 @@ const NavBar = ({ user, setUser }) => {
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
 
+  const isFrontpage = location.pathname === "/"
   const isHomepage = location.pathname === "/home"
   const isPresentationPage = location.pathname.startsWith("/presentation")
   const prefersReducedMotion = usePrefersReducedMotion()
@@ -194,7 +195,7 @@ const NavBar = ({ user, setUser }) => {
                     Logout
                   </Button>
                 </Box>
-                {(isHomepage || isPresentationPage) && (
+                {(isFrontpage || isHomepage || isPresentationPage) && (
                   <Box ml={4} display="inline-block" position="relative">
                     <IconButton
                       variant="ghost"
@@ -250,6 +251,7 @@ const NavBar = ({ user, setUser }) => {
       <UserManualModal
         isOpen={isManualOpen}
         onClose={() => setIsManualOpen(false)}
+        isFrontpage={isFrontpage}
         isHomepage={isHomepage}
         isPresentationPage={isPresentationPage}
       />

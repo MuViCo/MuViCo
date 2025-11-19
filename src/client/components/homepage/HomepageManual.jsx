@@ -21,10 +21,10 @@ const HomepageManual = () => {
         </Button>
       </Text>
       <Text fontWeight="bold" mb={1} fontSize="2xl">
-        Home page
+        Presentations page
       </Text>
       <Text mb={3}>
-        After signing in, you will see the home page where you manage your
+        After signing in, you will see the presentations page where you manage your
         presentations.
       </Text>
       <FeatureSection
