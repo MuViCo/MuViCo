@@ -30,7 +30,6 @@ const NavBar = ({ user, setUser }) => {
   const location = useLocation()
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
-  const [showHint, setShowHint] = useState(false)
 
   const isFrontpage = location.pathname === "/"
   const isHomepage = location.pathname === "/home"
@@ -79,7 +78,6 @@ const NavBar = ({ user, setUser }) => {
     localStorage.setItem(key, "true")
     setHighlight(false)
     setShowHint(false)
-    setIsManualOpen(true)
   }
 
   // Check token expiration
@@ -103,7 +101,7 @@ const NavBar = ({ user, setUser }) => {
       setHighlight(true) // show highlight on first visit
       setShowHint(true)
     }
-  }, [isHomepage, isPresentationPage])
+  }, [])
 
   return (
     <>
@@ -210,39 +208,6 @@ const NavBar = ({ user, setUser }) => {
                       borderRadius="full"
                       transition="transform 0.2s ease"
                     ></IconButton>
-
-                    {showHint && (
-                      <Box
-                        position="absolute"
-                        top="5px"
-                        left="165px"
-                        transform="translateX(-50%)"
-                        bg="purple.600"
-                        color="white"
-                        px={3}
-                        py={2}
-                        borderRadius="md"
-                        fontSize="sm"
-                        boxShadow="lg"
-                        whiteSpace="nowrap"
-                        zIndex="10"
-                        align="right"
-                        onClick={() => setShowHint(false)}
-                        cursor="pointer"
-                        _after={{
-                          content: "''",
-                          position: "absolute",
-                          left: "0px",
-                          top: "40%",
-                          transform: "translateX(-50%) rotate(45deg)",
-                          width: "12px",
-                          height: "12px",
-                          bg: "purple.600",
-                        }}
-                      >
-                        View the help page here!
-                      </Box>
-                    )}
                   </Box>
                 )}
               </>
