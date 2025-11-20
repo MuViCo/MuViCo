@@ -85,7 +85,7 @@ const NavBar = ({ user, setUser }) => {
     if (isTokenExpired(token)) {
       handleLogout(navigate, setUser)
     }
-  }, [isHomepage, isPresentationPage]) //run only once
+  }, []) //run only once
 
 
   useEffect(() => {
@@ -98,9 +98,8 @@ const NavBar = ({ user, setUser }) => {
 
     if (!hasSeen) {
       setHighlight(true) // show highlight on first visit
-      setShowHint(true)
     }
-  }, [])
+  }, [isHomepage, isPresentationPage])
 
   return (
     <>
