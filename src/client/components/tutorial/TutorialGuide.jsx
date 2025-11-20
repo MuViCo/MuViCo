@@ -218,11 +218,11 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
               <Text whiteSpace="pre-wrap" fontSize="sm">{steps[index].description}</Text>
             </Box>
             <HStack justifyContent="space-between">
-              <Button size="sm" colorScheme="purple" onClick={next}>
-                {index + 1 < steps.length ? "Next" : "Done"}
-              </Button>
               <Button size="sm" colorScheme="purple" onClick={prev}>
                 Prev
+              </Button>
+              <Button size="sm" colorScheme="purple" onClick={next}>
+                {index + 1 < steps.length ? "Next" : "Done"}
               </Button>
               <Button size="sm" colorScheme="red" onClick={finish}>
                 Quit
