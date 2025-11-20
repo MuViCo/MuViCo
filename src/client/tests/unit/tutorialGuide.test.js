@@ -301,4 +301,79 @@ describe('TutorialGuide', () => {
 
     expect(localStorage.getItem('final_key')).toBe('true')
   })
+
+  test('selector tooltip shows Done on final step and sets storageKey', async () => {
+    const btn = document.createElement('button')
+    btn.id = 'sel-target'
+    btn.textContent = 'Target'
+    document.body.appendChild(btn)
+
+    const steps = [
+      { id: 'only', selector: '#sel-target', title: 'Only', description: 'end' },
+    ]
+
+    const Wrapper = () => {
+      const [open, setOpen] = React.useState(true)
+      return (
+        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} storageKey="sel_key" />
+      )
+    }
+
+    const utils = renderWithRouter(<Wrapper />)
+
+    // Next button should be labeled Done for the only step
+    const done = await screen.findByRole('button', { name: /done/i })
+    expect(done).toBeInTheDocument()
+
+    fireEvent.click(done)
+
+    // simulate parent closing in case it wasn't already closed
+    const { rerender } = utils
+    rerender(
+      <MemoryRouter initialEntries={["/home"]}>
+        <TutorialGuide steps={steps} isOpen={false} onClose={() => {}} storageKey="sel_key" />
+      </MemoryRouter>
+    )
+
+    expect(localStorage.getItem('sel_key')).toBe('true')
+
+    document.body.removeChild(btn)
+  })
+
+  test('selector tooltip Prev/Next navigation works and Quit closes', () => {
+    const btn = document.createElement('button')
+    btn.id = 'nav-target'
+    btn.textContent = 'Target'
+    document.body.appendChild(btn)
+
+    const steps = [
+      { id: 'one', selector: '#nav-target', title: 'Step1', description: '1' },
+      { id: 'two', selector: '#nav-target', title: 'Step2', description: '2' },
+    ]
+
+    const Wrapper = () => {
+      const [open, setOpen] = React.useState(true)
+      return (
+        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} />
+      )
+    }
+
+    renderWithRouter(<Wrapper />)
+
+    expect(screen.getByText('Step1')).toBeInTheDocument()
+
+    const next = screen.getByRole('button', { name: /next/i })
+    fireEvent.click(next)
+    expect(screen.getByText('Step2')).toBeInTheDocument()
+
+    const prev = screen.getByRole('button', { name: /prev/i })
+    fireEvent.click(prev)
+    expect(screen.getByText('Step1')).toBeInTheDocument()
+
+    const quit = screen.getByRole('button', { name: /quit/i })
+    fireEvent.click(quit)
+    expect(screen.queryByText('Step1')).not.toBeInTheDocument()
+
+    document.body.removeChild(btn)
+  })
 })
