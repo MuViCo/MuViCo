@@ -77,7 +77,6 @@ const NavBar = ({ user, setUser }) => {
 
     localStorage.setItem(key, "true")
     setHighlight(false)
-    setShowHint(false)
   }
 
   // Check token expiration
@@ -86,7 +85,7 @@ const NavBar = ({ user, setUser }) => {
     if (isTokenExpired(token)) {
       handleLogout(navigate, setUser)
     }
-  }, []) //run only once
+  }, [isHomepage, isPresentationPage]) //run only once
 
 
   useEffect(() => {
