@@ -77,6 +77,7 @@ const NavBar = ({ user, setUser }) => {
 
     localStorage.setItem(key, "true")
     setHighlight(false)
+    setIsManualOpen(true)
   }
 
   // Check token expiration
