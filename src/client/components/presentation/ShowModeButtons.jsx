@@ -27,7 +27,6 @@ import {
 
 const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => {
   const allScreenNumbers = Object.keys(screens)
-  const maxScreenNumber = Math.max(...allScreenNumbers.map(Number)).toString()
   
   return (
     <Menu>
@@ -46,7 +45,7 @@ const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => {
         {allScreenNumbers
           .filter(
             (targetScreen) =>
-              targetScreen !== screenNumber && targetScreen !== maxScreenNumber
+              targetScreen !== screenNumber
           )
           .map((targetScreen) => (
           <MenuItem
@@ -125,10 +124,8 @@ const ScreenToggleButtons = ({
 }) => {
 
   const allScreenNumbers = Object.keys(screens)
-  const maxScreenNumber = Math.max(...allScreenNumbers.map(Number)).toString()
   
   const hasOpenScreen = allScreenNumbers
-    .filter((screenNumber) => screenNumber !== maxScreenNumber)
     .some((screenNumber) => screens[screenNumber])
 
   return (
@@ -142,7 +139,6 @@ const ScreenToggleButtons = ({
       </Button>
     <Box display="flex" flexWrap="wrap" gap={2}>
     {allScreenNumbers
-      .filter((screenNumber) => screenNumber !== maxScreenNumber)
       .map((screenNumber) => (
         <Box key={screenNumber}>
           <Button

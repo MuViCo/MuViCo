@@ -29,15 +29,6 @@ const mockCues = [
     _id: "987654321",
     loop: false,
   },
-  {
-    file: { url: "http://example.com/audio1.mp3", type: "audio/mp3" },
-
-    index: 2,
-    name: "audio_cue",
-    screen: 3,
-    _id: "111222333",
-    loop: false,
-  },
 ]
 
 const mockemptyCues = []
