@@ -31,6 +31,7 @@ const NavBar = ({ user, setUser }) => {
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
 
+  const isFrontpage = location.pathname === "/"
   const isHomepage = location.pathname === "/home"
   const isPresentationPage = location.pathname.startsWith("/presentation")
   const prefersReducedMotion = usePrefersReducedMotion()
@@ -121,7 +122,6 @@ const NavBar = ({ user, setUser }) => {
             <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
               <Tooltip label="to Frontpage" aria-label="A tooltip">
                 <Heading
-                  id="navbar-title"
                   as="h3"
                   size="lg"
                   letterSpacing={"tighter"}
@@ -148,9 +148,8 @@ const NavBar = ({ user, setUser }) => {
             </Flex>
             <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
               { user && (
-              <Tooltip label="to Presentation Page" aria-label="A tooltip">
+              <Tooltip label="to Homepage" aria-label="A tooltip">
                 <Heading
-                  id="navbar-presentations-link"
                   as="h3"
                   size="lg"
                   letterSpacing={"tighter"}
@@ -158,7 +157,7 @@ const NavBar = ({ user, setUser }) => {
                   fontFamily={"'Poppins', sans-serif"}
                   style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
                 >
-                  <Link to={"/home"} style={{ position: "relative" }}>
+                  <Link to={"/home"} id="navbar-presentations-link" style={{ position: "relative" }}>
                     <Text as="span" color="inherit">
                       Presentations
                     </Text>
@@ -194,9 +193,10 @@ const NavBar = ({ user, setUser }) => {
                     Logout
                   </Button>
                 </Box>
-                {(isHomepage || isPresentationPage) && (
+                {(isFrontpage || isHomepage || isPresentationPage) && (
                   <Box ml={4} display="inline-block" position="relative">
                     <IconButton
+                      className="help-button"
                       variant="ghost"
                       size="lg"
                       colorScheme="purple"
@@ -206,7 +206,6 @@ const NavBar = ({ user, setUser }) => {
                       animation={highlight ? animation : "none"}
                       borderRadius="full"
                       transition="transform 0.2s ease"
-                      className="help-button"
                     ></IconButton>
                   </Box>
                 )}
@@ -250,6 +249,7 @@ const NavBar = ({ user, setUser }) => {
       <UserManualModal
         isOpen={isManualOpen}
         onClose={() => setIsManualOpen(false)}
+        isFrontpage={isFrontpage}
         isHomepage={isHomepage}
         isPresentationPage={isPresentationPage}
       />
