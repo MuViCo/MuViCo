@@ -612,6 +612,46 @@ describe("ShowMode", () => {
       jest.useRealTimers()
     })
 
+    test("autoplay advances frames 10 times a second with 0.1 second intervals", async () => {
+      jest.useFakeTimers()
+      const mockSetCueIndex = jest.fn((updater) => {
+        if (typeof updater === "function") {
+          updater(0)
+        }
+      })
+
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={0}
+            setCueIndex={mockSetCueIndex}
+            indexCount={100}
+          />
+        )
+      })
+
+      const autoplayTimeInput = screen.getByRole("spinbutton", { id: "autoplaytime" })
+      act(() => {
+        fireEvent.change(autoplayTimeInput, { target: { value: "0.1" } })
+      })
+      expect(autoplayTimeInput.value).toBe("0.1")
+
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+      })
+      expect(mockSetCueIndex).toHaveBeenCalled()
+
+      act(() => {
+        jest.advanceTimersByTime(5000)
+      })
+      expect(mockSetCueIndex).toHaveBeenCalledTimes(51) // initial call + 50 advances
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: "Stop Autoplay" }))
+      })
+      jest.useRealTimers()
+    })
+
     test("changing interval updates autoplay speed", async () => {
       jest.useFakeTimers()
       const mockSetCueIndex = jest.fn((updater) => {
