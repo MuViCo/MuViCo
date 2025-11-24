@@ -233,6 +233,28 @@ router.put("/:id/screenCount", userExtractor, async (req, res) => {
   }
 })
 
+router.put("/:id/name", userExtractor, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { name } = req.body
+
+    if (typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "name must be a non-empty string" })
+    }
+
+    const updated = await Presentation.findByIdAndUpdate(
+      id,
+      { name: name.trim() },
+      { new: true }
+    )
+
+    res.json({ name: updated.name })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+})
+
 /**
  * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
  * and aws bucket. Can upload any kind of image or pdf.

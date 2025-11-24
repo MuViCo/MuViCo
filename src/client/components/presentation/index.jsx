@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, Box, Text } from "@chakra-ui/react"
+import { Button, Flex, Box, Text, IconButton, Input } from "@chakra-ui/react"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
 import ShowMode from "./ShowMode"
 import EditMode from "./EditMode"
+import PresentationTitle from "./PresentationTitle"
 import Dialog from "../utils/AlertDialog"
 import useDeletePresentation from "../utils/useDeletePresentation"
 import TutorialGuide from "../tutorial/TutorialGuide"
@@ -73,11 +74,11 @@ const PresentationPage = ({ user }) => {
 
   return (
     <>
-      <h2 style={{
-      textAlign: "center",
-      fontSize: "2em",
-      fontWeight: 700
-      }}>{presentationName}</h2>
+      <PresentationTitle
+        id={id}
+        presentationName={presentationName}
+        showMode={showMode}
+      />
       {presentationInfo && (
         <Box
           width="100vw"

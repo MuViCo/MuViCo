@@ -103,6 +103,18 @@ const shiftIndexes = async (id, startIndex, direction) => {
   return response.data
 }
 
+const updatePresentationName = async (id, newName) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const body = { name: newName }
+  const response = await axios.put(`${baseUrl}${id}/name`, body, config)
+  return response.data
+}
+
 export default {
   get,
   remove,
@@ -112,4 +124,5 @@ export default {
   saveIndexCountApi,
   saveScreenCountApi,
   shiftIndexes,
+  updatePresentationName,
 }
