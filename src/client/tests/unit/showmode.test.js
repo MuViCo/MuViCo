@@ -691,6 +691,25 @@ describe("ShowMode", () => {
     
       jest.useRealTimers()
     })
+
+    test("interval cant be set to negative", async () => {
+      await act(async () => {
+        render(
+          <ShowMode
+            cues={mockCues}
+            cueIndex={0}
+            indexCount={100}
+          />
+        )
+      })
+
+      const autoplayTimeInput = screen.getByRole("spinbutton", { id: "autoplaytime" })
+      act(() => {
+        fireEvent.change(autoplayTimeInput, { target: { value: "-1" } })
+        fireEvent.focusOut(autoplayTimeInput)
+      })
+      expect(autoplayTimeInput.value).toBe("0.1")
+    })
   })
 })
 
