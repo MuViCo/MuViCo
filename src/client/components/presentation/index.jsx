@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Button, Flex, Box, Text, IconButton, Input } from "@chakra-ui/react"
+import { Button, Flex, Box, Text, IconButton, Input, Select, useToast } from "@chakra-ui/react"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -30,6 +30,26 @@ const PresentationPage = ({ user }) => {
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isAudioMuted, setIsAudioMuted] = useState(false)
+  const [isTransitionMenuOpen, setIsTransitionMenuOpen] = useState(false)
+  const [transitionType, setTransitionType] = useState("fade")
+
+  const toast = useToast()
+
+  useEffect(() => {
+    try {
+      const storedTransition = localStorage.getItem(`presentation-${id}-transition`)
+      if (storedTransition) setTransitionType(storedTransition)
+    } catch (err) {
+      console.warn("Could not read persisted transition preference:", err)
+      toast({
+        title: "Error",
+        description: "Could not read persisted transition preference.",
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      })
+    }
+  }, [id, toast])
 
   // Fetch presentation info from Redux state
   const presentationInfo = useSelector((state) => state.presentation.cues)
@@ -111,6 +131,36 @@ const PresentationPage = ({ user }) => {
                 >
                   Add Element
                 </Button>
+                <Select
+                  colorScheme="gray"
+                  data-testid="transition-type-select"
+                  value={transitionType}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setTransitionType(val)
+                    try {
+                      localStorage.setItem(`presentation-${id}-transition`, val)
+                    } catch (err) {
+                      console.warn("Could not persist transition preference:", err)
+                      toast({
+                        title: "Error",
+                        description: "Could not persist transition preference.",
+                        status: "warning",
+                        duration: 5000,
+                        isClosable: true,
+                      })
+                    }
+                  }}
+                  placeholder="Select transition"
+                  width="200px"
+                  minW="140px"
+                >
+                  <option value="fade">Fade</option>
+                  <option value="slide-left">Slide From Left</option>
+                  <option value="slide-right">Slide From Right</option>
+                  <option value="zoom">Zoom</option>
+                  <option value="none">None</option>
+                </Select>
               </>
             )}
             {user.driveToken === null ? (
@@ -132,6 +182,7 @@ const PresentationPage = ({ user }) => {
                 cueIndex={cueIndex}
                 setCueIndex={setCueIndex}
                 indexCount={indexCount}
+                transitionType={transitionType}
               />
             )}
             <EditMode
@@ -139,6 +190,10 @@ const PresentationPage = ({ user }) => {
               cues={presentationInfo}
               isToolboxOpen={isToolboxOpen}
               setIsToolboxOpen={setIsToolboxOpen}
+              isTransitionMenuOpen={isTransitionMenuOpen}
+              setIsTransitionMenuOpen={setIsTransitionMenuOpen}
+              transitionType={transitionType}
+              setTransitionType={setTransitionType}
               isShowMode={showMode === true}
               cueIndex={cueIndex}
               isAudioMuted={isAudioMuted}
