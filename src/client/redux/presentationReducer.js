@@ -72,6 +72,9 @@ const presentationSlice = createSlice({
          state.screenCount -= 1
        }
     },
+    updateNameOnly(state, action) {
+      state.name = action.payload
+    },
   },
   extraReducers: builder => {
     builder
@@ -123,6 +126,7 @@ export const {
   decrementIndexCount,
   incrementScreenCount,
   decrementScreenCount,
+  updateNameOnly,
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
@@ -251,6 +255,17 @@ export const shiftPresentationIndexes = (presentationId, startIndex, direction) 
     const result = await presentationService.shiftIndexes(presentationId, startIndex, direction)
     await dispatch(fetchPresentationInfo(presentationId))
     return result
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
+  }
+}
+
+export const updatePresentationName = (presentationId, newName) => async (dispatch, getState) => {
+  try {
+    const updated = await presentationService.updatePresentationName(presentationId, newName)
+    dispatch(updateNameOnly(updated.name))
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)

@@ -16,6 +16,7 @@ import reducer, {
   incrementScreenCount,
   decrementScreenCount,
   shiftPresentationIndexes,
+  updatePresentationName,
 } from "../../redux/presentationReducer.js"
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks.js"
 import presentationService from "../../services/presentation.js"
@@ -38,6 +39,7 @@ jest.mock("../../services/presentation.js", () => ({
   saveScreenCountApi: jest.fn(),
   saveIndexCountApi: jest.fn(),
   shiftIndexes: jest.fn(),
+  updatePresentationName: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -120,6 +122,15 @@ describe("presentationReducer actions", () => {
       type: decrementScreenCount.type,
     }
     expect(decrementScreenCount()).toEqual(expectedAction)
+  })
+
+  it("should create an action to update presentation name only", () => { 
+    const newName = "Updated Presentation Name"
+    const expectedAction = {
+      type: "presentation/updateNameOnly",
+      payload: newName,
+    }
+    expect({ type: "presentation/updateNameOnly", payload: newName  }).toEqual(expectedAction)
   })
 })
 
@@ -861,6 +872,44 @@ describe("presentationReducer asynchronous actions", () => {
         updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
       )
     ).rejects.toThrow("Not found")
+  })
+
+  it("should update presentation name only", async () => {
+    const store = makeStore()
+
+    store.dispatch(setPresentationInfo({
+      cues: [],
+      name: "Old Presentation Name",
+      screenCount: 3,
+      indexCount: 5,
+    }))
+
+    presentationService.updatePresentationName.mockResolvedValue({
+      name: "New Name"
+    })
+
+    await store.dispatch(updatePresentationName("123", "New Name"))
+
+    expect(store.getState().presentation.name).toBe("New Name")
+  })
+
+  it("throws error when updatePresentationName fails", async () => {
+    const store = makeStore()
+
+    store.dispatch(setPresentationInfo({
+      cues: [],
+      name: "Old Name",
+      screenCount: 3,
+      indexCount: 5,
+    }))
+
+    presentationService.updatePresentationName.mockRejectedValue({
+      response: { data: { error: "Name invalid" } }
+    })
+
+    await expect(
+      store.dispatch(updatePresentationName("123", ""))
+    ).rejects.toThrow("Name invalid")
   })
 })
 

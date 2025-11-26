@@ -217,4 +217,27 @@ describe("presentation services api tests", () => {
         },
       })
   })
+
+  test("updatePresentationName in presentation api call behaves as expected", async () => {
+    const response = {
+      id: id,
+      name: "Updated Presentation Name",
+    }
+
+    axios.put.mockResolvedValue({ data: response })
+
+    const newName = "Updated Presentation Name"
+
+    const result = await presentation.default.updatePresentationName(id, newName)
+    expect(result).toEqual(response)
+    expect(axios.put).toHaveBeenCalledWith(
+      `${baseUrl}${id}/name`,
+      { name: newName },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      })
+  })
 })

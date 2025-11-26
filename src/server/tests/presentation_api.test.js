@@ -296,9 +296,9 @@ describe("test presentation", () => {
 
   describe("PUT /api/presentation/:id/screenCount", () => {
     beforeEach(async () => {
-      const user = await User.findOne({ username: "testuser" });
+      const user = await User.findOne({ username: "testuser" })
       if (!user) {
-        throw new Error("Test user not found in screen count tests");
+        throw new Error("Test user not found in screen count tests")
       }
 
       const presentation = new Presentation({
@@ -313,123 +313,123 @@ describe("test presentation", () => {
           { screen: 3, index: 2, name: "Element 3-2" },
           { screen: 3, index: 3, name: "Element 3-3" }
         ]
-      });
-      await presentation.save();
-      testPresentationId = presentation._id;
-    });
+      })
+      await presentation.save()
+      testPresentationId = presentation._id
+    })
 
     test("Should increase screen count and add initial elements", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 4 })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.screenCount).toBe(4);
-      expect(response.body.removedCuesCount).toBe(0);
+      expect(response.body.screenCount).toBe(4)
+      expect(response.body.removedCuesCount).toBe(0)
 
       // Verify the presentation was updated
-      const updatedPresentation = await Presentation.findById(testPresentationId);
-      expect(updatedPresentation.screenCount).toBe(4);
+      const updatedPresentation = await Presentation.findById(testPresentationId)
+      expect(updatedPresentation.screenCount).toBe(4)
       
       // Check that the presentation has the same number of cues (no automatic new cues added)
-      expect(updatedPresentation.cues.length).toBe(6);
-    });
+      expect(updatedPresentation.cues.length).toBe(6)
+    })
 
     test("Should decrease screen count and remove cues from removed screens", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 2 })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.screenCount).toBe(2);
-      expect(response.body.removedCuesCount).toBe(3);
+      expect(response.body.screenCount).toBe(2)
+      expect(response.body.removedCuesCount).toBe(3)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId);
-      expect(updatedPresentation.screenCount).toBe(2);
+      const updatedPresentation = await Presentation.findById(testPresentationId)
+      expect(updatedPresentation.screenCount).toBe(2)
 
-      const screen3Cues = updatedPresentation.cues.filter(cue => cue.screen === 3);
-      expect(screen3Cues.length).toBe(0);
+      const screen3Cues = updatedPresentation.cues.filter(cue => cue.screen === 3)
+      expect(screen3Cues.length).toBe(0)
       
-      const remainingCues = updatedPresentation.cues;
-      expect(remainingCues.filter(cue => cue.screen === 1).length).toBe(2);
-      expect(remainingCues.filter(cue => cue.screen === 2).length).toBe(1);
-    });
+      const remainingCues = updatedPresentation.cues
+      expect(remainingCues.filter(cue => cue.screen === 1).length).toBe(2)
+      expect(remainingCues.filter(cue => cue.screen === 2).length).toBe(1)
+    })
 
     test("Should reject invalid screen count (too low)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 0 })
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("screenCount must be between 1 and 8");
-    });
+      expect(response.body.error).toBe("screenCount must be between 1 and 8")
+    })
 
     test("Should reject invalid screen count (too high)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 9 })
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("screenCount must be between 1 and 8");
-    });
+      expect(response.body.error).toBe("screenCount must be between 1 and 8")
+    })
 
     test("Should accept non-integer screen count (API converts to integer)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 2.5 })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.screenCount).toBe(2.5); 
-    });
+      expect(response.body.screenCount).toBe(2.5) 
+    })
 
     test("Should reject missing screen count", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({})
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("screenCount must be a number");
-    });
+      expect(response.body.error).toBe("screenCount must be a number")
+    })
 
     test("Should handle setting same screen count (no change)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 3 })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.screenCount).toBe(3);
-      expect(response.body.removedCuesCount).toBe(0);
+      expect(response.body.screenCount).toBe(3)
+      expect(response.body.removedCuesCount).toBe(0)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId);
-      expect(updatedPresentation.cues.length).toBe(6); // Original count
-    });
+      const updatedPresentation = await Presentation.findById(testPresentationId)
+      expect(updatedPresentation.cues.length).toBe(6) // Original count
+    })
 
     test("Should work without authorization (current API behavior)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .send({ screenCount: 2 })
-        .expect(200);
+        .expect(200)
       
-      expect(response.body.screenCount).toBe(2);
-    });
+      expect(response.body.screenCount).toBe(2)
+    })
 
     test("Should reject access to non-existent presentation", async () => {
-      const fakeId = new mongoose.Types.ObjectId();
+      const fakeId = new mongoose.Types.ObjectId()
       const response = await api
         .put(`/api/presentation/${fakeId}/screenCount`)
         .set("Authorization", authHeader)
         .send({ screenCount: 2 })
-        .expect(404);
+        .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found");
-    });
+      expect(response.body.error).toBe("Presentation not found")
+    })
 
     test("Should allow access regardless of user (current API behavior)", async () => {
       // Create another user
@@ -437,26 +437,26 @@ describe("test presentation", () => {
         email: "other@example.com",
         hashedPassword: await bcrypt.hash("password123", 10),
         username: "otheruser"
-      });
-      await otherUser.save();
+      })
+      await otherUser.save()
 
-      const otherToken = jwt.sign({ id: otherUser._id }, config.SECRET);
+      const otherToken = jwt.sign({ id: otherUser._id }, config.SECRET)
 
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", `Bearer ${otherToken}`)
         .send({ screenCount: 2 })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.screenCount).toBe(2);
-    });
-  });
+      expect(response.body.screenCount).toBe(2)
+    })
+  })
 
   describe("PUT /api/presentation/:id/shiftIndexes", () => {
     beforeEach(async () => {
-      const user = await User.findOne({ username: "testuser" });
+      const user = await User.findOne({ username: "testuser" })
       if (!user) {
-        throw new Error("Test user not found in screen count tests");
+        throw new Error("Test user not found in screen count tests")
       }
 
       const presentation = new Presentation({
@@ -464,118 +464,155 @@ describe("test presentation", () => {
         user: user._id,
         screenCount: 3,
         cues: []
-      });
-      await presentation.save();
-      testPresentationId = presentation._id;
-      await setIndexCount(testPresentationId, 6);
+      })
+      await presentation.save()
+      testPresentationId = presentation._id
+      await setIndexCount(testPresentationId, 6)
       
-      await createCue(0, "First Cue", 1);
-      await createCue(2, "Second Cue", 1);
-      await createCue(4, "Third Cue", 1);
-    });
+      await createCue(0, "First Cue", 1)
+      await createCue(2, "Second Cue", 1)
+      await createCue(4, "Third Cue", 1)
+    })
 
     test("Should shift indices right successfully", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 0, direction: "right" })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.shifted).toBe(true);
+      expect(response.body.shifted).toBe(true)
 
-      const presentation = await Presentation.findById(testPresentationId);
-      const cues = presentation.cues;
-      const first = cues.find(c => c.name === "First Cue");
-      const second = cues.find(c => c.name === "Second Cue");
-      const third = cues.find(c => c.name === "Third Cue");
-      expect(first).toBeDefined();
-      expect(second).toBeDefined();
-      expect(third).toBeDefined();
-      expect(first.index).toBe(0);
-      expect(second.index).toBe(3);
-      expect(third.index).toBe(5);
-    });
+      const presentation = await Presentation.findById(testPresentationId)
+      const cues = presentation.cues
+      const first = cues.find(c => c.name === "First Cue")
+      const second = cues.find(c => c.name === "Second Cue")
+      const third = cues.find(c => c.name === "Third Cue")
+      expect(first).toBeDefined()
+      expect(second).toBeDefined()
+      expect(third).toBeDefined()
+      expect(first.index).toBe(0)
+      expect(second.index).toBe(3)
+      expect(third.index).toBe(5)
+    })
 
     test("Should shift indices left successfully", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 2, direction: "left" })
-        .expect(200);
+        .expect(200)
 
-      expect(response.body.shifted).toBe(true);
+      expect(response.body.shifted).toBe(true)
 
-      const presentation = await Presentation.findById(testPresentationId);
-      const cues = presentation.cues;
-      const first = cues.find(c => c.name === "First Cue");
-      const second = cues.find(c => c.name === "Second Cue");
-      const third = cues.find(c => c.name === "Third Cue");
-      expect(first).toBeDefined();
-      expect(second).toBeDefined();
-      expect(third).toBeDefined();
-      expect(first.index).toBe(0);
-      expect(second.index).toBe(2);
-      expect(third.index).toBe(3);
-    });
+      const presentation = await Presentation.findById(testPresentationId)
+      const cues = presentation.cues
+      const first = cues.find(c => c.name === "First Cue")
+      const second = cues.find(c => c.name === "Second Cue")
+      const third = cues.find(c => c.name === "Third Cue")
+      expect(first).toBeDefined()
+      expect(second).toBeDefined()
+      expect(third).toBeDefined()
+      expect(first.index).toBe(0)
+      expect(second.index).toBe(2)
+      expect(third.index).toBe(3)
+    })
 
     test("Should fail with invalid direction", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1, direction: "invalid" })
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("Invalid parameters");
-    });
+      expect(response.body.error).toBe("Invalid parameters")
+    })
 
     test("Should fail with missing startIndex", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ direction: "right" })
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("Invalid parameters");
-    });
+      expect(response.body.error).toBe("Invalid parameters")
+    })
 
     test("Should fail with missing direction", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1 })
-        .expect(400);
+        .expect(400)
 
-      expect(response.body.error).toBe("Invalid parameters");
-    });
+      expect(response.body.error).toBe("Invalid parameters")
+    })
 
     test("Should handle invalid presentation ID", async () => {
-      const fakeId = new mongoose.Types.ObjectId();
+      const fakeId = new mongoose.Types.ObjectId()
       const response = await api
         .put(`/api/presentation/${fakeId}/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1, direction: "right" })
-        .expect(404);
+        .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found");
-    });
+      expect(response.body.error).toBe("Presentation not found")
+    })
 
     test("Should work without without authorization (current API behavior)", async () => {
       await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .send({ startIndex: 1, direction: "right" })
-        .expect(200);
-    });
+        .expect(200)
+    })
 
     test("Should catch some error and respond with 500", async () => {
       const response = await api
         .put(`/api/presentation/invalid-id/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1, direction: "right" })
-        .expect(500);
+        .expect(500)
 
-      expect(response.body.error).toBe("Internal server error");
-    });
-  });
+      expect(response.body.error).toBe("Internal server error")
+    })
+  })
+
+  describe("PUT /api/presentation/:id/name", () => {
+    test("Should update presentation name successfully", async () => {
+      const newName = "Updated Presentation Name"
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", authHeader)
+        .send({ name: newName })
+        .expect(200)
+
+      expect(response.body.name).toBe(newName)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      expect(presentation.name).toBe(newName)
+    })
+
+    test("Should fail with missing name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", authHeader)
+        .send({})
+        .expect(400)
+
+      expect(response.body.error).toBe("name must be a non-empty string")
+    })
+
+    test("Should catch some error and respond with 500", async () => {
+      const fakeId = new mongoose.Types.ObjectId()
+      const response = await api
+        .put(`/api/presentation/${fakeId}/name`)
+        .set("Authorization", authHeader)
+        .send({ name: "New Name" })
+        .expect(500)
+
+      expect(response.body.error).toBe("Internal server error")
+    })
+  })
 })
 
 afterAll(async () => {
