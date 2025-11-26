@@ -73,8 +73,14 @@ const AutoplayControls = ({
       <Button colorScheme={isAutoplaying ? "red" : "blue"} onClick={toggleAutoplay}>
         {isAutoplaying ? "Stop Autoplay" : "Start Autoplay"}
       </Button>
-      <NumberInput id="autoplaytime"
-       value={autoplayInterval} width="70px" onChange={(valueString) => toggleAutoplayInterval(valueString)} >
+      <NumberInput
+       id="autoplaytime"
+       value={autoplayInterval}
+       width="100px"
+       onChange={(valueString) => toggleAutoplayInterval(valueString)}
+       min={0.1}
+       step={0.1}
+      >
         <NumberInputField placeholder="sec" />
         <NumberInputStepper>
           <NumberIncrementStepper />
