@@ -3,17 +3,10 @@ import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
-import { keyframes, CacheProvider } from "@emotion/react"
+import { CacheProvider } from "@emotion/react"
+import { getAnims } from "../../utils/transitionUtils"
 
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`
 
-const fadeOut = keyframes`
-  from { opacity: 1; }
-  to { opacity: 0; }
-`
 
 //conditional rendering helper function based on file type
 const renderMedia = (file, name) => {
@@ -60,15 +53,21 @@ const ScreenContent = ({
   currentScreenData,
   previousScreenData,
   showText,
-}) => (
-  <Box
-    bg="black"
-    color="white"
-    width="100vw"
-    height="100vh"
-    display="flex"
-    flexDirection="column"
-  >
+  transitionType,
+}) => {
+
+  const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
+  const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
+
+  return (
+    <Box
+      bg="black"
+      color="white"
+      width="100vw"
+      height="100vh"
+      display="flex"
+      flexDirection="column"
+    >
     {/* Header with Screen Number on the left and Cue Name on the right */}
     <Box
       display="flex"
@@ -97,10 +96,10 @@ const ScreenContent = ({
       )}
     </Box>
 
-    {/* Fade out previous cue media, if any */}
+    {/* Animates out previous cue media, if any */}
     {previousScreenData && (
       <Box
-        key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}`}
+        key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}-${transitionType}`}
         flex="1"
         display="flex"
         justifyContent="center"
@@ -108,7 +107,7 @@ const ScreenContent = ({
         position="absolute"
         width="100vw"
         zIndex={1}
-        animation={`${fadeOut} 500ms ease-in-out forwards`}
+        animation={animStyle(exitAnim)}
       >
         {(previousScreenData.file?.url || previousScreenData.file?.name) &&
           (isType.image(previousScreenData.file) ? (
@@ -133,9 +132,9 @@ const ScreenContent = ({
       </Box>
     )}
 
-    {/* Fade in current cue media */}
+    {/* Animates in current cue media */}
     <Box
-      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
+      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}-${transitionType}`}
       flex="1"
       display="flex"
       justifyContent="center"
@@ -143,7 +142,7 @@ const ScreenContent = ({
       position="absolute"
       width="100vw"
       zIndex={1}
-      animation={`${fadeIn} 500ms ease-in-out forwards`}
+      animation={animStyle(enterAnim)}
     >
       {currentScreenData?.file?.url ? (
         renderMedia(currentScreenData.file, currentScreenData.name)
@@ -152,9 +151,10 @@ const ScreenContent = ({
       )}
     </Box>
   </Box>
-)
+  )
+}
 
-const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
+const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
   const [currentScreenData, setCurrentScreenData] = useState(null)
@@ -298,6 +298,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose }) => {
             currentScreenData={currentScreenData}
             previousScreenData={previousScreenData}
             showText={showText}
+            transitionType={transitionType}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body

@@ -6,6 +6,7 @@ export const editModeFeaturesData = [
       "Show Mode: Preview your presentation.",
       "Delete Presentation: Delete the current presentation.",
       "Add Element: Insert new elements into your presentation.",
+      "Select Transition: Choose how elements transition between frames.",
       "Storage indicator: Displays how much space has been used. The maximum allowed space is 50 MB.",
       "Save status icon (✓): This is marked when your changes have been successfully saved.",
     ],

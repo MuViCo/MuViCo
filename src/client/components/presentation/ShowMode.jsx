@@ -4,7 +4,7 @@ import ShowModeButtons from "./ShowModeButtons"
 import KeyboardHandler from "../utils/keyboardHandler"
 
 // ShowMode component
-const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
+const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
@@ -248,6 +248,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount }) => {
             screenNumber={screenNumber}
             isVisible={screenVisibility[screenNumber]}
             onClose={handleScreenClose}
+            transitionType={transitionType}
           />
         )
       })}
