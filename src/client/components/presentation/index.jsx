@@ -131,6 +131,23 @@ const PresentationPage = ({ user }) => {
                 >
                   Add Element
                 </Button>
+                {user.driveToken === null ? (
+              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
+                {presentationSize} MB / 50 MB
+              </Text>
+            ) : (
+              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
+                {presentationSize} MB
+              </Text>
+            )}
+                <Box
+                  width="100vw"
+                  margin={0}
+                  padding={0}
+                  display="flex"
+                  flexDirection="column"
+                >
+                <Text mb={2} fontWeight={700}>Transition Type:</Text>
                 <Select
                   colorScheme="gray"
                   data-testid="transition-type-select"
@@ -151,7 +168,6 @@ const PresentationPage = ({ user }) => {
                       })
                     }
                   }}
-                  placeholder="Select transition"
                   width="200px"
                   minW="140px"
                 >
@@ -161,16 +177,8 @@ const PresentationPage = ({ user }) => {
                   <option value="zoom">Zoom</option>
                   <option value="none">None</option>
                 </Select>
+                </Box>
               </>
-            )}
-            {user.driveToken === null ? (
-              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
-                {presentationSize} MB / 50 MB
-              </Text>
-            ) : (
-              <Text alignSelf="center" data-testid="presentationSize" className="presentation-size-info">
-                {presentationSize} MB
-              </Text>
             )}
           </Flex>
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto" id="presentations-grid">
