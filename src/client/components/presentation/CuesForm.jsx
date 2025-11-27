@@ -27,11 +27,12 @@ import {
 const theme = extendTheme({})
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState("")
+  const [file, setFile] = useState(isAudioMode ? "" : "/blank.png")
+  const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
-  const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(isAudioMode ? 0 : (position?.screen || 0))
+  const [cueName, setCueName] = useState(isAudioMode ? "" : "Blank")
+  const [screen, setScreen] = useState(isAudioMode ? 0 : (position?.screen || 1))
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
@@ -77,7 +78,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       } else if (screen > 0) {
         setIndex((prevIndex) => {
           const newIndex = getNextAvailableIndex(screen, cues)
-          return prevIndex !== newIndex ? newIndex : prevIndex // Only update if different
+          return prevIndex !== newIndex ? newIndex : prevIndex 
         })
       }
     }
@@ -89,11 +90,28 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setIndex(cueData.index)
       setScreen(cueData.screen)
       setCueId(cueData._id)
-      setFile(cueData.file)
-      setFileName(cueData.file.name ? cueData.file.name : "")
+      
+      if (typeof cueData.file === 'string' && cueData.file.startsWith('/blank')) {
+        setFile(cueData.file)
+        setActualFile(null)
+        setFileName("")
+      } else {
+        setFile("")
+        setActualFile(cueData.file)
+        setFileName(cueData.file.name ? cueData.file.name : "")
+      }
       setLoop(cueData.loop)
+    } else {
+      if (isAudioMode) {
+        setFile("")
+        setCueName("")
+      } else {
+        setFile("/blank.png")
+        setCueName("Blank")
+        setScreen(position?.screen || 1)
+      }
     }
-  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile])
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, isAudioMode, position?.screen])
 
   const checkFileType = (file) => {
     if (typeof file === "string") {
@@ -177,18 +195,21 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
 
   const handleUpdateSubmit = async (event) => {
     event.preventDefault()
+    
+    const fileToUse = actualFile || file
+    
     const updatedCue = {
       cueId,
       cueName,
       index,
       screen,
-      file,
+      file: fileToUse,
       fileName,
     }
 
     const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
     
-    if (!isBlankImage) {
+    if (!isBlankImage && !actualFile) {
       if (checkFileType(file) == false) {
         return
       }
@@ -209,6 +230,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
         setCueName(selected.name)
       }
       setFile(selected)
+      setActualFile(null)
       setFileName(selected.name)
 
       if (selected.type && selected.type.includes("audio")) {
@@ -228,11 +250,22 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   }
 
   const blankSelected = (event) => {
-    if (cueName === "" || cueName === fileName) {
-      setCueName("Blank")
-    }
-    setFile(event.target.value)
-    if (event.target.value === "" || event.target.value.startsWith("/blank")) {
+    const selectedValue = event.target.value
+    setFile(selectedValue)
+    setActualFile(null)
+    
+    if (selectedValue.startsWith("/blank")) {
+      if (cueName === "" || cueName === fileName || cueName === "Blank") {
+        setCueName("Blank")
+      }
+      if (!cueData) {
+        setFileName("")
+        if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
+      }
+    } else if (selectedValue === "") {
+      if (cueName === "Blank" || cueName === fileName) {
+        setCueName("")
+      }
       if (!cueData) {
         setFileName("")
         if (fileInputRef && fileInputRef.current) fileInputRef.current.value = ""
@@ -367,12 +400,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             data-testid="add-blank"
             value={file}
             onChange={blankSelected}
-            placeholder="Select blank"
           >
             <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
             <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
             <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
             <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
+            <option value="">Clear selection</option>
           </Select>
           {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen !== screenCount + 1 && (
             <>
