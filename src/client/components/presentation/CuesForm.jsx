@@ -91,7 +91,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setScreen(cueData.screen)
       setCueId(cueData._id)
       
-      if (typeof cueData.file === 'string' && cueData.file.startsWith('/blank')) {
+      if (typeof cueData.file === "string" && cueData.file.startsWith("/blank")) {
         setFile(cueData.file)
         setActualFile(null)
         setFileName("")
