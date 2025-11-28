@@ -184,15 +184,14 @@ const PresentationPage = ({ user }) => {
           <Box flex="1" padding={4} marginLeft="0px" overflow="auto" id="presentations-grid">
             {" "}
             {/* Adjust marginLeft to move the grid to the left */}
-            {showMode && (
-              <ShowMode
-                cues={presentationInfo}
-                cueIndex={cueIndex}
-                setCueIndex={setCueIndex}
-                indexCount={indexCount}
-                transitionType={transitionType}
-              />
-            )}
+            <ShowMode
+              cues={presentationInfo}
+              cueIndex={cueIndex}
+              setCueIndex={setCueIndex}
+              indexCount={indexCount}
+              transitionType={transitionType}
+              isHidden={!showMode}
+            />
             <EditMode
               id={id}
               cues={presentationInfo}

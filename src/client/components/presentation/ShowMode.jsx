@@ -4,7 +4,7 @@ import ShowModeButtons from "./ShowModeButtons"
 import KeyboardHandler from "../utils/keyboardHandler"
 
 // ShowMode component
-const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType }) => {
+const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isHidden }) => {
   // Preload cues once on initialization
   const [preloadedCues, setPreloadedCues] = useState({})
 
@@ -211,7 +211,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType }) =
 
 
   return (
-    <div className="show-mode">
+    <div className="show-mode" style={isHidden ? { display: "none" } : undefined}>
       {/* Pass screen visibility and cue navigation to ShowModeButtons */}
       <KeyboardHandler
         onNext={() => updateCue("Next")}
