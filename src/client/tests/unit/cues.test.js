@@ -8,7 +8,7 @@ describe("CuesForm new element", () => {
   test("render form elements", () => {
     render(
       <MemoryRouter>
-        <CuesForm indexCount={5} screenCount={4}/>
+        <CuesForm indexCount={5} screenCount={4} cues={[]}/>
       </MemoryRouter>
     )
     expect(screen.getByText("Add element")).toBeInTheDocument()
@@ -25,7 +25,7 @@ describe("CuesForm new element", () => {
     expect(foundScreenText).toBe(true)
     expect(screen.getAllByText("Upload media")).toHaveLength(2)
     expect(screen.getByText("or select a blank element")).toBeInTheDocument()
-    expect(screen.getByText("Select blank")).toBeInTheDocument()
+    expect(screen.getByText("Black")).toBeInTheDocument()
     expect(screen.getByText("Submit")).toBeInTheDocument()
   })
 })
@@ -369,6 +369,10 @@ describe("CuesForm new element", () => {
     const screenInput = screen.getByTestId("screen-number")
     fireEvent.change(screenInput, { target: { value: "4" } })
 
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "" } })
+
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
 
@@ -396,6 +400,9 @@ describe("CuesForm new element", () => {
 
     const screenInput = screen.getByTestId("screen-number")
     fireEvent.change(screenInput, { target: { value: "5" } })
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "" } })
 
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
@@ -465,6 +472,9 @@ describe("CuesForm new element", () => {
 
     const indexInput = screen.getByTestId("index-number")
     fireEvent.change(indexInput, { target: { value: "2" } })
+
+    const blankSelect = screen.getByTestId("add-blank")
+    fireEvent.change(blankSelect, { target: { value: "" } })
     
     const submitButton = screen.getByText("Submit")
     fireEvent.click(submitButton)
@@ -705,6 +715,161 @@ describe("CuesForm new element", () => {
       loop: false,
     })
     expect(onClose).toHaveBeenCalled()
+  })
+
+  test("form defaults to black blank element on creation", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+    const blankSelect = screen.getByTestId("add-blank")
+    expect(blankSelect.value).toBe("/blank.png")
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    expect(cueNameInput.value).toBe("Blank")
+
+    expect(screen.getByText("Black blank element")).toBeInTheDocument()
+
+    const screenInput = screen.getByTestId("screen-number")
+    fireEvent.change(screenInput, { target: { value: "2" } })
+
+    const indexInput = screen.getByTestId("index-number")
+    fireEvent.change(indexInput, { target: { value: "1" } })
+
+    const submitButton = screen.getByText("Submit")
+    fireEvent.click(submitButton)
+
+    expect(addCue).toHaveBeenCalledWith({
+      file: "/blank.png",
+      index: 0,
+      cueName: "Blank",
+      screen: 2,
+      fileName: "",
+      loop: false,
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("form defaults to empty when in audio mode", async () => {
+    const addAudioCue = jest.fn()
+    const onClose = jest.fn()
+    const mockAudioCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm 
+          addAudioCue={addAudioCue} 
+          onClose={onClose} 
+          audioCues={mockAudioCues} 
+          screenCount={4}
+          isAudioMode={true}
+        />
+      </MemoryRouter>
+    )
+
+    const blankSelect = screen.getByTestId("add-blank")
+    expect(blankSelect.value).toBe("")
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    expect(cueNameInput.value).toBe("")
+
+    expect(screen.queryByText("Black blank element")).not.toBeInTheDocument()
+  })
+
+  test("changing from default black blank to other colors works", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+
+    const blankSelect = screen.getByTestId("add-blank")
+    expect(blankSelect.value).toBe("/blank.png")
+    expect(screen.getByText("Black blank element")).toBeInTheDocument()
+
+
+    fireEvent.change(blankSelect, { target: { value: "/blank-white.png" } })
+    expect(blankSelect.value).toBe("/blank-white.png")
+    expect(screen.getByText("White blank element")).toBeInTheDocument()
+    expect(screen.queryByText("Black blank element")).not.toBeInTheDocument()
+
+
+    fireEvent.change(blankSelect, { target: { value: "/blank-indigo.png" } })
+    expect(blankSelect.value).toBe("/blank-indigo.png")
+    expect(screen.getByText("Indigo blank element")).toBeInTheDocument()
+    expect(screen.queryByText("White blank element")).not.toBeInTheDocument()
+  })
+
+  test("clear selection option works", async () => {
+    const addCue = jest.fn()
+    const onClose = jest.fn()
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm addCue={addCue} onClose={onClose} cues={mockCues} screenCount={4}/>
+      </MemoryRouter>
+    )
+
+
+    const blankSelect = screen.getByTestId("add-blank")
+    expect(blankSelect.value).toBe("/blank.png")
+    
+    const cueNameInput = screen.getByTestId("cue-name")
+    expect(cueNameInput.value).toBe("Blank")
+
+
+    fireEvent.change(blankSelect, { target: { value: "" } })
+    expect(blankSelect.value).toBe("")
+    
+    expect(cueNameInput.value).toBe("")
+    
+    expect(screen.queryByText("Black blank element")).not.toBeInTheDocument()
+  })
+
+  test("editing existing element does not default to black blank", async () => {
+    const updateCue = jest.fn()
+    const onClose = jest.fn()
+    const cueData = {
+      file: { url: "http://example.com/image1.jpg", name: "image1.jpg" },
+      index: 0,
+      name: "existing element",
+      screen: 1,
+      _id: "123456789",
+    }
+    const mockCues = []
+
+    render(
+      <MemoryRouter>
+        <CuesForm
+          updateCue={updateCue}
+          cues={mockCues}
+          cueData={cueData}
+          onClose={onClose}
+          screenCount={4}
+        />
+      </MemoryRouter>
+    )
+
+    const cueNameInput = screen.getByTestId("cue-name")
+    expect(cueNameInput.value).toBe("existing element")
+
+
+    const blankSelect = screen.getByTestId("add-blank")
+    expect(blankSelect.value).toBe("")
+
+    expect(screen.getByText("image1.jpg")).toBeInTheDocument()
   })
   
 describe("CuesForm update element", () => {
