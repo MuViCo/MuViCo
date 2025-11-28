@@ -109,6 +109,14 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isH
     preloadCueData()
   }, [cues])
 
+  useEffect(() => {
+    // Ensure all cues are loaded when setting screen visibility
+    const screenNumbers = [...new Set(cues.map(cue => cue.screen))]
+    const visibility = {}
+    screenNumbers.forEach(n => visibility[n] = false)
+    setScreenVisibility(visibility)
+  }, [cues])
+
   // Toggle screen visibility
   const toggleScreenVisibility = (screenNumber) => {
     setScreenVisibility((prevVisibility) => ({
