@@ -18,9 +18,15 @@ When you open MuViCo, the first thing you will see is the login page:
 
 You can learn more about the key features **(Ease of use, Multiple screens, and Remote access)** of the application by clicking the **"Learn more"** buttons at the bottom of the page.
 
+By scrolling down, you can also access the MuViCo introduction videos and learn how it is used, all without needing to log in.
+
+![Login page tutorial videos](./images/frontpage_tutorialvideos.png "Introduction videos")
+
+
 ## Home page
 
-After signing in, you will see the **home page** where you manage your presentations:
+After signing in, you will be taken to the **home page** , where you can access your existing presentations, modify them, and create new ones with ease.
+
 
 ![Home page](./images/homepage.png "Home page")
 
