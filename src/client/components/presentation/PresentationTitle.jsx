@@ -58,6 +58,7 @@ const PresentationTitle = ({ id, presentationName, showMode }) => {
         )}
         {!showMode && !isEditingPresentationName && (
           <IconButton
+            id="edit-presentation-name-button"
             data-testid="edit-presentation-name-button"
             icon={<EditIcon />}
             aria-label="Edit presentation name"
