@@ -17,3 +17,10 @@ Ensure the MuViCo presentation window is **active** (focused) when using these k
 ### Previous Cue
 
 - ← (Arrow Left), PageUp, ↓ (Arrow Down)
+
+### Tutorial
+
+- While in the tutorial:
+    - Next step: → (Arrow Right), Enter
+    - Previous step: ← (Arrow Left)
+    - Quit tutorial: Esc
