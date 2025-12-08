@@ -27,7 +27,6 @@ By scrolling down, you can also access the MuViCo introduction videos and learn 
 
 After signing in, you will be taken to the **home page** , where you can access your existing presentations, modify them, and create new ones with ease.
 
-
 ![Home page](./images/homepage.png "Home page")
 
 ### Features on this Page:
@@ -39,11 +38,11 @@ After signing in, you will be taken to the **home page** , where you can access 
 
 When you click the New presentation button, you first need to enter a name for your presentation and choose the number of screens to start with (you can add or delete screens later while editing so don't worry about this too much here). You will also select a color for the Starting Frame.
 
-![Create page](./images/new_presentation.png "New presentation")
+![Create page](./images/create_new_presentation.png "New presentation")
 
 ## Edit presentation page
 
-After that, your new presentation will open in edit mode. You can also find it on your home page alongside your other presentations, and clicking it there will take you back to the edit page. In edit mode, you can adjust your presentation to fit your live show perfectly by adding new elements, editing existing ones, and adding new frames or screens.
+After clicking create , your new presentation will open in edit mode. You can also find it on your home page alongside your other presentations, and clicking it there will take you also to the edit page. In edit mode, you can adjust your presentation to fit your live show perfectly by adding new elements, editing existing ones, and adding new frames or screens.
 
 ![Edit page](./images/editmode.png "Edit page")
 
@@ -65,7 +64,7 @@ After that, your new presentation will open in edit mode. You can also find it o
   - Initially starts with 1 starting frame and 4 extra frames.
   - Additional frames can be added or removed by clicking the +/- buttons.
   - You can have anywhere from 1 to 100 frames per screen.
-  - You can also add or delete frames between existing ones by clicking the dropdown button on the frame you want to modify.
+  - You can also add or delete frames between existing ones by clicking the dropdown button on the specific frame
 
   ![Frame menu](./images/frame_dropdown.png "frame menu")
 
@@ -77,10 +76,10 @@ After that, your new presentation will open in edit mode. You can also find it o
   - Additional screens can be added or removed by clicking the +/- buttons.
   - The "Audio files" row is used only for audio files. Only audio files can be uploaded on this row.
   - Audio files have a few extra features:
-    - Loop button: click on the loop button on an audio element to have the audio tape play continuously in your presentation.
-    - Speaker icon: click on the Audio files box's speaker icon to mute the audio in your presentation.
+    - Loop button: click on the green arrow icon button on an audio element dropdown menu to have the audio tape play continuously in your presentation.
 
 - **Initial elements (elements labeled as initial elements)**
+
   - When creating a new presentation, initial elements are added to all screens at the starting frame.
   - You can delete elements by opening the dropdown menu and clicking the trash can icon. You can modify them by either double-clicking the element or selecting the pencil icon from the dropdown menu.
 
@@ -115,20 +114,21 @@ You can add an element in different ways:
    - The element is automatically given the same name as the file on your local machine.
    - You can also edit the name and enter a descriptive name for the element to easily identify it later.
 
-5. **Upload media or select "Add blank"**:
+5. **Upload media**:
 
    - Click **"Upload media"** to add an image or video.
    - The information button (ℹ️) will show you the **allowed file types**:
      - **Images:** .png, .bmp, .jpeg, .jpg, .jpe, .jfif, .gif, .cur, and .ico
      - **Videos:** .mp4, .webm, and ogg
      - **Audio:** .mp3 and .wav
-   - If you don't upload anything the default is Black element with name "Blank" which you are able to add without making any changes to the Add elem. You can also choose another color from the dropdown list provided.
 
 6. **Submit the Element**
+
    - Click **"Submit"** to confirm the addition of your new element to the screen.
 
+#### HINT:
 
-**If you only want to add a blank element**, you can simply click Submit without making any changes to the form (assuming the screen and frame are the ones you want). A blank element is black by default, but you can change its colour from the provided list.
+**If you only want to add a blank element**, you can simply click Submit without making any changes to the Add Element form (assuming the screen and frame are the ones you want). A blank element is black by default, but you can change its colour from the provided list.
 
 
 ## Editing an existing element
@@ -160,8 +160,8 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 - **Screen selection (purple buttons on the top labeled Open screen 1, Open screen 2, etc.)**
 
   - You can display a specific screen by clicking the **"Open screen"** button
-  - Above the individual Open Screen buttons, there is also an Open All Screens button, which lets you open all screens at once.
-  - You can open and close screens using the same buttons. When a screen is open, the button changes to “Close Screen.” The Open All Screens button works the same way — once all screens are open, it changes to “Close All Screens".
+  - Above the individual Open Screen buttons, there is also an **"Open All Screens"** button, which lets you open all screens at once.
+  - You can open and close screens using the same buttons. When a screen is open, the button changes to **“Close Screen”**. The Open All Screens button works the same way — once all screens are open, it changes to **“Close All Screens"**.
   Mirroring:
     - Next to the individual **"Open screen"** button is an arrow that opens a dropdown menu.
       - There you can choose to mirror another screen's elements.
@@ -170,28 +170,32 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 
 
 - **Autoplay**
+
   - Autoplay allows you to automatically progress through the frames at a set interval.
   - Each frame is displayed for the number of seconds you enter in the box. You can also choose a time which is less than a second.
-  - Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically. Autoplay always starts from the Starting Frame.
+  - Open the wanted screens and click **“Start Autoplay”** to begin playing the frames automatically. Autoplay always starts from the Starting Frame.
   - You can also switch the frames manually and change the sec/frame during the Autoplay.
   - Autoplay stops automatically after the last frame.
-  - You can also stop it manually at anytime by clicking “Stop Autoplay.”
+  - You can also stop it manually at anytime by clicking **“Stop Autoplay”** button.
 
 - **Frame navigation (below autoplay section)**
+
   - **Frame display (e.g., "Starting Frame", "Frame 1", etc)**: Shows the current index being played, you can also see the current frame highlighted with a light purple colour
   - **Left ("<") and right (">") arrows**: Navigate between frames to control the presentation flow manually.
 
 
-- **Still in need of help?**
-  - There is a question mark button in every page on the top left corner
+## Still in need of help?
 
-  ![Help page button](./images/helppage_button.png "Help page button")
+There is a question mark button in every page on the top left corner
 
-  - It opens a window that provides the most helpful guidance for the specific page you are on when you click the button.
-  - There are also guided tutorials on the presentation page and the editing page when you visit MuViCo.live for the first time. The tutorial walks you through the app and teaches you all the features of MuViCo. You can also rewatch it anytime by clicking “Restart the tutorial.”
+![Help page button](./images/helppage_button.png "Help page button")
+
+  - Clicking the button opens a window that provides the most helpful guidance for the specific page you are on.
+  - There are also guided tutorials on the presentation page and the editing page when you visit MuViCo.live for the first time. The tutorial walks you through the app and teaches you all the features of MuViCo. You can also rewatch it anytime by clicking **“Restart the tutorial”** from the help page window selections.
   - Inside the subsections, you can find detailed instructions to help ensure your MuViCo experience is smooth and enjoyable.
 
-  ![Help page](./images/helppage.png "Help page")
+![Help page](./images/helppage.png "Help page")
 
 
-  ENJOY!
+  
+# ENJOY MuViCo !
