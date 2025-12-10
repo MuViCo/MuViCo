@@ -10,29 +10,28 @@
 
 - Detailed module dependency charts for the front- and backend. The charts were produced using [Madge](https://github.com/pahen/madge), which is highly recommended for future use too! More detail in [Section 3](#3-listing-module-dependencies-using-madge).
 
-## 2. Outdated / missing information files
+## 2. Archived documentation with outdated / missing information
 
-`documentation/architecture/overview.md`
+**All of these files can potentially be deleted if they are not needed.**
+
+`documentation/archive/architecture/overview.md`
 
 - Contains only the text: "_todo: summary of architecture files_".
 - Was meant to be some sort of architecture overview,  but the exact vision is left unclear.
-- Could be deleted if no use is found.
 
-`documentation/architecture/sprint 1.png`
+`documentation/archive/architecture/sprint 1.png`
 
 - Client and server architecture diagrams. Outdated and redundant with `sprint 2.png` being a newer version.
-- Could be deleted.
 
-`documentation/architecture/sprint 2.png`
+`documentation/archive/architecture/sprint 2.png`
 
 - Client and server architecture diagrams. Outdated, some modules in the diagrams no longer exist and new ones are missing.
-- Could be deleted and replaced with an up-to-date high-level architecture diagrams for the front- and backend.
 
 ## 3. Listing module dependencies using Madge
 
 Tools like [Madge](https://github.com/pahen/madge) are a quick and easy way to figure out up-to-date module dependencies. Compared to manually going through files one by one – a project that is both challenging to do without errors and very boring – Madge can be used to list all dependencies for modules in a given folder in mere seconds. This output can be a text listing or a visual graph.
 
-### Module dependencies as of 15.5.2025
+### Module dependencies as of 8.12.2025
 
 Note that we are excluding test files in these outputs. Review the documentation in the Madge repository readme file for installation and usage instructions.
 
@@ -47,7 +46,7 @@ Note that we are excluding test files in these outputs. Review the documentation
 
 ```Nushell
 ~/MuViCo$ npx madge --extensions js,jsx --exclude 'test' src/client
-Processed 65 files (807ms) (1 warning)
+Processed 77 files (2.1s) (1 warning)
 
 App.jsx
   components/admin/UserMedia.jsx
@@ -69,16 +68,25 @@ components/admin/UserPresentations.jsx
 components/admin/UsersList.jsx
   components/utils/randomGradient.js
   services/admin.js
+components/data/frontpageData.js
 components/data/homepageData.js
 components/data/presentationPageData.js
+components/data/tutorialSteps.js
 components/footer/index.jsx
 components/frontpage/Card.jsx
+components/frontpage/FrontpageManual.jsx
+  components/data/frontpageData.js
+  components/utils/FeatureSection.jsx
 components/frontpage/ModalSvgs.jsx
 components/frontpage/RadialCircle.jsx
 components/frontpage/index.jsx
   components/frontpage/Card.jsx
   components/frontpage/ModalSvgs.jsx
   components/frontpage/RadialCircle.jsx
+  public/editmodepreview.png
+  public/muvico_intro_editmode.mp4
+  public/muvico_showmode.mp4
+  public/showmodepreview.png
 components/homepage/AdminControls.jsx
 components/homepage/HomepageManual.jsx
   components/data/homepageData.js
@@ -95,11 +103,13 @@ components/homepage/PresentationsGrid.jsx
   components/utils/randomGradient.js
 components/homepage/StorageInfoModal.jsx
 components/homepage/index.jsx
+  components/data/tutorialSteps.js
   components/homepage/AdminControls.jsx
   components/homepage/LinkGoogleDriveButton.jsx
   components/homepage/PresentationFormWrapper.jsx
   components/homepage/PresentationsGrid.jsx
   components/homepage/StorageInfoModal.jsx
+  components/tutorial/TutorialGuide.jsx
   components/utils/AlertDialog.jsx
   components/utils/addInitialElements.js
   components/utils/toastUtils.js
@@ -115,6 +125,7 @@ components/navbar/SignUp.jsx
   services/login.js
   services/signup.js
 components/navbar/UserManualModal.jsx
+  components/frontpage/FrontpageManual.jsx
   components/homepage/HomepageManual.jsx
   components/presentation/PresentationManual.jsx
 components/navbar/index.jsx
@@ -132,10 +143,13 @@ components/presentation/EditMode.jsx
   components/presentation/StatusToolTip.jsx
   components/presentation/ToolBox.jsx
   components/utils/AlertDialog.jsx
+  components/utils/CustomAlert.jsx
   components/utils/formDataUtils.js
   components/utils/toastUtils.js
   lib/icons.jsx
   redux/presentationReducer.js
+  redux/presentationThunks.js
+  services/presentation.js
 components/presentation/GoogleSignInButton.jsx
   components/presentation/SignInInfoModal.jsx
   components/utils/firebase.js
@@ -146,8 +160,12 @@ components/presentation/GridLayoutComponent.jsx
 components/presentation/PresentationManual.jsx
   components/data/presentationPageData.js
   components/utils/FeatureSection.jsx
+components/presentation/PresentationTitle.jsx
+  components/utils/toastUtils.js
+  redux/presentationReducer.js
 components/presentation/Screen.jsx
   components/utils/fileTypeUtils.js
+  utils/transitionUtils.js
 components/presentation/ShowMode.jsx
   components/presentation/Screen.jsx
   components/presentation/ShowModeButtons.jsx
@@ -158,13 +176,18 @@ components/presentation/StatusToolTip.jsx
 components/presentation/ToolBox.jsx
   components/presentation/CuesForm.jsx
 components/presentation/index.jsx
+  components/data/tutorialSteps.js
   components/presentation/EditMode.jsx
+  components/presentation/PresentationTitle.jsx
   components/presentation/ShowMode.jsx
+  components/tutorial/TutorialGuide.jsx
   components/utils/AlertDialog.jsx
   components/utils/useDeletePresentation.js
   redux/presentationReducer.js
 components/termspage/index.jsx
+components/tutorial/TutorialGuide.jsx
 components/utils/AlertDialog.jsx
+components/utils/CustomAlert.jsx
 components/utils/Error.jsx
 components/utils/FeatureSection.jsx
   components/utils/NestedList.jsx
@@ -191,8 +214,15 @@ lib/theme.jsx
 main.jsx
   App.jsx
   redux/store.js
+public/editmodepreview.png
+public/muvico_intro_editmode.mp4
+public/muvico_showmode.mp4
+public/showmodepreview.png
 redux/presentationReducer.js
   components/utils/formDataUtils.js
+  redux/presentationThunks.js
+  services/presentation.js
+redux/presentationThunks.js
   services/presentation.js
 redux/store.js
   redux/presentationReducer.js
@@ -206,13 +236,14 @@ services/presentations.js
 services/signup.js
 services/users.js
   auth.js
+utils/transitionUtils.js
 ```
 
 ##### Backend
 
 ```Nushell
 ~/MuViCo$ npx madge --extensions js,jsx --exclude 'test' src/server
-Processed 19 files (614ms) 
+Processed 19 files (685ms) 
 
 app.js
   routes/admin.js

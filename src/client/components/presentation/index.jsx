@@ -150,6 +150,7 @@ const PresentationPage = ({ user }) => {
                 <Text mb={2} fontWeight={700}>Transition Type:</Text>
                 <Select
                   colorScheme="gray"
+                  id="transition-type-select"
                   data-testid="transition-type-select"
                   value={transitionType}
                   onChange={(e) => {
