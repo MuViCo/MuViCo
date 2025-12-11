@@ -161,8 +161,9 @@ When you click on the **"Show mode"** button on the **edit presentation** page y
 
   - You can display a specific screen by clicking the **"Open screen"** button
   - Above the individual Open Screen buttons, there is also an **"Open All Screens"** button, which lets you open all screens at once.
-  - You can open and close screens using the same buttons. When a screen is open, the button changes to **“Close Screen”**. The Open All Screens button works the same way — once all screens are open, it changes to **“Close All Screens"**.
-  Mirroring:
+  - You can open and close screens using the same buttons. When a screen is open, the button changes to **“Close Screen”**. The Open All Screens button works the same way — once all screens are open, it changes to **“Close All Screens"**
+    
+- **Mirroring**:
     - Next to the individual **"Open screen"** button is an arrow that opens a dropdown menu.
       - There you can choose to mirror another screen's elements.
       - This is done to ensure that if during a presentation a monitor were to crash it is possible to show these elements on another screen.
