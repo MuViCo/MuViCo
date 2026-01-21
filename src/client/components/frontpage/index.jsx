@@ -41,7 +41,7 @@ const FrontPage = () => {
             <RadialCircle />
           </motion.div>
         </SimpleGrid>
-        <Text color={"white.500"}>Music Visualization in Concerts</Text>
+        <Text color={"white.500"}>Designed to provide visual elements and support functions for live music performances</Text>
         <SimpleGrid
           spacing={4}
           templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
