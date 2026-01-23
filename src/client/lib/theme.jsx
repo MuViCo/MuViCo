@@ -6,7 +6,7 @@ const styles = {
     body: {
       bg: mode("#ffffff", "#000000")(props),
       backgroundImage: mode(
-        "radial-gradient(circle at 50% 50%, rgb(236, 130, 255) 0%, rgba(255, 255, 255, 0) 70%)",
+        "radial-gradient(circle at 50% 50%, rgb(255, 255, 255) 0%, rgb(236, 130, 255) 70%)",
         "radial-gradient(circle at 50% 50%, rgb(121, 39, 144) 0%, rgba(0, 0, 0, 0) 70%)"
       )(props),
       backgroundSize: "100% 100%",
