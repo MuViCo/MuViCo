@@ -562,7 +562,9 @@ router.put(
       cue.screen = screen
       cue.name = cueName
       cue.loop = loop
+      cue.color = color
 
+      
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         const newFileId = generateFileId()
         cue.file = {
