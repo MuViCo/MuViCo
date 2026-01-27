@@ -71,6 +71,11 @@ const presentationSchema = mongoose.Schema({
           message: "screen must be an integer"
         }
       },
+      color: {
+        type: String,
+        match: /^#([0-9A-F]{3}){1,2}$/i,
+        default: "#fded11",
+      },
       file: {
         id: String,
         name: String,
