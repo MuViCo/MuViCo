@@ -9,7 +9,11 @@ import {
   FormControl,
   FormLabel,
   Input,
+  InputGroup,
+  InputRightElement,
+  IconButton,
 } from "@chakra-ui/react"
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
 import signupService from "../../services/signup"
 import loginService from "../../services/login"
@@ -38,6 +42,7 @@ const validationSchema = yup.object().shape({
 export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
+  const [showPasswords, setShowPasswords] = useState(false)
   const usernameRef = useRef(null)
   const passwordRef = useRef(null)
   const passwordagainRef = useRef(null)
@@ -113,17 +118,29 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
 
         <FormControl mt={4}>
           <FormLabel htmlFor="password">Password</FormLabel>
-          <Input
-            id="password_signup"
-            data-testid="password_signup"
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            ref={passwordRef}
-            onKeyDown={handleKeyDown}
-          />
+          <InputGroup>
+            <Input
+              id="password_signup"
+              data-testid="password_signup"
+              type={showPasswords ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              ref={passwordRef}
+              onKeyDown={handleKeyDown}
+            />
+            <InputRightElement>
+              <IconButton
+                aria-label={showPasswords ? "Hide password" : "Show password"}
+                icon={showPasswords ? <ViewOffIcon /> : <ViewIcon />}
+                onClick={() => setShowPasswords(!showPasswords)}
+                variant="ghost"
+                size="sm"
+                tabIndex={-1}
+              />
+            </InputRightElement>
+          </InputGroup>
           {formErrors.password && <Error error={formErrors.password} />}
         </FormControl>
 
@@ -131,17 +148,29 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
           <FormLabel htmlFor="password_confirmation">
             Confirm Password
           </FormLabel>
-          <Input
-            id="password_confirmation_signup"
-            data-testid="password_signup_confirmation"
-            type="password"
-            name="password_confirmation"
-            placeholder="Password_confirmation"
-            value={formData.password_confirmation}
-            onChange={handleChange}
-            ref={passwordagainRef}
-            onKeyDown={handleKeyDown}
-          />
+          <InputGroup>
+            <Input
+              id="password_confirmation_signup"
+              data-testid="password_signup_confirmation"
+              type={showPasswords ? "text" : "password"}
+              name="password_confirmation"
+              placeholder="Password_confirmation"
+              value={formData.password_confirmation}
+              onChange={handleChange}
+              ref={passwordagainRef}
+              onKeyDown={handleKeyDown}
+            />
+            <InputRightElement>
+              <IconButton
+                aria-label={showPasswords ? "Hide password" : "Show password"}
+                icon={showPasswords ? <ViewOffIcon /> : <ViewIcon />}
+                onClick={() => setShowPasswords(!showPasswords)}
+                variant="ghost"
+                size="sm"
+                tabIndex={-1}
+              />
+            </InputRightElement>
+          </InputGroup>
           {formErrors.password_confirmation && (
             <Error error={formErrors.password_confirmation} />
           )}
