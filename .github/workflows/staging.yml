@@ -9,6 +9,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Concurrency makes only one instance of test job run at a time. Concurrent tests break the test db.
+    # Should move to local mongodb container for tests
+    concurrency:
+      group: ci-tests
+      cancel-in-progress: false
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
