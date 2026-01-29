@@ -9,6 +9,7 @@ const {
   userExtractor,
   getTokenFrom,
 } = require("../utils/middleware")
+const { mock } = require("node:test")
 
 jest.mock("../utils/logger")
 
@@ -136,14 +137,16 @@ describe("Middleware functions", () => {
       expect(mockNext).toHaveBeenCalled()
     })
 
-    test("should return 401 when token is invalid", async () => {
+    test("should call next with JsonWebTokenError when token is invalid", async () => {
       mockRequest.headers.authorization = "Bearer invalid-token"
 
       await userExtractor(mockRequest, mockResponse, mockNext)
-
-      expect(mockResponse.status).toHaveBeenCalledWith(401)
-      expect(mockResponse.send).toHaveBeenCalledWith({ error: "token-expired" })
-      expect(mockNext).not.toHaveBeenCalled()
+      expect(mockResponse.status).not.toHaveBeenCalled()
+      expect(mockNext).toHaveBeenCalledTimes(1)
+      
+      const errorArg = mockNext.mock.calls[0][0]
+      expect(errorArg).toBeInstanceOf(Error)
+      expect(errorArg.name).toBe("JsonWebTokenError")
     })
 
     test("should return 401 when token has no id", async () => {
@@ -165,7 +168,7 @@ describe("Middleware functions", () => {
       expect(mockRequest.user).toBeUndefined()
     })
 
-    test("should return 401 when token is expired", async () => {
+    test("should call next with TokenExpiredError", async () => {
       const token = jwt.sign({ id: "userid" }, "test-secret", {
         expiresIn: "-1h", // Expired token
       })
@@ -173,8 +176,12 @@ describe("Middleware functions", () => {
 
       await userExtractor(mockRequest, mockResponse, mockNext)
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401)
-      expect(mockResponse.send).toHaveBeenCalledWith({ error: "token-expired" })
+      expect(mockResponse.status).not.toHaveBeenCalled()
+      expect(mockNext).toHaveBeenCalledTimes(1)
+      
+      const errorArg = mockNext.mock.calls[0][0]
+      expect(errorArg).toBeInstanceOf(Error)
+      expect(errorArg.name).toBe("TokenExpiredError")
     })
 
     test("should handle user not found in database", async () => {
