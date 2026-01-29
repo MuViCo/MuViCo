@@ -23,6 +23,8 @@ const FrontPage = () => {
     "linear(to-r, pink.200, rgb(148, 0, 202))",
     "linear(to-r, pink, rgb(157, 0, 214))"
   )
+  const textColor = useColorModeValue("gray.800", "gray.50")
+  const lightTextColor = useColorModeValue("gray.700", "whiteAlpha.700")
 
   return (
     <Container maxW="3xl">
@@ -41,13 +43,13 @@ const FrontPage = () => {
         bgClip="text"
       >
         MuViCo
-      </Heading>
+      </Heading> 
 
         {/* Subtitle */}
         <Text 
         mt={-10}
         fontFamily="'Zalando Sans Expanded', sans-serif"
-        color="gray.50"
+        color={textColor}
         letterSpacing="0.01em"
         fontSize={{ base: "20x", md: "20px"}}>
           Music Visualization in Concerts
@@ -72,17 +74,17 @@ const FrontPage = () => {
           fontSize={{ base: "lg", md: "2xl" }}
           fontStyle="normal"
           letterSpacing="0.01em"
-          color="whiteAlpha.700"
+          color={lightTextColor}
         >
           {/* Ylempi rivi */}
           Designed to provide{" "}
-          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color="gray.50">
+          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
             visual elements
           </Text>{" "}
           and
           <br />
           {/* Alempi rivi */}
-          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color="gray.50">
+          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
             support functions
           </Text>{" "}
           for live music performances
@@ -129,7 +131,7 @@ const FrontPage = () => {
             What Does MuViCo Do?
           </Heading>
 
-          <Text mb={8} color="whiteAlpha.800">
+          <Text mb={8} color={lightTextColor}>
             Here are some example videos that show what MuViCo does in practice.
           </Text>
 
