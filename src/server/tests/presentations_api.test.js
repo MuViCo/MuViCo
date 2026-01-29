@@ -68,7 +68,7 @@ describe("GET /presentations", () => {
       .expect(400)
       .expect("Content-Type", /application\/json/)
       .expect(res => {
-        expect(res.body.error).toBe("invalid presentation id")
+        expect(res.body.error).toBe("malformatted id")
       })
   })
 
@@ -99,10 +99,10 @@ test("returns 404 when fetching other user's presentation", async () => {
   await api
     .get(`/api/home/${otherPres.body.id}`)
     .set("Authorization", authHeader)
-    .expect(404)
+    .expect(403)
     .expect("Content-Type", /application\/json/)
     .expect(res => {
-      expect(res.body.error).toBe("presentation not found")
+      expect(res.body.error).toBe("access denied")
     })
   })
 
@@ -146,15 +146,15 @@ describe("POST /presentations", () => {
     expect(presentationsAtEnd).toHaveLength(1)
   })
 
-  test("returns 401 without name", async () => {
+  test("returns 400 without name", async () => {
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
       .send({})
-      .expect(401)
+      .expect(400)
       .expect("Content-Type", /application\/json/)
       .expect(res => {
-        expect(res.body.error).toBe("operation not permitted")
+        expect(res.body.error).toBe("name is required and must be a non-empty string")
       })
   })
 

@@ -210,8 +210,8 @@ describe("test presentation", () => {
 
     const validCases = [
       [0, 1],
-      [50, 2],
-      [100, 4],
+      [3, 2],
+      [4, 4],
     ]
 
     test.each(validCases)(
@@ -229,10 +229,10 @@ describe("test presentation", () => {
     )
 
     const invalidCases = [
-      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
-      [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
+      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 4."],
+      [5, 4, "Invalid cue index: 5. Index must be between 0 and 4."],
       [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 5."],
-      [100, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
+      [0, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
     ]
 
     test.each(invalidCases)(
@@ -558,24 +558,26 @@ describe("test presentation", () => {
         .send({ startIndex: 1, direction: "right" })
         .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found")
+      expect(response.body.error).toBe("presentation not found")
     })
 
-    test("Should work without without authorization (current API behavior)", async () => {
-      await api
+    test("Should not work without authorization", async () => {
+      const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .send({ startIndex: 1, direction: "right" })
-        .expect(200)
+        .expect(401)
+
+      expect(response.body.error).toBe("authentication required")
     })
 
-    test("Should catch some error and respond with 500", async () => {
+    test("Should return 400 with invalid id", async () => {
       const response = await api
         .put(`/api/presentation/invalid-id/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1, direction: "right" })
-        .expect(500)
+        .expect(400)
 
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.body.error).toBe("malformatted id")
     })
   })
 
@@ -604,15 +606,15 @@ describe("test presentation", () => {
       expect(response.body.error).toBe("name must be a non-empty string")
     })
 
-    test("Should catch some error and respond with 500", async () => {
+    test("Should respond with 404 when presentation not found", async () => {
       const fakeId = new mongoose.Types.ObjectId()
       const response = await api
         .put(`/api/presentation/${fakeId}/name`)
         .set("Authorization", authHeader)
         .send({ name: "New Name" })
-        .expect(500)
+        .expect(404)
 
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.body.error).toBe("presentation not found")
     })
   })
 })

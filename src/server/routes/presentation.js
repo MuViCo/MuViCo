@@ -136,7 +136,8 @@ router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (r
     const updatedPresentation = await Presentation.findByIdAndUpdate(
       presentation._id,
       updateQuery,
-      { new: true }
+      { new: true },
+      { runValidators: true }
     )
 
     res.json({
@@ -187,7 +188,8 @@ router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (
     const updated = await Presentation.findByIdAndUpdate(
       presentation._id,
       updateQuery,
-      { new: true }
+      { new: true },
+      { runValidators: true }
     )
 
     res.json({ 
@@ -199,9 +201,9 @@ router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (
   }
 })
 
-router.put("/:id/name", userExtractor, async (req, res) => {
+router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { name } = req.body
 
     if (typeof name !== "string" || name.trim() === "") {
@@ -209,15 +211,15 @@ router.put("/:id/name", userExtractor, async (req, res) => {
     }
 
     const updated = await Presentation.findByIdAndUpdate(
-      id,
+      presentation._id,
       { name: name.trim() },
-      { new: true }
+      { new: true },
+      { runValidators: true }
     )
 
     res.json({ name: updated.name })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
@@ -226,11 +228,11 @@ router.put("/:id/name", userExtractor, async (req, res) => {
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
+router.put("/:id", userExtractor, requirePresentationAccess, upload.single("image"), async (req, res, next) => {
   try {
     const { id } = req.params
     const fileId = generateFileId()
-    const { file, user } = req
+    const { file, user, presentation } = req
     const { cueName, image, driveId } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
@@ -240,15 +242,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    // Get presentation to check screenCount for dynamic validation
-    const presentationForValidation = await Presentation.findById(id)
-    if (!presentationForValidation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    if (typeof cueName !== "string" || cueName.trim() === "") {
+      return res.status(400).json({ error: "Cue name must be a non-empty string" })
     }
 
-    if (screen < 1 || screen > presentationForValidation.screenCount + 1) {
+    if (screen < 1 || screen > presentation.screenCount + 1) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationForValidation.screenCount + 1}.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
       })
     }
 
@@ -319,7 +319,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       }
     }
 
-    const isAudioScreen = screen === presentationForValidation.screenCount + 1
+    const isAudioScreen = screen === presentation.screenCount + 1
     
     if (isAudioScreen) {
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -341,7 +341,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
-      id,
+      presentation._id,
       {
         $push: {
           cues: {
@@ -411,8 +411,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       res.json(updatedPresentation)
     }
   } catch (error) {
-    logger.info("Error:", error)
-    return res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 
@@ -420,18 +419,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
  * Shift cue indices in bulk starting after startIndex.
  * body: { startIndex: number, direction: 'left'|'right' }
  */
-router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
+router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { startIndex, direction } = req.body
 
     if (typeof startIndex !== "number" || !["left", "right"].includes(direction)) {
       return res.status(400).json({ error: "Invalid parameters" })
-    }
-
-    const presentation = await Presentation.findById(id)
-    if (!presentation) {
-      return res.status(404).json({ error: "Presentation not found" })
     }
 
     let modified = false
@@ -453,19 +447,19 @@ router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
 
     res.json({ shifted: modified })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
 router.put(
   "/:id/:cueId",
   userExtractor,
+  requirePresentationAccess,
   upload.single("image"),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { id, cueId } = req.params
-      const { file, user } = req
+      const { file, user, presentation } = req
       const { cueName, image } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
@@ -475,25 +469,19 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      // Get presentation to check screenCount for dynamic validation
-      const presentationData = await Presentation.findById(id)
-      if (!presentationData) {
-        return res.status(404).json({ error: "Presentation not found" })
-      }
-
-      if (screen < 1 || screen > presentationData.screenCount + 1) {
+      if (screen < 1 || screen > presentation.screenCount + 1) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationData.screenCount + 1}.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
         })
       }
 
-      if (index < 0 || index > 100) {
+      if (index < 0 || index >= presentation.indexCount) {
         return res.status(400).json({
-          error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
+          error: `Invalid cue index: ${index}. Index must be between 0 and ${presentation.indexCount - 1}.`,
         })
       }
 
-      const isAudioScreen = screen === presentationData.screenCount + 1
+      const isAudioScreen = screen === presentation.screenCount + 1
       
       if (isAudioScreen) {
         if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -512,11 +500,6 @@ router.put(
             error: "Audio files are not allowed on visual screens. Please use the audio screen." 
           })
         }
-      }
-
-      const presentation = await Presentation.findById(id)
-      if (!presentation) {
-        return res.status(404).json({ error: "Presentation not found" })
       }
 
       const cue = presentation.cues.id(cueId)
@@ -546,8 +529,6 @@ router.put(
           if (cue.file && cue.file.url) {
             const driveToken = user.driveToken
             if (cue.file.driveId) {
-              const presentation = await Presentation.findById(id)
-
               const sameFileCount = presentation.cues.filter(
                 (c) => c.file.driveId === cue.file.driveId
               ).length
@@ -606,8 +587,7 @@ router.put(
         res.json(updatedCue[0])
       }
     } catch (error) {
-      console.error("Error:", error)
-      res.status(500).json({ error: "Internal server error" })
+      next(error)
     }
   }
 )
@@ -615,16 +595,15 @@ router.put(
 /**
  * Update the presentation by removing a file from the files array.
  */
-router.delete("/:id/:cueId", userExtractor, async (req, res) => {
+router.delete("/:id/:cueId", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id, cueId } = req.params
-    const { user } = req
-    const updatedPresentation = await deletObject(id, cueId, user.driveToken)
+    const { cueId } = req.params
+    const { user, presentation } = req
+    const updatedPresentation = await deletObject(presentation._id, cueId, user.driveToken)
     res.json(updatedPresentation)
     res.status(204).end()
   } catch (error) {
-    logger.info("Error: ", error)
-    res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 
