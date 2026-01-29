@@ -4,7 +4,7 @@ const crypto = require("crypto")
 const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
 const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
-const { userExtractor } = require("../utils/middleware")
+const { userExtractor, requirePresentationAccess } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
 const {
   generateSignedUrlForS3,
@@ -63,64 +63,47 @@ const deletObject = async (id, cueId, driveToken) => {
  * Returns all files related to a presentation.
  * Adds an expiring signed url to AWS Bucket for each file.
  */
-router.get("/:id", userExtractor, async (req, res) => {
+router.get("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { user } = req
-    const { id } = req.params
-    if (!user) {
-      return res.status(401).json({ error: "operation not permitted" })
-    }
-    const presentation = await Presentation.findById(req.params.id)
-    if (
-      presentation &&
-      (presentation.user.toString() === user._id.toString() || user.isAdmin)
-    ) {
-      if (user.driveToken) {
-        const driveToken = user.driveToken
-        presentation.cues = await processDriveCueFiles(
-          presentation.cues,
-          driveToken
-        )
-        res.json(presentation)
-      } else {
-        presentation.cues = await processS3Files(presentation.cues, id)
-        res.json(presentation)
-      }
+    const { user, presentation } = req
+
+    if (user.driveToken) {
+      const driveToken = user.driveToken
+      presentation.cues = await processDriveCueFiles(
+        presentation.cues,
+        driveToken
+      )
     } else {
-      res.status(404).end()
+      presentation.cues = await processS3Files(presentation.cues, presentation._id)
     }
-    return null
+
+    res.json(presentation)
   } catch (error) {
-    logger.info("Error: ", error)
-    return res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 
-router.delete("/:id", userExtractor, async (req, res) => {
+router.delete("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
-    const { user } = req
-
-    const presentation = await Presentation.findById(id)
+    const { user, presentation } = req
 
     for (const cue of presentation.cues) {
-      await deletObject(id, cue._id, user.driveToken)
+      await deletObject(presentation._id, cue._id, user.driveToken)
     }
 
-    await Presentation.findByIdAndDelete(id)
+    await Presentation.findByIdAndDelete(presentation._id)
     return res.status(204).end()
   } catch (error) {
-    logger.info("Error:", error)
-    return res.status(500).json({ error: "Internal server error" }).end()
+    next(error)
   }
 })
 
 /**
  * Updates presentation by ID, setting the new index count and adding them to mongoDB
  */
-router.put("/:id/indexCount", userExtractor, async (req, res) => {
+router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { indexCount } = req.body
 
     if (typeof indexCount !== "number") {
@@ -131,55 +114,46 @@ router.put("/:id/indexCount", userExtractor, async (req, res) => {
       return res.status(400).json({ error: "indexCount must be between 1 and 100"})
     }
 
-    // Get current presentation to check for cues on indexes being removed
-    const currentPresentation = await Presentation.findById(id)
-    if (!currentPresentation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    const updateQuery = {
+      $set: { indexCount }
     }
 
     // If reducing index count, remove cues from indexes that will be removed
     let removedCuesCount = 0
-    if (indexCount < currentPresentation.indexCount) {
-      const cuesToRemove = currentPresentation.cues.filter(
-        cue => cue.index >= indexCount && cue.index < currentPresentation.indexCount
+    if (indexCount < presentation.indexCount) {
+      const cuesToRemove = presentation.cues.filter(
+        cue => cue.index >= indexCount && cue.index < presentation.indexCount
       )
       removedCuesCount = cuesToRemove.length
 
-      // Remove cues from screens being deleted
-      await Presentation.findByIdAndUpdate(
-        id,
-        {
-          $pull: {
-            cues: {
-              index: { $gt: indexCount }
-            }
-          }
+      updateQuery.$pull = {
+        cues: {
+          index: { $gte: indexCount }
         }
-      )
+      }
     }
 
-    const updated = await Presentation.findByIdAndUpdate(
-      id,
-      { indexCount },
+    const updatedPresentation = await Presentation.findByIdAndUpdate(
+      presentation._id,
+      updateQuery,
       { new: true }
     )
 
     res.json({
-      indexCount: updated.indexCount,
+      indexCount: updatedPresentation.indexCount,
       removedCuesCount: removedCuesCount
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
 /**
  * Update presentation screenCount by ID
  */
-router.put("/:id/screenCount", userExtractor, async (req, res) => {
+router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { screenCount } = req.body
 
     if (typeof screenCount !== "number") {
@@ -190,36 +164,29 @@ router.put("/:id/screenCount", userExtractor, async (req, res) => {
       return res.status(400).json({ error: "screenCount must be between 1 and 8" })
     }
 
-    // Get current presentation to check for cues on screens being removed
-    const currentPresentation = await Presentation.findById(id)
-    if (!currentPresentation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    const updateQuery = {
+      $set: { screenCount }
     }
-
+    
     // If reducing screen count, remove cues from screens that will be removed
     let removedCuesCount = 0
-    if (screenCount < currentPresentation.screenCount) {
-      const cuesToRemove = currentPresentation.cues.filter(
-        cue => cue.screen > screenCount && cue.screen <= currentPresentation.screenCount
+    if (screenCount < presentation.screenCount) {
+      const cuesToRemove = presentation.cues.filter(
+        cue => cue.screen > screenCount && cue.screen <= presentation.screenCount
       )
       removedCuesCount = cuesToRemove.length
 
       // Remove cues from screens being deleted
-      await Presentation.findByIdAndUpdate(
-        id,
-        {
-          $pull: {
-            cues: {
-              screen: { $gt: screenCount, $lte: currentPresentation.screenCount }
-            }
-          }
+      updateQuery.$pull = {
+        cues: {
+          screen: { $gt: screenCount, $lte: presentation.screenCount }
         }
-      )
+      }
     }
     
     const updated = await Presentation.findByIdAndUpdate(
-      id,
-      { screenCount },
+      presentation._id,
+      updateQuery,
       { new: true }
     )
 
@@ -228,8 +195,7 @@ router.put("/:id/screenCount", userExtractor, async (req, res) => {
       removedCuesCount: removedCuesCount
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 

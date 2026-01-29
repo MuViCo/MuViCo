@@ -130,20 +130,22 @@ describe("test presentation", () => {
       expect(response.status).toBe(404)
     })
 
-    it("GET /api/presentation/:id with invalid path should return 500", async () => {
+    it("GET /api/presentation/:id with invalid path should return 400", async () => {
       const response = await api
         .get("/api/presentation/invalid-id-format")
         .set("Authorization", authHeader)
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("malformatted id")
     })
 
-    it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
+    it("DELETE /api/presentation/:id with invalid ID should return 404", async () => {
       const response = await api
         .delete("/api/presentation/000000000000000000000000")
         .set("Authorization", authHeader)
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(404)
+      expect(response.body.error).toBe("presentation not found")
     })
 
     it("PUT /api/presentation/:id with missing required fields should return 400", async () => {
@@ -287,10 +289,10 @@ describe("test presentation", () => {
       }
     )
 
-    test("throws error with missing id", async () => {
+    test("throws 400 with missing id", async () => {
       const response = await setIndexCount(null, 5)
-      expect(response.status).toBe(500)
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("malformatted id")
     })
   })
 
@@ -411,13 +413,13 @@ describe("test presentation", () => {
       expect(updatedPresentation.cues.length).toBe(6) // Original count
     })
 
-    test("Should work without authorization (current API behavior)", async () => {
+    test("Should not work without authorization", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .send({ screenCount: 2 })
-        .expect(200)
+        .expect(401)
       
-      expect(response.body.screenCount).toBe(2)
+      expect(response.body.error).toBe("authentication required")
     })
 
     test("Should reject access to non-existent presentation", async () => {
@@ -428,10 +430,10 @@ describe("test presentation", () => {
         .send({ screenCount: 2 })
         .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found")
+      expect(response.body.error).toBe("presentation not found")
     })
 
-    test("Should allow access regardless of user (current API behavior)", async () => {
+    test("Should not allow access regardless of user", async () => {
       // Create another user
       const otherUser = new User({
         email: "other@example.com",
@@ -446,9 +448,9 @@ describe("test presentation", () => {
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", `Bearer ${otherToken}`)
         .send({ screenCount: 2 })
-        .expect(200)
+        .expect(403)
 
-      expect(response.body.screenCount).toBe(2)
+      expect(response.body.error).toBe("access denied")
     })
   })
 

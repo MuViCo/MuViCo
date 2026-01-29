@@ -9,7 +9,6 @@ const {
   userExtractor,
   getTokenFrom,
 } = require("../utils/middleware")
-const { mock } = require("node:test")
 
 jest.mock("../utils/logger")
 
