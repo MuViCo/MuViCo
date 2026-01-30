@@ -55,6 +55,18 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
       />
     )
   } else if (cue.file.type.startsWith("image/")) {
+    if (cue.file.name.includes("blank")) {
+      return (
+        <Box
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: cue.color || "#e014ee",
+            borderRadius: "10px",
+          }}
+        />
+      )
+    }
     return (
       <img // Thumbail for image
         src={cue.file.url || `/${cue.file.name}`}

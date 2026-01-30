@@ -184,6 +184,7 @@ const EditMode = ({
             cue.screen,
             cue.file,
             cue._id,
+            cue.color,
             cue.loop
           )
 
@@ -253,7 +254,8 @@ const EditMode = ({
           cue.screen,
           cue.file,
           cue._id,
-          cue.loop
+          cue.loop,
+          cue.color
         )
 
         return presentationService.updateCue(id, cue._id, formData)
@@ -626,7 +628,7 @@ const EditMode = ({
 
   const addCue = async (cueData) => {
     setStatus("loading")
-    const { index, cueName, screen, file, loop } = cueData
+    const { index, cueName, screen, file, loop, color } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -643,7 +645,8 @@ const EditMode = ({
       cueName,
       screen,
       file || "/blank.png",
-      loop || false
+      loop || false,
+      color
     )
 
     try {

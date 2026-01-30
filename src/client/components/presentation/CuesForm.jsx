@@ -148,6 +148,11 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     return true
   }
 
+  const onColorChange = (newColor) => {
+    console.log("Color changed to:", newColor);
+    setColor(newColor);
+  }
+
   const onAddCue = (event) => {
     event.preventDefault()
 
@@ -186,7 +191,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     if (isAudioMode && addAudioCue) {
       addAudioCue({ file, index, cueName, fileName, loop })
     } else {
-      addCue({ file, index, cueName, screen, fileName, loop })
+      addCue({ file, index, cueName, screen, fileName, color, loop})
     }
     
     setError(null)
@@ -433,7 +438,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </FormHelperText>
             </>
           )}{" "}
-          <HexColorPicker color={color} onChange={setColor} />
+          <HexColorPicker color={color} onChange={onColorChange} />
           <Divider orientation="horizontal" my={4} />
         </FormControl>
         <Button mb={4} type="submit" colorScheme="purple">
