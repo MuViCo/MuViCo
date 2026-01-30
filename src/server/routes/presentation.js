@@ -269,7 +269,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
-
+    const color = req.body.color || "#09f6ab"
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
@@ -388,6 +388,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
               url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
               ...(driveId && { driveId }),
             },
+            color: color,
             loop: loop,
           },
         },
