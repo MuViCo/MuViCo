@@ -23,8 +23,10 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
+import { HexColorPicker } from "react-colorful"
 
 const theme = extendTheme({})
+
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState(isAudioMode ? "" : "/blank.png")
@@ -37,6 +39,8 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
+  const [color, setColor] = useState();
+
   const visualTypes = [
     "image/png",
     "image/jpeg",
@@ -90,7 +94,8 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setIndex(cueData.index)
       setScreen(cueData.screen)
       setCueId(cueData._id)
-      
+      setColor(cueData.color)
+
       if (typeof cueData.file === "string" && cueData.file.startsWith("/blank")) {
         setFile(cueData.file)
         setActualFile(null)
@@ -111,7 +116,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
         setScreen(position?.screen || 1)
       }
     }
-  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, isAudioMode, position?.screen])
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, setColor, isAudioMode, position?.screen])
 
   const checkFileType = (file) => {
     if (typeof file === "string") {
@@ -203,6 +208,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       cueName,
       index,
       screen,
+      color,
       file: fileToUse,
       fileName,
     }
@@ -427,6 +433,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </FormHelperText>
             </>
           )}{" "}
+          <HexColorPicker color={color} onChange={setColor} />
           <Divider orientation="horizontal" my={4} />
         </FormControl>
         <Button mb={4} type="submit" colorScheme="purple">

@@ -445,7 +445,7 @@ const GridLayoutComponent = ({
                 maxWidth="80%"
                 textAlign="center"
                 cursor="default"
-                style={{ textShadow: "2px 2px 4px rgba(0,0,0,1)" }}
+                style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
               >
                 {cue.name}
               </Text>

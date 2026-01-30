@@ -504,6 +504,7 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      const color = req.body.color || "#fded11"
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
