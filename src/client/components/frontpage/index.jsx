@@ -25,7 +25,7 @@ const FrontPage = () => {
   )
   const textColor = useColorModeValue("gray.800", "gray.50")
   const lightTextColor = useColorModeValue("gray.700", "whiteAlpha.700")
-  const videoBg = useColorModeValue("gray.100", "gray.700")
+  const videoBg = useColorModeValue("white", "gray.700")
 
   return (
     <Container maxW="3xl">
