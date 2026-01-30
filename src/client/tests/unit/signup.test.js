@@ -190,3 +190,86 @@ describe("HandleKeyDown", () => {
     })
   })
 })
+
+describe("Password visibility toggle", () => {
+  test("renders password visibility toggle buttons", () => {
+    const onSubmit = jest.fn()
+    render(<SignUpForm onSubmit={onSubmit} />)
+
+    const showButtons = screen.getAllByLabelText("Show password")
+    expect(showButtons).toHaveLength(2)
+  })
+
+  test("password input is hidden by default", () => {
+    const onSubmit = jest.fn()
+    const { getByTestId } = render(<SignUpForm onSubmit={onSubmit} />)
+    const passwordInput = getByTestId("password_signup")
+    expect(passwordInput).toHaveAttribute("type", "password")
+  })
+
+  test("password confirmation input is hidden by default", () => {
+    const onSubmit = jest.fn()
+    const { getByTestId } = render(<SignUpForm onSubmit={onSubmit} />)
+    const passwordConfirmInput = getByTestId("password_signup_confirmation")
+    expect(passwordConfirmInput).toHaveAttribute("type", "password")
+  })
+
+  test("clicking show password button makes both password fields visible", async () => {
+    const onSubmit = jest.fn()
+    const { getByTestId, getAllByLabelText } = render(
+      <SignUpForm onSubmit={onSubmit} />
+    )
+    const passwordInput = getByTestId("password_signup")
+    const passwordConfirmInput = getByTestId("password_signup_confirmation")
+
+    const showButtons = getAllByLabelText("Show password")
+
+    // Click the first button (on password field)
+    fireEvent.click(showButtons[0])
+
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute("type", "text")
+      expect(passwordConfirmInput).toHaveAttribute("type", "text")
+    })
+  })
+
+  test("clicking show password button again hides both password fields", async () => {
+    const onSubmit = jest.fn()
+    const { getByTestId, getAllByLabelText } = render(
+      <SignUpForm onSubmit={onSubmit} />
+    )
+    const passwordInput = getByTestId("password_signup")
+    const passwordConfirmInput = getByTestId("password_signup_confirmation")
+
+    const showButtons = getAllByLabelText("Show password")
+    fireEvent.click(showButtons[0])
+
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute("type", "text")
+    })
+
+    const hideButtons = getAllByLabelText("Hide password")
+    fireEvent.click(hideButtons[0])
+
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute("type", "password")
+      expect(passwordConfirmInput).toHaveAttribute("type", "password")
+    })
+  })
+
+  test("both password toggle buttons toggle the same state", async () => {
+    const onSubmit = jest.fn()
+    const { getByTestId, getAllByLabelText } = render(
+      <SignUpForm onSubmit={onSubmit} />
+    )
+    const passwordInput = getByTestId("password_signup")
+
+    // Click second button (on password confirmation field)
+    const showButtons = getAllByLabelText("Show password")
+    fireEvent.click(showButtons[1])
+
+    await waitFor(() => {
+      expect(passwordInput).toHaveAttribute("type", "text")
+    })
+  })
+})
