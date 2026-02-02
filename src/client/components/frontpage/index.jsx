@@ -77,25 +77,6 @@ const FrontPage = () => {
           <Heading size="lg" mb={4}>What Does MuViCo Do?</Heading>
           <Text mb={4}>Here are some example videos that show what MuViCo does in practice.</Text>
 
-          <Box mb={8}>
-            <Heading size="md" mb={3}>Creating and Editing a Presentation</Heading>
-            <Box
-              overflow="hidden"
-              borderRadius="lg"
-              boxShadow="sm"
-              _hover={{ boxShadow: "lg", transform: "scale(1.01)" }}
-              transition="all 0.25s ease"
-            >
-              <video
-                src={editModeVideo}
-                poster={editModePreview}
-                controls
-                preload="none"
-                style={{ width: "100%", display: "block" }}
-              />
-            </Box>
-          </Box>
-
           <Box mb={4}>
             <Heading size="md" mb={3}>Show Mode in Action</Heading>
             <Box
@@ -108,6 +89,26 @@ const FrontPage = () => {
               <video
                 src={showModeVideo}
                 poster={showModePreview}
+                controls
+                preload="none"
+                style={{ width: "100%", display: "block" }}
+              />
+            </Box>
+          </Box>
+
+
+          <Box mb={8}>
+            <Heading size="md" mb={3}>Creating and Editing a Presentation</Heading>
+            <Box
+              overflow="hidden"
+              borderRadius="lg"
+              boxShadow="sm"
+              _hover={{ boxShadow: "lg", transform: "scale(1.01)" }}
+              transition="all 0.25s ease"
+            >
+              <video
+                src={editModeVideo}
+                poster={editModePreview}
                 controls
                 preload="none"
                 style={{ width: "100%", display: "block" }}
