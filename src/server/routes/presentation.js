@@ -241,8 +241,8 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
-    const color = req.body.color || "#09f6ab"
-
+    const color = req.body.color || "#9142ff"
+    
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
