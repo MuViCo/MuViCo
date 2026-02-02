@@ -25,6 +25,7 @@ const FrontPage = () => {
   )
   const textColor = useColorModeValue("gray.800", "gray.50")
   const lightTextColor = useColorModeValue("gray.700", "whiteAlpha.700")
+  const videoBg = useColorModeValue("white", "gray.700")
 
   return (
     <Container maxW="3xl">
@@ -121,7 +122,7 @@ const FrontPage = () => {
 
         {/* Video section */}
         <Box
-          bg="gray.700"
+          bg={videoBg}
           borderRadius="lg"
           p={{ base: 5, md: 6 }}
           boxShadow="md"
