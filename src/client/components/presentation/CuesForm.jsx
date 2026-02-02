@@ -406,7 +406,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </>
             ))}
           {error && <Error error={error} />}
-          <FormHelperText mb={2}>or select a blank element</FormHelperText>
+          {/* <FormHelperText mb={2}>or select a blank element</FormHelperText>
           <Select
             data-testid="add-blank"
             value={file}
@@ -429,15 +429,16 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
                  ""}
               </FormHelperText>
             </>
-          )}
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen === screenCount + 1 && (
+          )} */}
+          {/* {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen === screenCount + 1 && (
             <>
               <CloseIcon color="#D2042D" />
               <FormHelperText color="red.500">
                 Blank elements are not allowed on the audio screen. Please select an audio file instead.
               </FormHelperText>
             </>
-          )}{" "}
+          )}{" "} */}
+           <Divider orientation="horizontal" my={4} />
           <HexColorPicker color={color} onChange={onColorChange} />
           <Divider orientation="horizontal" my={4} />
         </FormControl>

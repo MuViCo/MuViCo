@@ -549,6 +549,8 @@ const EditMode = ({
       screen: yIndex,
       file: fileObj,
       fileName: copiedCue.file.name || "blank.png",
+      color: copiedCue.color,
+      loop: copiedCue.loop,
     }
   }
 

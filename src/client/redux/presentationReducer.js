@@ -189,6 +189,7 @@ export const updatePresentation =
         updatedCueData.screen,
         updatedCueData.file,
         updatedCueData.cueId || cueId,
+        updatedCueData.color,
         updatedCueData.loop
       )
 
@@ -216,6 +217,7 @@ export const updatePresentationSwappedCues =
         firstUpdatedCue.screen,
         firstUpdatedCue.file,
         firstUpdatedCue._id,
+        firstUpdatedCue.color,
         firstUpdatedCue.loop
       )
 
@@ -225,6 +227,7 @@ export const updatePresentationSwappedCues =
         secondUpdatedCue.screen,
         secondUpdatedCue.file,
         secondUpdatedCue._id,
+        secondUpdatedCue.color,
         secondUpdatedCue.loop
       )
 

@@ -41,7 +41,7 @@ const presentationSchema = mongoose.Schema({
       color: {
         type: String,
         match: /^#([0-9A-F]{3}){1,2}$/i,
-        default: "#05ee1d",
+        default: "#9142ff",
       },
 
       file: {
