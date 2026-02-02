@@ -383,10 +383,10 @@ describe("test presentation", () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
-        .send({ screenCount: 2.5 })
+        .send({ screenCount: 2.2 })
         .expect(200)
 
-      expect(response.body.screenCount).toBe(2.5) 
+      expect(response.body.screenCount).toBe(2) 
     })
 
     test("Should reject missing screen count", async () => {

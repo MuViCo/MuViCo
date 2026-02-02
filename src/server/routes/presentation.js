@@ -105,30 +105,33 @@ router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (r
   try {
     const { presentation } = req
     const { indexCount } = req.body
-
-    if (typeof indexCount !== "number") {
+    
+    const newIndexCount = Math.round(Number(indexCount))
+    
+    if (isNaN(newIndexCount)) {
       return res.status(400).json({ error: "indexCount must be a number" })
     }
 
-    if (indexCount < 1 || indexCount > 100) {
+    if (newIndexCount < 1 || newIndexCount > 100) {
       return res.status(400).json({ error: "indexCount must be between 1 and 100"})
     }
+    
 
     const updateQuery = {
-      $set: { indexCount }
+      $set: { indexCount: newIndexCount }
     }
 
     // If reducing index count, remove cues from indexes that will be removed
     let removedCuesCount = 0
-    if (indexCount < presentation.indexCount) {
+    if (newIndexCount < presentation.indexCount) {
       const cuesToRemove = presentation.cues.filter(
-        cue => cue.index >= indexCount && cue.index < presentation.indexCount
+        cue => cue.index >= newIndexCount && cue.index < presentation.indexCount
       )
       removedCuesCount = cuesToRemove.length
 
       updateQuery.$pull = {
         cues: {
-          index: { $gte: indexCount }
+          index: { $gte: newIndexCount }
         }
       }
     }
@@ -136,8 +139,7 @@ router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (r
     const updatedPresentation = await Presentation.findByIdAndUpdate(
       presentation._id,
       updateQuery,
-      { new: true },
-      { runValidators: true }
+      { new: true }
     )
 
     res.json({
@@ -157,30 +159,32 @@ router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (
     const { presentation } = req
     const { screenCount } = req.body
 
-    if (typeof screenCount !== "number") {
+    const newScreenCount = Math.round(Number(screenCount))
+
+    if (isNaN(newScreenCount)) {
       return res.status(400).json({ error: "screenCount must be a number" })
     }
 
-    if (screenCount < 1 || screenCount > 8) {
+    if (newScreenCount < 1 || newScreenCount > 8) {
       return res.status(400).json({ error: "screenCount must be between 1 and 8" })
     }
 
     const updateQuery = {
-      $set: { screenCount }
+      $set: { screenCount: newScreenCount }
     }
     
     // If reducing screen count, remove cues from screens that will be removed
     let removedCuesCount = 0
-    if (screenCount < presentation.screenCount) {
+    if (newScreenCount < presentation.screenCount) {
       const cuesToRemove = presentation.cues.filter(
-        cue => cue.screen > screenCount && cue.screen <= presentation.screenCount
+        cue => cue.screen > newScreenCount && cue.screen <= presentation.screenCount
       )
       removedCuesCount = cuesToRemove.length
 
       // Remove cues from screens being deleted
       updateQuery.$pull = {
         cues: {
-          screen: { $gt: screenCount, $lte: presentation.screenCount }
+          screen: { $gt: newScreenCount }
         }
       }
     }
@@ -188,8 +192,7 @@ router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (
     const updated = await Presentation.findByIdAndUpdate(
       presentation._id,
       updateQuery,
-      { new: true },
-      { runValidators: true }
+      { new: true }
     )
 
     res.json({ 
@@ -210,12 +213,8 @@ router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, re
       return res.status(400).json({ error: "name must be a non-empty string" })
     }
 
-    const updated = await Presentation.findByIdAndUpdate(
-      presentation._id,
-      { name: name.trim() },
-      { new: true },
-      { runValidators: true }
-    )
+    presentation.name = name.trim()
+    const updated = await presentation.save()
 
     res.json({ name: updated.name })
   } catch (err) {

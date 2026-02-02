@@ -29,6 +29,7 @@ const presentationSchema = mongoose.Schema({
     default: 1,
     min: 1,
     max: 8,
+    set: v => (v === undefined || v === null ? v : Math.round(v)),
     validate: {
       validator: Number.isInteger,
       message: "screenCount must be an integer"
@@ -40,6 +41,7 @@ const presentationSchema = mongoose.Schema({
     default: 5,
     min: 1,
     max: 101,
+    set: v => (v === undefined || v === null ? v : Math.round(v)),
     validate: {
       validator: Number.isInteger,
       message: "indexCount must be an integer"
@@ -51,6 +53,7 @@ const presentationSchema = mongoose.Schema({
       index: { 
         type: Number, 
         required: true,
+        set: v => (v === undefined || v === null ? v : Math.round(v)),
         validate: {
           validator: Number.isInteger,
           message: "index must be an integer"
@@ -62,6 +65,7 @@ const presentationSchema = mongoose.Schema({
         required: true,
         min: 1,
         max: 8,
+        set: v => (v === undefined || v === null ? v : Math.round(v)),
         validate: {
           validator: Number.isInteger,
           message: "screen must be an integer"
@@ -84,6 +88,7 @@ const presentationSchema = mongoose.Schema({
       index: { 
         type: Number, 
         required: true,
+        set: v => (v === undefined || v === null ? v : Math.round(v)),
         validate: {
           validator: Number.isInteger,
           message: "index must be an integer"
