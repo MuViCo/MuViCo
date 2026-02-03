@@ -94,7 +94,7 @@ const FrontPage = () => {
         {/* Feature cards */}
         <SimpleGrid
           spacing={6}
-          templateColumns="repeat(auto-fill, minmax(200px, 1fr))"
+          columns={{ base: 1, md: 3 }}
           pt={6}
         >
           <InfoCard
