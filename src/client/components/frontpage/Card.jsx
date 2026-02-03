@@ -27,7 +27,7 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
       onHoverStart={(e) => {}}
       onHoverEnd={(e) => {}}
     >
-      <Card height="280">
+      <Card h={{ base: "auto", md: "280px" }}>
         <CardHeader>
           <Heading size="md">{title}</Heading>
         </CardHeader>
