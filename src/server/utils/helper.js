@@ -86,8 +86,17 @@ const processS3Files = async (cues, presentationId) => {
   return processedCues
 }
 
+// This is validation function is a stub and it should be expanded to cover all validation cases
+const validatePassword = (password) => {
+  if (password.length < 3) {
+    return false
+  }
+  return true
+}
+
 module.exports = {
   processDriveCueFiles,
   generateSignedUrlForS3,
   processS3Files,
+  validatePassword
 }
