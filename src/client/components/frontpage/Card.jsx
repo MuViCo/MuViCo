@@ -29,10 +29,10 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
     >
       <Card height="280">
         <CardHeader>
-          <Heading size="md">{title}</Heading>
+          <Heading fontSize="17px" fontFamily="'Zalando Sans Expanded', sans-serif">{title}</Heading>
         </CardHeader>
         <CardBody>
-          <Text>{description}</Text>
+          <Text fontSize="14px" fontFamily="'Zalando Sans Expanded', sans-serif">{description}</Text>
         </CardBody>
         <CardFooter justifyContent="center">
           <Button
@@ -53,7 +53,7 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
           backdropBlur="10px"
         />
         <ModalContent>
-          <ModalHeader>{modalTitle}</ModalHeader>
+          <ModalHeader fontFamily="'Zalando Sans Expanded', sans-serif">{modalTitle}</ModalHeader>
           <ModalCloseButton />
           <ModalBody alignContent="center">
             <Text fontStyle="italic">{modalDesc}</Text>
