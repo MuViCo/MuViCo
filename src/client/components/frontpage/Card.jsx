@@ -33,6 +33,7 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
       onHoverStart={(e) => {}}
       onHoverEnd={(e) => {}}
     >
+
       <Card height="280">
         <CardHeader pt={6} pb={0}>
           <Heading fontSize="17px" fontFamily="'Zalando Sans Expanded', sans-serif">{title}</Heading>
