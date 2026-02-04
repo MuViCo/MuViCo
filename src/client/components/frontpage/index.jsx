@@ -98,23 +98,23 @@ const FrontPage = () => {
           pt={6}
         >
           <InfoCard
-            title="Ease of use"
-            description="Create a presentation in just a few clicks"
-            modalTitle="Ease of use"
-            modalDesc="Add your own images or gifs to the presentation and decide the order of the elements! It's that simple!"
+            title="Upload Media"
+            description="Supporting everything from motion and stills to soundscapes."
+            modalTitle="Upload Visuals"
+            modalDesc="Mix images, videos, GIFs, and audio files effortlessly. It’s as simple as picking your files and setting the flow."
             modalSvg={<Upload />}
           />
           <InfoCard
-            title="Multiple screens"
-            description="Control multiple screens at once"
-            modalTitle="Multiple screens"
-            modalDesc="Traverse through multiple screens at once using the unique index system. Control the elements on the fly with just one device!"
+            title="Build Presentation"
+            description="Create a multiscreen presentation in just a few clicks"
+            modalTitle="Build Presentation"
+            modalDesc="Design stunning multiscreen presentations in seconds. Our smart indexing handles the complexity, letting you command every screen simultaneously from just one device."
             modalSvg={<Desktop />}
           />
           <InfoCard
-            title="Remote access"
-            description="Your presentations available on the go"
-            modalTitle="Remote access"
+            title="Show Time"
+            description="Your presentations available on the go."
+            modalTitle="Show Time"
             modalDesc="MuViCo provides access to your presentations from anywhere. Log in to your account and access your presentations from any device with an internet connection. This makes sharing your presentations between devices easy and convenient."
             modalSvg={<Globe />}
           />
@@ -126,18 +126,18 @@ const FrontPage = () => {
           borderRadius="lg"
           p={{ base: 5, md: 6 }}
           boxShadow="md"
-          mt={10}
+          mt={1}
         >
-          <Heading size="lg" mb={4}>
+          <Heading size="lg" mb={2} fontFamily="'Zalando Sans Expanded', sans-serif">
             What Does MuViCo Do?
           </Heading>
 
-          <Text mb={8} color={lightTextColor}>
-            Here are some example videos that show what MuViCo does in practice.
+          <Text mb={6} color={lightTextColor} fontFamily="'Zalando Sans Expanded', sans-serif">
+            Watch MuViCo's live performance and editing workflow in the videos below.
           </Text>
 
-          <Box mb={4}>
-            <Heading size="md" mb={3}>Show Mode in Action</Heading>
+          <Box mb={6}>
+            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Show Mode in Action</Heading>
             <Box
               overflow="hidden"
               borderRadius="lg"
@@ -156,8 +156,8 @@ const FrontPage = () => {
           </Box>
 
 
-          <Box mb={8}>
-            <Heading size="md" mb={3}>Creating and Editing a Presentation</Heading>
+          <Box mb={6}>
+            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Creating and Editing a Presentation</Heading>
             <Box
               overflow="hidden"
               borderRadius="lg"

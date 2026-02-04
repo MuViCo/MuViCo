@@ -15,11 +15,17 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
+  Box,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 
 const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const underlineColor = useColorModeValue(
+    "#9D4EDD",
+    "#E9B8FF"
+  )
 
   return (
     <motion.div
@@ -27,12 +33,18 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
       onHoverStart={(e) => {}}
       onHoverEnd={(e) => {}}
     >
-      <Card h={{ base: "auto", md: "280px" }}>
-        <CardHeader>
-          <Heading size="md">{title}</Heading>
+
+      <Card height="280">
+        <CardHeader pt={6} pb={0}>
+          <Heading fontSize="17px" fontFamily="'Zalando Sans Expanded', sans-serif">{title}</Heading>
+          <Box 
+            height="2px" 
+            bg={underlineColor}
+            mt={5}
+          />
         </CardHeader>
         <CardBody>
-          <Text>{description}</Text>
+          <Text fontSize="14px" fontFamily="'Zalando Sans Expanded', sans-serif">{description}</Text>
         </CardBody>
         <CardFooter justifyContent="center">
           <Button
@@ -53,7 +65,7 @@ const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
           backdropBlur="10px"
         />
         <ModalContent>
-          <ModalHeader>{modalTitle}</ModalHeader>
+          <ModalHeader fontFamily="'Zalando Sans Expanded', sans-serif">{modalTitle}</ModalHeader>
           <ModalCloseButton />
           <ModalBody alignContent="center">
             <Text fontStyle="italic">{modalDesc}</Text>
