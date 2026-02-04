@@ -128,16 +128,16 @@ const FrontPage = () => {
           boxShadow="md"
           mt={1}
         >
-          <Heading size="lg" mb={4} fontFamily="'Zalando Sans Expanded', sans-serif">
+          <Heading size="lg" mb={2} fontFamily="'Zalando Sans Expanded', sans-serif">
             What Does MuViCo Do?
           </Heading>
 
-          <Text mb={8} color={lightTextColor} fontFamily="'Zalando Sans Expanded', sans-serif">
-            Here are some example videos that show what MuViCo does in practice.
+          <Text mb={6} color={lightTextColor} fontFamily="'Zalando Sans Expanded', sans-serif">
+            Watch MuViCo's live performance and editing workflow in the videos below.
           </Text>
 
-          <Box mb={4}>
-            <Heading size="md" mb={3} fontFamily="'Zalando Sans Expanded', sans-serif">Show Mode in Action</Heading>
+          <Box mb={6}>
+            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Show Mode in Action</Heading>
             <Box
               overflow="hidden"
               borderRadius="lg"
@@ -156,8 +156,8 @@ const FrontPage = () => {
           </Box>
 
 
-          <Box mb={8}>
-            <Heading size="md" mb={3} fontFamily="'Zalando Sans Expanded', sans-serif">Creating and Editing a Presentation</Heading>
+          <Box mb={6}>
+            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Creating and Editing a Presentation</Heading>
             <Box
               overflow="hidden"
               borderRadius="lg"
