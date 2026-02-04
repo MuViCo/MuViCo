@@ -126,7 +126,7 @@ const FrontPage = () => {
           borderRadius="lg"
           p={{ base: 5, md: 6 }}
           boxShadow="md"
-          mt={10}
+          mt={1}
         >
           <Heading size="lg" mb={4}>
             What Does MuViCo Do?
