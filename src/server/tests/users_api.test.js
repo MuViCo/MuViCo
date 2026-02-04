@@ -82,6 +82,112 @@ describe("POST /link-drive and /unlink-drive", () => {
   })
 })
 
+describe("POST /change-password", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+    
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    authHeader = `Bearer ${response.body.token}`
+  })
+
+  test("changing password successfully with valid current password", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({ 
+        currentPassword: "testpassword", 
+        newPassword: "newpassword123" 
+      })
+      .expect(201)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body).toHaveProperty("id")
+    expect(response.body.username).toBe("testuser")
+  })
+
+  test("changing password fails with invalid current password", async () => {
+    await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({ 
+        currentPassword: "wrongpassword", 
+        newPassword: "newpassword123" 
+      })
+      .expect(401)
+      .expect("Content-Type", /application\/json/)
+  })
+
+  test("changing password fails with weak new password", async () => {
+    await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({ 
+        currentPassword: "testpassword", 
+        newPassword: "wk" 
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+  })
+
+  test("changing password fails without authentication", async () => {
+    await api
+      .post("/api/users/change-password")
+      .send({ 
+        currentPassword: "testpassword", 
+        newPassword: "newpassword123" 
+      })
+      .expect(401)
+  })
+
+  test("new password works on next login", async () => {
+    await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({ 
+        currentPassword: "testpassword", 
+        newPassword: "newpassword123" 
+      })
+      .expect(201)
+
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ 
+        username: "testuser", 
+        password: "newpassword123" 
+      })
+      .expect(200)
+
+    expect(loginResponse.body.token).toBeDefined()
+  })
+
+  test("old password no longer works", async () => {
+    await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({ 
+        currentPassword: "testpassword", 
+        newPassword: "newpassword123" 
+      })
+      .expect(201)
+
+    await api
+      .post("/api/login")
+      .send({ 
+        username: "testuser", 
+        password: "testpassword" 
+      })
+      .expect(401)
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })
