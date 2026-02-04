@@ -5,6 +5,7 @@ import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
+import { CuesForm } from "../../data/CuesForm"
 
 
 
@@ -12,17 +13,62 @@ import { getAnims } from "../../utils/transitionUtils"
 const renderMedia = (file, name) => {
   if (isType.image(file)) {
     // Handle blank images by using local file path when URL is null
-    const imageSrc = file.url || `/${file.name}`
-    
-    return (
-      <Image
-        src={imageSrc}
-        alt={name}
-        width="100%"
-        height="100vh"
-        objectFit="cover"
-      />
-    )
+    if (file.name.includes("blank")) {
+      if (file.name.includes("blank-black")) {
+        return (
+          <Image
+            bg="#000000"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-white")) {
+        return (
+          <Image
+            bg="#ffffff"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-indigo")) {
+        return (
+          <Image
+            bg="#5700a3"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-tropical-indigo")) {
+        return (
+          <Image
+            bg="#8f94f6"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      const imageSrc = file.url || `/${file.name}`
+    } else {
+        return (
+          <Image
+            src={imageSrc}
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
   }
   if (isType.video(file)) {
     return (
@@ -45,7 +91,19 @@ const renderMedia = (file, name) => {
       </audio>
     )
   }
-  return <Text>Unsupported media type.</Text>
+else {
+        return (
+          <Image
+            bg={CuesForm.color.default}
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+  }  
+  // return <Text>Unsupported media type.</Text>
+}
 }
 
 const ScreenContent = ({
@@ -129,6 +187,7 @@ const ScreenContent = ({
               style={{ objectFit: "contain" }}
             />
           ))}
+      
       </Box>
     )}
 
