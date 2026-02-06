@@ -214,7 +214,7 @@ router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, re
     }
 
     presentation.name = name.trim()
-    const updated = await presentation.save()
+    const updated = await presentation.save({validateModifiedOnly: true})
 
     res.json({ name: updated.name })
   } catch (err) {
@@ -441,7 +441,7 @@ router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async 
     }
 
     if (modified) {
-      await presentation.save()
+      await presentation.save({validateModifiedOnly: true})
     }
 
     res.json({ shifted: modified })
@@ -553,7 +553,7 @@ router.put(
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save()
+        await presentation.save({validateModifiedOnly: true})
 
         const driveToken = user.driveToken
         const updatedCue = await processDriveCueFiles([cue], driveToken)
@@ -580,7 +580,7 @@ router.put(
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save()
+        await presentation.save({validateModifiedOnly: true})
 
         const updatedCue = await processS3Files([cue], id)
         res.json(updatedCue[0])
