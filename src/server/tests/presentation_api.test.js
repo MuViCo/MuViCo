@@ -596,6 +596,16 @@ describe("test presentation", () => {
       expect(presentation.name).toBe(newName)
     })
 
+    test("Should trim whitespace from presentation name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", authHeader)
+        .send({ name: "  Trimmed Name  " })
+        .expect(200)
+
+      expect(response.body.name).toBe("Trimmed Name")
+    })
+
     test("Should fail with missing name", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/name`)
@@ -615,6 +625,96 @@ describe("test presentation", () => {
         .expect(404)
 
       expect(response.body.error).toBe("presentation not found")
+    })
+  })
+
+  describe("Authorization checks", () => {
+    let otherAuthHeader
+
+    beforeEach(async () => {
+      // Create another user
+      await api
+        .post("/api/signup")
+        .send({ username: "otheruser", password: "otherpassword" })
+
+      const response = await api
+        .post("/api/login")
+        .send({ username: "otheruser", password: "otherpassword" })
+
+      otherAuthHeader = `Bearer ${response.body.token}`
+    })
+
+    test("Another user cannot edit presentation name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", otherAuthHeader)
+        .send({ name: "I should not be able to change this" })
+        .expect(403)
+      
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot delete presentation", async () => {
+      const response = await api
+        .delete(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", otherAuthHeader)
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot update screen count", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", otherAuthHeader)
+        .send({ screenCount: 2 })
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot update index count", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/indexCount`)
+        .set("Authorization", otherAuthHeader)
+        .send({ indexCount: 10 })
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+  })
+
+  describe("Admin Access", () => {
+    let adminToken
+
+    beforeEach(async () => {
+      // Create the admin user before each test in this block
+      const adminUser = new User({
+        username: "adminuser",
+        passwordHash: await bcrypt.hash("password", 10),
+        isAdmin: true
+      })
+      await adminUser.save()
+      
+      adminToken = jwt.sign({ id: adminUser._id }, config.SECRET)
+    })
+
+    test("Admin can access another user's presentation", async () => {
+      await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200)
+    })
+
+    test("Admin can modify another user's presentation", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ name: "Admin Edited Name" })
+        .expect(200)
+        
+       const updatedPresentation = await Presentation.findById(testPresentationId)
+       expect(updatedPresentation.name).toBe("Admin Edited Name")
     })
   })
 })

@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken")
 const mongoose = require("mongoose")
 const User = require("../models/user")
+const Presentation = require("../models/presentation")
 const logger = require("../utils/logger")
 const {
   requestLogger,
@@ -8,6 +9,7 @@ const {
   errorHandler,
   userExtractor,
   getTokenFrom,
+  requirePresentationAccess,
 } = require("../utils/middleware")
 
 jest.mock("../utils/logger")
@@ -209,6 +211,98 @@ describe("Middleware functions", () => {
     })
   })
 
+  describe("requirePresentationAccess", () => {
+    let mockUser
+    let mockPresentation
+
+    beforeEach(() => {
+      mockUser = {
+        _id: new mongoose.Types.ObjectId(),
+        isAdmin: false,
+      }
+      mockPresentation = {
+        _id: new mongoose.Types.ObjectId(),
+        user: mockUser._id,
+      }
+      mockRequest.params = { id: mockPresentation._id.toString() }
+      jest.spyOn(Presentation, "findById").mockResolvedValue(null)
+    })
+
+    afterEach(() => {
+      Presentation.findById.mockRestore()
+    })
+
+    test("should return 401 if authentication is missing", async () => {
+      mockRequest.user = undefined
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401)
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "authentication required",
+      })
+    })
+
+    test("should return 404 if presentation not found", async () => {
+      mockRequest.user = mockUser
+      Presentation.findById.mockResolvedValue(null)
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404)
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "presentation not found",
+      })
+    })
+
+    test("should return 403 if user is not owner and not admin", async () => {
+      mockRequest.user = {
+        _id: new mongoose.Types.ObjectId(),
+        isAdmin: false,
+      }
+      Presentation.findById.mockResolvedValue(mockPresentation)
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(403)
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "access denied" })
+    })
+
+    test("should call next() if user is owner", async () => {
+      mockRequest.user = mockUser
+      Presentation.findById.mockResolvedValue(mockPresentation)
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockNext).toHaveBeenCalled()
+      expect(mockRequest.presentation).toEqual(mockPresentation)
+    })
+
+    test("should call next() if user is admin", async () => {
+      const adminUser = {
+        _id: new mongoose.Types.ObjectId(),
+        isAdmin: true,
+      }
+      mockRequest.user = adminUser
+      Presentation.findById.mockResolvedValue(mockPresentation)
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockNext).toHaveBeenCalled()
+      expect(mockRequest.presentation).toEqual(mockPresentation)
+    })
+
+    test("should call next(error) if database query fails", async () => {
+      mockRequest.user = mockUser
+      const error = new Error("Database error")
+      Presentation.findById.mockRejectedValue(error)
+
+      await requirePresentationAccess(mockRequest, mockResponse, mockNext)
+
+      expect(mockNext).toHaveBeenCalledWith(error)
+    })
+  })
+
   describe("unknownEndpoint", () => {
     test("should return 404 with unknown endpoint error", () => {
       unknownEndpoint(mockRequest, mockResponse)
@@ -251,6 +345,37 @@ describe("Middleware functions", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400)
       expect(mockResponse.json).toHaveBeenCalledWith({ error: "Validation failed" })
+    })
+
+    test("should handle JsonWebTokenError", () => {
+      const error = new Error("invalid token")
+      error.name = "JsonWebTokenError"
+
+      errorHandler(error, mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401)
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "invalid token" })
+    })
+
+    test("should handle TokenExpiredError", () => {
+      const error = new Error("jwt expired")
+      error.name = "TokenExpiredError"
+
+      errorHandler(error, mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(401)
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "token expired" })
+    })
+
+    test("should handle MongoServerError duplicate key error", () => {
+      const error = new Error("E11000 duplicate key error collection")
+      error.name = "MongoServerError"
+      error.code = 11000
+
+      errorHandler(error, mockRequest, mockResponse, mockNext)
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400)
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "duplicate key error" })
     })
 
     test("should pass unknown errors to next middleware", () => {
