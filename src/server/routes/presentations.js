@@ -48,12 +48,17 @@ router.post("/", userExtractor, async (req, res, next) => {
       return res.status(401).json({ error: "operation not permitted" })
     }
 
-    if (typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "name is required and must be a non-empty string" })
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "name is required and must be a string" })
+    }
+
+    const trimmedName = name.trim()
+    if (trimmedName.length === 0 || trimmedName.length > 100) {
+      return res.status(400).json({ error: "name must be between 1 and 100 characters long" })
     }
 
     const presentation = new Presentation({
-      name: name.trim(),
+      name: trimmedName,
       screenCount,
       user: user._id,
       storage: user.driveToken ? "googleDrive" : "aws"

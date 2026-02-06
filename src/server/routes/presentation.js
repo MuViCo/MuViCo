@@ -209,11 +209,16 @@ router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, re
     const { presentation } = req
     const { name } = req.body
 
-    if (typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "name must be a non-empty string" })
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "Presentation name must be a string" })
+    }
+    
+    const trimmedName = name.trim()
+    if (trimmedName.length === 0 || trimmedName.length > 100) {
+      return res.status(400).json({ error: "Presentation name must be between 1 and 100 characters long" })
     }
 
-    presentation.name = name.trim()
+    presentation.name = trimmedName
     const updated = await presentation.save({validateModifiedOnly: true})
 
     res.json({ name: updated.name })
@@ -237,12 +242,17 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const screen = Number(req.body.screen)
     const loop = req.body.loop
 
-    if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+    if (!id || isNaN(index) || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (typeof cueName !== "string" || cueName.trim() === "") {
-      return res.status(400).json({ error: "Cue name must be a non-empty string" })
+    if (typeof cueName !== "string") {
+      return res.status(400).json({ error: "Cue name must be a string" })
+    }
+
+    const trimmedCueName = cueName.trim()
+    if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+      return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
     }
 
     if (screen < 1 || screen > presentation.screenCount + 1) {
@@ -345,7 +355,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
         $push: {
           cues: {
             index: index,
-            name: cueName,
+            name: trimmedCueName,
             screen: screen,
             file: {
               id: fileId,
@@ -464,8 +474,17 @@ router.put(
       const screen = Number(req.body.screen)
       const loop = req.body.loop
 
-      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+      if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (typeof cueName !== "string") {
+        return res.status(400).json({ error: "Cue name must be a string" })
+      }
+
+      const trimmedCueName = cueName.trim()
+      if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+        return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
       if (screen < 1 || screen > presentation.screenCount + 1) {
@@ -508,7 +527,7 @@ router.put(
       // Update cue fields
       cue.index = index
       cue.screen = screen
-      cue.name = cueName
+      cue.name = trimmedCueName
       cue.loop = loop
 
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {

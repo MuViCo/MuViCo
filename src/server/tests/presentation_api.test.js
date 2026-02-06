@@ -613,7 +613,7 @@ describe("test presentation", () => {
         .send({})
         .expect(400)
 
-      expect(response.body.error).toBe("name must be a non-empty string")
+      expect(response.body.error).toBe("Presentation name must be a string")
     })
 
     test("Should respond with 404 when presentation not found", async () => {

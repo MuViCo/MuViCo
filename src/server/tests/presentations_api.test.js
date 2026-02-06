@@ -154,7 +154,7 @@ describe("POST /presentations", () => {
       .expect(400)
       .expect("Content-Type", /application\/json/)
       .expect(res => {
-        expect(res.body.error).toBe("name is required and must be a non-empty string")
+        expect(res.body.error).toBe("name is required and must be a string")
       })
   })
 
