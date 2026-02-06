@@ -64,6 +64,87 @@ describe("creation of a new user", () => {
     const usersAtEnd = await usersInDb()
     expect(usersAtEnd).toHaveLength(usersAtStart.length)
   })
+
+  test("fails with status code 400 if validation fails", async () => {
+    const usersAtStart = await usersInDb()
+
+    const invalidUser = {
+      username: "te",
+      password: "te",
+    }
+
+    await api
+      .post("/api/signup")
+      .send(invalidUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    const usersAtEnd = await usersInDb()
+    expect(usersAtEnd).toHaveLength(usersAtStart.length)
+  })
+
+  test("fails with status code 400 if user fields are missing", async () => {
+    const usersAtStart = await usersInDb()
+
+    const invalidUser = {
+      username: "testuser",
+    }
+
+    await api
+      .post("/api/signup")
+      .send(invalidUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    const usersAtEnd = await usersInDb()
+    expect(usersAtEnd).toHaveLength(usersAtStart.length)
+  })
+
+  test("fails if username is only whitespace", async () => {
+    const invalidUser = {
+      username: "   ",
+      password: "validpassword",
+    }
+
+    const result = await api
+      .post("/api/signup")
+      .send(invalidUser)
+      .expect(400)
+
+    expect(result.body.error).toContain("username must be at least 3 characters long")
+  })
+
+  test("fails if password is only whitespace", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "   ",
+    }
+
+    const result = await api
+      .post("/api/signup")
+      .send(invalidUser)
+      .expect(400)
+
+    expect(result.body.error).toContain("password must be at least 3 characters long")
+  })
+
+  test("trims username and password before saving", async () => {
+    const newUser = {
+      username: "  trimmeduser  ",
+      password: "  trimmedpass  ",
+    }
+
+    const response = await api
+      .post("/api/signup")
+      .send(newUser)
+      .expect(201)
+
+    expect(response.body.username).toBe("trimmeduser")
+
+    const savedUser = await User.findOne({ username: "trimmeduser" })
+    expect(savedUser).toBeDefined()
+    expect(savedUser.username).toBe("trimmeduser")
+  })
 })
 
 afterAll(async () => {
