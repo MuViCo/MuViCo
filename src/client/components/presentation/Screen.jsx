@@ -5,12 +5,11 @@ import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
-import { CuesForm } from "../../data/CuesForm"
 
 
 
 //conditional rendering helper function based on file type
-const renderMedia = (file, name) => {
+const renderMedia = (file, name, color) => {
   if (isType.image(file)) {
     // Handle blank images by using local file path when URL is null
     if (file.name.includes("blank")) {
@@ -58,8 +57,8 @@ const renderMedia = (file, name) => {
           />
         )
       }
-      const imageSrc = file.url || `/${file.name}`
     } else {
+      const imageSrc = file.url || `/${file.name}`
         return (
           <Image
             src={imageSrc}
@@ -94,8 +93,8 @@ const renderMedia = (file, name) => {
 else {
         return (
           <Image
-            bg={CuesForm.color.default}
-            alt={name}
+            bg={color}
+            // alt={name}
             width="100%"
             height="100vh"
             objectFit="cover"
@@ -204,7 +203,7 @@ const ScreenContent = ({
       animation={animStyle(enterAnim)}
     >
       {currentScreenData?.file?.url ? (
-        renderMedia(currentScreenData.file, currentScreenData.name)
+        renderMedia(currentScreenData.file, currentScreenData.name, currentScreenData.color)
       ) : (
         <Text>No media available for this cue.</Text>
       )}
@@ -307,10 +306,11 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         setPreviousScreenData(null)
         setCurrentScreenData(screenData)
       } else {
-        // Skip update if media URL and name hasn't changed
+        // Skip update if media URL, name or color hasn't changed
         if (
           currentScreenData?.file?.url === screenData?.file?.url &&
-          currentScreenData?.name === screenData?.name
+          currentScreenData?.name === screenData?.name &&
+          currentScreenData?.color === screenData?.color
         ) {
           return
         }
