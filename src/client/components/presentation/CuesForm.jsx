@@ -32,7 +32,7 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
-import { HexColorPicker } from "react-colorful"
+import { ColorPickerWithPresets } from "./ColorPicker"
 
 const theme = extendTheme({})
 
@@ -49,6 +49,8 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
   const [color, setColor] = useState();
+  const presetColors = ["#9142ff", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
+  
 
   const visualTypes = [
     "image/png",
@@ -295,6 +297,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
 
   return (
     <ChakraProvider theme={theme}>
+    
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
@@ -415,40 +418,13 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </>
             ))}
           {error && <Error error={error} />}
-          {/* <FormHelperText mb={2}>or select a blank element</FormHelperText>
-          <Select
-            data-testid="add-blank"
-            value={file}
-            onChange={blankSelected}
-          >
-            <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
-            <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
-            <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
-            <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
-            <option value="">Clear selection</option>
-          </Select>
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen !== screenCount + 1 && (
-            <>
-              <CheckIcon color="#03C03C" />
-              <FormHelperText>
-                {file === "/blank.png" ? "Black blank element" : 
-                 file === "/blank-white.png" ? "White blank element" : 
-                 file === "/blank-indigo.png" ? "Indigo blank element" : 
-                 file === "/blank-tropicalindigo.png" ? "Tropical indigo blank element" :
-                 ""}
-              </FormHelperText>
-            </>
-          )} */}
-          {/* {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen === screenCount + 1 && (
-            <>
-              <CloseIcon color="#D2042D" />
-              <FormHelperText color="red.500">
-                Blank elements are not allowed on the audio screen. Please select an audio file instead.
-              </FormHelperText>
-            </>
-          )}{" "} */}
-           <Divider orientation="horizontal" my={4} />
-          <HexColorPicker color={color} onChange={onColorChange} />
+           <Divider orientation="horizontal" my={4} />           <div className="App">
+          <ColorPickerWithPresets
+            color={color}
+            onChange={setColor}
+            presetColors={presetColors}
+          />
+          </div>
           <Divider orientation="horizontal" my={4} />
         </FormControl>
         <Button mb={4} type="submit" colorScheme="purple">
