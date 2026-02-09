@@ -492,7 +492,6 @@ router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
     res.status(500).json({ error: "Internal server error" })
   }
 })
-
 router.put(
   "/:id/:cueId",
   userExtractor,
@@ -505,6 +504,7 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {

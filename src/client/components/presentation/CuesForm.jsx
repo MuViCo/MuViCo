@@ -1,3 +1,12 @@
+/**
+ * CuesForm component for adding and editing cues in the presentation
+ * 
+ * This component is used in the presentation editor to allow users to add new cues or edit existing cues.
+ * It supports both visual cues (images and videos) and audio cues, with validation for file types and required fields.
+ * The form includes inputs for cue name, index, screen number, file upload, and color selection.
+ * It also provides feedback on file selection and displays error messages for invalid inputs.
+ */
+
 import {
   FormControl,
   NumberInput,

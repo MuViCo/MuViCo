@@ -1,3 +1,16 @@
+/**
+ * Screen.jsx
+ * Component responsible for rendering media cues on individual screens during presentation mode. 
+ * 
+ * Key Features:
+ * - Opens a new browser window for each screen and renders media cues based on the current presentation state.
+ * - Supports images, videos, and audio files, with conditional rendering based on file type.
+ * - Implements transitions between cues using Emotion for CSS-in-JS styling.
+ * - Displays screen number and cue name as an overlay when the Shift key is held down.
+ * - Listens for changes in the assigned cue data and updates the displayed media accordingly.
+ * - Cleans up resources and event listeners when the screen is closed or unmounted.
+ */
+
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
@@ -12,6 +25,8 @@ import { getAnims } from "../../utils/transitionUtils"
 const renderMedia = (file, name, color) => {
   if (isType.image(file)) {
     // Handle blank images by using local file path when URL is null
+    // This is intended to be temporary until blank files are replaced in the database with actual color values and the blank file type is removed
+    // TODO: Refactor to remove blank file type and use color value directly from cue data instead of relying on file name parsing
     if (file.name.includes("blank")) {
       if (file.name.includes("blank-black")) {
         return (
@@ -57,6 +72,7 @@ const renderMedia = (file, name, color) => {
           />
         )
       }
+    // show other images as normal  
     } else {
       const imageSrc = file.url || `/${file.name}`
         return (
@@ -69,6 +85,7 @@ const renderMedia = (file, name, color) => {
           />
         )
   }
+  // check if media is video
   if (isType.video(file)) {
     return (
       <video
@@ -82,6 +99,7 @@ const renderMedia = (file, name, color) => {
       />
     )
   }
+  // check if media is audio
   if (isType.audio(file)) {
     return (
       <audio autoPlay loop controls style={{ width: "100%" }}>
@@ -90,6 +108,7 @@ const renderMedia = (file, name, color) => {
       </audio>
     )
   }
+// if no media file, render a solid color background  
 else {
         return (
           <Image
