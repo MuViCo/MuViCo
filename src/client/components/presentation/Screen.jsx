@@ -23,6 +23,21 @@ import { getAnims } from "../../utils/transitionUtils"
 
 //conditional rendering helper function based on file type
 const renderMedia = (file, name, color) => {
+
+  console.log("Rendering media with file:", file) // Debug log to check file object
+
+  if (!file) {
+    return (
+          <Image
+            bg={color}
+            // alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+  }
+
   if (isType.image(file)) {
     // Handle blank images by using local file path when URL is null
     // This is intended to be temporary until blank files are replaced in the database with actual color values and the blank file type is removed
@@ -219,9 +234,10 @@ const ScreenContent = ({
       position="absolute"
       width="100vw"
       zIndex={1}
+      color="white"
       animation={animStyle(enterAnim)}
     >
-      {currentScreenData?.file?.url ? (
+      {currentScreenData.name != undefined ? (
         renderMedia(currentScreenData.file, currentScreenData.name, currentScreenData.color)
       ) : (
         <Text>No media available for this cue.</Text>

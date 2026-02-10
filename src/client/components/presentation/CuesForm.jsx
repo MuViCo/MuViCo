@@ -38,7 +38,7 @@ const theme = extendTheme({})
 
 
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState(isAudioMode ? "" : "/blank.png")
+  const [file, setFile] = useState(isAudioMode ? "" : "")
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
@@ -49,7 +49,8 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
   const [color, setColor] = useState();
-  const presetColors = ["#9142ff", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
+  const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#fffff0", "#00ff00", "#00ffff", 
+                        "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"];
   
 
   const visualTypes = [
@@ -114,7 +115,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       } else {
         setFile("")
         setActualFile(cueData.file)
-        setFileName(cueData.file.name ? cueData.file.name : "")
+        setFileName(cueData.file && cueData.file.name ? cueData.file.name : "")
       }
       setLoop(cueData.loop)
     } else {
@@ -122,7 +123,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
         setFile("")
         setCueName("")
       } else {
-        setFile("/blank.png")
+        setFile("")
         setCueName("Blank")
         setScreen(position?.screen || 1)
       }
@@ -159,10 +160,6 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     return true
   }
 
-  const onColorChange = (newColor) => {
-    console.log("Color changed to:", newColor);
-    setColor(newColor);
-  }
 
   const onAddCue = (event) => {
     event.preventDefault()
@@ -176,15 +173,15 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     }
 
     // Don't allow submission if no file is selected
-    if (file === "") {
-      if (isAudioMode || screen === screenCount + 1) {
-        setError("Please select an audio file")
-      } else {
-        setError("Please select a file or blank element")
-      }
-      setTimeout(() => setError(null), 5000)
-      return
-    }
+    // if (file === "") {
+    //   if (isAudioMode || screen === screenCount + 1) {
+    //     setError("Please select an audio file")
+    //   } else {
+    //     setError("Please select a file or blank element")
+    //   }
+    //   setTimeout(() => setError(null), 5000)
+    //   return
+    // }
 
     if (isAudioMode || screen === screenCount + 1) {
       if (isBlankImage) {

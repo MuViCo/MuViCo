@@ -374,6 +374,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       }
     }
 
+    const fileObject = {
+              id: fileId,
+              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank2.png"),
+              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
+              ...(driveId && { driveId }),
+            }
+
     const updatedPresentation = await Presentation.findByIdAndUpdate(
       id,
       {
@@ -382,12 +389,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
             index: index,
             name: cueName,
             screen: screen,
-            file: {
-              id: fileId,
-              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank.png"),
-              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
-              ...(driveId && { driveId }),
-            },
+            file: file ? fileObject : null,
             color: color,
             loop: loop,
           },
@@ -437,12 +439,11 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
         const fileName = `${id}/${fileId}`
 
         await uploadFileS3(file.buffer, fileName, file.mimetype)
-      }
-
-      updatedPresentation.cues = await processS3Files(
+        updatedPresentation.cues = await processS3Files(
         updatedPresentation.cues,
         id
-      )
+        )
+      }
       res.json(updatedPresentation)
     }
   } catch (error) {

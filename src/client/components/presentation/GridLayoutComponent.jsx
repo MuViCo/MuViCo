@@ -39,6 +39,20 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue, screenCount) => {
 }
 
 const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount) => {
+  
+  if (cue.file == null) {
+      return (
+        <Box
+          style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: cue.color || "#e014ee",
+            borderRadius: "10px",
+          }}
+        />
+      )
+  }
+  
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -192,7 +206,7 @@ const GridLayoutComponent = ({
 
   const ShowModeCueButtons = (cue) => (
     <>
-      {cue.file.type.startsWith("audio/") && (
+      {cue.file &&cue.file.type.startsWith("audio/") && (
         <IconButton
           icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
           disabled={true}
@@ -276,7 +290,7 @@ const GridLayoutComponent = ({
             size="xs"
             w="100%"
             h="30px"
-            borderRadius={cue.file.type.startsWith("audio/") ? "0" : "0 0 0.375rem 0.375rem"}
+            borderRadius={cue.file!=null ? (cue.file.type.startsWith("audio/") ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
@@ -295,7 +309,7 @@ const GridLayoutComponent = ({
               })
             }}
           />
-          {cue.file.type.startsWith("audio/") && (
+          {cue.file!=null &&cue.file.type.startsWith("audio/") && (
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
