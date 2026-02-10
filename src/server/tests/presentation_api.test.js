@@ -130,20 +130,22 @@ describe("test presentation", () => {
       expect(response.status).toBe(404)
     })
 
-    it("GET /api/presentation/:id with invalid path should return 500", async () => {
+    it("GET /api/presentation/:id with invalid path should return 400", async () => {
       const response = await api
         .get("/api/presentation/invalid-id-format")
         .set("Authorization", authHeader)
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("malformatted id")
     })
 
-    it("DELETE /api/presentation/:id with invalid ID should return 500", async () => {
+    it("DELETE /api/presentation/:id with invalid ID should return 404", async () => {
       const response = await api
         .delete("/api/presentation/000000000000000000000000")
         .set("Authorization", authHeader)
 
-      expect(response.status).toBe(500)
+      expect(response.status).toBe(404)
+      expect(response.body.error).toBe("presentation not found")
     })
 
     it("PUT /api/presentation/:id with missing required fields should return 400", async () => {
@@ -208,8 +210,8 @@ describe("test presentation", () => {
 
     const validCases = [
       [0, 1],
-      [50, 2],
-      [100, 4],
+      [3, 2],
+      [4, 4],
     ]
 
     test.each(validCases)(
@@ -227,10 +229,10 @@ describe("test presentation", () => {
     )
 
     const invalidCases = [
-      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
-      [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
+      [-1, 1, "Invalid cue index: -1. Index must be between 0 and 4."],
+      [5, 4, "Invalid cue index: 5. Index must be between 0 and 4."],
       [0, 0, "Invalid cue screen: 0. Screen must be between 1 and 5."],
-      [100, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
+      [0, 6, "Invalid cue screen: 6. Screen must be between 1 and 5."],
     ]
 
     test.each(invalidCases)(
@@ -287,10 +289,10 @@ describe("test presentation", () => {
       }
     )
 
-    test("throws error with missing id", async () => {
+    test("throws 400 with missing id", async () => {
       const response = await setIndexCount(null, 5)
-      expect(response.status).toBe(500)
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.status).toBe(400)
+      expect(response.body.error).toBe("malformatted id")
     })
   })
 
@@ -381,10 +383,10 @@ describe("test presentation", () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", authHeader)
-        .send({ screenCount: 2.5 })
+        .send({ screenCount: 2.2 })
         .expect(200)
 
-      expect(response.body.screenCount).toBe(2.5) 
+      expect(response.body.screenCount).toBe(2) 
     })
 
     test("Should reject missing screen count", async () => {
@@ -411,13 +413,13 @@ describe("test presentation", () => {
       expect(updatedPresentation.cues.length).toBe(6) // Original count
     })
 
-    test("Should work without authorization (current API behavior)", async () => {
+    test("Should not work without authorization", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .send({ screenCount: 2 })
-        .expect(200)
+        .expect(401)
       
-      expect(response.body.screenCount).toBe(2)
+      expect(response.body.error).toBe("authentication required")
     })
 
     test("Should reject access to non-existent presentation", async () => {
@@ -428,10 +430,10 @@ describe("test presentation", () => {
         .send({ screenCount: 2 })
         .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found")
+      expect(response.body.error).toBe("presentation not found")
     })
 
-    test("Should allow access regardless of user (current API behavior)", async () => {
+    test("Should not allow access regardless of user", async () => {
       // Create another user
       const otherUser = new User({
         email: "other@example.com",
@@ -446,9 +448,9 @@ describe("test presentation", () => {
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .set("Authorization", `Bearer ${otherToken}`)
         .send({ screenCount: 2 })
-        .expect(200)
+        .expect(403)
 
-      expect(response.body.screenCount).toBe(2)
+      expect(response.body.error).toBe("access denied")
     })
   })
 
@@ -556,24 +558,26 @@ describe("test presentation", () => {
         .send({ startIndex: 1, direction: "right" })
         .expect(404)
 
-      expect(response.body.error).toBe("Presentation not found")
+      expect(response.body.error).toBe("presentation not found")
     })
 
-    test("Should work without without authorization (current API behavior)", async () => {
-      await api
+    test("Should not work without authorization", async () => {
+      const response = await api
         .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
         .send({ startIndex: 1, direction: "right" })
-        .expect(200)
+        .expect(401)
+
+      expect(response.body.error).toBe("authentication required")
     })
 
-    test("Should catch some error and respond with 500", async () => {
+    test("Should return 400 with invalid id", async () => {
       const response = await api
         .put(`/api/presentation/invalid-id/shiftIndexes`)
         .set("Authorization", authHeader)
         .send({ startIndex: 1, direction: "right" })
-        .expect(500)
+        .expect(400)
 
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.body.error).toBe("malformatted id")
     })
   })
 
@@ -592,6 +596,16 @@ describe("test presentation", () => {
       expect(presentation.name).toBe(newName)
     })
 
+    test("Should trim whitespace from presentation name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", authHeader)
+        .send({ name: "  Trimmed Name  " })
+        .expect(200)
+
+      expect(response.body.name).toBe("Trimmed Name")
+    })
+
     test("Should fail with missing name", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/name`)
@@ -599,18 +613,108 @@ describe("test presentation", () => {
         .send({})
         .expect(400)
 
-      expect(response.body.error).toBe("name must be a non-empty string")
+      expect(response.body.error).toBe("Presentation name must be a string")
     })
 
-    test("Should catch some error and respond with 500", async () => {
+    test("Should respond with 404 when presentation not found", async () => {
       const fakeId = new mongoose.Types.ObjectId()
       const response = await api
         .put(`/api/presentation/${fakeId}/name`)
         .set("Authorization", authHeader)
         .send({ name: "New Name" })
-        .expect(500)
+        .expect(404)
 
-      expect(response.body.error).toBe("Internal server error")
+      expect(response.body.error).toBe("presentation not found")
+    })
+  })
+
+  describe("Authorization checks", () => {
+    let otherAuthHeader
+
+    beforeEach(async () => {
+      // Create another user
+      await api
+        .post("/api/signup")
+        .send({ username: "otheruser", password: "otherpassword" })
+
+      const response = await api
+        .post("/api/login")
+        .send({ username: "otheruser", password: "otherpassword" })
+
+      otherAuthHeader = `Bearer ${response.body.token}`
+    })
+
+    test("Another user cannot edit presentation name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", otherAuthHeader)
+        .send({ name: "I should not be able to change this" })
+        .expect(403)
+      
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot delete presentation", async () => {
+      const response = await api
+        .delete(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", otherAuthHeader)
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot update screen count", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", otherAuthHeader)
+        .send({ screenCount: 2 })
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+
+    test("Another user cannot update index count", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/indexCount`)
+        .set("Authorization", otherAuthHeader)
+        .send({ indexCount: 10 })
+        .expect(403)
+
+      expect(response.body.error).toBe("access denied")
+    })
+  })
+
+  describe("Admin Access", () => {
+    let adminToken
+
+    beforeEach(async () => {
+      // Create the admin user before each test in this block
+      const adminUser = new User({
+        username: "adminuser",
+        passwordHash: await bcrypt.hash("password", 10),
+        isAdmin: true
+      })
+      await adminUser.save()
+      
+      adminToken = jwt.sign({ id: adminUser._id }, config.SECRET)
+    })
+
+    test("Admin can access another user's presentation", async () => {
+      await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200)
+    })
+
+    test("Admin can modify another user's presentation", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ name: "Admin Edited Name" })
+        .expect(200)
+        
+       const updatedPresentation = await Presentation.findById(testPresentationId)
+       expect(updatedPresentation.name).toBe("Admin Edited Name")
     })
   })
 })

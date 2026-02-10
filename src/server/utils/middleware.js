@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken")
 const User = require("../models/user")
+const Presentation = require("../models/presentation")
 const logger = require("./logger")
 
 const requestLogger = (request, response, next) => {
@@ -40,8 +41,41 @@ const userExtractor = async (request, response, next) => {
     }
     next() // Call next() only if no response has been sent
   } catch (error) {
-    console.log("Token expired (middleware)")
-    return response.status(401).send({ error: "token-expired" })
+    next(error)
+  }
+}
+
+/**
+ * Fetches presentation from the database and checks if the user is authorized to access it.
+ */
+
+const requirePresentationAccess = async (request, response, next) => {
+  try {
+    const { id } = request.params
+    const { user } = request
+
+    if (!user) {
+      return response.status(401).json({ error: "authentication required" })
+    }
+
+    const presentation = await Presentation.findById(id)
+
+    if (!presentation) {
+      return response.status(404).json({ error: "presentation not found" })
+    }
+
+    const isOwner = presentation.user.toString() === user._id.toString()
+    const isAdmin = user.isAdmin
+
+    if (!isOwner && !isAdmin) {
+      return response.status(403).json({ error: "access denied" })
+    }
+
+    request.presentation = presentation
+
+    next()
+  } catch (error) {
+    next(error)
   }
 }
 
@@ -58,6 +92,15 @@ const errorHandler = (error, request, response, next) => {
   if (error.name === "ValidationError") {
     return response.status(400).json({ error: error.message })
   }
+  if (error.name === "JsonWebTokenError") {
+    return response.status(401).json({ error: "invalid token" })
+  }
+  if (error.name === "TokenExpiredError") {
+    return response.status(401).json({ error: "token expired" })
+  }
+  if (error.name === "MongoServerError" && error.code === 11000) {
+    return response.status(400).json({ error: "duplicate key error" })
+  }
 
   next(error)
 
@@ -69,5 +112,6 @@ module.exports = {
   unknownEndpoint,
   errorHandler,
   userExtractor,
+  requirePresentationAccess,
   getTokenFrom,
 }

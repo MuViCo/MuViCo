@@ -4,7 +4,7 @@ const crypto = require("crypto")
 const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
 const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
-const { userExtractor } = require("../utils/middleware")
+const { userExtractor, requirePresentationAccess } = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
 const {
   generateSignedUrlForS3,
@@ -63,163 +63,135 @@ const deletObject = async (id, cueId, driveToken) => {
  * Returns all files related to a presentation.
  * Adds an expiring signed url to AWS Bucket for each file.
  */
-router.get("/:id", userExtractor, async (req, res) => {
+router.get("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { user } = req
-    const { id } = req.params
-    if (!user) {
-      return res.status(401).json({ error: "operation not permitted" })
-    }
-    const presentation = await Presentation.findById(req.params.id)
-    if (
-      presentation &&
-      (presentation.user.toString() === user._id.toString() || user.isAdmin)
-    ) {
-      if (user.driveToken) {
-        const driveToken = user.driveToken
-        presentation.cues = await processDriveCueFiles(
-          presentation.cues,
-          driveToken
-        )
-        res.json(presentation)
-      } else {
-        presentation.cues = await processS3Files(presentation.cues, id)
-        res.json(presentation)
-      }
+    const { user, presentation } = req
+
+    if (user.driveToken) {
+      const driveToken = user.driveToken
+      presentation.cues = await processDriveCueFiles(
+        presentation.cues,
+        driveToken
+      )
     } else {
-      res.status(404).end()
+      presentation.cues = await processS3Files(presentation.cues, presentation._id)
     }
-    return null
+
+    res.json(presentation)
   } catch (error) {
-    logger.info("Error: ", error)
-    return res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 
-router.delete("/:id", userExtractor, async (req, res) => {
+router.delete("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
-    const { user } = req
-
-    const presentation = await Presentation.findById(id)
+    const { user, presentation } = req
 
     for (const cue of presentation.cues) {
-      await deletObject(id, cue._id, user.driveToken)
+      await deletObject(presentation._id, cue._id, user.driveToken)
     }
 
-    await Presentation.findByIdAndDelete(id)
+    await Presentation.findByIdAndDelete(presentation._id)
     return res.status(204).end()
   } catch (error) {
-    logger.info("Error:", error)
-    return res.status(500).json({ error: "Internal server error" }).end()
+    next(error)
   }
 })
 
 /**
  * Updates presentation by ID, setting the new index count and adding them to mongoDB
  */
-router.put("/:id/indexCount", userExtractor, async (req, res) => {
+router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { indexCount } = req.body
-
-    if (typeof indexCount !== "number") {
+    
+    const newIndexCount = Math.round(Number(indexCount))
+    
+    if (isNaN(newIndexCount)) {
       return res.status(400).json({ error: "indexCount must be a number" })
     }
 
-    if (indexCount < 1 || indexCount > 100) {
+    if (newIndexCount < 1 || newIndexCount > 100) {
       return res.status(400).json({ error: "indexCount must be between 1 and 100"})
     }
+    
 
-    // Get current presentation to check for cues on indexes being removed
-    const currentPresentation = await Presentation.findById(id)
-    if (!currentPresentation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    const updateQuery = {
+      $set: { indexCount: newIndexCount }
     }
 
     // If reducing index count, remove cues from indexes that will be removed
     let removedCuesCount = 0
-    if (indexCount < currentPresentation.indexCount) {
-      const cuesToRemove = currentPresentation.cues.filter(
-        cue => cue.index >= indexCount && cue.index < currentPresentation.indexCount
+    if (newIndexCount < presentation.indexCount) {
+      const cuesToRemove = presentation.cues.filter(
+        cue => cue.index >= newIndexCount && cue.index < presentation.indexCount
       )
       removedCuesCount = cuesToRemove.length
 
-      // Remove cues from screens being deleted
-      await Presentation.findByIdAndUpdate(
-        id,
-        {
-          $pull: {
-            cues: {
-              index: { $gt: indexCount }
-            }
-          }
+      updateQuery.$pull = {
+        cues: {
+          index: { $gte: newIndexCount }
         }
-      )
+      }
     }
 
-    const updated = await Presentation.findByIdAndUpdate(
-      id,
-      { indexCount },
+    const updatedPresentation = await Presentation.findByIdAndUpdate(
+      presentation._id,
+      updateQuery,
       { new: true }
     )
 
     res.json({
-      indexCount: updated.indexCount,
+      indexCount: updatedPresentation.indexCount,
       removedCuesCount: removedCuesCount
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
 /**
  * Update presentation screenCount by ID
  */
-router.put("/:id/screenCount", userExtractor, async (req, res) => {
+router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { screenCount } = req.body
 
-    if (typeof screenCount !== "number") {
+    const newScreenCount = Math.round(Number(screenCount))
+
+    if (isNaN(newScreenCount)) {
       return res.status(400).json({ error: "screenCount must be a number" })
     }
 
-    if (screenCount < 1 || screenCount > 8) {
+    if (newScreenCount < 1 || newScreenCount > 8) {
       return res.status(400).json({ error: "screenCount must be between 1 and 8" })
     }
 
-    // Get current presentation to check for cues on screens being removed
-    const currentPresentation = await Presentation.findById(id)
-    if (!currentPresentation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    const updateQuery = {
+      $set: { screenCount: newScreenCount }
     }
-
+    
     // If reducing screen count, remove cues from screens that will be removed
     let removedCuesCount = 0
-    if (screenCount < currentPresentation.screenCount) {
-      const cuesToRemove = currentPresentation.cues.filter(
-        cue => cue.screen > screenCount && cue.screen <= currentPresentation.screenCount
+    if (newScreenCount < presentation.screenCount) {
+      const cuesToRemove = presentation.cues.filter(
+        cue => cue.screen > newScreenCount && cue.screen <= presentation.screenCount
       )
       removedCuesCount = cuesToRemove.length
 
       // Remove cues from screens being deleted
-      await Presentation.findByIdAndUpdate(
-        id,
-        {
-          $pull: {
-            cues: {
-              screen: { $gt: screenCount, $lte: currentPresentation.screenCount }
-            }
-          }
+      updateQuery.$pull = {
+        cues: {
+          screen: { $gt: newScreenCount }
         }
-      )
+      }
     }
     
     const updated = await Presentation.findByIdAndUpdate(
-      id,
-      { screenCount },
+      presentation._id,
+      updateQuery,
       { new: true }
     )
 
@@ -228,30 +200,30 @@ router.put("/:id/screenCount", userExtractor, async (req, res) => {
       removedCuesCount: removedCuesCount
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
-router.put("/:id/name", userExtractor, async (req, res) => {
+router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { name } = req.body
 
-    if (typeof name !== "string" || name.trim() === "") {
-      return res.status(400).json({ error: "name must be a non-empty string" })
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "Presentation name must be a string" })
+    }
+    
+    const trimmedName = name.trim()
+    if (trimmedName.length === 0 || trimmedName.length > 100) {
+      return res.status(400).json({ error: "Presentation name must be between 1 and 100 characters long" })
     }
 
-    const updated = await Presentation.findByIdAndUpdate(
-      id,
-      { name: name.trim() },
-      { new: true }
-    )
+    presentation.name = trimmedName
+    const updated = await presentation.save({validateModifiedOnly: true})
 
     res.json({ name: updated.name })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
@@ -260,29 +232,32 @@ router.put("/:id/name", userExtractor, async (req, res) => {
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
+router.put("/:id", userExtractor, requirePresentationAccess, upload.single("image"), async (req, res, next) => {
   try {
     const { id } = req.params
     const fileId = generateFileId()
-    const { file, user } = req
+    const { file, user, presentation } = req
     const { cueName, image, driveId } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
 
-    if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+    if (!id || isNaN(index) || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    // Get presentation to check screenCount for dynamic validation
-    const presentationForValidation = await Presentation.findById(id)
-    if (!presentationForValidation) {
-      return res.status(404).json({ error: "Presentation not found" })
+    if (typeof cueName !== "string") {
+      return res.status(400).json({ error: "Cue name must be a string" })
     }
 
-    if (screen < 1 || screen > presentationForValidation.screenCount + 1) {
+    const trimmedCueName = cueName.trim()
+    if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+      return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
+    }
+
+    if (screen < 1 || screen > presentation.screenCount + 1) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationForValidation.screenCount + 1}.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
       })
     }
 
@@ -353,7 +328,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       }
     }
 
-    const isAudioScreen = screen === presentationForValidation.screenCount + 1
+    const isAudioScreen = screen === presentation.screenCount + 1
     
     if (isAudioScreen) {
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -375,12 +350,12 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
     }
 
     const updatedPresentation = await Presentation.findByIdAndUpdate(
-      id,
+      presentation._id,
       {
         $push: {
           cues: {
             index: index,
-            name: cueName,
+            name: trimmedCueName,
             screen: screen,
             file: {
               id: fileId,
@@ -445,8 +420,7 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
       res.json(updatedPresentation)
     }
   } catch (error) {
-    logger.info("Error:", error)
-    return res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 
@@ -454,18 +428,13 @@ router.put("/:id", userExtractor, upload.single("image"), async (req, res) => {
  * Shift cue indices in bulk starting after startIndex.
  * body: { startIndex: number, direction: 'left'|'right' }
  */
-router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
+router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id } = req.params
+    const { presentation } = req
     const { startIndex, direction } = req.body
 
     if (typeof startIndex !== "number" || !["left", "right"].includes(direction)) {
       return res.status(400).json({ error: "Invalid parameters" })
-    }
-
-    const presentation = await Presentation.findById(id)
-    if (!presentation) {
-      return res.status(404).json({ error: "Presentation not found" })
     }
 
     let modified = false
@@ -482,52 +451,55 @@ router.put("/:id/shiftIndexes", userExtractor, async (req, res) => {
     }
 
     if (modified) {
-      await presentation.save()
+      await presentation.save({validateModifiedOnly: true})
     }
 
     res.json({ shifted: modified })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ error: "Internal server error" })
+    next(err)
   }
 })
 
 router.put(
   "/:id/:cueId",
   userExtractor,
+  requirePresentationAccess,
   upload.single("image"),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const { id, cueId } = req.params
-      const { file, user } = req
+      const { file, user, presentation } = req
       const { cueName, image } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
 
-      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+      if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      // Get presentation to check screenCount for dynamic validation
-      const presentationData = await Presentation.findById(id)
-      if (!presentationData) {
-        return res.status(404).json({ error: "Presentation not found" })
+      if (typeof cueName !== "string") {
+        return res.status(400).json({ error: "Cue name must be a string" })
       }
 
-      if (screen < 1 || screen > presentationData.screenCount + 1) {
+      const trimmedCueName = cueName.trim()
+      if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+        return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
+      }
+
+      if (screen < 1 || screen > presentation.screenCount + 1) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentationData.screenCount + 1}.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
         })
       }
 
-      if (index < 0 || index > 100) {
+      if (index < 0 || index >= presentation.indexCount) {
         return res.status(400).json({
-          error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
+          error: `Invalid cue index: ${index}. Index must be between 0 and ${presentation.indexCount - 1}.`,
         })
       }
 
-      const isAudioScreen = screen === presentationData.screenCount + 1
+      const isAudioScreen = screen === presentation.screenCount + 1
       
       if (isAudioScreen) {
         if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -548,11 +520,6 @@ router.put(
         }
       }
 
-      const presentation = await Presentation.findById(id)
-      if (!presentation) {
-        return res.status(404).json({ error: "Presentation not found" })
-      }
-
       const cue = presentation.cues.id(cueId)
       if (!cue) {
         return res.status(404).json({ error: "Cue not found" })
@@ -560,7 +527,7 @@ router.put(
       // Update cue fields
       cue.index = index
       cue.screen = screen
-      cue.name = cueName
+      cue.name = trimmedCueName
       cue.loop = loop
 
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -580,8 +547,6 @@ router.put(
           if (cue.file && cue.file.url) {
             const driveToken = user.driveToken
             if (cue.file.driveId) {
-              const presentation = await Presentation.findById(id)
-
               const sameFileCount = presentation.cues.filter(
                 (c) => c.file.driveId === cue.file.driveId
               ).length
@@ -607,7 +572,7 @@ router.put(
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save()
+        await presentation.save({validateModifiedOnly: true})
 
         const driveToken = user.driveToken
         const updatedCue = await processDriveCueFiles([cue], driveToken)
@@ -634,14 +599,13 @@ router.put(
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save()
+        await presentation.save({validateModifiedOnly: true})
 
         const updatedCue = await processS3Files([cue], id)
         res.json(updatedCue[0])
       }
     } catch (error) {
-      console.error("Error:", error)
-      res.status(500).json({ error: "Internal server error" })
+      next(error)
     }
   }
 )
@@ -649,16 +613,15 @@ router.put(
 /**
  * Update the presentation by removing a file from the files array.
  */
-router.delete("/:id/:cueId", userExtractor, async (req, res) => {
+router.delete("/:id/:cueId", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
-    const { id, cueId } = req.params
-    const { user } = req
-    const updatedPresentation = await deletObject(id, cueId, user.driveToken)
+    const { cueId } = req.params
+    const { user, presentation } = req
+    const updatedPresentation = await deletObject(presentation._id, cueId, user.driveToken)
     res.json(updatedPresentation)
     res.status(204).end()
   } catch (error) {
-    logger.info("Error: ", error)
-    res.status(500).json({ error: "Internal server error" })
+    next(error)
   }
 })
 

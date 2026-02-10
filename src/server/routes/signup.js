@@ -6,11 +6,38 @@ const router = express.Router()
 
 router.post("/", async (req, res) => {
   const { username, password } = req.body
+
+  if (!username || !password) {
+    return res.status(400).json({
+      error: "username and password are required"
+    })
+  }
+
+  if (typeof username !== "string" || typeof password !== "string") {
+    return res.status(400).json({
+      error: "username and password must be strings"
+    })
+  }
+
+  const trimmedUsername = username.trim()
+  if (trimmedUsername.length < 3) {
+    return res.status(400).json({
+      error: "username must be at least 3 characters long and not just whitespace"
+    })
+  }
+
+  const trimmedPassword = password.trim()
+  if (trimmedPassword.length < 3) {
+    return res.status(400).json({
+      error: "password must be at least 3 characters long and not just whitespace"
+    })
+  }
+
   try {
     const saltRounds = 10 // Number of rounds to use when hashing the password
-    const passwordHash = await bcrypt.hash(password, saltRounds)
+    const passwordHash = await bcrypt.hash(trimmedPassword, saltRounds)
     const user = new User({
-      username,
+      username: trimmedUsername,
       passwordHash,
     })
 
