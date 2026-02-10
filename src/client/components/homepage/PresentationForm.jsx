@@ -12,7 +12,7 @@ import {
 const PresentationForm = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
   const [screenCount, setScreenCount] = useState(1)
-  const [startingFrameColor, setStartingFrameColor] = useState("black")
+  const [startingFrameColor, setStartingFrameColor] = useState("#000000")
 
   const addPresentation = (event) => {
     event.preventDefault()
@@ -24,7 +24,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
 
     setName("")
     setScreenCount(1)
-    setStartingFrameColor("black")
+    setStartingFrameColor("#FF0000")
     onCancel()
   }
 
@@ -55,19 +55,24 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setScreenCount(target.value)}
           />
           
-          <FormLabel fontWeight="bold" style={{ marginTop: ".5em" }}>
+          <FormLabel fontWeight="bold" style={{display:"none", marginTop: ".5em" }}>
             Starting Frame Color
           </FormLabel>
-          <Select 
+          <Select style={{display:"none"}}
             data-testid="starting-frame-color"
             value={startingFrameColor} 
             onChange={(e) => setStartingFrameColor(e.target.value)}
             placeholder="Select color"
           >
-            <option value="black" style={{backgroundColor: "black", color: "white"}}>Black</option>
+            <option value="#000000" style={{backgroundColor: "yellow", color: "white"}}>Black</option>
             <option value="white" style={{backgroundColor: "white", color: "black"}}>White</option>
-            <option value="indigo" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
-            <option value="tropicalindigo" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
+            <option value="indigo" style={{backgroundColor: "#0c2bde", color: "white"}}>Indigo</option>
+            <option value="tropicalindigo" style={{backgroundColor: "#e5ed9f", color: "black"}}>Tropical indigo</option>
+           {/* <ColorPickerWithPresets
+            color={startingFrameColor}
+            onChange={setStartingFrameColor}
+            presetColors={presetColors}
+          />  */}
           </Select>
         </FormControl>
         <Flex align="center" mt={2} mb={4}>

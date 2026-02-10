@@ -646,7 +646,7 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "/blank.png",
+      file || "",
       loop || false,
       color
     )

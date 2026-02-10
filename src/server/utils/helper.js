@@ -60,6 +60,15 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
 const processS3Files = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
+    //orm returns a proxy that breaks boolean comparisons, so use raw object for checks
+      const cueo = cue.toObject();
+      if(!cueo.file){
+        return cue
+      }
+
+
+
+
       await generateSignedUrlForS3(cue, presentationId)
       if (
         cue.file.url !== "/src/server/public/blank.png" &&

@@ -1,16 +1,18 @@
 import { createFormData } from "./formDataUtils"
-import presentation from "../../services/presentation"
+import presentation from "../../services/presentation"      
+import { color } from "framer-motion"
 
-const addInitialElements = async (presentationId, screenCount, showToast, startingFrameColor = "black") => {
+const addInitialElements = async (presentationId, screenCount, showToast, startingFrameColor = "#000000") => {
   if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {
     return
   }
   
   // Determine the image file based on color choice
-  const imageFile = startingFrameColor === "white" ? "/blank-white.png" 
-    : startingFrameColor === "indigo" ? "/blank-indigo.png" 
-    : startingFrameColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
-    : "/blank.png"
+  // const imageFile = startingFrameColor === "white" ? "/blank-white.png" 
+  //   : startingFrameColor === "indigo" ? "/blank-indigo.png" 
+  //   : startingFrameColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
+  //   : "/blank.png"
+      // startingFrameColor === "white" ? "#ffffff" : "#000000"
   
   try {
     for (let screen = 1; screen <= screenCount; screen++) {
@@ -21,7 +23,7 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
         null
       )
 
-      formData.append("image", imageFile)
+      formData.append("color", startingFrameColor)
       await presentation.addCue(presentationId, formData)
     }
 

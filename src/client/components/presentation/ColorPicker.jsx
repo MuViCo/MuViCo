@@ -1,6 +1,7 @@
 import React from "react";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 import { Box } from "@chakra-ui/react";
+import { set } from "mongoose";
 
 
 
@@ -20,7 +21,7 @@ export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
         }}
         >
             <HexColorPicker color={color} onChange={onChange} />
-            <HexColorInput style={{width: "100%"}} color={color} prefixed onChange={onChange} />
+            <HexColorInput style={{width: "100%", outline: "1px solid #8282824a"}} color={color} prefixed onChange={onChange} />
             
             <Box
             
@@ -33,7 +34,7 @@ export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
             >
                 
                 {presetColors.map((presetColor) => (
-                    <button
+                    <Box
                         key={presetColor}
                         className="picker__swatch"
                         style={{
