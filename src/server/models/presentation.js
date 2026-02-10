@@ -48,6 +48,12 @@ const presentationSchema = mongoose.Schema({
     }
   },
 
+  lastUsed: {
+    type: Date,
+    default: Date.now,
+    index: -1,
+  },
+
   cues: [
     {
       index: { 
@@ -106,7 +112,9 @@ const presentationSchema = mongoose.Schema({
       loop: { type: Boolean, default: false },
     },
   ],
-})
+}, { timestamps: true })
+
+presentationSchema.index({ user: 1, lastUsed: -1 })
 
 presentationSchema.pre("save", function (next) {
   const validationError = new mongoose.Error.ValidationError(this)
@@ -152,6 +160,7 @@ presentationSchema.set("toJSON", {
     delete returnedObject._id
     delete returnedObject.__v
   },
+
 })
 
 module.exports = mongoose.model("Presentation", presentationSchema)
