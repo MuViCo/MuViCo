@@ -62,6 +62,8 @@ const processS3Files = async (cues, presentationId) => {
     cues.map(async (cue) => {
     //orm returns a proxy that breaks boolean comparisons, so use raw object for checks
       const cueo = cue.toObject();
+      console.log("Processing cue: ", cueo);
+
       if(!cueo.file){
         return cue
       }

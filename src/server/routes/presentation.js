@@ -242,7 +242,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const screen = Number(req.body.screen)
     const loop = req.body.loop
     const color = req.body.color || "#000000"
-    
+
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
@@ -471,14 +471,17 @@ router.put(
     try {
       const { id, cueId } = req.params
       const { file, user, presentation } = req
-      const { cueName, image } = req.body
+      const { cueName, image_real } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
-      if (!id || isNaN(index) || isNaN(screen)) {
+      const image = image_real === "null" ? undefined : image_real;
+      console.log("Image is : ", image, typeof image);
+
+      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
       }
 
@@ -544,6 +547,10 @@ router.put(
           url: null,
           type: "image/png",
         }
+      }
+
+      if (image == undefined){
+        cue.file = null;
       }
 
       if (user.driveToken) {
