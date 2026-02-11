@@ -373,6 +373,7 @@ const GridLayoutComponent = ({
     const cue = cues.find((cue) => cue._id === newItem.i)
     if (cue) {
       movedCue.cueName = cue.name
+      movedCue.color = cue.color
     }
 
     if (movedCue) {
