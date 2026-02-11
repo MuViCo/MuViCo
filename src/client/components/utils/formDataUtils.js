@@ -16,8 +16,9 @@ export const createFormData = (index, name, screen, file, cueId, color, loop) =>
   formData.append("index", index)
   formData.append("cueName", name)
   formData.append("screen", screen)
-  if (file) {
-    formData.append("image", file)
+  
+  if (file || file===null) {
+  formData.append("image", file)
   }
   if (file && file.driveId) {
     formData.append("driveId", file.driveId)
@@ -33,5 +34,6 @@ export const createFormData = (index, name, screen, file, cueId, color, loop) =>
   } else {
     formData.append("loop", loop)
   }
+  
   return formData
 }

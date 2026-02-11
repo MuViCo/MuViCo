@@ -149,6 +149,7 @@ const GridLayoutComponent = ({
       index: cue.index,
       screen: cue.screen,
       file: cue.file,
+      color: cue.color,
       loop: !cue.loop,
     }
 
