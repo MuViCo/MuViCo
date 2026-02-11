@@ -719,6 +719,206 @@ describe("test presentation", () => {
   })
 })
 
+describe("MRU (Most Recently Used) sorting", () => {
+  let user
+  let presentation1
+  let presentation2
+  let presentation3
+  let authHeader
+
+  beforeEach(async () => {
+    // Create test user
+    user = new User({
+      username: "testuser1",
+      passwordHash: await bcrypt.hash("testpassword", 10),
+    })
+    await user.save()
+
+    // Create test presentations
+    presentation1 = new Presentation({
+      name: "Presentation 1",
+      user: user.id,
+    })
+    await presentation1.save()
+
+    presentation2 = new Presentation({
+      name: "Presentation 2",
+      user: user.id,  
+    })
+    await presentation2.save()
+
+    presentation3 = new Presentation({
+      name: "Presentation 3",
+      user: user.id,  
+    })
+    await presentation3.save()
+
+
+    // Login and get auth token
+    const loginRes = await api
+      .post("/api/login")
+      .send({ username: "testuser1", password: "testpassword" })
+
+    authHeader = `Bearer ${loginRes.body.token}`
+  })
+
+  afterEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+  })
+
+  test("lastUsed is updated when presentation is accessed", async () => {
+    const beforeTime = new Date()
+
+    await api
+      .get(`/api/presentation/${presentation1.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    const updatedPresentation = await Presentation.findById(presentation1.id)
+    const afterTime = new Date()
+
+    expect(updatedPresentation.lastUsed).toBeDefined()
+    expect(updatedPresentation.lastUsed.getTime()).toBeGreaterThanOrEqual(
+      beforeTime.getTime()
+    )
+    expect(updatedPresentation.lastUsed.getTime()).toBeLessThanOrEqual(
+      afterTime.getTime()
+    )
+  })
+
+  test("presentations are sorted by lastUsed in descending order", async () => {
+    // Access presentations in order: 1, 2, 3
+    const response1 = await api
+      .get(`/api/presentation/${presentation1.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Add small delay to ensure different timestamps
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    const response2 =  await api
+      .get(`/api/presentation/${presentation2.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    await api
+      .get(`/api/presentation/${presentation3.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Fetch presentations list
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Should be in order: 3, 2, 1 (most recently used first)
+    expect(response.body[0].id).toBe(presentation3.id)
+    expect(response.body[1].id).toBe(presentation2.id)
+    expect(response.body[2].id).toBe(presentation1.id)
+  })
+
+  test("recently used presentation moves to top", async () => {
+    // Access all presentations
+    await api
+      .get(`/api/presentation/${presentation1.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    await api
+      .get(`/api/presentation/${presentation2.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    await api
+      .get(`/api/presentation/${presentation3.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Now access presentation1 again
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    await api
+      .get(`/api/presentation/${presentation1.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Fetch presentations list again
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // presentation1 should now be at the top
+    expect(response.body[0].id).toBe(presentation1.id)
+    expect(response.body[1].id).toBe(presentation3.id)
+    expect(response.body[2].id).toBe(presentation2.id)
+  })
+
+  test("createdAt and updatedAt are set correctly", async () => {
+    const beforeCreate = new Date()
+
+    const newPresentation = new Presentation({
+      name: "New Presentation",
+      user: user.id,
+    })
+    await newPresentation.save()
+
+    const afterCreate = new Date()
+
+    expect(newPresentation.createdAt).toBeDefined()
+    expect(newPresentation.updatedAt).toBeDefined()
+    expect(newPresentation.createdAt.getTime()).toBeGreaterThanOrEqual(
+      beforeCreate.getTime()
+    )
+    expect(newPresentation.createdAt.getTime()).toBeLessThanOrEqual(
+      afterCreate.getTime()
+    )
+    expect(newPresentation.updatedAt).toEqual(newPresentation.createdAt)
+  })
+
+  test("only current user's presentations are affected by MRU sorting", async () => {
+    // Create another user
+    const user2 = new User({
+      username: "testuser2",
+      passwordHash: await bcrypt.hash("testpassword", 10),
+    })
+    await user2.save()
+
+    // Create presentation for user2
+    const user2Presentation = new Presentation({
+      name: "User2 Presentation",
+      user: user2.id,
+    })
+    await user2Presentation.save()
+
+    // Access user1's presentations
+    await api
+      .get(`/api/presentation/${presentation1.id}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Fetch user1's presentations
+    const user1Response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    // Should only contain user1's presentations
+    expect(user1Response.body.length).toBe(3)
+    expect(user1Response.body.every((p) => p.user === user.id.toString())).toBe(
+      true
+    )
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })
