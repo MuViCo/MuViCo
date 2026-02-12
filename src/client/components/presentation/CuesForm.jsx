@@ -48,9 +48,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
-  const [color, setColor] = useState();
+  const [color, setColor] = useState()
   const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#fffff0", "#00ff00", "#00ffff", 
-                        "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"];
+                        "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
   
 
   const visualTypes = [

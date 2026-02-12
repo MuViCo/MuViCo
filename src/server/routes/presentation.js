@@ -549,7 +549,7 @@ router.put(
       }
 
       if (image == undefined){
-        cue.file = null;
+        cue.file = null
       }
 
       if (user.driveToken) {

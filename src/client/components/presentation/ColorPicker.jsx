@@ -1,8 +1,5 @@
-import React from "react";
-import { HexColorPicker, HexColorInput } from "react-colorful";
-import { Box } from "@chakra-ui/react";
-import { set } from "mongoose";
-
+import { HexColorPicker, HexColorInput } from "react-colorful"
+import { Box } from "@chakra-ui/react"
 
 
 export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
@@ -54,5 +51,5 @@ export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
                 
             </Box>
         </Box>
-    );
-};
+    )
+}
