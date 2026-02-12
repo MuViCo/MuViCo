@@ -3,12 +3,6 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import ShowMode from "../../components/presentation/ShowMode"
 import Screen from "../../components/presentation/Screen"
 import "@testing-library/jest-dom"
-import {
-  preloadImage,
-  preloadVideo,
-  preloadAudio,
-  preloadFile,
-} from "../../components/presentation/ShowMode"
 
 const mockCues = [
   {
@@ -267,7 +261,7 @@ describe("ShowMode", () => {
  test("title shows 'Starting Frame' when index=0", async () => {
   const cues = [
     {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
       index: 0,
       name: "cue-start",
       screen: 1,
@@ -293,7 +287,7 @@ describe("ShowMode", () => {
  test("title does not contain 'Starting Frame' when index is not 0", async () => {
   const cues = [
     {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
       index: 4,
       name: "cue-start",
       screen: 1,
@@ -318,7 +312,7 @@ describe("ShowMode", () => {
 
   test("Screen sets window title when index is 4", async () => {
     const screenData = {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
       index: 4,
       name: "cue-4",
       screen: 1,
@@ -338,7 +332,7 @@ describe("ShowMode", () => {
 
   test("Screen sets window title when index is 7", async () => {
     const screenData = {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg" },
+      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
       index: 7,
       name: "cue-4",
       screen: 1,
@@ -354,6 +348,32 @@ describe("ShowMode", () => {
       const popup = window.open.mock.results.at(-1).value
       expect(popup.document.title).toBe("Screen 1 • Frame 7")
     })
+  })
+
+  test("Screen renders a color background when cue has no file but has color", async () => {
+    const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {})
+
+    const screenData = {
+      file: null,
+      color: "#ff0000",
+      index: 2,
+      name: "color-only-cue",
+      screen: 1,
+      _id: "id-color",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1 • Frame 2")
+    })
+
+    expect(consoleLogSpy).toHaveBeenCalledWith("Rendering media with file:", null)
+    consoleLogSpy.mockRestore()
   })
 
   test("toggleAllScreens opens all screens when none are open", async () => {

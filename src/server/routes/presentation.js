@@ -471,15 +471,14 @@ router.put(
     try {
       const { id, cueId } = req.params
       const { file, user, presentation } = req
-      const { cueName, image_real } = req.body
+      const { cueName } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
-      const image = image_real === "null" ? undefined : image_real;
-      console.log("Image is : ", image, typeof image);
+      const image = req.body.image === "null" ? undefined : req.body.image
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })

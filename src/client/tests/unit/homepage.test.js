@@ -82,7 +82,7 @@ describe("HomePage", () => {
       id: 3,
       name: "Presentation 3",
       screenCount: 1,
-      startingFrameColor: "black"
+      startingFrameColor: "#000000"
     })
 
     render(<HomePage user={{ isAdmin: true }} />)
@@ -99,7 +99,7 @@ describe("HomePage", () => {
       expect(presentationService.create).toHaveBeenCalledWith({
         name: "Presentation 3",
         screenCount: 1,
-        startingFrameColor: "black"
+        startingFrameColor: "#000000"
       })
     )
 
@@ -107,7 +107,7 @@ describe("HomePage", () => {
       expect(presentationService.getAll).toHaveBeenCalledTimes(2)
     ) //one call in useEffect and one call in createPresentation
 
-    expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function), "black")
+    expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function), "#000000")
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
@@ -306,7 +306,7 @@ describe("PresentationForm", () => {
 
     expect(nameInput.value).toBe("")
     expect(screenCountInput.value).toBe("1")
-    expect(startingFrameColorInput.value).toBe("black") 
+    expect(startingFrameColorInput.value).toBe("#000000") 
 
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.change(screenCountInput, { target: { value: 3 } })
@@ -333,13 +333,13 @@ describe("PresentationForm", () => {
     const startingFrameColorInput = screen.getByTestId("starting-frame-color")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.change(screenCountInput, { target: { value: 1 } })
-    fireEvent.change(startingFrameColorInput, { target: { value: "black" } })
+    fireEvent.change(startingFrameColorInput, { target: { value: "#000000" } })
     fireEvent.click(screen.getByText("create"))
 
     expect(createPresentationMock).toHaveBeenCalledWith({
       name: "Test Presentation",
       screenCount: 1,
-      startingFrameColor: "black"
+      startingFrameColor: "#000000"
     })
   })
 

@@ -42,13 +42,6 @@ const presentationSlice = createSlice({
       )
       state.cues = updatedCues
     },
-    replaceCue(state, action) {
-      console.log("haloo", state, action)
-      const cueToChange = action.payload
-
-      // const jokuid = state.cues.
-      state.cues = cueToChange
-    },
     editAudioCue(state, action) {
       const cueToChange = action.payload
       const updatedCues = state.audioCues.map((cue) =>
@@ -125,7 +118,6 @@ export const {
   deleteCue,
   deleteAudioCue,
   addCue,
-  replaceCue,
   addAudioCue,
   editCue,
   editAudioCue,

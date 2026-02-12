@@ -21,6 +21,7 @@ import reducer, {
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks.js"
 import presentationService from "../../services/presentation.js"
 import { configureStore } from "@reduxjs/toolkit"
+import { createFormData } from "../../components/utils/formDataUtils.js"
 
 const originalConsoleLog = console.logICount
 const originalConsoleError = console.error
@@ -600,6 +601,235 @@ describe("presentationReducer asynchronous actions", () => {
       ...initialState.cues[0],
       ...updatedCueData,
     })
+  })
+
+  it("should copy cue with file over cue without file", async () => {
+    const store = makeStore()
+    const sourceFile = new File(["image-binary"], "source.png", { type: "image/png" })
+    const sourceCueColor = "#000000"
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: { name: "orig.png", type: "image/png" }, color: sourceCueColor },
+        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: null, color: "#FFFFFF" },
+      ],
+      audioCues: [],
+      name: "My Presentation",
+      screenCount: 3,
+      indexCount: 5,
+    }
+    store.dispatch(setPresentationInfo(initialState))
+
+    const copiedCueData = {
+      cueName: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: sourceFile,
+      color: sourceCueColor,
+    }
+
+    presentationService.updateCue.mockResolvedValue({
+      _id: 2,
+      name: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: { name: "source.png", type: "image/png" },
+      color: sourceCueColor,
+    })
+
+    await store.dispatch(updatePresentation("123", copiedCueData, 2))
+
+    const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
+    const uploadedImage = sentFormData.get("image")
+    const sentColor = sentFormData.get("color")
+
+    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+
+    expect(uploadedImage).toBeInstanceOf(File)
+    expect(uploadedImage.name).toBe("source.png")
+    expect(sentColor).toBe(sourceCueColor)
+
+    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    expect(updatedCue).toEqual(
+      expect.objectContaining({
+        _id: 2,
+        name: "Cue 1 copy",
+        index: 2,
+        screen: 1,
+        color: sourceCueColor,
+      })
+    )
+    expect(updatedCue.file).toEqual(
+      expect.objectContaining({
+        name: "source.png",
+        type: "image/png",
+      })
+    )
+  })
+
+  it("should copy cue without file over cue with file and clear target file", async () => {
+    const store = makeStore()
+    const sourceCueColor = "#111111"
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: null, color: sourceCueColor },
+        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: { name: "target.png", type: "image/png" }, color: "#222222" },
+      ],
+      audioCues: [],
+      name: "My Presentation",
+      screenCount: 3,
+      indexCount: 5,
+    }
+    store.dispatch(setPresentationInfo(initialState))
+
+    const copiedCueData = {
+      cueName: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: null,
+      color: sourceCueColor,
+    }
+
+    presentationService.updateCue.mockResolvedValue({
+      _id: 2,
+      name: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: null,
+      color: sourceCueColor,
+    })
+
+    await store.dispatch(updatePresentation("123", copiedCueData, 2))
+
+    const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
+    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+    expect(sentFormData.get("image")).toBe("null")
+
+    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    expect(updatedCue).toEqual(
+      expect.objectContaining({
+        _id: 2,
+        name: "Cue 1 copy",
+        index: 2,
+        screen: 1,
+        file: null,
+        color: sourceCueColor,
+      })
+    )
+  })
+
+  it("should copy cue color over different target color", async () => {
+    const store = makeStore()
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: null, color: "#AA11CC" },
+        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: null, color: "#33BB44" },
+      ],
+      audioCues: [],
+      name: "My Presentation",
+      screenCount: 3,
+      indexCount: 5,
+    }
+    store.dispatch(setPresentationInfo(initialState))
+
+    const copiedCueData = {
+      cueName: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: null,
+      color: "#AA11CC",
+    }
+
+    presentationService.updateCue.mockResolvedValue({
+      _id: 2,
+      name: "Cue 1 copy",
+      index: 2,
+      screen: 1,
+      file: null,
+      color: "#AA11CC",
+    })
+
+    await store.dispatch(updatePresentation("123", copiedCueData, 2))
+
+    const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
+    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+    expect(sentFormData.get("color")).toBe("#AA11CC")
+
+    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    expect(updatedCue).toEqual(
+      expect.objectContaining({
+        _id: 2,
+        name: "Cue 1 copy",
+        index: 2,
+        screen: 1,
+        color: "#AA11CC",
+      })
+    )
+  })
+
+  it("should create a new cue with copied values when pasting to empty grid position", async () => {
+    const store = makeStore()
+    const sourceFile = new File(["image-binary"], "source.png", { type: "image/png" })
+    const sourceCueColor = "#2B6CB0"
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: { name: "source.png", type: "image/png" }, color: sourceCueColor },
+      ],
+      audioCues: [],
+      name: "My Presentation",
+      screenCount: 3,
+      indexCount: 5,
+    }
+    store.dispatch(setPresentationInfo(initialState))
+
+    const copiedCueData = {
+      index: 3,
+      cueName: "Cue 1 copy",
+      screen: 2,
+      file: sourceFile,
+      color: sourceCueColor,
+    }
+
+    const formData = createFormData(
+      copiedCueData.index,
+      copiedCueData.cueName,
+      copiedCueData.screen,
+      copiedCueData.file,
+      undefined,
+      copiedCueData.color
+    )
+
+    const createdCue = {
+      _id: 3,
+      name: copiedCueData.cueName,
+      index: copiedCueData.index,
+      screen: copiedCueData.screen,
+      file: { name: "source.png", type: "image/png" },
+      color: sourceCueColor,
+    }
+
+    presentationService.addCue.mockResolvedValue({
+      cues: [initialState.cues[0], createdCue],
+    })
+
+    await store.dispatch(createCue("123", formData))
+
+    expect(presentationService.addCue).toHaveBeenCalledWith("123", formData)
+    expect(formData.get("index")).toBe("3")
+    expect(formData.get("screen")).toBe("2")
+    expect(formData.get("cueName")).toBe("Cue 1 copy")
+    expect(formData.get("color")).toBe(sourceCueColor)
+
+    const image = formData.get("image")
+    expect(image).toBeInstanceOf(File)
+    expect(image.name).toBe("source.png")
+
+    const stateCues = store.getState().presentation.cues
+    expect(stateCues).toContainEqual(createdCue)
+    expect(stateCues).toHaveLength(2)
   })
 
   it("should handle error in update presentation cue", async () => {

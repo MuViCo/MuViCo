@@ -60,16 +60,11 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
 const processS3Files = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
-    //orm returns a proxy that breaks boolean comparisons, so use raw object for checks
-      const cueo = cue.toObject();
-      console.log("Processing cue: ", cueo);
+      const cueObject = typeof cue?.toObject === "function" ? cue.toObject() : cue
 
-      if(!cueo.file){
+      if (!cueObject.file) {
         return cue
       }
-
-
-
 
       await generateSignedUrlForS3(cue, presentationId)
       if (

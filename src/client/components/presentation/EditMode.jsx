@@ -26,7 +26,6 @@ import {
   incrementScreenCount,
   decrementScreenCount,
   editCue,
-  replaceCue,
   shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
@@ -41,7 +40,6 @@ import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
-import { replace } from "react-router-dom"
 
 const theme = extendTheme({})
 
@@ -537,7 +535,7 @@ const EditMode = ({
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
-    let fileObj = null;
+    let fileObj = null
     if (copiedCue.file) {
 
       fileObj = await fetchFileFromUrl(
@@ -681,46 +679,13 @@ const EditMode = ({
       `Frame ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
     )
     setConfirmAction(() => async () => {
-      try {
-        // await dispatch(removeCue(id, existingCue._id))
-        // await addCue(newCueData)
-        
-        let new_modified_data = newCueData;
-        new_modified_data._id = existingCue._id;
-        new_modified_data.name = new_modified_data.cueName;
-        
-        console.log("Replaced cue with new cue data: ", newCueData)
-        console.log("Modified cue with new cue data: ", new_modified_data)
-        console.log("Existing cue that was replaced: ", existingCue)
-        
-        const formData = createFormData(
-          new_modified_data.index,
-          new_modified_data.name,
-          new_modified_data.screen,
-          new_modified_data.file,
-          new_modified_data._id,
-          new_modified_data.color,
-          new_modified_data.loop
-        )
-
-        console.log("Form data: ", formData.get("index"), formData.get("cueName"), formData.get("screen"), formData.get("file"), formData.get("cueId"), formData.get("color"), formData.get("loop"))
-
-        await presentationService.updateCue(id, new_modified_data._id, formData);
-
-        await dispatch(editCue(new_modified_data));
-
-        setStatus("saved")
-
-
-
-      } catch (error) {
-        console.error("Error replacing cue:", error)
-        showToast({
-          title: "Error",
-          description: error.message || "Failed to replace element",
-          status: "error",
-        })
+      const updatedCueData = {
+        ...newCueData,
+        _id: existingCue._id,
+        cueName: newCueData.cueName,
       }
+
+      await dispatchUpdateCue(existingCue._id, updatedCueData)
       setIsConfirmOpen(false)
     })
     setIsConfirmOpen(true)
