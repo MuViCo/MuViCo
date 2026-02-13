@@ -126,6 +126,12 @@ const EditMode = ({
     }
   }, [isToolboxOpen])
 
+  useEffect(() => {
+    if (selectedCue && !cues.some((cue) => cue._id === selectedCue._id)) {
+      setSelectedCue(null)
+    }
+  }, [cues, selectedCue])
+
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
       `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
@@ -698,6 +704,12 @@ const EditMode = ({
   }
 
   const updateCue = async (previousCueId, updatedCue) => {
+    const previousStillExists = cues.some((cue) => cue._id === previousCueId)
+    if (!previousStillExists) {
+      await addCue(updatedCue)
+      return
+    }
+
     const existingCue = cues.find(
       (cue) =>
         cue.index === Number(updatedCue.index) &&
@@ -791,6 +803,7 @@ const EditMode = ({
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     } else {
+      setSelectedCue(null)
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
       setIsToolboxOpen(true)
     }
@@ -880,6 +893,7 @@ const EditMode = ({
         setSelectedCue(null)
       }
     } else {
+      console.log("Swapping cues: ", newTargetCue, newSelectedCue)
       await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
       setSelectedCue(null)
     }
