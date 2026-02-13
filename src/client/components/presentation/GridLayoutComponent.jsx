@@ -375,6 +375,18 @@ const GridLayoutComponent = ({
       return
     }
 
+    const targetCue = cues.find(
+      (cue) =>
+        cue._id !== newItem.i &&
+        Number(cue.index) === Number(newItem.x) &&
+        Number(cue.screen) === Number(newItem.y + 1)
+    )
+
+    if (targetCue) {
+      setCurrentLayout(newLayout)
+      return
+    }
+
     const movedCue = {
       cueId: newItem.i,
       index: newItem.x,

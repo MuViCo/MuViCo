@@ -115,6 +115,17 @@ const updatePresentationName = async (id, newName) => {
   return response.data
 }
 
+const swapCues = async (id, payload) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.put(`${baseUrl}${id}/swap`, payload, config)
+  return response.data
+}
+
 export default {
   get,
   remove,
@@ -125,4 +136,5 @@ export default {
   saveScreenCountApi,
   shiftIndexes,
   updatePresentationName,
+  swapCues,
 }
