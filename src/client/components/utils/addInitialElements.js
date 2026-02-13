@@ -7,13 +7,6 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
     return
   }
   
-  // Determine the image file based on color choice
-  // const imageFile = startingFrameColor === "white" ? "/blank-white.png" 
-  //   : startingFrameColor === "indigo" ? "/blank-indigo.png" 
-  //   : startingFrameColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
-  //   : "/blank.png"
-      // startingFrameColor === "white" ? "#ffffff" : "#000000"
-  
   try {
     for (let screen = 1; screen <= screenCount; screen++) {
       const formData = createFormData(
@@ -29,7 +22,7 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
 
     showToast({
       title: "New presentation created",
-      description: `Initial elements added to screens`,
+      description: "Initial elements added to screens",
       status: "success",
     })
   
