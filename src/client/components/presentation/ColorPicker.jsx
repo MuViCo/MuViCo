@@ -1,3 +1,10 @@
+/* * This component is a color picker with preset colors. It uses the react-colorful library for the color picker and Chakra UI for styling.
+ * The component accepts three props:
+ * - color: the current color value
+ * - onChange: a function to call when the color changes
+ * - presetColors: an array of preset color values to display as swatches
+ */
+
 import { HexColorPicker, HexColorInput } from "react-colorful"
 import { Box } from "@chakra-ui/react"
 
@@ -40,10 +47,10 @@ export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
                             height: "24px",
                             margin: "4px",
                             border: "none",
-                            padding: "0",
+                            padding: "1px",
                             borderRadius: "4px",
                             cursor: "pointer",
-                            outline: "none",
+                            outline: "1px solid #8282824a",
                         }}
                         onClick={() => onChange(presetColor)}
                     />

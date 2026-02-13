@@ -260,8 +260,8 @@ const EditMode = ({
           cue.screen,
           cue.file,
           cue._id,
-          cue.loop,
-          cue.color
+          cue.color,
+          cue.loop
         )
 
         return presentationService.updateCue(id, cue._id, formData)
@@ -342,13 +342,6 @@ const EditMode = ({
         newScreenNumber,
         null
       )
-      // Add image field for blank elements - use the original starting color
-      // const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
-      // const imageFile = storedColor === "white" ? "/blank-white.png"
-      //   : storedColor === "indigo" ? "/blank-indigo.png" 
-      //   : storedColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
-      //   : "/blank.png"
-      // formData.append("image", imageFile)
 
       await dispatch(createCue(id, formData))
 
