@@ -341,37 +341,52 @@ const GridLayoutComponent = ({
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
-    
-    if (oldItem.y === screenCount || newItem.y === screenCount) {
-      if (!(oldItem.y === screenCount && newItem.y === screenCount)) {
-        showToast({
-          title: "Cannot move this file type here",
-          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
-          status: "error",
-        })
 
-        const updatedLayout = currentLayout.map((item) => {
-          // find the item that was moved with its ID and revert it to its old position
-          if (item.i === newItem.i) {
-            return {
-              ...item,
-              x: oldItem.x,
-              y: oldItem.y,
-            }
+    const cue = cues.find((currentCue) => currentCue._id === newItem.i)
+    const isAudioCue = cue?.file?.type?.startsWith("audio/") === true
+    const isDroppingToAudioRow = newItem.y === screenCount
+
+    if ((isAudioCue && !isDroppingToAudioRow) || (!isAudioCue && isDroppingToAudioRow)) {
+      showToast({
+        title: "Cannot move this file type here",
+        description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+        status: "error",
+      })
+
+      // find the item that was moved with its ID and revert its position to the original position
+      const updatedLayout = currentLayout.map((item) => {
+        if (item.i === newItem.i) {
+          return {
+            ...item,
+            x: oldItem.x,
+            y: oldItem.y,
           }
-          return item
-        })
+        }
+        return item
+      })
 
-        setCurrentLayout(updatedLayout)
-        return
-      }
+      setCurrentLayout(updatedLayout)
+      return
     }
+
+    const targetCue = cues.find(
+      (cue) =>
+        cue._id !== newItem.i &&
+        Number(cue.index) === Number(newItem.x) &&
+        Number(cue.screen) === Number(newItem.y + 1)
+    )
+
+    if (targetCue) {
+      setCurrentLayout(newLayout)
+      return
+    }
+
     const movedCue = {
       cueId: newItem.i,
       index: newItem.x,
       screen: newItem.y + 1,
     }
-    const cue = cues.find((cue) => cue._id === newItem.i)
+
     if (cue) {
       movedCue.cueName = cue.name
       movedCue.color = cue.color

@@ -37,6 +37,7 @@ jest.mock("../../services/presentation.js", () => ({
   addCue: jest.fn(),
   remove: jest.fn(),
   updateCue: jest.fn(),
+  swapCues: jest.fn(),
   saveScreenCountApi: jest.fn(),
   saveIndexCountApi: jest.fn(),
   shiftIndexes: jest.fn(),
@@ -872,25 +873,23 @@ describe("presentationReducer asynchronous actions", () => {
       screen: 1,
     }
 
-    presentationService.updateCue
-      .mockResolvedValueOnce(firstUpdatedCue)
-      .mockResolvedValueOnce(secondUpdatedCue)
+    presentationService.swapCues.mockResolvedValue({
+      firstCue: firstUpdatedCue,
+      secondCue: secondUpdatedCue,
+    })
 
     await store.dispatch(
       updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
     )
 
-    expect(presentationService.updateCue).toHaveBeenCalledWith(
-      "123",
-      firstUpdatedCue._id,
-      expect.any(FormData)
-    )
-
-    expect(presentationService.updateCue).toHaveBeenCalledWith(
-      "123",
-      secondUpdatedCue._id,
-      expect.any(FormData)
-    )
+    expect(presentationService.swapCues).toHaveBeenCalledWith("123", {
+      firstCueId: firstUpdatedCue._id,
+      secondCueId: secondUpdatedCue._id,
+      firstIndex: firstUpdatedCue.index,
+      firstScreen: firstUpdatedCue.screen,
+      secondIndex: secondUpdatedCue.index,
+      secondScreen: secondUpdatedCue.screen,
+    })
 
     expect(store.getState().presentation.cues).toContainEqual(firstUpdatedCue)
     expect(store.getState().presentation.cues).toContainEqual(secondUpdatedCue)
@@ -1093,7 +1092,7 @@ describe("presentationReducer asynchronous actions", () => {
       screen: 1,
     }
 
-    presentationService.updateCue.mockRejectedValue({
+    presentationService.swapCues.mockRejectedValue({
       response: { data: { error: "Not found" } },
     })
 

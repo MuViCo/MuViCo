@@ -210,38 +210,15 @@ export const updatePresentation =
 export const updatePresentationSwappedCues =
   (presentationId, firstUpdatedCue, secondUpdatedCue) => async (dispatch) => {
     try {
-      const firstFormData = createFormData(
-        firstUpdatedCue.index,
-        firstUpdatedCue.name,
-        firstUpdatedCue.screen,
-        firstUpdatedCue.file,
-        firstUpdatedCue._id,
-        firstUpdatedCue.color,
-        firstUpdatedCue.loop
-      )
-
-      const secondFormData = createFormData(
-        secondUpdatedCue.index,
-        secondUpdatedCue.name,
-        secondUpdatedCue.screen,
-        secondUpdatedCue.file,
-        secondUpdatedCue._id,
-        secondUpdatedCue.color,
-        secondUpdatedCue.loop
-      )
-
-      const [updatedFirstCue, updatedSecondCue] = await Promise.all([
-        presentationService.updateCue(
-          presentationId,
-          firstUpdatedCue._id,
-          firstFormData
-        ),
-        presentationService.updateCue(
-          presentationId,
-          secondUpdatedCue._id,
-          secondFormData
-        ),
-      ])
+      const { firstCue: updatedFirstCue, secondCue: updatedSecondCue } =
+        await presentationService.swapCues(presentationId, {
+          firstCueId: firstUpdatedCue._id,
+          secondCueId: secondUpdatedCue._id,
+          firstIndex: firstUpdatedCue.index,
+          firstScreen: firstUpdatedCue.screen,
+          secondIndex: secondUpdatedCue.index,
+          secondScreen: secondUpdatedCue.screen,
+        })
 
       dispatch(editCue(updatedFirstCue))
       dispatch(editCue(updatedSecondCue))

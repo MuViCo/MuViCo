@@ -18,6 +18,20 @@ const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
+const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
+  return cues.some((cue) => {
+    const samePosition = Number(cue.index) === Number(index) && Number(cue.screen) === Number(screen)
+    if (!samePosition) {
+      return false
+    }
+
+    if (!excludedCueId) {
+      return true
+    }
+
+    return cue._id.toString() !== excludedCueId.toString()
+  })
+}
 
 const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
@@ -354,6 +368,10 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       }
     }
 
+    if (hasPositionConflict(presentation.cues, index, screen)) {
+      return res.status(400).json({ error: "A cue with the same index and screen already exists." })
+    }
+
     const fileObject = {
               id: fileId,
               name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank2.png"),
@@ -466,6 +484,108 @@ router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async 
     next(err)
   }
 })
+
+router.put("/:id/swap", userExtractor, requirePresentationAccess, async (req, res, next) => {
+  try {
+    const { id } = req.params
+    const { presentation, user } = req
+    const {
+      firstCueId,
+      secondCueId,
+      firstIndex,
+      firstScreen,
+      secondIndex,
+      secondScreen,
+    } = req.body
+
+    const parsedFirstIndex = Number(firstIndex)
+    const parsedFirstScreen = Number(firstScreen)
+    const parsedSecondIndex = Number(secondIndex)
+    const parsedSecondScreen = Number(secondScreen)
+
+    if (
+      !firstCueId ||
+      !secondCueId ||
+      isNaN(parsedFirstIndex) ||
+      isNaN(parsedFirstScreen) ||
+      isNaN(parsedSecondIndex) ||
+      isNaN(parsedSecondScreen)
+    ) {
+      return res.status(400).json({ error: "Missing required swap fields" })
+    }
+
+    if (
+      !Number.isInteger(parsedFirstIndex) ||
+      !Number.isInteger(parsedFirstScreen) ||
+      !Number.isInteger(parsedSecondIndex) ||
+      !Number.isInteger(parsedSecondScreen)
+    ) {
+      return res.status(400).json({ error: "Swap coordinates must be integers" })
+    }
+
+    if (firstCueId === secondCueId) {
+      return res.status(400).json({ error: "Cannot swap a cue with itself" })
+    }
+
+    const maxScreen = presentation.screenCount + 1
+    if (
+      parsedFirstIndex < 0 ||
+      parsedFirstIndex >= presentation.indexCount ||
+      parsedSecondIndex < 0 ||
+      parsedSecondIndex >= presentation.indexCount ||
+      parsedFirstScreen < 1 ||
+      parsedFirstScreen > maxScreen ||
+      parsedSecondScreen < 1 ||
+      parsedSecondScreen > maxScreen
+    ) {
+      return res.status(400).json({ error: "Invalid swap target position" })
+    }
+
+    const firstCue = presentation.cues.id(firstCueId)
+    const secondCue = presentation.cues.id(secondCueId)
+
+    if (!firstCue || !secondCue) {
+      return res.status(404).json({ error: "Cue not found" })
+    }
+
+    const hasThirdCueConflict = presentation.cues.some((cue) => {
+      const cueId = cue._id.toString()
+      if (cueId === firstCueId.toString() || cueId === secondCueId.toString()) {
+        return false
+      }
+
+      return (
+        (Number(cue.index) === parsedFirstIndex && Number(cue.screen) === parsedFirstScreen) ||
+        (Number(cue.index) === parsedSecondIndex && Number(cue.screen) === parsedSecondScreen)
+      )
+    })
+
+    if (hasThirdCueConflict) {
+      return res.status(400).json({ error: "Swap target position is already occupied by another cue." })
+    }
+
+    firstCue.index = parsedFirstIndex
+    firstCue.screen = parsedFirstScreen
+    secondCue.index = parsedSecondIndex
+    secondCue.screen = parsedSecondScreen
+
+    await presentation.save({ validateModifiedOnly: true })
+
+    if (user.driveToken) {
+      const [updatedFirstCue, updatedSecondCue] = await processDriveCueFiles(
+        [firstCue, secondCue],
+        user.driveToken
+      )
+      return res.json({ firstCue: updatedFirstCue, secondCue: updatedSecondCue })
+    }
+
+    const [updatedFirstCue, updatedSecondCue] = await processS3Files([firstCue, secondCue], id)
+    return res.json({ firstCue: updatedFirstCue, secondCue: updatedSecondCue })
+  } catch (error) {
+    next(error)
+  }
+})
+
 router.put(
   "/:id/:cueId",
   userExtractor,
@@ -535,6 +655,11 @@ router.put(
       if (!cue) {
         return res.status(404).json({ error: "Cue not found" })
       }
+
+      if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
+        return res.status(400).json({ error: "A cue with the same index and screen already exists." })
+      }
+
       // Update cue fields
       cue.index = index
       cue.screen = screen
