@@ -893,7 +893,6 @@ const EditMode = ({
         setSelectedCue(null)
       }
     } else {
-      console.log("Swapping cues: ", newTargetCue, newSelectedCue)
       await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
       setSelectedCue(null)
     }

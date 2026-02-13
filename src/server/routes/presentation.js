@@ -478,7 +478,8 @@ router.put(
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
-      const image = req.body.image === "null" ? undefined : req.body.image
+      const image = req.body.image
+      const shouldClearFile = image === "null"
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
@@ -548,7 +549,7 @@ router.put(
         }
       }
 
-      if (image == undefined){
+      if (shouldClearFile) {
         cue.file = null
       }
 
