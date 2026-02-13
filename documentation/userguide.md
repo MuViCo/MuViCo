@@ -128,7 +128,7 @@ You can add an element in different ways:
 
 #### HINT:
 
-**If you only want to add a blank element**, you can simply click Submit without making any changes to the Add Element form (assuming the screen and frame are the ones you want). A blank element is black by default, but you can change its colour from the provided list.
+**If you only want to add a blank element**, you can simply click Submit without making any changes to the Add Element form (assuming the screen and frame are the ones you want). A blank element is black by default, but you can change its colour from the color picker or the color palette.
 
 
 ## Editing an existing element

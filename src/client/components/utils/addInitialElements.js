@@ -28,8 +28,8 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
     }
 
     showToast({
-      title: "Elements added",
-      description: `Initial ${startingFrameColor} elements added to screens`,
+      title: "New presentation created",
+      description: `Initial elements added to screens`,
       status: "success",
     })
   
