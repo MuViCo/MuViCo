@@ -2,6 +2,7 @@ import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import dotenv from "dotenv"
 import { resolve } from "path"
+import pkg from "./package.json" assert { type: "json" }
 
 dotenv.config()
 
@@ -40,5 +41,6 @@ export default defineConfig({
         process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
       VITE_FIREBASE_MEASUREMENT_ID: process.env.VITE_FIREBASE_MEASUREMENT_ID,
     },
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 })
