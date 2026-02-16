@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const config = require("../utils/config")
 const verifyToken = require("../utils/verifyToken")
+const { generateUniqueUsername } = require("../utils/username")
 
 const router = express.Router()
 
@@ -45,18 +46,41 @@ Checks if the entered password is correct for the given user.*
 
 router.post("/firebase", verifyToken, async (req, res) => {
   const { driveAccessToken } = req.body
-  const { uid, email, name } = req.user
+  const { uid, email } = req.user
 
   try {
-    const username = email ? email.split("@")[0] : `user${uid}`
-    let user = await User.findOne({ username })
+    let user = await User.findOne({ googleUid: uid })
 
     if (!user) {
-      user = new User({ uid, email, name, username })
-      await user.save()
+      const preferredUsername = email ? email.split("@")[0] : "user"
+      /* Check for a legacy account with the same username (email prefix) that
+         doesn't have a Google UID or password hash. Can be removed once
+         all google users are identified with uid and not username. */
+      const legacyCandidate = email
+        ? await User.findOne({ username: preferredUsername })
+        : null
+
+      const isSafeLegacyAccount =
+        legacyCandidate &&
+        !legacyCandidate.googleUid &&
+        !legacyCandidate.passwordHash
+
+      // If such a legacy account exists, link it to the Google UID. 
+      if (isSafeLegacyAccount) {
+        user = legacyCandidate
+      // Otherwise, create a new account with a unique username.
+      } else {
+        const username = await generateUniqueUsername(preferredUsername, User)
+        user = new User({ googleUid: uid, username })
+      }
     }
 
-    user.driveToken = driveAccessToken
+    user.googleUid = uid
+
+    if (driveAccessToken !== undefined) {
+      user.driveToken = driveAccessToken
+    }
+
     await user.save()
 
     const userForToken = {
