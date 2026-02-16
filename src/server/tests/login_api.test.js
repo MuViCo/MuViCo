@@ -8,14 +8,18 @@ const verifyToken = require("../utils/verifyToken")
 const api = supertest(app)
 
 // Mock the verifyToken middleware to simulate a valid Firebase token
-jest.mock("../utils/verifyToken", () => jest.fn((req, res, next) => {
-  req.user = {
-    uid: "testuid",
-    email: "testuser@example.com",
-    name: "Test User",
-  }
-  next()
-}))
+jest.mock("../utils/verifyToken", () => {
+  const middleware = jest.fn((req, res, next) => {
+    req.user = {
+      uid: "testuid",
+      email: "testuser@example.com",
+      name: "Test User",
+    }
+    next()
+  })
+
+  return middleware
+})
 
 describe("Login API", () => {
   beforeEach(async () => {
@@ -58,8 +62,7 @@ describe("Login API", () => {
     expect(response.body.error).toBe("invalid username or password")
   })
 
-
-  test("succeeds with valid Firebase token", async () => {
+  test("does not match password user by email prefix on Firebase login", async () => {
     const response = await api
       .post("/api/login/firebase")
       .set("Authorization", "Bearer validFirebaseToken")
@@ -67,12 +70,123 @@ describe("Login API", () => {
       .expect("Content-Type", /application\/json/)
 
     expect(response.body.token).toBeDefined()
-    expect(response.body.username).toBe("testuser")
+    expect(response.body.username).toBe("testuser_1")
+
+    const users = await User.find({}).sort({ username: 1 })
+    expect(users).toHaveLength(2)
+    expect(users[0].username).toBe("testuser")
+    expect(users[1].username).toBe("testuser_1")
+    expect(users[1].firebaseUid).toBe("testuid")
+  })
+
+  test("keeps Google and password users as separate accounts", async () => {
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .expect(200)
+
+    expect(response.body.username).toBe("testuser_1")
+
+    const passwordUser = await User.findOne({ username: "testuser" })
+    const googleUser = await User.findOne({ username: "testuser_1" })
+    expect(passwordUser.firebaseUid).toBeFalsy()
+    expect(googleUser.firebaseUid).toBe("testuid")
+  })
+
+  test("links legacy Google-only user by username prefix once", async () => {
+    const legacyGoogleUser = new User({ username: "legacyuser" })
+    await legacyGoogleUser.save()
+
+    verifyToken.mockImplementationOnce((req, res, next) => {
+      req.user = {
+        uid: "legacyuid",
+        email: "legacyuser@example.com",
+      }
+      next()
+    })
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .expect(200)
+
+    expect(response.body.username).toBe("legacyuser")
+
+    const updatedLegacyUser = await User.findOne({ username: "legacyuser" })
+    expect(updatedLegacyUser.firebaseUid).toBe("legacyuid")
+
+    const users = await User.find({})
+    expect(users).toHaveLength(2)
+  })
+
+  test("links legacy Google-only user with unsanitized email prefix", async () => {
+    const legacyGoogleUser = new User({ username: "legacy.user" })
+    await legacyGoogleUser.save()
+
+    verifyToken.mockImplementationOnce((req, res, next) => {
+      req.user = {
+        uid: "legacyunsanitizeduid",
+        email: "legacy.user@example.com",
+      }
+      next()
+    })
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .expect(200)
+
+    expect(response.body.username).toBe("legacy.user")
+
+    const updatedLegacyUser = await User.findOne({ username: "legacy.user" })
+    expect(updatedLegacyUser.firebaseUid).toBe("legacyunsanitizeduid")
+
+    const users = await User.find({})
+    expect(users).toHaveLength(2)
+  })
+
+  test("does not auto-link legacy prefix match when passwordHash exists", async () => {
+    const passwordHash = await bcrypt.hash("legacy-password", 10)
+    const legacyPasswordUser = new User({
+      username: "legacy.user",
+      passwordHash,
+    })
+    await legacyPasswordUser.save()
+
+    verifyToken.mockImplementationOnce((req, res, next) => {
+      req.user = {
+        uid: "legacyprotecteduid",
+        email: "legacy.user@example.com",
+      }
+      next()
+    })
+
+    const response = await api
+      .post("/api/login/firebase")
+      .set("Authorization", "Bearer validFirebaseToken")
+      .expect(200)
+
+    expect(response.body.username).toBe("legacy.user_1")
+
+    const originalPasswordUser = await User.findOne({ username: "legacy.user" })
+    const createdGoogleUser = await User.findOne({ username: "legacy.user_1" })
+
+    expect(originalPasswordUser.firebaseUid).toBeFalsy()
+    expect(createdGoogleUser.firebaseUid).toBe("legacyprotecteduid")
+
+    const users = await User.find({})
+    expect(users).toHaveLength(3)
   })
 
   test("saves drive access token for existing user", async () => {
+    await User.findOneAndUpdate(
+      { username: "testuser" },
+      { firebaseUid: "testuid" },
+      { new: true }
+    )
+
     const driveAccessToken = "test-drive-token-123"
-    
+
     const response = await api
       .post("/api/login/firebase")
       .set("Authorization", "Bearer validFirebaseToken")
@@ -88,7 +202,7 @@ describe("Login API", () => {
 
   test("saves drive access token for new Firebase user", async () => {
     const driveAccessToken = "new-user-drive-token-456"
-    
+
     // Mock verifyToken to return a new user
     verifyToken.mockImplementationOnce((req, res, next) => {
       req.user = {
@@ -112,12 +226,19 @@ describe("Login API", () => {
     const user = await User.findOne({ username: "newuser" })
     expect(user).toBeDefined()
     expect(user.driveToken).toBe(driveAccessToken)
+    expect(user.firebaseUid).toBe("newuid")
   })
 
   test("updates drive token when logging in with Firebase again", async () => {
+    await User.findOneAndUpdate(
+      { username: "testuser" },
+      { firebaseUid: "testuid" },
+      { new: true }
+    )
+
     const firstToken = "first-drive-token"
     const secondToken = "second-drive-token"
-    
+
     // First login
     await api
       .post("/api/login/firebase")
@@ -189,7 +310,8 @@ describe("Login API", () => {
 
     // Restore the original implementation
     User.prototype.save.mockRestore()
-  })})
+  })
+})
 
 afterAll(async () => {
   await mongoose.connection.close()
