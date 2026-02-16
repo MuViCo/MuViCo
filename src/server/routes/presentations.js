@@ -20,7 +20,7 @@ router.get("/", userExtractor, async (req, res, next) => {
     const presentations = await Presentation.find({
       user: user._id,
       storage: storageType
-    })
+    }).sort({ lastUsed: -1 })
     
     return res.json(presentations.map((presentation) => presentation.toJSON()))
   } catch (error) {

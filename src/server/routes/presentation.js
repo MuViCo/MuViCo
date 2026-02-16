@@ -67,6 +67,10 @@ router.get("/:id", userExtractor, requirePresentationAccess, async (req, res, ne
   try {
     const { user, presentation } = req
 
+    // Update lastUsed for MRU sorting
+    presentation.lastUsed = new Date()
+    await presentation.save()
+
     if (user.driveToken) {
       const driveToken = user.driveToken
       presentation.cues = await processDriveCueFiles(
