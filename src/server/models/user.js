@@ -8,7 +8,7 @@ const userSchema = mongoose.Schema({
     required: true,
     minlength: 3,
   },
-  googleUid: {
+  firebaseUid: {
     type: String,
     unique: true,
     sparse: true,

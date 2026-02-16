@@ -76,7 +76,7 @@ describe("Login API", () => {
     expect(users).toHaveLength(2)
     expect(users[0].username).toBe("testuser")
     expect(users[1].username).toBe("testuser_1")
-    expect(users[1].googleUid).toBe("testuid")
+    expect(users[1].firebaseUid).toBe("testuid")
   })
 
   test("keeps Google and password users as separate accounts", async () => {
@@ -89,8 +89,8 @@ describe("Login API", () => {
 
     const passwordUser = await User.findOne({ username: "testuser" })
     const googleUser = await User.findOne({ username: "testuser_1" })
-    expect(passwordUser.googleUid).toBeFalsy()
-    expect(googleUser.googleUid).toBe("testuid")
+    expect(passwordUser.firebaseUid).toBeFalsy()
+    expect(googleUser.firebaseUid).toBe("testuid")
   })
 
   test("links legacy Google-only user by username prefix once", async () => {
@@ -113,7 +113,7 @@ describe("Login API", () => {
     expect(response.body.username).toBe("legacyuser")
 
     const updatedLegacyUser = await User.findOne({ username: "legacyuser" })
-    expect(updatedLegacyUser.googleUid).toBe("legacyuid")
+    expect(updatedLegacyUser.firebaseUid).toBe("legacyuid")
 
     const users = await User.find({})
     expect(users).toHaveLength(2)
@@ -139,7 +139,7 @@ describe("Login API", () => {
     expect(response.body.username).toBe("legacy.user")
 
     const updatedLegacyUser = await User.findOne({ username: "legacy.user" })
-    expect(updatedLegacyUser.googleUid).toBe("legacyunsanitizeduid")
+    expect(updatedLegacyUser.firebaseUid).toBe("legacyunsanitizeduid")
 
     const users = await User.find({})
     expect(users).toHaveLength(2)
@@ -171,8 +171,8 @@ describe("Login API", () => {
     const originalPasswordUser = await User.findOne({ username: "legacy.user" })
     const createdGoogleUser = await User.findOne({ username: "legacy.user_1" })
 
-    expect(originalPasswordUser.googleUid).toBeFalsy()
-    expect(createdGoogleUser.googleUid).toBe("legacyprotecteduid")
+    expect(originalPasswordUser.firebaseUid).toBeFalsy()
+    expect(createdGoogleUser.firebaseUid).toBe("legacyprotecteduid")
 
     const users = await User.find({})
     expect(users).toHaveLength(3)
@@ -181,7 +181,7 @@ describe("Login API", () => {
   test("saves drive access token for existing user", async () => {
     await User.findOneAndUpdate(
       { username: "testuser" },
-      { googleUid: "testuid" },
+      { firebaseUid: "testuid" },
       { new: true }
     )
 
@@ -226,13 +226,13 @@ describe("Login API", () => {
     const user = await User.findOne({ username: "newuser" })
     expect(user).toBeDefined()
     expect(user.driveToken).toBe(driveAccessToken)
-    expect(user.googleUid).toBe("newuid")
+    expect(user.firebaseUid).toBe("newuid")
   })
 
   test("updates drive token when logging in with Firebase again", async () => {
     await User.findOneAndUpdate(
       { username: "testuser" },
-      { googleUid: "testuid" },
+      { firebaseUid: "testuid" },
       { new: true }
     )
 

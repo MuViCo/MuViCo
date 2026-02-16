@@ -49,12 +49,12 @@ router.post("/firebase", verifyToken, async (req, res) => {
   const { uid, email } = req.user
 
   try {
-    let user = await User.findOne({ googleUid: uid })
+    let user = await User.findOne({ firebaseUid: uid })
 
     if (!user) {
       const preferredUsername = email ? email.split("@")[0] : "user"
       /* Check for a legacy account with the same username (email prefix) that
-         doesn't have a Google UID or password hash. Can be removed once
+         doesn't have a Firebase UID or password hash. Can be removed once
          all google users are identified with uid and not username. */
       const legacyCandidate = email
         ? await User.findOne({ username: preferredUsername })
@@ -62,20 +62,20 @@ router.post("/firebase", verifyToken, async (req, res) => {
 
       const isSafeLegacyAccount =
         legacyCandidate &&
-        !legacyCandidate.googleUid &&
+        !legacyCandidate.firebaseUid &&
         !legacyCandidate.passwordHash
 
-      // If such a legacy account exists, link it to the Google UID. 
+      // If such a legacy account exists, link it to the Firebase UID.
       if (isSafeLegacyAccount) {
         user = legacyCandidate
       // Otherwise, create a new account with a unique username.
       } else {
         const username = await generateUniqueUsername(preferredUsername, User)
-        user = new User({ googleUid: uid, username })
+        user = new User({ firebaseUid: uid, username })
       }
     }
 
-    user.googleUid = uid
+    user.firebaseUid = uid
 
     if (driveAccessToken !== undefined) {
       user.driveToken = driveAccessToken
