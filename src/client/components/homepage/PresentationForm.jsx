@@ -55,25 +55,8 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setScreenCount(target.value)}
           />
           
-          <FormLabel fontWeight="bold" style={{display:"none", marginTop: ".5em" }}>
-            Starting Frame Color
-          </FormLabel>
-          {/* <Select style={{display:"none"}} */}
-            {/* data-testid="starting-frame-color"
-            value={startingFrameColor} 
-            onChange={(e) => setStartingFrameColor(e.target.value)}
-            placeholder="Select color"
           
-            <option value="#000000" style={{backgroundColor: "yellow", color: "white"}}>Black</option>
-            <option value="white" style={{backgroundColor: "white", color: "black"}}>White</option>
-            <option value="indigo" style={{backgroundColor: "#0c2bde", color: "white"}}>Indigo</option>
-            <option value="tropicalindigo" style={{backgroundColor: "#e5ed9f", color: "black"}}>Tropical indigo</option> */}
-           {/* <ColorPickerWithPresets
-            color={startingFrameColor}
-            onChange={setStartingFrameColor}
-            presetColors={presetColors}
-          />  */}
-          {/* </Select> */}
+      
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
           <Button id="create-button" type="submit" colorScheme="purple">
