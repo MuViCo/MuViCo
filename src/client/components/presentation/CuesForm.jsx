@@ -1,3 +1,12 @@
+/**
+ * CuesForm component for adding and editing cues in the presentation
+ * 
+ * This component is used in the presentation editor to allow users to add new cues or edit existing cues.
+ * It supports both visual cues (images and videos) and audio cues, with validation for file types and required fields.
+ * The form includes inputs for cue name, index, screen number, file upload, and color selection.
+ * It also provides feedback on file selection and displays error messages for invalid inputs.
+ */
+
 import {
   FormControl,
   NumberInput,
@@ -23,11 +32,13 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
+import { ColorPickerWithPresets } from "./ColorPicker"
 
 const theme = extendTheme({})
 
+
 const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState(isAudioMode ? "" : "/blank.png")
+  const [file, setFile] = useState(isAudioMode ? "" : "")
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
@@ -37,6 +48,11 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
+  const [color, setColor] = useState()
+  const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff",
+    "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
+
+
   const visualTypes = [
     "image/png",
     "image/jpeg",
@@ -78,7 +94,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       } else if (screen > 0) {
         setIndex((prevIndex) => {
           const newIndex = getNextAvailableIndex(screen, cues)
-          return prevIndex !== newIndex ? newIndex : prevIndex 
+          return prevIndex !== newIndex ? newIndex : prevIndex
         })
       }
     }
@@ -90,7 +106,8 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setIndex(cueData.index)
       setScreen(cueData.screen)
       setCueId(cueData._id)
-      
+      setColor(cueData.color)
+
       if (typeof cueData.file === "string" && cueData.file.startsWith("/blank")) {
         setFile(cueData.file)
         setActualFile(null)
@@ -98,7 +115,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       } else {
         setFile("")
         setActualFile(cueData.file)
-        setFileName(cueData.file.name ? cueData.file.name : "")
+        setFileName(cueData.file && cueData.file.name ? cueData.file.name : "")
       }
       setLoop(cueData.loop)
     } else {
@@ -106,12 +123,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
         setFile("")
         setCueName("")
       } else {
-        setFile("/blank.png")
+        setFile("")
         setCueName("Blank")
         setScreen(position?.screen || 1)
       }
     }
-  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, isAudioMode, position?.screen])
+  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, setColor, isAudioMode, position?.screen])
 
   const checkFileType = (file) => {
     if (typeof file === "string") {
@@ -121,16 +138,16 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     if (!file || !file.type) {
       return false
     }
-    
+
     const isAudio = file.type.includes("audio/")
     const currentScreen = screen
-    
+
     // For audio files, check if they"ll be placed correctly (auto-assigned to audio screen)
     const effectiveScreen = isAudio ? screenCount + 1 : currentScreen
-    
+
     // Check if the file type is allowed for the effective screen
     const effectiveAllowedTypes = effectiveScreen === screenCount + 1 ? audioTypes : visualTypes
-    
+
     if (!effectiveAllowedTypes.includes(file.type)) {
       const errorMsg = effectiveScreen === screenCount + 1
         ? "Invalid file type. Only audio files (.mp3, .wav) are allowed on the audio screen."
@@ -139,31 +156,22 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setTimeout(() => setError(null), 5000)
       return false
     }
-    
+
     return true
   }
 
+  
   const onAddCue = (event) => {
     event.preventDefault()
 
     const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
-    
+
     if (!isBlankImage && file !== "") {
       if (checkFileType(file) == false) {
         return
       }
     }
 
-    // Don't allow submission if no file is selected
-    if (file === "") {
-      if (isAudioMode || screen === screenCount + 1) {
-        setError("Please select an audio file")
-      } else {
-        setError("Please select a file or blank element")
-      }
-      setTimeout(() => setError(null), 5000)
-      return
-    }
 
     if (isAudioMode || screen === screenCount + 1) {
       if (isBlankImage) {
@@ -181,9 +189,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     if (isAudioMode && addAudioCue) {
       addAudioCue({ file, index, cueName, fileName, loop })
     } else {
-      addCue({ file, index, cueName, screen, fileName, loop })
+      addCue({ file, index, cueName, screen, fileName, color, loop })
     }
-    
+
     setError(null)
     setFile("")
     setFileName("")
@@ -195,20 +203,21 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
 
   const handleUpdateSubmit = async (event) => {
     event.preventDefault()
-    
+
     const fileToUse = actualFile || file
-    
+
     const updatedCue = {
       cueId,
       cueName,
       index,
       screen,
+      color,
       file: fileToUse,
       fileName,
     }
-
-    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
     
+    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
+
     if (!isBlankImage && !actualFile) {
       if (checkFileType(file) == false) {
         return
@@ -253,7 +262,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     const selectedValue = event.target.value
     setFile(selectedValue)
     setActualFile(null)
-    
+
     if (selectedValue.startsWith("/blank")) {
       if (cueName === "" || cueName === fileName || cueName === "Blank") {
         setCueName("Blank")
@@ -272,9 +281,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       }
     }
   }
-
+  // form with inputs for cue name, index, screen number, file upload, and color selection. 
+  // It also includes front end validation for file types and displays error messages when necessary. 
+  // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
   return (
     <ChakraProvider theme={theme}>
+
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
@@ -308,19 +320,19 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </NumberInput>
             </>
           )}
-          
+
           {isAudioMode && (
             <FormHelperText mb={4} color="purple.600">
               Adding audio cue (screen not applicable)
             </FormHelperText>
           )}
-          <FormHelperText mb={2}>Frame 0-{indexCount-1}*</FormHelperText>
+          <FormHelperText mb={2}>Frame 0-{indexCount - 1}*</FormHelperText>
           <NumberInput
             id="index-number"
             value={index}
             mb={4}
             min={0}
-            max={indexCount-1}
+            max={indexCount - 1}
             onChange={handleNumericInputChange(setIndex)}
             onBlur={validateAndSetNumber(setIndex, 0, indexCount)}
             required
@@ -395,38 +407,24 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               </>
             ))}
           {error && <Error error={error} />}
-          <FormHelperText mb={2}>or select a blank element</FormHelperText>
-          <Select
-            data-testid="add-blank"
-            value={file}
-            onChange={blankSelected}
-          >
-            <option value="/blank.png" style={{backgroundColor: "black", color: "white"}}>Black</option>
-            <option value="/blank-white.png" style={{backgroundColor: "white", color: "black"}}>White</option>
-            <option value="/blank-indigo.png" style={{backgroundColor: "#560D6A", color: "white"}}>Indigo</option>
-            <option value="/blank-tropicalindigo.png" style={{backgroundColor: "#9F9FED", color: "black"}}>Tropical indigo</option>
-            <option value="">Clear selection</option>
-          </Select>
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen !== screenCount + 1 && (
-            <>
-              <CheckIcon color="#03C03C" />
-              <FormHelperText>
-                {file === "/blank.png" ? "Black blank element" : 
-                 file === "/blank-white.png" ? "White blank element" : 
-                 file === "/blank-indigo.png" ? "Indigo blank element" : 
-                 file === "/blank-tropicalindigo.png" ? "Tropical indigo blank element" :
-                 ""}
-              </FormHelperText>
-            </>
-          )}
-          {(file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png") && screen === screenCount + 1 && (
-            <>
-              <CloseIcon color="#D2042D" />
-              <FormHelperText color="red.500">
-                Blank elements are not allowed on the audio screen. Please select an audio file instead.
-              </FormHelperText>
-            </>
-          )}{" "}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", my: 4 }}>
+            <Divider orientation="horizontal" />
+            <FormHelperText mb={2} whiteSpace="nowrap">or</FormHelperText>
+            <Divider orientation="horizontal" />
+          </div>
+          <div className="App">
+
+            <FormHelperText mb={2}>
+              {"Select a color for the element"
+              }
+            </FormHelperText>
+            {/*Color picker component with preset colors and custom color selection*/}
+            <ColorPickerWithPresets
+              color={color}
+              onChange={setColor}
+              presetColors={presetColors}
+            />
+          </div>
           <Divider orientation="horizontal" my={4} />
         </FormControl>
         <Button mb={4} type="submit" colorScheme="purple">

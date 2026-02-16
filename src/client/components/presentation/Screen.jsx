@@ -1,3 +1,16 @@
+/**
+ * Screen.jsx
+ * Component responsible for rendering media cues on individual screens during presentation mode. 
+ * 
+ * Key Features:
+ * - Opens a new browser window for each screen and renders media cues based on the current presentation state.
+ * - Supports images, videos, and audio files, with conditional rendering based on file type.
+ * - Implements transitions between cues using Emotion for CSS-in-JS styling.
+ * - Displays screen number and cue name as an overlay when the Shift key is held down.
+ * - Listens for changes in the assigned cue data and updates the displayed media accordingly.
+ * - Cleans up resources and event listeners when the screen is closed or unmounted.
+ */
+
 import React, { useEffect, useRef, useState } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
@@ -9,21 +22,87 @@ import { getAnims } from "../../utils/transitionUtils"
 
 
 //conditional rendering helper function based on file type
-const renderMedia = (file, name) => {
-  if (isType.image(file)) {
-    // Handle blank images by using local file path when URL is null
-    const imageSrc = file.url || `/${file.name}`
-    
+const renderMedia = (file, name, color) => {
+
+  console.log("Rendering media with file:", file) // Debug log to check file object
+
+  if (!file) {
     return (
       <Image
-        src={imageSrc}
-        alt={name}
+        bg={color}
+        // alt={name}
         width="100%"
         height="100vh"
         objectFit="cover"
       />
     )
   }
+
+  if (isType.image(file)) {
+    // Handle blank images by using local file path when URL is null
+    // This is intended to be temporary until blank files are replaced in the database with actual color values and the blank file type is removed
+    // TODO: Refactor to remove blank file type and use color value directly from cue data instead of relying on file name parsing
+    if (file.name.includes("blank")) {
+      if (file.name.includes("blank-black")) {
+        return (
+          <Image
+            bg="#000000"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-white")) {
+        return (
+          <Image
+            bg="#ffffff"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-indigo")) {
+        return (
+          <Image
+            bg="#5700a3"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      if (file.name.includes("blank-tropical-indigo")) {
+        return (
+          <Image
+            bg="#8f94f6"
+            alt={name}
+            width="100%"
+            height="100vh"
+            objectFit="cover"
+          />
+        )
+      }
+      // show other images as normal  
+    } else {
+      const imageSrc = file.url || `/${file.name}`
+      return (
+        <Image
+          src={imageSrc}
+          alt={name}
+          width="100%"
+          height="100vh"
+          objectFit="cover"
+        />
+      )
+    }
+
+  }
+  // check if media is video
   if (isType.video(file)) {
     return (
       <video
@@ -37,6 +116,7 @@ const renderMedia = (file, name) => {
       />
     )
   }
+  // check if media is audio
   if (isType.audio(file)) {
     return (
       <audio autoPlay loop controls style={{ width: "100%" }}>
@@ -45,7 +125,17 @@ const renderMedia = (file, name) => {
       </audio>
     )
   }
-  return <Text>Unsupported media type.</Text>
+  // if no media file, render a solid color background  
+  return (
+    <Image
+      bg={color}
+      // alt={name}
+      width="100%"
+      height="100vh"
+      objectFit="cover"
+    />
+  )
+  // return <Text>Unsupported media type.</Text>
 }
 
 const ScreenContent = ({
@@ -68,38 +158,74 @@ const ScreenContent = ({
       display="flex"
       flexDirection="column"
     >
-    {/* Header with Screen Number on the left and Cue Name on the right */}
-    <Box
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-      position="absolute"
-      width="90vw"
-      left="5vw"
-      zIndex={2}
-    >
-      <Text
-        fontSize="xl"
-        textShadow="1px 0 2px #000000"
-        style={{ visibility: showText ? "visible" : "hidden" }}
+      {/* Header with Screen Number on the left and Cue Name on the right */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        position="absolute"
+        width="90vw"
+        left="5vw"
+        zIndex={2}
       >
-        Screen {screenNumber}
-      </Text>
-      {currentScreenData && (
         <Text
           fontSize="xl"
           textShadow="1px 0 2px #000000"
           style={{ visibility: showText ? "visible" : "hidden" }}
         >
-          Element Name: {currentScreenData.name}
+          Screen {screenNumber}
         </Text>
-      )}
-    </Box>
+        {currentScreenData && (
+          <Text
+            fontSize="xl"
+            textShadow="1px 0 2px #000000"
+            style={{ visibility: showText ? "visible" : "hidden" }}
+          >
+            Element Name: {currentScreenData.name}
+          </Text>
+        )}
+      </Box>
 
-    {/* Animates out previous cue media, if any */}
-    {previousScreenData && (
+      {/* Animates out previous cue media, if any */}
+      {previousScreenData && (
+        <Box
+          key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}-${transitionType}`}
+          flex="1"
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          position="absolute"
+          width="100vw"
+          zIndex={1}
+          animation={animStyle(exitAnim)}
+        >
+          {(previousScreenData.file?.url || previousScreenData.file?.name) &&
+            (isType.image(previousScreenData.file) ? (
+              <Image
+                src={previousScreenData.file.url || `/${previousScreenData.file.name}`}
+                alt={previousScreenData.name}
+                width="100%"
+                height="100vh"
+                objectFit="contain"
+              />
+            ) : (
+              <video
+                src={previousScreenData.file.url}
+                width="100%"
+                height="100%"
+                autoPlay
+                loop
+                muted
+                style={{ objectFit: "contain" }}
+              />
+            ))}
+
+        </Box>
+      )}
+
+      {/* Animates in current cue media */}
       <Box
-        key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}-${transitionType}`}
+        key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}-${transitionType}`}
         flex="1"
         display="flex"
         justifyContent="center"
@@ -107,50 +233,16 @@ const ScreenContent = ({
         position="absolute"
         width="100vw"
         zIndex={1}
-        animation={animStyle(exitAnim)}
+        color="white"
+        animation={animStyle(enterAnim)}
       >
-        {(previousScreenData.file?.url || previousScreenData.file?.name) &&
-          (isType.image(previousScreenData.file) ? (
-            <Image
-              src={previousScreenData.file.url || `/${previousScreenData.file.name}`}
-              alt={previousScreenData.name}
-              width="100%"
-              height="100vh"
-              objectFit="contain"
-            />
-          ) : (
-            <video
-              src={previousScreenData.file.url}
-              width="100%"
-              height="100%"
-              autoPlay
-              loop
-              muted
-              style={{ objectFit: "contain" }}
-            />
-          ))}
+        {currentScreenData.name != undefined ? (
+          renderMedia(currentScreenData.file, currentScreenData.name, currentScreenData.color)
+        ) : (
+          <Text>No media available for this cue.</Text>
+        )}
       </Box>
-    )}
-
-    {/* Animates in current cue media */}
-    <Box
-      key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}-${transitionType}`}
-      flex="1"
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      position="absolute"
-      width="100vw"
-      zIndex={1}
-      animation={animStyle(enterAnim)}
-    >
-      {currentScreenData?.file?.url ? (
-        renderMedia(currentScreenData.file, currentScreenData.name)
-      ) : (
-        <Text>No media available for this cue.</Text>
-      )}
     </Box>
-  </Box>
   )
 }
 
@@ -248,10 +340,11 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         setPreviousScreenData(null)
         setCurrentScreenData(screenData)
       } else {
-        // Skip update if media URL and name hasn't changed
+        // Skip update if media URL, name or color hasn't changed
         if (
           currentScreenData?.file?.url === screenData?.file?.url &&
-          currentScreenData?.name === screenData?.name
+          currentScreenData?.name === screenData?.name &&
+          currentScreenData?.color === screenData?.color
         ) {
           return
         }
@@ -259,7 +352,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(screenData)
       }
-    } windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}` 
+    } windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}`
   }, [screenData, currentScreenData, isWindowReady])
 
   // Listeners for shift-press to show screen data on screens
@@ -291,19 +384,19 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
     emotionCache &&
     (currentScreenData || previousScreenData)
     ? ReactDOM.createPortal(
-        //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
-        <CacheProvider value={emotionCache}>
-          <ScreenContent
-            screenNumber={screenNumber}
-            currentScreenData={currentScreenData}
-            previousScreenData={previousScreenData}
-            showText={showText}
-            transitionType={transitionType}
-          />
-        </CacheProvider>,
-        windowRef.current.document.body // render to new window's document.body
-        
-      )
+      //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
+      <CacheProvider value={emotionCache}>
+        <ScreenContent
+          screenNumber={screenNumber}
+          currentScreenData={currentScreenData}
+          previousScreenData={previousScreenData}
+          showText={showText}
+          transitionType={transitionType}
+        />
+      </CacheProvider>,
+      windowRef.current.document.body // render to new window's document.body
+
+    )
     : null
 }
 

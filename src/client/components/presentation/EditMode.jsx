@@ -77,15 +77,15 @@ const EditMode = ({
   const [hoverPosition, setHoverPosition] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
-  const [confirmAction, setConfirmAction] = useState(() => () => {})
+  const [confirmAction, setConfirmAction] = useState(() => () => { })
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
 
-  const xLabels = Array.from({ length: indexCount }, (_, index) => 
+  const xLabels = Array.from({ length: indexCount }, (_, index) =>
     index === 0 ? "Starting Frame" : `Frame ${index}`)
   const visualCues = cues.filter(cue => cue.screen <= presentation.screenCount)
   const maxVisualScreen = Math.max(...visualCues.map((cue) => cue.screen), presentation.screenCount)
-  
+
   const yLabels = Array.from(
     { length: maxVisualScreen },
     (_, index) => `Screen ${index + 1}`
@@ -125,6 +125,12 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [isToolboxOpen])
+
+  useEffect(() => {
+    if (selectedCue && !cues.some((cue) => cue._id === selectedCue._id)) {
+      setSelectedCue(null)
+    }
+  }, [cues, selectedCue])
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -184,6 +190,7 @@ const EditMode = ({
             cue.screen,
             cue.file,
             cue._id,
+            cue.color,
             cue.loop
           )
 
@@ -232,7 +239,7 @@ const EditMode = ({
       return
     }
 
-   // Get all cues after this index, shift them to the left
+    // Get all cues after this index, shift them to the left
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
     if (cuesAfter.length === 0) {
@@ -253,6 +260,7 @@ const EditMode = ({
           cue.screen,
           cue.file,
           cue._id,
+          cue.color,
           cue.loop
         )
 
@@ -305,7 +313,7 @@ const EditMode = ({
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
-      
+
       for (const audioCue of audioCues) {
         const updatedCue = {
           cueId: audioCue._id,
@@ -317,9 +325,9 @@ const EditMode = ({
         }
         await dispatch(updatePresentation(id, updatedCue))
 
-        const updatedCueForState = { 
-          ...audioCue, 
-          screen: updatedCue.screen 
+        const updatedCueForState = {
+          ...audioCue,
+          screen: updatedCue.screen
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -327,23 +335,16 @@ const EditMode = ({
       if (audioCues.length > 0) {
         await dispatch(fetchPresentationInfo(id))
       }
-      
+
       const formData = createFormData(
         0,
         `initial element for screen ${newScreenNumber}`,
         newScreenNumber,
         null
       )
-      // Add image field for blank elements - use the original starting color
-      const storedColor = localStorage.getItem(`presentation-${id}-startingColor`)
-      const imageFile = storedColor === "white" ? "/blank-white.png"
-        : storedColor === "indigo" ? "/blank-indigo.png" 
-        : storedColor === "tropicalindigo" ? "/blank-tropicalindigo.png"
-        : "/blank.png"
-      formData.append("image", imageFile)
-      
+
       await dispatch(createCue(id, formData))
-      
+
       showToast({
         title: "Screen added",
         description: `Screen ${newScreenNumber} has been added with initial element`,
@@ -371,7 +372,7 @@ const EditMode = ({
 
     const screenToRemove = presentation.screenCount
     const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
-    
+
     if (cuesOnScreen.length > 0) {
       setConfirmMessage(
         `Screen ${screenToRemove} has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?`
@@ -391,7 +392,7 @@ const EditMode = ({
     try {
       const currentScreenCount = presentation.screenCount
       const audioCues = cues.filter(cue => cue.screen === currentScreenCount + 1)
-      
+
       dispatch(decrementScreenCount())
       const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
 
@@ -406,10 +407,10 @@ const EditMode = ({
         }
 
         await dispatch(updatePresentation(id, updatedCue))
-        
-        const updatedCueForState = { 
-          ...audioCue, 
-          screen: updatedCue.screen 
+
+        const updatedCueForState = {
+          ...audioCue,
+          screen: updatedCue.screen
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -417,7 +418,7 @@ const EditMode = ({
       if (audioCues.length > 0) {
         await dispatch(fetchPresentationInfo(id))
       }
-      
+
       // Show appropriate message based on whether cues were removed
       const removedCuesCount = result.payload?.removedCuesCount || 0
       if (removedCuesCount > 0) {
@@ -512,8 +513,8 @@ const EditMode = ({
 
     if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
       return
-    } 
-    
+    }
+
     const audioRowIndex = presentation.screenCount + 1
     if (
       (yIndex === audioRowIndex && copiedCue.screen !== audioRowIndex) ||
@@ -529,24 +530,32 @@ const EditMode = ({
 
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
     await addCue(newCueData)
+    console.log("Pasted cue data: ", newCueData)
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
-    const fileObj = await fetchFileFromUrl(
-      copiedCue.file.url,
-      copiedCue.file.name
-    )
+    let fileObj = null
+    if (copiedCue.file) {
 
-    if (copiedCue.file.driveId) {
-      fileObj.driveId = copiedCue.file.driveId
+      fileObj = await fetchFileFromUrl(
+        copiedCue.file.url,
+        copiedCue.file.name
+      )
+      if (copiedCue.file.driveId) {
+        fileObj.driveId = copiedCue.file.driveId
+      }
     }
+
 
     return {
       index: xIndex,
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
       file: fileObj,
-      fileName: copiedCue.file.name || "blank.png",
+
+      fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
+      color: copiedCue.color,
+      loop: copiedCue.loop,
     }
   }
 
@@ -626,7 +635,7 @@ const EditMode = ({
 
   const addCue = async (cueData) => {
     setStatus("loading")
-    const { index, cueName, screen, file, loop } = cueData
+    const { index, cueName, screen, file, loop, color } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -642,8 +651,9 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "/blank.png",
-      loop || false
+      file || "",
+      loop || false,
+      color
     )
 
     try {
@@ -668,8 +678,13 @@ const EditMode = ({
       `Frame ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
     )
     setConfirmAction(() => async () => {
-      const updatedCue = { ...existingCue, ...newCueData }
-      await dispatchUpdateCue(existingCue._id, updatedCue)
+      const updatedCueData = {
+        ...newCueData,
+        _id: existingCue._id,
+        cueName: newCueData.cueName,
+      }
+
+      await dispatchUpdateCue(existingCue._id, updatedCueData)
       setIsConfirmOpen(false)
     })
     setIsConfirmOpen(true)
@@ -682,6 +697,12 @@ const EditMode = ({
   }
 
   const updateCue = async (previousCueId, updatedCue) => {
+    const previousStillExists = cues.some((cue) => cue._id === previousCueId)
+    if (!previousStillExists) {
+      await addCue(updatedCue)
+      return
+    }
+
     const existingCue = cues.find(
       (cue) =>
         cue.index === Number(updatedCue.index) &&
@@ -694,6 +715,8 @@ const EditMode = ({
     }
     await dispatchUpdateCue(previousCueId, updatedCue)
   }
+
+
 
   const handleExistingCueUpdate = async (
     existingCue,
@@ -714,10 +737,13 @@ const EditMode = ({
   }
 
   const createUpdatedCueData = async (existingCue, updatedCue) => {
-    const fileObj = await fetchFileFromUrl(
-      updatedCue.file.url,
-      updatedCue.file.name
-    )
+    let fileObj = null
+    if (updatedCue.file) {
+      fileObj = await fetchFileFromUrl(
+        updatedCue.file.url,
+        updatedCue.file.name
+      )
+    }
 
     if (updatedCue.file.driveId) {
       fileObj.driveId = updatedCue.file.driveId
@@ -770,6 +796,7 @@ const EditMode = ({
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     } else {
+      setSelectedCue(null)
       setDoubleClickPosition({ index: xIndex, screen: yIndex })
       setIsToolboxOpen(true)
     }
@@ -1007,7 +1034,7 @@ const EditMode = ({
                 <Text fontWeight="bold" color="black">
                   {label}
                 </Text>
-                
+
                 {/* Screen count controls for visual screens */}
                 {label !== "Audio files" && !isShowMode && (
                   <>
@@ -1034,7 +1061,7 @@ const EditMode = ({
                         zIndex="10"
                       />
                     )}
-                    
+
                     {/* Remove screen button - show on last visual screen only if more than 1 screen */}
                     {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
                       <IconButton
@@ -1060,7 +1087,7 @@ const EditMode = ({
                     )}
                   </>
                 )}
-                
+
                 {/* Audio mute button */}
                 {label === "Audio files" && (
                   <IconButton
@@ -1123,111 +1150,111 @@ const EditMode = ({
                 bg={"transparent"}
                 mb={`${gap}px`}
               >
-              {xLabels.map((label, index) => (
-                <Box
-                  key={label}
-                  position="relative"
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
+                {xLabels.map((label, index) => (
                   <Box
-                    className="x-index-label"
-                    display="flex"
+                    key={label}
+                    position="relative"
+                    display="inline-flex"
                     alignItems="center"
                     justifyContent="center"
-                    bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-                    borderRadius="md"
-                    h={`${rowHeight}px`}
-                    width={`${columnWidth}px`}
                   >
-                    <Text fontWeight="bold" color="black">
-                      {label}
-                    </Text>
-                    <Menu>
-                      <MenuButton
-                        isDisabled={isShowMode}
-                        as={IconButton}
-                        aria-label="Options"
-                        icon={<ChevronDownIcon />}
-                        variant="outline"
-                        position="absolute"
-                        zIndex="10"
-                        top="2px"
-                        right="2px"
-                        size="xs"
-                        backgroundColor="var(--chakra-colors-gray-700)" 
-                        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}  
-                        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}                       
-                      />
-                      <Portal>
-                        <MenuList
+                    <Box
+                      className="x-index-label"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
+                      borderRadius="md"
+                      h={`${rowHeight}px`}
+                      width={`${columnWidth}px`}
+                    >
+                      <Text fontWeight="bold" color="black">
+                        {label}
+                      </Text>
+                      <Menu>
+                        <MenuButton
+                          isDisabled={isShowMode}
+                          as={IconButton}
+                          aria-label="Options"
+                          icon={<ChevronDownIcon />}
+                          variant="outline"
+                          position="absolute"
+                          zIndex="10"
+                          top="2px"
+                          right="2px"
+                          size="xs"
                           backgroundColor="var(--chakra-colors-gray-700)"
-                          margin="-5px 0 0 -166px"
-                          padding="10px 10px 0 10px"
-                          minW="none"
-                          display="flex"
-                          flexDirection="column"
-                        >
-                          <MenuItem
-                            onClick={() => { handleRemoveIndex(index) }}
-                            isDisabled={indexCount <= 1 || index === 0}
-                            backgroundColor="var(--chakra-colors-red-600)"
-                            color="white"
-                            _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
-                            borderRadius="5px"
-                            fontWeight={700}
-                            display="block"
-                            textAlign="center"
+                          _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                          _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                        />
+                        <Portal>
+                          <MenuList
+                            backgroundColor="var(--chakra-colors-gray-700)"
+                            margin="-5px 0 0 -166px"
+                            padding="10px 10px 0 10px"
+                            minW="none"
+                            display="flex"
+                            flexDirection="column"
                           >
-                            Delete Frame
-                          </MenuItem>
-                          <MenuItem
-                            onClick={() => { handleAddIndex(index) }}
-                            isDisabled={indexCount >= 100}
-                            marginTop="10px"
-                            marginBottom="10px"
-                            backgroundColor="var(--chakra-colors-green-600)"
-                            color="white"
-                            _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
-                            borderRadius="5px"
-                            fontWeight={700}                            
-                            display="block"
-                            textAlign="center"
+                            <MenuItem
+                              onClick={() => { handleRemoveIndex(index) }}
+                              isDisabled={indexCount <= 1 || index === 0}
+                              backgroundColor="var(--chakra-colors-red-600)"
+                              color="white"
+                              _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
+                              borderRadius="5px"
+                              fontWeight={700}
+                              display="block"
+                              textAlign="center"
                             >
-                            Add Frame After
-                          </MenuItem>
-                        </MenuList>
-                      </Portal>
-                    </Menu>
+                              Delete Frame
+                            </MenuItem>
+                            <MenuItem
+                              onClick={() => { handleAddIndex(index) }}
+                              isDisabled={indexCount >= 100}
+                              marginTop="10px"
+                              marginBottom="10px"
+                              backgroundColor="var(--chakra-colors-green-600)"
+                              color="white"
+                              _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
+                              borderRadius="5px"
+                              fontWeight={700}
+                              display="block"
+                              textAlign="center"
+                            >
+                              Add Frame After
+                            </MenuItem>
+                          </MenuList>
+                        </Portal>
+                      </Menu>
+                    </Box>
                   </Box>
-                </Box>
-              ))}
-            </Box>
-            <Button
-              colorScheme="gray"
-              onClick={() => {handleAddIndex(indexCount - 1)}}
-              isDisabled={indexCount >= 100}
-              position="absolute"
-              right="-50px"
-              top="5px"
-              paddingTop="20px"
-              paddingBottom="20px"
-            >
-              +
-            </Button>
-            <Button
-              colorScheme="gray"
-              onClick={() => {handleRemoveIndex(indexCount - 1)}}
-              isDisabled={indexCount <= 1}
-              position="absolute"
-              right="-50px"
-              top="55px"
-              paddingTop="20px"
-              paddingBottom="20px"
-            >
-              -
-            </Button>
+                ))}
+              </Box>
+              <Button
+                colorScheme="gray"
+                onClick={() => { handleAddIndex(indexCount - 1) }}
+                isDisabled={indexCount >= 100}
+                position="absolute"
+                right="-50px"
+                top="5px"
+                paddingTop="20px"
+                paddingBottom="20px"
+              >
+                +
+              </Button>
+              <Button
+                colorScheme="gray"
+                onClick={() => { handleRemoveIndex(indexCount - 1) }}
+                isDisabled={indexCount <= 1}
+                position="absolute"
+                right="-50px"
+                top="55px"
+                paddingTop="20px"
+                paddingBottom="20px"
+              >
+                -
+              </Button>
               <GridLayoutComponent
                 layout={layout}
                 cues={cues}
@@ -1242,8 +1269,8 @@ const EditMode = ({
                 isShowMode={isShowMode}
                 cueIndex={cueIndex}
                 isAudioMuted={isAudioMuted}
-                setSelectedCue = {setSelectedCue}
-                setIsToolboxOpen = {setIsToolboxOpen}
+                setSelectedCue={setSelectedCue}
+                setIsToolboxOpen={setIsToolboxOpen}
                 indexCount={indexCount}
                 setShowAlert={setShowAlert}
                 setAlertData={setAlertData}

@@ -172,6 +172,35 @@ describe("test presentation", () => {
       }
     )
 
+    test("creates cue with explicit color", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Color Cue")
+        .field("screen", 2)
+        .field("color", "#ff69b4")
+        .expect(200)
+
+      const createdCue = response.body.cues.find((cue) => cue.name === "Color Cue")
+      expect(createdCue).toBeDefined()
+      expect(createdCue.color).toBe("#ff69b4")
+    })
+
+    test("creates cue with default color when color is missing", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 3)
+        .field("cueName", "Default Color Cue")
+        .field("screen", 2)
+        .expect(200)
+
+      const createdCue = response.body.cues.find((cue) => cue.name === "Default Color Cue")
+      expect(createdCue).toBeDefined()
+      expect(createdCue.color).toBe("#000000")
+    })
+
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
       [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
@@ -227,6 +256,31 @@ describe("test presentation", () => {
           .expect(200)
       }
     )
+
+    test("updates cue color when color is provided", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("color", "#4b0082")
+        .expect(200)
+
+      expect(response.body.color).toBe("#4b0082")
+    })
+
+    test("updates cue with fallback color when color is missing", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .expect(200)
+
+      expect(response.body.color).toBe("#fded11")
+    })
 
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 4."],

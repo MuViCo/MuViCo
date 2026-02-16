@@ -82,11 +82,11 @@ export const stepsToAddElementData = [
     ],
   },
   {
-    title: "Upload media or select Add blank:",
+    title: "Upload media or select a blank element from the color picker or color palette:",
     items: [
       "Click Upload media to add an image or video.",
       "The information button (ℹ️) will show you the allowed file types.",
-      "You can also click \"Add blank\" to create an empty placeholder.",
+      "You can also choose a colored element by clicking the color picker or selecting a color from the palette.",
     ],
   },
   {

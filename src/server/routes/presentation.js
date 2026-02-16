@@ -245,8 +245,9 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
+    const color = req.body.color || "#000000"
 
-    if (!id || isNaN(index) || isNaN(screen)) {
+    if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
@@ -353,6 +354,13 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       }
     }
 
+    const fileObject = {
+              id: fileId,
+              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank2.png"),
+              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
+              ...(driveId && { driveId }),
+            }
+
     const updatedPresentation = await Presentation.findByIdAndUpdate(
       presentation._id,
       {
@@ -361,12 +369,8 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
             index: index,
             name: trimmedCueName,
             screen: screen,
-            file: {
-              id: fileId,
-              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank.png"),
-              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
-              ...(driveId && { driveId }),
-            },
+            file: file ? fileObject : null,
+            color: color,
             loop: loop,
           },
         },
@@ -415,12 +419,11 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
         const fileName = `${id}/${fileId}`
 
         await uploadFileS3(file.buffer, fileName, file.mimetype)
-      }
-
-      updatedPresentation.cues = await processS3Files(
+        updatedPresentation.cues = await processS3Files(
         updatedPresentation.cues,
         id
-      )
+        )
+      }
       res.json(updatedPresentation)
     }
   } catch (error) {
@@ -463,7 +466,6 @@ router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async 
     next(err)
   }
 })
-
 router.put(
   "/:id/:cueId",
   userExtractor,
@@ -473,12 +475,17 @@ router.put(
     try {
       const { id, cueId } = req.params
       const { file, user, presentation } = req
-      const { cueName, image } = req.body
+      const { cueName } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      // default fallback color is yellow, but it should never be used since color is a required field in the frontend
+      const color = req.body.color || "#fded11"
 
-      if (!id || isNaN(index) || isNaN(screen)) {
+      const image = req.body.image
+      const shouldClearFile = image === "null"
+
+      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
       }
 
@@ -533,7 +540,9 @@ router.put(
       cue.screen = screen
       cue.name = trimmedCueName
       cue.loop = loop
+      cue.color = color
 
+      
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         const newFileId = generateFileId()
         cue.file = {
@@ -542,6 +551,10 @@ router.put(
           url: null,
           type: "image/png",
         }
+      }
+
+      if (shouldClearFile) {
+        cue.file = null
       }
 
       if (user.driveToken) {

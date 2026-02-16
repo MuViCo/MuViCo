@@ -60,6 +60,12 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
 const processS3Files = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
+      const cueObject = typeof cue?.toObject === "function" ? cue.toObject() : cue
+
+      if (!cueObject.file) {
+        return cue
+      }
+
       await generateSignedUrlForS3(cue, presentationId)
       if (
         cue.file.url !== "/src/server/public/blank.png" &&

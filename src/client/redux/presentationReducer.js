@@ -189,9 +189,9 @@ export const updatePresentation =
         updatedCueData.screen,
         updatedCueData.file,
         updatedCueData.cueId || cueId,
+        updatedCueData.color,
         updatedCueData.loop
       )
-
       const updatedCue = await presentationService.updateCue(
         presentationId,
         updatedCueData.cueId || cueId,
@@ -216,6 +216,7 @@ export const updatePresentationSwappedCues =
         firstUpdatedCue.screen,
         firstUpdatedCue.file,
         firstUpdatedCue._id,
+        firstUpdatedCue.color,
         firstUpdatedCue.loop
       )
 
@@ -225,6 +226,7 @@ export const updatePresentationSwappedCues =
         secondUpdatedCue.screen,
         secondUpdatedCue.file,
         secondUpdatedCue._id,
+        secondUpdatedCue.color,
         secondUpdatedCue.loop
       )
 
