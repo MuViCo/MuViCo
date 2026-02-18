@@ -1,4 +1,5 @@
 import React from "react"
+import ClickablePopover from "../utils/ClickablePopover"
 
 import {
   Button,
@@ -88,7 +89,7 @@ const AutoplayControls = ({
         </NumberInputStepper>
       </NumberInput>
     <Text fontSize="sm" fontWeight="bold">sec / frame</Text>
-    <Tooltip
+    <ClickablePopover
       label={
           <>
             <b>Autoplay</b>
@@ -114,7 +115,7 @@ const AutoplayControls = ({
         variant="ghost"
         colorScheme="purple"
       />
-    </Tooltip>
+    </ClickablePopover>
 
 
     </Box>
@@ -200,7 +201,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
     />
 
 
-    <Tooltip
+    <ClickablePopover
       label={
         <>
           Make sure this window is in focus!
@@ -225,7 +226,7 @@ const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
         variant="ghost"
         colorScheme="purple"
       />
-    </Tooltip>
+    </ClickablePopover>
   </Box>
 )
 
