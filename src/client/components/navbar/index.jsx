@@ -193,6 +193,14 @@ const NavBar = ({ user, setUser }) => {
                     Logout
                   </Button>
                 </Box>
+                <Box ml={4} display={{ base: "inline-block" }}>
+                  <Link to="/profilepage">
+                    <Button colorScheme="purple" variant="ghost">
+                      Profile
+                    </Button>
+                  </Link>
+                </Box>
+
                 {(isFrontpage || isHomepage || isPresentationPage) && (
                   <Box ml={4} display="inline-block" position="relative">
                     <IconButton
