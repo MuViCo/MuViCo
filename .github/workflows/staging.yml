@@ -45,35 +45,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/frontend/lcov.info,coverage/backend/lcov.info
-
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build image
-        id: build-image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: muvico
-          tags: staging ${{ github.sha }}
-          containerfiles: |
-            ./Dockerfile
-          build-args: |
-            STAGING=true
-
-      - name: Push to quay.io
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: staging
-          registry: quay.io/muvico_hy
-          username: muvico_hy+robo
-          password: ${{ secrets.QUAY_IO_TOKEN }}
