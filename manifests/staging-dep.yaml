@@ -17,6 +17,7 @@ spec:
       containers:
       - name: muvico-staging
         image: quay.io/muvico_hy/muvico:staging
+        imagePullPolicy: Always
         ports:
           - containerPort: 8000
         envFrom:
