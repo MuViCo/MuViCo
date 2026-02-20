@@ -5,7 +5,7 @@ metadata:
   labels:
     app: muvico-staging
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: muvico-staging
@@ -16,6 +16,9 @@ spec:
     spec:
       containers:
       - name: muvico-staging
-        image: docker.io/strm/helloworld-http
+        image: quay.io/muvico_hy/muvico:staging
         ports:
-        - containerPort: 80
+          - containerPort: 8000
+        envFrom:
+          - secretRef:
+              name: muvico-staging-secrets
