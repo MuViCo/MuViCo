@@ -48,7 +48,11 @@ jobs:
 
   build-to-quay:
     needs: test
+<<<<<<< HEAD
     #if: ${{ github.ref == 'refs/heads/main'}}
+=======
+    if: ${{ github.ref == 'refs/heads/main'}}
+>>>>>>> 99bf1cc (Changed staging build to use docker build)
     runs-on: ubuntu-latest
 
     steps:
