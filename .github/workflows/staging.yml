@@ -46,34 +46,29 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/frontend/lcov.info,coverage/backend/lcov.info
 
-  build-and-push:
+  build-to-quay:
     needs: test
+    if: ${{ github.ref == 'refs/heads/main'}}
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: npm ci
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build image
+      - name: Build, tag, and push image to Quay.io
         id: build-image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: muvico
-          tags: staging ${{ github.sha }}
-          containerfiles: |
-            ./Dockerfile
-          build-args: |
-            STAGING=true
-
-      - name: Push to quay.io
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: staging
-          registry: quay.io/muvico_hy
-          username: muvico_hy+robo
-          password: ${{ secrets.QUAY_IO_TOKEN }}
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: |
+          docker login quay.io -u muvico_hy+robo -p ${{ secrets.QUAY_IO_TOKEN }}
+          docker build \
+            --build-arg VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+            --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+            --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+            -t 'quay.io/muvico_hy/muvico:staging' .
+          docker push 'quay.io/muvico_hy/muvico:staging'
+          echo "image=quay.io/muvico_hy/muvico:staging" >> $GITHUB_OUTPUT
