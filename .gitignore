@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
+*.env
 .npm*
 
 /coverage
@@ -36,3 +36,8 @@ dist-ssr
 
 # Playwright
 /playwright/.auth/
+
+# CI/CD
+*secrets.yaml
+*token.yaml
+*kubeconfig.yaml
