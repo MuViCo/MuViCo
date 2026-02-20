@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: muvico-staging-dep
+  labels:
+    app: muvico-staging
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: muvico-staging
+  template:
+    metadata:
+      labels:
+        app: muvico-staging
+    spec:
+      containers:
+      - name: muvico-staging
+        image: docker.io/strm/helloworld-http
+        ports:
+        - containerPort: 80
