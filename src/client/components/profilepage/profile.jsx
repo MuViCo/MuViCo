@@ -1,4 +1,5 @@
 import { useState, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
 import changepassword from "../../services/changepassword"
 import Error from "../utils/Error" 
@@ -20,6 +21,7 @@ import {
 } from "@chakra-ui/react"
 
 const Profile = ({ user }) => {
+  const navigate = useNavigate()
   const [passwords, setPasswords] = useState({
     currentPassword: "",
     newPassword: "",
@@ -241,17 +243,11 @@ const Profile = ({ user }) => {
 
                   <HStack spacing={3} pt={4}>
                     <Button type="submit" colorScheme="purple">
-                      Change Password
+                      Confirm changes
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() =>
-                        setPasswords({
-                          currentPassword: "",
-                          newPassword: "",
-                          confirmPassword: "",
-                        })
-                      }
+                      onClick={() => navigate("/")}
                     >
                       Return to Frontpage
                     </Button>
@@ -264,36 +260,6 @@ const Profile = ({ user }) => {
       )}
     </Box>
   )
-}
-
-const changePassword = ({ changepassword }) => {
-  const [error, setError]= useState(null)
-  const navigate = useNavigate()
-  const toast = useToast()
-  
-  const onSubmit = async ({ currentPassword, newPassword }) => {
-    try {
-      await changepassword({ currentPassword, newPassword })
-      toast({
-        title: "Success",
-        description: "Password changed successfully",
-        status: "success",
-        duration: 3,
-        isClosable: true,
-      })
-      navigate("/")
-    } catch (error) {
-      console.error("Error changing password:", error)
-      setError("Failed to change password. Please check your current password and try again.")
-    }
-  }
-  return (
-      <SignUpForm
-        onSubmit={onSubmit}
-        error={error}
-        handleTermsClick={handleTermsClick}
-      />
-    )
 }
 
 export default Profile
