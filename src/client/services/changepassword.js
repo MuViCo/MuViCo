@@ -1,9 +1,14 @@
 import axios from "axios"
+import getToken from "../auth"
 
-const Url = "/api/changepassword"
+const Url = "/api/users/change-password"
 
 const changepassword = async (credentials) => {
-  const response = await axios.post(Url, credentials)
+  const config = {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  }
+
+  const response = await axios.post(Url, credentials, config)
   return response.data
 }
 

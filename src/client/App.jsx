@@ -83,11 +83,13 @@ const App = () => {
             />
             <Route path="/terms" element={<TermsPage />} />
             <Route
+              path="/profilepage"
+              element={user ? <Profile user={user} /> : <Navigate to="/" />}
+            />
+            <Route
               path="/userspresentations/:id"
               element={<UserPresentations />}
             />
-            <Route path="/profilepage"element={<Profile user={user} />}
-             />
           </Routes>
         </Container>
         <Footer />
