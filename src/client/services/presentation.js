@@ -122,7 +122,7 @@ const swapCues = async (id, payload) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}${id}/swap`, payload, config)
+  const response = await axios.put(`${baseUrl}${id}/swapCues`, payload, config)
   return response.data
 }
 

@@ -443,7 +443,7 @@ router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async 
   }
 })
 
-router.put("/:id/swap", userExtractor, requirePresentationAccess, async (req, res, next) => {
+router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
     const { id } = req.params
     const { presentation, user } = req
