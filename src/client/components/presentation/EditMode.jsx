@@ -20,7 +20,7 @@ import {
   updatePresentation,
   createCue,
   removeCue,
-  updatePresentationSwappedCues,
+  swapCues,
   incrementIndexCount,
   decrementIndexCount,
   incrementScreenCount,
@@ -824,15 +824,16 @@ const EditMode = ({
     }
   }
 
-  const dispatchUpdateSwappedCues = async (newTargetCue, newSelectedCue) => {
+  const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
     setStatus("loading")
     try {
       await dispatch(
-        updatePresentationSwappedCues(id, newTargetCue, newSelectedCue)
+        swapCues(id, newTargetCue, newSelectedCue)
       )
       setStatus("saved")
     } catch (error) {
       console.error(error)
+      setStatus("saved")
       showToast({
         title: "Error",
         description: error.message || "An error occurred",
@@ -882,11 +883,11 @@ const EditMode = ({
         setSelectedCue(null)
         return
       } else {
-        await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+        await dispatchSwapCues(newTargetCue, newSelectedCue)
         setSelectedCue(null)
       }
     } else {
-      await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+      await dispatchSwapCues(newTargetCue, newSelectedCue)
       setSelectedCue(null)
     }
   }

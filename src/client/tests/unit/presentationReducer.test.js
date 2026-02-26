@@ -10,7 +10,7 @@ import reducer, {
   createCue,
   deletePresentation,
   updatePresentation,
-  updatePresentationSwappedCues,
+  swapCues,
   incrementIndexCount,
   decrementIndexCount,
   incrementScreenCount,
@@ -879,7 +879,7 @@ describe("presentationReducer asynchronous actions", () => {
     })
 
     await store.dispatch(
-      updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
+      swapCues("123", firstUpdatedCue, secondUpdatedCue)
     )
 
     expect(presentationService.swapCues).toHaveBeenCalledWith("123", {
@@ -1098,7 +1098,7 @@ describe("presentationReducer asynchronous actions", () => {
 
     await expect(
       store.dispatch(
-        updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
+        swapCues("123", firstUpdatedCue, secondUpdatedCue)
       )
     ).rejects.toThrow("Not found")
   })

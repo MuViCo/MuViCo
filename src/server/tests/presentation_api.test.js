@@ -317,6 +317,90 @@ describe("test presentation", () => {
     })
   })
 
+  describe("PUT /api/presentation/:id/swapCues", () => {
+    let firstCueId
+    let secondCueId
+
+    beforeEach(async () => {
+      await createCue(0, "Swap Cue 1", 1)
+      await createCue(1, "Swap Cue 2", 1)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      const firstCue = presentation.cues.find((cue) => cue.name === "Swap Cue 1")
+      const secondCue = presentation.cues.find((cue) => cue.name === "Swap Cue 2")
+
+      firstCueId = firstCue._id.toString()
+      secondCueId = secondCue._id.toString()
+    })
+
+    test("swaps cues successfully", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId,
+          secondCueId,
+          firstIndex: 1,
+          firstScreen: 1,
+          secondIndex: 0,
+          secondScreen: 1,
+        })
+        .expect(200)
+
+      expect(response.body.firstCue).toBeDefined()
+      expect(response.body.secondCue).toBeDefined()
+      expect(response.body.firstCue.index).toBe(1)
+      expect(response.body.firstCue.screen).toBe(1)
+      expect(response.body.secondCue.index).toBe(0)
+      expect(response.body.secondCue.screen).toBe(1)
+
+      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedFirstCue = updatedPresentation.cues.id(firstCueId)
+      const updatedSecondCue = updatedPresentation.cues.id(secondCueId)
+
+      expect(updatedFirstCue.index).toBe(1)
+      expect(updatedFirstCue.screen).toBe(1)
+      expect(updatedSecondCue.index).toBe(0)
+      expect(updatedSecondCue.screen).toBe(1)
+    })
+
+    test("rejects decimal swap coordinates", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId,
+          secondCueId,
+          firstIndex: 1.5,
+          firstScreen: 1,
+          secondIndex: 0,
+          secondScreen: 1,
+        })
+        .expect(400)
+
+      expect(response.body.error).toBe("Swap coordinates must be integers")
+    })
+
+    test("rejects swap when target position has third cue conflict", async () => {
+      await createCue(2, "Third Cue", 1)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId,
+          secondCueId,
+          firstIndex: 2,
+          firstScreen: 1,
+          secondIndex: 0,
+          secondScreen: 1,
+        })
+        .expect(400)
+
+      expect(response.body.error).toBe("Swap target position is already occupied by another cue.")
+    })
+  })
+
   describe("PUT /api/presentation/:id/indexCount", () => {
     const validCases = [1, 5, 10, 100]
 
