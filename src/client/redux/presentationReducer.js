@@ -188,7 +188,7 @@ export const updatePresentation =
     }
   }
 
-export const updatePresentationSwappedCues =
+export const swapCues =
   (presentationId, firstUpdatedCue, secondUpdatedCue) => async (dispatch) => {
     try {
       const { firstCue: updatedFirstCue, secondCue: updatedSecondCue } =
