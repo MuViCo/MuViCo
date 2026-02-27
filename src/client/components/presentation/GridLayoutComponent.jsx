@@ -14,6 +14,7 @@ import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
+import { getAudioRow, isAudioCue } from "../utils/fileTypeUtils"
 
 const renderElementBasedOnIndex = (currentIndex, cues, cue, screenCount) => {
   if (cue.index > currentIndex) {
@@ -22,7 +23,7 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue, screenCount) => {
     return true
   } else if (cue.index < currentIndex) {
     const audioElementIndexes = cues
-      .filter((c) => c.screen === screenCount + 1)
+      .filter((c) => isAudioCue(c, screenCount))
       .map((c) => c.index)
       .sort((a, b) => a - b)
     if (
@@ -95,7 +96,7 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
     )
   } else if (
     isShowMode &&
-    cue.file.type.startsWith("audio/") &&
+    isAudioCue(cue, screenCount) &&
     renderElementBasedOnIndex(cueIndex, cues, cue, screenCount)
   ) {
     return (
@@ -207,7 +208,7 @@ const GridLayoutComponent = ({
 
   const ShowModeCueButtons = (cue) => (
     <>
-      {cue.file &&cue.file.type.startsWith("audio/") && (
+      {cue.file && isAudioCue(cue, screenCount) && (
         <IconButton
           icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
           disabled={true}
@@ -291,7 +292,7 @@ const GridLayoutComponent = ({
             size="xs"
             w="100%"
             h="30px"
-            borderRadius={cue.file!=null ? (cue.file.type.startsWith("audio/") ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
+            borderRadius={cue.file!=null ? (isAudioCue(cue, screenCount) ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
@@ -310,7 +311,7 @@ const GridLayoutComponent = ({
               })
             }}
           />
-          {cue.file!=null &&cue.file.type.startsWith("audio/") && (
+          {cue.file!=null && isAudioCue(cue, screenCount) && (
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
@@ -342,8 +343,10 @@ const GridLayoutComponent = ({
       return
     }
     
-    if (oldItem.y === screenCount || newItem.y === screenCount) {
-      if (!(oldItem.y === screenCount && newItem.y === screenCount)) {
+    const audioRowYIndex = getAudioRow(screenCount) - 1
+
+    if (oldItem.y === audioRowYIndex || newItem.y === audioRowYIndex) {
+      if (!(oldItem.y === audioRowYIndex && newItem.y === audioRowYIndex)) {
         showToast({
           title: "Cannot move this file type here",
           description: "Keep audio elements to the audio row and visual elements to the visual rows.",
@@ -429,7 +432,7 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), screenCount + 1)}
+      maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => (
         <div

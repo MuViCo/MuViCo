@@ -40,6 +40,12 @@ import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
+import {
+  getAudioRow,
+  isAudioCue,
+  isAudioMimeType,
+  isImageOrVideoMimeType,
+} from "../utils/fileTypeUtils"
 
 const theme = extendTheme({})
 
@@ -83,11 +89,10 @@ const EditMode = ({
 
   const xLabels = Array.from({ length: indexCount }, (_, index) =>
     index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const visualCues = cues.filter(cue => cue.screen <= presentation.screenCount)
-  const maxVisualScreen = Math.max(...visualCues.map((cue) => cue.screen), presentation.screenCount)
+  const visualCues = cues.filter(cue => !isAudioCue(cue, presentation.screenCount))
 
   const yLabels = Array.from(
-    { length: maxVisualScreen },
+    { length: presentation.screenCount },
     (_, index) => `Screen ${index + 1}`
   )
 
@@ -309,7 +314,7 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      const audioCues = cues.filter(cue => cue.screen === presentation.screenCount + 1)
+      const audioCues = cues.filter(cue => isAudioCue(cue, presentation.screenCount))
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
@@ -391,7 +396,7 @@ const EditMode = ({
   const performScreenRemoval = async () => {
     try {
       const currentScreenCount = presentation.screenCount
-      const audioCues = cues.filter(cue => cue.screen === currentScreenCount + 1)
+      const audioCues = cues.filter(cue => isAudioCue(cue, currentScreenCount))
 
       dispatch(decrementScreenCount())
       const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
@@ -498,7 +503,9 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > presentation.screenCount + 1 || xIndex < 0 || xIndex >= indexCount) {
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+
+    if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
       setIsCopied(false)
       setCopiedCue(null)
       setShowAlert(false)
@@ -515,7 +522,6 @@ const EditMode = ({
       return
     }
 
-    const audioRowIndex = presentation.screenCount + 1
     if (
       (yIndex === audioRowIndex && copiedCue.screen !== audioRowIndex) ||
       (copiedCue.screen === audioRowIndex && yIndex !== audioRowIndex)
@@ -580,7 +586,7 @@ const EditMode = ({
       !cueExists &&
       xIndex >= 0 &&
       xIndex < indexCount &&
-      yIndex <= presentation.screenCount + 1 &&
+      yIndex <= getAudioRow(presentation.screenCount) &&
       yIndex >= 1
     ) {
       setHoverPosition({ index: xIndex, screen: yIndex })
@@ -780,7 +786,7 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > presentation.screenCount + 1) {
+    if (yIndex < 1 || yIndex > getAudioRow(presentation.screenCount)) {
       return
     }
 
@@ -872,8 +878,9 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    if (newTargetCue.screen === 5 || newSelectedCue.screen === 5) {
-      if (!(newTargetCue.screen === 5 && newSelectedCue.screen === 5)) {
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+    if (newTargetCue.screen === audioRowIndex || newSelectedCue.screen === audioRowIndex) {
+      if (!(newTargetCue.screen === audioRowIndex && newSelectedCue.screen === audioRowIndex)) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -891,9 +898,8 @@ const EditMode = ({
     }
   }
 
-  const isImageOrVideo = (file) =>
-    file.type.startsWith("image/") || file.type.startsWith("video/")
-  const isAudio = (file) => file.type.startsWith("audio/")
+  const isImageOrVideo = (file) => isImageOrVideoMimeType(file?.type)
+  const isAudio = (file) => isAudioMimeType(file?.type)
 
   const handleCueReplace = async (xIndex, yIndex, file) => {
     const existingCue = cues.find(
@@ -938,7 +944,7 @@ const EditMode = ({
       )
 
       const file = mediaFiles[0]
-      const audioRowIndex = presentation.screenCount + 1
+      const audioRowIndex = getAudioRow(presentation.screenCount)
 
       if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
         showToast({

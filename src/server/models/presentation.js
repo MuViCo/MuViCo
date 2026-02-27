@@ -13,8 +13,7 @@
 */
 
 const mongoose = require("mongoose")
-
-const VALID_CUE_TYPES = ["visual", "audio"]
+const { VALID_CUE_TYPES, getAudioRow, getCueTypeFromScreen } = require("../utils/cueType")
 
 const normalizePresentationCues = (presentationObject) => {
   const screenCount = Number(presentationObject.screenCount) || 1
@@ -26,14 +25,12 @@ const normalizePresentationCues = (presentationObject) => {
 
     const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
       ? normalizedCue.cueType
-      : Number(normalizedCue.screen) === screenCount + 1
-        ? "audio"
-        : "visual"
+      : getCueTypeFromScreen(normalizedCue.screen, screenCount)
 
     return {
       ...normalizedCue,
       cueType,
-      ...(cueType === "audio" ? { screen: screenCount + 1 } : {}),
+      ...(cueType === "audio" ? { screen: getAudioRow(screenCount) } : {}),
     }
   })
 }
@@ -168,7 +165,7 @@ presentationSchema.pre("save", function (next) {
       }))
     }
 
-    if (cue.cueType === "audio" && cue.screen !== this.screenCount + 1) {
+    if (cue.cueType === "audio" && cue.screen !== getAudioRow(this.screenCount)) {
       validationError.addError("cues.screen", new mongoose.Error.ValidatorError({
         message: `Audio cue screen ${cue.screen} must equal screenCount + 1`,
         path: "cues.screen",
