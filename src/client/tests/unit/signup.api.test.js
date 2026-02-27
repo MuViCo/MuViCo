@@ -1,5 +1,5 @@
 const axios = require("axios")
-import signupService from "../../services/signup"
+import authService from "../../services/auth"
 
 jest.mock("axios")
 
@@ -12,7 +12,7 @@ test("signup api call works", async () => {
 
   axios.post.mockResolvedValue(payload)
 
-  await expect(signupService.signup(credentials)).resolves.toEqual(credentials)
+  await expect(authService.signup(credentials)).resolves.toEqual(credentials)
 
   expect(axios.post).toHaveBeenCalledWith("/api/signup", credentials)
 })
