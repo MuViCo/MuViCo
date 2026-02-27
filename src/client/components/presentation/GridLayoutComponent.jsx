@@ -14,16 +14,16 @@ import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
-import { getAudioRow, isAudioCue } from "../utils/fileTypeUtils"
+import { getAudioRow } from "../utils/fileTypeUtils"
 
-const renderElementBasedOnIndex = (currentIndex, cues, cue, screenCount) => {
+const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   if (cue.index > currentIndex) {
     return false
   } else if (cue.index === currentIndex) {
     return true
   } else if (cue.index < currentIndex) {
     const audioElementIndexes = cues
-      .filter((c) => isAudioCue(c, screenCount))
+      .filter((c) => c.cueType === "audio")
       .map((c) => c.index)
       .sort((a, b) => a - b)
     if (
@@ -96,8 +96,8 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
     )
   } else if (
     isShowMode &&
-    isAudioCue(cue, screenCount) &&
-    renderElementBasedOnIndex(cueIndex, cues, cue, screenCount)
+    cue.cueType === "audio" &&
+    renderElementBasedOnIndex(cueIndex, cues, cue)
   ) {
     return (
       <audio
@@ -208,7 +208,7 @@ const GridLayoutComponent = ({
 
   const ShowModeCueButtons = (cue) => (
     <>
-      {cue.file && isAudioCue(cue, screenCount) && (
+      {cue.file && cue.cueType === "audio" && (
         <IconButton
           icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
           disabled={true}
@@ -292,7 +292,7 @@ const GridLayoutComponent = ({
             size="xs"
             w="100%"
             h="30px"
-            borderRadius={cue.file!=null ? (isAudioCue(cue, screenCount) ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
+            borderRadius={cue.file!=null ? (cue.cueType === "audio" ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
@@ -311,7 +311,7 @@ const GridLayoutComponent = ({
               })
             }}
           />
-          {cue.file!=null && isAudioCue(cue, screenCount) && (
+          {cue.file!=null && cue.cueType === "audio" && (
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
@@ -342,39 +342,45 @@ const GridLayoutComponent = ({
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
-    
-    const audioRowYIndex = getAudioRow(screenCount) - 1
 
-    if (oldItem.y === audioRowYIndex || newItem.y === audioRowYIndex) {
-      if (!(oldItem.y === audioRowYIndex && newItem.y === audioRowYIndex)) {
-        showToast({
-          title: "Cannot move this file type here",
-          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
-          status: "error",
-        })
-
-        const updatedLayout = currentLayout.map((item) => {
-          // find the item that was moved with its ID and revert it to its old position
-          if (item.i === newItem.i) {
-            return {
-              ...item,
-              x: oldItem.x,
-              y: oldItem.y,
-            }
-          }
-          return item
-        })
-
-        setCurrentLayout(updatedLayout)
-        return
-      }
+    const cue = cues.find((cue) => cue._id === newItem.i)
+    if (!cue) {
+      return
     }
+
+    const audioRowYIndex = getAudioRow(screenCount) - 1
+    const movingToAudioRow = newItem.y === audioRowYIndex
+    const cueIsAudio = cue.cueType === "audio"
+
+    if ((cueIsAudio && !movingToAudioRow) || (!cueIsAudio && movingToAudioRow)) {
+      showToast({
+        title: "Cannot move this file type here",
+        description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+        status: "error",
+      })
+
+      const updatedLayout = currentLayout.map((item) => {
+        // find the item that was moved with its ID and revert it to its old position
+        if (item.i === newItem.i) {
+          return {
+            ...item,
+            x: oldItem.x,
+            y: oldItem.y,
+          }
+        }
+        return item
+      })
+
+      setCurrentLayout(updatedLayout)
+      return
+    }
+
     const movedCue = {
       cueId: newItem.i,
       index: newItem.x,
       screen: newItem.y + 1,
     }
-    const cue = cues.find((cue) => cue._id === newItem.i)
+
     if (cue) {
       movedCue.cueName = cue.name
       movedCue.color = cue.color

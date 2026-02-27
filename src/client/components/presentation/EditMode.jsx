@@ -42,7 +42,6 @@ import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
 import {
   getAudioRow,
-  isAudioCue,
   isAudioMimeType,
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
@@ -89,7 +88,7 @@ const EditMode = ({
 
   const xLabels = Array.from({ length: indexCount }, (_, index) =>
     index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const visualCues = cues.filter(cue => !isAudioCue(cue, presentation.screenCount))
+  const visualCues = cues.filter(cue => cue.cueType === "visual")
 
   const yLabels = Array.from(
     { length: presentation.screenCount },
@@ -314,7 +313,7 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      const audioCues = cues.filter(cue => isAudioCue(cue, presentation.screenCount))
+      const audioCues = cues.filter(cue => cue.cueType === "audio")
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
@@ -396,7 +395,7 @@ const EditMode = ({
   const performScreenRemoval = async () => {
     try {
       const currentScreenCount = presentation.screenCount
-      const audioCues = cues.filter(cue => isAudioCue(cue, currentScreenCount))
+      const audioCues = cues.filter(cue => cue.cueType === "audio")
 
       dispatch(decrementScreenCount())
       const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
@@ -522,9 +521,11 @@ const EditMode = ({
       return
     }
 
+    const copiedCueIsAudio = copiedCue.cueType === "audio"
+
     if (
-      (yIndex === audioRowIndex && copiedCue.screen !== audioRowIndex) ||
-      (copiedCue.screen === audioRowIndex && yIndex !== audioRowIndex)
+      (yIndex === audioRowIndex && !copiedCueIsAudio) ||
+      (copiedCueIsAudio && yIndex !== audioRowIndex)
     ) {
       showToast({
         title: "Only audio files on the audio row.",
@@ -878,9 +879,10 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    const audioRowIndex = getAudioRow(presentation.screenCount)
-    if (newTargetCue.screen === audioRowIndex || newSelectedCue.screen === audioRowIndex) {
-      if (!(newTargetCue.screen === audioRowIndex && newSelectedCue.screen === audioRowIndex)) {
+    const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
+
+    if (hasAudioCue) {
+      if (!(newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio")) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
