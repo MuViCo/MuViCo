@@ -15,8 +15,7 @@ import {
 } from "@chakra-ui/react"
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
-import signupService from "../../services/signup"
-import loginService from "../../services/login"
+import authService from "../../services/auth"
 
 const initialValues = {
   username: "",
@@ -221,8 +220,8 @@ const SignUp = ({ onSignup }) => {
   }
   const onSubmit = async ({ username, password }) => {
     try {
-      await signupService.signup({ username, password })
-      const user = await loginService.login({ username, password })
+      await authService.signup({ username, password })
+      const user = await authService.login({ username, password })
       const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", userJSON)
       onSignup(userJSON)
