@@ -14,6 +14,30 @@
 
 const mongoose = require("mongoose")
 
+const VALID_CUE_TYPES = ["visual", "audio"]
+
+const normalizePresentationCues = (presentationObject) => {
+  const screenCount = Number(presentationObject.screenCount) || 1
+  const cues = Array.isArray(presentationObject.cues) ? presentationObject.cues : []
+  presentationObject.cues = cues.map((cue) => {
+    const normalizedCue = cue && typeof cue.toObject === "function"
+      ? cue.toObject()
+      : { ...cue }
+
+    const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
+      ? normalizedCue.cueType
+      : Number(normalizedCue.screen) === screenCount + 1
+        ? "audio"
+        : "visual"
+
+    return {
+      ...normalizedCue,
+      cueType,
+      ...(cueType === "audio" ? { screen: screenCount + 1 } : {}),
+    }
+  })
+}
+
 const presentationSchema = mongoose.Schema({
   name: {
     type: String,
@@ -70,6 +94,14 @@ const presentationSchema = mongoose.Schema({
 
   cues: [
     {
+      cueType: {
+        type: String,
+        required: true,
+        enum: {
+          values: VALID_CUE_TYPES,
+          message: "cueType must be either visual or audio",
+        },
+      },
       index: { 
         type: Number, 
         required: true,
@@ -84,7 +116,6 @@ const presentationSchema = mongoose.Schema({
         type: Number, 
         required: true,
         min: 1,
-        max: 8,
         set: v => (v === undefined || v === null ? v : Math.round(v)),
         validate: {
           validator: Number.isInteger,
@@ -108,32 +139,14 @@ const presentationSchema = mongoose.Schema({
     },
   ],
 
-  audioCues: [
-    {
-      index: { 
-        type: Number, 
-        required: true,
-        set: v => (v === undefined || v === null ? v : Math.round(v)),
-        validate: {
-          validator: Number.isInteger,
-          message: "index must be an integer"
-        }
-      },
-      name: { type: String, required: true, minlength: 1, maxlength: 100 },
-      file: {
-        id: String,
-        name: String,
-        url: String,
-        driveId: String,
-        size: { type: String, default: "0" },
-        type: { type: String, default: "audio/mpeg" },
-      },
-      loop: { type: Boolean, default: false },
-    },
-  ],
 }, { timestamps: true })
 
 presentationSchema.index({ user: 1, lastUsed: -1 })
+
+presentationSchema.pre("validate", function (next) {
+  normalizePresentationCues(this)
+  next()
+})
 
 presentationSchema.pre("save", function (next) {
   const validationError = new mongoose.Error.ValidationError(this)
@@ -146,21 +159,28 @@ presentationSchema.pre("save", function (next) {
         value: cue.index,
       }))
     }
-    if (cue.screen < 1 || cue.screen > this.screenCount) {
+
+    if (!VALID_CUE_TYPES.includes(cue.cueType)) {
+      validationError.addError("cues.cueType", new mongoose.Error.ValidatorError({
+        message: `Invalid cueType ${cue.cueType}`,
+        path: "cues.cueType",
+        value: cue.cueType,
+      }))
+    }
+
+    if (cue.cueType === "audio" && cue.screen !== this.screenCount + 1) {
       validationError.addError("cues.screen", new mongoose.Error.ValidatorError({
-        message: `Cue screen ${cue.screen} exceeds screenCount`,
+        message: `Audio cue screen ${cue.screen} must equal screenCount + 1`,
         path: "cues.screen",
         value: cue.screen,
       }))
     }
-  }
-  
-  for (const audioCue of this.audioCues) {
-    if (audioCue.index < 0 || audioCue.index >= this.indexCount) {
-      validationError.addError("audioCues.index", new mongoose.Error.ValidatorError({
-        message: `Audio cue index ${audioCue.index} exceeds indexCount`,
-        path: "audioCues.index",
-        value: audioCue.index,
+
+    if (cue.cueType === "visual" && (cue.screen < 1 || cue.screen > this.screenCount)) {
+      validationError.addError("cues.screen", new mongoose.Error.ValidatorError({
+        message: `Visual cue screen ${cue.screen} exceeds screenCount`,
+        path: "cues.screen",
+        value: cue.screen,
       }))
     }
   }
@@ -175,6 +195,8 @@ presentationSchema.pre("save", function (next) {
 
 presentationSchema.set("toJSON", {
   transform: (document, returnedObject) => {
+    normalizePresentationCues(returnedObject)
+    returnedObject.audioCues = returnedObject.cues.filter((cue) => cue.cueType === "audio")
     returnedObject.id = returnedObject._id.toString()
     delete returnedObject._id
     delete returnedObject.__v
