@@ -33,6 +33,12 @@ import {
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 import { ColorPickerWithPresets } from "./ColorPicker"
+import {
+  isAudioMimeType,
+  getAudioRow,
+  isAudioRow,
+  getAllowedMimeTypesForScreen,
+} from "../utils/fileTypeUtils"
 
 const theme = extendTheme({})
 
@@ -53,31 +59,10 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
 
 
-  const visualTypes = [
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "image/gif",
-    "image/bmp",
-    "image/webp",
-    "image/avif",
-    "image/apng",
-    "image/ico",
-    "image/jfif",
-    "image/jpe",
-    "image/svg+xml",
-    "video/mp4",
-    "video/3gpp",
-  ]
+  const audioRow = getAudioRow(screenCount)
+  const allowedTypes = getAllowedMimeTypesForScreen(screen, screenCount)
 
-  const audioTypes = [
-    "audio/mpeg",
-    "audio/wav",
-  ]
-
-  const allowedTypes = screen === screenCount + 1 ? audioTypes : visualTypes
-
-  const isAudioFile = () => file?.type?.includes("audio/")
+  const isAudioFile = () => isAudioMimeType(file?.type)
 
   useEffect(() => {
     if (position) {
@@ -139,17 +124,11 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       return false
     }
 
-    const isAudio = file.type.includes("audio/")
-    const currentScreen = screen
+    const targetScreen = isAudioMimeType(file.type) ? audioRow : screen
+    const allowedMimeTypes = getAllowedMimeTypesForScreen(targetScreen, screenCount)
 
-    // For audio files, check if they"ll be placed correctly (auto-assigned to audio screen)
-    const effectiveScreen = isAudio ? screenCount + 1 : currentScreen
-
-    // Check if the file type is allowed for the effective screen
-    const effectiveAllowedTypes = effectiveScreen === screenCount + 1 ? audioTypes : visualTypes
-
-    if (!effectiveAllowedTypes.includes(file.type)) {
-      const errorMsg = effectiveScreen === screenCount + 1
+    if (!allowedMimeTypes.includes(file.type)) {
+      const errorMsg = isAudioRow(targetScreen, screenCount)
         ? "Invalid file type. Only audio files (.mp3, .wav) are allowed on the audio screen."
         : "Invalid file type. Please see the info button for valid visual file types."
       setError(errorMsg)
@@ -173,7 +152,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
     }
 
 
-    if (isAudioMode || screen === screenCount + 1) {
+    if (isAudioMode || isAudioRow(screen, screenCount)) {
       if (isBlankImage) {
         setError("Blank elements are not allowed on the audio screen")
         setTimeout(() => setError(null), 5000)
@@ -242,12 +221,12 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       setActualFile(null)
       setFileName(selected.name)
 
-      if (selected.type && selected.type.includes("audio")) {
-        if (screen !== screenCount + 1) {
-          setScreen(screenCount + 1)
+      if (isAudioMimeType(selected.type)) {
+        if (!isAudioRow(screen, screenCount)) {
+          setScreen(audioRow)
         }
       } else {
-        if (screen === screenCount + 1) {
+        if (isAudioRow(screen, screenCount)) {
           setScreen(1)
         }
       }
@@ -299,7 +278,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
               <FormHelperText mb={2}>
                 {screenCount === 1
                   ? "Screen 1 for images and videos and screen 2 for audio only*"
-                  : `Screens 1-${screenCount} for images and videos and screen ${screenCount + 1} for audio only*`
+                  : `Screens 1-${screenCount} for images and videos and screen ${audioRow} for audio only*`
                 }
               </FormHelperText>
               <NumberInput
@@ -307,9 +286,9 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
                 value={screen}
                 mb={4}
                 min={1}
-                max={screenCount + 1}
+                max={audioRow}
                 onChange={handleNumericInputChange(setScreen)}
-                onBlur={validateAndSetNumber(setScreen, 1, screenCount + 1)}
+                onBlur={validateAndSetNumber(setScreen, 1, audioRow)}
                 required
               >
                 <NumberInputField data-testid="screen-number" />
@@ -358,7 +337,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
             {isAudioMode ? "Upload audio file" : "Upload media"}
             <Tooltip
               label={
-                isAudioMode || screen === screenCount + 1 ? (
+                isAudioMode || isAudioRow(screen, screenCount) ? (
                   <><strong>Valid audio types: </strong> .mp3 and .wav</>
                 ) : (
                   <>

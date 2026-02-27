@@ -11,6 +11,13 @@ const {
   processS3Files,
   processDriveCueFiles,
 } = require("../utils/helper")
+const {
+  getAudioRow,
+  isAudioScreen,
+  getCueTypeFromScreen,
+  isAudioMimeType,
+  isAllowedMimeType,
+} = require("../utils/cueType")
 const logger = require("../utils/logger")
 const router = express.Router()
 
@@ -260,9 +267,11 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
     }
 
-    if (screen < 1 || screen > presentation.screenCount + 1) {
+    const audioRow = getAudioRow(presentation.screenCount)
+
+    if (screen < 1 || screen > audioRow) {
       return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
+        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${audioRow}.`,
       })
     }
 
@@ -276,79 +285,28 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       return res.status(400).json({ error: "File size exceeds 50 MB limit" })
     }
 
-    if (file) {
-      const validVideoTypes = ["video/mp4", "video/3gpp"]
-      const validImageTypes = [
-        "image/jpeg",
-        "image/gif",
-        "image/apng",
-        "image/bmp",
-        "image/png",
-        "image/svg+xml",
-        "image/webp",
-        "image/vnd.microsoft.icon",
-        "image/avif",
-        "image/x-win-bitmap",
-      ]
-      const validAudioTypes = ["audio/mpeg", "audio/wav"]
-
-      let fileType = ""
-      if (file.mimetype.startsWith("image/")) {
-        fileType = "image"
-      } else if (file.mimetype.startsWith("video/")) {
-        fileType = "video"
-      } else if (file.mimetype.startsWith("audio/")) {
-        fileType = "audio"
-      }
-
-      switch (fileType) {
-        case "image":
-          if (!validImageTypes.includes(file.mimetype)) {
-            return res
-              .status(400)
-              .json({ error: `Invalid filetype: ${file.originalname}` })
-          } else {
-            break
-          }
-        case "video":
-          if (!validVideoTypes.includes(file.mimetype)) {
-            return res
-              .status(400)
-              .json({ error: `Invalid filetype: ${file.originalname}` })
-          } else {
-            break
-          }
-        case "audio":
-          if (!validAudioTypes.includes(file.mimetype)) {
-            return res
-              .status(400)
-              .json({ error: `Invalid filetype: ${file.originalname}` })
-          } else {
-            break
-          }
-        default:
-          return res
-            .status(400)
-            .json({ error: `Invalid filetype: ${file.originalname}` })
-      }
+    if (file && !isAllowedMimeType(file.mimetype)) {
+      return res
+        .status(400)
+        .json({ error: `Invalid filetype: ${file.originalname}` })
     }
 
-    const isAudioScreen = screen === presentation.screenCount + 1
-    const cueType = isAudioScreen ? "audio" : "visual"
+    const isCueOnAudioScreen = isAudioScreen(screen, presentation.screenCount)
+    const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
     
-    if (isAudioScreen) {
+    if (isCueOnAudioScreen) {
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         return res.status(400).json({ 
           error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
         })
       }
-      if (file && !file.mimetype.startsWith("audio/")) {
+      if (file && !isAudioMimeType(file.mimetype)) {
         return res.status(400).json({ 
           error: "Only audio files are allowed on the audio screen." 
         })
       }
     } else {
-      if (file && file.mimetype.startsWith("audio/")) {
+      if (file && isAudioMimeType(file.mimetype)) {
         return res.status(400).json({ 
           error: "Audio files are not allowed on visual screens. Please use the audio screen." 
         })
@@ -500,9 +458,11 @@ router.put(
         return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
-      if (screen < 1 || screen > presentation.screenCount + 1) {
+      const audioRow = getAudioRow(presentation.screenCount)
+
+      if (screen < 1 || screen > audioRow) {
         return res.status(400).json({
-          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${presentation.screenCount + 1}.`,
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${audioRow}.`,
         })
       }
 
@@ -512,22 +472,22 @@ router.put(
         })
       }
 
-      const isAudioScreen = screen === presentation.screenCount + 1
-      const cueType = isAudioScreen ? "audio" : "visual"
+      const isCueOnAudioScreen = isAudioScreen(screen, presentation.screenCount)
+      const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
       
-      if (isAudioScreen) {
+      if (isCueOnAudioScreen) {
         if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
           return res.status(400).json({ 
             error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
           })
         }
-        if (file && !file.mimetype.startsWith("audio/")) {
+        if (file && !isAudioMimeType(file.mimetype)) {
           return res.status(400).json({ 
             error: "Only audio files are allowed on the audio screen." 
           })
         }
       } else {
-        if (file && file.mimetype.startsWith("audio/")) {
+        if (file && isAudioMimeType(file.mimetype)) {
           return res.status(400).json({ 
             error: "Audio files are not allowed on visual screens. Please use the audio screen." 
           })
