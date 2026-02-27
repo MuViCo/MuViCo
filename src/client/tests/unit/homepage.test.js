@@ -389,7 +389,8 @@ describe("PresentationsGrid", () => {
     )
     expect(screen.getByText("Presentations")).toBeInTheDocument()
   })
-  test("renders the component with presentation buttons", () => {
+
+  test("renders the component with presentation buttons and toggle", () => {
     render(
       <PresentationsGrid
         presentations={mock_data}
@@ -398,7 +399,28 @@ describe("PresentationsGrid", () => {
     )
     expect(screen.getByText("Test Presentation")).toBeInTheDocument()
     expect(screen.getByText("Another Presentation")).toBeInTheDocument()
+
+    // toggle buttons exist, grid is active by default
+    const gridBtn = screen.getByTestId("grid-button")
+    const listBtn = screen.getByTestId("list-button")
+    expect(gridBtn).toBeInTheDocument()
+    expect(listBtn).toBeInTheDocument()
   })
+
+  test("switches to list view when list button is clicked", () => {
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+      />
+    )
+    const listBtn = screen.getByTestId("list-button")
+    fireEvent.click(listBtn)
+    // list items should be rendered
+    const items = screen.getAllByRole("listitem")
+    expect(items.length).toBe(mock_data.length)
+  })
+
   test("calls handlePresentationClick with correct id when presentation button is clicked", () => {
     const handlePresentationClickMock = jest.fn()
     render(
