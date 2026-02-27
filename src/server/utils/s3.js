@@ -12,9 +12,13 @@ const {
   BUCKET_NAME,
   ACCESS_KEY,
   SECRET_ACCESS_KEY,
+  PUBLIC_S3_ENDPOINT,
+  PRIVATE_S3_ENDPOINT,
 } = require("./config")
 
 const s3 = new S3Client({
+  endpoint: PUBLIC_S3_ENDPOINT,
+  forcePathStyle: true,
   region: BUCKET_REGION,
   credentials: {
     accessKeyId: ACCESS_KEY,
