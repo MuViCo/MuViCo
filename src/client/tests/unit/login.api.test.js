@@ -1,6 +1,6 @@
 const axios = require("axios")
-const loginService = require("../../services/login")
-const login = loginService.default.login
+const authService = require("../../services/auth")
+const login = authService.default.login
 
 jest.mock("axios")
 

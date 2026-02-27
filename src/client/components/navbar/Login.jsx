@@ -7,7 +7,7 @@ import {
   Container,
   Box,
 } from "@chakra-ui/react"
-import loginService from "../../services/login"
+import authService from "../../services/auth"
 import Error from "../utils/Error"
 import GoogleSignInButton from "../presentation/GoogleSignInButton"
 
@@ -139,7 +139,7 @@ const Login = ({ onLogin }) => {
 
   const onSubmit = async ({ username, password }) => {
     try {
-      const user = await loginService.login({ username, password })
+      const user = await authService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))
       onLogin(user)
     } catch (err) {

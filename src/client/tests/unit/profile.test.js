@@ -5,14 +5,17 @@ import { useNavigate } from "react-router-dom"
 import { useToast } from "@chakra-ui/react"
 
 import Profile from "../../components/profilepage/profile"
-import changepasswordService from "../../services/changepassword"
+import authService from "../../services/auth"
 
 jest.mock("react-router-dom", () => ({
   useNavigate: jest.fn(),
 }))
 
-jest.mock("../../services/changepassword", () => ({
-  changepassword: jest.fn(),
+jest.mock("../../services/auth", () => ({
+  __esModule: true,
+  default: {
+    changepassword: jest.fn(),
+  },
 }))
 
 jest.mock("@chakra-ui/react", () => {
@@ -34,7 +37,7 @@ describe("Profile", () => {
 
     useNavigate.mockReturnValue(navigateMock)
     useToast.mockReturnValue(toastMock)
-    changepasswordService.changepassword.mockReset()
+    authService.changepassword.mockReset()
   })
 
   test("renders profile content", () => {
@@ -62,7 +65,7 @@ describe("Profile", () => {
       )
     })
 
-    expect(changepasswordService.changepassword).not.toHaveBeenCalled()
+    expect(authService.changepassword).not.toHaveBeenCalled()
   })
 
   test("shows mismatch toast when new passwords do not match", async () => {
@@ -89,7 +92,7 @@ describe("Profile", () => {
         })
       )
     })
-    expect(changepasswordService.changepassword).not.toHaveBeenCalled()
+    expect(authService.changepassword).not.toHaveBeenCalled()
   })
 
   test("toggles current password visibility with eye button", () => {
@@ -130,11 +133,11 @@ describe("Profile", () => {
       )
     })
 
-    expect(changepasswordService.changepassword).not.toHaveBeenCalled()
+    expect(authService.changepassword).not.toHaveBeenCalled()
   })
 
   test("submits valid form and shows success toast", async () => {
-    changepasswordService.changepassword.mockResolvedValue({})
+    authService.changepassword.mockResolvedValue({})
     render(<Profile user={user} />)
 
     fireEvent.change(screen.getByTestId("current-password-input"), {
@@ -150,7 +153,7 @@ describe("Profile", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm changes" }))
 
     await waitFor(() => {
-      expect(changepasswordService.changepassword).toHaveBeenCalledWith({
+      expect(authService.changepassword).toHaveBeenCalledWith({
         currentPassword: "current-password",
         newPassword: "new-password",
       })
@@ -174,7 +177,7 @@ describe("Profile", () => {
   })
 
   test("shows backend error message when API fails", async () => {
-    changepasswordService.changepassword.mockRejectedValue({
+    authService.changepassword.mockRejectedValue({
       response: { data: { error: "Invalid current password" } },
     })
 

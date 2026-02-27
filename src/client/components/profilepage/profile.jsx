@@ -1,7 +1,7 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
-import changepassword from "../../services/changepassword"
+import authService from "../../services/auth"
 import Error from "../utils/Error" 
 import {
   Box,
@@ -101,7 +101,7 @@ const Profile = ({ user }) => {
         newPassword: passwords.newPassword,
       }
 
-      await changepassword.changepassword(payload)
+      await authService.changepassword(payload)
 
       toast({
         title: "Success",
