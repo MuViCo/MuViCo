@@ -37,7 +37,6 @@ import {
   isAudioMimeType,
   getAudioRow,
   isAudioRow,
-  isAudioCue,
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 
@@ -75,7 +74,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   useEffect(() => {
     if (!cueData && !position) {
       if (isAudioMode) {
-        const audioCues = cues.filter((cue) => isAudioCue(cue, screenCount))
+        const audioCues = cues.filter((cue) => cue.cueType === "audio")
         const newIndex = getNextAvailableIndex(0, audioCues)
         setIndex(newIndex)
       } else if (screen > 0) {

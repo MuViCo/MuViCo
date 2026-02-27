@@ -13,7 +13,6 @@ const {
 } = require("../utils/helper")
 const {
   getAudioRow,
-  isAudioScreen,
   getCueTypeFromScreen,
   isAudioMimeType,
   isAllowedMimeType,
@@ -291,10 +290,9 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
         .json({ error: `Invalid filetype: ${file.originalname}` })
     }
 
-    const isCueOnAudioScreen = isAudioScreen(screen, presentation.screenCount)
     const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
     
-    if (isCueOnAudioScreen) {
+    if (cueType === "audio") {
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
         return res.status(400).json({ 
           error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
@@ -472,10 +470,9 @@ router.put(
         })
       }
 
-      const isCueOnAudioScreen = isAudioScreen(screen, presentation.screenCount)
       const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
       
-      if (isCueOnAudioScreen) {
+      if (cueType === "audio") {
         if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
           return res.status(400).json({ 
             error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
