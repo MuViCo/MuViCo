@@ -5,7 +5,6 @@ import { saveIndexCount, saveScreenCount } from "./presentationThunks"
 
 const initialState = {
   cues: [],
-  audioCues: [],
   name: "",
   screenCount: null,
   indexCount: 5,
@@ -18,7 +17,6 @@ const presentationSlice = createSlice({
   reducers: {
     setPresentationInfo(state, action) {
       state.cues = action.payload.cues
-      state.audioCues = action.payload.audioCues
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
       state.indexCount = action.payload.indexCount
@@ -26,14 +24,8 @@ const presentationSlice = createSlice({
     deleteCue(state, action) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
     },
-    deleteAudioCue(state, action) {
-      state.audioCues = state.audioCues.filter((cue) => cue._id !== action.payload)
-    },
     addCue(state, action) {
       state.cues.push(action.payload)
-    },
-    addAudioCue(state, action) {
-      state.audioCues.push(action.payload)
     },
     editCue(state, action) {
       const cueToChange = action.payload
@@ -42,16 +34,8 @@ const presentationSlice = createSlice({
       )
       state.cues = updatedCues
     },
-    editAudioCue(state, action) {
-      const cueToChange = action.payload
-      const updatedCues = state.audioCues.map((cue) =>
-        cue._id !== cueToChange._id ? cue : cueToChange
-      )
-      state.audioCues = updatedCues
-    },
     removePresentation(state) {
       state.cues = null
-      state.audioCues = []
       state.name = ""
       state.screenCount = null
       state.indexCount = null
@@ -116,11 +100,8 @@ const presentationSlice = createSlice({
 export const {
   setPresentationInfo,
   deleteCue,
-  deleteAudioCue,
   addCue,
-  addAudioCue,
   editCue,
-  editAudioCue,
   removePresentation,
   incrementIndexCount,
   decrementIndexCount,

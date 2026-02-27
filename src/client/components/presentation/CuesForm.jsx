@@ -37,13 +37,14 @@ import {
   isAudioMimeType,
   getAudioRow,
   isAudioRow,
+  isAudioCue,
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 
 const theme = extendTheme({})
 
 
-const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = [], cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
+const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState(isAudioMode ? "" : "")
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
@@ -74,6 +75,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
   useEffect(() => {
     if (!cueData && !position) {
       if (isAudioMode) {
+        const audioCues = cues.filter((cue) => isAudioCue(cue, screenCount))
         const newIndex = getNextAvailableIndex(0, audioCues)
         setIndex(newIndex)
       } else if (screen > 0) {
@@ -83,7 +85,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
         })
       }
     }
-  }, [screen, cues, audioCues, cueData, isAudioMode])
+  }, [screen, cues, cueData, isAudioMode, screenCount])
 
   useEffect(() => {
     if (cueData) {
@@ -165,11 +167,7 @@ const CuesForm = ({ addCue, addAudioCue, onClose, position, cues, audioCues = []
       }
     }
 
-    if (isAudioMode && addAudioCue) {
-      addAudioCue({ file, index, cueName, fileName, loop })
-    } else {
-      addCue({ file, index, cueName, screen, fileName, color, loop })
-    }
+    addCue({ file, index, cueName, screen, fileName, color, loop })
 
     setError(null)
     setFile("")

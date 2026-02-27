@@ -139,7 +139,6 @@ describe("presentationReducer actions", () => {
 describe("presentationReducer reducer", () => {
   const initialState = {
     cues: [],
-    audioCues: [],
     name: "",
     screenCount: 3,
     indexCount: 5,
@@ -148,12 +147,11 @@ describe("presentationReducer reducer", () => {
 
   it("should handle setPresentationInfo", () => {
     const cues = [{ _id: 1, name: "Test Cue" }]
-    const audioCues = [{ _id: 2, name: "Audio Cue" }]
     const name = "My Presentation"
     const screenCount = 3
     const indexCount = 5
-    const action = { type: setPresentationInfo.type, payload: { cues, audioCues, name, screenCount, indexCount } }
-    const expectedState = { ...initialState, cues, audioCues, name, screenCount, indexCount }
+    const action = { type: setPresentationInfo.type, payload: { cues, name, screenCount, indexCount } }
+    const expectedState = { ...initialState, cues, name, screenCount, indexCount }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -197,7 +195,7 @@ describe("presentationReducer reducer", () => {
 
   it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, audioCues: [], name: "", screenCount: null, indexCount: null }
+    const expectedState = { ...initialState, cues: null, name: "", screenCount: null, indexCount: null }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -209,14 +207,11 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
-      audioCues: [
-        { _id: 3, name: "Audio Cue" }
-      ],
       name: "My Presentation",
       screenCount: 3
     }
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, audioCues: [], screenCount: null, indexCount: null}
+    const expectedState = { ...initialState, cues: null, screenCount: null, indexCount: null}
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })
@@ -399,9 +394,6 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Cue 1" },
         { _id: 2, name: "Cue 2" },
       ],
-      audioCues: [
-        { _id: 1, name: "Audio 1" },
-      ],
       name: "Test Presentation",
       screenCount: 4,
       indexCount: 5,
@@ -412,7 +404,6 @@ describe("presentationReducer reducer", () => {
     const result = reducer(initialStateWithData, action)
     
     expect(result.cues).toBeNull()
-    expect(result.audioCues).toEqual([])
     expect(result.name).toBe("")
     expect(result.screenCount).toBeNull()
     expect(result.indexCount).toBeNull()
@@ -421,7 +412,6 @@ describe("presentationReducer reducer", () => {
   it("should set all presentation properties on setPresentationInfo", () => {
     const presentationData = {
       cues: [{ _id: 1, name: "Cue 1", index: 0, screen: 1 }],
-      audioCues: [{ _id: 1, name: "Audio 1", index: 0 }],
       name: "Full Presentation",
       screenCount: 5,
       indexCount: 20,
@@ -431,7 +421,6 @@ describe("presentationReducer reducer", () => {
     const result = reducer(initialState, action)
     
     expect(result.cues).toEqual(presentationData.cues)
-    expect(result.audioCues).toEqual(presentationData.audioCues)
     expect(result.name).toBe("Full Presentation")
     expect(result.screenCount).toBe(5)
     expect(result.indexCount).toBe(20)
