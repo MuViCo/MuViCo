@@ -58,7 +58,7 @@ describe("CuesForm new element", () => {
 
     expect(addCue).toHaveBeenCalledWith({
       file,
-      index: 0,
+      index: 4,
       cueName: "test cue",
       screen: 2,
       fileName: "testfile.png",
@@ -111,7 +111,7 @@ describe("CuesForm new element", () => {
 
     expect(addCue).toHaveBeenCalledWith({
       file: "",
-      index: 0,
+      index: 1,
       cueName: "color cue",
       screen: 2,
       fileName: "",
@@ -263,7 +263,7 @@ describe("CuesForm new element", () => {
 
     expect(addCue).toHaveBeenCalledWith({
       file,
-      index: 0,
+      index: 2,
       cueName: "testfile.png",
       screen: 3,
       fileName: "testfile.png",
@@ -322,16 +322,16 @@ describe("CuesForm new element", () => {
   })
 
   test("form defaults to empty cue name when in audio mode", async () => {
-    const addAudioCue = jest.fn()
+    const addCue = jest.fn()
     const onClose = jest.fn()
-    const mockAudioCues = []
+    const cues = []
 
     render(
       <MemoryRouter>
         <CuesForm
-          addAudioCue={addAudioCue}
+          addCue={addCue}
           onClose={onClose}
-          audioCues={mockAudioCues}
+          cues={cues}
           screenCount={4}
           indexCount={5}
           isAudioMode={true}
