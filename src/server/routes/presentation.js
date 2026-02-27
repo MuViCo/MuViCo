@@ -334,6 +334,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     }
 
     const isAudioScreen = screen === presentation.screenCount + 1
+    const cueType = isAudioScreen ? "audio" : "visual"
     
     if (isAudioScreen) {
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -366,6 +367,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       {
         $push: {
           cues: {
+            cueType,
             index: index,
             name: trimmedCueName,
             screen: screen,
@@ -511,6 +513,7 @@ router.put(
       }
 
       const isAudioScreen = screen === presentation.screenCount + 1
+      const cueType = isAudioScreen ? "audio" : "visual"
       
       if (isAudioScreen) {
         if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
@@ -538,6 +541,7 @@ router.put(
       // Update cue fields
       cue.index = index
       cue.screen = screen
+      cue.cueType = cueType
       cue.name = trimmedCueName
       cue.loop = loop
       cue.color = color
