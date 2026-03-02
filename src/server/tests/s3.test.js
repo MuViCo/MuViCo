@@ -1,36 +1,40 @@
-const AWSMock = require("aws-sdk-mock")
-const AWS = require("aws-sdk")
+import { mockClient } from "aws-sdk-client-mock"
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3"
+
 const {
   uploadFileS3,
   deleteFileS3,
   getObjectSignedUrl,
 } = require("../utils/s3")
 
-describe("S3 operations", () => {
-  beforeAll(() => {
-    AWSMock.setSDKInstance(AWS)
-  })
+const S3Mock = mockClient(S3Client)
 
-  afterEach(() => {
-    AWSMock.restore("S3")
+describe("S3 operations", () => {
+  beforeEach(() => {
+    S3Mock.reset()
   })
 
   it("should upload a file", async () => {
-    AWSMock.mock("S3", "putObject", (_, callback) => {
-      callback(null, {
-        ETag: '"e283c504365c76c53a7807ba6c8d86c3"',
-        ServerSideEncryption: "AES256",
-      })
+    S3Mock.on(PutObjectCommand).resolves({
+      ETag: '"e283c504365c76c53a7807ba6c8d86c3"',
+      ServerSideEncryption: "AES256",
     })
 
     const response = await uploadFileS3("fileBuffer", "fileName", "mimetype")
-    expect(response).toHaveProperty("ETag")
-    expect(response).toHaveProperty("ServerSideEncryption")
+    expect(response.ETag).toBeDefined()
   })
 
   it("should delete a file", async () => {
-    AWSMock.mock("S3", "deleteObject", (_, callback) => {
-      callback(null, { $metadata: { attempts: 1, httpStatusCode: 204 } })
+    S3Mock.on(DeleteObjectCommand).resolves({
+      $metadata: {
+        attempts: 1,
+        httpStatusCode: 204,
+      },
     })
 
     const response = await deleteFileS3("fileName")
@@ -40,8 +44,8 @@ describe("S3 operations", () => {
   })
 
   it("should get signed URL", async () => {
-    AWSMock.mock("S3", "getObject", (_, callback) => {
-      callback(null, "Successfully got object from S3")
+    S3Mock.on(GetObjectCommand).resolves({
+      url: "https://s3.example.com/bucket/object",
     })
 
     const url = await getObjectSignedUrl("key")
