@@ -1,0 +1,32 @@
+name: Build Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-to-quay:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build, tag, and push image to Quay.io
+        id: build-image
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: |
+          docker login quay.io -u muvico_hy+robo -p ${{ secrets.QUAY_IO_TOKEN }}
+          docker build \
+            --build-arg VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+            --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+            --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+            -t 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}' .
+          docker push 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}'
+          echo "image=quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT

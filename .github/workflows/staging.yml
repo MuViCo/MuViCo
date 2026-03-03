@@ -29,10 +29,11 @@ jobs:
           npm run test-all
         env:
           TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
-          BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
-          BUCKET_REGION: ${{ secrets.AWS_REGION }}
-          ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
+          BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
+          BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
+          ACCESS_KEY: ${{ secrets.UPCLOUD_ACCESS_KEY }}
+          SECRET_ACCESS_KEY: ${{ secrets.UPCLOUD_SECRET_KEY }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -48,7 +49,7 @@ jobs:
 
   build-to-quay:
     needs: test
-    #if: ${{ github.ref == 'refs/heads/main'}}
+    if: ${{ github.ref == 'refs/heads/main'}}
     runs-on: ubuntu-latest
 
     steps:
