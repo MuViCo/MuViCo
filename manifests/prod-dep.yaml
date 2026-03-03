@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: muvico-dep
+  labels:
+    app: muvico
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: muvico
+  template:
+    metadata:
+      labels:
+        app: muvico
+    spec:
+      containers:
+      - name: muvico
+        image: quay.io/muvico_hy/muvico:v1.3.0
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - secretRef:
+              name: muvico-prod-secrets
