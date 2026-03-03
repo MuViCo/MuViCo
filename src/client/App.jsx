@@ -83,7 +83,7 @@ const App = () => {
             />
             <Route path="/terms" element={<TermsPage />} />
             <Route
-              path="/profilepage"
+              path="/profile"
               element={user ? <Profile user={user} /> : <Navigate to="/" />}
             />
             <Route

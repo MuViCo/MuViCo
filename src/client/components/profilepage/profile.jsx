@@ -1,8 +1,8 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import authService from "../../services/auth"
-import Error from "../utils/Error" 
+import Error from "../utils/Error"
 import {
   Box,
   Heading,
@@ -17,7 +17,7 @@ import {
   useToast,
   InputGroup,
   InputRightElement,
-  IconButton
+  IconButton,
 } from "@chakra-ui/react"
 
 const Profile = ({ user }) => {
@@ -47,7 +47,11 @@ const Profile = ({ user }) => {
     e.preventDefault()
 
     // Check for empty fields
-    if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
+    if (
+      !passwords.currentPassword ||
+      !passwords.newPassword ||
+      !passwords.confirmPassword
+    ) {
       toast({
         title: "Error",
         description: "All fields are required",
@@ -142,7 +146,12 @@ const Profile = ({ user }) => {
                 Account Information
               </Heading>
               <VStack align="start" spacing={3}>
-                <FormLabel fontWeight="bold">Username:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{fontWeight: "normal"}}>{user.username || "N/A"}</span></FormLabel>
+                <FormLabel fontWeight="bold">
+                  Username:&nbsp;&nbsp;&nbsp;&nbsp;
+                  <span style={{ fontWeight: "normal" }}>
+                    {user.username || "N/A"}
+                  </span>
+                </FormLabel>
                 {/* <Box>
                   <FormLabel fontWeight="bold">Email</FormLabel>
                   <Input
@@ -169,7 +178,9 @@ const Profile = ({ user }) => {
                       <Input
                         id="current-password"
                         data-testid="current-password-input"
-                        type={showPasswords.currentPassword ? "text" : "password"}
+                        type={
+                          showPasswords.currentPassword ? "text" : "password"
+                        }
                         name="currentPassword"
                         value={passwords.currentPassword}
                         onChange={handlePasswordChange}
@@ -177,9 +188,24 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.currentPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.currentPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, currentPassword: !showPasswords.currentPassword})}
+                          aria-label={
+                            showPasswords.currentPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.currentPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              currentPassword: !showPasswords.currentPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
@@ -203,18 +229,34 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.newPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.newPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, newPassword: !showPasswords.newPassword})}
+                          aria-label={
+                            showPasswords.newPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.newPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              newPassword: !showPasswords.newPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
-                    {formErrors.password && <Error error={formErrors.password} />}
+                    {formErrors.password && (
+                      <Error error={formErrors.password} />
+                    )}
                   </FormControl>
-                  
 
                   <FormControl isRequired>
                     <FormLabel>Confirm Password</FormLabel>
@@ -222,7 +264,9 @@ const Profile = ({ user }) => {
                       <Input
                         id="confirm-password"
                         data-testid="confirm-password-input"
-                        type={showPasswords.confirmPassword ? "text" : "password"}
+                        type={
+                          showPasswords.confirmPassword ? "text" : "password"
+                        }
                         name="confirmPassword"
                         value={passwords.confirmPassword}
                         onChange={handlePasswordChange}
@@ -230,9 +274,24 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.confirmPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.confirmPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, confirmPassword: !showPasswords.confirmPassword})}
+                          aria-label={
+                            showPasswords.confirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.confirmPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              confirmPassword: !showPasswords.confirmPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
@@ -245,10 +304,7 @@ const Profile = ({ user }) => {
                     <Button type="submit" colorScheme="purple">
                       Confirm changes
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/")}
-                    >
+                    <Button variant="outline" onClick={() => navigate("/")}>
                       Return to Frontpage
                     </Button>
                   </HStack>

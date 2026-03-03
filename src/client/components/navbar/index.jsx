@@ -194,7 +194,7 @@ const NavBar = ({ user, setUser }) => {
                   </Button>
                 </Box>
                 <Box ml={4} display={{ base: "inline-block" }}>
-                  <Link to="/profilepage">
+                  <Link to="/profile">
                     <Button colorScheme="purple" variant="ghost">
                       Profile
                     </Button>
