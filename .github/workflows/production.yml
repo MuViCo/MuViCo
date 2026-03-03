@@ -10,6 +10,7 @@ env:
 
 jobs:
   build-and-deploy:
+    if: false #Disable workflow before removing completely
     name: Deploy
     runs-on: ubuntu-latest
 
