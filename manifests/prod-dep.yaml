@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: muvico
-        image: quay.io/muvico_hy/muvico:v1.3.0
-        imagePullPolicy: Always
+        image: quay.io/muvico_hy/muvico:staging
+        imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 8000
         envFrom:
