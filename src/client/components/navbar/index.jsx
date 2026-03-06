@@ -25,7 +25,7 @@ import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 import UserManualModal from "./UserManualModal"
 
-const NavBar = ({ user, setUser }) => {
+const NavBar = ({ user, setUser, topOffset = 40 }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const [isManualOpen, setIsManualOpen] = useState(false)
@@ -108,7 +108,11 @@ const NavBar = ({ user, setUser }) => {
         position="fixed"
         as="nav"
         w="100%"
-        style={{ backdropFilter: "blur(10px)", zIndex: 1000, top: 0 }}
+        style={{
+          backdropFilter: isPresentationPage ? "none" : "blur(10px)",
+          zIndex: 1000,
+          top: `${topOffset}px`,
+        }}
       >
         <Container
           display="flex"
