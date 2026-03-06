@@ -16,13 +16,18 @@ import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
+import MaintenanceNotice from "./components/maintenancenotice"
 
 const App = () => {
   const [user, setUser] = useState(null)
+  const [bannerHeight, setBannerHeight] = useState(40)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
-  const isPresentation = useLocation().pathname.startsWith("/presentation")
+  const location = useLocation()
+  const isPresentation = location.pathname.startsWith("/presentation")
+  const isHome = location.pathname.startsWith("/home")
+  const isProfile = location.pathname.startsWith("/profile")
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("user")
@@ -41,8 +46,12 @@ const App = () => {
     <ChakraProvider theme={theme}>
       <Fonts />
       <Box>
-        <NavBar user={user} setUser={setUser} />
-        <Container pt={20} maxW={isPresentation ? "none" : "container.xl"}>
+        <MaintenanceNotice onHeightChange={setBannerHeight} />
+        <NavBar user={user} setUser={setUser} topOffset={bannerHeight} />
+        <Container
+          pt={isPresentation || isHome || isProfile ? 36 : 30}
+          maxW={isPresentation ? "none" : "container.xl"}
+        >
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route
