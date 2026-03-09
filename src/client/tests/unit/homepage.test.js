@@ -465,4 +465,87 @@ describe("PresentationsGrid", () => {
     expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
     expect(handlePresentationClickMock).not.toHaveBeenCalled()
   })
+
+  test("initializes viewMode from localStorage", () => {
+    // Mock localStorage
+    const mockLocalStorage = {
+      getItem: jest.fn(() => "list"),
+      setItem: jest.fn(),
+    }
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+    })
+
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    // Should initialize to "list" from localStorage
+    expect(mockLocalStorage.getItem).toHaveBeenCalledWith("presentationsLayoutMode")
+
+    // List view should be active (list button should have different styling or check the rendered view)
+    const listBtn = screen.getByTestId("list-button")
+    expect(listBtn).toBeInTheDocument()
+    // Since we switched to list, list items should be rendered
+    const items = screen.getAllByRole("listitem")
+    expect(items.length).toBe(mock_data.length)
+  })
+
+  test("saves viewMode to localStorage when changed", () => {
+    // Mock localStorage
+    const mockLocalStorage = {
+      getItem: jest.fn(() => "grid"), // default
+      setItem: jest.fn(),
+    }
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+    })
+
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    // Initially called once on mount with "grid"
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith("presentationsLayoutMode", "grid")
+
+    // Click list button
+    const listBtn = screen.getByTestId("list-button")
+    fireEvent.click(listBtn)
+
+    // Should save "list" to localStorage
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith("presentationsLayoutMode", "list")
+  })
+
+  test("defaults to grid view when localStorage is empty", () => {
+    // Mock localStorage with no stored value
+    const mockLocalStorage = {
+      getItem: jest.fn(() => null),
+      setItem: jest.fn(),
+    }
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+    })
+
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    // Should default to grid (check that grid view is rendered, not list)
+    const gridBtn = screen.getByTestId("grid-button")
+    expect(gridBtn).toBeInTheDocument()
+    // Grid view should be active by default, so no list items
+    expect(screen.queryByRole("listitem")).toBeNull()
+  })
 })
