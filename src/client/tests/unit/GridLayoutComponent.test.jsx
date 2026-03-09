@@ -117,6 +117,7 @@ describe("GridLayoutComponent drag constraints", () => {
         name: "Visual cue",
         color: "#ffffff",
         loop: false,
+        cueType: "visual",
         file: {
           type: "image/png",
           url: "https://example.com/image.png",
@@ -156,6 +157,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 1,
         name: "Visual cue 1",
         color: "#ffffff",
+        cueType: "visual",
         file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
       },
       {
@@ -164,6 +166,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 1,
         name: "Visual cue 2",
         color: "#000000",
+        cueType: "visual",
         file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
       },
     ]
@@ -191,6 +194,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 1,
         name: "Visual cue",
         color: "#ffffff",
+        cueType: "visual",
         file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
       },
     ]
@@ -215,6 +219,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 9,
         name: "Audio cue",
         color: "#ffffff",
+        cueType: "audio",
         file: { type: "audio/mpeg", url: "https://example.com/audio.mp3", name: "audio.mp3" },
       },
     ]
@@ -248,6 +253,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 9,
         name: "Audio cue 1",
         color: "#ffffff",
+        cueType: "audio",
         file: { type: "audio/mpeg", url: "https://example.com/a1.mp3", name: "a1.mp3" },
       },
       {
@@ -256,6 +262,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 9,
         name: "Audio cue 2",
         color: "#000000",
+        cueType: "audio",
         file: { type: "audio/mpeg", url: "https://example.com/a2.mp3", name: "a2.mp3" },
       },
     ]
