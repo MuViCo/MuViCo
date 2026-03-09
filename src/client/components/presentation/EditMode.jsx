@@ -1141,6 +1141,7 @@ const EditMode = ({
               height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
               width="100%"
               position="relative"
+              data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
               onMouseDown={handleMouseDown}
