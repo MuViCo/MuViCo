@@ -508,133 +508,6 @@ describe("test presentation", () => {
     })
   })
 
-  describe("PUT /api/presentation/:id/shiftIndexes", () => {
-    beforeEach(async () => {
-      const user = await User.findOne({ username: "testuser" })
-      if (!user) {
-        throw new Error("Test user not found in screen count tests")
-      }
-
-      const presentation = new Presentation({
-        name: "Screen Count Test Presentation",
-        user: user._id,
-        screenCount: 3,
-        cues: []
-      })
-      await presentation.save()
-      testPresentationId = presentation._id
-      await setIndexCount(testPresentationId, 6)
-      
-      await createCue(0, "First Cue", 1)
-      await createCue(2, "Second Cue", 1)
-      await createCue(4, "Third Cue", 1)
-    })
-
-    test("Should shift indices right successfully", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 0, direction: "right" })
-        .expect(200)
-
-      expect(response.body.shifted).toBe(true)
-
-      const presentation = await Presentation.findById(testPresentationId)
-      const cues = presentation.cues
-      const first = cues.find(c => c.name === "First Cue")
-      const second = cues.find(c => c.name === "Second Cue")
-      const third = cues.find(c => c.name === "Third Cue")
-      expect(first).toBeDefined()
-      expect(second).toBeDefined()
-      expect(third).toBeDefined()
-      expect(first.index).toBe(0)
-      expect(second.index).toBe(3)
-      expect(third.index).toBe(5)
-    })
-
-    test("Should shift indices left successfully", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 2, direction: "left" })
-        .expect(200)
-
-      expect(response.body.shifted).toBe(true)
-
-      const presentation = await Presentation.findById(testPresentationId)
-      const cues = presentation.cues
-      const first = cues.find(c => c.name === "First Cue")
-      const second = cues.find(c => c.name === "Second Cue")
-      const third = cues.find(c => c.name === "Third Cue")
-      expect(first).toBeDefined()
-      expect(second).toBeDefined()
-      expect(third).toBeDefined()
-      expect(first.index).toBe(0)
-      expect(second.index).toBe(2)
-      expect(third.index).toBe(3)
-    })
-
-    test("Should fail with invalid direction", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 1, direction: "invalid" })
-        .expect(400)
-
-      expect(response.body.error).toBe("Invalid parameters")
-    })
-
-    test("Should fail with missing startIndex", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ direction: "right" })
-        .expect(400)
-
-      expect(response.body.error).toBe("Invalid parameters")
-    })
-
-    test("Should fail with missing direction", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 1 })
-        .expect(400)
-
-      expect(response.body.error).toBe("Invalid parameters")
-    })
-
-    test("Should handle invalid presentation ID", async () => {
-      const fakeId = new mongoose.Types.ObjectId()
-      const response = await api
-        .put(`/api/presentation/${fakeId}/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 1, direction: "right" })
-        .expect(404)
-
-      expect(response.body.error).toBe("presentation not found")
-    })
-
-    test("Should not work without authorization", async () => {
-      const response = await api
-        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
-        .send({ startIndex: 1, direction: "right" })
-        .expect(401)
-
-      expect(response.body.error).toBe("authentication required")
-    })
-
-    test("Should return 400 with invalid id", async () => {
-      const response = await api
-        .put(`/api/presentation/invalid-id/shiftIndexes`)
-        .set("Authorization", authHeader)
-        .send({ startIndex: 1, direction: "right" })
-        .expect(400)
-
-      expect(response.body.error).toBe("malformatted id")
-    })
-  })
-
   describe("PUT /api/presentation/:id/name", () => {
     test("Should update presentation name successfully", async () => {
       const newName = "Updated Presentation Name"
@@ -770,6 +643,143 @@ describe("test presentation", () => {
        const updatedPresentation = await Presentation.findById(testPresentationId)
        expect(updatedPresentation.name).toBe("Admin Edited Name")
     })
+  })
+})
+
+describe("PUT /api/presentation/:id/shiftIndexes", () => {
+  let authHeader
+  let testPresentationId
+
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    const user = new User({
+      username: "shiftindexes-user",
+      passwordHash: "test-password-hash",
+    })
+    await user.save()
+
+    authHeader = `Bearer ${jwt.sign({ id: user._id }, config.SECRET)}`
+
+    const presentation = new Presentation({
+      name: "Shift Indexes Test Presentation",
+      user: user._id,
+      screenCount: 3,
+      indexCount: 6,
+      cues: [
+        { cueType: "visual", index: 0, name: "First Cue", screen: 1 },
+        { cueType: "visual", index: 2, name: "Second Cue", screen: 1 },
+        { cueType: "visual", index: 4, name: "Third Cue", screen: 1 },
+      ],
+    })
+    await presentation.save()
+
+    testPresentationId = presentation._id
+  })
+
+  test("Should shift indices right successfully", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right" })
+      .expect(200)
+
+    expect(response.body.shifted).toBe(true)
+
+    const presentation = await Presentation.findById(testPresentationId)
+    const cues = presentation.cues
+    const first = cues.find(c => c.name === "First Cue")
+    const second = cues.find(c => c.name === "Second Cue")
+    const third = cues.find(c => c.name === "Third Cue")
+    expect(first).toBeDefined()
+    expect(second).toBeDefined()
+    expect(third).toBeDefined()
+    expect(first.index).toBe(0)
+    expect(second.index).toBe(3)
+    expect(third.index).toBe(5)
+  })
+
+  test("Should shift indices left successfully", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 2, direction: "left" })
+      .expect(200)
+
+    expect(response.body.shifted).toBe(true)
+
+    const presentation = await Presentation.findById(testPresentationId)
+    const cues = presentation.cues
+    const first = cues.find(c => c.name === "First Cue")
+    const second = cues.find(c => c.name === "Second Cue")
+    const third = cues.find(c => c.name === "Third Cue")
+    expect(first).toBeDefined()
+    expect(second).toBeDefined()
+    expect(third).toBeDefined()
+    expect(first.index).toBe(0)
+    expect(second.index).toBe(2)
+    expect(third.index).toBe(3)
+  })
+
+  test("Should fail with invalid direction", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "invalid" })
+      .expect(400)
+
+    expect(response.body.error).toBe("Invalid parameters")
+  })
+
+  test("Should fail with missing startIndex", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ direction: "right" })
+      .expect(400)
+
+    expect(response.body.error).toBe("Invalid parameters")
+  })
+
+  test("Should fail with missing direction", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1 })
+      .expect(400)
+
+    expect(response.body.error).toBe("Invalid parameters")
+  })
+
+  test("Should handle invalid presentation ID", async () => {
+    const fakeId = new mongoose.Types.ObjectId()
+    const response = await api
+      .put(`/api/presentation/${fakeId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(404)
+
+    expect(response.body.error).toBe("presentation not found")
+  })
+
+  test("Should not work without authorization", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(401)
+
+    expect(response.body.error).toBe("authentication required")
+  })
+
+  test("Should return 400 with invalid id", async () => {
+    const response = await api
+      .put(`/api/presentation/invalid-id/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(400)
+
+    expect(response.body.error).toBe("malformatted id")
   })
 })
 
