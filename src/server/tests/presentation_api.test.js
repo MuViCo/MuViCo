@@ -16,6 +16,7 @@ let authHeader
 let testPresentationId
 
 const mockImageBuffer = fs.readFileSync(path.join(__dirname, "mock_image.png"))
+const mockAudioBuffer = Buffer.from("mock-audio")
 
 describe("test presentation", () => {
   beforeEach(async () => {
@@ -59,6 +60,28 @@ describe("test presentation", () => {
       .put(url)
       .set("Authorization", authHeader)
       .attach("image", mockImageBuffer, "mock_image.png")
+      .field("index", index)
+      .field("cueName", cueName)
+      .field("screen", screen)
+      .field("fileName", "")
+
+    return response
+  }
+
+  const createAudioCue = async (index, cueName, screen) => {
+    if (!testPresentationId) {
+      throw new Error("Error in createAudioCue: testPresentationId is undefined")
+    }
+
+    const url = `/api/presentation/${testPresentationId}`
+
+    const response = await api
+      .put(url)
+      .set("Authorization", authHeader)
+      .attach("image", mockAudioBuffer, {
+        filename: "mock_audio.mp3",
+        contentType: "audio/mpeg",
+      })
       .field("index", index)
       .field("cueName", cueName)
       .field("screen", screen)
@@ -398,6 +421,42 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Swap target position is already occupied by another cue.")
+    })
+
+    test("rejects swap when cue types do not match target screens", async () => {
+      await Presentation.findByIdAndUpdate(
+        testPresentationId,
+        {
+          screenCount: 4,
+        },
+        { new: true }
+      )
+
+      const deleteResponse = await Presentation.findById(testPresentationId)
+      deleteResponse.cues = []
+      await deleteResponse.save()
+
+      await createCue(0, "Visual Cue", 1)
+      await createAudioCue(0, "Audio Cue", 5)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      const visualCue = presentation.cues.find((cue) => cue.name === "Visual Cue")
+      const audioCue = presentation.cues.find((cue) => cue.name === "Audio Cue")
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId: visualCue._id.toString(),
+          secondCueId: audioCue._id.toString(),
+          firstIndex: 0,
+          firstScreen: 5,
+          secondIndex: 0,
+          secondScreen: 1,
+        })
+        .expect(400)
+
+      expect(response.body.error).toBe("Cue type does not match swap target screen")
     })
   })
 

@@ -39,6 +39,29 @@ const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
   })
 }
 
+const hasSwapTargetConflict = (
+  cues,
+  firstCueId,
+  secondCueId,
+  firstTargetIndex,
+  firstTargetScreen,
+  secondTargetIndex,
+  secondTargetScreen
+) => {
+  return cues.some((cue) => {
+    const cueId = cue._id.toString()
+
+    if (cueId === firstCueId.toString() || cueId === secondCueId.toString()) {
+      return false
+    }
+
+    return (
+      (Number(cue.index) === firstTargetIndex && Number(cue.screen) === firstTargetScreen) ||
+      (Number(cue.index) === secondTargetIndex && Number(cue.screen) === secondTargetScreen)
+    )
+  })
+}
+
 const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
@@ -460,7 +483,9 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
     const parsedFirstScreen = Number(firstScreen)
     const parsedSecondIndex = Number(secondIndex)
     const parsedSecondScreen = Number(secondScreen)
+    const maxScreen = presentation.screenCount + 1
 
+    // Validate request payload.
     if (
       !firstCueId ||
       !secondCueId ||
@@ -485,7 +510,6 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
       return res.status(400).json({ error: "Cannot swap a cue with itself" })
     }
 
-    const maxScreen = presentation.screenCount + 1
     if (
       parsedFirstIndex < 0 ||
       parsedFirstIndex >= presentation.indexCount ||
@@ -499,6 +523,7 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
       return res.status(400).json({ error: "Invalid swap target position" })
     }
 
+    // Resolve and validate the cues being swapped.
     const firstCue = presentation.cues.id(firstCueId)
     const secondCue = presentation.cues.id(secondCueId)
 
@@ -506,29 +531,43 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
       return res.status(404).json({ error: "Cue not found" })
     }
 
-    const hasThirdCueConflict = presentation.cues.some((cue) => {
-      const cueId = cue._id.toString()
-      if (cueId === firstCueId.toString() || cueId === secondCueId.toString()) {
-        return false
-      }
+    const firstTargetCueType = getCueTypeFromScreen(parsedFirstScreen, presentation.screenCount)
+    const secondTargetCueType = getCueTypeFromScreen(parsedSecondScreen, presentation.screenCount)
+    const firstCurrentCueType = firstCue.cueType ?? getCueTypeFromScreen(firstCue.screen, presentation.screenCount)
+    const secondCurrentCueType = secondCue.cueType ?? getCueTypeFromScreen(secondCue.screen, presentation.screenCount)
+    const firstCueMatchesTargetRow = firstCurrentCueType === firstTargetCueType
+    const secondCueMatchesTargetRow = secondCurrentCueType === secondTargetCueType
 
-      return (
-        (Number(cue.index) === parsedFirstIndex && Number(cue.screen) === parsedFirstScreen) ||
-        (Number(cue.index) === parsedSecondIndex && Number(cue.screen) === parsedSecondScreen)
+    if (!firstCueMatchesTargetRow || !secondCueMatchesTargetRow) {
+      return res.status(400).json({ error: "Cue type does not match swap target screen" })
+    }
+
+    // Reject swaps that would collide with a third cue.
+    if (
+      hasSwapTargetConflict(
+        presentation.cues,
+        firstCueId,
+        secondCueId,
+        parsedFirstIndex,
+        parsedFirstScreen,
+        parsedSecondIndex,
+        parsedSecondScreen
       )
-    })
-
-    if (hasThirdCueConflict) {
+    ) {
       return res.status(400).json({ error: "Swap target position is already occupied by another cue." })
     }
 
+    // Apply the swap and persist the normalized cue types.
     firstCue.index = parsedFirstIndex
     firstCue.screen = parsedFirstScreen
+    firstCue.cueType = firstTargetCueType
     secondCue.index = parsedSecondIndex
     secondCue.screen = parsedSecondScreen
+    secondCue.cueType = secondTargetCueType
 
     await presentation.save({ validateModifiedOnly: true })
 
+    // Rehydrate file URLs for the response.
     if (user.driveToken) {
       const [updatedFirstCue, updatedSecondCue] = await processDriveCueFiles(
         [firstCue, secondCue],
