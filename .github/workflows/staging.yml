@@ -9,26 +9,31 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Concurrency makes only one instance of test job run at a time. Concurrent tests break the test db.
-    # Should move to local mongodb container for tests
-    concurrency:
-      group: ci-tests
-      cancel-in-progress: false
-
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.12.1
+        with:
+          mongodb-username: "testing"
+          mongodb-password: "testing"
+          mongodb-db: "test"
+
       - name: Install dependencies
         run: npm ci
+
       - name: Run linter
         run: npm run lint
+
       - name: Run unit tests
         run: |
           npm run test-all
         env:
-          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+          TEST_MONGODB_URI: "mongodb+srv://testing:testing@localhost:27017/test?"
           PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
           BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
           BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
