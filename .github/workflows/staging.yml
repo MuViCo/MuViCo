@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run test-all
         env:
-          TEST_MONGODB_URI: "mongodb+srv://testing:testing@localhost:27017/test?"
+          TEST_MONGODB_URI: "mongodb://testing:testing@localhost/test"
           PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
           BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
           BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
