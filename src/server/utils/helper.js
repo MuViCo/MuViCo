@@ -1,6 +1,7 @@
 const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
+const { minPwLength, maxPwLength } = require("../../constants.js")
 
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (cue.file && cue.file.driveId) {
@@ -86,9 +87,8 @@ const processS3Files = async (cues, presentationId) => {
   return processedCues
 }
 
-// This is validation function is a stub and it should be expanded to cover all validation cases
 const validatePassword = (password) => {
-  if (password.length < 3) {
+  if (password.length < minPwLength) {
     return false
   }
   return true
