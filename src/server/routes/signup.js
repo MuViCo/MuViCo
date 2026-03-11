@@ -1,6 +1,7 @@
 const express = require("express")
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
+const { minPwLength, maxPwLength } = require("../../constants.js")
 
 const router = express.Router()
 
@@ -27,9 +28,9 @@ router.post("/", async (req, res) => {
   }
 
   const trimmedPassword = password.trim()
-  if (trimmedPassword.length < 3) {
+  if (trimmedPassword.length < minPwLength) {
     return res.status(400).json({
-      error: "password must be at least 3 characters long and not just whitespace"
+      error: `password must be at least ${minPwLength} characters long and not just whitespace`
     })
   }
 
