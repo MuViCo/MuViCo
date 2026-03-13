@@ -1333,6 +1333,7 @@ const EditMode = ({
               />
 
               <Box
+                data-testid="hover-preview"
                 ref={hoverPreviewRef}
                 position="absolute"
                 left="0px"

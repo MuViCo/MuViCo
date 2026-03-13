@@ -144,6 +144,24 @@ describe("EditMode drag swapping", () => {
     )
   }
 
+  const setupGridGeometry = () => {
+    const gridContainer = screen.getByTestId("edit-mode-grid-container")
+    Object.defineProperty(gridContainer, "scrollLeft", {
+      configurable: true,
+      value: 0,
+    })
+    gridContainer.getBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
+      right: 480,
+      bottom: 440,
+      width: 480,
+      height: 440,
+    }))
+
+    return gridContainer
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
@@ -163,19 +181,7 @@ describe("EditMode drag swapping", () => {
 
     renderEditMode()
 
-    const gridContainer = screen.getByTestId("edit-mode-grid-container")
-    Object.defineProperty(gridContainer, "scrollLeft", {
-      configurable: true,
-      value: 0,
-    })
-    gridContainer.getBoundingClientRect = jest.fn(() => ({
-      left: 0,
-      top: 0,
-      right: 480,
-      bottom: 440,
-      width: 480,
-      height: 440,
-    }))
+    const gridContainer = setupGridGeometry()
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
@@ -206,5 +212,64 @@ describe("EditMode drag swapping", () => {
     })
 
     expect(updatePresentation).not.toHaveBeenCalled()
+  })
+
+  it("shows and repositions hover preview on empty slots", () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const hoverPreview = screen.getByTestId("hover-preview")
+
+    expect(hoverPreview).toHaveStyle({ display: "none" })
+
+    // Empty slot at xIndex=2, yIndex=1 with current test cues and index count
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+
+    expect(hoverPreview).toHaveStyle({
+      display: "block",
+      left: "320px",
+      top: "110px",
+    })
+  })
+
+  it("hides hover preview when moving over occupied slots", () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const hoverPreview = screen.getByTestId("hover-preview")
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+    expect(hoverPreview).toHaveStyle({ display: "block" })
+
+    // Occupied slot at xIndex=0, yIndex=1 by visual-1
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 10,
+      clientY: 120,
+    })
+
+    expect(hoverPreview).toHaveStyle({ display: "none" })
+  })
+
+  it("hides hover preview when hovering frame header labels", () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const hoverPreview = screen.getByTestId("hover-preview")
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+    expect(hoverPreview).toHaveStyle({ display: "block" })
+
+    fireEvent.mouseMove(screen.getByText("Frame 1"), {
+      clientX: 170,
+      clientY: 10,
+    })
+
+    expect(hoverPreview).toHaveStyle({ display: "none" })
   })
 })
