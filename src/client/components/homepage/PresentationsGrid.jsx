@@ -10,6 +10,7 @@ import {
   Flex,
   List,
   ListItem,
+  Box,
 } from "@chakra-ui/react"
 import { DeleteIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
@@ -55,6 +56,20 @@ const PresentationsGrid = ({
               >
                 {presentation.name}
               </Heading>
+              <h2 style={{
+                marginTop: "0.5em",
+                fontSize: "0.9em",
+                color: "rgba(255, 255, 255, 0.8)",
+                textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                whiteSpace: "pre-wrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: "vertical",
+              }}>
+                {presentation.description || ""}
+              </h2>
             </CardHeader>
             <IconButton
               icon={<DeleteIcon />}
@@ -96,13 +111,32 @@ const PresentationsGrid = ({
             onClick={() => handlePresentationClick(presentation.id)}
             position="relative"
           >
-            <Heading
-              size="md"
-              color="white"
-              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
-            >
-              {presentation.name}
-            </Heading>
+            <Flex align="center" justify="space-between">
+              <Box flex="1">
+                <Flex align="center">
+                  <Heading
+                    size="md"
+                    color="white"
+                    style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
+                    mr={4}
+                  >
+                    {presentation.name}
+                  </Heading>
+                  <p style={{
+                    fontSize: "1.2em",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "600px",
+                    textAlign: "center",
+                  }}>
+                    {presentation.description || ""}
+                  </p>
+                </Flex>
+              </Box>
+            </Flex>
             <IconButton
               icon={<DeleteIcon />}
               size="sm"
