@@ -85,4 +85,37 @@ router.post("/", userExtractor, async (req, res, next) => {
   }
 })
 
+router.put("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
+  try {
+    const { presentation } = req
+    const { name, description } = req.body
+
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "name is required and must be a string" })
+    }
+
+    const trimmedName = name.trim()
+    if (trimmedName.length === 0 || trimmedName.length > 100) {
+      return res.status(400).json({ error: "name must be between 1 and 100 characters long" })
+    }
+
+    if (description !== undefined && typeof description !== "string") {
+      return res.status(400).json({ error: "description must be a string" })
+    }
+
+    const trimmedDescription = typeof description === "string" ? description.trim() : ""
+    if (trimmedDescription.length > 500) {
+      return res.status(400).json({ error: "description must be at most 500 characters long" })
+    }
+
+    presentation.name = trimmedName
+    presentation.description = trimmedDescription
+    const updatedPresentation = await presentation.save({ validateModifiedOnly: true })
+
+    return res.json(updatedPresentation.toJSON())
+  } catch (error) {
+    next(error)
+  }
+})
+
 module.exports = router

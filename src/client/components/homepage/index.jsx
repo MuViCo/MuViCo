@@ -77,6 +77,16 @@ const HomePage = ({ user, setUser }) => {
     navigate(`/presentation/${presentationId}`)
   }
 
+  const handleEditPresentation = async (presentationId, updatedPresentation) => {
+    try {
+      await presentationService.update(presentationId, updatedPresentation)
+      const updatedPresentations = await presentationService.getAll()
+      setPresentations(updatedPresentations)
+    } catch (error) {
+      console.error("Error updating presentation: ", error)
+    }
+  }
+
   const handleCancel = () => {
     togglableRef.current.toggleVisibility()
   }
@@ -168,6 +178,7 @@ const HomePage = ({ user, setUser }) => {
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
         handleDeletePresentation={handleDeletePresentation}
+        handleEditPresentation={handleEditPresentation}
       />
       <Dialog
         isOpen={isDialogOpen}

@@ -97,6 +97,7 @@ describe("HomePage", () => {
 
     await waitFor(() =>
       expect(presentationService.create).toHaveBeenCalledWith({
+        description: "",
         name: "Presentation 3",
         screenCount: 1,
         startingFrameColor: "#000000"
@@ -331,6 +332,7 @@ describe("PresentationForm", () => {
     fireEvent.click(screen.getByText("create"))
 
     expect(createPresentationMock).toHaveBeenCalledWith({
+      description: "",
       name: "Test Presentation",
       screenCount: 1,
       startingFrameColor: "#000000"

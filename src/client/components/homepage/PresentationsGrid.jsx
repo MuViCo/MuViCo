@@ -11,25 +11,78 @@ import {
   List,
   ListItem,
   Box,
+  Tooltip,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  useDisclosure,
 } from "@chakra-ui/react"
-import { DeleteIcon } from "@chakra-ui/icons"
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
+import { blurElement } from "@testing-library/user-event/dist/cjs/event/focus.js"
 
 const PresentationsGrid = ({
   presentations,
   handlePresentationClick,
   handleDeletePresentation,
+  handleEditPresentation,
 }) => {
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const [viewMode, setViewMode] = useState(() => {
     // Initialize from localStorage, default to "grid"
     return localStorage.getItem("presentationsLayoutMode") || "grid"
   })
+  const [editingPresentationId, setEditingPresentationId] = useState(null)
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
 
   // Save to localStorage whenever viewMode changes
   useEffect(() => {
     localStorage.setItem("presentationsLayoutMode", viewMode)
   }, [viewMode])
+
+  const openEditModal = (presentation, event) => {
+    event.stopPropagation()
+    setEditingPresentationId(presentation.id)
+    setEditName(presentation.name || "")
+    setEditDescription(presentation.description || "")
+    onOpen()
+  }
+
+  const handleCloseEditModal = () => {
+    if (isSaving) {
+      return
+    }
+    onClose()
+  }
+
+  const handleSaveEdit = async () => {
+    const trimmedName = editName.trim()
+    if (!trimmedName || !editingPresentationId) {
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await handleEditPresentation(editingPresentationId, {
+        name: trimmedName,
+        description: editDescription,
+      })
+      onClose()
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const renderGrid = () => (
     <SimpleGrid columns={[1, 2, 3]} gap={5} id="presentations-grid" minH="400px">
@@ -56,21 +109,37 @@ const PresentationsGrid = ({
               >
                 {presentation.name}
               </Heading>
-              <h2 style={{
-                marginTop: "0.5em",
-                fontSize: "0.9em",
-                color: "rgba(255, 255, 255, 0.8)",
-                textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                whiteSpace: "pre-wrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical",
-              }}>
-                {presentation.description || ""}
-              </h2>
+              <Tooltip label={presentation.description || ""} placement="auto" openDelay={800} closeDelay={100}>
+                <h2 style={{
+                  marginTop: "0.5em",
+                  fontSize: "0.9em",
+                  color: "rgba(255, 255, 255, 0.8)",
+                  textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                  whiteSpace: "pre-wrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                }}>
+                  {presentation.description || ""}
+                </h2>
+              </Tooltip>
             </CardHeader>
+            <IconButton
+              icon={<EditIcon />}
+              size="md"
+              backgroundColor="transparent"
+              _hover={{ bg: "purple.300", color: "white" }}
+              position="absolute"
+              draggable={false}
+              zIndex="10"
+              top="4px"
+              right="50px"
+              aria-label={"Edit presentation"}
+              title="Edit presentation"
+              onClick={(e) => openEditModal(presentation, e)}
+            />
             <IconButton
               icon={<DeleteIcon />}
               size="md"
@@ -111,32 +180,49 @@ const PresentationsGrid = ({
             onClick={() => handlePresentationClick(presentation.id)}
             position="relative"
           >
-            <Flex align="center" justify="space-between">
-              <Box flex="1">
-                <Flex align="center">
+            <Flex align="center" justify="space-between" pr={24}>
+              <Box flex="1" minW={0}>
+                <Flex align="center" minW={0} gap="20px">
                   <Heading
                     size="md"
                     color="white"
                     style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
-                    mr={4}
+                    flexShrink={0}
                   >
                     {presentation.name}
                   </Heading>
-                  <p style={{
-                    fontSize: "1.2em",
-                    color: "rgba(255, 255, 255, 0.8)",
-                    textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    maxWidth: "600px",
-                    textAlign: "center",
-                  }}>
-                    {presentation.description || ""}
-                  </p>
+                  <Tooltip label={presentation.description || ""} placement="auto" openDelay={800} closeDelay={100}>
+                    <p style={{
+                      fontSize: "1.2em",
+                      color: "rgba(255, 255, 255, 0.8)",
+                      textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      flex: "1",
+                      minWidth: "0",
+                      textAlign: "left",
+                    }}>
+                      {presentation.description || ""}
+                    </p>
+                  </Tooltip>
                 </Flex>
               </Box>
             </Flex>
+            <IconButton
+              icon={<EditIcon />}
+              size="sm"
+              backgroundColor="transparent"
+              _hover={{ bg: "purple.300", color: "white" }}
+              position="absolute"
+              draggable={false}
+              zIndex="10"
+              top="4px"
+              right="40px"
+              aria-label={"Edit presentation"}
+              title="Edit presentation"
+              onClick={(e) => openEditModal(presentation, e)}
+            />
             <IconButton
               icon={<DeleteIcon />}
               size="sm"
@@ -231,6 +317,46 @@ const PresentationsGrid = ({
       )}
 
       {viewMode === "grid" ? renderGrid() : renderList()}
+
+      <Modal isCentered isOpen={isOpen} onClose={handleCloseEditModal}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit presentation</ModalHeader>
+          <ModalCloseButton isDisabled={isSaving} />
+          <ModalBody>
+            <FormControl mb={4} isRequired>
+              <FormLabel>Title</FormLabel>
+              <Input
+                value={editName}
+                onChange={(event) => setEditName(event.target.value)}
+                maxLength={100}
+              />
+            </FormControl>
+            <FormControl>
+              <FormLabel>Description</FormLabel>
+              <Textarea
+                placeholder="Max. 500 characters"
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                maxLength={500}
+              />
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button mr={3} variant="ghost" onClick={handleCloseEditModal} isDisabled={isSaving}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="purple"
+              onClick={handleSaveEdit}
+              isLoading={isSaving}
+              isDisabled={!editName.trim()}
+            >
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   )
 }

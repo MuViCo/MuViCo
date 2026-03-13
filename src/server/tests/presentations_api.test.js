@@ -180,6 +180,115 @@ test("returns only googleDrive presentations when user has driveToken", async ()
   })
 })
 })
+
+describe("PUT /presentations", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    authHeader = `Bearer ${response.body.token}`
+
+    const createRes = await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Old title", description: "Old description" })
+      .expect(201)
+
+    presentationId = createRes.body.id
+  })
+
+  test("updates presentation name and description", async () => {
+    const response = await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "Updated title", description: "Updated description" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.name).toBe("Updated title")
+    expect(response.body.description).toBe("Updated description")
+
+    const updatedInDb = await Presentation.findById(presentationId)
+    expect(updatedInDb.name).toBe("Updated title")
+    expect(updatedInDb.description).toBe("Updated description")
+  })
+
+  test("trims name and description on update", async () => {
+    const response = await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "   Trimmed title   ", description: "   Trimmed description   " })
+      .expect(200)
+
+    expect(response.body.name).toBe("Trimmed title")
+    expect(response.body.description).toBe("Trimmed description")
+  })
+
+  test("returns 400 when description exceeds max length", async () => {
+    const longDescription = "a".repeat(501)
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "Valid title", description: longDescription })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+      .expect((res) => {
+        expect(res.body.error).toBe("description must be at most 500 characters long")
+      })
+  })
+
+  test("returns 400 when name is missing or empty", async () => {
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ description: "Only description" })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toBe("name is required and must be a string")
+      })
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "   ", description: "Desc" })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.error).toBe("name must be between 1 and 100 characters long")
+      })
+  })
+
+  test("returns 403 when updating another user's presentation", async () => {
+    await api
+      .post("/api/signup")
+      .send({ username: "other", password: "secret" })
+
+    const otherLogin = await api
+      .post("/api/login")
+      .send({ username: "other", password: "secret" })
+
+    const otherAuth = `Bearer ${otherLogin.body.token}`
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", otherAuth)
+      .send({ name: "Not allowed", description: "Nope" })
+      .expect(403)
+      .expect("Content-Type", /application\/json/)
+      .expect((res) => {
+        expect(res.body.error).toBe("access denied")
+      })
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })
