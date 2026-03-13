@@ -11,6 +11,7 @@ import {
 
 const PresentationForm = ({ createPresentation, onCancel }) => {
   const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
   const [screenCount, setScreenCount] = useState(1)
   const [startingFrameColor, setStartingFrameColor] = useState("#000000")
 
@@ -18,11 +19,13 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
     event.preventDefault()
     createPresentation({
       name,
+      description,
       screenCount: parseInt(screenCount, 10),
       startingFrameColor
     })
 
     setName("")
+    setDescription("")
     setScreenCount(1)
     setStartingFrameColor("#FF0000")
     onCancel()
@@ -41,7 +44,21 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             value={name}
             onChange={({ target }) => setName(target.value)}
           />
-          
+        </FormControl>
+
+        <FormControl>
+          <FormLabel htmlFor="description" mb={3} fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
+            Description
+          </FormLabel>
+          <Input
+            data-testid="presentation-description"
+            id="description"
+            value={description}
+            onChange={({ target }) => setDescription(target.value)}
+          />
+        </FormControl>
+        
+        <FormControl isRequired>
           <FormLabel htmlFor="screen-count" fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
             Screen Count (max 8)
           </FormLabel>
@@ -54,9 +71,6 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             value={screenCount}
             onChange={({ target }) => setScreenCount(target.value)}
           />
-          
-          
-      
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
           <Button id="create-button" type="submit" colorScheme="purple">

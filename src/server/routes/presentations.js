@@ -41,7 +41,7 @@ router.get("/:id", userExtractor, requirePresentationAccess, async (req, res) =>
  */
 router.post("/", userExtractor, async (req, res, next) => {
   try {
-    const { name, screenCount} = req.body
+    const { name, description, screenCount} = req.body
     const { user } = req
 
     if (!user) {
@@ -57,8 +57,18 @@ router.post("/", userExtractor, async (req, res, next) => {
       return res.status(400).json({ error: "name must be between 1 and 100 characters long" })
     }
 
+    if (description && typeof description !== "string") {
+      return res.status(400).json({ error: "description must be a string" })
+    }
+
+    const trimmedDescription = description ? description.trim() : ""
+    if (trimmedDescription.length > 500) {
+      return res.status(400).json({ error: "description must be at most 500 characters long" })
+    }
+
     const presentation = new Presentation({
       name: trimmedName,
+      description: trimmedDescription,
       screenCount,
       user: user._id,
       storage: user.driveToken ? "googleDrive" : "aws"

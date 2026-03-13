@@ -43,6 +43,11 @@ const presentationSchema = mongoose.Schema({
     maxlength: 100,
   },
 
+  description: {
+    type: String,
+    maxlength: 500,
+  },
+
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
