@@ -79,7 +79,6 @@ const EditMode = ({
     xIndex: 0,
     yIndex: 0,
   })
-  const [hoverPosition, setHoverPosition] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => { })
@@ -119,6 +118,8 @@ const EditMode = ({
   })
 
   const clickTimeout = useRef(null)
+  const hoverPreviewRef = useRef(null)
+  const hoverCellRef = useRef(null)
 
   const columnWidth = 150
   const rowHeight = 100
@@ -135,6 +136,34 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [cues, selectedCue])
+
+  const hideHoverPreview = () => {
+    hoverCellRef.current = null
+
+    if (hoverPreviewRef.current) {
+      hoverPreviewRef.current.style.display = "none"
+    }
+  }
+
+  const showHoverPreview = (xIndex, yIndex) => {
+    if (!hoverPreviewRef.current) {
+      return
+    }
+
+    const nextCell = `${xIndex}:${yIndex}`
+    if (hoverCellRef.current === nextCell) {
+      return
+    }
+
+    hoverCellRef.current = nextCell
+    hoverPreviewRef.current.style.display = "block"
+    hoverPreviewRef.current.style.left = `${xIndex * (columnWidth + gap)}px`
+    hoverPreviewRef.current.style.top = `${yIndex * (rowHeight + gap)}px`
+  }
+
+  useEffect(() => {
+    hideHoverPreview()
+  }, [cues, indexCount, presentation.screenCount, isShowMode])
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -465,7 +494,7 @@ const EditMode = ({
 
       if (event.target.closest(".react-grid-item")) {
         setIsDragging(true)
-        setHoverPosition(null)
+        hideHoverPreview()
       } else {
         setIsDragging(false)
       }
@@ -567,8 +596,12 @@ const EditMode = ({
   }
 
   const handleMouseMove = (event) => {
-    if (isDragging) return
+    if (isDragging) {
+      hideHoverPreview()
+      return
+    }
     if (event.target.closest(".x-index-label")) {
+      hideHoverPreview()
       return
     }
     const { xIndex, yIndex } = getPosition(
@@ -590,9 +623,9 @@ const EditMode = ({
       yIndex <= getAudioRow(presentation.screenCount) &&
       yIndex >= 1
     ) {
-      setHoverPosition({ index: xIndex, screen: yIndex })
+      showHoverPreview(xIndex, yIndex)
     } else {
-      setHoverPosition(null)
+      hideHoverPreview()
     }
   }
 
@@ -1136,7 +1169,18 @@ const EditMode = ({
               </Box>
             ))}
           </Box>
-          <Box position="relative" pointerEvents={isShowMode ? "none" : "auto"}>
+          <Box
+            position="relative"
+            pointerEvents={isShowMode ? "none" : "auto"}
+            sx={{
+              ".layout > .react-grid-placeholder": {
+                background: bgColorHover,
+                borderRadius: "16px",
+                opacity: 1,
+                transitionDuration: "0s",
+              },
+            }}
+          >
             <Box
               height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
               width="100%"
@@ -1146,6 +1190,7 @@ const EditMode = ({
               onDoubleClick={handleDoubleClick}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
+              onMouseLeave={hideHoverPreview}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
             >
@@ -1287,20 +1332,20 @@ const EditMode = ({
                 screenCount={presentation.screenCount}
               />
 
-              {hoverPosition && !isDragging && (
-                <Box
-                  position="absolute"
-                  left={`${hoverPosition.index * (columnWidth + gap)}px`}
-                  top={`${hoverPosition.screen * (rowHeight + gap)}px`}
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  bg={bgColorHover}
-                  borderRadius="16"
-                  transition="0"
-                  zIndex={-1}
-                  pointerEvents="none"
-                />
-              )}
+              <Box
+                ref={hoverPreviewRef}
+                position="absolute"
+                left="0px"
+                top="0px"
+                width={`${columnWidth}px`}
+                height={`${rowHeight}px`}
+                bg={bgColorHover}
+                borderRadius="16"
+                transition="0"
+                zIndex={-1}
+                pointerEvents="none"
+                display="none"
+              />
             </Box>
           </Box>
 
