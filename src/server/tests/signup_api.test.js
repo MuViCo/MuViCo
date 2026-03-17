@@ -44,6 +44,24 @@ describe("creation of a new user", () => {
     expect(usernames).toContain(newUser.username)
   })
 
+  test("fails with status code 400 if username is not string", async () => {
+    const usersAtStart = await usersInDb()
+
+    const invalidUser = {
+      username: 12345,
+      password: "te",
+    }
+
+    await api
+      .post("/api/signup")
+      .send(invalidUser)
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    const usersAtEnd = await usersInDb()
+    expect(usersAtEnd).toHaveLength(usersAtStart.length)
+  })
+
   test("fails with status code 400 if username is already taken", async () => {
     const usersAtStart = await usersInDb()
 
