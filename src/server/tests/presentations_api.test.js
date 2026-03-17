@@ -56,7 +56,7 @@ describe("GET /presentations", () => {
       .get("/api/home")
       .expect(401)
       .expect("Content-Type", /application\/json/)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.error).toBe("operation not permitted")
       })
   })
@@ -67,7 +67,7 @@ describe("GET /presentations", () => {
       .set("Authorization", authHeader)
       .expect(400)
       .expect("Content-Type", /application\/json/)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.error).toBe("malformatted id")
       })
   })
@@ -82,28 +82,28 @@ describe("GET /presentations", () => {
     expect(response.body.name).toBe("Test presentation")
   })
 
-test("returns 404 when fetching other user's presentation", async () => {
-  const otherRes = await api
-    .post("/api/signup")
-    .send({ username: "other", password: "secret" })
-  const otherLogin = await api
-    .post("/api/login")
-    .send({ username: "other", password: "secret" })
-  const otherAuth = `Bearer ${otherLogin.body.token}`
+  test("returns 404 when fetching other user's presentation", async () => {
+    const otherRes = await api
+      .post("/api/signup")
+      .send({ username: "other", password: "secretpw" })
+    const otherLogin = await api
+      .post("/api/login")
+      .send({ username: "other", password: "secretpw" })
+    const otherAuth = `Bearer ${otherLogin.body.token}`
 
-  const otherPres = await api
-    .post("/api/home")
-    .set("Authorization", otherAuth)
-    .send({ name: "Other's presentation" })
+    const otherPres = await api
+      .post("/api/home")
+      .set("Authorization", otherAuth)
+      .send({ name: "Other's presentation" })
 
-  await api
-    .get(`/api/home/${otherPres.body.id}`)
-    .set("Authorization", authHeader)
-    .expect(403)
-    .expect("Content-Type", /application\/json/)
-    .expect(res => {
-      expect(res.body.error).toBe("access denied")
-    })
+    await api
+      .get(`/api/home/${otherPres.body.id}`)
+      .set("Authorization", authHeader)
+      .expect(403)
+      .expect("Content-Type", /application\/json/)
+      .expect((res) => {
+        expect(res.body.error).toBe("access denied")
+      })
   })
 
   test("all presentations are returned", async () => {
@@ -153,32 +153,32 @@ describe("POST /presentations", () => {
       .send({})
       .expect(400)
       .expect("Content-Type", /application\/json/)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body.error).toBe("name is required and must be a string")
       })
   })
 
-test("returns only googleDrive presentations when user has driveToken", async () => {
-  const user = await User.findOne({ username: "testuser" })
-  user.driveToken = "test-drive-token"
-  await user.save()
+  test("returns only googleDrive presentations when user has driveToken", async () => {
+    const user = await User.findOne({ username: "testuser" })
+    user.driveToken = "test-drive-token"
+    await user.save()
 
-  const presRes = await api
-    .post("/api/home")
-    .set("Authorization", authHeader)
-    .send({ name: "Drive presentation" })
-    .expect(201)
+    const presRes = await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Drive presentation" })
+      .expect(201)
 
-  const response = await api
-    .get("/api/home")
-    .set("Authorization", authHeader)
-    .expect(200)
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
 
-  expect(response.body.length).toBeGreaterThan(0)
-  response.body.forEach(p => {
-    expect(p.storage).toBe("googleDrive")
+    expect(response.body.length).toBeGreaterThan(0)
+    response.body.forEach((p) => {
+      expect(p.storage).toBe("googleDrive")
+    })
   })
-})
 })
 
 describe("PUT /presentations", () => {

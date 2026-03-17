@@ -1,16 +1,15 @@
 const mongoose = require("mongoose")
 const supertest = require("supertest")
 const app = require("../app")
+const { minPwLength } = require("../../constants.js")
 
 const api = supertest(app)
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
 const { usersInDb } = require("./test_helper")
 
-
 const presentation1 = new Presentation({ name: "Test Presentation 1" })
 const presentation2 = new Presentation({ name: "Another Presentation" })
-
 
 const user1 = new User({
   username: "testuser",
@@ -106,12 +105,11 @@ describe("creation of a new user", () => {
       password: "validpassword",
     }
 
-    const result = await api
-      .post("/api/signup")
-      .send(invalidUser)
-      .expect(400)
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
-    expect(result.body.error).toContain("username must be at least 3 characters long")
+    expect(result.body.error).toContain(
+      "username must be at least 3 characters long"
+    )
   })
 
   test("fails if password is only whitespace", async () => {
@@ -120,12 +118,11 @@ describe("creation of a new user", () => {
       password: "   ",
     }
 
-    const result = await api
-      .post("/api/signup")
-      .send(invalidUser)
-      .expect(400)
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
-    expect(result.body.error).toContain("password must be at least 3 characters long")
+    expect(result.body.error).toContain(
+      `password must be at least ${minPwLength} characters long`
+    )
   })
 
   test("trims username and password before saving", async () => {
@@ -134,10 +131,7 @@ describe("creation of a new user", () => {
       password: "  trimmedpass  ",
     }
 
-    const response = await api
-      .post("/api/signup")
-      .send(newUser)
-      .expect(201)
+    const response = await api.post("/api/signup").send(newUser).expect(201)
 
     expect(response.body.username).toBe("trimmeduser")
 
