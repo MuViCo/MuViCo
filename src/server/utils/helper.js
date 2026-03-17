@@ -1,7 +1,6 @@
 const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
-const { minPwLength, maxPwLength } = require("../../constants.js")
 
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (cue.file && cue.file.driveId) {
@@ -45,7 +44,7 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
   } else {
     // Handle blank images by using the correct filename
     const filename = cue.file.name || "blank.png"
-    
+
     if (
       process.env.NODE_ENV === "development" ||
       process.env.NODE_ENV === "test"
@@ -61,7 +60,8 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
 const processS3Files = async (cues, presentationId) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
-      const cueObject = typeof cue?.toObject === "function" ? cue.toObject() : cue
+      const cueObject =
+        typeof cue?.toObject === "function" ? cue.toObject() : cue
 
       if (!cueObject.file) {
         return cue
@@ -87,16 +87,8 @@ const processS3Files = async (cues, presentationId) => {
   return processedCues
 }
 
-const validatePassword = (password) => {
-  if (password.length < minPwLength) {
-    return false
-  }
-  return true
-}
-
 module.exports = {
   processDriveCueFiles,
   generateSignedUrlForS3,
   processS3Files,
-  validatePassword
 }

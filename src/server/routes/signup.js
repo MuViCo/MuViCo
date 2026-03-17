@@ -1,5 +1,5 @@
 const express = require("express")
-const bcrypt = require("bcrypt")
+const { validatePassword, generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
 const { minPwLength, maxPwLength } = require("../../constants.js")
 
@@ -10,33 +10,32 @@ router.post("/", async (req, res) => {
 
   if (!username || !password) {
     return res.status(400).json({
-      error: "username and password are required"
+      error: "username and password are required",
     })
   }
 
   if (typeof username !== "string" || typeof password !== "string") {
     return res.status(400).json({
-      error: "username and password must be strings"
+      error: "username and password must be strings",
     })
   }
 
   const trimmedUsername = username.trim()
   if (trimmedUsername.length < 3) {
     return res.status(400).json({
-      error: "username must be at least 3 characters long and not just whitespace"
+      error:
+        "username must be at least 3 characters long and not just whitespace",
     })
   }
 
-  const trimmedPassword = password.trim()
-  if (trimmedPassword.length < minPwLength) {
+  if (!validatePassword(password)) {
     return res.status(400).json({
-      error: `password must be at least ${minPwLength} characters long and not just whitespace`
+      error: `password must be at least ${minPwLength} characters long`,
     })
   }
 
+  const passwordHash = await generateHash(password)
   try {
-    const saltRounds = 10 // Number of rounds to use when hashing the password
-    const passwordHash = await bcrypt.hash(trimmedPassword, saltRounds)
     const user = new User({
       username: trimmedUsername,
       passwordHash,

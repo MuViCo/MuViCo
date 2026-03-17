@@ -1,6 +1,6 @@
 const supertest = require("supertest")
 const mongoose = require("mongoose")
-const bcrypt = require("bcrypt")
+const { generateHash } = require("../utils/auth.js")
 const jwt = require("jsonwebtoken")
 const config = require("../utils/config")
 const Presentation = require("../models/presentation")
@@ -205,7 +205,9 @@ describe("test presentation", () => {
         .field("color", "#ff69b4")
         .expect(200)
 
-      const createdCue = response.body.cues.find((cue) => cue.name === "Color Cue")
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Color Cue"
+      )
       expect(createdCue).toBeDefined()
       expect(createdCue.color).toBe("#ff69b4")
     })
@@ -219,7 +221,9 @@ describe("test presentation", () => {
         .field("screen", 2)
         .expect(200)
 
-      const createdCue = response.body.cues.find((cue) => cue.name === "Default Color Cue")
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Default Color Cue"
+      )
       expect(createdCue).toBeDefined()
       expect(createdCue.color).toBe("#000000")
     })
@@ -474,7 +478,7 @@ describe("test presentation", () => {
     const invalidCases = [
       [0, "indexCount must be between 1 and 100"],
       [101, "indexCount must be between 1 and 100"],
-      ["asdf", "indexCount must be a number"]
+      ["asdf", "indexCount must be a number"],
     ]
 
     test.each(invalidCases)(
@@ -510,8 +514,8 @@ describe("test presentation", () => {
           { screen: 2, index: 1, name: "Element 2-1" },
           { screen: 3, index: 1, name: "Element 3-1" },
           { screen: 3, index: 2, name: "Element 3-2" },
-          { screen: 3, index: 3, name: "Element 3-3" }
-        ]
+          { screen: 3, index: 3, name: "Element 3-3" },
+        ],
       })
       await presentation.save()
       testPresentationId = presentation._id
@@ -528,9 +532,10 @@ describe("test presentation", () => {
       expect(response.body.removedCuesCount).toBe(0)
 
       // Verify the presentation was updated
-      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
       expect(updatedPresentation.screenCount).toBe(4)
-      
+
       // Check that the presentation has the same number of cues (no automatic new cues added)
       expect(updatedPresentation.cues.length).toBe(6)
     })
@@ -545,15 +550,18 @@ describe("test presentation", () => {
       expect(response.body.screenCount).toBe(2)
       expect(response.body.removedCuesCount).toBe(3)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
       expect(updatedPresentation.screenCount).toBe(2)
 
-      const screen3Cues = updatedPresentation.cues.filter(cue => cue.screen === 3)
+      const screen3Cues = updatedPresentation.cues.filter(
+        (cue) => cue.screen === 3
+      )
       expect(screen3Cues.length).toBe(0)
-      
+
       const remainingCues = updatedPresentation.cues
-      expect(remainingCues.filter(cue => cue.screen === 1).length).toBe(2)
-      expect(remainingCues.filter(cue => cue.screen === 2).length).toBe(1)
+      expect(remainingCues.filter((cue) => cue.screen === 1).length).toBe(2)
+      expect(remainingCues.filter((cue) => cue.screen === 2).length).toBe(1)
     })
 
     test("Should reject invalid screen count (too low)", async () => {
@@ -583,7 +591,7 @@ describe("test presentation", () => {
         .send({ screenCount: 2.2 })
         .expect(200)
 
-      expect(response.body.screenCount).toBe(2) 
+      expect(response.body.screenCount).toBe(2)
     })
 
     test("Should reject missing screen count", async () => {
@@ -606,7 +614,8 @@ describe("test presentation", () => {
       expect(response.body.screenCount).toBe(3)
       expect(response.body.removedCuesCount).toBe(0)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
       expect(updatedPresentation.cues.length).toBe(6) // Original count
     })
 
@@ -615,7 +624,7 @@ describe("test presentation", () => {
         .put(`/api/presentation/${testPresentationId}/screenCount`)
         .send({ screenCount: 2 })
         .expect(401)
-      
+
       expect(response.body.error).toBe("authentication required")
     })
 
@@ -634,8 +643,8 @@ describe("test presentation", () => {
       // Create another user
       const otherUser = new User({
         email: "other@example.com",
-        hashedPassword: await bcrypt.hash("password123", 10),
-        username: "otheruser"
+        hashedPassword: await generateHash("password123"),
+        username: "otheruser",
       })
       await otherUser.save()
 
@@ -720,7 +729,7 @@ describe("test presentation", () => {
         .set("Authorization", otherAuthHeader)
         .send({ name: "I should not be able to change this" })
         .expect(403)
-      
+
       expect(response.body.error).toBe("access denied")
     })
 
@@ -761,11 +770,11 @@ describe("test presentation", () => {
       // Create the admin user before each test in this block
       const adminUser = new User({
         username: "adminuser",
-        passwordHash: await bcrypt.hash("password", 10),
-        isAdmin: true
+        passwordHash: await generateHash("password"),
+        isAdmin: true,
       })
       await adminUser.save()
-      
+
       adminToken = jwt.sign({ id: adminUser._id }, config.SECRET)
     })
 
@@ -782,9 +791,10 @@ describe("test presentation", () => {
         .set("Authorization", `Bearer ${adminToken}`)
         .send({ name: "Admin Edited Name" })
         .expect(200)
-        
-       const updatedPresentation = await Presentation.findById(testPresentationId)
-       expect(updatedPresentation.name).toBe("Admin Edited Name")
+
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
+      expect(updatedPresentation.name).toBe("Admin Edited Name")
     })
   })
 })
@@ -832,9 +842,9 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
 
     const presentation = await Presentation.findById(testPresentationId)
     const cues = presentation.cues
-    const first = cues.find(c => c.name === "First Cue")
-    const second = cues.find(c => c.name === "Second Cue")
-    const third = cues.find(c => c.name === "Third Cue")
+    const first = cues.find((c) => c.name === "First Cue")
+    const second = cues.find((c) => c.name === "Second Cue")
+    const third = cues.find((c) => c.name === "Third Cue")
     expect(first).toBeDefined()
     expect(second).toBeDefined()
     expect(third).toBeDefined()
@@ -854,9 +864,9 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
 
     const presentation = await Presentation.findById(testPresentationId)
     const cues = presentation.cues
-    const first = cues.find(c => c.name === "First Cue")
-    const second = cues.find(c => c.name === "Second Cue")
-    const third = cues.find(c => c.name === "Third Cue")
+    const first = cues.find((c) => c.name === "First Cue")
+    const second = cues.find((c) => c.name === "Second Cue")
+    const third = cues.find((c) => c.name === "Third Cue")
     expect(first).toBeDefined()
     expect(second).toBeDefined()
     expect(third).toBeDefined()
@@ -937,7 +947,7 @@ describe("MRU (Most Recently Used) sorting", () => {
     // Create test user
     user = new User({
       username: "testuser1",
-      passwordHash: await bcrypt.hash("testpassword", 10),
+      passwordHash: await generateHash("testpassword"),
     })
     await user.save()
 
@@ -950,16 +960,15 @@ describe("MRU (Most Recently Used) sorting", () => {
 
     presentation2 = new Presentation({
       name: "Presentation 2",
-      user: user.id,  
+      user: user.id,
     })
     await presentation2.save()
 
     presentation3 = new Presentation({
       name: "Presentation 3",
-      user: user.id,  
+      user: user.id,
     })
     await presentation3.save()
-
 
     // Login and get auth token
     const loginRes = await api
@@ -1004,7 +1013,7 @@ describe("MRU (Most Recently Used) sorting", () => {
     // Add small delay to ensure different timestamps
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    const response2 =  await api
+    const response2 = await api
       .get(`/api/presentation/${presentation2.id}`)
       .set("Authorization", authHeader)
       .expect(200)
@@ -1095,7 +1104,7 @@ describe("MRU (Most Recently Used) sorting", () => {
     // Create another user
     const user2 = new User({
       username: "testuser2",
-      passwordHash: await bcrypt.hash("testpassword", 10),
+      passwordHash: await generateHash("testpassword"),
     })
     await user2.save()
 

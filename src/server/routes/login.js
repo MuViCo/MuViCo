@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken")
 const express = require("express")
-const bcrypt = require("bcrypt")
+const { checkPassword } = require("../utils/auth.js")
 const User = require("../models/user")
 const config = require("../utils/config")
 const verifyToken = require("../utils/verifyToken")
@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
 Checks if the entered password is correct for the given user.*
 @type {boolean}*/
   const passwordCorrect =
-    user === null ? false : await bcrypt.compare(password, user.passwordHash)
+    user === null ? false : await checkPassword(password, user.passwordHash)
 
   if (!(user && passwordCorrect)) {
     return res.status(401).json({
@@ -68,7 +68,7 @@ router.post("/firebase", verifyToken, async (req, res) => {
       // If such a legacy account exists, link it to the Firebase UID.
       if (isSafeLegacyAccount) {
         user = legacyCandidate
-      // Otherwise, create a new account with a unique username.
+        // Otherwise, create a new account with a unique username.
       } else {
         const username = await generateUniqueUsername(preferredUsername, User)
         user = new User({ firebaseUid: uid, username })

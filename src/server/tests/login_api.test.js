@@ -1,6 +1,6 @@
 const supertest = require("supertest")
 const mongoose = require("mongoose")
-const bcrypt = require("bcrypt")
+const { generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
 const app = require("../app")
 const verifyToken = require("../utils/verifyToken")
@@ -25,7 +25,7 @@ describe("Login API", () => {
   beforeEach(async () => {
     await User.deleteMany({})
 
-    const passwordHash = await bcrypt.hash("testpassword", 10)
+    const passwordHash = await generateHash("testpassword")
     const user = new User({ username: "testuser", passwordHash })
 
     await user.save()
@@ -146,7 +146,7 @@ describe("Login API", () => {
   })
 
   test("does not auto-link legacy prefix match when passwordHash exists", async () => {
-    const passwordHash = await bcrypt.hash("legacy-password", 10)
+    const passwordHash = await generateHash("legacy-password", 10)
     const legacyPasswordUser = new User({
       username: "legacy.user",
       passwordHash,
@@ -266,7 +266,9 @@ describe("Login API", () => {
 
   test("returns 500 error when user creation fails", async () => {
     // Mock User.save to throw an error
-    jest.spyOn(User.prototype, "save").mockRejectedValueOnce(new Error("Database error"))
+    jest
+      .spyOn(User.prototype, "save")
+      .mockRejectedValueOnce(new Error("Database error"))
 
     verifyToken.mockImplementationOnce((req, res, next) => {
       req.user = {
@@ -298,7 +300,9 @@ describe("Login API", () => {
       .expect(200)
 
     // Mock User.save to throw an error on the second call
-    jest.spyOn(User.prototype, "save").mockRejectedValueOnce(new Error("Save failed"))
+    jest
+      .spyOn(User.prototype, "save")
+      .mockRejectedValueOnce(new Error("Save failed"))
 
     const response = await api
       .post("/api/login/firebase")
