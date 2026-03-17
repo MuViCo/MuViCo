@@ -53,37 +53,40 @@ const theme = extendTheme({})
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
 
-
+// Layout for different components of the editor
 class MyFirstGrid extends React.Component {
   render() {
     const layouts = {
       lg: [
-        { i: "a", x: 0, y: 0, w: 9, h: 2 },
-        { i: "b", x: 0, y: 2, w: 9, h: 2 },
-        { i: "c", x: 9, y: 0, w: 3, h: 6 },
+        { i: "a", x: 0, y: 0, w: 10, h: 5 },
+        { i: "b", x: 0, y: 2, w: 10, h: 10 },
+        { i: "c", x: 10, y: 0, w: 2, h: 15 },
       ],
       md: [
-        { i: "a", x: 0, y: 0, w: 7, h: 2 },
-        { i: "b", x: 0, y: 2, w: 7, h: 2 },
-        { i: "c", x: 7, y: 0, w: 3, h: 6 },
+        { i: "a", x: 0, y: 0, w: 8, h: 5 },
+        { i: "b", x: 0, y: 2, w: 8, h: 10 },
+        { i: "c", x: 8, y: 0, w: 2, h: 15 },
       ],
       sm: [
-        { i: "a", x: 0, y: 0, w: 4, h: 2 },
-        { i: "b", x: 0, y: 2, w: 4, h: 2 },
-        { i: "c", x: 0, y: 6, w: 4, h: 4 },
+        { i: "a", x: 0, y: 0, w: 7, h: 3 },
+        { i: "b", x: 0, y: 2, w: 7, h: 7 },
+        { i: "c", x: 6, y: 6, w: 7, h: 7 },
       ],
       xs: [
-        { i: "a", x: 0, y: 0, w: 4, h: 2 },
-        { i: "b", x: 0, y: 2, w: 4, h: 2 },
-        { i: "c", x: 0, y: 6, w: 4, h: 4 },
+        { i: "a", x: 0, y: 0, w: 4, h: 3 },
+        { i: "b", x: 0, y: 2, w: 4, h: 7 },
+        { i: "c", x: 2, y: 6, w: 4, h: 7 },
       ],
       xxs: [
-        { i: "a", x: 0, y: 0, w: 2, h: 2 },
+        { i: "a", x: 0, y: 0, w: 2, h: 3 },
         { i: "b", x: 0, y: 2, w: 2, h: 2 },
-        { i: "c", x: 0, y: 6, w: 2, h: 4 },
+        { i: "c", x: 0, y: 6, w: 2, h: 7 },
       ],
     }
-
+// Formatting the grid layout for the editor, using react-grid-layout. 
+// The layout is responsive and changes based on the screen size. 
+// Each grid item (a, b, c) represents a different component of the editor, 
+// such as the cue list, preview area, and toolbox.
     return (
       <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "lightgray" }}>
         <ResponsiveGridLayout
