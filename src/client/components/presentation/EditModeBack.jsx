@@ -1,0 +1,1346 @@
+import React, { useState, useRef, useCallback, useEffect } from "react"
+import {
+  Box,
+  Text,
+  ChakraProvider,
+  extendTheme,
+  useOutsideClick,
+  useColorModeValue,
+  IconButton,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Portal
+} from "@chakra-ui/react"
+import "react-grid-layout/css/styles.css"
+import { useDispatch, useSelector } from "react-redux"
+import {
+  updatePresentation,
+  createCue,
+  removeCue,
+  updatePresentationSwappedCues,
+  incrementIndexCount,
+  decrementIndexCount,
+  incrementScreenCount,
+  decrementScreenCount,
+  editCue,
+  shiftPresentationIndexes,
+  fetchPresentationInfo,
+} from "../../redux/presentationReducer"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
+import { createFormData } from "../utils/formDataUtils"
+import presentationService from "../../services/presentation"
+import ToolBox from "./ToolBox"
+import GridLayoutComponent from "./GridLayoutComponent"
+import StatusTooltip from "./StatusToolTip"
+import CustomAlert from "../utils/CustomAlert"
+import Dialog from "../utils/AlertDialog"
+import { useCustomToast } from "../utils/toastUtils"
+import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
+import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
+import {
+  getAudioRow,
+  isAudioMimeType,
+  isImageOrVideoMimeType,
+} from "../utils/fileTypeUtils"
+
+const theme = extendTheme({})
+
+
+
+const EditMode = ({
+  id,
+  cues,
+  isToolboxOpen,
+  setIsToolboxOpen,
+  isShowMode,
+  cueIndex,
+  isAudioMuted,
+  toggleAudioMute,
+  indexCount,
+}) => {
+  const bgColorHover = useColorModeValue(
+    "rgba(255, 181, 181, 0.8)",
+    "rgba(72, 26, 35, 0.8)"
+  )
+  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
+  const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
+  const showToast = useCustomToast()
+  const dispatch = useDispatch()
+  const presentation = useSelector((state) => state.presentation)
+  const containerRef = useRef(null)
+
+  const [status, setStatus] = useState("saved")
+  const [selectedCue, setSelectedCue] = useState(null)
+
+  const [doubleClickPosition, setDoubleClickPosition] = useState({
+    xIndex: 0,
+    yIndex: 0,
+  })
+  const [hoverPosition, setHoverPosition] = useState(null)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmMessage, setConfirmMessage] = useState("")
+  const [confirmAction, setConfirmAction] = useState(() => () => { })
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertData, setAlertData] = useState({})
+
+  const xLabels = Array.from({ length: indexCount }, (_, index) =>
+    index === 0 ? "Starting Frame" : `Frame ${index}`)
+  const visualCues = cues.filter(cue => cue.cueType === "visual")
+
+  const yLabels = Array.from(
+    { length: presentation.screenCount },
+    (_, index) => `Screen ${index + 1}`
+  )
+
+  // Add audio row separately (always at the end)
+  yLabels.push("Audio files")
+
+  const [isDragging, setIsDragging] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
+  const [copiedCue, setCopiedCue] = useState(null)
+  useOutsideClick({
+    ref: containerRef,
+    handler: () => {
+      if (isCopied && !isConfirmOpen) {
+        showToast({
+          title: "Cancelled copying",
+          description: "Copying has been cancelled.",
+          status: "info",
+        })
+        setIsCopied(false)
+        setCopiedCue(null)
+        setShowAlert(false)
+        setAlertData({})
+      }
+    },
+  })
+
+  const clickTimeout = useRef(null)
+
+  const columnWidth = 150
+  const rowHeight = 100
+  const gap = 10
+
+  useEffect(() => {
+    if (!isToolboxOpen) {
+      setSelectedCue(null)
+    }
+  }, [isToolboxOpen])
+
+  useEffect(() => {
+    if (selectedCue && !cues.some((cue) => cue._id === selectedCue._id)) {
+      setSelectedCue(null)
+    }
+  }, [cues, selectedCue])
+
+  const handleIndexHasData = async (index) => {
+    setConfirmMessage(
+      `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
+    )
+    setConfirmAction(() => async () => {
+      setIsConfirmOpen(false)
+
+      // Remove all cues that are on the selected index
+      const cuesOnIndex = cues.filter((c) => Number(c.index) === Number(index))
+      for (const cue of cuesOnIndex) {
+        try {
+          await dispatch(removeCue(id, cue._id))
+        } catch (err) {
+          console.error("Failed to remove cue on index during confirm:", err)
+        }
+      }
+
+      // Get all cues after this index, shift them to the left
+      const cuesToShift = cues.filter((c) => Number(c.index) > Number(index))
+      if (index !== indexCount - 1) {
+        try {
+          await dispatch(shiftPresentationIndexes(id, index, "left"))
+          showToast({
+            title: "Removed frame in between and its elements",
+            description: `Removed old Frame ${index} and all its elements.${cuesToShift.length > 0 ? ` Moved ${cuesToShift.length} element(s) backwards.` : ""}`,
+            status: "success",
+          })
+        } catch (err) {
+          console.error("Failed to shift cues after deleting index:", err)
+        }
+      }
+
+      // Remove last index
+      await performRemoveIndex(indexCount - 1)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const handleAddIndex = async (index) => {
+    const originalIndexCount = indexCount
+    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+
+    if (originalIndexCount < 101) {
+      setStatus("loading")
+      try {
+        dispatch(incrementIndexCount())
+        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount + 1 }))
+
+        const cuesToShift = cuesAfter.slice().sort((a, b) => Number(b.index) - Number(a.index))
+
+        // Create new data for the elements in the new positions
+        const updatePromises = cuesToShift.map((cue) => {
+          const formData = createFormData(
+            Number(cue.index) + 1,
+            cue.name,
+            cue.screen,
+            cue.file,
+            cue._id,
+            cue.color,
+            cue.loop
+          )
+
+          return presentationService.updateCue(id, cue._id, formData)
+        })
+
+        // We wait for all the promises to resolve
+        const updatedCues = await Promise.all(updatePromises)
+
+        // Then update cues
+        for (const updated of updatedCues) {
+          dispatch(editCue(updated))
+        }
+
+        setStatus("saved")
+        if (cuesToShift.length > 0) {
+          showToast({
+            title: "Frame added in between",
+            description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesToShift.length} element(s) forward.`,
+            status: "success",
+          })
+        }
+      } catch (error) {
+        console.error("Error shifting cues when adding index:", error)
+        dispatch(decrementIndexCount())
+        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount }))
+        setStatus("saved")
+        showToast({ title: "Error", description: error.message || "Failed to add index", status: "error" })
+      }
+    }
+  }
+
+  const handleRemoveIndex = async (index) => {
+    if (indexCount <= 1) {
+      showToast({
+        title: "Minimum indexes required",
+        description: "Cannot have less than 1 index",
+        status: "warning",
+      })
+      return
+    }
+
+    const cuesInIndex = cues.filter((cue) => Number(cue.index) === Number(index))
+    if (cuesInIndex.length > 0) {
+      handleIndexHasData(index)
+      return
+    }
+
+    // Get all cues after this index, shift them to the left
+    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+
+    if (cuesAfter.length === 0) {
+      // Just remove last index if no cues to move
+      await performRemoveIndex(indexCount - 1)
+      return
+    }
+
+    setStatus("loading")
+    try {
+      const cuesToShift = cuesAfter.slice().sort((a, b) => Number(a.index) - Number(b.index))
+
+      // Create new data for the elements in the new positions
+      const updatePromises = cuesToShift.map((cue) => {
+        const formData = createFormData(
+          Number(cue.index) - 1,
+          cue.name,
+          cue.screen,
+          cue.file,
+          cue._id,
+          cue.color,
+          cue.loop
+        )
+
+        return presentationService.updateCue(id, cue._id, formData)
+      })
+
+      const updatedCues = await Promise.all(updatePromises)
+
+      for (const updated of updatedCues) {
+        dispatch(editCue(updated))
+      }
+
+      await performRemoveIndex(indexCount - 1)
+      setStatus("saved")
+      // We never reach here if there were existing elements on the removed index, as handleIndexHasData handles that case (so different toast)
+      showToast({
+        title: "Removed frame in between",
+        description: `Removed old Frame ${index}. Moved ${cuesToShift.length} element(s) backwards.`,
+        status: "success",
+      })
+    } catch (error) {
+      console.error("Error shifting cues when removing index:", error)
+      showToast({ title: "Error", description: error.message || "Failed to remove index", status: "error" })
+      setStatus("saved")
+    }
+  }
+
+  const performRemoveIndex = async (indexToRemove) => {
+    if (indexCount > 1) {
+      setStatus("loading")
+      dispatch(decrementIndexCount())
+      await dispatch(saveIndexCount({ id, indexCount: indexToRemove }))
+      setStatus("saved")
+    }
+  }
+
+  const handleIncreaseScreenCount = async () => {
+    if (presentation.screenCount >= 8) {
+      showToast({
+        title: "Maximum screens reached",
+        description: "Cannot add more than 8 screens",
+        status: "warning",
+      })
+      return
+    }
+
+    try {
+      const newScreenNumber = presentation.screenCount + 1
+      const audioCues = cues.filter(cue => cue.cueType === "audio")
+
+      dispatch(incrementScreenCount())
+      await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
+
+      for (const audioCue of audioCues) {
+        const updatedCue = {
+          cueId: audioCue._id,
+          cueName: audioCue.name,
+          index: audioCue.index,
+          screen: newScreenNumber + 1,
+          file: audioCue.file,
+          loop: audioCue.loop
+        }
+        await dispatch(updatePresentation(id, updatedCue))
+
+        const updatedCueForState = {
+          ...audioCue,
+          screen: updatedCue.screen
+        }
+        dispatch(editCue(updatedCueForState))
+      }
+
+      if (audioCues.length > 0) {
+        await dispatch(fetchPresentationInfo(id))
+      }
+
+      const formData = createFormData(
+        0,
+        `initial element for screen ${newScreenNumber}`,
+        newScreenNumber,
+        null
+      )
+
+      await dispatch(createCue(id, formData))
+
+      showToast({
+        title: "Screen added",
+        description: `Screen ${newScreenNumber} has been added with initial element`,
+        status: "success",
+      })
+    } catch (error) {
+      dispatch(decrementScreenCount()) // Revert on error
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to add screen",
+        status: "error",
+      })
+    }
+  }
+
+  const handleDecreaseScreenCount = async () => {
+    if (presentation.screenCount <= 1) {
+      showToast({
+        title: "Minimum screens required",
+        description: "Cannot have less than 1 screen",
+        status: "warning",
+      })
+      return
+    }
+
+    const screenToRemove = presentation.screenCount
+    const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
+
+    if (cuesOnScreen.length > 0) {
+      setConfirmMessage(
+        `Screen ${screenToRemove} has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?`
+      )
+      setConfirmAction(() => async () => {
+        setIsConfirmOpen(false)
+        await performScreenRemoval()
+      })
+      setIsConfirmOpen(true)
+      return
+    }
+
+    await performScreenRemoval()
+  }
+
+  const performScreenRemoval = async () => {
+    try {
+      const currentScreenCount = presentation.screenCount
+      const audioCues = cues.filter(cue => cue.cueType === "audio")
+
+      dispatch(decrementScreenCount())
+      const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
+
+      for (const audioCue of audioCues) {
+        const updatedCue = {
+          cueId: audioCue._id,
+          cueName: audioCue.name,
+          index: audioCue.index,
+          screen: (currentScreenCount - 1) + 1,
+          file: audioCue.file,
+          loop: audioCue.loop
+        }
+
+        await dispatch(updatePresentation(id, updatedCue))
+
+        const updatedCueForState = {
+          ...audioCue,
+          screen: updatedCue.screen
+        }
+        dispatch(editCue(updatedCueForState))
+      }
+
+      if (audioCues.length > 0) {
+        await dispatch(fetchPresentationInfo(id))
+      }
+
+      // Show appropriate message based on whether cues were removed
+      const removedCuesCount = result.payload?.removedCuesCount || 0
+      if (removedCuesCount > 0) {
+        showToast({
+          title: "Screen removed",
+          description: `Screen ${currentScreenCount} removed along with ${removedCuesCount} cue(s)`,
+          status: "success",
+        })
+      } else {
+        showToast({
+          title: "Screen removed",
+          description: `Screen ${currentScreenCount} has been removed`,
+          status: "success",
+        })
+      }
+    } catch (error) {
+      dispatch(incrementScreenCount()) // Revert on error
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove screen",
+        status: "error",
+      })
+    }
+  }
+
+  const handleMouseDown = (event) => {
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (cueExists(xIndex, yIndex)) {
+      const movingCue = cues.find(
+        (cue) => cue.index === xIndex && cue.screen === yIndex
+      )
+      setSelectedCue(movingCue)
+
+      if (event.target.closest(".react-grid-item")) {
+        setIsDragging(true)
+        setHoverPosition(null)
+      } else {
+        setIsDragging(false)
+      }
+    }
+  }
+
+  const handlePaste = async (event) => {
+    if (event.target.closest("button")) return
+    if (!isCopied || !copiedCue) return
+
+    if (event.target.closest(".x-index-label")) {
+      setIsCopied(false)
+      setCopiedCue(null)
+      setShowAlert(false)
+      setAlertData({})
+      showToast({
+        title: "Cancelled copying",
+        description: "Copying has been cancelled.",
+        status: "info",
+      })
+      return
+    }
+
+    if (!containerRef?.current) {
+      console.error("Container ref is not available")
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+
+    if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+      setIsCopied(false)
+      setCopiedCue(null)
+      setShowAlert(false)
+      setAlertData({})
+      showToast({
+        title: "Cancelled copying",
+        description: "Copying has been cancelled.",
+        status: "info",
+      })
+      return
+    }
+
+    if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
+      return
+    }
+
+    const copiedCueIsAudio = copiedCue.cueType === "audio"
+
+    if (
+      (yIndex === audioRowIndex && !copiedCueIsAudio) ||
+      (copiedCueIsAudio && yIndex !== audioRowIndex)
+    ) {
+      showToast({
+        title: "Only audio files on the audio row.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
+
+    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
+    await addCue(newCueData)
+    console.log("Pasted cue data: ", newCueData)
+  }
+
+  const createNewCueData = async (xIndex, yIndex, copiedCue) => {
+    let fileObj = null
+    if (copiedCue.file) {
+
+      fileObj = await fetchFileFromUrl(
+        copiedCue.file.url,
+        copiedCue.file.name
+      )
+      if (copiedCue.file.driveId) {
+        fileObj.driveId = copiedCue.file.driveId
+      }
+    }
+
+
+    return {
+      index: xIndex,
+      cueName: `${copiedCue.name} copy`,
+      screen: yIndex,
+      file: fileObj,
+
+      fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
+      color: copiedCue.color,
+      loop: copiedCue.loop,
+    }
+  }
+
+  const handleMouseMove = (event) => {
+    if (isDragging) return
+    if (event.target.closest(".x-index-label")) {
+      return
+    }
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    const cueExists = cues.some(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+
+    if (
+      !cueExists &&
+      xIndex >= 0 &&
+      xIndex < indexCount &&
+      yIndex <= getAudioRow(presentation.screenCount) &&
+      yIndex >= 1
+    ) {
+      setHoverPosition({ index: xIndex, screen: yIndex })
+    } else {
+      setHoverPosition(null)
+    }
+  }
+
+  const handleMouseUp = (event) => {
+    setIsDragging(false)
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (cueExists(xIndex, yIndex) && isDragging) {
+      const targetCue = cues.find(
+        (cue) => cue.index === xIndex && cue.screen === yIndex
+      )
+      if (selectedCue && targetCue && selectedCue !== targetCue) {
+        handleElementPositionChange(selectedCue, targetCue)
+      }
+    }
+
+    if (!isDragging) {
+      if (clickTimeout.current) {
+        clearTimeout(clickTimeout.current)
+        clickTimeout.current = null
+        handleDoubleClick(event)
+      } else {
+        clickTimeout.current = setTimeout(() => {
+          clickTimeout.current = null
+        }, 300)
+      }
+    }
+  }
+
+  const layout = cues.map((cue) => {
+    const position = {
+      i: cue._id.toString(),
+      x: cue.index,
+      y: cue.screen,
+      w: 1,
+      h: 1,
+      static: false,
+    }
+    return position
+  })
+
+  const addCue = async (cueData) => {
+    setStatus("loading")
+    const { index, cueName, screen, file, loop, color } = cueData
+
+    //Check if cue with same index and screen already exists
+    const existingCue = cues.find(
+      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
+    )
+
+    if (existingCue) {
+      await handleCueExists(existingCue, cueData)
+      return
+    }
+
+    const formData = createFormData(
+      index,
+      cueName,
+      screen,
+      file || "",
+      loop || false,
+      color
+    )
+
+    try {
+      await dispatch(createCue(id, formData))
+
+      setTimeout(() => {
+        setStatus("saved")
+        showToast({
+          title: "Element added",
+          description: `Element ${cueName} added to screen ${screen}`,
+          status: "success",
+        })
+      }, 300)
+    } catch (error) {
+      const errorMessage = error.message
+      showToast({ title: "Error", description: errorMessage, status: "error" })
+    }
+  }
+
+  const handleCueExists = async (existingCue, newCueData) => {
+    setConfirmMessage(
+      `Frame ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
+    )
+    setConfirmAction(() => async () => {
+      const updatedCueData = {
+        ...newCueData,
+        _id: existingCue._id,
+        cueName: newCueData.cueName,
+      }
+
+      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      setIsConfirmOpen(false)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const fetchFileFromUrl = async (url, fileName) => {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new File([blob], fileName, { type: blob.type })
+  }
+
+  const updateCue = async (previousCueId, updatedCue) => {
+    const previousStillExists = cues.some((cue) => cue._id === previousCueId)
+    if (!previousStillExists) {
+      await addCue(updatedCue)
+      return
+    }
+
+    const existingCue = cues.find(
+      (cue) =>
+        cue.index === Number(updatedCue.index) &&
+        cue.screen === Number(updatedCue.screen)
+    )
+
+    if (existingCue && existingCue._id !== previousCueId) {
+      await handleExistingCueUpdate(existingCue, updatedCue, previousCueId)
+      return
+    }
+    await dispatchUpdateCue(previousCueId, updatedCue)
+  }
+
+
+
+  const handleExistingCueUpdate = async (
+    existingCue,
+    updatedCue,
+    previousCueId
+  ) => {
+    setConfirmMessage(
+      `${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to replace it?`
+    )
+
+    setConfirmAction(() => async () => {
+      const updatedCueData = await createUpdatedCueData(existingCue, updatedCue)
+      await dispatch(removeCue(id, previousCueId))
+      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      setIsConfirmOpen(false)
+    })
+    setIsConfirmOpen(true)
+  }
+
+  const createUpdatedCueData = async (existingCue, updatedCue) => {
+    let fileObj = null
+    if (updatedCue.file) {
+      fileObj = await fetchFileFromUrl(
+        updatedCue.file.url,
+        updatedCue.file.name
+      )
+    }
+
+    if (updatedCue.file.driveId) {
+      fileObj.driveId = updatedCue.file.driveId
+    }
+
+    return {
+      ...existingCue,
+      index: updatedCue.index,
+      cueName: updatedCue.cueName,
+      screen: updatedCue.screen,
+      file: fileObj,
+      fileName: updatedCue.fileName,
+    }
+  }
+
+  const cueExists = (xIndex, yIndex) => {
+    return cues.some(
+      (cue) =>
+        Number(cue.index) === Number(xIndex) &&
+        Number(cue.screen) === Number(yIndex)
+    )
+  }
+
+  const handleDoubleClick = (event) => {
+    if (event.target.closest(".x-index-label")) {
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    if (yIndex < 1 || yIndex > getAudioRow(presentation.screenCount)) {
+      return
+    }
+
+    if (xIndex < 0 || xIndex >= indexCount) {
+      return
+    }
+
+    const cue = cues.find(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+
+    if (cue) {
+      setSelectedCue(cue)
+      setIsToolboxOpen(true)
+    } else {
+      setSelectedCue(null)
+      setDoubleClickPosition({ index: xIndex, screen: yIndex })
+      setIsToolboxOpen(true)
+    }
+  }
+
+  const dispatchUpdateCue = async (cueId, updatedCue) => {
+    setStatus("loading")
+    try {
+      await dispatch(updatePresentation(id, updatedCue, cueId))
+      setTimeout(() => {
+        setStatus("saved")
+        showToast({
+          title: "Element updated",
+          description: `Element ${updatedCue.cueName} updated on screen ${updatedCue.screen}`,
+          status: "success",
+        })
+      }, 300)
+    } catch (error) {
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
+    }
+  }
+
+  const dispatchUpdateSwappedCues = async (newTargetCue, newSelectedCue) => {
+    setStatus("loading")
+    try {
+      await dispatch(
+        updatePresentationSwappedCues(id, newTargetCue, newSelectedCue)
+      )
+      setStatus("saved")
+    } catch (error) {
+      console.error(error)
+      showToast({
+        title: "Error",
+        description: error.message || "An error occurred",
+        status: "error",
+      })
+    }
+  }
+
+  const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
+    const dropX = event.clientX
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const containerScrollLeft = containerRef.current.scrollLeft
+
+    const relativeDropX = dropX - containerRect.left
+    const absoluteDropX = relativeDropX + containerScrollLeft
+    const dropY = event.clientY - containerRect.top
+
+    const cellWidthWithGap = columnWidth + gap
+    const cellHeightWithGap = rowHeight + gap
+
+    const yIndex = Math.floor(dropY / cellHeightWithGap)
+    const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
+
+    return { xIndex, yIndex }
+  }
+
+  const handleElementPositionChange = async (selectedCue, targetCue) => {
+    const newTargetCue = {
+      ...targetCue,
+      index: selectedCue.index,
+      screen: selectedCue.screen,
+    }
+
+    const newSelectedCue = {
+      ...selectedCue,
+      index: targetCue.index,
+      screen: targetCue.screen,
+    }
+
+    const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
+
+    if (hasAudioCue) {
+      if (!(newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio")) {
+        showToast({
+          title: "Error",
+          description: "You cannot swap elements with audio files",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      } else {
+        await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+        setSelectedCue(null)
+      }
+    } else {
+      await dispatchUpdateSwappedCues(newTargetCue, newSelectedCue)
+      setSelectedCue(null)
+    }
+  }
+
+  const isImageOrVideo = (file) => isImageOrVideoMimeType(file?.type)
+  const isAudio = (file) => isAudioMimeType(file?.type)
+
+  const handleCueReplace = async (xIndex, yIndex, file) => {
+    const existingCue = cues.find(
+      (cue) => cue.index === xIndex && cue.screen === yIndex
+    )
+    if (!existingCue) return
+
+    const updatedCue = {
+      ...existingCue,
+      index: xIndex,
+      cueName: file.name,
+      screen: yIndex,
+      file: file,
+    }
+
+    await dispatchUpdateCue(existingCue._id, updatedCue)
+    setIsConfirmOpen(false)
+  }
+
+  const handleDrop = useCallback(
+    async (event) => {
+      event.preventDefault()
+
+      if (isShowMode) {
+        return
+      }
+      const files = Array.from(event.dataTransfer.files)
+      const mediaFiles = files.filter(
+        (file) => isImageOrVideo(file) || isAudio(file)
+      )
+
+      if (mediaFiles.length === 0 || !containerRef.current) {
+        return
+      }
+
+      const { xIndex, yIndex } = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
+
+      const file = mediaFiles[0]
+      const audioRowIndex = getAudioRow(presentation.screenCount)
+
+      if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
+        showToast({
+          title: "Only audio files on the audio row.",
+          description: "Click on an appropriate row to paste the element.",
+          status: "error",
+        })
+        return
+      }
+      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount) {
+        showToast({
+          title: "Only images/videos on screen rows.",
+          description: "Click on an appropriate row to paste the element.",
+          status: "error",
+        })
+        return
+      }
+
+      if (cueExists(xIndex, yIndex)) {
+        setConfirmMessage(
+          `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
+        )
+        setConfirmAction(() => async () => {
+          handleCueReplace(xIndex, yIndex, file)
+        })
+        setIsConfirmOpen(true)
+        return
+      }
+      const formData = createFormData(xIndex, file.name, yIndex, file)
+
+      try {
+        await dispatch(createCue(id, formData))
+        showToast({
+          title: "Element added",
+          description: `Element ${file.name} added to screen ${yIndex}`,
+          status: "success",
+        })
+      } catch (error) {
+        const errorMessage = error.message || "An error occurred"
+        showToast({
+          title: "Error",
+          description: errorMessage,
+          status: "error",
+        })
+      }
+    },
+    [dispatch, gap, rowHeight, columnWidth, id, cues]
+  )
+
+  return (
+    <ChakraProvider theme={theme}>
+      <CustomAlert
+        showAlert={showAlert}
+        alertData={alertData}
+      />
+      <div
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        data-testid="drop-area"
+      >
+        <Box
+          display="flex"
+          width="100%"
+          marginTop={`${gap * 2}px`}
+          overflow="auto"
+        >
+          <Box
+            className="screen-boxes"
+            display="grid"
+            gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
+            gap={`${gap}px`}
+            left={0}
+            zIndex={2}
+            bg={"transparent"}
+          >
+            <Box h={`${rowHeight}px`} bg="transparent" />
+
+            {yLabels.map((label, index) => (
+              <Box
+                key={label}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                bg={
+                  label === "Audio files" ? "rgb(204, 46, 252)" : "purple.200"
+                }
+                borderRadius="md"
+                marginRight={`${gap}px`}
+                h={`${rowHeight}px`}
+                width={`${columnWidth}px`}
+                position="relative"
+              >
+                <Text fontWeight="bold" color="black">
+                  {label}
+                </Text>
+
+                {/* Screen count controls for visual screens */}
+                {label !== "Audio files" && !isShowMode && (
+                  <>
+                    {/* Add screen button - show on last visual screen only */}
+                    {index === presentation.screenCount - 1 && presentation.screenCount < 8 && (
+                      <IconButton
+                        icon={<AddIcon />}
+                        size="sm"
+                        colorScheme="green"
+                        variant="solid"
+                        bg="white"
+                        color="green.600"
+                        border="2px solid"
+                        borderColor="green.500"
+                        position="absolute"
+                        bottom="4px"
+                        right="4px"
+                        aria-label="Add screen"
+                        title="Add screen"
+                        onClick={handleIncreaseScreenCount}
+                        _hover={{ bg: "green.50", borderColor: "green.600", transform: "scale(1.1)" }}
+                        _active={{ bg: "green.100" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
+                      />
+                    )}
+
+                    {/* Remove screen button - show on last visual screen only if more than 1 screen */}
+                    {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
+                      <IconButton
+                        icon={<MinusIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        variant="solid"
+                        bg="white"
+                        color="red.600"
+                        border="2px solid"
+                        borderColor="red.500"
+                        position="absolute"
+                        top="4px"
+                        right="4px"
+                        aria-label="Remove screen"
+                        title="Remove screen"
+                        onClick={handleDecreaseScreenCount}
+                        _hover={{ bg: "red.50", borderColor: "red.600", transform: "scale(1.1)" }}
+                        _active={{ bg: "red.100" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
+                      />
+                    )}
+                  </>
+                )}
+
+                {/* Audio mute button */}
+                {label === "Audio files" && (
+                  <IconButton
+                    icon={
+                      isAudioMuted ? (
+                        <SpeakerMutedIcon boxSize="32px" />
+                      ) : (
+                        <SpeakerIcon boxSize="32px" />
+                      )
+                    }
+                    disabled={isShowMode}
+                    _disabled={{
+                      opacity: 0.7,
+                      cursor: "not-allowed",
+                    }}
+                    sx={{
+                      width: "48px",
+                      height: "48px",
+                      padding: "10px",
+                    }}
+                    _hover={{ color: "rgb(99, 76, 107)" }}
+                    textColor={"black"}
+                    variant="ghost"
+                    draggable={false}
+                    position="absolute"
+                    zIndex="10"
+                    top="0px"
+                    right="0px"
+                    aria-label="Mute/unmute audio"
+                    title={isAudioMuted ? "Unmute audio" : "Mute audio"}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      toggleAudioMute()
+                    }}
+                  />
+                )}
+              </Box>
+            ))}
+          </Box>
+          <Box position="relative" pointerEvents={isShowMode ? "none" : "auto"}>
+            <Box
+              height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
+              width="100%"
+              position="relative"
+              ref={containerRef}
+              onDoubleClick={handleDoubleClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onClick={handlePaste}
+            >
+              <Box
+                className="index-boxes"
+                display="grid"
+                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
+                gap={`${gap}px`}
+                position="sticky"
+                top={0}
+                zIndex={1}
+                bg={"transparent"}
+                mb={`${gap}px`}
+              >
+                {xLabels.map((label, index) => (
+                  <Box
+                    key={label}
+                    position="relative"
+                    display="inline-flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Box
+                      className="x-index-label"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
+                      borderRadius="md"
+                      h={`${rowHeight}px`}
+                      width={`${columnWidth}px`}
+                    >
+                      <Text fontWeight="bold" color="black">
+                        {label}
+                      </Text>
+                      <Menu>
+                        <MenuButton
+                          isDisabled={isShowMode}
+                          as={IconButton}
+                          aria-label="Options"
+                          icon={<ChevronDownIcon />}
+                          variant="outline"
+                          position="absolute"
+                          zIndex="10"
+                          top="2px"
+                          right="2px"
+                          size="xs"
+                          backgroundColor="var(--chakra-colors-gray-700)"
+                          _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                          _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                        />
+                        <Portal>
+                          <MenuList
+                            backgroundColor="var(--chakra-colors-gray-700)"
+                            margin="-5px 0 0 -166px"
+                            padding="10px 10px 0 10px"
+                            minW="none"
+                            display="flex"
+                            flexDirection="column"
+                          >
+                            <MenuItem
+                              onClick={() => { handleRemoveIndex(index) }}
+                              isDisabled={indexCount <= 1 || index === 0}
+                              backgroundColor="var(--chakra-colors-red-600)"
+                              color="white"
+                              _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
+                              borderRadius="5px"
+                              fontWeight={700}
+                              display="block"
+                              textAlign="center"
+                            >
+                              Delete Frame
+                            </MenuItem>
+                            <MenuItem
+                              onClick={() => { handleAddIndex(index) }}
+                              isDisabled={indexCount >= 100}
+                              marginTop="10px"
+                              marginBottom="10px"
+                              backgroundColor="var(--chakra-colors-green-600)"
+                              color="white"
+                              _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
+                              borderRadius="5px"
+                              fontWeight={700}
+                              display="block"
+                              textAlign="center"
+                            >
+                              Add Frame After
+                            </MenuItem>
+                          </MenuList>
+                        </Portal>
+                      </Menu>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+              <Button
+                colorScheme="gray"
+                onClick={() => { handleAddIndex(indexCount - 1) }}
+                isDisabled={indexCount >= 100}
+                position="absolute"
+                right="-50px"
+                top="5px"
+                paddingTop="20px"
+                paddingBottom="20px"
+              >
+                +
+              </Button>
+              <Button
+                colorScheme="gray"
+                onClick={() => { handleRemoveIndex(indexCount - 1) }}
+                isDisabled={indexCount <= 1}
+                position="absolute"
+                right="-50px"
+                top="55px"
+                paddingTop="20px"
+                paddingBottom="20px"
+              >
+                -
+              </Button>
+              <GridLayoutComponent
+                layout={layout}
+                cues={cues}
+                containerRef={containerRef}
+                columnWidth={columnWidth}
+                rowHeight={rowHeight}
+                gap={gap}
+                setStatus={setStatus}
+                setIsCopied={setIsCopied}
+                setCopiedCue={setCopiedCue}
+                id={id}
+                isShowMode={isShowMode}
+                cueIndex={cueIndex}
+                isAudioMuted={isAudioMuted}
+                setSelectedCue={setSelectedCue}
+                setIsToolboxOpen={setIsToolboxOpen}
+                indexCount={indexCount}
+                setShowAlert={setShowAlert}
+                setAlertData={setAlertData}
+                screenCount={presentation.screenCount}
+              />
+
+              {hoverPosition && !isDragging && (
+                <Box
+                  position="absolute"
+                  left={`${hoverPosition.index * (columnWidth + gap)}px`}
+                  top={`${hoverPosition.screen * (rowHeight + gap)}px`}
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  bg={bgColorHover}
+                  borderRadius="16"
+                  transition="0"
+                  zIndex={-1}
+                  pointerEvents="none"
+                />
+              )}
+            </Box>
+          </Box>
+
+          <ToolBox
+            isOpen={isToolboxOpen}
+            onClose={() => setIsToolboxOpen(false)}
+            position={doubleClickPosition}
+            addCue={addCue}
+            cues={cues}
+            cueData={selectedCue || null}
+            updateCue={updateCue}
+            screenCount={presentation.screenCount}
+            indexCount={indexCount}
+          />
+        </Box>
+        <Box
+          position="fixed"
+          top="20%"
+          right="5%"
+          display="flex"
+          alignItems="center"
+          zIndex={1}
+        ></Box>
+        <Box
+          position="fixed"
+          top="11%"
+          right="5%"
+          display="flex"
+          alignItems="center"
+          zIndex={1}
+        >
+          <StatusTooltip status={status} />
+        </Box>
+        <Dialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={confirmAction}
+          message={confirmMessage}
+        />
+      </div>
+    </ChakraProvider>
+  )
+}
+
+export default EditMode
