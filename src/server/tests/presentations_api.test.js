@@ -269,11 +269,11 @@ describe("PUT /presentations", () => {
   test("returns 403 when updating another user's presentation", async () => {
     await api
       .post("/api/signup")
-      .send({ username: "other", password: "secret" })
+      .send({ username: "other", password: "secretpw" })
 
     const otherLogin = await api
       .post("/api/login")
-      .send({ username: "other", password: "secret" })
+      .send({ username: "other", password: "secretpw" })
 
     const otherAuth = `Bearer ${otherLogin.body.token}`
 
