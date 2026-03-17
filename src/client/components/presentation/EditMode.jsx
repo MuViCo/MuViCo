@@ -56,18 +56,16 @@ class MyFirstGrid extends React.Component {
   render() {
     // layout is an array of objects, see the demo for more complete usage
     const layout = [
-      { i: "a", x: 0, y: 0, w: 3, h: 1},
-      { i: "b", x: 0, y: 1, w: 3, h: 1},
-      { i: "c", x: 0, y: 2, w: 3, h: 1},
-      { i: "d", x: 3, y: 0, w: 1, h: 10}
+      { i: "a", x: 0, y: 0, w: 3, h: 2},
+      { i: "b", x: 0, y: 1, w: 3, h: 3},
+      { i: "c", x: 3, y: 0, w: 1, h: 10, static: true }
     ];
     return (
       <GridLayout
         className="layout"
         layout={layout}
         cols={4}
-        maxRows={3}
-        
+        maxRows={5}
         width={1920}
         style={{ backgroundColor: "lightgray" }}
         isDraggable={false}
@@ -77,7 +75,6 @@ class MyFirstGrid extends React.Component {
         <div style={{ backgroundColor:"gray"}}key="a">a</div>
         <div style={{ backgroundColor:"gray"}}key="b">b</div>
         <div style={{ backgroundColor:"gray"}}key="c">c</div>
-        <div style={{ backgroundColor:"black"}}key="d">d</div>
 
       </GridLayout>
     );
