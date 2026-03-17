@@ -50,37 +50,35 @@ router.post("/unlink-drive", userExtractor, async (req, res) => {
 })
 
 router.post("/change-password", userExtractor, async (req, res) => {
+  const { currentPassword, newPassword } = req.body
+  const { user } = req
+
+  if (!user) {
+    return res.status(401).json({ error: "User not found" })
+  }
+
+  if (!validatePassword(newPassword)) {
+    return res.status(400).json({
+      error: "New password is not valid",
+    })
+  }
+  if (!(await checkPassword(currentPassword, user.passwordHash))) {
+    return res.status(401).json({
+      error: "Current password is not valid",
+    })
+  }
+
+  const newPasswordHash = await generateHash(newPassword)
+
   try {
-    const { currentPassword, newPassword } = req.body
-    const { user } = req
-
-    if (!user) {
-      return res.status(401).json({ error: "User not found" })
-    }
-
-    if (!validatePassword(newPassword)) {
-      return res.status(400).json({
-        error: "New password is not valid",
-      })
-    }
-    if (!(await checkPassword(currentPassword, user.passwordHash))) {
-      return res.status(401).json({
-        error: "Current password is not valid",
-      })
-    }
-
-    const newPasswordHash = await generateHash(newPassword)
-
     const updatedUser = await User.findByIdAndUpdate(
       user.id,
       { passwordHash: newPasswordHash },
       { new: true }
     )
-
     return res.status(201).json(updatedUser)
   } catch (error) {
-    console.error(error)
-    console.error("Password change failed")
+    console.error("Password change failed:", error)
     res.status(400).json({ error: "Failed to change password" })
   }
 })
