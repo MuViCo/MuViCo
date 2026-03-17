@@ -146,7 +146,7 @@ describe("Login API", () => {
   })
 
   test("does not auto-link legacy prefix match when passwordHash exists", async () => {
-    const passwordHash = await generateHash("legacy-password", 10)
+    const passwordHash = await generateHash("legacy-password")
     const legacyPasswordUser = new User({
       username: "legacy.user",
       passwordHash,
