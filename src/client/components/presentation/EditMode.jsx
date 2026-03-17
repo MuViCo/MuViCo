@@ -40,7 +40,7 @@ import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
-import GridLayout from "react-grid-layout";
+import { Responsive, WidthProvider } from "react-grid-layout";
 import "react-resizable/css/styles.css";
 import {
   getAudioRow,
@@ -50,37 +50,62 @@ import {
 
 const theme = extendTheme({})
 
+const ResponsiveGridLayout = WidthProvider(Responsive)
+
 
 
 class MyFirstGrid extends React.Component {
   render() {
-    // layout is an array of objects, see the demo for more complete usage
-    const layout = [
-      { i: "a", x: 0, y: 0, w: 3, h: 1},
-      { i: "b", x: 0, y: 1, w: 3, h: 1},
-      { i: "c", x: 0, y: 2, w: 3, h: 1},
-      { i: "d", x: 3, y: 0, w: 1, h: 10}
-    ];
-    return (
-      <GridLayout
-        className="layout"
-        layout={layout}
-        cols={4}
-        maxRows={3}
-        
-        width={1920}
-        style={{ backgroundColor: "lightgray" }}
-        isDraggable={false}
-        resizeHandles={[ "s" ]}
-        autoSize={true}
-      >
-        <div style={{ backgroundColor:"gray"}}key="a">a</div>
-        <div style={{ backgroundColor:"gray"}}key="b">b</div>
-        <div style={{ backgroundColor:"gray"}}key="c">c</div>
-        <div style={{ backgroundColor:"black"}}key="d">d</div>
+    const layouts = {
+      lg: [
+        { i: "a", x: 0, y: 0, w: 9, h: 2 },
+        { i: "b", x: 0, y: 2, w: 9, h: 2 },
+        { i: "c", x: 9, y: 0, w: 3, h: 6 },
+      ],
+      md: [
+        { i: "a", x: 0, y: 0, w: 7, h: 2 },
+        { i: "b", x: 0, y: 2, w: 7, h: 2 },
+        { i: "c", x: 7, y: 0, w: 3, h: 6 },
+      ],
+      sm: [
+        { i: "a", x: 0, y: 0, w: 4, h: 2 },
+        { i: "b", x: 0, y: 2, w: 4, h: 2 },
+        { i: "c", x: 0, y: 6, w: 4, h: 4 },
+      ],
+      xs: [
+        { i: "a", x: 0, y: 0, w: 4, h: 2 },
+        { i: "b", x: 0, y: 2, w: 4, h: 2 },
+        { i: "c", x: 0, y: 6, w: 4, h: 4 },
+      ],
+      xxs: [
+        { i: "a", x: 0, y: 0, w: 2, h: 2 },
+        { i: "b", x: 0, y: 2, w: 2, h: 2 },
+        { i: "c", x: 0, y: 6, w: 2, h: 4 },
+      ],
+    }
 
-      </GridLayout>
-    );
+    return (
+      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "lightgray" }}>
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={layouts}
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          isDraggable={false}
+          isResizable={true}
+          resizeHandles={["s"]}
+          autoSize={true}
+          rowHeight={60}
+          margin={[8, 8]}
+          containerPadding={[8, 8]}
+          style={{ width: "100%" }}
+        >
+          <div style={{ backgroundColor: "gray" }} key="a">a</div>
+          <div style={{ backgroundColor: "gray" }} key="b">b</div>
+          <div style={{ backgroundColor: "black" }} key="c">c</div>
+        </ResponsiveGridLayout>
+      </div>
+    )
   }
 }
 
