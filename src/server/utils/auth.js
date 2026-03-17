@@ -1,24 +1,27 @@
 const bcrypt = require("bcrypt")
-const { minPwLength, maxPwLength } = require("../../constants.js")
-
-const saltrounds = 10
+const {
+  minPwLength,
+  maxPwLength,
+  invalidPwCharRegex,
+  saltRounds,
+} = require("../../constants.js")
 
 const validatePassword = (password) => {
-  if (password.length < minPwLength) {
-    return false
-  }
-  if (password.length > maxPwLength) {
-    return false
-  }
+  if (password.length < minPwLength) return false
+
+  if (password.length > maxPwLength) return false
+
+  if (password.match(invalidPwCharRegex)) return false
+
   return true
 }
 
-const checkPassword = async (plaintextPassword, pwHash) => {
-  return await bcrypt.compare(plaintextPassword, pwHash)
+const checkPassword = (plaintextPassword, pwHash) => {
+  return bcrypt.compare(plaintextPassword, pwHash)
 }
 
-const generateHash = async (plaintextPassword) => {
-  return await bcrypt.hash(plaintextPassword, saltrounds)
+const generateHash = (plaintextPassword) => {
+  return bcrypt.hash(plaintextPassword, saltRounds)
 }
 
 module.exports = {
