@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 const supertest = require("supertest")
 const app = require("../app")
-const { minPwLength } = require("../../constants.js")
+const { minPwLength, maxPwLength } = require("../../constants.js")
 
 const api = supertest(app)
 const Presentation = require("../models/presentation")
@@ -121,7 +121,7 @@ describe("creation of a new user", () => {
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain(
-      `password must be at least ${minPwLength} characters long`
+      `password must be between ${minPwLength} and ${maxPwLength} bytes long`
     )
   })
 

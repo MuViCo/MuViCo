@@ -30,7 +30,7 @@ router.post("/", async (req, res) => {
 
   if (!validatePassword(password)) {
     return res.status(400).json({
-      error: `password must be at least ${minPwLength} characters long`,
+      error: `password must be between ${minPwLength} and ${maxPwLength} bytes long`,
     })
   }
 
