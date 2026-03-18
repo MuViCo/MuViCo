@@ -1,4 +1,4 @@
-name: Test and deploy to staging
+name: Test, build and deploy to staging
 
 on:
   push:
@@ -48,7 +48,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/frontend/lcov.info,coverage/backend/lcov.info
 
-  build-image:
+  build:
     needs: test
     runs-on: ubuntu-latest
 
@@ -69,13 +69,13 @@ jobs:
             --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
             --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
-            -t 'quay.io/muvico_hy/muvico:testing' .
+            -t 'quay.io/muvico_hy/muvico:staging' .
 
       - name: Push image to Quay.io
         id: push-to-quay
-        #if: ${{ github.ref == 'refs/heads/main'}}
+        if: ${{ github.ref == 'refs/heads/main'}}
         env:
           QUAY_IO_TOKEN: ${{ secrets.QUAY_IO_TOKEN }}
         run: |
           echo $QUAY_IO_TOKEN | docker login quay.io -u muvico_hy+robo --password-stdin
-          docker push quay.io/muvico_hy/muvico:testing
+          docker push quay.io/muvico_hy/muvico:staging
