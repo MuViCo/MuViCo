@@ -10,8 +10,9 @@ Creates and populates a FormData object with the given parameters.
 @param {string} color - The color associated with the cue. (optional)
 @param {boolean} loop - Whether the cue should loop. (optional)
 @param {string} name - The name of the cue.
+@param {number} cueWidth - The width of the cue in grid columns. (optional)
 @returns {FormData} - The populated FormData object.*/
-export const createFormData = (index, name, screen, file, cueId, color, loop) => {
+export const createFormData = (index, name, screen, file, cueId, color, loop, cueWidth) => {
   const formData = new FormData()
   formData.append("index", index)
   formData.append("cueName", name)
@@ -33,6 +34,10 @@ export const createFormData = (index, name, screen, file, cueId, color, loop) =>
     formData.append("loop", false)
   } else {
     formData.append("loop", loop)
+  }
+
+  if (cueWidth !== undefined && cueWidth !== null) {
+    formData.append("cueWidth", cueWidth)
   }
   
   return formData

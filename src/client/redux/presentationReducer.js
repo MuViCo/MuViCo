@@ -171,7 +171,8 @@ export const updatePresentation =
         updatedCueData.file,
         updatedCueData.cueId || cueId,
         updatedCueData.color,
-        updatedCueData.loop
+        updatedCueData.loop,
+        updatedCueData.cueWidth ?? updatedCueData.w
       )
       const updatedCue = await presentationService.updateCue(
         presentationId,

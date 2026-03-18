@@ -23,12 +23,24 @@ const normalizePresentationCues = (presentationObject) => {
       ? cue.toObject()
       : { ...cue }
 
+    const {
+      w: legacyWidth,
+      cueWidth: rawCueWidth,
+      ...cueWithoutWidth
+    } = normalizedCue
+
     const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
       ? normalizedCue.cueType
       : getCueTypeFromScreen(normalizedCue.screen, screenCount)
 
+    const parsedCueWidth = Number(rawCueWidth ?? legacyWidth)
+    const normalizedCueWidth = Number.isInteger(parsedCueWidth) && parsedCueWidth >= 1
+      ? parsedCueWidth
+      : 1
+
     return {
-      ...normalizedCue,
+      ...cueWithoutWidth,
+      cueWidth: normalizedCueWidth,
       cueType,
       ...(cueType === "audio" ? { screen: getAudioRow(screenCount) } : {}),
     }
@@ -128,6 +140,16 @@ const presentationSchema = mongoose.Schema({
         type: String,
         match: /^#([0-9A-F]{3}){1,2}$/i,
         default: "#000000",
+      },
+      cueWidth: {
+        type: Number,
+        default: 1,
+        min: 1,
+        set: v => (v === undefined || v === null ? v : Math.round(v)),
+        validate: {
+          validator: Number.isInteger,
+          message: "cueWidth must be an integer"
+        }
       },
       file: {
         id: String,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
@@ -15,6 +15,27 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 import { getAudioRow } from "../utils/fileTypeUtils"
+import {
+  DEFAULT_CUE_WIDTH_UNITS,
+  buildCueCellMap,
+  getCueWidthUnits,
+} from "../utils/cueGridUtils"
+
+const normalizeLayoutItem = (item) => {
+  const cueWidthUnits = Number(item?.w)
+  const normalizedCueWidthUnits = Number.isInteger(cueWidthUnits) && cueWidthUnits >= DEFAULT_CUE_WIDTH_UNITS
+    ? cueWidthUnits
+    : DEFAULT_CUE_WIDTH_UNITS
+
+  return {
+    ...item,
+    w: normalizedCueWidthUnits,
+    h: 1,
+    minW: 1,
+    minH: 1,
+    maxH: 1,
+  }
+}
 
 const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   if (cue.index > currentIndex) {
@@ -137,10 +158,55 @@ const GridLayoutComponent = ({
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState(null)
-  const [currentLayout, setCurrentLayout] = useState(layout)
+  const [currentLayout, setCurrentLayout] = useState(() => layout.map(normalizeLayoutItem))
+
+  const cueById = useMemo(() => {
+    return new Map(cues.map((cue) => [cue._id, cue]))
+  }, [cues])
+
+  const cueByGridCell = useMemo(() => {
+    return buildCueCellMap(cues)
+  }, [cues])
+
+  const getCueAtGridCell = useCallback((x, y, excludedCueId = null) => {
+    const cue = cueByGridCell.get(`${Number(x)}:${Number(y) + 1}`)
+    if (!cue) {
+      return null
+    }
+
+    if (excludedCueId && cue._id === excludedCueId) {
+      return null
+    }
+
+    return cue
+  }, [cueByGridCell])
+
+  const isCueOnAllowedRow = useCallback((cueType, targetY) => {
+    const audioRowYIndex = getAudioRow(screenCount) - 1
+    const movingToAudioRow = Number(targetY) === audioRowYIndex
+    const cueIsAudio = cueType === "audio"
+
+    return (cueIsAudio && movingToAudioRow) || (!cueIsAudio && !movingToAudioRow)
+  }, [screenCount])
+
+  const revertCueLayoutPosition = useCallback((cueId, oldItem) => {
+    setCurrentLayout((prevLayout) => prevLayout.map((item) => {
+      if (item.i !== cueId) {
+        return item
+      }
+
+      return {
+        ...item,
+        x: oldItem.x,
+        y: oldItem.y,
+        w: Math.max(DEFAULT_CUE_WIDTH_UNITS, Math.round(Number(oldItem.w) || DEFAULT_CUE_WIDTH_UNITS)),
+        h: 1,
+      }
+    }))
+  }, [])
 
   useEffect(() => {
-    setCurrentLayout(layout)
+    setCurrentLayout(layout.map(normalizeLayoutItem))
   }, [layout])
 
   const handleLoopToggle = async (cue) => {
@@ -343,47 +409,26 @@ const GridLayoutComponent = ({
       return
     }
 
-    const cue = cues.find((cue) => cue._id === newItem.i)
+    const cue = cueById.get(newItem.i)
     if (!cue) {
       return
     }
 
-    const audioRowYIndex = getAudioRow(screenCount) - 1
-    const movingToAudioRow = newItem.y === audioRowYIndex
-    const cueIsAudio = cue.cueType === "audio"
-
-    if ((cueIsAudio && !movingToAudioRow) || (!cueIsAudio && movingToAudioRow)) {
+    if (!isCueOnAllowedRow(cue.cueType, newItem.y)) {
       showToast({
         title: "Cannot move this file type here",
         description: "Keep audio elements to the audio row and visual elements to the visual rows.",
         status: "error",
       })
 
-      const updatedLayout = currentLayout.map((item) => {
-        // find the item that was moved with its ID and revert it to its old position
-        if (item.i === newItem.i) {
-          return {
-            ...item,
-            x: oldItem.x,
-            y: oldItem.y,
-          }
-        }
-        return item
-      })
-
-      setCurrentLayout(updatedLayout)
+      revertCueLayoutPosition(newItem.i, oldItem)
       return
     }
 
-    const targetCue = cues.find(
-      (cue) =>
-        cue._id !== newItem.i &&
-        Number(cue.index) === Number(newItem.x) &&
-        Number(cue.screen) === Number(newItem.y + 1)
-    )
+    const targetCue = getCueAtGridCell(newItem.x, newItem.y, newItem.i)
 
     if (targetCue) {
-      setCurrentLayout(newLayout)
+      setCurrentLayout(newLayout.map(normalizeLayoutItem))
       return
     }
 
@@ -402,7 +447,7 @@ const GridLayoutComponent = ({
       setStatus("loading")
       try {
         await dispatch(updatePresentation(id, movedCue))
-        setCurrentLayout(newLayout)
+        setCurrentLayout(newLayout.map(normalizeLayoutItem))
 
         setTimeout(() => {
           setStatus("saved")
@@ -412,18 +457,7 @@ const GridLayoutComponent = ({
 
         // additional error handling for if something goes wrong with the API call to update the cue in database
         // revert the layout to the state that was before the error happened
-        const revertedLayout = currentLayout.map((item) => {
-          if (item.i === newItem.i) {
-            return {
-              ...item,
-              x: oldItem.x,
-              y: oldItem.y,
-            }
-          }
-          return item
-        })
-
-        setCurrentLayout(revertedLayout)
+        revertCueLayoutPosition(newItem.i, oldItem)
 
         showToast({
           title: "Error updating position",
@@ -435,6 +469,57 @@ const GridLayoutComponent = ({
     }
   }
 
+  const handleResizeStop = async (newLayout, oldItem, newItem) => {
+    const cue = cueById.get(newItem.i)
+    if (!cue) {
+      return
+    }
+
+    const nextCueWidthUnits = Math.max(DEFAULT_CUE_WIDTH_UNITS, Math.round(Number(newItem.w) || DEFAULT_CUE_WIDTH_UNITS))
+    const previousCueWidthUnits = getCueWidthUnits(cue)
+    const positionDidNotChange = oldItem.x === newItem.x && oldItem.y === newItem.y
+
+    if (positionDidNotChange && previousCueWidthUnits === nextCueWidthUnits) {
+      return
+    }
+
+    if (!isCueOnAllowedRow(cue.cueType, newItem.y)) {
+      showToast({
+        title: "Cannot move this file type here",
+        description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+        status: "error",
+      })
+      revertCueLayoutPosition(newItem.i, oldItem)
+      return
+    }
+
+    const resizedCue = {
+      cueId: newItem.i,
+      index: newItem.x,
+      screen: newItem.y + 1,
+      cueWidth: nextCueWidthUnits,
+      cueName: cue.name,
+      color: cue.color,
+    }
+
+    setStatus("loading")
+    try {
+      await dispatch(updatePresentation(id, resizedCue))
+      setCurrentLayout(newLayout.map(normalizeLayoutItem))
+      setTimeout(() => {
+        setStatus("saved")
+      }, 300)
+    } catch (error) {
+      console.error(error)
+      revertCueLayoutPosition(newItem.i, oldItem)
+      showToast({
+        title: "Error updating size",
+        description: "The element has been returned to its previous size.",
+        status: "error",
+      })
+    }
+  }
+
   return (
     <GridLayout
       className="layout"
@@ -442,7 +527,8 @@ const GridLayoutComponent = ({
       cols={indexCount}
       rowHeight={rowHeight}
       width={indexCount * columnWidth + (indexCount - 1) * gap}
-      isResizable={false}
+      isResizable={!isShowMode}
+      resizeHandles={["e", "w"]}
       compactType={null}
       isBounded={false}
       preventCollision={true}
@@ -450,6 +536,7 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
+      onResizeStop={handleResizeStop}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => (
@@ -459,8 +546,11 @@ const GridLayoutComponent = ({
           data-grid={{
             x: cue.index,
             y: cue.screen - 1,
-            w: 1,
+            w: getCueWidthUnits(cue),
             h: 1,
+            minW: 1,
+            minH: 1,
+            maxH: 1,
             static: false,
           }}
           id={`cue-screen-${cue.screen}-index-${cue.index}`}

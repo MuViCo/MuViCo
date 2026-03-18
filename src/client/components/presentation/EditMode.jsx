@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import {
   Box,
   Text,
@@ -34,6 +34,7 @@ import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
+import { buildCueCellMap, getCueWidthUnits } from "../utils/cueGridUtils"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
@@ -48,7 +49,14 @@ import {
 
 const theme = extendTheme({})
 
-
+const getWidthAwareSwapIndexes = (selectedCue, targetCue) => {
+  const selectedIndex = Number(selectedCue.index)
+  const targetIndex = Number(targetCue.index)
+  return {
+    selectedCueNextIndex: targetIndex,
+    targetCueNextIndex: selectedIndex,
+  }
+}
 
 const EditMode = ({
   id,
@@ -84,6 +92,14 @@ const EditMode = ({
   const [confirmAction, setConfirmAction] = useState(() => () => { })
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
+
+  const cueByGridCell = useMemo(() => {
+    return buildCueCellMap(cues)
+  }, [cues])
+
+  const getCueAtGridCell = useCallback((xIndex, yIndex) => {
+    return cueByGridCell.get(`${Number(xIndex)}:${Number(yIndex)}`) || null
+  }, [cueByGridCell])
 
   const xLabels = Array.from({ length: indexCount }, (_, index) =>
     index === 0 ? "Starting Frame" : `Frame ${index}`)
@@ -487,9 +503,7 @@ const EditMode = ({
     )
 
     if (cueExists(xIndex, yIndex)) {
-      const movingCue = cues.find(
-        (cue) => cue.index === xIndex && cue.screen === yIndex
-      )
+      const movingCue = getCueAtGridCell(xIndex, yIndex)
       setSelectedCue(movingCue)
 
       if (event.target.closest(".react-grid-item")) {
@@ -612,9 +626,7 @@ const EditMode = ({
       gap
     )
 
-    const cueExists = cues.some(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const cueExists = Boolean(getCueAtGridCell(xIndex, yIndex))
 
     if (
       !cueExists &&
@@ -640,9 +652,7 @@ const EditMode = ({
     )
 
     if (cueExists(xIndex, yIndex) && isDragging) {
-      const targetCue = cues.find(
-        (cue) => cue.index === xIndex && cue.screen === yIndex
-      )
+      const targetCue = getCueAtGridCell(xIndex, yIndex)
       if (selectedCue && targetCue && selectedCue !== targetCue) {
         handleElementPositionChange(selectedCue, targetCue)
       }
@@ -661,26 +671,26 @@ const EditMode = ({
     }
   }
 
-  const layout = cues.map((cue) => {
-    const position = {
+  const layout = useMemo(() => {
+    return cues.map((cue) => ({
       i: cue._id.toString(),
       x: cue.index,
       y: cue.screen,
-      w: 1,
+      w: getCueWidthUnits(cue),
       h: 1,
+      minW: 1,
+      minH: 1,
+      maxH: 1,
       static: false,
-    }
-    return position
-  })
+    }))
+  }, [cues])
 
   const addCue = async (cueData) => {
     setStatus("loading")
     const { index, cueName, screen, file, loop, color } = cueData
 
     //Check if cue with same index and screen already exists
-    const existingCue = cues.find(
-      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
-    )
+    const existingCue = getCueAtGridCell(index, screen)
 
     if (existingCue) {
       await handleCueExists(existingCue, cueData)
@@ -743,11 +753,7 @@ const EditMode = ({
       return
     }
 
-    const existingCue = cues.find(
-      (cue) =>
-        cue.index === Number(updatedCue.index) &&
-        cue.screen === Number(updatedCue.screen)
-    )
+    const existingCue = getCueAtGridCell(updatedCue.index, updatedCue.screen)
 
     if (existingCue && existingCue._id !== previousCueId) {
       await handleExistingCueUpdate(existingCue, updatedCue, previousCueId)
@@ -800,11 +806,7 @@ const EditMode = ({
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(
-      (cue) =>
-        Number(cue.index) === Number(xIndex) &&
-        Number(cue.screen) === Number(yIndex)
-    )
+    return Boolean(getCueAtGridCell(xIndex, yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -828,9 +830,7 @@ const EditMode = ({
       return
     }
 
-    const cue = cues.find(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const cue = getCueAtGridCell(xIndex, yIndex)
 
     if (cue) {
       setSelectedCue(cue)
@@ -901,15 +901,101 @@ const EditMode = ({
   }
 
   const handleElementPositionChange = async (selectedCue, targetCue) => {
+    const { selectedCueNextIndex, targetCueNextIndex } = getWidthAwareSwapIndexes(selectedCue, targetCue)
+    const selectedCueWidth = getCueWidthUnits(selectedCue)
+    const targetCueWidth = getCueWidthUnits(targetCue)
+    const swapOnSameScreen = Number(selectedCue.screen) === Number(targetCue.screen)
+
+    const cueIdsToIgnore = new Set([selectedCue._id, targetCue._id])
+    const canPlaceCueAtIndex = (candidateIndex, cueWidth, screen, blockedRange = null) => {
+      if (candidateIndex < 0 || candidateIndex + cueWidth > indexCount) {
+        return false
+      }
+
+      for (let xOffset = 0; xOffset < cueWidth; xOffset += 1) {
+        const x = candidateIndex + xOffset
+        if (blockedRange && x >= blockedRange.start && x < blockedRange.end) {
+          return false
+        }
+
+        const occupyingCue = getCueAtGridCell(x, screen)
+        if (occupyingCue && !cueIdsToIgnore.has(occupyingCue._id)) {
+          return false
+        }
+      }
+
+      return true
+    }
+
+    const findLeftMostAvailableIndex = (cueWidth, screen, blockedRange = null) => {
+      const maxStartIndex = indexCount - cueWidth
+      for (let candidateIndex = 0; candidateIndex <= maxStartIndex; candidateIndex += 1) {
+        if (canPlaceCueAtIndex(candidateIndex, cueWidth, screen, blockedRange)) {
+          return candidateIndex
+        }
+      }
+      return null
+    }
+
+    const selectedOutOfBounds =
+      selectedCueNextIndex < 0 || selectedCueNextIndex + selectedCueWidth > indexCount
+    let resolvedTargetCueIndex = targetCueNextIndex
+    let selectedPlacementBlockedRange = null
+
+    if (swapOnSameScreen) {
+      const selectedRange = {
+        start: selectedCueNextIndex,
+        end: selectedCueNextIndex + selectedCueWidth,
+      }
+
+      const leftMostIndex = findLeftMostAvailableIndex(targetCueWidth, selectedCue.screen, selectedRange)
+      if (leftMostIndex === null) {
+        showToast({
+          title: "Cannot swap elements",
+          description: "No valid non-overlapping position was found for this mixed-width swap.",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      }
+
+      resolvedTargetCueIndex = leftMostIndex
+
+      selectedPlacementBlockedRange = {
+        start: resolvedTargetCueIndex,
+        end: resolvedTargetCueIndex + targetCueWidth,
+      }
+    }
+
+    const selectedHasSpace = canPlaceCueAtIndex(
+      selectedCueNextIndex,
+      selectedCueWidth,
+      targetCue.screen,
+      selectedPlacementBlockedRange
+    )
+
+    const targetOutOfBounds =
+      resolvedTargetCueIndex < 0 || resolvedTargetCueIndex + targetCueWidth > indexCount
+
+    if (selectedOutOfBounds || targetOutOfBounds || !selectedHasSpace) {
+      showToast({
+        title: "Cannot swap elements",
+        description: "The swap would place an element outside the available frame range.",
+        status: "error",
+      })
+      setSelectedCue(null)
+      return
+    }
+
     const newTargetCue = {
       ...targetCue,
-      index: selectedCue.index,
+      index: resolvedTargetCueIndex,
       screen: selectedCue.screen,
     }
 
     const newSelectedCue = {
       ...selectedCue,
-      index: targetCue.index,
+      index: selectedCueNextIndex,
       screen: targetCue.screen,
     }
 
@@ -938,9 +1024,7 @@ const EditMode = ({
   const isAudio = (file) => isAudioMimeType(file?.type)
 
   const handleCueReplace = async (xIndex, yIndex, file) => {
-    const existingCue = cues.find(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const existingCue = getCueAtGridCell(xIndex, yIndex)
     if (!existingCue) return
 
     const updatedCue = {

@@ -11,6 +11,7 @@ import {
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
 let mockDragScenario = null
+let lastGridLayoutProps = null
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -72,9 +73,16 @@ jest.mock("../../services/presentation", () => ({
 jest.mock("react-grid-layout", () => {
   const mockReact = require("react")
 
-  return function MockGridLayout({ children, onDragStop }) {
+  return function MockGridLayout(props) {
+    const { children, onDragStop } = props
+    lastGridLayoutProps = props
+
     const scenarios = {
       visualSwapVisual: {
+        oldItem: { i: "visual-1", x: 0, y: 0 },
+        newItem: { i: "visual-1", x: 1, y: 0 },
+      },
+      visualSwapWideVisual: {
         oldItem: { i: "visual-1", x: 0, y: 0 },
         newItem: { i: "visual-1", x: 1, y: 0 },
       },
@@ -128,18 +136,27 @@ describe("EditMode drag swapping", () => {
     },
   ]
 
-  const renderEditMode = () => {
+  const renderEditMode = (customCues = cues, customIndexCount = 3) => {
+    useSelector.mockImplementation((selector) => selector({
+      presentation: {
+        cues: customCues,
+        name: "Test presentation",
+        screenCount: 2,
+        indexCount: customIndexCount,
+      },
+    }))
+
     return render(
       <EditMode
         id="presentation-1"
-        cues={cues}
+        cues={customCues}
         isToolboxOpen={false}
         setIsToolboxOpen={jest.fn()}
         isShowMode={false}
         cueIndex={0}
         isAudioMuted={false}
         toggleAudioMute={jest.fn()}
-        indexCount={3}
+        indexCount={customIndexCount}
       />
     )
   }
@@ -165,15 +182,39 @@ describe("EditMode drag swapping", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
-    useSelector.mockImplementation((selector) => selector({
-      presentation: {
-        cues,
-        name: "Test presentation",
-        screenCount: 2,
-        indexCount: 3,
-      },
-    }))
     mockDragScenario = null
+    lastGridLayoutProps = null
+  })
+
+  it("defaults missing cue width to 1 in layout while keeping fixed height", () => {
+    const mixedWidthCues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        cueWidth: 4,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      },
+    ]
+
+    renderEditMode(mixedWidthCues, 4)
+
+    expect(lastGridLayoutProps.layout).toEqual([
+      expect.objectContaining({ i: "visual-1", w: 1, h: 1, minH: 1, maxH: 1 }),
+      expect.objectContaining({ i: "visual-2", w: 4, h: 1, minH: 1, maxH: 1 }),
+    ])
   })
 
   it("swaps cues after drag collision without dispatching a direct move update", async () => {

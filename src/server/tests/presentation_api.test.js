@@ -228,6 +228,35 @@ describe("test presentation", () => {
       expect(createdCue.color).toBe("#000000")
     })
 
+    test("defaults cue width to 1 when width is missing", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 4)
+        .field("cueName", "Default Width Cue")
+        .field("screen", 2)
+        .expect(200)
+
+      const createdCue = response.body.cues.find((cue) => cue.name === "Default Width Cue")
+      expect(createdCue).toBeDefined()
+      expect(createdCue.cueWidth).toBe(1)
+    })
+
+    test("creates cue with explicit width", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Wide Cue")
+        .field("screen", 3)
+        .field("cueWidth", 3)
+        .expect(200)
+
+      const createdCue = response.body.cues.find((cue) => cue.name === "Wide Cue")
+      expect(createdCue).toBeDefined()
+      expect(createdCue.cueWidth).toBe(3)
+    })
+
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 100."],
       [101, 4, "Invalid cue index: 101. Index must be between 0 and 100."],
@@ -253,6 +282,19 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
+    })
+
+    test("throws error with invalid cue width", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Invalid Width Cue")
+        .field("screen", 2)
+        .field("cueWidth", 0)
+        .expect(400)
+
+      expect(response.body.error).toBe("Cue width must be an integer greater than or equal to 1.")
     })
   })
 
@@ -309,6 +351,44 @@ describe("test presentation", () => {
       expect(response.body.color).toBe("#fded11")
     })
 
+    test("updates cue width when width is provided", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("cueWidth", 4)
+        .expect(200)
+
+      expect(response.body.cueWidth).toBe(4)
+
+      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedCue = updatedPresentation.cues.id(testCueId)
+      expect(updatedCue.cueWidth).toBe(4)
+    })
+
+    test("keeps cue width unchanged when width is omitted", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("cueWidth", 5)
+        .expect(200)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue Again")
+        .field("screen", 2)
+        .expect(200)
+
+      expect(response.body.cueWidth).toBe(5)
+    })
+
     const invalidCases = [
       [-1, 1, "Invalid cue index: -1. Index must be between 0 and 4."],
       [5, 4, "Invalid cue index: 5. Index must be between 0 and 4."],
@@ -341,6 +421,19 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Missing required fields")
+    })
+
+    test("throws error with invalid update width", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("cueWidth", "1.5")
+        .expect(400)
+
+      expect(response.body.error).toBe("Cue width must be an integer greater than or equal to 1.")
     })
   })
 
@@ -461,6 +554,51 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Cue type does not match swap target screen")
+    })
+
+    test("rejects swap that would cause overlapping cue widths", async () => {
+      await Presentation.findByIdAndUpdate(
+        testPresentationId,
+        {
+          indexCount: 6,
+        },
+        { new: true }
+      )
+
+      const clearPresentation = await Presentation.findById(testPresentationId)
+      clearPresentation.cues = []
+      await clearPresentation.save()
+
+      await createCue(0, "Narrow Cue", 1)
+      await createCue(1, "Wide Cue", 1)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      const narrowCue = presentation.cues.find((cue) => cue.name === "Narrow Cue")
+      const wideCue = presentation.cues.find((cue) => cue.name === "Wide Cue")
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/${wideCue._id.toString()}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Wide Cue")
+        .field("screen", 1)
+        .field("cueWidth", 2)
+        .expect(200)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId: narrowCue._id.toString(),
+          secondCueId: wideCue._id.toString(),
+          firstIndex: 1,
+          firstScreen: 1,
+          secondIndex: 0,
+          secondScreen: 1,
+        })
+        .expect(400)
+
+      expect(response.body.error).toBe("Swap target position is already occupied by another cue.")
     })
   })
 

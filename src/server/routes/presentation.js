@@ -24,18 +24,29 @@ const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
-const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
+const getCueWidthUnits = (cue) => {
+  const parsedWidth = Number(cue?.cueWidth ?? cue?.w)
+  return Number.isInteger(parsedWidth) && parsedWidth >= 1 ? parsedWidth : 1
+}
+
+const spansOverlap = (firstStart, firstWidth, secondStart, secondWidth) => {
+  const firstEnd = Number(firstStart) + Number(firstWidth)
+  const secondEnd = Number(secondStart) + Number(secondWidth)
+  return Number(firstStart) < secondEnd && Number(secondStart) < firstEnd
+}
+
+const hasPositionConflict = (cues, index, screen, excludedCueId = null, cueWidth = 1) => {
   return cues.some((cue) => {
-    const samePosition = Number(cue.index) === Number(index) && Number(cue.screen) === Number(screen)
-    if (!samePosition) {
+    const sameScreen = Number(cue.screen) === Number(screen)
+    if (!sameScreen) {
       return false
     }
 
-    if (!excludedCueId) {
-      return true
+    if (excludedCueId && cue._id.toString() === excludedCueId.toString()) {
+      return false
     }
 
-    return cue._id.toString() !== excludedCueId.toString()
+    return spansOverlap(index, cueWidth, cue.index, getCueWidthUnits(cue))
   })
 }
 
@@ -45,9 +56,18 @@ const hasSwapTargetConflict = (
   secondCueId,
   firstTargetIndex,
   firstTargetScreen,
+  firstTargetCueWidth,
   secondTargetIndex,
-  secondTargetScreen
+  secondTargetScreen,
+  secondTargetCueWidth
 ) => {
+  if (
+    Number(firstTargetScreen) === Number(secondTargetScreen) &&
+    spansOverlap(firstTargetIndex, firstTargetCueWidth, secondTargetIndex, secondTargetCueWidth)
+  ) {
+    return true
+  }
+
   return cues.some((cue) => {
     const cueId = cue._id.toString()
 
@@ -55,10 +75,17 @@ const hasSwapTargetConflict = (
       return false
     }
 
-    return (
-      (Number(cue.index) === firstTargetIndex && Number(cue.screen) === firstTargetScreen) ||
-      (Number(cue.index) === secondTargetIndex && Number(cue.screen) === secondTargetScreen)
-    )
+    const cueWidth = getCueWidthUnits(cue)
+
+    const overlapsFirstTarget =
+      Number(cue.screen) === Number(firstTargetScreen) &&
+      spansOverlap(cue.index, cueWidth, firstTargetIndex, firstTargetCueWidth)
+
+    const overlapsSecondTarget =
+      Number(cue.screen) === Number(secondTargetScreen) &&
+      spansOverlap(cue.index, cueWidth, secondTargetIndex, secondTargetCueWidth)
+
+    return overlapsFirstTarget || overlapsSecondTarget
   })
 }
 
@@ -288,6 +315,8 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
+    const rawCueWidth = req.body.cueWidth ?? req.body.w
+    const cueWidth = rawCueWidth === undefined || rawCueWidth === "" ? undefined : Number(rawCueWidth)
     const color = req.body.color || "#000000"
 
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
@@ -315,6 +344,10 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       return res.status(400).json({
         error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
       })
+    }
+
+    if (cueWidth !== undefined && (!Number.isInteger(cueWidth) || cueWidth < 1)) {
+      return res.status(400).json({ error: "Cue width must be an integer greater than or equal to 1." })
     }
 
     if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
@@ -348,7 +381,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       }
     }
 
-    if (hasPositionConflict(presentation.cues, index, screen)) {
+    if (hasPositionConflict(presentation.cues, index, screen, null, cueWidth ?? 1)) {
       return res.status(400).json({ error: "A cue with the same index and screen already exists." })
     }
 
@@ -368,6 +401,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
             index: index,
             name: trimmedCueName,
             screen: screen,
+            cueWidth,
             file: file ? fileObject : null,
             color: color,
             loop: loop,
@@ -531,6 +565,18 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
       return res.status(404).json({ error: "Cue not found" })
     }
 
+    const firstCueWidth = getCueWidthUnits(firstCue)
+    const secondCueWidth = getCueWidthUnits(secondCue)
+
+    const firstTargetOutOfBounds =
+      parsedFirstIndex < 0 || parsedFirstIndex + firstCueWidth > presentation.indexCount
+    const secondTargetOutOfBounds =
+      parsedSecondIndex < 0 || parsedSecondIndex + secondCueWidth > presentation.indexCount
+
+    if (firstTargetOutOfBounds || secondTargetOutOfBounds) {
+      return res.status(400).json({ error: "Invalid swap target position" })
+    }
+
     const firstTargetCueType = getCueTypeFromScreen(parsedFirstScreen, presentation.screenCount)
     const secondTargetCueType = getCueTypeFromScreen(parsedSecondScreen, presentation.screenCount)
     const firstCurrentCueType = firstCue.cueType ?? getCueTypeFromScreen(firstCue.screen, presentation.screenCount)
@@ -550,8 +596,10 @@ router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req
         secondCueId,
         parsedFirstIndex,
         parsedFirstScreen,
+        firstCueWidth,
         parsedSecondIndex,
-        parsedSecondScreen
+        parsedSecondScreen,
+        secondCueWidth
       )
     ) {
       return res.status(400).json({ error: "Swap target position is already occupied by another cue." })
@@ -596,6 +644,8 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      const rawCueWidth = req.body.cueWidth ?? req.body.w
+      const cueWidth = rawCueWidth === undefined || rawCueWidth === "" ? undefined : Number(rawCueWidth)
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
@@ -629,6 +679,10 @@ router.put(
         })
       }
 
+      if (cueWidth !== undefined && (!Number.isInteger(cueWidth) || cueWidth < 1)) {
+        return res.status(400).json({ error: "Cue width must be an integer greater than or equal to 1." })
+      }
+
       const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
       
       if (cueType === "audio") {
@@ -655,7 +709,7 @@ router.put(
         return res.status(404).json({ error: "Cue not found" })
       }
 
-      if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
+      if (hasPositionConflict(presentation.cues, index, screen, cueId, cueWidth ?? getCueWidthUnits(cue))) {
         return res.status(400).json({ error: "A cue with the same index and screen already exists." })
       }
 
@@ -666,6 +720,9 @@ router.put(
       cue.name = trimmedCueName
       cue.loop = loop
       cue.color = color
+      if (cueWidth !== undefined) {
+        cue.cueWidth = cueWidth
+      }
 
       
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
