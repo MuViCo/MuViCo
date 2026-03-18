@@ -17,8 +17,8 @@ import Dialog from "../utils/AlertDialog"
 import { getAudioRow } from "../utils/fileTypeUtils"
 import {
   DEFAULT_CUE_WIDTH_UNITS,
-  buildCueCellMap,
   getCueWidthUnits,
+  getCueAtGridCell as getCueAtGridCellFromMap,
 } from "../utils/cueGridUtils"
 
 const normalizeLayoutItem = (item) => {
@@ -137,6 +137,7 @@ const GridLayoutComponent = ({
   id,
   layout,
   cues,
+  cueByGridCell,
   setStatus,
   setCopiedCue,
   setIsCopied,
@@ -164,12 +165,8 @@ const GridLayoutComponent = ({
     return new Map(cues.map((cue) => [cue._id, cue]))
   }, [cues])
 
-  const cueByGridCell = useMemo(() => {
-    return buildCueCellMap(cues)
-  }, [cues])
-
   const getCueAtGridCell = useCallback((x, y, excludedCueId = null) => {
-    const cue = cueByGridCell.get(`${Number(x)}:${Number(y) + 1}`)
+    const cue = getCueAtGridCellFromMap(cueByGridCell, Number(x), Number(y) + 1)
     if (!cue) {
       return null
     }
@@ -401,10 +398,10 @@ const GridLayoutComponent = ({
   )
 
   /**
-   * Do not remove the `layout` parameter from the `handlePositionChange` function.
+    * Do not remove the `layout` parameter from the `handleCueDragStop` function.
    * It is required for the function to work correctly.
    */
-  const handlePositionChange = async (newLayout, oldItem, newItem) => {
+    const handleCueDragStop = async (newLayout, oldItem, newItem) => {
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
     }
@@ -535,7 +532,7 @@ const GridLayoutComponent = ({
       margin={[gap, gap]}
       containerPadding={[0, 0]}
       useCSSTransforms={true}
-      onDragStop={handlePositionChange}
+      onDragStop={handleCueDragStop}
       onResizeStop={handleResizeStop}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >

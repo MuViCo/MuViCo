@@ -4,6 +4,7 @@ import "@testing-library/jest-dom"
 import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"
 import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
+import { buildCueCellMap } from "../../components/utils/cueGridUtils"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -127,6 +128,7 @@ describe("GridLayoutComponent drag constraints", () => {
         {...baseProps}
         cues={cues}
         layout={layout}
+        cueByGridCell={buildCueCellMap(cues)}
       />
     )
   }

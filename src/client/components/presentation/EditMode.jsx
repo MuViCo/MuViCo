@@ -34,7 +34,13 @@ import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
-import { buildCueCellMap, getCueWidthUnits } from "../utils/cueGridUtils"
+import {
+  buildCueCellMap,
+  getCueWidthUnits,
+  getCueAtGridCell as getCueAtGridCellFromMap,
+  getGridPositionFromPointer,
+} from "../utils/cueGridUtils"
+import { resolveCueSwapPlacement } from "../utils/cuePlacementController"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
@@ -98,7 +104,7 @@ const EditMode = ({
   }, [cues])
 
   const getCueAtGridCell = useCallback((xIndex, yIndex) => {
-    return cueByGridCell.get(`${Number(xIndex)}:${Number(yIndex)}`) || null
+    return getCueAtGridCellFromMap(cueByGridCell, xIndex, yIndex)
   }, [cueByGridCell])
 
   const xLabels = Array.from({ length: indexCount }, (_, index) =>
@@ -494,9 +500,9 @@ const EditMode = ({
   }
 
   const handleMouseDown = (event) => {
-    const { xIndex, yIndex } = getPosition(
+    const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
-      containerRef,
+      containerRef.current,
       columnWidth,
       rowHeight,
       gap
@@ -537,9 +543,9 @@ const EditMode = ({
       return
     }
 
-    const { xIndex, yIndex } = getPosition(
+    const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
-      containerRef,
+      containerRef.current,
       columnWidth,
       rowHeight,
       gap
@@ -618,9 +624,9 @@ const EditMode = ({
       hideHoverPreview()
       return
     }
-    const { xIndex, yIndex } = getPosition(
+    const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
-      containerRef,
+      containerRef.current,
       columnWidth,
       rowHeight,
       gap
@@ -643,9 +649,9 @@ const EditMode = ({
 
   const handleMouseUp = (event) => {
     setIsDragging(false)
-    const { xIndex, yIndex } = getPosition(
+    const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
-      containerRef,
+      containerRef.current,
       columnWidth,
       rowHeight,
       gap
@@ -654,7 +660,7 @@ const EditMode = ({
     if (cueExists(xIndex, yIndex) && isDragging) {
       const targetCue = getCueAtGridCell(xIndex, yIndex)
       if (selectedCue && targetCue && selectedCue !== targetCue) {
-        handleElementPositionChange(selectedCue, targetCue)
+        handleCueSwapOnDrop(selectedCue, targetCue)
       }
     }
 
@@ -814,9 +820,9 @@ const EditMode = ({
       return
     }
 
-    const { xIndex, yIndex } = getPosition(
+    const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
-      containerRef,
+      containerRef.current,
       columnWidth,
       rowHeight,
       gap
@@ -882,142 +888,44 @@ const EditMode = ({
     }
   }
 
-  const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
-    const dropX = event.clientX
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const containerScrollLeft = containerRef.current.scrollLeft
-
-    const relativeDropX = dropX - containerRect.left
-    const absoluteDropX = relativeDropX + containerScrollLeft
-    const dropY = event.clientY - containerRect.top
-
-    const cellWidthWithGap = columnWidth + gap
-    const cellHeightWithGap = rowHeight + gap
-
-    const yIndex = Math.floor(dropY / cellHeightWithGap)
-    const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
-
-    return { xIndex, yIndex }
-  }
-
-  const handleElementPositionChange = async (selectedCue, targetCue) => {
+  const handleCueSwapOnDrop = async (selectedCue, targetCue) => {
     const { selectedCueNextIndex, targetCueNextIndex } = getWidthAwareSwapIndexes(selectedCue, targetCue)
-    const selectedCueWidth = getCueWidthUnits(selectedCue)
-    const targetCueWidth = getCueWidthUnits(targetCue)
-    const swapOnSameScreen = Number(selectedCue.screen) === Number(targetCue.screen)
+    const swapResolution = resolveCueSwapPlacement({
+      selectedCue,
+      targetCue,
+      selectedCueNextIndex,
+      targetCueNextIndex,
+      indexCount,
+      cueByGridCell,
+    })
 
-    const cueIdsToIgnore = new Set([selectedCue._id, targetCue._id])
-    const canPlaceCueAtIndex = (candidateIndex, cueWidth, screen, blockedRange = null) => {
-      if (candidateIndex < 0 || candidateIndex + cueWidth > indexCount) {
-        return false
-      }
-
-      for (let xOffset = 0; xOffset < cueWidth; xOffset += 1) {
-        const x = candidateIndex + xOffset
-        if (blockedRange && x >= blockedRange.start && x < blockedRange.end) {
-          return false
-        }
-
-        const occupyingCue = getCueAtGridCell(x, screen)
-        if (occupyingCue && !cueIdsToIgnore.has(occupyingCue._id)) {
-          return false
-        }
-      }
-
-      return true
-    }
-
-    const findLeftMostAvailableIndex = (cueWidth, screen, blockedRange = null) => {
-      const maxStartIndex = indexCount - cueWidth
-      for (let candidateIndex = 0; candidateIndex <= maxStartIndex; candidateIndex += 1) {
-        if (canPlaceCueAtIndex(candidateIndex, cueWidth, screen, blockedRange)) {
-          return candidateIndex
-        }
-      }
-      return null
-    }
-
-    const selectedOutOfBounds =
-      selectedCueNextIndex < 0 || selectedCueNextIndex + selectedCueWidth > indexCount
-    let resolvedTargetCueIndex = targetCueNextIndex
-    let selectedPlacementBlockedRange = null
-
-    if (swapOnSameScreen) {
-      const selectedRange = {
-        start: selectedCueNextIndex,
-        end: selectedCueNextIndex + selectedCueWidth,
-      }
-
-      const leftMostIndex = findLeftMostAvailableIndex(targetCueWidth, selectedCue.screen, selectedRange)
-      if (leftMostIndex === null) {
+    if (!swapResolution.ok) {
+      if (swapResolution.reason === "no-valid-target-slot") {
         showToast({
           title: "Cannot swap elements",
           description: "No valid non-overlapping position was found for this mixed-width swap.",
           status: "error",
         })
-        setSelectedCue(null)
-        return
-      }
-
-      resolvedTargetCueIndex = leftMostIndex
-
-      selectedPlacementBlockedRange = {
-        start: resolvedTargetCueIndex,
-        end: resolvedTargetCueIndex + targetCueWidth,
-      }
-    }
-
-    const selectedHasSpace = canPlaceCueAtIndex(
-      selectedCueNextIndex,
-      selectedCueWidth,
-      targetCue.screen,
-      selectedPlacementBlockedRange
-    )
-
-    const targetOutOfBounds =
-      resolvedTargetCueIndex < 0 || resolvedTargetCueIndex + targetCueWidth > indexCount
-
-    if (selectedOutOfBounds || targetOutOfBounds || !selectedHasSpace) {
-      showToast({
-        title: "Cannot swap elements",
-        description: "The swap would place an element outside the available frame range.",
-        status: "error",
-      })
-      setSelectedCue(null)
-      return
-    }
-
-    const newTargetCue = {
-      ...targetCue,
-      index: resolvedTargetCueIndex,
-      screen: selectedCue.screen,
-    }
-
-    const newSelectedCue = {
-      ...selectedCue,
-      index: selectedCueNextIndex,
-      screen: targetCue.screen,
-    }
-
-    const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
-
-    if (hasAudioCue) {
-      if (!(newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio")) {
+      } else if (swapResolution.reason === "audio-type-mismatch") {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
           status: "error",
         })
-        setSelectedCue(null)
-        return
       } else {
-        await dispatchSwapCues(newTargetCue, newSelectedCue)
-        setSelectedCue(null)
+        showToast({
+          title: "Cannot swap elements",
+          description: "The swap would place an element outside the available frame range.",
+          status: "error",
+        })
       }
-    } else {
-      await dispatchSwapCues(newTargetCue, newSelectedCue)
+
       setSelectedCue(null)
+      return
     }
+
+    await dispatchSwapCues(swapResolution.newTargetCue, swapResolution.newSelectedCue)
+    setSelectedCue(null)
   }
 
   const isImageOrVideo = (file) => isImageOrVideoMimeType(file?.type)
@@ -1055,9 +963,9 @@ const EditMode = ({
         return
       }
 
-      const { xIndex, yIndex } = getPosition(
+      const { xIndex, yIndex } = getGridPositionFromPointer(
         event,
-        containerRef,
+        containerRef.current,
         columnWidth,
         rowHeight,
         gap
@@ -1397,6 +1305,7 @@ const EditMode = ({
               <GridLayoutComponent
                 layout={layout}
                 cues={cues}
+                cueByGridCell={cueByGridCell}
                 containerRef={containerRef}
                 columnWidth={columnWidth}
                 rowHeight={rowHeight}
