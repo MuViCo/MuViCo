@@ -1,5 +1,5 @@
 import React from "react"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor, within, waitForElementToBeRemoved } from "@testing-library/react"
 import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
@@ -30,14 +30,23 @@ jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 jest.mock("../../components/utils/useDeletePresentation")
 
 jest.mock("@chakra-ui/react", () => {
+  const React = jest.requireActual("react")
   const originalModule = jest.requireActual("@chakra-ui/react")
   return {
     ...originalModule,
-    useDisclosure: () => ({
-      isOpen: false,
-      onOpen: jest.fn(),
-      onClose: jest.fn(),
-    }),
+    useDisclosure: () => {
+      const [isOpen, setIsOpen] = React.useState(false)
+      return {
+        isOpen,
+        onOpen: () => setIsOpen(true),
+        onClose: () => setIsOpen(false),
+      }
+    },
+    useToast: () => {
+      const toastFn = jest.fn()
+      toastFn.isActive = jest.fn(() => false)
+      return toastFn
+    },
   }
 })
 
@@ -549,5 +558,139 @@ describe("PresentationsGrid", () => {
     expect(gridBtn).toBeInTheDocument()
     // Grid view should be active by default, so no list items
     expect(screen.queryByRole("listitem")).toBeNull()
+  })
+
+  test("opens modal from edit action with prefilled name and description", async () => {
+    const dataWithDescription = [
+      { id: "123", name: "Test Presentation", description: "Existing description" },
+    ]
+
+    render(
+      <PresentationsGrid
+        presentations={dataWithDescription}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={() => {}}
+        handleEditPresentation={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Edit presentation"))
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument()
+    })
+
+    const dialog = screen.getByRole("dialog")
+    const [titleInput, descriptionInput] = within(dialog).getAllByRole("textbox")
+
+    expect(titleInput).toHaveValue("Test Presentation")
+    expect(descriptionInput).toHaveValue("Existing description")
+  })
+
+  test("disables save when title is empty", async () => {
+    const dataWithDescription = [
+      { id: "123", name: "Test Presentation", description: "Existing description" },
+    ]
+
+    render(
+      <PresentationsGrid
+        presentations={dataWithDescription}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={() => {}}
+        handleEditPresentation={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Edit presentation"))
+
+    const dialog = await screen.findByRole("dialog")
+    const [titleInput] = within(dialog).getAllByRole("textbox")
+    fireEvent.change(titleInput, { target: { value: "   " } })
+
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled()
+  })
+
+  test("save calls handler with trimmed title and description", async () => {
+    const handleEditPresentationMock = jest.fn().mockResolvedValue({})
+    const dataWithDescription = [
+      { id: "123", name: "Test Presentation", description: "Existing description" },
+    ]
+
+    render(
+      <PresentationsGrid
+        presentations={dataWithDescription}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={() => {}}
+        handleEditPresentation={handleEditPresentationMock}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Edit presentation"))
+
+    const dialog = await screen.findByRole("dialog")
+    const [titleInput, descriptionInput] = within(dialog).getAllByRole("textbox")
+
+    fireEvent.change(titleInput, { target: { value: "  Updated Title  " } })
+    fireEvent.change(descriptionInput, { target: { value: "Updated description" } })
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+
+    await waitFor(() => {
+      expect(handleEditPresentationMock).toHaveBeenCalledWith("123", {
+        name: "Updated Title",
+        description: "Updated description",
+      })
+    })
+  })
+
+  test("successful save closes modal", async () => {
+    const handleEditPresentationMock = jest.fn().mockResolvedValue({})
+    const dataWithDescription = [
+      { id: "123", name: "Test Presentation", description: "Existing description" },
+    ]
+
+    render(
+      <PresentationsGrid
+        presentations={dataWithDescription}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={() => {}}
+        handleEditPresentation={handleEditPresentationMock}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Edit presentation"))
+    const dialog = await screen.findByRole("dialog")
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+
+    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"))
+  })
+
+  test("failed save keeps modal open and shows failure state", async () => {
+    const handleEditPresentationMock = jest.fn().mockRejectedValue(new Error("Save failed"))
+    const dataWithDescription = [
+      { id: "123", name: "Test Presentation", description: "Existing description" },
+    ]
+
+    render(
+      <PresentationsGrid
+        presentations={dataWithDescription}
+        handlePresentationClick={() => {}}
+        handleDeletePresentation={() => {}}
+        handleEditPresentation={handleEditPresentationMock}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Edit presentation"))
+    const dialog = await screen.findByRole("dialog")
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
+
+    await waitFor(() => {
+      expect(handleEditPresentationMock).toHaveBeenCalledTimes(1)
+      expect(screen.getByRole("dialog")).toBeInTheDocument()
+      expect(
+        screen.getByText("Failed to save presentation. Please try again.")
+      ).toBeInTheDocument()
+    })
   })
 })
