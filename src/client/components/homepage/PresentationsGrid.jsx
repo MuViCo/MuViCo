@@ -22,13 +22,125 @@ import {
   FormControl,
   FormLabel,
   Input,
+  Text,
   Textarea,
   useDisclosure,
+  useToast,
 } from "@chakra-ui/react"
 import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
-import { blurElement } from "@testing-library/user-event/dist/cjs/event/focus.js"
+
+const EditModal = ({ isOpen, onClose, presentation, handleEditPresentation }) => {
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [saveError, setSaveError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+  const toast = useToast()
+
+  const handleDescriptionChange = (event) => {
+    const nextValue = event.target.value
+
+    if (nextValue.length > 500) {
+      const toastId = "description-limit-toast"
+      if (!toast.isActive(toastId)) {
+        toast({
+          id: toastId,
+          title: "Description too long",
+          description: "Description cannot exceed 500 characters.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+        })
+      }
+      return
+    }
+
+    setEditDescription(nextValue)
+  }
+
+  useEffect(() => {
+    if (isOpen && presentation) {
+      setEditName(presentation.name || "")
+      setEditDescription(presentation.description || "")
+      setSaveError("")
+    }
+  }, [isOpen, presentation])
+
+  const handleClose = () => {
+    if (isSaving) {
+      return
+    }
+    onClose()
+  }
+
+  const handleSaveEdit = async () => {
+    const trimmedName = editName.trim()
+    if (!trimmedName || !presentation?.id) {
+      return
+    }
+
+    setSaveError("")
+    setIsSaving(true)
+    try {
+      await handleEditPresentation(presentation.id, {
+        name: trimmedName,
+        description: editDescription,
+      })
+      onClose()
+    } catch (error) {
+      setSaveError("Failed to save presentation. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Modal isCentered isOpen={isOpen} onClose={handleClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Edit presentation</ModalHeader>
+        <ModalCloseButton isDisabled={isSaving} />
+        <ModalBody>
+          <FormControl mb={4} isRequired>
+            <FormLabel>Title</FormLabel>
+            <Input
+              value={editName}
+              onChange={(event) => setEditName(event.target.value)}
+              maxLength={100}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Description</FormLabel>
+            <Textarea
+              placeholder="Max. 500 characters"
+              value={editDescription}
+              onChange={handleDescriptionChange}
+            />
+          </FormControl>
+          {saveError && (
+            <Text mt={3} color="red.500" role="alert">
+              {saveError}
+            </Text>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button mr={3} variant="ghost" onClick={handleClose} isDisabled={isSaving}>
+            Cancel
+          </Button>
+          <Button
+            colorScheme="purple"
+            onClick={handleSaveEdit}
+            isLoading={isSaving}
+            isDisabled={!editName.trim()}
+          >
+            Save
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
+}
 
 const PresentationsGrid = ({
   presentations,
@@ -41,10 +153,7 @@ const PresentationsGrid = ({
     // Initialize from localStorage, default to "grid"
     return localStorage.getItem("presentationsLayoutMode") || "grid"
   })
-  const [editingPresentationId, setEditingPresentationId] = useState(null)
-  const [editName, setEditName] = useState("")
-  const [editDescription, setEditDescription] = useState("")
-  const [isSaving, setIsSaving] = useState(false)
+  const [editingPresentation, setEditingPresentation] = useState(null)
 
   // Save to localStorage whenever viewMode changes
   useEffect(() => {
@@ -53,35 +162,13 @@ const PresentationsGrid = ({
 
   const openEditModal = (presentation, event) => {
     event.stopPropagation()
-    setEditingPresentationId(presentation.id)
-    setEditName(presentation.name || "")
-    setEditDescription(presentation.description || "")
+    setEditingPresentation(presentation)
     onOpen()
   }
 
   const handleCloseEditModal = () => {
-    if (isSaving) {
-      return
-    }
     onClose()
-  }
-
-  const handleSaveEdit = async () => {
-    const trimmedName = editName.trim()
-    if (!trimmedName || !editingPresentationId) {
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      await handleEditPresentation(editingPresentationId, {
-        name: trimmedName,
-        description: editDescription,
-      })
-      onClose()
-    } finally {
-      setIsSaving(false)
-    }
+    setEditingPresentation(null)
   }
 
   const renderGrid = () => (
@@ -318,45 +405,12 @@ const PresentationsGrid = ({
 
       {viewMode === "grid" ? renderGrid() : renderList()}
 
-      <Modal isCentered isOpen={isOpen} onClose={handleCloseEditModal}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit presentation</ModalHeader>
-          <ModalCloseButton isDisabled={isSaving} />
-          <ModalBody>
-            <FormControl mb={4} isRequired>
-              <FormLabel>Title</FormLabel>
-              <Input
-                value={editName}
-                onChange={(event) => setEditName(event.target.value)}
-                maxLength={100}
-              />
-            </FormControl>
-            <FormControl>
-              <FormLabel>Description</FormLabel>
-              <Textarea
-                placeholder="Max. 500 characters"
-                value={editDescription}
-                onChange={(event) => setEditDescription(event.target.value)}
-                maxLength={500}
-              />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button mr={3} variant="ghost" onClick={handleCloseEditModal} isDisabled={isSaving}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme="purple"
-              onClick={handleSaveEdit}
-              isLoading={isSaving}
-              isDisabled={!editName.trim()}
-            >
-              Save
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <EditModal
+        isOpen={isOpen}
+        onClose={handleCloseEditModal}
+        presentation={editingPresentation}
+        handleEditPresentation={handleEditPresentation}
+      />
     </>
   )
 }
