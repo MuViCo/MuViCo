@@ -71,13 +71,9 @@ jobs:
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
             -t 'quay.io/muvico_hy/muvico:staging' .
 
-  push-to-quay:
-    needs: build-image
-    if: ${{ github.ref == 'refs/heads/main'}}
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Push image to Quay.io
+        id: push-to-quay
+        if: ${{ github.ref == 'refs/heads/main'}}
         env:
           QUAY_IO_TOKEN: ${{ secrets.QUAY_IO_TOKEN }}
         run: |
