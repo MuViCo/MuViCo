@@ -67,10 +67,10 @@ For more details, see the Autumn 2025 Backlog [here](https://github.com/orgs/MuV
 - **Recommendation:**
   - Address this issue through the `package.json` file using the "overrides" field.
 
-### AWS Media Database File Duplication
+### Object Storage File Duplication
 
 - **Issue:**  
-  When using AWS as the media database, copying a file results in duplicate entries in the database.
+  When using object storage (S3-compatible storage such as Upcloud Object Storage) as the media backend, copying a file results in duplicate entries in the database.
 - **Recommendation:**
   - Consider modifying the logic so that only one file exists (with the front-end displaying it in multiple locations as needed).
   - **Current Reference:**  
