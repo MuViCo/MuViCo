@@ -54,14 +54,13 @@ jobs:
   build-image:
     needs: test
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ steps.build-image.outputs.image }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build and tag image
+        id: build-image
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -75,10 +74,6 @@ jobs:
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
             -t 'quay.io/muvico_hy/muvico:staging' .
 
-      - name: Set image output
-        id: build-image
-        run: echo "image=quay.io/muvico_hy/muvico:staging" >> $GITHUB_OUTPUT
-
   push-to-quay:
     needs: build-image
     if: ${{ github.ref == 'refs/heads/main'}}
@@ -90,4 +85,4 @@ jobs:
           QUAY_IO_TOKEN: ${{ secrets.QUAY_IO_TOKEN }}
         run: |
           echo $QUAY_IO_TOKEN | docker login quay.io -u muvico_hy+robo --password-stdin
-          docker push ${{ needs.build-image.outputs.image }}
+          docker push quay.io/muvico_hy/muvico:staging
