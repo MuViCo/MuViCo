@@ -41,9 +41,16 @@
       - Example: `v1.5.3` -> `v1.6.0`
   - If there have only been bug fixes or tweaks and no new features, bump to a new PATCH.
       - Example: `v1.5.3` -> `v1.5.4`
+  > [!IMPORTANT]
+  > The version in `package.json` should have the same version number.
 3. Set a title for the release in the format `MuViCo vX.Y.Z`, where `X.Y.Z` is the version of the release being made.
 4. Create release notes for the release and set it as the latest, then publish it.
-5. Ensure that the CD (Deploy to Amazon ECS) is green.
+5. After the new image has been built, change the prod image tag to the newly published version in `manifests/prod-dep.yaml`.
+6. Apply the changes to Kubernetes with
+```bash
+kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml apply -f manifests/prod-dep.yaml && \
+kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml rollout restart deployment muvico-dep
+```
 
 ### User story size estimates
 
@@ -57,9 +64,6 @@ You can e.g. use the following, assuming backlog is in Github Projects:
 | S    | 8 h             |
 | XS   | 2 h             |
 
-### Pull request template
-
-https://cryptpad.fr/pad/#/2/pad/edit/GCJA0a8qIgjXZS+cYLJBiK5y/
 
 ### N.B. New functionality is always expected to correspond with a predetermined user story found in the backlog!
 
