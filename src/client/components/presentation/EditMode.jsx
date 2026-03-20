@@ -52,10 +52,58 @@ const theme = extendTheme({})
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
+// Screens display component
+const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0 }) => {
+  // Get the current cue for the screen
+  const getCurrentCueForScreen = (screenNumber) => {
+    if (!cues || cues.length === 0) return null
+    const cueForScreen = cues.find(cue => cue.screen === screenNumber && cue.index === cueIndex)
+    return cueForScreen || null
+  }
+
+  return (
+    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: "gray", gap: "10px", padding: "10px", width: "100%", height: "100%" }}>
+      {Array.from({ length: screenCount }).map((_, index) => {
+        const screenNumber = index + 1
+        const screenData = getCurrentCueForScreen(screenNumber)
+
+        return (
+          <div key={screenNumber} style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "black", color: "white", overflow: "hidden", position: "relative" }}>
+            <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 10 }}>Screen {screenNumber}</div>
+            {screenData && screenData.file ? (
+              screenData.file.url ? (
+                <img 
+                  src={screenData.file.url} 
+                  alt={screenData.name} 
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              ) : (
+                <video 
+                  src={screenData.file.url}
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                  autoPlay
+                  loop
+                  muted
+                />
+              )
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                No content
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+
 
 // Layout for different components of the editor
 class MyFirstGrid extends React.Component {
   render() {
+    const { screenCount, cues, cueIndex } = this.props
     const layouts = {
       lg: [
         { i: "a", x: 0, y: 0, w: 10, h: 5 },
@@ -83,10 +131,10 @@ class MyFirstGrid extends React.Component {
         { i: "c", x: 0, y: 6, w: 2, h: 7 },
       ],
     }
-// Formatting the grid layout for the editor, using react-grid-layout. 
-// The layout is responsive and changes based on the screen size. 
-// Each grid item (a, b, c) represents a different component of the editor, 
-// such as the cue list, preview area, and toolbox.
+    // Formatting the grid layout for the editor, using react-grid-layout. 
+    // The layout is responsive and changes based on the screen size. 
+    // Each grid item (a, b, c) represents a different component of the editor, 
+    // such as the cue list, preview area, and toolbox.
     return (
       <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "lightgray" }}>
         <ResponsiveGridLayout
@@ -103,7 +151,10 @@ class MyFirstGrid extends React.Component {
           containerPadding={[8, 8]}
           style={{ width: "100%" }}
         >
-          <div style={{ backgroundColor: "gray" }} key="a">a</div>
+          {/* todo fix shit */}
+          <div style={{ backgroundColor: "gray" }} key="a">
+            <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
+          </div>
           <div style={{ backgroundColor: "gray" }} key="b">b</div>
           <div style={{ backgroundColor: "black" }} key="c">c</div>
         </ResponsiveGridLayout>
@@ -124,10 +175,21 @@ const EditMode = ({
   indexCount,
 }) => {
 
+  const dispatch = useDispatch()
+  const presentation = useSelector((state) => state.presentation)
+  const screenCount = presentation?.screenCount
 
-return <>
-  <MyFirstGrid />
-</>
+  useEffect(() => {
+    dispatch(fetchPresentationInfo(id))
+  }, [id, dispatch])
+
+  console.log("Rendering EditMode with cues:", id, cues, isToolboxOpen, isShowMode, cueIndex, isAudioMuted, indexCount)
+
+  console.log("Fetched presentation info:", cues, presentation);
+
+  return <>
+    <MyFirstGrid screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
+  </>
 
 }
 export default EditMode

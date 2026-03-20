@@ -26,6 +26,12 @@ const PresentationPage = ({ user }) => {
     handleCancelDelete,
   } = useDeletePresentation()
 
+
+  useEffect(() => {
+    dispatch(fetchPresentationInfo(id))
+  }, [id, navigate, dispatch])
+
+
   const [presentationSize, setPresentationSize] = useState(0)
   const [showMode, setShowMode] = useState(false)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
