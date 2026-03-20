@@ -120,8 +120,10 @@ const EditMode = ({
   yLabels.push("Audio files")
 
   const [isDragging, setIsDragging] = useState(false)
+  const [isCueResizeInProgress, setIsCueResizeInProgress] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
+  const suppressSwapOnMouseUpRef = useRef(false)
   useOutsideClick({
     ref: containerRef,
     handler: () => {
@@ -649,6 +651,13 @@ const EditMode = ({
 
   const handleMouseUp = (event) => {
     setIsDragging(false)
+
+    if (suppressSwapOnMouseUpRef.current || isCueResizeInProgress) {
+      suppressSwapOnMouseUpRef.current = false
+      setIsCueResizeInProgress(false)
+      return
+    }
+
     const { xIndex, yIndex } = getGridPositionFromPointer(
       event,
       containerRef.current,
@@ -676,6 +685,14 @@ const EditMode = ({
       }
     }
   }
+
+  const handleCueResizeStateChange = useCallback((isResizing) => {
+    setIsCueResizeInProgress(isResizing)
+    if (isResizing) {
+      // Prevent the resize mouse-up from being interpreted as a cue swap drop.
+      suppressSwapOnMouseUpRef.current = true
+    }
+  }, [])
 
   const layout = useMemo(() => {
     return cues.map((cue) => ({
@@ -1306,6 +1323,7 @@ const EditMode = ({
                 layout={layout}
                 cues={cues}
                 cueByGridCell={cueByGridCell}
+                onCueResizeStateChange={handleCueResizeStateChange}
                 containerRef={containerRef}
                 columnWidth={columnWidth}
                 rowHeight={rowHeight}

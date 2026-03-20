@@ -74,7 +74,7 @@ jest.mock("react-grid-layout", () => {
   const mockReact = require("react")
 
   return function MockGridLayout(props) {
-    const { children, onDragStop } = props
+    const { children, onDragStop, onResizeStart } = props
     lastGridLayoutProps = props
 
     const scenarios = {
@@ -105,6 +105,13 @@ jest.mock("react-grid-layout", () => {
           onClick={runScenario}
         >
           trigger
+        </button>
+        <button
+          type="button"
+          data-testid="trigger-resize-start"
+          onClick={() => onResizeStart?.([], {}, {}, {}, {}, {})}
+        >
+          trigger-resize-start
         </button>
         {mockReact.Children.map(children, (child) => (
           <div className="react-grid-item">{child}</div>
@@ -313,4 +320,39 @@ describe("EditMode drag swapping", () => {
 
     expect(hoverPreview).toHaveStyle({ display: "none" })
   })
+  
+  it("does not swap cues when mouse is released after starting a resize", async () => {
+    renderEditMode()
+
+    const gridContainer = screen.getByTestId("edit-mode-grid-container")
+    Object.defineProperty(gridContainer, "scrollLeft", {
+      configurable: true,
+      value: 0,
+    })
+    gridContainer.getBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
+      right: 480,
+      bottom: 440,
+      width: 480,
+      height: 440,
+    }))
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+    })
+
+    fireEvent.click(screen.getByTestId("trigger-resize-start"))
+
+    fireEvent.mouseUp(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(swapCues).not.toHaveBeenCalled()
+    })
+  })
+
 })

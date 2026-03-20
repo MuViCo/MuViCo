@@ -138,6 +138,7 @@ const GridLayoutComponent = ({
   layout,
   cues,
   cueByGridCell,
+  onCueResizeStateChange,
   setStatus,
   setCopiedCue,
   setIsCopied,
@@ -467,6 +468,10 @@ const GridLayoutComponent = ({
   }
 
   const handleResizeStop = async (newLayout, oldItem, newItem) => {
+    if (onCueResizeStateChange) {
+      onCueResizeStateChange(false)
+    }
+
     const cue = cueById.get(newItem.i)
     if (!cue) {
       return
@@ -533,6 +538,11 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handleCueDragStop}
+      onResizeStart={() => {
+        if (onCueResizeStateChange) {
+          onCueResizeStateChange(true)
+        }
+      }}
       onResizeStop={handleResizeStop}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
