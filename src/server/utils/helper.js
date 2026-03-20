@@ -2,6 +2,61 @@ const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
 
+const isBlankFileName = (fileName) => {
+  if (typeof fileName !== "string") {
+    return false
+  }
+
+  return fileName.includes("blank")
+}
+
+const getFirstFrameCue = (presentation) => {
+  const cues = Array.isArray(presentation?.cues) ? presentation.cues : []
+
+  return (
+    cues.find((cue) => Number(cue?.screen) === 1 && Number(cue?.index) === 0) ||
+    cues.find((cue) => Number(cue?.screen) === 1 && Number(cue?.index) === 1) ||
+    null
+  )
+}
+
+const resolvePresentationThumbnail = async (presentation, accessToken) => {
+  const firstFrameCue = getFirstFrameCue(presentation)
+  if (!firstFrameCue?.file) {
+    return ""
+  }
+
+  const fileName = firstFrameCue.file.name || ""
+  if (isBlankFileName(fileName)) {
+    return ""
+  }
+
+  const fileType = firstFrameCue.file.type || ""
+  if (typeof fileType === "string" && !fileType.startsWith("image/")) {
+    return ""
+  }
+
+  if (firstFrameCue.file.driveId && accessToken) {
+    const baseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://muvico.live"
+        : "http://localhost:3000"
+    return `${baseUrl}/api/media/${firstFrameCue.file.driveId}?access_token=${accessToken}`
+  }
+
+  if (firstFrameCue.file.id) {
+    const presentationId = presentation?.id || presentation?._id?.toString()
+    if (!presentationId) {
+      return ""
+    }
+
+    const key = `${presentationId}/${firstFrameCue.file.id.toString()}`
+    return getObjectSignedUrl(key)
+  }
+
+  return ""
+}
+
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (cue.file && cue.file.driveId) {
     try {
@@ -98,5 +153,6 @@ module.exports = {
   processDriveCueFiles,
   generateSignedUrlForS3,
   processS3Files,
+  resolvePresentationThumbnail,
   validatePassword
 }

@@ -30,6 +30,7 @@ import {
 import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
+import Thumbnail from "../utils/Thumbnail"
 
 const EditModal = ({ isOpen, onClose, presentation, handleEditPresentation }) => {
   const [editName, setEditName] = useState("")
@@ -186,14 +187,18 @@ const PresentationsGrid = ({
             cursor="pointer"
             justifyContent="center"
             textAlign="center"
-            bg={randomLinearGradient()}
+            position="relative"
+            overflow="hidden"
+            bg="gray.800"
           >
+            <Thumbnail presentation={presentation} borderRadius="md" />
+            <Box
+              position="absolute"
+              inset={0}
+              bg="linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 100%)"
+            />
             <CardHeader>
-              <Heading
-                size="md"
-                color={"white"}
-                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
-              >
+              <Heading size="md" color={"white"} style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}>
                 {presentation.name}
               </Heading>
               <Tooltip label={presentation.description || ""} placement="auto" openDelay={800} closeDelay={100}>
@@ -220,7 +225,7 @@ const PresentationsGrid = ({
               _hover={{ bg: "purple.300", color: "white" }}
               position="absolute"
               draggable={false}
-              zIndex="10"
+              zIndex="20"
               top="4px"
               right="50px"
               aria-label={"Edit presentation"}
@@ -234,7 +239,7 @@ const PresentationsGrid = ({
               _hover={{ bg: "red.500", color: "white" }}
               backgroundColor="red.300"
               draggable={false}
-              zIndex="10"
+              zIndex="20"
               top="4px"
               right="4px"
               aria-label={"Delete presentation"}

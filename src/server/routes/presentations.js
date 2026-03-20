@@ -1,6 +1,7 @@
 const express = require("express")
 const { userExtractor, requirePresentationAccess } = require("../utils/middleware")
 const Presentation = require("../models/presentation")
+const { resolvePresentationThumbnail } = require("../utils/helper")
 
 const router = express.Router()
 
@@ -21,8 +22,20 @@ router.get("/", userExtractor, async (req, res, next) => {
       user: user._id,
       storage: storageType
     }).sort({ lastUsed: -1 })
-    
-    return res.json(presentations.map((presentation) => presentation.toJSON()))
+
+    const presentationsWithThumbnails = await Promise.all(
+      presentations.map(async (presentation) => {
+        const presentationObject = presentation.toJSON()
+        presentationObject.thumbnail = await resolvePresentationThumbnail(
+          presentationObject,
+          user.driveToken
+        )
+
+        return presentationObject
+      })
+    )
+
+    return res.json(presentationsWithThumbnails)
   } catch (error) {
     next(error)
   }
