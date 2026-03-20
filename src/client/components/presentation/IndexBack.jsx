@@ -6,7 +6,7 @@ import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
 import ShowMode from "./ShowMode"
-import EditMode from "./EditMode"
+import EditMode from "./EditModeContainer"
 import PresentationTitle from "./PresentationTitle"
 import Dialog from "../utils/AlertDialog"
 import useDeletePresentation from "../utils/useDeletePresentation"
