@@ -269,7 +269,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           ) : (
             <Heading size="md">Add element</Heading>
           )}
-          {!isAudioMode && (
+          {/* {!isAudioMode && (
             <>
               <FormHelperText mb={2}>
                 {screenCount === 1
@@ -294,9 +294,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                 </NumberInputStepper>
               </NumberInput>
             </>
-          )}
+          )} */}
 
-          {isAudioMode && (
+          {/* {isAudioMode && (
             <FormHelperText mb={4} color="purple.600">
               Adding audio cue (screen not applicable)
             </FormHelperText>
@@ -327,7 +327,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             mb={2}
             onChange={(e) => setCueName(e.target.value)}
             required
-          />
+          /> */}
           <Divider orientation="horizontal" my={4} />
           <FormHelperText mb={2}>
             {isAudioMode ? "Upload audio file" : "Upload media"}
