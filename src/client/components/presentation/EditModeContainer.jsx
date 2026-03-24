@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useCallback, useEffect, forwardRef } from "react"
 import {
   Box,
   Text,
@@ -103,6 +103,51 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0 }) => {
 }
 
 
+    const VSCodeVerticalHandle = forwardRef((props, ref) => {
+      const { handleAxis, ...restProps } = props
+      
+      // Only render for the "South" (bottom) axis
+      if (handleAxis !== "s") return null
+      
+      return (
+        <div
+        ref={ref}
+        className="custom-bottom-handle"
+        style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: "0px", // Centers the hit area on the bottom edge
+            height: "16px",  // The "Hit Area"
+            cursor: "ns-resize", // North-South resize cursor
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            transition: "background 0.2s",
+          }}
+          {...restProps}
+          >
+          {/* The actual visible line */}
+          <div className="visible-line" style={{
+            width: "100%",
+            height: "2px",
+            backgroundColor: "transparent",
+            transition: "background-color 0.2s"
+          }} />
+          
+          <style>{`
+            .custom-bottom-handle:hover .visible-line {
+              background-color: #9244ff !important;
+              }
+              /* Keep the line blue while dragging */
+              .react-resizable-prop-dragging .visible-line {
+              background-color: #9244ff !important;
+              }
+          `}</style>
+        </div>
+      )
+    })
+
 
 // Layout for different components of the editor
 class MyFirstGrid extends React.Component {
@@ -137,41 +182,49 @@ class MyFirstGrid extends React.Component {
     const layouts = {
       lg: [
         { i: "a", x: 0, y: 0, w: 12, h: 5 },
-        { i: "b", x: 0, y: 5, w: 12, h: 3, isResizable: false},
+        { i: "b", x: 0, y: 5, w: 12, h: 3, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 7, w: 10, h: 10 },
-        { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false},
+        { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
       ],
       md: [
         { i: "a", x: 0, y: 0, w: 10, h: 5 },
-        { i: "b", x: 0, y: 2, w: 10, h: 3, isResizable: false},
+        { i: "b", x: 0, y: 2, w: 10, h: 3, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 10, h: 14 },
-        { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false},
+        { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
       ],
       sm: [
         { i: "a", x: 0, y: 0, w: 6, h: 5 },
-        { i: "b", x: 0, y: 2, w: 6, h: 3, isResizable: false},
+        { i: "b", x: 0, y: 2, w: 6, h: 3, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 6, h: 14},
-        { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false},
+        { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
       ],
       xs: [
         { i: "a", x: 0, y: 0, w: 4, h: 5 },
-        { i: "b", x: 0, y: 2, w: 4, h: 3, isResizable: false},
+        { i: "b", x: 0, y: 2, w: 4, h: 3, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 4, h: 14 },
-        { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false },
+        { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
         { i: "a", x: 0, y: 0, w: 2, h: 5 },
-        { i: "b", x: 0, y: 2, w: 2, h: 3 , isResizable: false},
+        { i: "b", x: 0, y: 2, w: 2, h: 3 , isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 2, h: 14 },
-        { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false},
+        { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
       ],
     }
+    
+
+    
     // Formatting the grid layout for the editor, using react-grid-layout. 
     // The layout is responsive and changes based on the screen size. 
     // Each grid item (a, b, c) represents a different component of the editor, 
     // such as the cue list, preview area, and toolbox.
     return (
       <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "" }}>
+        <style>{`
+          .no-resize-handle .react-resizable-handle {
+            display: none !important;
+          }
+        `}</style>
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
@@ -185,12 +238,15 @@ class MyFirstGrid extends React.Component {
           rowHeight={60}
           margin={[1, 1]}
           containerPadding={[80 , 8]}
+          resizeHandle={(axis, ref) => <VSCodeVerticalHandle handleAxis={axis} ref={ref} />}
+
           style={{ width: "100%" }}
         >
           <div style={{ backgroundColor: "" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
+            
           </div>
-          <div style={{ backgroundColor: "" }} key="b">
+          <div style={{ backgroundColor: "" }} className="no-resize-handle" key="b">
             <ShowModeButtons 
             screens={screens} 
             toggleScreenVisibility={toggleScreenVisibility} 
@@ -204,6 +260,7 @@ class MyFirstGrid extends React.Component {
             toggleAutoplay={toggleAutoplay}
             isAutoplaying={isAutoplaying}
             toggleAutoplayInterval={toggleAutoplayInterval}
+
             />
           </div>
 
@@ -221,7 +278,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: "" }} key="d">
+          <div style={{ backgroundColor: "" }} className="no-resize-handle" key="d">
             <CuesForm
               addCue={addCue}
               onClose={onClose} 
