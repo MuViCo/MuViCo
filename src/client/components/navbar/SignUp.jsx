@@ -221,10 +221,11 @@ const SignUp = ({ onSignup }) => {
   const onSubmit = async ({ username, password }) => {
     try {
       await authService.signup({ username, password })
+      
       const user = await authService.login({ username, password })
       const userJSON = JSON.stringify(user)
       window.localStorage.setItem("user", userJSON)
-      onSignup(userJSON)
+      onSignup(user)
     } catch (e) {
       setError(e.response.data.error)
     }
