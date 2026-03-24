@@ -48,6 +48,9 @@ import {
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
 import EditMode from "./EditMode"
+import CuesForm from "./CuesForm"
+import ShowModeButtons from "./ShowModeButtons"
+
 
 const theme = extendTheme({})
 
@@ -115,37 +118,52 @@ class MyFirstGrid extends React.Component {
       isAudioMuted,
       toggleAudioMute,
       indexCount,
+      addCue = () => {},
+      onClose = () => {},
+      position,
+      cueData,
+      updateCue = () => {},
+      isAudioMode = false,
+      screens = {},
+      toggleScreenVisibility = () => {},
+      toggleScreenMirroring = () => {},
+      toggleAllScreens = () => {},
+      mirroring = {},
+      autoplayInterval = 1,
+      toggleAutoplay = () => {},
+      isAutoplaying = false,
+      toggleAutoplayInterval = () => {},
     } = this.props
     const layouts = {
       lg: [
-        { i: "a", x: 0, y: 0, w: 10, h: 5 },
-        { i: "b", x: 0, y: 2, w: 10, h: 2, isResizable: false },
-        { i: "c", x: 0, y: 2, w: 10, h: 10 },
-        { i: "d", x: 10, y: 0, w: 2, h: 15 },
+        { i: "a", x: 0, y: 0, w: 12, h: 5 },
+        { i: "b", x: 0, y: 5, w: 12, h: 3, isResizable: false},
+        { i: "c", x: 0, y: 7, w: 10, h: 10 },
+        { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false},
       ],
       md: [
-        { i: "a", x: 0, y: 0, w: 8, h: 5 },
-        { i: "b", x: 0, y: 2, w: 8, h: 2 , isResizable: false},
-        { i: "c", x: 0, y: 2, w: 8, h: 10 },
-        { i: "c", x: 8, y: 0, w: 2, h: 15 },
+        { i: "a", x: 0, y: 0, w: 10, h: 5 },
+        { i: "b", x: 0, y: 2, w: 10, h: 3, isResizable: false},
+        { i: "c", x: 0, y: 2, w: 10, h: 14 },
+        { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false},
       ],
       sm: [
-        { i: "a", x: 0, y: 0, w: 7, h: 3 },
-        { i: "b", x: 0, y: 2, w: 7, h: 2 ,  isResizable: false},
-        { i: "c", x: 0, y: 2, w: 7, h: 7 },
-        { i: "d", x: 6, y: 6, w: 7, h: 7 },
+        { i: "a", x: 0, y: 0, w: 6, h: 5 },
+        { i: "b", x: 0, y: 2, w: 6, h: 3, isResizable: false},
+        { i: "c", x: 0, y: 2, w: 6, h: 14},
+        { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false},
       ],
       xs: [
-        { i: "a", x: 0, y: 0, w: 4, h: 3 },
-        { i: "b", x: 0, y: 2, w: 4, h: 2 ,  isResizable: false},
-        { i: "c", x: 0, y: 2, w: 4, h: 7 },
-        { i: "d", x: 2, y: 6, w: 4, h: 7 },
+        { i: "a", x: 0, y: 0, w: 4, h: 5 },
+        { i: "b", x: 0, y: 2, w: 4, h: 3, isResizable: false},
+        { i: "c", x: 0, y: 2, w: 4, h: 14 },
+        { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false },
       ],
       xxs: [
-        { i: "a", x: 0, y: 0, w: 2, h: 3 },
-        { i: "b", x: 0, y: 2, w: 2, h: 2 ,  isResizable: false},
-        { i: "c", x: 0, y: 2, w: 2, h: 2 },
-        { i: "d", x: 0, y: 6, w: 2, h: 7 },
+        { i: "a", x: 0, y: 0, w: 2, h: 5 },
+        { i: "b", x: 0, y: 2, w: 2, h: 3 , isResizable: false},
+        { i: "c", x: 0, y: 2, w: 2, h: 14 },
+        { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false},
       ],
     }
     // Formatting the grid layout for the editor, using react-grid-layout. 
@@ -153,28 +171,43 @@ class MyFirstGrid extends React.Component {
     // Each grid item (a, b, c) represents a different component of the editor, 
     // such as the cue list, preview area, and toolbox.
     return (
-      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "lightgray" }}>
+      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "" }}>
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
           cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rows={{ lg: 20, md: 14, sm: 10, xs: 10, xxs: 10 }}
           isDraggable={false}
           isResizable={true}
           resizeHandles={["s"]}
           autoSize={true}
           rowHeight={60}
-          margin={[8, 8]}
-          containerPadding={[8, 8]}
+          margin={[1, 1]}
+          containerPadding={[80 , 8]}
           style={{ width: "100%" }}
         >
-          {/* todo fix shit */}
           <div style={{ backgroundColor: "" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
           </div>
-          <div style={{ backgroundColor: "gray" }} key="b">b</div>
+          <div style={{ backgroundColor: "" }} key="b">
+            <ShowModeButtons 
+            screens={screens} 
+            toggleScreenVisibility={toggleScreenVisibility} 
+            toggleScreenMirroring={toggleScreenMirroring}
+            toggleAllScreens={toggleAllScreens}
+            mirroring={mirroring}
+            cueIndex={cueIndex}
+            updateCue={updateCue}
+            indexCount={indexCount}
+            autoplayInterval={autoplayInterval}
+            toggleAutoplay={toggleAutoplay}
+            isAutoplaying={isAutoplaying}
+            toggleAutoplayInterval={toggleAutoplayInterval}
+            />
+          </div>
 
-          <div style={{ backgroundColor: ""}} key="c">
+          <div style={{ backgroundColor: "" }} key="c">
             <EditMode
               id={id}
               cues={cues}
@@ -188,7 +221,18 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: "black" }} key="d">d</div>
+          <div style={{ backgroundColor: "" }} key="d">
+            <CuesForm
+              addCue={addCue}
+              onClose={onClose} 
+              position={position} 
+              cues={cues} 
+              cueData={cueData} 
+              updateCue={updateCue}
+              screenCount={screenCount} 
+              isAudioMode={isAudioMode}
+              indexCount={indexCount}/> 
+          </div>
         </ResponsiveGridLayout>
       </div>
     )
@@ -207,6 +251,12 @@ const EditModeContainer = ({
   isAudioMuted,
   toggleAudioMute,
   indexCount,
+  addCue,
+  onClose,
+  position,
+  cueData,
+  updateCue,
+  isAudioMode,
 }) => {
 
   const dispatch = useDispatch()
@@ -233,6 +283,12 @@ const EditModeContainer = ({
       isAudioMuted={isAudioMuted}
       toggleAudioMute={toggleAudioMute}
       indexCount={indexCount}
+      addCue={addCue}
+      onClose={onClose}
+      position={position}
+      cueData={cueData}
+      updateCue={updateCue}
+      isAudioMode={isAudioMode}
     />
   </>
 
