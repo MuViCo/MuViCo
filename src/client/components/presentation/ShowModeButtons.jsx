@@ -253,7 +253,7 @@ const ShowModeButtons = ({
   toggleAutoplayInterval
 }) => (
 
-  <Box display="flex" flexDirection="row" alignItems="center" gap={4} mt={4}>
+  <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
     <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
     {cueIndex > 0 && <Heading size="md">{`Frame ${cueIndex}`}</Heading>}
 

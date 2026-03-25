@@ -237,17 +237,17 @@ class MyFirstGrid extends React.Component {
           resizeHandles={["s"]}
           autoSize={true}
           rowHeight={60}
-          margin={[1, 1]}
+          margin={[15, 15]}
           containerPadding={[80 , 8]}
           resizeHandle={(axis, ref) => <VSCodeVerticalHandle handleAxis={axis} ref={ref} />}
 
           style={{ width: "100%" }}
         >
-          <div style={{ backgroundColor: "" }} key="a">
+          <div style={{ backgroundColor: "#B494C3", borderRadius: "8px" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
             
           </div>
-          <div style= {{ backgroundColor: "" }} className="no-resize-handle" key="b">
+          <div style= {{ backgroundColor: "", borderRadius: "8px" }} className="no-resize-handle" key="b">
             <ShowModeButtons 
             screens={screens} 
             toggleScreenVisibility={toggleScreenVisibility} 
@@ -265,7 +265,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div style={{ backgroundColor: "" }} key="c">
+          <div style={{ backgroundColor: "#B494C3", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", borderRadius: "8px" }} key="c">
             <EditMode
               id={id}
               cues={cues}
@@ -279,7 +279,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: "" }} className="no-resize-handle" key="d">
+          <div style={{ backgroundColor: "#B494C3", paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
             <CuesForm
               addCue={addCue}
               onClose={onClose} 
