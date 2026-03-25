@@ -1044,7 +1044,7 @@ const EditMode = ({
         <Box
           display="flex"
           width="100%"
-          marginTop={`${gap * 2}px`}
+          marginTop="0px"
           overflow="auto"
         >
           <Box
