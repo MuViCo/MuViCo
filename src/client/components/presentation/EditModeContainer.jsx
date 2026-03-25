@@ -12,7 +12,8 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Portal
+  Portal,
+  Center
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -182,31 +183,31 @@ class MyFirstGrid extends React.Component {
     const layouts = {
       lg: [
         { i: "a", x: 0, y: 0, w: 12, h: 5 },
-        { i: "b", x: 0, y: 5, w: 12, h: 3, isResizable: false, resizeHandles: [] },
+        { i: "b", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 7, w: 10, h: 10 },
         { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
       ],
       md: [
         { i: "a", x: 0, y: 0, w: 10, h: 5 },
-        { i: "b", x: 0, y: 2, w: 10, h: 3, isResizable: false, resizeHandles: [] },
+        { i: "b", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 10, h: 14 },
         { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
       ],
       sm: [
         { i: "a", x: 0, y: 0, w: 6, h: 5 },
-        { i: "b", x: 0, y: 2, w: 6, h: 3, isResizable: false, resizeHandles: [] },
+        { i: "b", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 6, h: 14},
         { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
       ],
       xs: [
         { i: "a", x: 0, y: 0, w: 4, h: 5 },
-        { i: "b", x: 0, y: 2, w: 4, h: 3, isResizable: false, resizeHandles: [] },
+        { i: "b", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 4, h: 14 },
         { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
         { i: "a", x: 0, y: 0, w: 2, h: 5 },
-        { i: "b", x: 0, y: 2, w: 2, h: 3 , isResizable: false, resizeHandles: [] },
+        { i: "b", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 2, h: 14 },
         { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
       ],
@@ -246,7 +247,7 @@ class MyFirstGrid extends React.Component {
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
             
           </div>
-          <div style={{ backgroundColor: "" }} className="no-resize-handle" key="b">
+          <div style= {{ backgroundColor: "" }} className="no-resize-handle" key="b">
             <ShowModeButtons 
             screens={screens} 
             toggleScreenVisibility={toggleScreenVisibility} 
@@ -260,7 +261,7 @@ class MyFirstGrid extends React.Component {
             toggleAutoplay={toggleAutoplay}
             isAutoplaying={isAutoplaying}
             toggleAutoplayInterval={toggleAutoplayInterval}
-
+            
             />
           </div>
 
