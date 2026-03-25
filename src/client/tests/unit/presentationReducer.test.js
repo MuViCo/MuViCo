@@ -593,6 +593,31 @@ describe("presentationReducer asynchronous actions", () => {
     })
   })
 
+  it("should include duration in update presentation payload", async () => {
+    const store = makeStore()
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, duration: 1 },
+      ],
+      name: "My Presentation"
+    }
+
+    store.dispatch(setPresentationInfo(initialState))
+
+    const updatedCueData = { cueName: "Updated Cue", index: 1, screen: 1, duration: 2 }
+
+    presentationService.updateCue.mockResolvedValue({
+      ...initialState.cues[0],
+      ...updatedCueData,
+    })
+
+    await store.dispatch(updatePresentation("123", updatedCueData, 1))
+
+    const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
+    expect(sentFormData.get("duration")).toBe("2")
+  })
+
   it("should copy cue with file over cue without file", async () => {
     const store = makeStore()
     const sourceFile = new File(["image-binary"], "source.png", { type: "image/png" })
@@ -882,6 +907,49 @@ describe("presentationReducer asynchronous actions", () => {
 
     expect(store.getState().presentation.cues).toContainEqual(firstUpdatedCue)
     expect(store.getState().presentation.cues).toContainEqual(secondUpdatedCue)
+  })
+
+  it("should include duration in swapped cue payloads", async () => {
+    const store = makeStore()
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 1, screen: 1, duration: 2 },
+        { _id: 2, name: "Cue 2", index: 3, screen: 1, duration: 1 },
+      ],
+      name: "My Presentation"
+    }
+
+    store.dispatch(setPresentationInfo(initialState))
+
+    const firstUpdatedCue = {
+      _id: 1,
+      name: "Cue 1",
+      index: 3,
+      screen: 1,
+      duration: 2,
+    }
+    const secondUpdatedCue = {
+      _id: 2,
+      name: "Cue 2",
+      index: 1,
+      screen: 1,
+      duration: 1,
+    }
+
+    presentationService.updateCue
+      .mockResolvedValueOnce(firstUpdatedCue)
+      .mockResolvedValueOnce(secondUpdatedCue)
+
+    await store.dispatch(
+      updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
+    )
+
+    const firstCallFormData = presentationService.updateCue.mock.calls.at(-2)[2]
+    const secondCallFormData = presentationService.updateCue.mock.calls.at(-1)[2]
+
+    expect(firstCallFormData.get("duration")).toBe("2")
+    expect(secondCallFormData.get("duration")).toBe("1")
   })
 
   it("should shift presentation indices right", async () => {

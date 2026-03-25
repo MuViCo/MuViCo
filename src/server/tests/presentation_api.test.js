@@ -49,14 +49,14 @@ describe("test presentation", () => {
     testPresentationId = presentation._id
   })
 
-  const createCue = async (index, cueName, screen) => {
+  const createCue = async (index, cueName, screen, duration) => {
     if (!testPresentationId) {
       throw new Error("Error in createCue: testPresentationId is undefined")
     }
 
     const url = `/api/presentation/${testPresentationId}`
 
-    const response = await api
+    const request = api
       .put(url)
       .set("Authorization", authHeader)
       .attach("image", mockImageBuffer, "mock_image.png")
@@ -64,6 +64,12 @@ describe("test presentation", () => {
       .field("cueName", cueName)
       .field("screen", screen)
       .field("fileName", "")
+
+    if (duration !== undefined) {
+      request.field("duration", duration)
+    }
+
+    const response = await request
 
     return response
   }
@@ -183,8 +189,8 @@ describe("test presentation", () => {
   describe("PUT /api/presentation/:id", () => {
     const validCases = [
       [0, 1],
-      [50, 2],
-      [100, 4],
+      [2, 2],
+      [4, 4],
     ]
 
     test.each(validCases)(
@@ -226,6 +232,21 @@ describe("test presentation", () => {
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.color).toBe("#000000")
+    })
+
+    test("creates cue with explicit duration", async () => {
+      const response = await createCue(1, "Duration Cue", 2, 2)
+      expect(response.status).toBe(200)
+
+      const createdCue = response.body.cues.find((cue) => cue.name === "Duration Cue")
+      expect(createdCue).toBeDefined()
+      expect(createdCue.duration).toBe(2)
+    })
+
+    test("rejects cue creation when duration span exceeds indexCount", async () => {
+      const response = await createCue(4, "Too Wide Cue", 2, 2)
+      expect(response.status).toBe(400)
+      expect(response.body.error).toContain("Invalid cue duration")
     })
 
     const invalidCases = [
@@ -307,6 +328,32 @@ describe("test presentation", () => {
         .expect(200)
 
       expect(response.body.color).toBe("#fded11")
+    })
+
+    test("updates cue with explicit duration", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("duration", 2)
+        .expect(200)
+
+      expect(response.body.duration).toBe(2)
+    })
+
+    test("rejects cue update when duration span exceeds indexCount", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 4)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("duration", 2)
+        .expect(400)
+
+      expect(response.body.error).toContain("Invalid cue duration")
     })
 
     const invalidCases = [
