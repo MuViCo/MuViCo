@@ -77,20 +77,21 @@ const AutoplayControls = ({
 
   return (
     <Box display="flex" alignItems="center">
-      <Button
+      <IconButton
         colorScheme={isAutoplaying ? "red" : "blue"}
         onClick={toggleAutoplay}
-        leftIcon={
+        p={0}
+        icon={
           <img
             src={isAutoplaying ? pausebutton : playbutton}
             alt=""
-            width="40"
-            height="40"
+            width="35"
+            height="35"
             aria-hidden="true"
           />
         }
       >
-      </Button>
+      </IconButton>
       {/* <NumberInput
        id="autoplaytime"
        value={autoplayInterval}
@@ -106,35 +107,6 @@ const AutoplayControls = ({
         </NumberInputStepper>
       </NumberInput> */}
       {/* <Text fontSize="sm" fontWeight="bold">sec / frame</Text> */}
-      <ClickablePopover
-        label={
-          <>
-            <b>Autoplay</b>
-            <br /><br />
-            Each frame is displayed for the number of seconds you enter in the box.
-            <br /><br />
-            Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically.
-            Autoplay always starts from the Starting Frame.
-            <br /><br />
-            You can also switch the frames manually and change the sec/frame during the Autoplay.
-            <br /><br />
-            Autoplay stops automatically after the last frame.
-            You can stop it manually at anytime by clicking “Stop Autoplay.”
-          </>
-        }
-        placement="top"
-        fontSize="sm"
-      >
-        <IconButton
-          aria-label="Keyboard Shortcuts"
-          icon={<QuestionIcon />}
-          size="lg"
-          variant="ghost"
-          colorScheme="purple"
-        />
-      </ClickablePopover>
-
-
     </Box>
   )
 }
@@ -173,7 +145,7 @@ const ScreenToggleButtons = ({
     .some((screenNumber) => screens[screenNumber])
 
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
+    <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
       <Button
         colorScheme={hasOpenScreen ? "red" : "blue"}
         onClick={toggleAllScreens}
@@ -181,7 +153,7 @@ const ScreenToggleButtons = ({
       >
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
-      <Box display="flex" flexWrap="wrap" gap={2}>
+      <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
         {allScreenNumbers
           .map((screenNumber) => (
             <Box key={screenNumber}>
@@ -245,7 +217,7 @@ const ScreenToggleButtons = ({
 const CueNavigationPrevious = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Previous Cue"
-    icon={<img src={previousbutton} alt="" width="40" height="40" aria-hidden="true" />}
+    icon={<img src={previousbutton} alt="" width="35" height="35" aria-hidden="true" />}
     onClick={() => updateCue("Previous")}
     colorScheme="purple"
     isDisabled={cueIndex === 0}
@@ -255,7 +227,7 @@ const CueNavigationPrevious = ({ cueIndex, updateCue, indexCount }) => (
 const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Next Cue"
-    icon={<img src={nextbutton} alt="" width="40" height="40" aria-hidden="true" />}
+    icon={<img src={nextbutton} alt="" width="35" height="35" aria-hidden="true" />}
     onClick={() => updateCue("Next")}
     colorScheme="purple"
     isDisabled={cueIndex === indexCount - 1}
@@ -281,7 +253,52 @@ const ShowModeButtons = ({
   toggleAutoplayInterval
 }) => (
 
-  <Box display="flex" flexDirection="row" alignItems="left" gap={4} mt={4}>
+  <Box display="flex" flexDirection="row" alignItems="center" gap={4} mt={4}>
+    <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
+    {cueIndex > 0 && <Heading size="md">{`Frame ${cueIndex}`}</Heading>}
+
+    <AutoplayControls
+      autoplayInterval={autoplayInterval}
+      toggleAutoplay={toggleAutoplay}
+      isAutoplaying={isAutoplaying}
+      toggleAutoplayInterval={toggleAutoplayInterval}
+    />
+    <CueNavigationNext cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
+    <ScreenToggleButtons
+      screens={screens}
+      toggleScreenVisibility={toggleScreenVisibility}
+      toggleScreenMirroring={toggleScreenMirroring}
+      toggleAllScreens={toggleAllScreens}
+      mirroring={mirroring}
+    />
+    <AutoplayInterval autoplayInterval={autoplayInterval} />
+    <ClickablePopover
+      label={
+        <>
+          <b>Autoplay</b>
+          <br /><br />
+          Each frame is displayed for the number of seconds you enter in the box.
+          <br /><br />
+          Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically.
+          Autoplay always starts from the Starting Frame.
+          <br /><br />
+          You can also switch the frames manually and change the sec/frame during the Autoplay.
+          <br /><br />
+          Autoplay stops automatically after the last frame.
+          You can stop it manually at anytime by clicking “Stop Autoplay.”
+        </>
+      }
+      placement="top"
+      fontSize="sm"
+    >
+      <IconButton
+        aria-label="Autoplay Help"
+        icon={<QuestionIcon />}
+        size="lg"
+        variant="ghost"
+        colorScheme="purple"
+      />
+    </ClickablePopover>
     <ClickablePopover
       label={
         <>
@@ -308,24 +325,6 @@ const ShowModeButtons = ({
         colorScheme="purple"
       />
     </ClickablePopover>
-    <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
-    <Heading size="md">{cueIndex === 0 ? "" : `Frame ${cueIndex}`}</Heading>
-
-    <AutoplayControls
-      autoplayInterval={autoplayInterval}
-      toggleAutoplay={toggleAutoplay}
-      isAutoplaying={isAutoplaying}
-      toggleAutoplayInterval={toggleAutoplayInterval}
-    />
-    <CueNavigationNext cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
-    <ScreenToggleButtons
-      screens={screens}
-      toggleScreenVisibility={toggleScreenVisibility}
-      toggleScreenMirroring={toggleScreenMirroring}
-      toggleAllScreens={toggleAllScreens}
-      mirroring={mirroring}
-    />
-    <AutoplayInterval autoplayInterval={autoplayInterval} />
   </Box>
 )
 
