@@ -13,10 +13,20 @@ const get = async (id) => {
   return response.data
 }
 
+const create = async (presentationData) => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.post(baseUrl, presentationData, config)
+  return response.data
+}
+
 const remove = async (id) => {
   const config = {
     headers: {
-      "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
@@ -41,7 +51,7 @@ const addCue = async (id, formData) => {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}${id}`, formData, config)
+  const response = await axios.post(`${baseUrl}${id}`, formData, config)
   return response.data
 }
 
@@ -128,6 +138,7 @@ const swapCues = async (id, payload) => {
 
 export default {
   get,
+  create,
   remove,
   addCue,
   removeCue,

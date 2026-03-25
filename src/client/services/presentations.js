@@ -18,16 +18,7 @@ const getById = async (id) => {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.get(baseUrl + id, config)
-  return response.data
-}
-
-const create = async (newObject) => {
-  const config = {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  }
-
-  const response = await axios.post(baseUrl, newObject, config)
+  const response = await axios.get(`${baseUrl}${id}`, config)
   return response.data
 }
 
@@ -36,8 +27,8 @@ const update = async (id, updatedObject) => {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.put(baseUrl + id, updatedObject, config)
+  const response = await axios.put(`${baseUrl}${id}`, updatedObject, config)
   return response.data
 }
 
-export default { getAll, getById, create, update }
+export default { getAll, getById, update }

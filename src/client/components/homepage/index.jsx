@@ -8,6 +8,7 @@ import {
 import { QuestionIcon } from "@chakra-ui/icons"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect, useRef } from "react"
+import { useDispatch } from "react-redux"
 import StorageInfoModal from "./StorageInfoModal"
 import presentationService from "../../services/presentations"
 import userService from "../../services/users"
@@ -21,10 +22,12 @@ import useDeletePresentation from "../utils/useDeletePresentation"
 import Dialog from "../utils/AlertDialog"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { homePageTutorialSteps } from "../data/tutorialSteps"
+import { createPresentation } from "../../redux/presentationReducer"
 
 const HomePage = ({ user, setUser }) => {
   const [presentations, setPresentations] = useState([])
   const [showHint, setShowHint] = useState(false)
+  const dispatch = useDispatch()
   const navigate = useNavigate()
   const togglableRef = useRef(null)
   const showToast = useCustomToast()
@@ -59,25 +62,39 @@ const HomePage = ({ user, setUser }) => {
     }
   }, [])
 
-  const createPresentation = async (presentationObject) => {
+  const handleCreatePresentation = async (presentationObject) => {
+    let newPresentation
     try {
-      const createdPresentation = await presentationService.create(presentationObject)
-      const updatedPresentations = await presentationService.getAll()
-      setPresentations(updatedPresentations)
-      localStorage.setItem(`presentation-${createdPresentation.id}-startingColor`, presentationObject.startingFrameColor)
-      
-      await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast, presentationObject.startingFrameColor)
-      navigate(`/presentation/${createdPresentation.id}`)
+      newPresentation = await dispatch(createPresentation(presentationObject))
     } catch (error) {
       console.error("Error creating presentation: ", error)
+      navigate("/")
     }
+    const createdId = newPresentation.id
+    navigate(`/presentation/${createdId}`)
   }
+
+  // const createPresentation = async (presentationObject) => {
+  //   try {
+  //     const createdPresentation = await presentationService.create(presentationObject)
+  //     const updatedPresentations = await presentationService.getAll()
+  //     setPresentations(updatedPresentations)
+
+  //     await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast, presentationObject.startingFrameColor)
+  //     navigate(`/presentation/${createdPresentation.id}`)
+  //   } catch (error) {
+  //     console.error("Error creating presentation: ", error)
+  //   }
+  // }
 
   const handlePresentationClick = (presentationId) => {
     navigate(`/presentation/${presentationId}`)
   }
 
-  const handleEditPresentation = async (presentationId, updatedPresentation) => {
+  const handleEditPresentation = async (
+    presentationId,
+    updatedPresentation
+  ) => {
     try {
       await presentationService.update(presentationId, updatedPresentation)
       const updatedPresentations = await presentationService.getAll()
@@ -150,7 +167,7 @@ const HomePage = ({ user, setUser }) => {
         gap={4}
       >
         <PresentationFormWrapper
-          createPresentation={createPresentation}
+          createPresentation={handleCreatePresentation}
           togglableRef={togglableRef}
           handleCancel={handleCancel}
         />

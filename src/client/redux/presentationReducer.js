@@ -4,6 +4,7 @@ import { createFormData } from "../components/utils/formDataUtils"
 import { saveIndexCount, saveScreenCount } from "./presentationThunks"
 
 const initialState = {
+  id: null,
   cues: [],
   name: "",
   screenCount: null,
@@ -16,6 +17,7 @@ const presentationSlice = createSlice({
   initialState,
   reducers: {
     setPresentationInfo(state, action) {
+      state.id = action.payload.id
       state.cues = action.payload.cues
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
@@ -35,6 +37,7 @@ const presentationSlice = createSlice({
       state.cues = updatedCues
     },
     removePresentation(state) {
+      state.id = null
       state.cues = null
       state.name = ""
       state.screenCount = null
@@ -52,46 +55,48 @@ const presentationSlice = createSlice({
       state.screenCount += 1
     },
     decrementScreenCount(state) {
-       if (state.screenCount > 1) {
-         state.screenCount -= 1
-       }
+      if (state.screenCount > 1) {
+        state.screenCount -= 1
+      }
     },
     updateNameOnly(state, action) {
       state.name = action.payload
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
-      .addCase(saveIndexCount.pending, state => {
+      .addCase(saveIndexCount.pending, (state) => {
         state.saving = true
       })
       .addCase(saveIndexCount.fulfilled, (state, action) => {
         state.saving = false
         const newIndexCount = action.payload.indexCount
         state.indexCount = newIndexCount
-        state.cues = state.cues.filter(cue => cue.index < newIndexCount)
+        state.cues = state.cues.filter((cue) => cue.index < newIndexCount)
       })
-      .addCase(saveIndexCount.rejected, state => {
+      .addCase(saveIndexCount.rejected, (state) => {
         state.saving = false
       })
-      .addCase(saveScreenCount.pending, state => {
+      .addCase(saveScreenCount.pending, (state) => {
         state.saving = true
       })
       .addCase(saveScreenCount.fulfilled, (state, action) => {
         state.saving = false
-        
+
         if (action.payload.screenCount !== undefined) {
           const newScreenCount = action.payload.screenCount
           const removedCuesCount = action.payload.removedCuesCount
-          
+
           state.screenCount = newScreenCount
-          
+
           if (removedCuesCount > 0) {
-            state.cues = state.cues.filter(cue => cue.screen <= newScreenCount)
+            state.cues = state.cues.filter(
+              (cue) => cue.screen <= newScreenCount
+            )
           }
         }
       })
-      .addCase(saveScreenCount.rejected, state => {
+      .addCase(saveScreenCount.rejected, (state) => {
         state.saving = false
       })
   },
@@ -111,6 +116,18 @@ export const {
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
+
+export const createPresentation = (presentationData) => async (dispatch) => {
+  try {
+    const presentation = await presentationService.create(presentationData)
+    dispatch(setPresentationInfo(presentation))
+    return presentation
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || "An error occurred"
+    console.error(errorMessage)
+    throw new Error(errorMessage)
+  }
+}
 
 export const fetchPresentationInfo = (id) => async (dispatch) => {
   try {
@@ -210,25 +227,34 @@ export const swapCues =
     }
   }
 
-export const shiftPresentationIndexes = (presentationId, startIndex, direction) => async (dispatch) => {
-  try {
-    const result = await presentationService.shiftIndexes(presentationId, startIndex, direction)
-    await dispatch(fetchPresentationInfo(presentationId))
-    return result
-  } catch (error) {
-    const errorMessage = error.response?.data?.error || "An error occurred"
-    console.error(errorMessage)
-    throw new Error(errorMessage)
+export const shiftPresentationIndexes =
+  (presentationId, startIndex, direction) => async (dispatch) => {
+    try {
+      const result = await presentationService.shiftIndexes(
+        presentationId,
+        startIndex,
+        direction
+      )
+      await dispatch(fetchPresentationInfo(presentationId))
+      return result
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
-}
 
-export const updatePresentationName = (presentationId, newName) => async (dispatch, getState) => {
-  try {
-    const updated = await presentationService.updatePresentationName(presentationId, newName)
-    dispatch(updateNameOnly(updated.name))
-  } catch (error) {
-    const errorMessage = error.response?.data?.error || "An error occurred"
-    console.error(errorMessage)
-    throw new Error(errorMessage)
+export const updatePresentationName =
+  (presentationId, newName) => async (dispatch, getState) => {
+    try {
+      const updated = await presentationService.updatePresentationName(
+        presentationId,
+        newName
+      )
+      dispatch(updateNameOnly(updated.name))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
-}
