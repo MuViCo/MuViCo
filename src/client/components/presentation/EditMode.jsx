@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import {
   Box,
   Text,
@@ -124,6 +124,46 @@ const EditMode = ({
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
+
+  const getCueDuration = (cue) => {
+    const parsedDuration = Number(cue?.duration)
+    return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
+  }
+
+  const getCueEndIndex = (cue) => Number(cue.index) + getCueDuration(cue) - 1
+
+  const cueOccupiesSlot = (cue, xIndex, yIndex) => (
+    Number(cue.screen) === Number(yIndex) &&
+    Number(xIndex) >= Number(cue.index) &&
+    Number(xIndex) <= getCueEndIndex(cue)
+  )
+
+  const getCueAtPosition = (xIndex, yIndex) => (
+    cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
+  )
+
+  const canPlaceCueAt = (cue, proposedIndex, proposedScreen, excludedCueIds = []) => {
+    const cueDuration = getCueDuration(cue)
+    const startIndex = Number(proposedIndex)
+    const endIndex = startIndex + cueDuration - 1
+
+    if (startIndex < 0 || endIndex >= indexCount) {
+      return false
+    }
+
+    return !cues.some((otherCue) => {
+      if (excludedCueIds.includes(otherCue._id)) {
+        return false
+      }
+      if (Number(otherCue.screen) !== Number(proposedScreen)) {
+        return false
+      }
+
+      const otherStart = Number(otherCue.index)
+      const otherEnd = getCueEndIndex(otherCue)
+      return !(endIndex < otherStart || startIndex > otherEnd)
+    })
+  }
 
   useEffect(() => {
     if (!isToolboxOpen) {
@@ -487,9 +527,7 @@ const EditMode = ({
     )
 
     if (cueExists(xIndex, yIndex)) {
-      const movingCue = cues.find(
-        (cue) => cue.index === xIndex && cue.screen === yIndex
-      )
+      const movingCue = getCueAtPosition(xIndex, yIndex)
       setSelectedCue(movingCue)
 
       if (event.target.closest(".react-grid-item")) {
@@ -588,6 +626,7 @@ const EditMode = ({
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
       file: fileObj,
+      duration: getCueDuration(copiedCue),
 
       fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
       color: copiedCue.color,
@@ -666,7 +705,7 @@ const EditMode = ({
       i: cue._id.toString(),
       x: cue.index,
       y: cue.screen,
-      w: 1,
+      w: getCueDuration(cue),
       h: 1,
       static: false,
     }
@@ -675,7 +714,7 @@ const EditMode = ({
 
   const addCue = async (cueData) => {
     setStatus("loading")
-    const { index, cueName, screen, file, loop, color } = cueData
+    const { index, cueName, screen, file, loop, color, duration } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -692,8 +731,10 @@ const EditMode = ({
       cueName,
       screen,
       file || "",
+      undefined,
+      color,
       loop || false,
-      color
+      duration
     )
 
     try {
@@ -796,15 +837,12 @@ const EditMode = ({
       screen: updatedCue.screen,
       file: fileObj,
       fileName: updatedCue.fileName,
+      duration: updatedCue.duration ?? getCueDuration(existingCue),
     }
   }
 
   const cueExists = (xIndex, yIndex) => {
-    return cues.some(
-      (cue) =>
-        Number(cue.index) === Number(xIndex) &&
-        Number(cue.screen) === Number(yIndex)
-    )
+    return Boolean(getCueAtPosition(xIndex, yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -828,9 +866,7 @@ const EditMode = ({
       return
     }
 
-    const cue = cues.find(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const cue = getCueAtPosition(xIndex, yIndex)
 
     if (cue) {
       setSelectedCue(cue)
@@ -901,16 +937,59 @@ const EditMode = ({
   }
 
   const handleElementPositionChange = async (selectedCue, targetCue) => {
+    const selectedDuration = getCueDuration(selectedCue)
+    const targetDuration = getCueDuration(targetCue)
+
     const newTargetCue = {
       ...targetCue,
       index: selectedCue.index,
       screen: selectedCue.screen,
+      duration: targetDuration,
     }
 
     const newSelectedCue = {
       ...selectedCue,
       index: targetCue.index,
       screen: targetCue.screen,
+      duration: selectedDuration,
+    }
+
+    const sameScreenSwap = Number(selectedCue.screen) === Number(targetCue.screen)
+    if (sameScreenSwap && selectedDuration !== targetDuration) {
+      const excludedCueIds = [selectedCue._id, targetCue._id]
+      const leftMostIndex = Math.min(Number(selectedCue.index), Number(targetCue.index))
+
+      let firstCue = newTargetCue
+      let secondCue = newSelectedCue
+
+      if (Number(newSelectedCue.index) < Number(newTargetCue.index)) {
+        firstCue = newSelectedCue
+        secondCue = newTargetCue
+      }
+
+      firstCue.index = leftMostIndex
+
+      if (!canPlaceCueAt(firstCue, firstCue.index, firstCue.screen, excludedCueIds)) {
+        showToast({
+          title: "Error",
+          description: "Unable to swap these elements in available slots.",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      }
+
+      const secondCueStart = Number(firstCue.index) + getCueDuration(firstCue)
+      if (!canPlaceCueAt(secondCue, secondCueStart, secondCue.screen, excludedCueIds)) {
+        showToast({
+          title: "Error",
+          description: "Unable to swap these elements in available slots.",
+          status: "error",
+        })
+        setSelectedCue(null)
+        return
+      }
+      secondCue.index = secondCueStart
     }
 
     const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
@@ -938,9 +1017,7 @@ const EditMode = ({
   const isAudio = (file) => isAudioMimeType(file?.type)
 
   const handleCueReplace = async (xIndex, yIndex, file) => {
-    const existingCue = cues.find(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
 
     const updatedCue = {
@@ -955,80 +1032,77 @@ const EditMode = ({
     setIsConfirmOpen(false)
   }
 
-  const handleDrop = useCallback(
-    async (event) => {
-      event.preventDefault()
+  const handleDrop = async (event) => {
+    event.preventDefault()
 
-      if (isShowMode) {
-        return
-      }
-      const files = Array.from(event.dataTransfer.files)
-      const mediaFiles = files.filter(
-        (file) => isImageOrVideo(file) || isAudio(file)
+    if (isShowMode) {
+      return
+    }
+    const files = Array.from(event.dataTransfer.files)
+    const mediaFiles = files.filter(
+      (file) => isImageOrVideo(file) || isAudio(file)
+    )
+
+    if (mediaFiles.length === 0 || !containerRef.current) {
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    const file = mediaFiles[0]
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+
+    if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
+      showToast({
+        title: "Only audio files on the audio row.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
+    if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount) {
+      showToast({
+        title: "Only images/videos on screen rows.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
+
+    if (cueExists(xIndex, yIndex)) {
+      setConfirmMessage(
+        `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
       )
+      setConfirmAction(() => async () => {
+        handleCueReplace(xIndex, yIndex, file)
+      })
+      setIsConfirmOpen(true)
+      return
+    }
+    const formData = createFormData(xIndex, file.name, yIndex, file)
 
-      if (mediaFiles.length === 0 || !containerRef.current) {
-        return
-      }
-
-      const { xIndex, yIndex } = getPosition(
-        event,
-        containerRef,
-        columnWidth,
-        rowHeight,
-        gap
-      )
-
-      const file = mediaFiles[0]
-      const audioRowIndex = getAudioRow(presentation.screenCount)
-
-      if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
-        showToast({
-          title: "Only audio files on the audio row.",
-          description: "Click on an appropriate row to paste the element.",
-          status: "error",
-        })
-        return
-      }
-      if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount) {
-        showToast({
-          title: "Only images/videos on screen rows.",
-          description: "Click on an appropriate row to paste the element.",
-          status: "error",
-        })
-        return
-      }
-
-      if (cueExists(xIndex, yIndex)) {
-        setConfirmMessage(
-          `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
-        )
-        setConfirmAction(() => async () => {
-          handleCueReplace(xIndex, yIndex, file)
-        })
-        setIsConfirmOpen(true)
-        return
-      }
-      const formData = createFormData(xIndex, file.name, yIndex, file)
-
-      try {
-        await dispatch(createCue(id, formData))
-        showToast({
-          title: "Element added",
-          description: `Element ${file.name} added to screen ${yIndex}`,
-          status: "success",
-        })
-      } catch (error) {
-        const errorMessage = error.message || "An error occurred"
-        showToast({
-          title: "Error",
-          description: errorMessage,
-          status: "error",
-        })
-      }
-    },
-    [dispatch, gap, rowHeight, columnWidth, id, cues]
-  )
+    try {
+      await dispatch(createCue(id, formData))
+      showToast({
+        title: "Element added",
+        description: `Element ${file.name} added to screen ${yIndex}`,
+        status: "success",
+      })
+    } catch (error) {
+      const errorMessage = error.message || "An error occurred"
+      showToast({
+        title: "Error",
+        description: errorMessage,
+        status: "error",
+      })
+    }
+  }
 
   return (
     <ChakraProvider theme={theme}>

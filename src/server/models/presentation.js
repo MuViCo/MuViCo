@@ -27,9 +27,15 @@ const normalizePresentationCues = (presentationObject) => {
       ? normalizedCue.cueType
       : getCueTypeFromScreen(normalizedCue.screen, screenCount)
 
+    const parsedDuration = Number(normalizedCue.duration)
+    const duration = Number.isInteger(parsedDuration) && parsedDuration > 0
+      ? parsedDuration
+      : 1
+
     return {
       ...normalizedCue,
       cueType,
+      duration,
       ...(cueType === "audio" ? { screen: getAudioRow(screenCount) } : {}),
     }
   })
@@ -138,6 +144,18 @@ const presentationSchema = mongoose.Schema({
         type: { type: String, default: "image/jpeg" },
       },
       loop: { type: Boolean, default: false },
+      duration: {
+        type: Number,
+        required: true,
+        default: 1,
+        min: 1,
+        max: 101,
+        set: v => (v === undefined || v === null ? v : Math.round(v)),
+        validate: {
+          validator: Number.isInteger,
+          message: "duration must be an integer"
+        }
+      },
     },
   ],
 
@@ -183,6 +201,16 @@ presentationSchema.pre("save", function (next) {
         message: `Visual cue screen ${cue.screen} exceeds screenCount`,
         path: "cues.screen",
         value: cue.screen,
+      }))
+    }
+
+    const duration = Number(cue.duration) || 1
+    const cueEndIndex = cue.index + duration - 1
+    if (cueEndIndex >= this.indexCount) {
+      validationError.addError("cues.duration", new mongoose.Error.ValidatorError({
+        message: `Cue span ${cue.index}-${cueEndIndex} exceeds indexCount`,
+        path: "cues.duration",
+        value: duration,
       }))
     }
   }
