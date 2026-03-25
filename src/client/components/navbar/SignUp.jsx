@@ -16,6 +16,17 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
 import authService from "../../services/auth"
+import {
+  minPwLength,
+  maxPwLength,
+  minUnLength,
+  maxUnLength,
+  invalidPwCharRegex,
+  unAllowedCharsRegex,
+  unStartEndRegex,
+  unConsecutiveSpecialsRegex,
+  pwAlphaNumRegex,
+} from "../../../constants"
 
 const initialValues = {
   username: "",
@@ -26,12 +37,42 @@ const initialValues = {
 const validationSchema = yup.object().shape({
   username: yup
     .string()
+    .trim()
     .required("Username is required")
-    .min(3, "Username must be at least 3 characters"),
+    .min(minUnLength, `Username must be at least ${minUnLength} characters`)
+    .max(maxUnLength, `Username can be at most ${maxUnLength} characters`)
+    .matches(
+      unAllowedCharsRegex,
+      "Username can only contain letters, numbers, dots, underscores, and hyphens"
+    )
+    .matches(
+      unStartEndRegex,
+      "Username must start and end with a letter or number"
+    )
+    .test(
+      "username-no-consecutive-specials",
+      "Username cannot contain consecutive special characters",
+      (value) => !value || !unConsecutiveSpecialsRegex.test(value)
+    ),
   password: yup
     .string()
     .required("Password is required")
-    .min(3, "Password must be at least 3 characters"),
+    .min(minPwLength, `Password must be at least ${minPwLength} characters`)
+    .max(maxPwLength, `Password must be at most ${maxPwLength} characters`)
+    .test(
+      "password-not-whitespace-only",
+      "Password cannot contain only spaces",
+      (value) => !value || value.trim().length > 0
+    )
+    .matches(
+      pwAlphaNumRegex,
+      "Password must contain at least one letter and one number"
+    )
+    .test(
+      "allowed-password-characters",
+      "Password contains unsupported characters",
+      (value) => !value || !invalidPwCharRegex.test(value)
+    ),
   password_confirmation: yup
     .string()
     .oneOf([yup.ref("password"), null], "Passwords must match")
@@ -42,6 +83,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
   const [showPasswords, setShowPasswords] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const usernameRef = useRef(null)
   const passwordRef = useRef(null)
   const passwordagainRef = useRef(null)
@@ -51,19 +93,33 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
+    setFormErrors((prevErrors) => {
+      if (!prevErrors[name]) {
+        return prevErrors
+      }
+
+      const nextErrors = { ...prevErrors }
+      delete nextErrors[name]
+      return nextErrors
+    })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       await validationSchema.validate(formData, { abortEarly: false })
+      setIsSubmitting(true)
       await onSubmit(formData)
     } catch (validationErrors) {
-      const errors = {}
-      validationErrors.inner.forEach((validationError) => {
-        errors[validationError.path] = validationError.message
-      })
-      setFormErrors(errors)
+      if (validationErrors?.name === "ValidationError") {
+        const errors = {}
+        validationErrors.inner.forEach((validationError) => {
+          errors[validationError.path] = validationError.message
+        })
+        setFormErrors(errors)
+      }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -199,6 +255,9 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
             data-testid="signup_inform"
             colorScheme="purple"
             type="submit"
+            isLoading={isSubmitting}
+            loadingText="Signing up"
+            isDisabled={isSubmitting}
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}
             mt={3}
