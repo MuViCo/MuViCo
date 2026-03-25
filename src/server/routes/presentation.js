@@ -62,6 +62,19 @@ const hasSwapTargetConflict = (
   })
 }
 
+const parseDuration = (durationValue) => {
+  if (durationValue === undefined || durationValue === null || durationValue === "") {
+    return 1
+  }
+
+  const parsedDuration = Math.round(Number(durationValue))
+  if (isNaN(parsedDuration) || parsedDuration < 1 || parsedDuration > 101) {
+    return null
+  }
+
+  return parsedDuration
+}
+
 const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
@@ -159,8 +172,8 @@ router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (r
       return res.status(400).json({ error: "indexCount must be a number" })
     }
 
-    if (newIndexCount < 1 || newIndexCount > 100) {
-      return res.status(400).json({ error: "indexCount must be between 1 and 100"})
+    if (newIndexCount < 1 || newIndexCount > 101) {
+      return res.status(400).json({ error: "indexCount must be between 1 and 101"})
     }
     
 
@@ -171,14 +184,16 @@ router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (r
     // If reducing index count, remove cues from indexes that will be removed
     let removedCuesCount = 0
     if (newIndexCount < presentation.indexCount) {
-      const cuesToRemove = presentation.cues.filter(
-        cue => cue.index >= newIndexCount && cue.index < presentation.indexCount
-      )
+      const cuesToRemove = presentation.cues.filter((cue) => {
+        const cueDuration = Number(cue.duration) || 1
+        const cueEndIndex = Number(cue.index) + cueDuration - 1
+        return cueEndIndex >= newIndexCount
+      })
       removedCuesCount = cuesToRemove.length
 
       updateQuery.$pull = {
         cues: {
-          index: { $gte: newIndexCount }
+          _id: { $in: cuesToRemove.map((cue) => cue._id) }
         }
       }
     }
@@ -289,6 +304,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const screen = Number(req.body.screen)
     const loop = req.body.loop
     const color = req.body.color || "#000000"
+    const duration = parseDuration(req.body.duration)
 
     if (!id || isNaN(index) || !cueName || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
@@ -314,6 +330,19 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     if (index < 0 || index > 100) {
       return res.status(400).json({
         error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
+      })
+    }
+
+    if (duration === null) {
+      return res.status(400).json({
+        error: "Invalid cue duration: duration must be an integer between 1 and 101.",
+      })
+    }
+
+    const cueEndIndex = index + duration - 1
+    if (cueEndIndex >= presentation.indexCount) {
+      return res.status(400).json({
+        error: `Invalid cue duration: cue span (${index}-${cueEndIndex}) exceeds indexCount ${presentation.indexCount}.`,
       })
     }
 
@@ -371,6 +400,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
             file: file ? fileObject : null,
             color: color,
             loop: loop,
+            duration,
           },
         },
       },
@@ -596,6 +626,7 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      const durationFromRequest = req.body.duration
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
 
@@ -659,6 +690,25 @@ router.put(
         return res.status(400).json({ error: "A cue with the same index and screen already exists." })
       }
 
+
+      const parsedDuration = parseDuration(durationFromRequest)
+      const duration = durationFromRequest === undefined || durationFromRequest === null || durationFromRequest === ""
+        ? (Number(cue.duration) || 1)
+        : parsedDuration
+
+      if (duration === null) {
+        return res.status(400).json({
+          error: "Invalid cue duration: duration must be an integer between 1 and 100.",
+        })
+      }
+
+      const cueEndIndex = index + duration - 1
+      if (cueEndIndex >= presentation.indexCount) {
+        return res.status(400).json({
+          error: `Invalid cue duration: cue span (${index}-${cueEndIndex}) exceeds indexCount ${presentation.indexCount}.`,
+        })
+      }
+
       // Update cue fields
       cue.index = index
       cue.screen = screen
@@ -666,6 +716,7 @@ router.put(
       cue.name = trimmedCueName
       cue.loop = loop
       cue.color = color
+      cue.duration = duration
 
       
       if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {

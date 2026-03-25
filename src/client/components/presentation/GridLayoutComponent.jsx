@@ -139,6 +139,42 @@ const GridLayoutComponent = ({
   const [cueToRemove, setCueToRemove] = useState(null)
   const [currentLayout, setCurrentLayout] = useState(layout)
 
+  const getCueDuration = (cue) => {
+    const parsedDuration = Number(cue?.duration)
+    return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
+  }
+
+  const getCueById = (cueId) => cues.find((cue) => cue._id === cueId)
+
+  const hasOverlapWithOtherCues = (cueId, startIndex, screen, duration) => {
+    const endIndex = startIndex + duration - 1
+    return cues.some((otherCue) => {
+      if (otherCue._id === cueId || Number(otherCue.screen) !== Number(screen)) {
+        return false
+      }
+
+      const otherStart = Number(otherCue.index)
+      const otherEnd = otherStart + getCueDuration(otherCue) - 1
+      return !(endIndex < otherStart || startIndex > otherEnd)
+    })
+  }
+
+  const revertLayoutItem = (itemId, previousItem) => {
+    const revertedLayout = currentLayout.map((item) => {
+      if (item.i === itemId) {
+        return {
+          ...item,
+          x: previousItem.x,
+          y: previousItem.y,
+          w: previousItem.w,
+          h: 1,
+        }
+      }
+      return item
+    })
+    setCurrentLayout(revertedLayout)
+  }
+
   useEffect(() => {
     setCurrentLayout(layout)
   }, [layout])
@@ -339,11 +375,11 @@ const GridLayoutComponent = ({
    * It is required for the function to work correctly.
    */
   const handlePositionChange = async (newLayout, oldItem, newItem) => {
-    if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
+    if (oldItem.x === newItem.x && oldItem.y === newItem.y && oldItem.w === newItem.w) {
       return
     }
 
-    const cue = cues.find((cue) => cue._id === newItem.i)
+    const cue = getCueById(newItem.i)
     if (!cue) {
       return
     }
@@ -366,6 +402,7 @@ const GridLayoutComponent = ({
             ...item,
             x: oldItem.x,
             y: oldItem.y,
+            w: oldItem.w,
           }
         }
         return item
@@ -375,15 +412,16 @@ const GridLayoutComponent = ({
       return
     }
 
-    const targetCue = cues.find(
-      (cue) =>
-        cue._id !== newItem.i &&
-        Number(cue.index) === Number(newItem.x) &&
-        Number(cue.screen) === Number(newItem.y + 1)
-    )
+    const movedDuration = Number(newItem.w) || getCueDuration(cue)
+    const movedEndIndex = Number(newItem.x) + movedDuration - 1
 
-    if (targetCue) {
-      setCurrentLayout(newLayout)
+    if (movedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1), movedDuration)) {
+      showToast({
+        title: "Cannot place element here",
+        description: "Cue duration overlaps another cue or exceeds frame bounds.",
+        status: "error",
+      })
+      revertLayoutItem(newItem.i, oldItem)
       return
     }
 
@@ -391,6 +429,7 @@ const GridLayoutComponent = ({
       cueId: newItem.i,
       index: newItem.x,
       screen: newItem.y + 1,
+      duration: movedDuration,
     }
 
     if (cue) {
@@ -412,18 +451,7 @@ const GridLayoutComponent = ({
 
         // additional error handling for if something goes wrong with the API call to update the cue in database
         // revert the layout to the state that was before the error happened
-        const revertedLayout = currentLayout.map((item) => {
-          if (item.i === newItem.i) {
-            return {
-              ...item,
-              x: oldItem.x,
-              y: oldItem.y,
-            }
-          }
-          return item
-        })
-
-        setCurrentLayout(revertedLayout)
+        revertLayoutItem(newItem.i, oldItem)
 
         showToast({
           title: "Error updating position",
@@ -435,6 +463,54 @@ const GridLayoutComponent = ({
     }
   }
 
+  const handleResizeStop = async (newLayout, oldItem, newItem) => {
+    const cue = getCueById(newItem.i)
+    if (!cue) {
+      return
+    }
+
+    const resizedDuration = Number(newItem.w) || getCueDuration(cue)
+    const resizedEndIndex = Number(newItem.x) + resizedDuration - 1
+
+    if (resizedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1), resizedDuration)) {
+      showToast({
+        title: "Cannot resize element",
+        description: "Cue duration overlaps another cue or exceeds frame bounds.",
+        status: "error",
+      })
+      revertLayoutItem(newItem.i, oldItem)
+      return
+    }
+
+    const resizedCue = {
+      cueId: newItem.i,
+      cueName: cue.name,
+      index: newItem.x,
+      screen: newItem.y + 1,
+      color: cue.color,
+      file: cue.file,
+      loop: cue.loop,
+      duration: resizedDuration,
+    }
+
+    setStatus("loading")
+    try {
+      await dispatch(updatePresentation(id, resizedCue))
+      setCurrentLayout(newLayout)
+      setTimeout(() => {
+        setStatus("saved")
+      }, 300)
+    } catch (error) {
+      console.error(error)
+      revertLayoutItem(newItem.i, oldItem)
+      showToast({
+        title: "Error updating width",
+        description: "The element has been returned to its previous width.",
+        status: "error",
+      })
+    }
+  }
+
   return (
     <GridLayout
       className="layout"
@@ -442,7 +518,8 @@ const GridLayoutComponent = ({
       cols={indexCount}
       rowHeight={rowHeight}
       width={indexCount * columnWidth + (indexCount - 1) * gap}
-      isResizable={false}
+      isResizable={!isShowMode}
+      resizeHandles={["e", "w"]}
       compactType={null}
       isBounded={false}
       preventCollision={true}
@@ -450,6 +527,7 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
+      onResizeStop={handleResizeStop}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => (
@@ -459,8 +537,11 @@ const GridLayoutComponent = ({
           data-grid={{
             x: cue.index,
             y: cue.screen - 1,
-            w: 1,
+            w: getCueDuration(cue),
             h: 1,
+            minH: 1,
+            maxH: 1,
+            minW: 1,
             static: false,
           }}
           id={`cue-screen-${cue.screen}-index-${cue.index}`}
