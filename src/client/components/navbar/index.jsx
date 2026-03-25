@@ -86,6 +86,7 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
     if (isTokenExpired(token)) {
       handleLogout(navigate, setUser)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) //run only once
 
 
