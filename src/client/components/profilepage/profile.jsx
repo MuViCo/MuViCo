@@ -1,8 +1,14 @@
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
+import * as yup from "yup"
+import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
 import authService from "../../services/auth"
-import Error from "../utils/Error"
+import Error from "../utils/Error" 
+import {
+  minPwLength,
+  maxPwLength,
+  invalidPwCharRegex,
+} from "../../../constants"
 import {
   Box,
   Heading,
@@ -17,8 +23,38 @@ import {
   useToast,
   InputGroup,
   InputRightElement,
-  IconButton,
+  IconButton
 } from "@chakra-ui/react"
+
+const validationSchema = yup.object().shape({
+  currentPassword: yup.string().required("Current password is required"),
+  newPassword: yup
+    .string()
+    .required("New password is required")
+    .min(minPwLength, `Password must be at least ${minPwLength} characters long`)
+    .max(maxPwLength, `Password must be at most ${maxPwLength} characters`)
+    .test(
+      "password-not-whitespace-only",
+      "Password cannot contain only spaces",
+      (value) => !value || value.trim().length > 0
+    )
+    .test(
+      "allowed-password-characters",
+      "Password contains unsupported characters",
+      (value) => !value || !invalidPwCharRegex.test(value)
+    )
+    .test(
+      "password-different-from-current",
+      "New password must be different from current password",
+      function (value) {
+        return !value || value !== this.parent.currentPassword
+      }
+    ),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref("newPassword"), null], "New passwords do not match")
+    .required("Confirm password is required"),
+})
 
 const Profile = ({ user }) => {
   const navigate = useNavigate()
@@ -33,73 +69,32 @@ const Profile = ({ user }) => {
     confirmPassword: false,
   })
   const [formErrors, setFormErrors] = useState({})
-  const newPasswordRef = useRef(null)
   const toast = useToast()
 
   const handlePasswordChange = (e) => {
+    const { name, value } = e.target
     setPasswords({
       ...passwords,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    })
+
+    setFormErrors((prevErrors) => {
+      if (!prevErrors[name]) {
+        return prevErrors
+      }
+
+      const nextErrors = { ...prevErrors }
+      delete nextErrors[name]
+      return nextErrors
     })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    // Check for empty fields
-    if (
-      !passwords.currentPassword ||
-      !passwords.newPassword ||
-      !passwords.confirmPassword
-    ) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-
-    // Check minimum length
-    if (passwords.newPassword.length < 8) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 8 characters long",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-
-    // Check that new password differs from current password
-    if (passwords.newPassword === passwords.currentPassword) {
-      toast({
-        title: "Error",
-        description: "New password must be different from current password",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-
-    // Check passwords match
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New passwords do not match",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      })
-      return
-    }
-
-    // Call backend to change password
     try {
+      await validationSchema.validate(passwords, { abortEarly: false })
+      setFormErrors({})
+
       const payload = {
         currentPassword: passwords.currentPassword,
         newPassword: passwords.newPassword,
@@ -121,6 +116,17 @@ const Profile = ({ user }) => {
         confirmPassword: "",
       })
     } catch (err) {
+      if (err?.name === "ValidationError") {
+        const errors = {}
+        err.inner.forEach((validationError) => {
+          if (validationError.path && !errors[validationError.path]) {
+            errors[validationError.path] = validationError.message
+          }
+        })
+        setFormErrors(errors)
+        return
+      }
+
       toast({
         title: "Error",
         description: err?.response?.data?.error || "Failed to change password",
@@ -146,12 +152,7 @@ const Profile = ({ user }) => {
                 Account Information
               </Heading>
               <VStack align="start" spacing={3}>
-                <FormLabel fontWeight="bold">
-                  Username:&nbsp;&nbsp;&nbsp;&nbsp;
-                  <span style={{ fontWeight: "normal" }}>
-                    {user.username || "N/A"}
-                  </span>
-                </FormLabel>
+                <FormLabel fontWeight="bold">Username:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{fontWeight: "normal"}}>{user.username || "N/A"}</span></FormLabel>
                 {/* <Box>
                   <FormLabel fontWeight="bold">Email</FormLabel>
                   <Input
@@ -178,9 +179,7 @@ const Profile = ({ user }) => {
                       <Input
                         id="current-password"
                         data-testid="current-password-input"
-                        type={
-                          showPasswords.currentPassword ? "text" : "password"
-                        }
+                        type={showPasswords.currentPassword ? "text" : "password"}
                         name="currentPassword"
                         value={passwords.currentPassword}
                         onChange={handlePasswordChange}
@@ -188,30 +187,16 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={
-                            showPasswords.currentPassword
-                              ? "Hide password"
-                              : "Show password"
-                          }
-                          icon={
-                            showPasswords.currentPassword ? (
-                              <ViewOffIcon />
-                            ) : (
-                              <ViewIcon />
-                            )
-                          }
-                          onClick={() =>
-                            setShowPasswords({
-                              ...showPasswords,
-                              currentPassword: !showPasswords.currentPassword,
-                            })
-                          }
+                          aria-label={showPasswords.currentPassword ? "Hide password" : "Show password"}
+                          icon={showPasswords.currentPassword ? <ViewOffIcon /> : <ViewIcon />}
+                          onClick={() => setShowPasswords({...showPasswords, currentPassword: !showPasswords.currentPassword})}
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
+                    {formErrors.currentPassword && <Error error={formErrors.currentPassword} />}
                   </FormControl>
 
                   <FormControl isRequired>
@@ -224,39 +209,22 @@ const Profile = ({ user }) => {
                         name="newPassword"
                         value={passwords.newPassword}
                         onChange={handlePasswordChange}
-                        ref={newPasswordRef}
                         placeholder="Enter your new password"
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={
-                            showPasswords.newPassword
-                              ? "Hide password"
-                              : "Show password"
-                          }
-                          icon={
-                            showPasswords.newPassword ? (
-                              <ViewOffIcon />
-                            ) : (
-                              <ViewIcon />
-                            )
-                          }
-                          onClick={() =>
-                            setShowPasswords({
-                              ...showPasswords,
-                              newPassword: !showPasswords.newPassword,
-                            })
-                          }
+                          aria-label={showPasswords.newPassword ? "Hide password" : "Show password"}
+                          icon={showPasswords.newPassword ? <ViewOffIcon /> : <ViewIcon />}
+                          onClick={() => setShowPasswords({...showPasswords, newPassword: !showPasswords.newPassword})}
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
-                    {formErrors.password && (
-                      <Error error={formErrors.password} />
-                    )}
+                    {formErrors.newPassword && <Error error={formErrors.newPassword} />}
                   </FormControl>
+                  
 
                   <FormControl isRequired>
                     <FormLabel>Confirm Password</FormLabel>
@@ -264,9 +232,7 @@ const Profile = ({ user }) => {
                       <Input
                         id="confirm-password"
                         data-testid="confirm-password-input"
-                        type={
-                          showPasswords.confirmPassword ? "text" : "password"
-                        }
+                        type={showPasswords.confirmPassword ? "text" : "password"}
                         name="confirmPassword"
                         value={passwords.confirmPassword}
                         onChange={handlePasswordChange}
@@ -274,37 +240,26 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={
-                            showPasswords.confirmPassword
-                              ? "Hide password"
-                              : "Show password"
-                          }
-                          icon={
-                            showPasswords.confirmPassword ? (
-                              <ViewOffIcon />
-                            ) : (
-                              <ViewIcon />
-                            )
-                          }
-                          onClick={() =>
-                            setShowPasswords({
-                              ...showPasswords,
-                              confirmPassword: !showPasswords.confirmPassword,
-                            })
-                          }
+                          aria-label={showPasswords.confirmPassword ? "Hide password" : "Show password"}
+                          icon={showPasswords.confirmPassword ? <ViewOffIcon /> : <ViewIcon />}
+                          onClick={() => setShowPasswords({...showPasswords, confirmPassword: !showPasswords.confirmPassword})}
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
+                    {formErrors.confirmPassword && <Error error={formErrors.confirmPassword} />}
                   </FormControl>
 
                   <HStack spacing={3} pt={4}>
                     <Button type="submit" colorScheme="purple">
                       Confirm changes
                     </Button>
-                    <Button variant="outline" onClick={() => navigate("/")}>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/")}
+                    >
                       Return to Frontpage
                     </Button>
                   </HStack>

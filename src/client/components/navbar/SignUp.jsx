@@ -25,7 +25,6 @@ import {
   unAllowedCharsRegex,
   unStartEndRegex,
   unConsecutiveSpecialsRegex,
-  pwAlphaNumRegex,
 } from "../../../constants"
 
 const initialValues = {
@@ -63,10 +62,6 @@ const validationSchema = yup.object().shape({
       "password-not-whitespace-only",
       "Password cannot contain only spaces",
       (value) => !value || value.trim().length > 0
-    )
-    .matches(
-      pwAlphaNumRegex,
-      "Password must contain at least one letter and one number"
     )
     .test(
       "allowed-password-characters",
