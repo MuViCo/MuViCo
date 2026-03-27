@@ -5,6 +5,8 @@ const User = require("../models/user")
 const app = require("../app")
 const { request } = require("http")
 
+import { minPwLength } from "../../constants.js"
+
 const api = supertest(app)
 
 let authHeader
@@ -136,7 +138,7 @@ describe("POST /change-password", () => {
       .expect(400)
       .expect("Content-Type", /application\/json/)
 
-    expect(response.body.error).toBe("Password must be at least 8 characters long")
+    expect(response.body.error).toBe(`Password must be at least ${minPwLength} characters long`)
   })
 
   test("changing password fails when current password is missing", async () => {
