@@ -211,9 +211,48 @@ class MyFirstGrid extends React.Component {
           style={{ width: "100%" }}
         >
           
-          <div style={{backgroundColor: "#B494C3", borderRadius: "8px"}} key="header">
-            <h1 style={{ margin: "0", fontWeight: "bold", padding: "20px", textAlign: "center-left", justifyContent:"center"  }}>EDIT MODE</h1>
-            </div>
+          <div
+            style={{
+              backgroundColor: "#B494C3",
+              borderRadius: "8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 20px",
+            }}
+            key="header"
+          >
+            <button
+              type="button"
+              aria-label="Header placeholder button"
+              style={{
+                border: "1px solid #000",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                backgroundColor: "#ffffff",
+                color: "#000000",
+                cursor: "default",
+              }}
+            >
+              Presentation Settings
+            </button>
+            <h1 style={{ margin: "0", fontWeight: "bold" }}>EDIT MODE</h1>
+            <button
+              type="button"
+              aria-label="Header placeholder button"
+              style={{
+                marginLeft: "auto",
+                border: "1px solid #000",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                backgroundColor: "#ffffff",
+                color: "#000000",
+                cursor: "default",
+              }}
+            >
+              Tutorial
+            </button>
+          </div>
           
           <div style={{ backgroundColor: "#B494C3", borderRadius: "8px" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
