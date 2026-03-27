@@ -49,7 +49,6 @@ import {
 const theme = extendTheme({})
 
 
-
 const EditMode = ({
   id,
   cues,
