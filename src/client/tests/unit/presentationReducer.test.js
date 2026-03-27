@@ -3,7 +3,7 @@ import reducer, {
   setPresentationInfo,
   deleteCue,
   addCue,
-  removePresentation,
+  clearPresentation,
   editCue,
   fetchPresentationInfo,
   removeCue,
@@ -87,9 +87,9 @@ describe("presentationReducer actions", () => {
 
   it("should create an action to remove a presentation", () => {
     const expectedAction = {
-      type: removePresentation.type,
+      type: clearPresentation.type,
     }
-    expect(removePresentation()).toEqual(expectedAction)
+    expect(clearPresentation()).toEqual(expectedAction)
   })
 
   it("should create an action to update a cue", () => {
@@ -211,8 +211,8 @@ describe("presentationReducer reducer", () => {
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })
 
-  it("should handle removePresentation when state is already null", () => {
-    const action = { type: removePresentation.type }
+  it("should handle clearPresentation when state is already null", () => {
+    const action = { type: clearPresentation.type }
     const expectedState = {
       ...initialState,
       cues: null,
@@ -224,7 +224,7 @@ describe("presentationReducer reducer", () => {
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
 
-  it("should handle removePresentation when state is not null", () => {
+  it("should handle clearPresentation when state is not null", () => {
     const initialStateWithCues = {
       ...initialState,
       cues: [
@@ -234,7 +234,7 @@ describe("presentationReducer reducer", () => {
       name: "My Presentation",
       screenCount: 3,
     }
-    const action = { type: removePresentation.type }
+    const action = { type: clearPresentation.type }
     const expectedState = {
       ...initialState,
       cues: null,
@@ -417,7 +417,7 @@ describe("presentationReducer reducer", () => {
     expect(result.cues).toHaveLength(2)
   })
 
-  it("should clear all data on removePresentation", () => {
+  it("should clear all data on clearPresentation", () => {
     const initialStateWithData = {
       cues: [
         { _id: 1, name: "Cue 1" },
@@ -428,7 +428,7 @@ describe("presentationReducer reducer", () => {
       indexCount: 5,
       saving: false,
     }
-    const action = { type: removePresentation.type }
+    const action = { type: clearPresentation.type }
 
     const result = reducer(initialStateWithData, action)
 

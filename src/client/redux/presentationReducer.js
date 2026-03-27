@@ -36,7 +36,7 @@ const presentationSlice = createSlice({
       )
       state.cues = updatedCues
     },
-    removePresentation(state) {
+    clearPresentation(state) {
       state.id = null
       state.cues = null
       state.name = ""
@@ -107,7 +107,7 @@ export const {
   deleteCue,
   addCue,
   editCue,
-  removePresentation,
+  clearPresentation,
   incrementIndexCount,
   decrementIndexCount,
   incrementScreenCount,
@@ -170,7 +170,7 @@ export const createCue = (id, formData) => async (dispatch) => {
 export const deletePresentation = (id) => async (dispatch) => {
   try {
     await presentationService.remove(id)
-    dispatch(removePresentation())
+    dispatch(clearPresentation())
   } catch (error) {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
