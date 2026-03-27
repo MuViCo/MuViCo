@@ -3,7 +3,11 @@ const { userExtractor } = require("../utils/middleware")
 const router = express.Router()
 const User = require("../models/user")
 const {
-  validatePassword,
+  minPwLength,
+  maxPwLength,
+  invalidPwCharRegex,
+} = require("../../constants.js")
+const {
   generateHash,
   checkPassword,
 } = require("../utils/auth.js")
@@ -57,11 +61,48 @@ router.post("/change-password", userExtractor, async (req, res) => {
     return res.status(401).json({ error: "User not found" })
   }
 
-  if (!validatePassword(newPassword)) {
+  if (typeof currentPassword !== "string" || currentPassword.length === 0) {
     return res.status(400).json({
-      error: "New password is not valid",
+      error: "Current password is required",
     })
   }
+
+  if (typeof newPassword !== "string" || newPassword.length === 0) {
+    return res.status(400).json({
+      error: "New password is required",
+    })
+  }
+
+  if (newPassword === currentPassword) {
+    return res.status(400).json({
+      error: "New password must be different from current password",
+    })
+  }
+
+  if (newPassword.trim().length === 0) {
+    return res.status(400).json({
+      error: "Password cannot contain only spaces",
+    })
+  }
+
+  if (newPassword.length < minPwLength) {
+    return res.status(400).json({
+      error: `Password must be at least ${minPwLength} characters long`,
+    })
+  }
+
+  if (newPassword.length > maxPwLength) {
+    return res.status(400).json({
+      error: `Password must be at most ${maxPwLength} characters`,
+    })
+  }
+
+  if (invalidPwCharRegex.test(newPassword)) {
+    return res.status(400).json({
+      error: "Password contains unsupported characters",
+    })
+  }
+
   if (!(await checkPassword(currentPassword, user.passwordHash))) {
     return res.status(401).json({
       error: "Current password is not valid",

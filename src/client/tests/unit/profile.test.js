@@ -49,26 +49,23 @@ describe("Profile", () => {
     expect(screen.getByText("testuser")).toBeInTheDocument()
   })
 
-  test("shows required fields toast and does not call API", async () => {
+  test("shows required field errors and does not call API", async () => {
     render(<Profile user={user} />)
 
     const submitButton = screen.getByRole("button", { name: "Confirm changes" })
     fireEvent.submit(submitButton.closest("form"))
 
     await waitFor(() => {
-      expect(toastMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Error",
-          description: "All fields are required",
-          status: "error",
-        })
-      )
+      expect(screen.getByText("Current password is required")).toBeInTheDocument()
+      expect(screen.getByText("New password is required")).toBeInTheDocument()
+      expect(screen.getByText("Confirm password is required")).toBeInTheDocument()
     })
 
+    expect(toastMock).not.toHaveBeenCalled()
     expect(authService.changepassword).not.toHaveBeenCalled()
   })
 
-  test("shows mismatch toast when new passwords do not match", async () => {
+  test("shows mismatch error when new passwords do not match", async () => {
     render(<Profile user={user} />)
 
     fireEvent.change(screen.getByTestId("current-password-input"), {
@@ -84,14 +81,10 @@ describe("Profile", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm changes" }))
 
     await waitFor(() => {
-      expect(toastMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Error",
-          description: "New passwords do not match",
-          status: "error",
-        })
-      )
+      expect(screen.getByText("New passwords do not match")).toBeInTheDocument()
     })
+
+    expect(toastMock).not.toHaveBeenCalled()
     expect(authService.changepassword).not.toHaveBeenCalled()
   })
 
@@ -124,15 +117,37 @@ describe("Profile", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm changes" }))
 
     await waitFor(() => {
-      expect(toastMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: "Error",
-          description: "Password must be at least 8 characters long",
-          status: "error",
-        })
-      )
+      expect(
+        screen.getByText("Password must be at least 8 characters long")
+      ).toBeInTheDocument()
     })
 
+    expect(toastMock).not.toHaveBeenCalled()
+    expect(authService.changepassword).not.toHaveBeenCalled()
+  })
+
+  test("shows error when new password is same as current password", async () => {
+    render(<Profile user={user} />)
+
+    fireEvent.change(screen.getByTestId("current-password-input"), {
+      target: { value: "same-password" },
+    })
+    fireEvent.change(screen.getByTestId("new-password-input"), {
+      target: { value: "same-password" },
+    })
+    fireEvent.change(screen.getByTestId("confirm-password-input"), {
+      target: { value: "same-password" },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm changes" }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("New password must be different from current password")
+      ).toBeInTheDocument()
+    })
+
+    expect(toastMock).not.toHaveBeenCalled()
     expect(authService.changepassword).not.toHaveBeenCalled()
   })
 

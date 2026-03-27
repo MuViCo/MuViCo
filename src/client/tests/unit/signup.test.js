@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event"
 
 import { SignUpForm } from "../../components/navbar/SignUp"
 import { describe } from "node:test"
+import { minPwLength } from "../../../constants"
 
 describe("SignUp", () => {
   test("renders content", () => {
@@ -21,18 +22,18 @@ describe("SignUp", () => {
     await userEvent.type(screen.getByPlaceholderText("Username"), "testuser")
     await userEvent.type(
       screen.getByPlaceholderText("Password"),
-      "testpassword"
+      "testpassword1"
     )
     await userEvent.type(
       screen.getByPlaceholderText("Password_confirmation"),
-      "testpassword"
+      "testpassword1"
     )
     await userEvent.click(screen.getByText("Sign up"))
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith({
       username: "testuser",
-      password: "testpassword",
-      password_confirmation: "testpassword",
+      password: "testpassword1",
+      password_confirmation: "testpassword1",
     })
   })
   test("shows error message when username is too short", async () => {
@@ -47,10 +48,10 @@ describe("SignUp", () => {
   test("shows error message when password is too short", async () => {
     const onSubmit = jest.fn()
     render(<SignUpForm onSubmit={onSubmit} />)
-    await userEvent.type(screen.getByPlaceholderText("Password"), "te")
+    await userEvent.type(screen.getByPlaceholderText("Password"), "te1")
     await userEvent.click(screen.getByText("Sign up"))
     expect(
-      screen.getByText("Password must be at least 3 characters")
+      screen.getByText(`Password must be at least ${minPwLength} characters`)
     ).toBeDefined()
   })
   test("shows error message when password confirmation does not match", async () => {
@@ -58,7 +59,7 @@ describe("SignUp", () => {
     render(<SignUpForm onSubmit={onSubmit} />)
     await userEvent.type(
       screen.getByPlaceholderText("Password"),
-      "testpassword"
+      "testpassword1"
     )
     await userEvent.type(
       screen.getByPlaceholderText("Password_confirmation"),
@@ -151,8 +152,8 @@ describe("HandleKeyDown", () => {
     const passwordAgainInput = getByTestId("password_signup_confirmation")
 
     fireEvent.change(usernameInput, { target: { value: "testuser" } })
-    fireEvent.change(passwordInput, { target: { value: "testpassword" } })
-    fireEvent.change(passwordAgainInput, { target: { value: "testpassword" } })
+    fireEvent.change(passwordInput, { target: { value: "testpassword1" } })
+    fireEvent.change(passwordAgainInput, { target: { value: "testpassword1" } })
 
     fireEvent.keyDown(passwordAgainInput, { key: "Enter" })
 
@@ -160,8 +161,8 @@ describe("HandleKeyDown", () => {
       expect(onSubmit).toHaveBeenCalledTimes(1)
       expect(onSubmit).toHaveBeenCalledWith({
         username: "testuser",
-        password: "testpassword",
-        password_confirmation: "testpassword",
+        password: "testpassword1",
+        password_confirmation: "testpassword1",
       })
     })
   })
@@ -175,8 +176,8 @@ describe("HandleKeyDown", () => {
     const submitButton = getByTestId("signup_inform")
 
     fireEvent.change(usernameInput, { target: { value: "testuser" } })
-    fireEvent.change(passwordInput, { target: { value: "testpassword" } })
-    fireEvent.change(passwordAgainInput, { target: { value: "testpassword" } })
+    fireEvent.change(passwordInput, { target: { value: "testpassword1" } })
+    fireEvent.change(passwordAgainInput, { target: { value: "testpassword1" } })
 
     fireEvent.keyDown(submitButton, { key: "Enter" })
 
@@ -184,8 +185,8 @@ describe("HandleKeyDown", () => {
       expect(onSubmit).toHaveBeenCalledTimes(1)
       expect(onSubmit).toHaveBeenCalledWith({
         username: "testuser",
-        password: "testpassword",
-        password_confirmation: "testpassword",
+        password: "testpassword1",
+        password_confirmation: "testpassword1",
       })
     })
   })

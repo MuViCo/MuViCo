@@ -30,9 +30,9 @@ const App = () => {
   const isProfile = location.pathname.startsWith("/profile")
 
   useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("user")
-    if (loggedUserJSON) {
-      const parsedUser = JSON.parse(loggedUserJSON)
+    const loggedUser = window.localStorage.getItem("user")
+    if (loggedUser) {
+      const parsedUser = JSON.parse(loggedUser)
       setUser(parsedUser)
     }
     setIsInitialized(true)

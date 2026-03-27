@@ -1,7 +1,16 @@
 const express = require("express")
-const { validatePassword, generateHash } = require("../utils/auth.js")
+const { generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
-const { minPwLength, maxPwLength } = require("../../constants.js")
+const {
+  minPwLength,
+  maxPwLength,
+  minUnLength,
+  maxUnLength,
+  invalidPwCharRegex,
+  unAllowedCharsRegex,
+  unStartEndRegex,
+  unConsecutiveSpecialsRegex,
+} = require("../../constants.js")
 
 const router = express.Router()
 
@@ -21,16 +30,58 @@ router.post("/", async (req, res) => {
   }
 
   const trimmedUsername = username.trim()
-  if (trimmedUsername.length < 3) {
+  if (trimmedUsername.length < minUnLength) {
     return res.status(400).json({
-      error:
-        "username must be at least 3 characters long and not just whitespace",
+      error: `username must be at least ${minUnLength} characters`,
     })
   }
 
-  if (!validatePassword(password)) {
+  if (trimmedUsername.length > maxUnLength) {
     return res.status(400).json({
-      error: `password must be between ${minPwLength} and ${maxPwLength} bytes long`,
+      error: `username can be at most ${maxUnLength} characters`,
+    })
+  }
+
+  if (!unAllowedCharsRegex.test(trimmedUsername)) {
+    return res.status(400).json({
+      error:
+        "username can only contain letters, numbers, dots, underscores, and hyphens",
+    })
+  }
+
+  if (!unStartEndRegex.test(trimmedUsername)) {
+    return res.status(400).json({
+      error: "username must start and end with a letter or number",
+    })
+  }
+
+  if (unConsecutiveSpecialsRegex.test(trimmedUsername)) {
+    return res.status(400).json({
+      error: "username cannot contain consecutive special characters",
+    })
+  }
+
+  if (password.trim().length === 0) {
+    return res.status(400).json({
+      error: "password cannot contain only spaces",
+    })
+  }
+
+  if (password.length < minPwLength) {
+    return res.status(400).json({
+      error: `password must be at least ${minPwLength} characters`,
+    })
+  }
+
+  if (password.length > maxPwLength) {
+    return res.status(400).json({
+      error: `password must be at most ${maxPwLength} characters`,
+    })
+  }
+
+  if (invalidPwCharRegex.test(password)) {
+    return res.status(400).json({
+      error: "password contains unsupported characters",
     })
   }
 

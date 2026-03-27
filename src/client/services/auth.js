@@ -15,6 +15,13 @@ const signup = async (credentials) => {
   return response.data
 }
 
+const signupAndLogin = async (credentials) => {
+  await signup(credentials)
+  const user = await login(credentials)
+  window.localStorage.setItem("user", JSON.stringify(user))
+  return user
+}
+
 const changepassword = async (credentials) => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -24,4 +31,4 @@ const changepassword = async (credentials) => {
   return response.data
 }
 
-export default { login, signup, changepassword }
+export default { login, signup, signupAndLogin, changepassword }
