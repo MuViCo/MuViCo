@@ -126,7 +126,7 @@ describe("POST /change-password", () => {
   })
 
   test("changing password fails with weak new password", async () => {
-    await api
+    const response = await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
       .send({ 
@@ -135,6 +135,78 @@ describe("POST /change-password", () => {
       })
       .expect(400)
       .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe("Password must be at least 8 characters long")
+  })
+
+  test("changing password fails when current password is missing", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({
+        newPassword: "newpassword123",
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe("Current password is required")
+  })
+
+  test("changing password fails when new password is missing", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({
+        currentPassword: "testpassword",
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe("New password is required")
+  })
+
+  test("changing password fails when new password matches current password", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "testpassword",
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe(
+      "New password must be different from current password"
+    )
+  })
+
+  test("changing password fails when new password is only spaces", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "        ",
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe("Password cannot contain only spaces")
+  })
+
+  test("changing password fails with unsupported characters", async () => {
+    const response = await api
+      .post("/api/users/change-password")
+      .set("Authorization", authHeader)
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "validpass😀",
+      })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.error).toBe("Password contains unsupported characters")
   })
 
   test("changing password fails without authentication", async () => {
