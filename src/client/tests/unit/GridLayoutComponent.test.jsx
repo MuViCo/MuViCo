@@ -137,6 +137,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 1,
         cueName: "Visual cue",
         color: "#ffffff",
+        duration: 1,
       })
     })
 
@@ -235,6 +236,7 @@ describe("GridLayoutComponent drag constraints", () => {
         screen: 9,
         cueName: "Audio cue",
         color: "#ffffff",
+        duration: 1,
       })
     })
 

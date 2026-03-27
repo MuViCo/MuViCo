@@ -32,3 +32,8 @@ if (typeof window !== 'undefined') {
     })),
   })
 }
+
+jest.mock("./src/client/public/icons/nextbutton.svg", () => "nextbutton.svg")
+jest.mock("./src/client/public/icons/previousbutton.svg", () => "previousbutton.svg")
+jest.mock("./src/client/public/icons/pausebutton.svg", () => "pausebutton.svg")
+jest.mock("./src/client/public/icons/playbutton.svg", () => "playbutton.svg")
