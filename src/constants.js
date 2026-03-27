@@ -1,7 +1,15 @@
-export const minPwLength = 8
-export const maxPwLength = 72
+const minPwLength = 8
+const maxPwLength = 72
 
-export const invalidPwCharRegex =
+const invalidPwCharRegex =
   /[^a-zA-Z0-9 !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~äöåÄÖÅ]+/
 
-export const saltRounds = 10
+const saltRounds = 10
+
+
+module.exports = {
+  minPwLength,
+  maxPwLength,
+  invalidPwCharRegex,
+  saltRounds,
+}

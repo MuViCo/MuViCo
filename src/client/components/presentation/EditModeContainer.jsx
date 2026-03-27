@@ -1,53 +1,14 @@
-import React, { useState, useRef, useCallback, useEffect, forwardRef } from "react"
+import React, { useEffect, forwardRef } from "react"
 import {
-  Box,
-  Text,
-  ChakraProvider,
   extendTheme,
-  useOutsideClick,
-  useColorModeValue,
-  IconButton,
-  Button,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Portal,
-  Center
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
 import {
-  updatePresentation,
-  createCue,
-  removeCue,
-  updatePresentationSwappedCues,
-  incrementIndexCount,
-  decrementIndexCount,
-  incrementScreenCount,
-  decrementScreenCount,
-  editCue,
-  shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
-import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
-import { createFormData } from "../utils/formDataUtils"
-import presentationService from "../../services/presentation"
-import ToolBox from "./ToolBox"
-import GridLayoutComponent from "./GridLayoutComponent"
-import StatusTooltip from "./StatusToolTip"
-import CustomAlert from "../utils/CustomAlert"
-import Dialog from "../utils/AlertDialog"
-import { useCustomToast } from "../utils/toastUtils"
-import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
-import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
-import { Responsive, WidthProvider } from "react-grid-layout";
-import "react-resizable/css/styles.css";
-import {
-  getAudioRow,
-  isAudioMimeType,
-  isImageOrVideoMimeType,
-} from "../utils/fileTypeUtils"
+import { Responsive, WidthProvider } from "react-grid-layout"
+import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
@@ -327,7 +288,7 @@ const EditModeContainer = ({
 
   console.log("Rendering EditMode with cues:", id, cues, isToolboxOpen, isShowMode, cueIndex, isAudioMuted, indexCount)
 
-  console.log("Fetched presentation info:", cues, presentation);
+  console.log("Fetched presentation info:", cues, presentation)
 
   return <>
     <MyFirstGrid
