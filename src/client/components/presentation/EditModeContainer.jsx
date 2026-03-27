@@ -1,7 +1,9 @@
 import React, { useEffect, forwardRef } from "react"
 import {
-  Button,
   Box,
+  Button,
+  VStack,
+  HStack,
   useColorModeValue,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
@@ -15,11 +17,27 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
+import { isType } from "../utils/fileTypeUtils"
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
 // Screens display component
 const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBackground }) => {
+  const getCleanUrl = (file = {}) => {
+    const url = file?.url || ""
+    return String(url).split("?")[0].split("#")[0]
+  }
+
+  const isImageFile = (file = {}) => {
+    if (isType.image(file)) return true
+    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file))
+  }
+
+  const isVideoFile = (file = {}) => {
+    if (isType.video(file)) return true
+    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file))
+  }
+
   // Get the current cue for the screen
   const getCurrentCueForScreen = (screenNumber) => {
     if (!cues || cues.length === 0) return null
@@ -28,7 +46,7 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", width: "100%", height: "100%" }}>
+    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", width: "100%", height: "100%", overflow: "hidden" }}>
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenData = getCurrentCueForScreen(screenNumber)
@@ -36,21 +54,42 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
         return (
           <div key={screenNumber} style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "black", color: "white", overflow: "hidden", position: "relative" }}>
             <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 10 }}>Screen {screenNumber}</div>
-            {screenData && screenData.file ? (
-              screenData.file.url ? (
-                <img 
-                  src={screenData.file.url} 
-                  alt={screenData.name} 
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                />
+            {screenData ? (
+              screenData?.file?.url ? (
+                isImageFile(screenData.file) ? (
+                  <img
+                    src={screenData.file.url}
+                    alt={screenData.name}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", aspectRatio: "16/9" }}
+                  />
+                ) : isVideoFile(screenData.file) ? (
+                  <video
+                    src={screenData.file.url}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", aspectRatio: "16/9" }}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                    Unsupported content type
+                  </div>
+                )
               ) : (
-                <video 
-                  src={screenData.file.url}
-                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  autoPlay
-                  loop
-                  muted
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: 1,
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: screenData.color || "#333",
+                  }}
+                >
+
+                </div>
               )
             ) : (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
@@ -64,40 +103,40 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
   )
 }
 
+// Custom resize handle component for the bottom edge (South) of the layout items.
+const VSCodeVerticalHandle = forwardRef((props, ref) => {
+  const { handleAxis, ...restProps } = props
 
-    const VSCodeVerticalHandle = forwardRef((props, ref) => {
-      const { handleAxis, ...restProps } = props
-      
-      // Only render for the "South" (bottom) axis
-      if (handleAxis !== "s") return null
-      
-      return (
-        <div
-        ref={ref}
-        className="custom-bottom-handle"
-        style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: "0px", // Centers the hit area on the bottom edge
-            height: "16px",  // The "Hit Area"
-            cursor: "ns-resize", // North-South resize cursor
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            transition: "background 0.2s",
-          }}
-          {...restProps}
-          >
-          {/* The actual visible line */}
-          <div className="visible-line" style={{
-            width: "100%",
-            height: "2px",
-            backgroundColor: "transparent",
-            transition: "background-color 0.2s"
-          }} />
-          
-          <style>{`
+  // Only render for the "South" (bottom) axis
+  if (handleAxis !== "s") return null
+
+  return (
+    <div
+      ref={ref}
+      className="custom-bottom-handle"
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: "0px", // Centers the hit area on the bottom edge
+        height: "16px",  // The "Hit Area"
+        cursor: "ns-resize", // North-South resize cursor
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        transition: "background 0.2s",
+      }}
+      {...restProps}
+    >
+      {/* The actual visible line */}
+      <div className="visible-line" style={{
+        width: "100%",
+        height: "2px",
+        backgroundColor: "transparent",
+        transition: "background-color 0.2s"
+      }} />
+
+      <style>{`
             .custom-bottom-handle:hover .visible-line {
               background-color: #9244ff !important;
               }
@@ -106,9 +145,9 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
               background-color: #9244ff !important;
               }
           `}</style>
-        </div>
-      )
-    })
+    </div>
+  )
+})
 
 
 // Layout for different components of the editor
@@ -125,21 +164,21 @@ class MyFirstGrid extends React.Component {
       isAudioMuted,
       toggleAudioMute,
       indexCount,
-      addCue = () => {},
-      onClose = () => {},
+      addCue = () => { },
+      onClose = () => { },
       position,
       cueData,
-      updateCue = () => {},
+      updateCue = () => { },
       isAudioMode = false,
       screens = {},
-      toggleScreenVisibility = () => {},
-      toggleScreenMirroring = () => {},
-      toggleAllScreens = () => {},
+      toggleScreenVisibility = () => { },
+      toggleScreenMirroring = () => { },
+      toggleAllScreens = () => { },
       mirroring = {},
       autoplayInterval = 1,
-      toggleAutoplay = () => {},
+      toggleAutoplay = () => { },
       isAutoplaying = false,
-      toggleAutoplayInterval = () => {},
+      toggleAutoplayInterval = () => { },
       editModeBackground,
       panelBackground,
       outlineColor,
@@ -148,43 +187,43 @@ class MyFirstGrid extends React.Component {
       lg: [
         { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
         { i: "showModeControls", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 7, w: 10, h: 10 },
-        { i: "cueEditorForm", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
-        {i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 7, w: 9, h: 10 },
+        { i: "cueEditorForm", x: 9, y: 5, w: 3, h: 14, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
       ],
       md: [
         { i: "screensPreview", x: 0, y: 0, w: 10, h: 5 },
         { i: "showModeControls", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
         { i: "editWorkspace", x: 0, y: 2, w: 10, h: 14 },
         { i: "cueEditorForm", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
-        {i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
       ],
       sm: [
         { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
         { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14},
+        { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14 },
         { i: "cueEditorForm", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
-        {i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-      
+        { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+
       ],
       xs: [
         { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
         { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         { i: "editWorkspace", x: 0, y: 2, w: 4, h: 14 },
         { i: "cueEditorForm", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
-        {i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
         { i: "screensPreview", x: 0, y: 0, w: 2, h: 5 },
-        { i: "showModeControls", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
+        { i: "showModeControls", x: 0, y: 2, w: 2, h: 1, isResizable: false, resizeHandles: [] },
         { i: "editWorkspace", x: 0, y: 2, w: 2, h: 14 },
-        { i: "cueEditorForm", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
-        {i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "cueEditorForm", x: 0, y: 6, w: 2, h: 7, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
       ],
     }
-    
 
-    
+
+
     // Formatting the grid layout for the editor, using react-grid-layout. 
     // The layout is responsive and changes based on the screen size. 
     // Each grid item (a, b, c) represents a different component of the editor, 
@@ -208,12 +247,12 @@ class MyFirstGrid extends React.Component {
           autoSize={true}
           rowHeight={60}
           margin={[15, 15]}
-          containerPadding={[80 , 8]}
+          containerPadding={[80, 8]}
           resizeHandle={(axis, ref) => <VSCodeVerticalHandle handleAxis={axis} ref={ref} />}
 
           style={{ width: "100%", backgroundColor: editModeBackground }}
         >
-          
+
           <Box
             display="flex"
             alignItems="center"
@@ -263,7 +302,23 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div
+          <div style={{ backgroundColor: "panelBackground",outline:"outlineColor",boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", 
+            paddingBottom: "5px", borderRadius: "8px"}}  key="editWorkspace">
+            <div style={{overflow: "scroll", height:"100%", width:"100%",outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px" }}>
+              <EditMode
+                id={id}
+                cues={cues}
+                isToolboxOpen={isToolboxOpen}
+                setIsToolboxOpen={setIsToolboxOpen}
+                isShowMode={isShowMode}
+                cueIndex={cueIndex}
+                isAudioMuted={isAudioMuted}
+                toggleAudioMute={toggleAudioMute}
+                indexCount={indexCount}
+              />
+            </div>
+          </div>
+          {/* <div
             style={{
               backgroundColor: panelBackground,
               outline: outlineColor,
@@ -276,9 +331,9 @@ class MyFirstGrid extends React.Component {
               display: "flex",
               flexDirection: "column",
             }}
-            key="editWorkspace"
-          >
-            <EditMode
+            key="editWorkspace" */}
+          
+            {/* <EditMode
               id={id}
               cues={cues}
               isToolboxOpen={isToolboxOpen}
@@ -288,20 +343,21 @@ class MyFirstGrid extends React.Component {
               isAudioMuted={isAudioMuted}
               toggleAudioMute={toggleAudioMute}
               indexCount={indexCount}
-            />
-          </div>
+            /> */}
+          {/* </div> */}
             
           <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="cueEditorForm">
             <CuesForm
               addCue={addCue}
-              onClose={onClose} 
-              position={position} 
-              cues={cues} 
-              cueData={cueData} 
+              onClose={onClose}
+              position={position}
+              cues={cues}
+              cueData={cueData}
               updateCue={updateCue}
-              screenCount={screenCount} 
+              screenCount={screenCount}
               isAudioMode={isAudioMode}
-              indexCount={indexCount}/> 
+              indexCount={indexCount}
+            />
           </div>
         </ResponsiveGridLayout>
       </div>
@@ -381,7 +437,7 @@ const EditModeContainer = ({
     />
   </>
 
-  
+
 
 }
 export default EditModeContainer

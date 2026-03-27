@@ -75,6 +75,15 @@ const parseDuration = (durationValue) => {
   return parsedDuration
 }
 
+const BLANK_IMAGE_VALUES = [
+  "/blank.png",
+  "/blank-white.png",
+  "/blank-indigo.png",
+  "/blank-tropicalindigo.png",
+]
+
+const isBlankImageValue = (image) => BLANK_IMAGE_VALUES.includes(image)
+
 const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
@@ -306,16 +315,16 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const color = req.body.color || "#000000"
     const duration = parseDuration(req.body.duration)
 
-    if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+    if (!id || isNaN(index) || isNaN(screen)) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    if (typeof cueName !== "string") {
+    if (cueName !== undefined && cueName !== null && typeof cueName !== "string") {
       return res.status(400).json({ error: "Cue name must be a string" })
     }
 
-    const trimmedCueName = cueName.trim()
-    if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+    const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
+    if (trimmedCueName.length > 100) {
       return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
     }
 
@@ -358,8 +367,10 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
 
     const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
     
+    const hasBlankImage = isBlankImageValue(image)
+
     if (cueType === "audio") {
-      if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
+      if (hasBlankImage) {
         return res.status(400).json({ 
           error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
         })
@@ -377,6 +388,11 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       }
     }
 
+    const isColorOnlyCue = cueType === "visual" && !file && !hasBlankImage && !image
+    if (!isColorOnlyCue && trimmedCueName.length === 0) {
+      return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
+    }
+
     if (hasPositionConflict(presentation.cues, index, screen)) {
       return res.status(400).json({ error: "A cue with the same index and screen already exists." })
     }
@@ -384,7 +400,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const fileObject = {
               id: fileId,
               name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank2.png"),
-              url: (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") ? null : "",
+              url: hasBlankImage ? null : "",
               ...(driveId && { driveId }),
             }
 
@@ -633,16 +649,16 @@ router.put(
       const image = req.body.image
       const shouldClearFile = image === "null"
 
-      if (!id || isNaN(index) || !cueName || isNaN(screen)) {
+      if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-      if (typeof cueName !== "string") {
+        if (cueName !== undefined && cueName !== null && typeof cueName !== "string") {
         return res.status(400).json({ error: "Cue name must be a string" })
       }
 
-      const trimmedCueName = cueName.trim()
-      if (trimmedCueName.length === 0 || trimmedCueName.length > 100) {
+        const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
+        if (trimmedCueName.length > 100) {
         return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
@@ -662,8 +678,10 @@ router.put(
 
       const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
       
+      const hasBlankImage = isBlankImageValue(image)
+
       if (cueType === "audio") {
-        if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
+        if (hasBlankImage) {
           return res.status(400).json({ 
             error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
           })
@@ -684,6 +702,12 @@ router.put(
       const cue = presentation.cues.id(cueId)
       if (!cue) {
         return res.status(404).json({ error: "Cue not found" })
+      }
+
+      const willHaveFileAfterUpdate = Boolean(file) || hasBlankImage || (!shouldClearFile && Boolean(cue.file))
+      const isColorOnlyCue = cueType === "visual" && !willHaveFileAfterUpdate
+      if (!isColorOnlyCue && trimmedCueName.length === 0) {
+        return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
       if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
@@ -719,7 +743,7 @@ router.put(
       cue.duration = duration
 
       
-      if (image === "/blank.png" || image === "/blank-white.png" || image === "/blank-indigo.png" || image === "/blank-tropicalindigo.png") {
+      if (hasBlankImage) {
         const newFileId = generateFileId()
         cue.file = {
           id: newFileId,

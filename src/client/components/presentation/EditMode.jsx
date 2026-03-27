@@ -46,6 +46,7 @@ import {
   isAudioMimeType,
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
+import mediaStore from "./mediaFileStore"
 
 const theme = extendTheme({})
 
@@ -905,6 +906,16 @@ const EditMode = ({
     }
   }
 
+  const handleToolboxSave = async (updatedCue) => {
+    if (!selectedCue) {
+      return
+    }
+
+    await dispatchUpdateCue(selectedCue._id, updatedCue)
+    setSelectedCue(null)
+    setIsToolboxOpen(false)
+  }
+
   const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
     setStatus("loading")
     try {
@@ -1043,12 +1054,21 @@ const EditMode = ({
     if (isShowMode) {
       return
     }
+
+    let dragData = null
+    try {
+      const dataStr = event.dataTransfer.getData("application/json")
+      if (dataStr) dragData = JSON.parse(dataStr)
+    } catch (e) {
+      // ignore parsing error
+    }
+
     const files = Array.from(event.dataTransfer.files)
     const mediaFiles = files.filter(
       (file) => isImageOrVideo(file) || isAudio(file)
     )
 
-    if (mediaFiles.length === 0 || !containerRef.current) {
+    if (mediaFiles.length === 0 && !dragData) {
       return
     }
 
@@ -1059,6 +1079,111 @@ const EditMode = ({
       rowHeight,
       gap
     )
+
+    if (dragData && dragData.type === "newCueFromForm") {
+      const audioRowIndex = getAudioRow(presentation.screenCount)
+      
+      // Handle different element types from the three boxes
+      if (dragData.elementType === "color") {
+        const colorCueName = (dragData.cueName || "").trim()
+
+        // Color element - no file
+        const dataToSave = {
+          index: xIndex,
+          cueName: colorCueName,
+          screen: yIndex,
+          color: dragData.color,
+        }
+        
+        if (cueExists(xIndex, yIndex)) {
+          showToast({
+            title: "Cannot drop here",
+            description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
+            status: "error",
+          })
+          return
+        }
+        await addCue(dataToSave)
+        return
+      } 
+      else if (dragData.elementType === "media" || dragData.elementType === "sound") {
+        // Media or sound element - has a file
+        const isSound = dragData.elementType === "sound"
+        const fileId = isSound ? dragData.soundId : dragData.mediaId
+        
+        // Retrieve the file from mediaStore
+        const file = mediaStore.getFile(fileId)
+        
+        if (!file) {
+          showToast({
+            title: "File not found",
+            description: "The file could not be found. Please try uploading again.",
+            status: "error",
+          })
+          return
+        }
+        
+        // Validate screen placement
+        if (isSound && yIndex !== audioRowIndex && xIndex < indexCount) {
+          showToast({
+            title: "Only audio on audio row",
+            description: "Drag audio files to the audio row.",
+            status: "error",
+          })
+          return
+        }
+        if (!isSound && yIndex === audioRowIndex && xIndex < indexCount) {
+          showToast({
+            title: "Only images/videos on screen rows",
+            description: "Drag media to screen rows, not the audio row.",
+            status: "error",
+          })
+          return
+        }
+        
+        if (cueExists(xIndex, yIndex)) {
+          showToast({
+            title: "Cannot drop here",
+            description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
+            status: "error",
+          })
+          return
+        }
+
+        // Create cue with the actual file
+        const dataToSave = {
+          index: xIndex,
+          cueName: dragData.cueName,
+          screen: yIndex,
+          file: file,
+        }
+        
+        await addCue(dataToSave)
+        
+        // Clean up the file from store after successful creation
+        mediaStore.removeFile(fileId)
+        return
+      }
+      
+      // Default color-based element (legacy support)
+      const dataToSave = {
+        index: xIndex,
+        cueName: dragData.cueName,
+        screen: yIndex,
+        color: dragData.color,
+      }
+      
+      if (cueExists(xIndex, yIndex)) {
+        showToast({
+          title: "Cannot drop here",
+          description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
+          status: "error",
+        })
+        return
+      }
+      await addCue(dataToSave)
+      return
+    }
 
     const file = mediaFiles[0]
     const audioRowIndex = getAudioRow(presentation.screenCount)
@@ -1124,7 +1249,6 @@ const EditMode = ({
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
         }}
       >
         <Box
@@ -1133,7 +1257,7 @@ const EditMode = ({
           marginTop="0px"
           height="100%"
           minHeight={0}
-          overflow="auto"
+          overflow="visible"
         >
           <Box
             className="screen-boxes"
@@ -1432,14 +1556,12 @@ const EditMode = ({
 
           <ToolBox
             isOpen={isToolboxOpen}
-            onClose={() => setIsToolboxOpen(false)}
-            position={doubleClickPosition}
-            addCue={addCue}
-            cues={cues}
-            cueData={selectedCue || null}
-            updateCue={updateCue}
-            screenCount={presentation.screenCount}
-            indexCount={indexCount}
+            cue={selectedCue}
+            onSave={handleToolboxSave}
+            onClose={() => {
+              setSelectedCue(null)
+              setIsToolboxOpen(false)
+            }}
           />
         </Box>
         <Box

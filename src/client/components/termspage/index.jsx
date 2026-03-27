@@ -4,6 +4,7 @@ import React from "react"
 const TermsPage = () => (
   <Box
     borderRadius="xl"
+    marginTop={100}
     mb={6}
     p={3}
     textAlign="jusfity"
@@ -53,7 +54,7 @@ const TermsPage = () => (
       users of the Services to do the same. You agree not to infringe upon the
       copyrights or other intellectual property rights of others. If you believe
       that your copyright has been infringed, please contact us at
-      muvicoproject@gmail.com.
+      projectmuvico(at)gmail.com.
     </p>
 
     <h4>User Responsibilities:</h4>
@@ -120,7 +121,7 @@ const TermsPage = () => (
     <h4>Contact Us:</h4>
     <p>
       If you have any questions about these Terms, please contact us at
-      muvicoproject@gmail.com.
+      projectmuvico(at)gmail.com.
     </p>
 
     <p>
