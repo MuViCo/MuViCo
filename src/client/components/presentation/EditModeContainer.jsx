@@ -147,30 +147,36 @@ class MyFirstGrid extends React.Component {
         { i: "b", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 7, w: 10, h: 10 },
         { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
+        {i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
       ],
       md: [
         { i: "a", x: 0, y: 0, w: 10, h: 5 },
         { i: "b", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 10, h: 14 },
         { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
+        {i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
       ],
       sm: [
         { i: "a", x: 0, y: 0, w: 6, h: 5 },
         { i: "b", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 6, h: 14},
         { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
+        {i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+      
       ],
       xs: [
         { i: "a", x: 0, y: 0, w: 4, h: 5 },
         { i: "b", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 4, h: 14 },
         { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
+        {i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
         { i: "a", x: 0, y: 0, w: 2, h: 5 },
         { i: "b", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 2, h: 14 },
         { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
+        {i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
       ],
     }
     
@@ -204,6 +210,11 @@ class MyFirstGrid extends React.Component {
 
           style={{ width: "100%" }}
         >
+          
+          <div style={{backgroundColor: "#B494C3", borderRadius: "8px"}} key="header">
+            <h1 style={{ margin: "0", fontWeight: "bold", padding: "20px", textAlign: "center-left", justifyContent:"center"  }}>EDIT MODE</h1>
+            </div>
+          
           <div style={{ backgroundColor: "#B494C3", borderRadius: "8px" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
             
