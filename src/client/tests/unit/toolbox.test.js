@@ -4,19 +4,13 @@ import Toolbox from "../../components/presentation/ToolBox.jsx"
 import "@testing-library/jest-dom"
 
 describe("ToolBox Component", () => {
-  const mockAddCue = jest.fn()
   const mockOnClose = jest.fn()
-  const position = { index: 1, screen: 1 }
-  const mockCues = []
 
   it("renders correctly when open", () => {
     render(
       <Toolbox
-        addCue={mockAddCue}
         isOpen={true}
         onClose={mockOnClose}
-        position={position}
-        cues={mockCues}
       />
     )
     expect(screen.getByRole("dialog")).toBeInTheDocument()
@@ -26,11 +20,8 @@ describe("ToolBox Component", () => {
   it("calls onClose when the close button is clicked", () => {
     render(
       <Toolbox
-        addCue={mockAddCue}
         isOpen={true}
         onClose={mockOnClose}
-        position={position}
-        cues={mockCues}
       />
     )
 
@@ -41,11 +32,8 @@ describe("ToolBox Component", () => {
   it("does not render when closed", () => {
     render(
       <Toolbox
-        addCue={mockAddCue}
         isOpen={false}
         onClose={mockOnClose}
-        position={position}
-        cues={mockCues}
       />
     )
 

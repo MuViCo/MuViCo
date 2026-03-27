@@ -4,20 +4,12 @@ import {
   DrawerCloseButton,
   DrawerBody,
   Drawer,
+  Text,
 } from "@chakra-ui/react"
 
-import CuesForm from "./CuesForm"
-
 const Toolbox = ({
-  addCue,
   isOpen,
   onClose,
-  position,
-  cues,
-  cueData,
-  updateCue,
-  screenCount,
-  indexCount,
 }) => {
   return (
     <>
@@ -30,16 +22,7 @@ const Toolbox = ({
             data-testid="close-drawer-button"
           />
           <DrawerBody>
-            <CuesForm
-              addCue={addCue}
-              onClose={onClose}
-              position={position}
-              cues={cues}
-              cueData={cueData || null}
-              updateCue={updateCue}
-              screenCount={screenCount}
-              indexCount={indexCount}
-            />
+            <Text>Toolbox features coming soon</Text>
           </DrawerBody>
         </DrawerContent>
       </Drawer>
