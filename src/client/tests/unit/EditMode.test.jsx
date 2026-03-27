@@ -3,10 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
 import { useDispatch, useSelector } from "react-redux"
-import {
-  swapCues,
-  updatePresentation,
-} from "../../redux/presentationReducer"
+import { swapCues, updatePresentation } from "../../redux/presentationReducer"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -24,11 +21,17 @@ jest.mock("../../redux/presentationReducer", () => ({
   swapCues: jest.fn(() => ({ type: "MOCK_SWAP_CUES" })),
   incrementIndexCount: jest.fn(() => ({ type: "MOCK_INCREMENT_INDEX_COUNT" })),
   decrementIndexCount: jest.fn(() => ({ type: "MOCK_DECREMENT_INDEX_COUNT" })),
-  incrementScreenCount: jest.fn(() => ({ type: "MOCK_INCREMENT_SCREEN_COUNT" })),
-  decrementScreenCount: jest.fn(() => ({ type: "MOCK_DECREMENT_SCREEN_COUNT" })),
+  incrementScreenCount: jest.fn(() => ({
+    type: "MOCK_INCREMENT_SCREEN_COUNT",
+  })),
+  decrementScreenCount: jest.fn(() => ({
+    type: "MOCK_DECREMENT_SCREEN_COUNT",
+  })),
   editCue: jest.fn(() => ({ type: "MOCK_EDIT_CUE" })),
   shiftPresentationIndexes: jest.fn(() => ({ type: "MOCK_SHIFT_INDEXES" })),
-  fetchPresentationInfo: jest.fn(() => ({ type: "MOCK_FETCH_PRESENTATION_INFO" })),
+  fetchPresentationInfo: jest.fn(() => ({
+    type: "MOCK_FETCH_PRESENTATION_INFO",
+  })),
 }))
 
 jest.mock("../../redux/presentationThunks", () => ({
@@ -115,7 +118,11 @@ describe("EditMode drag swapping", () => {
       name: "Visual cue 1",
       color: "#ffffff",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/1.png",
+        name: "1.png",
+      },
     },
     {
       _id: "visual-2",
@@ -124,7 +131,11 @@ describe("EditMode drag swapping", () => {
       name: "Visual cue 2",
       color: "#000000",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/2.png",
+        name: "2.png",
+      },
     },
   ]
 
@@ -165,14 +176,17 @@ describe("EditMode drag swapping", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
-    useSelector.mockImplementation((selector) => selector({
-      presentation: {
-        cues,
-        name: "Test presentation",
-        screenCount: 2,
-        indexCount: 3,
-      },
-    }))
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          id: "123",
+          cues,
+          name: "Test presentation",
+          screenCount: 2,
+          indexCount: 3,
+        },
+      })
+    )
     mockDragScenario = null
   })
 

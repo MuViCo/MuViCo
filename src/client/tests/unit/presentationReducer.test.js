@@ -18,7 +18,10 @@ import reducer, {
   shiftPresentationIndexes,
   updatePresentationName,
 } from "../../redux/presentationReducer.js"
-import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks.js"
+import {
+  saveIndexCount,
+  saveScreenCount,
+} from "../../redux/presentationThunks.js"
 import presentationService from "../../services/presentation.js"
 import { configureStore } from "@reduxjs/toolkit"
 import { createFormData } from "../../components/utils/formDataUtils.js"
@@ -126,19 +129,22 @@ describe("presentationReducer actions", () => {
     expect(decrementScreenCount()).toEqual(expectedAction)
   })
 
-  it("should create an action to update presentation name only", () => { 
+  it("should create an action to update presentation name only", () => {
     const newName = "Updated Presentation Name"
     const expectedAction = {
       type: "presentation/updateNameOnly",
       payload: newName,
     }
-    expect({ type: "presentation/updateNameOnly", payload: newName  }).toEqual(expectedAction)
+    expect({ type: "presentation/updateNameOnly", payload: newName }).toEqual(
+      expectedAction
+    )
   })
 })
 
 // Test Reducer Logic
 describe("presentationReducer reducer", () => {
   const initialState = {
+    id: null,
     cues: [],
     name: "",
     screenCount: 3,
@@ -147,12 +153,23 @@ describe("presentationReducer reducer", () => {
   }
 
   it("should handle setPresentationInfo", () => {
+    const id = "123"
     const cues = [{ _id: 1, name: "Test Cue" }]
     const name = "My Presentation"
     const screenCount = 3
     const indexCount = 5
-    const action = { type: setPresentationInfo.type, payload: { cues, name, screenCount, indexCount } }
-    const expectedState = { ...initialState, cues, name, screenCount, indexCount }
+    const action = {
+      type: setPresentationInfo.type,
+      payload: { id, cues, name, screenCount, indexCount },
+    }
+    const expectedState = {
+      ...initialState,
+      id,
+      cues,
+      name,
+      screenCount,
+      indexCount,
+    }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -161,7 +178,7 @@ describe("presentationReducer reducer", () => {
     const initialStateWithCues = {
       ...initialState,
       cues: [{ _id: 1, name: "Test Cue" }],
-      name: "My Presentation"
+      name: "My Presentation",
     }
     const addedCue = { _id: 2, name: "Another Cue" }
     const action = { type: addCue.type, payload: addedCue }
@@ -183,7 +200,7 @@ describe("presentationReducer reducer", () => {
         { _id: 1, name: "Test Cue" },
         { _id: 2, name: "Another Cue" },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
     const action = { type: deleteCue.type, payload: 1 }
     const expectedState = {
@@ -196,7 +213,13 @@ describe("presentationReducer reducer", () => {
 
   it("should handle removePresentation when state is already null", () => {
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, name: "", screenCount: null, indexCount: null }
+    const expectedState = {
+      ...initialState,
+      cues: null,
+      name: "",
+      screenCount: null,
+      indexCount: null,
+    }
 
     expect(reducer(initialState, action)).toEqual(expectedState)
   })
@@ -209,10 +232,15 @@ describe("presentationReducer reducer", () => {
         { _id: 2, name: "Another Cue" },
       ],
       name: "My Presentation",
-      screenCount: 3
+      screenCount: 3,
     }
     const action = { type: removePresentation.type }
-    const expectedState = { ...initialState, cues: null, screenCount: null, indexCount: null}
+    const expectedState = {
+      ...initialState,
+      cues: null,
+      screenCount: null,
+      indexCount: null,
+    }
 
     expect(reducer(initialStateWithCues, action)).toEqual(expectedState)
   })
@@ -269,7 +297,7 @@ describe("presentationReducer reducer", () => {
       indexCount: 1,
     }
     const action = { type: decrementIndexCount.type }
-    
+
     const result = reducer(initialStateWithMinIndexCount, action)
     // Verify IndexCount doesn't go below 1
     expect(result.indexCount).toBeGreaterThanOrEqual(1)
@@ -309,7 +337,7 @@ describe("presentationReducer reducer", () => {
       screenCount: 1,
     }
     const action = { type: decrementScreenCount.type }
-    
+
     const result = reducer(initialStateWithMinScreenCount, action)
     // Verify screenCount doesn't go below 1
     expect(result.screenCount).toBeGreaterThanOrEqual(1)
@@ -317,7 +345,7 @@ describe("presentationReducer reducer", () => {
 
   it("should handle multiple cue additions", () => {
     let state = initialState
-    
+
     const cue1 = { _id: 1, name: "Cue 1" }
     const cue2 = { _id: 2, name: "Cue 2" }
     const cue3 = { _id: 3, name: "Cue 3" }
@@ -342,9 +370,9 @@ describe("presentationReducer reducer", () => {
       ],
     }
     const action = { type: deleteCue.type, payload: 2 }
-    
+
     const result = reducer(initialStateWithCues, action)
-    
+
     expect(result.cues).toHaveLength(2)
     expect(result.cues).not.toContainEqual({ _id: 2, name: "Cue 2" })
     expect(result.cues).toContainEqual({ _id: 1, name: "Cue 1" })
@@ -362,9 +390,9 @@ describe("presentationReducer reducer", () => {
     }
     const updatedCue = { _id: 2, name: "Updated Cue 2" }
     const action = { type: editCue.type, payload: updatedCue }
-    
+
     const result = reducer(initialStateWithCues, action)
-    
+
     expect(result.cues[1]).toEqual(updatedCue)
     expect(result.cues[0]).toEqual({ _id: 1, name: "Cue 1" })
     expect(result.cues[2]).toEqual({ _id: 3, name: "Cue 3" })
@@ -380,9 +408,9 @@ describe("presentationReducer reducer", () => {
     }
     const newCue = { _id: 2, name: "New Cue" }
     const action = { type: addCue.type, payload: newCue }
-    
+
     const result = reducer(initialStateWithData, action)
-    
+
     expect(result.name).toBe("My Presentation")
     expect(result.screenCount).toBe(5)
     expect(result.indexCount).toBe(10)
@@ -401,9 +429,9 @@ describe("presentationReducer reducer", () => {
       saving: false,
     }
     const action = { type: removePresentation.type }
-    
+
     const result = reducer(initialStateWithData, action)
-    
+
     expect(result.cues).toBeNull()
     expect(result.name).toBe("")
     expect(result.screenCount).toBeNull()
@@ -418,9 +446,9 @@ describe("presentationReducer reducer", () => {
       indexCount: 20,
     }
     const action = { type: setPresentationInfo.type, payload: presentationData }
-    
+
     const result = reducer(initialState, action)
-    
+
     expect(result.cues).toEqual(presentationData.cues)
     expect(result.name).toBe("Full Presentation")
     expect(result.screenCount).toBe(5)
@@ -436,9 +464,9 @@ describe("presentationReducer reducer", () => {
       ],
     }
     const action = { type: deleteCue.type, payload: 1 }
-    
+
     const result = reducer(originalState, action)
-    
+
     // Original should remain unchanged
     expect(originalState.cues).toHaveLength(2)
     // Result should have 1 less
@@ -473,11 +501,11 @@ describe("presentationReducer asynchronous actions", () => {
   it("should remove cue", async () => {
     const store = makeStore()
     const initialState = {
-    cues: [
+      cues: [
         { _id: 1, name: "Cue 1" },
         { _id: 2, name: "Cue 2" },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
     store.dispatch(setPresentationInfo(initialState))
 
@@ -567,7 +595,7 @@ describe("presentationReducer asynchronous actions", () => {
         { _id: 1, name: "Cue 1", index: 1, screen: 1 },
         { _id: 2, name: "Cue 2", index: 2, screen: 2 },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
 
     store.dispatch(setPresentationInfo(initialState))
@@ -595,13 +623,29 @@ describe("presentationReducer asynchronous actions", () => {
 
   it("should copy cue with file over cue without file", async () => {
     const store = makeStore()
-    const sourceFile = new File(["image-binary"], "source.png", { type: "image/png" })
+    const sourceFile = new File(["image-binary"], "source.png", {
+      type: "image/png",
+    })
     const sourceCueColor = "#000000"
 
     const initialState = {
       cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: { name: "orig.png", type: "image/png" }, color: sourceCueColor },
-        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: null, color: "#FFFFFF" },
+        {
+          _id: 1,
+          name: "Cue 1",
+          index: 1,
+          screen: 1,
+          file: { name: "orig.png", type: "image/png" },
+          color: sourceCueColor,
+        },
+        {
+          _id: 2,
+          name: "Cue 2",
+          index: 2,
+          screen: 1,
+          file: null,
+          color: "#FFFFFF",
+        },
       ],
       audioCues: [],
       name: "My Presentation",
@@ -633,13 +677,19 @@ describe("presentationReducer asynchronous actions", () => {
     const uploadedImage = sentFormData.get("image")
     const sentColor = sentFormData.get("color")
 
-    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+    expect(presentationService.updateCue).toHaveBeenCalledWith(
+      "123",
+      2,
+      expect.any(FormData)
+    )
 
     expect(uploadedImage).toBeInstanceOf(File)
     expect(uploadedImage.name).toBe("source.png")
     expect(sentColor).toBe(sourceCueColor)
 
-    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    const updatedCue = store
+      .getState()
+      .presentation.cues.find((cue) => cue._id === 2)
     expect(updatedCue).toEqual(
       expect.objectContaining({
         _id: 2,
@@ -663,8 +713,22 @@ describe("presentationReducer asynchronous actions", () => {
 
     const initialState = {
       cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: null, color: sourceCueColor },
-        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: { name: "target.png", type: "image/png" }, color: "#222222" },
+        {
+          _id: 1,
+          name: "Cue 1",
+          index: 1,
+          screen: 1,
+          file: null,
+          color: sourceCueColor,
+        },
+        {
+          _id: 2,
+          name: "Cue 2",
+          index: 2,
+          screen: 1,
+          file: { name: "target.png", type: "image/png" },
+          color: "#222222",
+        },
       ],
       audioCues: [],
       name: "My Presentation",
@@ -693,10 +757,16 @@ describe("presentationReducer asynchronous actions", () => {
     await store.dispatch(updatePresentation("123", copiedCueData, 2))
 
     const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
-    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+    expect(presentationService.updateCue).toHaveBeenCalledWith(
+      "123",
+      2,
+      expect.any(FormData)
+    )
     expect(sentFormData.get("image")).toBe("null")
 
-    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    const updatedCue = store
+      .getState()
+      .presentation.cues.find((cue) => cue._id === 2)
     expect(updatedCue).toEqual(
       expect.objectContaining({
         _id: 2,
@@ -714,8 +784,22 @@ describe("presentationReducer asynchronous actions", () => {
 
     const initialState = {
       cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: null, color: "#AA11CC" },
-        { _id: 2, name: "Cue 2", index: 2, screen: 1, file: null, color: "#33BB44" },
+        {
+          _id: 1,
+          name: "Cue 1",
+          index: 1,
+          screen: 1,
+          file: null,
+          color: "#AA11CC",
+        },
+        {
+          _id: 2,
+          name: "Cue 2",
+          index: 2,
+          screen: 1,
+          file: null,
+          color: "#33BB44",
+        },
       ],
       audioCues: [],
       name: "My Presentation",
@@ -744,10 +828,16 @@ describe("presentationReducer asynchronous actions", () => {
     await store.dispatch(updatePresentation("123", copiedCueData, 2))
 
     const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
-    expect(presentationService.updateCue).toHaveBeenCalledWith("123", 2, expect.any(FormData))
+    expect(presentationService.updateCue).toHaveBeenCalledWith(
+      "123",
+      2,
+      expect.any(FormData)
+    )
     expect(sentFormData.get("color")).toBe("#AA11CC")
 
-    const updatedCue = store.getState().presentation.cues.find((cue) => cue._id === 2)
+    const updatedCue = store
+      .getState()
+      .presentation.cues.find((cue) => cue._id === 2)
     expect(updatedCue).toEqual(
       expect.objectContaining({
         _id: 2,
@@ -761,12 +851,21 @@ describe("presentationReducer asynchronous actions", () => {
 
   it("should create a new cue with copied values when pasting to empty grid position", async () => {
     const store = makeStore()
-    const sourceFile = new File(["image-binary"], "source.png", { type: "image/png" })
+    const sourceFile = new File(["image-binary"], "source.png", {
+      type: "image/png",
+    })
     const sourceCueColor = "#2B6CB0"
 
     const initialState = {
       cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, file: { name: "source.png", type: "image/png" }, color: sourceCueColor },
+        {
+          _id: 1,
+          name: "Cue 1",
+          index: 1,
+          screen: 1,
+          file: { name: "source.png", type: "image/png" },
+          color: sourceCueColor,
+        },
       ],
       audioCues: [],
       name: "My Presentation",
@@ -844,7 +943,7 @@ describe("presentationReducer asynchronous actions", () => {
         { _id: 1, name: "Cue 1", index: 1, screen: 1 },
         { _id: 2, name: "Cue 2", index: 2, screen: 2 },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
 
     store.dispatch(setPresentationInfo(initialState))
@@ -867,9 +966,7 @@ describe("presentationReducer asynchronous actions", () => {
       secondCue: secondUpdatedCue,
     })
 
-    await store.dispatch(
-      swapCues("123", firstUpdatedCue, secondUpdatedCue)
-    )
+    await store.dispatch(swapCues("123", firstUpdatedCue, secondUpdatedCue))
 
     expect(presentationService.swapCues).toHaveBeenCalledWith("123", {
       firstCueId: firstUpdatedCue._id,
@@ -886,14 +983,14 @@ describe("presentationReducer asynchronous actions", () => {
 
   it("should shift presentation indices right", async () => {
     const store = makeStore()
-    
+
     const initialState = {
       cues: [
         { _id: 1, name: "Cue 1", index: 0 },
         { _id: 2, name: "Cue 2", index: 2 },
-        { _id: 3, name: "Cue 3", index: 4 }
+        { _id: 3, name: "Cue 3", index: 4 },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
 
     store.dispatch(setPresentationInfo(initialState))
@@ -901,37 +998,41 @@ describe("presentationReducer asynchronous actions", () => {
     const shiftedCues = [
       { _id: 1, name: "Cue 1", index: 0 },
       { _id: 2, name: "Cue 2", index: 3 },
-      { _id: 3, name: "Cue 3", index: 5 }
+      { _id: 3, name: "Cue 3", index: 5 },
     ]
 
     presentationService.shiftIndexes.mockResolvedValue({
       cues: shiftedCues,
       name: "My Presentation",
-      id: "123"
+      id: "123",
     })
-   
-     presentationService.get.mockResolvedValue({
-       cues: shiftedCues,
-       name: "My Presentation",
-       id: "123"
-     })
+
+    presentationService.get.mockResolvedValue({
+      cues: shiftedCues,
+      name: "My Presentation",
+      id: "123",
+    })
 
     await store.dispatch(shiftPresentationIndexes("123", 0, "right"))
 
-    expect(presentationService.shiftIndexes).toHaveBeenCalledWith("123", 0, "right")
+    expect(presentationService.shiftIndexes).toHaveBeenCalledWith(
+      "123",
+      0,
+      "right"
+    )
     expect(store.getState().presentation.cues).toEqual(shiftedCues)
   })
 
   it("should shift presentation indices left", async () => {
     const store = makeStore()
-    
+
     const initialState = {
       cues: [
         { _id: 1, name: "Cue 1", index: 0 },
         { _id: 2, name: "Cue 2", index: 2 },
-        { _id: 3, name: "Cue 3", index: 4 }
+        { _id: 3, name: "Cue 3", index: 4 },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
 
     store.dispatch(setPresentationInfo(initialState))
@@ -939,37 +1040,41 @@ describe("presentationReducer asynchronous actions", () => {
     const shiftedCues = [
       { _id: 1, name: "Cue 1", index: 0 },
       { _id: 2, name: "Cue 2", index: 1 },
-      { _id: 3, name: "Cue 3", index: 3 }
+      { _id: 3, name: "Cue 3", index: 3 },
     ]
 
     presentationService.shiftIndexes.mockResolvedValue({
       cues: shiftedCues,
       name: "My Presentation",
-      id: "123"
+      id: "123",
     })
-   
-     presentationService.get.mockResolvedValue({
-       cues: shiftedCues,
-       name: "My Presentation",
-       id: "123"
-     })
+
+    presentationService.get.mockResolvedValue({
+      cues: shiftedCues,
+      name: "My Presentation",
+      id: "123",
+    })
 
     await store.dispatch(shiftPresentationIndexes("123", 1, "left"))
 
-    expect(presentationService.shiftIndexes).toHaveBeenCalledWith("123", 1, "left")
+    expect(presentationService.shiftIndexes).toHaveBeenCalledWith(
+      "123",
+      1,
+      "left"
+    )
     expect(store.getState().presentation.cues).toEqual(shiftedCues)
   })
 
   it("should update only cues after startIndex when shifting right", async () => {
     const store = makeStore()
-    
+
     const initialState = {
       cues: [
         { _id: 1, name: "Cue 1", index: 0 },
         { _id: 2, name: "Cue 2", index: 1 },
-        { _id: 3, name: "Cue 3", index: 2 }
+        { _id: 3, name: "Cue 3", index: 2 },
       ],
-      name: "My Presentation"
+      name: "My Presentation",
     }
 
     store.dispatch(setPresentationInfo(initialState))
@@ -977,20 +1082,20 @@ describe("presentationReducer asynchronous actions", () => {
     const shiftedCues = [
       { _id: 1, name: "Cue 1", index: 0 },
       { _id: 2, name: "Cue 2", index: 2 },
-      { _id: 3, name: "Cue 3", index: 3 }
+      { _id: 3, name: "Cue 3", index: 3 },
     ]
 
     presentationService.shiftIndexes.mockResolvedValue({
       cues: shiftedCues,
       name: "My Presentation",
-      id: "123"
+      id: "123",
     })
-   
-     presentationService.get.mockResolvedValue({
-       cues: shiftedCues,
-       name: "My Presentation",
-       id: "123"
-     })
+
+    presentationService.get.mockResolvedValue({
+      cues: shiftedCues,
+      name: "My Presentation",
+      id: "123",
+    })
 
     await store.dispatch(shiftPresentationIndexes("123", 1, "right"))
 
@@ -1023,7 +1128,9 @@ describe("presentationReducer asynchronous actions", () => {
     store.dispatch({ type: saveIndexCount.fulfilled.type, payload })
     expect(store.getState().presentation.saving).toBe(false)
     expect(store.getState().presentation.indexCount).toBe(2)
-    expect(store.getState().presentation.cues.every(c => c.index < 2)).toBe(true)
+    expect(store.getState().presentation.cues.every((c) => c.index < 2)).toBe(
+      true
+    )
 
     // rejected should also ensure saving is false
     store.dispatch({ type: saveIndexCount.pending.type })
@@ -1056,7 +1163,9 @@ describe("presentationReducer asynchronous actions", () => {
     store.dispatch({ type: saveScreenCount.fulfilled.type, payload })
     expect(store.getState().presentation.saving).toBe(false)
     expect(store.getState().presentation.screenCount).toBe(2)
-    expect(store.getState().presentation.cues.every(c => c.screen <= 2)).toBe(true)
+    expect(store.getState().presentation.cues.every((c) => c.screen <= 2)).toBe(
+      true
+    )
 
     // rejected should also ensure saving is false
     store.dispatch({ type: saveScreenCount.pending.type })
@@ -1086,24 +1195,24 @@ describe("presentationReducer asynchronous actions", () => {
     })
 
     await expect(
-      store.dispatch(
-        swapCues("123", firstUpdatedCue, secondUpdatedCue)
-      )
+      store.dispatch(swapCues("123", firstUpdatedCue, secondUpdatedCue))
     ).rejects.toThrow("Not found")
   })
 
   it("should update presentation name only", async () => {
     const store = makeStore()
 
-    store.dispatch(setPresentationInfo({
-      cues: [],
-      name: "Old Presentation Name",
-      screenCount: 3,
-      indexCount: 5,
-    }))
+    store.dispatch(
+      setPresentationInfo({
+        cues: [],
+        name: "Old Presentation Name",
+        screenCount: 3,
+        indexCount: 5,
+      })
+    )
 
     presentationService.updatePresentationName.mockResolvedValue({
-      name: "New Name"
+      name: "New Name",
     })
 
     await store.dispatch(updatePresentationName("123", "New Name"))
@@ -1114,15 +1223,17 @@ describe("presentationReducer asynchronous actions", () => {
   it("throws error when updatePresentationName fails", async () => {
     const store = makeStore()
 
-    store.dispatch(setPresentationInfo({
-      cues: [],
-      name: "Old Name",
-      screenCount: 3,
-      indexCount: 5,
-    }))
+    store.dispatch(
+      setPresentationInfo({
+        cues: [],
+        name: "Old Name",
+        screenCount: 3,
+        indexCount: 5,
+      })
+    )
 
     presentationService.updatePresentationName.mockRejectedValue({
-      response: { data: { error: "Name invalid" } }
+      response: { data: { error: "Name invalid" } },
     })
 
     await expect(

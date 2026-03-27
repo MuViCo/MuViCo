@@ -24,7 +24,7 @@ describe("POST /link-drive and /unlink-drive", () => {
     authHeader = `Bearer ${response.body.token}`
 
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", authHeader)
       .send({ name: "Test presentation" })
   })
@@ -86,7 +86,7 @@ describe("POST /change-password", () => {
   beforeEach(async () => {
     await User.deleteMany({})
     await Presentation.deleteMany({})
-    
+
     await api
       .post("/api/signup")
       .send({ username: "testuser", password: "testpassword" })
@@ -102,9 +102,9 @@ describe("POST /change-password", () => {
     const response = await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
       .expect("Content-Type", /application\/json/)
@@ -117,9 +117,9 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "wrongpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "wrongpassword",
+        newPassword: "newpassword123",
       })
       .expect(401)
       .expect("Content-Type", /application\/json/)
@@ -129,9 +129,9 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "wk" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "wk",
       })
       .expect(400)
       .expect("Content-Type", /application\/json/)
@@ -140,9 +140,9 @@ describe("POST /change-password", () => {
   test("changing password fails without authentication", async () => {
     await api
       .post("/api/users/change-password")
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(401)
   })
@@ -151,17 +151,17 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
 
     const loginResponse = await api
       .post("/api/login")
-      .send({ 
-        username: "testuser", 
-        password: "newpassword123" 
+      .send({
+        username: "testuser",
+        password: "newpassword123",
       })
       .expect(200)
 
@@ -172,17 +172,17 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
 
     await api
       .post("/api/login")
-      .send({ 
-        username: "testuser", 
-        password: "testpassword" 
+      .send({
+        username: "testuser",
+        password: "testpassword",
       })
       .expect(401)
   })

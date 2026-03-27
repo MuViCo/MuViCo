@@ -34,18 +34,6 @@ describe("presentations home service api", () => {
     })
   })
 
-  test("create calls POST /api/home with payload", async () => {
-    const payload = { name: "New", description: "Desc", screenCount: 2 }
-    axios.post.mockResolvedValue({ data: { id: "1", ...payload } })
-
-    const result = await presentationsService.create(payload)
-
-    expect(result).toEqual({ id: "1", ...payload })
-    expect(axios.post).toHaveBeenCalledWith("/api/home/", payload, {
-      headers: { Authorization: token },
-    })
-  })
-
   test("update sends name and description to PUT /api/home/:id", async () => {
     const payload = {
       name: "Updated title",

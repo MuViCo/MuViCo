@@ -3,7 +3,7 @@ import Togglable from "../utils/Togglable"
 import PresentationForm from "./PresentationForm"
 
 const PresentationFormWrapper = ({
-  createPresentation,
+  createPresentationHandler,
   togglableRef,
   handleCancel,
 }) => (
@@ -16,7 +16,7 @@ const PresentationFormWrapper = ({
         buttonId="presentation-form-togglable"
       >
         <PresentationForm
-          createPresentation={createPresentation}
+          createPresentationHandler={createPresentationHandler}
           onCancel={handleCancel}
         />
       </Togglable>

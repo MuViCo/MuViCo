@@ -33,7 +33,7 @@ describe("test presentation", () => {
     authHeader = `Bearer ${response.body.token}`
 
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", authHeader)
       .send({ name: "Test presentation", screenCount: 4 })
     const presentation = await Presentation.findOne({
@@ -57,7 +57,7 @@ describe("test presentation", () => {
     const url = `/api/presentation/${testPresentationId}`
 
     const response = await api
-      .put(url)
+      .post(url)
       .set("Authorization", authHeader)
       .attach("image", mockImageBuffer, "mock_image.png")
       .field("index", index)
@@ -70,13 +70,15 @@ describe("test presentation", () => {
 
   const createAudioCue = async (index, cueName, screen) => {
     if (!testPresentationId) {
-      throw new Error("Error in createAudioCue: testPresentationId is undefined")
+      throw new Error(
+        "Error in createAudioCue: testPresentationId is undefined"
+      )
     }
 
     const url = `/api/presentation/${testPresentationId}`
 
     const response = await api
-      .put(url)
+      .post(url)
       .set("Authorization", authHeader)
       .attach("image", mockAudioBuffer, {
         filename: "mock_audio.mp3",
@@ -173,7 +175,7 @@ describe("test presentation", () => {
 
     it("PUT /api/presentation/:id with missing required fields should return 400", async () => {
       const response = await api
-        .put("/api/presentation/:id")
+        .post("/api/presentation/:id")
         .set("Authorization", authHeader)
 
       expect(response.status).toBe(400)
@@ -197,7 +199,7 @@ describe("test presentation", () => {
 
     test("creates cue with explicit color", async () => {
       const response = await api
-        .put(`/api/presentation/${testPresentationId}`)
+        .post(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
         .field("index", 2)
         .field("cueName", "Color Cue")
@@ -214,7 +216,7 @@ describe("test presentation", () => {
 
     test("creates cue with default color when color is missing", async () => {
       const response = await api
-        .put(`/api/presentation/${testPresentationId}`)
+        .post(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
         .field("index", 3)
         .field("cueName", "Default Color Cue")
@@ -246,7 +248,7 @@ describe("test presentation", () => {
 
     test("throws error with missing fields", async () => {
       const response = await api
-        .put(`/api/presentation/${testPresentationId}`)
+        .post(`/api/presentation/${testPresentationId}`)
         .set("Authorization", authHeader)
         .field("index", "1")
         .field("fileName", "")
@@ -353,8 +355,12 @@ describe("test presentation", () => {
       await createCue(1, "Swap Cue 2", 1)
 
       const presentation = await Presentation.findById(testPresentationId)
-      const firstCue = presentation.cues.find((cue) => cue.name === "Swap Cue 1")
-      const secondCue = presentation.cues.find((cue) => cue.name === "Swap Cue 2")
+      const firstCue = presentation.cues.find(
+        (cue) => cue.name === "Swap Cue 1"
+      )
+      const secondCue = presentation.cues.find(
+        (cue) => cue.name === "Swap Cue 2"
+      )
 
       firstCueId = firstCue._id.toString()
       secondCueId = secondCue._id.toString()
@@ -381,7 +387,8 @@ describe("test presentation", () => {
       expect(response.body.secondCue.index).toBe(0)
       expect(response.body.secondCue.screen).toBe(1)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
       const updatedFirstCue = updatedPresentation.cues.id(firstCueId)
       const updatedSecondCue = updatedPresentation.cues.id(secondCueId)
 
@@ -424,7 +431,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Swap target position is already occupied by another cue.")
+      expect(response.body.error).toBe(
+        "Swap target position is already occupied by another cue."
+      )
     })
 
     test("rejects swap when cue types do not match target screens", async () => {
@@ -444,7 +453,9 @@ describe("test presentation", () => {
       await createAudioCue(0, "Audio Cue", 5)
 
       const presentation = await Presentation.findById(testPresentationId)
-      const visualCue = presentation.cues.find((cue) => cue.name === "Visual Cue")
+      const visualCue = presentation.cues.find(
+        (cue) => cue.name === "Visual Cue"
+      )
       const audioCue = presentation.cues.find((cue) => cue.name === "Audio Cue")
 
       const response = await api
@@ -460,7 +471,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Cue type does not match swap target screen")
+      expect(response.body.error).toBe(
+        "Cue type does not match swap target screen"
+      )
     })
   })
 

@@ -1,6 +1,7 @@
 const axios = require("axios")
 const presentation = require("../../services/presentation")
 const get = presentation.default.get
+const create = presentation.default.create
 const remove = presentation.default.remove
 const addCue = presentation.default.addCue
 const removeCue = presentation.default.removeCue
@@ -48,6 +49,21 @@ formData.append(
 )
 
 describe("presentation services api tests", () => {
+  test("create calls POST /api/presentation with payload", async () => {
+    const payload = { name: "New", description: "Desc", screenCount: 2 }
+    axios.post.mockResolvedValue({ data: { id: "1", ...payload } })
+
+    const result = await create(payload)
+
+    expect(result).toEqual({ id: "1", ...payload })
+    expect(axios.post).toHaveBeenCalledWith("/api/presentation/", payload, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token,
+      },
+    })
+  })
+
   test("get presentation api call behaves as expected", async () => {
     const response = {
       cues: mockCues,
@@ -74,7 +90,6 @@ describe("presentation services api tests", () => {
     expect(result).toEqual(response)
     expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}`, {
       headers: {
-        "Content-Type": "multipart/form-data",
         Authorization: token,
       },
     })
@@ -88,11 +103,11 @@ describe("presentation services api tests", () => {
       user: "user id",
     }
 
-    axios.put.mockResolvedValue({ data: response })
+    axios.post.mockResolvedValue({ data: response })
 
     const result = await addCue(id, formData)
     expect(result).toEqual(response)
-    expect(axios.put).toHaveBeenCalledWith(`${baseUrl}${id}`, formData, {
+    expect(axios.post).toHaveBeenCalledWith(`${baseUrl}${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: token,
@@ -147,10 +162,7 @@ describe("presentation services api tests", () => {
   test("shiftIndexes in presentation api call behaves as expected", async () => {
     const response = {
       shifted: true,
-      cues: [
-        { ...mockCues[0] },
-        { ...mockCues[1], index: 2 }
-      ]
+      cues: [{ ...mockCues[0] }, { ...mockCues[1], index: 2 }],
     }
 
     axios.put.mockResolvedValue({ data: response })
@@ -159,8 +171,12 @@ describe("presentation services api tests", () => {
     const direction = "right"
     const body = { startIndex, direction }
 
-    const result = await presentation.default.shiftIndexes(id, startIndex, direction)
-    
+    const result = await presentation.default.shiftIndexes(
+      id,
+      startIndex,
+      direction
+    )
+
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/shiftIndexes`,
@@ -168,8 +184,8 @@ describe("presentation services api tests", () => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: token
-        }
+          Authorization: token,
+        },
       }
     )
   })
@@ -193,7 +209,8 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 
   test("saveScreenCountApi in presentation api call behaves as expected", async () => {
@@ -205,7 +222,10 @@ describe("presentation services api tests", () => {
 
     const screenCount = 3
 
-    const result = await presentation.default.saveScreenCountApi(id, screenCount)
+    const result = await presentation.default.saveScreenCountApi(
+      id,
+      screenCount
+    )
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/screenCount`,
@@ -215,7 +235,8 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 
   test("updatePresentationName in presentation api call behaves as expected", async () => {
@@ -228,7 +249,10 @@ describe("presentation services api tests", () => {
 
     const newName = "Updated Presentation Name"
 
-    const result = await presentation.default.updatePresentationName(id, newName)
+    const result = await presentation.default.updatePresentationName(
+      id,
+      newName
+    )
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/name`,
@@ -238,6 +262,7 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 })

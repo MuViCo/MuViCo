@@ -26,7 +26,7 @@ describe("Get /admin as admin", () => {
     // Set the token in the authHeader
     authHeader = `Bearer ${response.body.token}`
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", authHeader)
       .send({ name: "Test presentation" })
   })
@@ -137,7 +137,7 @@ describe("Put /admin/makeadmin/:id", () => {
 
     authHeader = `Bearer ${response.body.token}`
     const user = await User.findOne({ username: "testuser" })
-    
+
     const result = await api
       .put(`/api/admin/makeadmin/${user.id}`)
       .set("Authorization", authHeader)
@@ -155,7 +155,7 @@ describe("Put /admin/makeadmin/:id", () => {
 
     authHeader = `Bearer ${response.body.token}`
     const user = await User.findOne({ username: "testuser" })
-    
+
     await api
       .put(`/api/admin/makeadmin/${user.id}`)
       .set("Authorization", authHeader)
@@ -172,7 +172,7 @@ describe("Put /admin/makeadmin/:id", () => {
 
     authHeader = `Bearer ${response.body.token}`
     const user = await User.findOne({ username: "testadmin" })
-    
+
     await api
       .put(`/api/admin/makeadmin/${user.id}`)
       .set("Authorization", authHeader)
@@ -181,10 +181,8 @@ describe("Put /admin/makeadmin/:id", () => {
 
   test("trying to make a user admin without authorization", async () => {
     const user = await User.findOne({ username: "testuser" })
-    
-    await api
-      .put(`/api/admin/makeadmin/${user.id}`)
-      .expect(401)
+
+    await api.put(`/api/admin/makeadmin/${user.id}`).expect(401)
   })
 
   test("trying to make a non-existent user admin", async () => {
@@ -194,12 +192,12 @@ describe("Put /admin/makeadmin/:id", () => {
 
     authHeader = `Bearer ${response.body.token}`
     const fakeId = new mongoose.Types.ObjectId()
-    
+
     const result = await api
       .put(`/api/admin/makeadmin/${fakeId}`)
       .set("Authorization", authHeader)
       .expect(404)
-      
+
     expect(result.body.error).toBe("user not found")
   })
 })
@@ -220,10 +218,10 @@ describe("Get /admin/userspresentations/:id", () => {
     await api
       .post("/api/signup")
       .send({ username: "testadmin", password: "testpassword" })
-    
+
     // Set admin status
     await User.findOneAndUpdate({ username: "testadmin" }, { isAdmin: true })
-    
+
     // Get admin token
     const response = await api
       .post("/api/login")
@@ -236,21 +234,21 @@ describe("Get /admin/userspresentations/:id", () => {
 
     // Create presentations for testuser
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", authHeader)
       .send({ name: "Admin's Presentation" })
 
     const userToken = await api
       .post("/api/login")
       .send({ username: "testuser", password: "testpassword" })
-    
+
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", `Bearer ${userToken.body.token}`)
       .send({ name: "User's Presentation 1" })
-    
+
     await api
-      .post("/api/home")
+      .post("/api/presentation")
       .set("Authorization", `Bearer ${userToken.body.token}`)
       .send({ name: "User's Presentation 2" })
   })
@@ -280,7 +278,7 @@ describe("Get /admin/userspresentations/:id", () => {
       .set("Authorization", authHeader)
       .expect(200)
 
-    const names = result.body.map(p => p.name)
+    const names = result.body.map((p) => p.name)
     expect(names).toContain("User's Presentation 1")
     expect(names).toContain("User's Presentation 2")
   })
@@ -299,9 +297,7 @@ describe("Get /admin/userspresentations/:id", () => {
   })
 
   test("trying to get user presentations without authorization", async () => {
-    await api
-      .get(`/api/admin/userspresentations/${userId}`)
-      .expect(401)
+    await api.get(`/api/admin/userspresentations/${userId}`).expect(401)
   })
 
   test("getting presentations for user with no presentations", async () => {
@@ -309,7 +305,7 @@ describe("Get /admin/userspresentations/:id", () => {
     await api
       .post("/api/signup")
       .send({ username: "emptyuser", password: "testpassword" })
-    
+
     const emptyUser = await User.findOne({ username: "emptyuser" })
 
     const result = await api

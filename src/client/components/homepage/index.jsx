@@ -63,29 +63,17 @@ const HomePage = ({ user, setUser }) => {
   }, [])
 
   const handleCreatePresentation = async (presentationObject) => {
-    let newPresentation
+    let newId
     try {
-      newPresentation = await dispatch(createPresentation(presentationObject))
+      const newPresentation = await dispatch(
+        createPresentation(presentationObject)
+      )
+      newId = newPresentation.id
+      navigate(`/presentation/${newId}`)
     } catch (error) {
       console.error("Error creating presentation: ", error)
-      navigate("/")
     }
-    const createdId = newPresentation.id
-    navigate(`/presentation/${createdId}`)
   }
-
-  // const createPresentation = async (presentationObject) => {
-  //   try {
-  //     const createdPresentation = await presentationService.create(presentationObject)
-  //     const updatedPresentations = await presentationService.getAll()
-  //     setPresentations(updatedPresentations)
-
-  //     await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast, presentationObject.startingFrameColor)
-  //     navigate(`/presentation/${createdPresentation.id}`)
-  //   } catch (error) {
-  //     console.error("Error creating presentation: ", error)
-  //   }
-  // }
 
   const handlePresentationClick = (presentationId) => {
     navigate(`/presentation/${presentationId}`)
@@ -167,7 +155,7 @@ const HomePage = ({ user, setUser }) => {
         gap={4}
       >
         <PresentationFormWrapper
-          createPresentation={handleCreatePresentation}
+          createPresentationHandler={handleCreatePresentation}
           togglableRef={togglableRef}
           handleCancel={handleCancel}
         />

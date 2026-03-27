@@ -9,7 +9,7 @@ import {
   Select,
 } from "@chakra-ui/react"
 
-const PresentationForm = ({ createPresentation, onCancel }) => {
+const PresentationForm = ({ createPresentationHandler, onCancel }) => {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [screenCount, setScreenCount] = useState(1)
@@ -17,11 +17,11 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
 
   const addPresentation = (event) => {
     event.preventDefault()
-    createPresentation({
+    createPresentationHandler({
       name,
       description,
       screenCount: parseInt(screenCount, 10),
-      startingFrameColor
+      startingFrameColor,
     })
 
     setName("")
@@ -47,7 +47,12 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
         </FormControl>
 
         <FormControl>
-          <FormLabel htmlFor="description" mb={3} fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
+          <FormLabel
+            htmlFor="description"
+            mb={3}
+            fontWeight="bold"
+            style={{ marginTop: ".5em", whiteSpace: "nowrap" }}
+          >
             Description
           </FormLabel>
           <Input
@@ -57,9 +62,13 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setDescription(target.value)}
           />
         </FormControl>
-        
+
         <FormControl isRequired>
-          <FormLabel htmlFor="screen-count" fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
+          <FormLabel
+            htmlFor="screen-count"
+            fontWeight="bold"
+            style={{ marginTop: ".5em", whiteSpace: "nowrap" }}
+          >
             Screen Count (max 8)
           </FormLabel>
           <Input
