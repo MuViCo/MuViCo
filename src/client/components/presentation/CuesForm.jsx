@@ -9,12 +9,7 @@
 
 import {
   FormControl,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
   FormHelperText,
-  NumberDecrementStepper,
   Input,
   Button,
   Heading,
@@ -22,14 +17,20 @@ import {
   Tooltip,
   ChakraProvider,
   extendTheme,
-  Select
+  Select,
+  Box,
+  VStack,
+  HStack,
+  Text,
+  SimpleGrid,
+  Image,
+  IconButton,
 } from "@chakra-ui/react"
-import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
+import { CheckIcon, CloseIcon, InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
+import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
 import {
-  handleNumericInputChange,
-  validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 import { ColorPickerWithPresets } from "./ColorPicker"
@@ -39,6 +40,7 @@ import {
   isAudioRow,
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
+import mediaStore from "./mediaFileStore"
 
 const theme = extendTheme({})
 
@@ -48,15 +50,35 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
-  const [cueName, setCueName] = useState(isAudioMode ? "" : "Blank")
+  const [cueName, setCueName] = useState("")
   const [screen, setScreen] = useState(isAudioMode ? 0 : (position?.screen || 1))
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
   const [color, setColor] = useState()
-  const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff",
-    "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
+  const [selectedColor, setSelectedColor] = useState("#9244ff")
+  const presetColors = ["#000000","#787878", "#ffffff","#ffff00","#ff7f00","#ff0000","#ff00ff","#9142ff","#00ffff","#0000ff","#00ff00", 
+      ]
+
+  // Media pool states
+  const [mediaFiles, setMediaFiles] = useState([])
+  const [soundFiles, setSoundFiles] = useState([])
+  const mediaInputRef = useRef(null)
+  const soundInputRef = useRef(null)
+
+  const getInitialActiveTab = () => {
+    if (typeof window === "undefined") return "media"
+
+    const savedTab = window.localStorage.getItem("editModeMediaPoolActiveTab")
+    if (savedTab === "colors" || savedTab === "media" || savedTab === "audio") {
+      return savedTab
+    }
+
+    return "media"
+  }
+
+  const [activeTab, setActiveTab] = useState(getInitialActiveTab)
 
   const audioRow = getAudioRow(screenCount)
   const allowedTypes = getAllowedMimeTypesForScreen(screen, screenCount)
@@ -71,6 +93,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   }, [position])
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("editModeMediaPoolActiveTab", activeTab)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
     if (!cueData && !position) {
       if (isAudioMode) {
         const audioCues = cues.filter((cue) => cue.cueType === "audio")
@@ -83,7 +111,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         })
       }
     }
-  }, [screen, cues, cueData, isAudioMode, screenCount])
+  }, [screen, cues, cueData, isAudioMode, screenCount, position])
 
   useEffect(() => {
     if (cueData) {
@@ -109,7 +137,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         setCueName("")
       } else {
         setFile("")
-        setCueName("Blank")
+        setCueName("")
         setScreen(position?.screen || 1)
       }
     }
@@ -239,8 +267,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     setActualFile(null)
 
     if (selectedValue.startsWith("/blank")) {
-      if (cueName === "" || cueName === fileName || cueName === "Blank") {
-        setCueName("Blank")
+      if (cueName === fileName || cueName === "Blank" || cueName === "") {
+        setCueName("")
       }
       if (!cueData) {
         setFileName("")
@@ -256,6 +284,95 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       }
     }
   }
+
+  const handleMediaUpload = (event) => {
+    const files = Array.from(event.target.files)
+    const validMediaFiles = files.filter(file => {
+      const isImage = file.type.startsWith("image/")
+      const isVideo = file.type.startsWith("video/")
+      return isImage || isVideo
+    })
+    
+    const newMediaFiles = validMediaFiles.map((file, idx) => ({
+      id: `media-${Date.now()}-${idx}`,
+      file,
+      name: file.name,
+      type: file.type,
+      preview: URL.createObjectURL(file)
+    }))
+    
+    setMediaFiles(prev => [...prev, ...newMediaFiles])
+  }
+
+  const handleSoundUpload = (event) => {
+    const files = Array.from(event.target.files)
+    const validAudioFiles = files.filter(file => isAudioMimeType(file.type))
+    
+    const newSoundFiles = validAudioFiles.map((file, idx) => ({
+      id: `sound-${Date.now()}-${idx}`,
+      file,
+      name: file.name,
+      type: file.type
+    }))
+    
+    setSoundFiles(prev => [...prev, ...newSoundFiles])
+  }
+
+  const removeMediaFile = (id) => {
+    setMediaFiles(prev => {
+      const file = prev.find(f => f.id === id)
+      if (file?.preview) {
+        URL.revokeObjectURL(file.preview)
+      }
+      return prev.filter(f => f.id !== id)
+    })
+  }
+
+  const removeSoundFile = (id) => {
+    setSoundFiles(prev => prev.filter(f => f.id !== id))
+  }
+
+  const getContrastTextColor = (hexColor) => {
+    const current = (hexColor || "").replace("#", "")
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(current)) return "white"
+
+    const normalized =
+      current.length === 3
+        ? current
+            .split("")
+            .map((char) => `${char}${char}`)
+            .join("")
+        : current
+
+    const r = parseInt(normalized.slice(0, 2), 16)
+    const g = parseInt(normalized.slice(2, 4), 16)
+    const b = parseInt(normalized.slice(4, 6), 16)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+
+    return brightness >= 186 ? "black" : "white"
+  }
+
+  const tabStyles = {
+    button: (isActive) => ({
+      padding: "8px 16px",
+      border: "none",
+      backgroundColor: isActive ? "#9244ff" : "#D6BCFA",
+      color: isActive ? "white" : "black",
+      cursor: "pointer",
+      fontWeight: isActive ? "bold" : "normal",
+      borderRadius: isActive ? "4px 4px 0 0" : "4px",
+      marginRight: "4px",
+      transition: "all 0.2s",
+      width: "100px",
+    }),
+    tabContent: {
+      padding: "16px",
+      backgroundColor: "#D6BCFA",
+      borderRadius: "0 4px 4px 4px",
+      minHeight: "200px",
+      overflowY: "auto",
+    },
+  }
   // form with inputs for cue name, index, screen number, file upload, and color selection. 
   // It also includes front end validation for file types and displays error messages when necessary. 
   // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
@@ -265,146 +382,288 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
-            <Heading size="md">Edit Element</Heading>
+            <Heading size="md" mb={4}>Edit Element</Heading>
           ) : (
-            <Heading size="md">Add element</Heading>
+            <Heading size="md" mb={4}>Add element</Heading>
           )}
-          {/* {!isAudioMode && (
-            <>
-              <FormHelperText mb={2}>
-                {screenCount === 1
-                  ? "Screen 1 for images and videos and screen 2 for audio only*"
-                  : `Screens 1-${screenCount} for images and videos and screen ${audioRow} for audio only*`
-                }
-              </FormHelperText>
-              <NumberInput
-                id="screen-number"
-                value={screen}
-                mb={4}
-                min={1}
-                max={audioRow}
-                onChange={handleNumericInputChange(setScreen)}
-                onBlur={validateAndSetNumber(setScreen, 1, audioRow)}
-                required
+
+          <Box>
+            <HStack spacing={0} mb={0}>
+              <Button
+                onClick={() => setActiveTab("colors")}
+                style={tabStyles.button(activeTab === "colors")}
+                variant="unstyled"
               >
-                <NumberInputField data-testid="screen-number" />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </>
-          )} */}
-
-          {/* {isAudioMode && (
-            <FormHelperText mb={4} color="purple.600">
-              Adding audio cue (screen not applicable)
-            </FormHelperText>
-          )}
-          <FormHelperText mb={2}>Frame 0-{indexCount - 1}*</FormHelperText>
-          <NumberInput
-            id="index-number"
-            value={index}
-            mb={4}
-            min={0}
-            max={indexCount - 1}
-            onChange={handleNumericInputChange(setIndex)}
-            onBlur={validateAndSetNumber(setIndex, 0, indexCount)}
-            required
-          >
-            <NumberInputField data-testid="index-number" />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-          <FormHelperText mb={2}>Name*</FormHelperText>
-          <Input
-            data-testid="cue-name"
-            id="cue-name"
-            value={cueName}
-            placeholder="Element name"
-            mb={2}
-            onChange={(e) => setCueName(e.target.value)}
-            required
-          /> */}
-          <Divider orientation="horizontal" my={4} />
-          <FormHelperText mb={2}>
-            {isAudioMode ? "Upload audio file" : "Upload media"}
-            <Tooltip
-              label={
-                isAudioMode || isAudioRow(screen, screenCount) ? (
-                  <><strong>Valid audio types: </strong> .mp3 and .wav</>
-                ) : (
-                  <>
-                    <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
-                    .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
-                    <br />
-                    <strong>Valid video types: </strong> .mp4 and .3gp
-                  </>
-                )
-              }
-              placement="right-end"
-              p={2}
-              fontSize="sm"
-            >
-              <Button variant="ghost" size="xs" marginLeft={2}>
-                <InfoOutlineIcon />
+                Colors
               </Button>
-            </Tooltip>
-          </FormHelperText>
-          <label htmlFor="file-upload">
-            <Button as="span" cursor="pointer" w={40} mr={2}>
-              Upload media
-            </Button>
-          </label>
-          <Input
-            type="file"
-            id="file-upload"
-            data-testid="file-name"
-            style={{ display: "none" }}
-            onChange={fileSelected}
-            accept={allowedTypes.join(",")}
-          />{" "}
-          {fileName &&
-            fileName !== "blank.png" &&
-            fileName !== "undefined" &&
-            (!allowedTypes.includes(file.type) ? (
-              <>
-                {" "}
-                <CloseIcon color="#D2042D" />
-                <FormHelperText>{fileName}</FormHelperText>
-              </>
-            ) : (
-              <>
-                <CheckIcon color="#03C03C" />
-                <FormHelperText>{fileName}</FormHelperText>
-              </>
-            ))}
-          {error && <Error error={error} />}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", my: 4 }}>
-            <Divider orientation="horizontal" />
-            <FormHelperText mb={2} whiteSpace="nowrap">or</FormHelperText>
-            <Divider orientation="horizontal" />
-          </div>
-          <div className="App">
+              <Button
+                onClick={() => setActiveTab("media")}
+                style={tabStyles.button(activeTab === "media")}
+                variant="unstyled"
+              >
+                Media
+              </Button>
+              <Button
+                onClick={() => setActiveTab("audio")}
+                style={tabStyles.button(activeTab === "audio")}
+                variant="unstyled"
+              >
+                Audio
+              </Button>
+            </HStack>
 
-            <FormHelperText mb={2}>
-              {"Select a color for the element"
-              }
-            </FormHelperText>
-            {/*Color picker component with preset colors and custom color selection*/}
-            <ColorPickerWithPresets
-              color={color}
-              onChange={setColor}
-              presetColors={presetColors}
-            />
-          </div>
-          <Divider orientation="horizontal" my={4} />
+            <Box style={tabStyles.tabContent}>
+              {activeTab === "colors" && (
+                <VStack spacing={4} align="stretch">
+                  <FormHelperText color="black">
+                    Select a color and drag it to the grid
+                  </FormHelperText>
+
+                  <ColorPickerWithPresets
+                    color={selectedColor}
+                    onChange={setSelectedColor}
+                    presetColors={presetColors}
+                  />
+                  <FormHelperText mb={2} color="black">Element name</FormHelperText>
+                    <Input
+                      data-testid="cue-name"
+                      id="cue-name"
+                      value={cueName}
+                      placeholder="Color Element"
+                      mb={2}
+                      color="black"
+                      onChange={(e) => setCueName(e.target.value)}
+                      required
+                    />
+
+                  <Box
+                    className="droppable-color-element"
+                    draggable={true}
+                    onDragStart={(e) => {
+                      const normalizedCueName = cueName.trim()
+
+                      e.dataTransfer.setData("application/json", JSON.stringify({
+                        type: "newCueFromForm",
+                        cueName: normalizedCueName.toLowerCase() !== "blank" ? normalizedCueName : "",
+                        color: selectedColor || "#e014ee",
+                        elementType: "color",
+                      }))
+                    }}
+                    p={6}
+                    bg={selectedColor || "purple.100"}
+                    border="2px dashed"
+                    borderColor="purple.400"
+                    borderRadius="md"
+                    textAlign="center"
+                    cursor="grab"
+                    _active={{ cursor: "grabbing" }}
+                    _hover={{ opacity: 0.8 }}
+                  >
+                    <Text color={getContrastTextColor(selectedColor)} fontWeight="bold">
+                      Drag color to grid
+                    </Text>
+                  </Box>
+                </VStack>
+              )}
+
+              {activeTab === "media" && (
+                <VStack spacing={4} align="stretch" >
+                  <FormHelperText color="black">
+                    Upload images or videos and drag them to the grid
+                    <Tooltip
+                      label={
+                        <>
+                          <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                          .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
+                          <br />
+                          <strong>Valid video types: </strong> .mp4 and .3gp
+                        </>
+                      }
+                      placement="right-end"
+                      p={2}
+                      fontSize="sm"
+                    >
+                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
+                        <InfoOutlineIcon />
+                      </Button>
+                    </Tooltip>
+                  </FormHelperText>
+
+                  <Input
+                    type="file"
+                    id="media-upload"
+                    ref={mediaInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleMediaUpload}
+                    accept="image/*,video/mp4,video/3gpp"
+                    multiple
+                  />
+
+                  <Button
+                    onClick={() => mediaInputRef.current?.click()}
+                    colorScheme="purple"
+                    variant="outline"
+                    _hover={{ backgroundColor: "#b366ff" }}
+                    color="black"
+                  >
+                    Upload Images/Videos
+                  </Button>
+
+                  {mediaFiles.length > 0 && (
+                    <>
+                      <Divider />
+                      <Text fontWeight="bold">Media Pool ({mediaFiles.length})</Text>
+                      <SimpleGrid columns={2} spacing={3}>
+                        {mediaFiles.map((media) => (
+                          <Box
+                            key={media.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              // Store the file in mediaStore so it can be retrieved on drop
+                              mediaStore.addFile(media.id, media.file)
+                              
+                              e.dataTransfer.setData("application/json", JSON.stringify({
+                                type: "newCueFromForm",
+                                cueName: media.name,
+                                elementType: "media",
+                                mediaId: media.id,
+                              }))
+                            }}
+                            position="relative"
+                            border="2px solid"
+                            borderColor="purple.300"
+                            borderRadius="md"
+                            p={2}
+                            cursor="grab"
+                            _active={{ cursor: "grabbing" }}
+                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                          >
+                            <IconButton
+                              icon={<DeleteIcon />}
+                              size="xs"
+                              colorScheme="red"
+                              position="absolute"
+                              top={1}
+                              right={1}
+                              onClick={() => removeMediaFile(media.id)}
+                              zIndex={1}
+                            />
+                            {media.type.startsWith("image/") && (
+                              <Image
+                                src={media.preview}
+                                alt={media.name}
+                                maxH="100px"
+                                objectFit="contain"
+                                w="100%"
+                              />
+                            )}
+                            {media.type.startsWith("video/") && (
+                              <Box bg="gray.200" p={4} textAlign="center">
+                                <Text fontSize="2xl">🎥</Text>
+                              </Box>
+                            )}
+                            <Text fontSize="xs" mt={1} noOfLines={1}>
+                              {media.name}
+                            </Text>
+                          </Box>
+                        ))}
+                      </SimpleGrid>
+                    </>
+                  )}
+                </VStack>
+              )}
+
+              {activeTab === "audio" && (
+                <VStack spacing={4} align="stretch">
+                  <FormHelperText color="black">
+                    Upload audio files and drag them to the grid
+                    <Tooltip
+                      label={<><strong>Valid audio types: </strong> .mp3 and .wav</>}
+                      placement="right-end"
+                      p={2}
+                      fontSize="sm"
+                    >
+                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
+                        <InfoOutlineIcon />
+                      </Button>
+                    </Tooltip>
+                  </FormHelperText>
+
+                  <Input
+                    type="file"
+                    id="sound-upload"
+                    ref={soundInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleSoundUpload}
+                    accept="audio/mpeg,audio/wav,audio/vnd.wave"
+                    multiple
+                  />
+
+                  <Button
+                    onClick={() => soundInputRef.current?.click()}
+                    colorScheme="purple"
+                    variant="outline"
+                    color="black"
+                  >
+                    Upload Audio Files
+                  </Button>
+
+                  {soundFiles.length > 0 && (
+                    <>
+                      <Divider />
+                      <Text fontWeight="bold" color="black">Sound Pool ({soundFiles.length})</Text>
+                      <VStack spacing={2} align="stretch">
+                        {soundFiles.map((sound) => (
+                          <Box
+                            key={sound.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              // Store the file in mediaStore so it can be retrieved on drop
+                              mediaStore.addFile(sound.id, sound.file)
+                              
+                              e.dataTransfer.setData("application/json", JSON.stringify({
+                                type: "newCueFromForm",
+                                cueName: sound.name,
+                                elementType: "sound",
+                                soundId: sound.id,
+                              }))
+                            }}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            border="2px solid"
+                            borderColor="purple.300"
+                            borderRadius="md"
+                            p={3}
+                            cursor="grab"
+                            _active={{ cursor: "grabbing" }}
+                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                          >
+                            <Box display="flex" alignItems="center" flex={1} color="black">
+                              <SpeakerIcon boxSize="20px" mr={2} />
+                              <Text fontSize="sm" noOfLines={1}>
+                                {sound.name}
+                              </Text>
+                            </Box>
+                            <IconButton
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              colorScheme="red"
+                              onClick={() => removeSoundFile(sound.id)}
+                            />
+                          </Box>
+                        ))}
+                      </VStack>
+                    </>
+                  )}
+                </VStack>
+              )}
+            </Box>
+          </Box>
+
+
+          {error && <Error error={error} />}
         </FormControl>
-        <Button mb={4} type="submit" colorScheme="purple">
-          Submit
-        </Button>
       </form>
     </ChakraProvider>
   )

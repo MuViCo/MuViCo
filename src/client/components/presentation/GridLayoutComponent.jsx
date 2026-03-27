@@ -557,29 +557,31 @@ const GridLayoutComponent = ({
 
             {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
 
-            <Tooltip label={cue.name} placement="top" hasArrow>
-              <Text
-                position="absolute"
-                top="50%"
-                left="50%"
-                transform="translate(-50%, -50%)"
-                color="white"
-                fontWeight="bold"
-                bg="rgba(0, 0, 0, 0.5)"
-                p={2}
-                borderRadius="md"
-                whiteSpace="nowrap"
-                overflow="hidden"
-                textOverflow="ellipsis"
-                display="inline-block"
-                maxWidth="80%"
-                textAlign="center"
-                cursor="default"
-                style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
-              >
-                {cue.name}
-              </Text>
-            </Tooltip>
+            {cue.name?.trim() && (
+              <Tooltip label={cue.name} placement="top" hasArrow>
+                <Text
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  color="white"
+                  fontWeight="bold"
+                  bg="rgba(0, 0, 0, 0.5)"
+                  p={2}
+                  borderRadius="md"
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  display="inline-block"
+                  maxWidth="80%"
+                  textAlign="center"
+                  cursor="default"
+                  style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
+                >
+                  {cue.name}
+                </Text>
+              </Tooltip>
+            )}
           </Box>
           <Dialog
             isOpen={isDialogOpen}

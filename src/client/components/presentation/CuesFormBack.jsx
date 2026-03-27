@@ -83,7 +83,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         })
       }
     }
-  }, [screen, cues, cueData, isAudioMode, screenCount])
+  }, [screen, cues, cueData, isAudioMode, screenCount, position])
 
   useEffect(() => {
     if (cueData) {

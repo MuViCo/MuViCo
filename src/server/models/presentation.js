@@ -119,7 +119,7 @@ const presentationSchema = mongoose.Schema({
           message: "index must be an integer"
         }
       },
-      name: { type: String, required: true, minlength: 1, maxlength: 100 },
+      name: { type: String, default: "", maxlength: 100 },
       screen: { 
         type: Number, 
         required: true,
