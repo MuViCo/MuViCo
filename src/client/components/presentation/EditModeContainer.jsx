@@ -213,6 +213,7 @@ class MyFirstGrid extends React.Component {
           
           <div style={{backgroundColor: "#B494C3", borderRadius: "8px"}} key="header">
             <h1 style={{ margin: "0", fontWeight: "bold", padding: "20px", textAlign: "center-left", justifyContent:"center"  }}>EDIT MODE</h1>
+            
             </div>
           
           <div style={{ backgroundColor: "#B494C3", borderRadius: "8px" }} key="a">

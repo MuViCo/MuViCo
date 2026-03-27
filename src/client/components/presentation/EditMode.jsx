@@ -1037,12 +1037,21 @@ const EditMode = ({
     if (isShowMode) {
       return
     }
+
+    let dragData = null
+    try {
+      const dataStr = event.dataTransfer.getData("application/json")
+      if (dataStr) dragData = JSON.parse(dataStr)
+    } catch (e) {
+      // ignore parsing error
+    }
+
     const files = Array.from(event.dataTransfer.files)
     const mediaFiles = files.filter(
       (file) => isImageOrVideo(file) || isAudio(file)
     )
 
-    if (mediaFiles.length === 0 || !containerRef.current) {
+    if (mediaFiles.length === 0 && !dragData) {
       return
     }
 
@@ -1053,6 +1062,28 @@ const EditMode = ({
       rowHeight,
       gap
     )
+
+    if (dragData && dragData.type === "newCueFromForm") {
+      const audioRowIndex = getAudioRow(presentation.screenCount)
+      const dataToSave = {
+        index: xIndex,
+        cueName: dragData.cueName,
+        screen: yIndex,
+        color: dragData.color,
+      }
+      
+      // Let's call addCue with dummy placeholder if it's not a file? Since the form might have files, but we are just making a generic element
+      if (cueExists(xIndex, yIndex)) {
+        showToast({
+          title: "Cannot drop here",
+          description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
+          status: "error",
+        })
+        return
+      }
+      await addCue(dataToSave)
+      return
+    }
 
     const file = mediaFiles[0]
     const audioRowIndex = getAudioRow(presentation.screenCount)
@@ -1426,13 +1457,6 @@ const EditMode = ({
           <ToolBox
             isOpen={isToolboxOpen}
             onClose={() => setIsToolboxOpen(false)}
-            position={doubleClickPosition}
-            addCue={addCue}
-            cues={cues}
-            cueData={selectedCue || null}
-            updateCue={updateCue}
-            screenCount={presentation.screenCount}
-            indexCount={indexCount}
           />
         </Box>
         <Box

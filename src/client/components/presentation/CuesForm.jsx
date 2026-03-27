@@ -9,12 +9,7 @@
 
 import {
   FormControl,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
   FormHelperText,
-  NumberDecrementStepper,
   Input,
   Button,
   Heading,
@@ -22,14 +17,13 @@ import {
   Tooltip,
   ChakraProvider,
   extendTheme,
-  Select
+  Select,
+  Box,
 } from "@chakra-ui/react"
 import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
 import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
 import {
-  handleNumericInputChange,
-  validateAndSetNumber,
   getNextAvailableIndex,
 } from "../utils/numberInputUtils"
 import { ColorPickerWithPresets } from "./ColorPicker"
@@ -265,10 +259,36 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
-            <Heading size="md">Edit Element</Heading>
+            <Heading size="md" mb={4}>Edit Element</Heading>
           ) : (
-            <Heading size="md">Add element</Heading>
+            <Heading size="md" mb={4}>Add element</Heading>
           )}
+
+          <Box
+            className="droppable-element"
+            draggable={true}
+            unselectable="on"
+            onDragStart={(e) => {
+              // Set some data indicating it's a drag from CuesForm
+              e.dataTransfer.setData("application/json", JSON.stringify({ 
+                type: "newCueFromForm",
+                cueName: cueName || "New Element", 
+                color: color || "#e014ee"
+              }))
+            }}
+            p={4}
+            mb={4}
+            bg="purple.100"
+            border="2px dashed"
+            borderColor="purple.400"
+            borderRadius="md"
+            textAlign="center"
+            cursor="grab"
+            _active={{ cursor: "grabbing" }}
+          >
+            Drag me to timeline!
+          </Box>
+
           {/* {!isAudioMode && (
             <>
               <FormHelperText mb={2}>
