@@ -218,6 +218,24 @@ describe("test presentation", () => {
       expect(createdCue.color).toBe("#ff69b4")
     })
 
+    test("creates color-only cue with empty name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "")
+        .field("screen", 2)
+        .field("color", "#ff69b4")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.index === 1 && cue.screen === 2
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.name).toBe("")
+      expect(createdCue.color).toBe("#ff69b4")
+    })
+
     test("creates cue with default color when color is missing", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
@@ -315,6 +333,21 @@ describe("test presentation", () => {
         .field("color", "#4b0082")
         .expect(200)
 
+      expect(response.body.color).toBe("#4b0082")
+    })
+
+    test("updates color-only cue with empty name", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "")
+        .field("screen", 2)
+        .field("color", "#4b0082")
+        .field("image", "null")
+        .expect(200)
+
+      expect(response.body.name).toBe("")
       expect(response.body.color).toBe("#4b0082")
     })
 

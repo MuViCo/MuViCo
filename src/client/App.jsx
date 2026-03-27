@@ -11,6 +11,7 @@ import FrontPage from "./components/frontpage"
 import HomePage from "./components/homepage"
 import PresentationPage from "./components/presentation"
 import TermsPage from "./components/termspage"
+import PrivacyPage from "./components/privacypage"
 import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
@@ -99,6 +100,7 @@ const App = () => {
               path="/userspresentations/:id"
               element={<UserPresentations />}
             />
+            <Route path="/privacy" element={<PrivacyPage />} />
           </Routes>
         </Container>
         <Footer />
