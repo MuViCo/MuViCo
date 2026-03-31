@@ -272,7 +272,23 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div style={{ backgroundColor: "#7c5b8a", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", borderRadius: "8px" }} key="c">
+          <div
+            style={{
+              backgroundColor: "#7c5b8a",
+              paddingLeft: "5px",
+              paddingTop: "5px",
+              paddingRight: "5px",
+              paddingBottom: "16px",
+              borderRadius: "8px",
+              boxSizing: "border-box",
+              height: "100%",
+              minHeight: 0,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            key="c"
+          >
             <EditMode
               id={id}
               cues={cues}

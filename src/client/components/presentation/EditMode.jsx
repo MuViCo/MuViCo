@@ -1113,11 +1113,20 @@ const EditMode = ({
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         data-testid="drop-area"
+        style={{
+          height: "100%",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
       >
         <Box
           display="flex"
           width="100%"
           marginTop="0px"
+          height="100%"
+          minHeight={0}
           overflow="auto"
         >
           <Box
@@ -1128,6 +1137,7 @@ const EditMode = ({
             left={0}
             zIndex={2}
             bg={"transparent"}
+            flexShrink={0}
           >
             <Box h={`${rowHeight}px`} bg="transparent" />
 
@@ -1245,6 +1255,7 @@ const EditMode = ({
           <Box
             position="relative"
             pointerEvents={isShowMode ? "none" : "auto"}
+            minHeight={0}
             sx={{
               ".layout > .react-grid-placeholder": {
                 background: bgColorHover,
@@ -1256,6 +1267,7 @@ const EditMode = ({
           >
             <Box
               height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
+              minHeight="100%"
               width="100%"
               position="relative"
               data-testid="edit-mode-grid-container"
