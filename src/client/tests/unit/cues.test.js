@@ -29,6 +29,14 @@ const getColorSwatches = () => document.querySelectorAll(".picker__swatch")
 describe("CuesForm new element", () => {
   test("renders core form elements with colorpicker", () => {
     renderVisualForm()
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     expect(screen.getByText("Add element")).toBeInTheDocument()
     expect(screen.getByText(/Frame\s*0-4/i)).toBeInTheDocument()
@@ -45,6 +53,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "2" } })
@@ -72,6 +88,14 @@ describe("CuesForm new element", () => {
     const addCue = jest.fn()
 
     renderVisualForm({ addCue })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "file and color cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "2" } })
@@ -99,6 +123,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "color cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "2" } })
@@ -125,6 +157,14 @@ describe("CuesForm new element", () => {
     const addCue = jest.fn()
 
     renderVisualForm({ addCue })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "preset color cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "3" } })
@@ -149,6 +189,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "2" } })
@@ -185,6 +233,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test audio cue" } })
     fireEvent.change(screen.getByTestId("index-number"), { target: { value: "2" } })
@@ -212,6 +268,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "5" } })
@@ -236,6 +300,14 @@ describe("CuesForm new element", () => {
     const onClose = jest.fn()
 
     renderVisualForm({ addCue, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "5" } })
@@ -251,6 +323,14 @@ describe("CuesForm new element", () => {
     const addCue = jest.fn()
 
     renderVisualForm({ addCue })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "3" } })
     fireEvent.change(screen.getByTestId("index-number"), { target: { value: "2" } })
@@ -276,6 +356,14 @@ describe("CuesForm new element", () => {
     const addCue = jest.fn()
 
     renderVisualForm({ addCue })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "test cue" } })
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "3" } })
@@ -299,6 +387,14 @@ describe("CuesForm new element", () => {
 
   test("uploading another file replaces previous file name", async () => {
     renderVisualForm()
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     const fileInput = screen.getByLabelText("Upload media")
     const file = new File([""], "testfile.png", { type: "image/png" })
@@ -314,6 +410,14 @@ describe("CuesForm new element", () => {
 
   test("form defaults include blank cue name and empty color", async () => {
     renderVisualForm()
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     const cueNameInput = screen.getByTestId("cue-name")
     expect(cueNameInput.value).toBe("Blank")
@@ -338,6 +442,14 @@ describe("CuesForm new element", () => {
         />
       </MemoryRouter>
     )
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     const cueNameInput = screen.getByTestId("cue-name")
     expect(cueNameInput.value).toBe("")
@@ -357,6 +469,14 @@ describe("CuesForm new element", () => {
     }
 
     renderVisualForm({ updateCue, cueData, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     const cueNameInput = screen.getByTestId("cue-name")
     expect(cueNameInput.value).toBe("existing element")
@@ -376,6 +496,14 @@ describe("CuesForm update element", () => {
     }
 
     renderVisualForm({ updateCue, cueData })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     expect(screen.getByTestId("cue-name", { target: { value: "testtt" } })).toBeInTheDocument()
     expect(screen.getByTestId("screen-number", { target: { value: "1" } })).toBeInTheDocument()
@@ -395,6 +523,14 @@ describe("CuesForm update element", () => {
     }
 
     renderVisualForm({ updateCue, cueData, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.change(screen.getByTestId("screen-number"), { target: { value: "2" } })
     fireEvent.change(screen.getByTestId("index-number"), { target: { value: "1" } })
@@ -432,6 +568,14 @@ describe("CuesForm update element", () => {
     }
 
     renderVisualForm({ updateCue, cueData })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     fireEvent.click(screen.getByText("Submit"))
 
@@ -458,6 +602,14 @@ describe("CuesForm update element", () => {
     }
 
     renderVisualForm({ updateCue, cueData, onClose })
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
+    var uploadMediaRadio = screen.queryByText("Upload Media")
+    if (uploadMediaRadio) {
+      fireEvent.click(uploadMediaRadio)
+    }
 
     const fileInput = screen.getByLabelText("Upload media")
     const testFile = new File([""], "invalidfile.pdf", { type: "application/pdf" })

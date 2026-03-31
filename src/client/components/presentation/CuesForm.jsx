@@ -19,8 +19,18 @@ import {
   extendTheme,
   Select,
   Box,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  VStack,
+  Text,
+  SimpleGrid,
+  Image,
+  IconButton,
 } from "@chakra-ui/react"
-import { CheckIcon, CloseIcon, InfoOutlineIcon } from "@chakra-ui/icons"
+import { CheckIcon, CloseIcon, InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
 import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
 import {
@@ -51,6 +61,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const [color, setColor] = useState()
   const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff",
     "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
+
+  // Media pool states
+  const [mediaFiles, setMediaFiles] = useState([])
+  const [soundFiles, setSoundFiles] = useState([])
+  const mediaInputRef = useRef(null)
+  const soundInputRef = useRef(null)
 
   const audioRow = getAudioRow(screenCount)
   const allowedTypes = getAllowedMimeTypesForScreen(screen, screenCount)
@@ -250,6 +266,53 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       }
     }
   }
+
+  const handleMediaUpload = (event) => {
+    const files = Array.from(event.target.files)
+    const validMediaFiles = files.filter(file => {
+      const isImage = file.type.startsWith("image/")
+      const isVideo = file.type.startsWith("video/")
+      return isImage || isVideo
+    })
+    
+    const newMediaFiles = validMediaFiles.map((file, idx) => ({
+      id: `media-${Date.now()}-${idx}`,
+      file,
+      name: file.name,
+      type: file.type,
+      preview: URL.createObjectURL(file)
+    }))
+    
+    setMediaFiles(prev => [...prev, ...newMediaFiles])
+  }
+
+  const handleSoundUpload = (event) => {
+    const files = Array.from(event.target.files)
+    const validAudioFiles = files.filter(file => isAudioMimeType(file.type))
+    
+    const newSoundFiles = validAudioFiles.map((file, idx) => ({
+      id: `sound-${Date.now()}-${idx}`,
+      file,
+      name: file.name,
+      type: file.type
+    }))
+    
+    setSoundFiles(prev => [...prev, ...newSoundFiles])
+  }
+
+  const removeMediaFile = (id) => {
+    setMediaFiles(prev => {
+      const file = prev.find(f => f.id === id)
+      if (file?.preview) {
+        URL.revokeObjectURL(file.preview)
+      }
+      return prev.filter(f => f.id !== id)
+    })
+  }
+
+  const removeSoundFile = (id) => {
+    setSoundFiles(prev => prev.filter(f => f.id !== id))
+  }
   // form with inputs for cue name, index, screen number, file upload, and color selection. 
   // It also includes front end validation for file types and displays error messages when necessary. 
   // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
@@ -264,167 +327,249 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             <Heading size="md" mb={4}>Add element</Heading>
           )}
 
-          <Box
-            className="droppable-element"
-            draggable={true}
-            unselectable="on"
-            onDragStart={(e) => {
-              // Set some data indicating it's a drag from CuesForm
-              e.dataTransfer.setData("application/json", JSON.stringify({ 
-                type: "newCueFromForm",
-                cueName: cueName || "New Element", 
-                color: color || "#e014ee"
-              }))
-            }}
-            p={4}
-            mb={4}
-            bg="purple.100"
-            border="2px dashed"
-            borderColor="purple.400"
-            borderRadius="md"
-            textAlign="center"
-            cursor="grab"
-            _active={{ cursor: "grabbing" }}
-          >
-            Drag me to timeline!
-          </Box>
+          <Tabs variant="enclosed" colorScheme="purple">
+            <TabList>
+              <Tab>Colors</Tab>
+              <Tab>Media</Tab>
+              <Tab>Sounds</Tab>
+            </TabList>
 
-          {/* {!isAudioMode && (
-            <>
-              <FormHelperText mb={2}>
-                {screenCount === 1
-                  ? "Screen 1 for images and videos and screen 2 for audio only*"
-                  : `Screens 1-${screenCount} for images and videos and screen ${audioRow} for audio only*`
-                }
-              </FormHelperText>
-              <NumberInput
-                id="screen-number"
-                value={screen}
-                mb={4}
-                min={1}
-                max={audioRow}
-                onChange={handleNumericInputChange(setScreen)}
-                onBlur={validateAndSetNumber(setScreen, 1, audioRow)}
-                required
-              >
-                <NumberInputField data-testid="screen-number" />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </>
-          )} */}
+            <TabPanels>
+              {/* COLORS TAB */}
+              <TabPanel>
+                <VStack spacing={4} align="stretch">
+                  <FormHelperText>
+                    Select a color and drag it to the timeline
+                  </FormHelperText>
+                  
+                  <ColorPickerWithPresets
+                    color={color}
+                    onChange={setColor}
+                    presetColors={presetColors}
+                  />
 
-          {/* {isAudioMode && (
-            <FormHelperText mb={4} color="purple.600">
-              Adding audio cue (screen not applicable)
-            </FormHelperText>
-          )}
-          <FormHelperText mb={2}>Frame 0-{indexCount - 1}*</FormHelperText>
-          <NumberInput
-            id="index-number"
-            value={index}
-            mb={4}
-            min={0}
-            max={indexCount - 1}
-            onChange={handleNumericInputChange(setIndex)}
-            onBlur={validateAndSetNumber(setIndex, 0, indexCount)}
-            required
-          >
-            <NumberInputField data-testid="index-number" />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-          <FormHelperText mb={2}>Name*</FormHelperText>
-          <Input
-            data-testid="cue-name"
-            id="cue-name"
-            value={cueName}
-            placeholder="Element name"
-            mb={2}
-            onChange={(e) => setCueName(e.target.value)}
-            required
-          /> */}
-          <Divider orientation="horizontal" my={4} />
-          <FormHelperText mb={2}>
-            {isAudioMode ? "Upload audio file" : "Upload media"}
-            <Tooltip
-              label={
-                isAudioMode || isAudioRow(screen, screenCount) ? (
-                  <><strong>Valid audio types: </strong> .mp3 and .wav</>
-                ) : (
-                  <>
-                    <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
-                    .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
-                    <br />
-                    <strong>Valid video types: </strong> .mp4 and .3gp
-                  </>
-                )
-              }
-              placement="right-end"
-              p={2}
-              fontSize="sm"
-            >
-              <Button variant="ghost" size="xs" marginLeft={2}>
-                <InfoOutlineIcon />
-              </Button>
-            </Tooltip>
-          </FormHelperText>
-          <label htmlFor="file-upload">
-            <Button as="span" cursor="pointer" w={40} mr={2}>
-              Upload media
-            </Button>
-          </label>
-          <Input
-            type="file"
-            id="file-upload"
-            data-testid="file-name"
-            style={{ display: "none" }}
-            onChange={fileSelected}
-            accept={allowedTypes.join(",")}
-          />{" "}
-          {fileName &&
-            fileName !== "blank.png" &&
-            fileName !== "undefined" &&
-            (!allowedTypes.includes(file.type) ? (
-              <>
-                {" "}
-                <CloseIcon color="#D2042D" />
-                <FormHelperText>{fileName}</FormHelperText>
-              </>
-            ) : (
-              <>
-                <CheckIcon color="#03C03C" />
-                <FormHelperText>{fileName}</FormHelperText>
-              </>
-            ))}
+                  <Box
+                    className="droppable-color-element"
+                    draggable={true}
+                    unselectable="on"
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("application/json", JSON.stringify({ 
+                        type: "newCueFromForm",
+                        cueName: cueName || "Color Element", 
+                        color: color || "#e014ee",
+                        elementType: "color"
+                      }))
+                    }}
+                    p={6}
+                    bg={color || "purple.100"}
+                    border="2px dashed"
+                    borderColor="purple.400"
+                    borderRadius="md"
+                    textAlign="center"
+                    cursor="grab"
+                    _active={{ cursor: "grabbing" }}
+                    _hover={{ opacity: 0.8 }}
+                  >
+                    <Text fontWeight="bold">Drag color to timeline</Text>
+                  </Box>
+                </VStack>
+              </TabPanel>
+
+              {/* MEDIA TAB */}
+              <TabPanel>
+                <VStack spacing={4} align="stretch">
+                  <FormHelperText>
+                    Upload images or videos and drag them to the timeline
+                    <Tooltip
+                      label={
+                        <>
+                          <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
+                          .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
+                          <br />
+                          <strong>Valid video types: </strong> .mp4 and .3gp
+                        </>
+                      }
+                      placement="right-end"
+                      p={2}
+                      fontSize="sm"
+                    >
+                      <Button variant="ghost" size="xs" marginLeft={2}>
+                        <InfoOutlineIcon />
+                      </Button>
+                    </Tooltip>
+                  </FormHelperText>
+
+                  <Input
+                    type="file"
+                    id="media-upload"
+                    ref={mediaInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleMediaUpload}
+                    accept="image/*,video/mp4,video/3gpp"
+                    multiple
+                  />
+                  
+                  <Button 
+                    onClick={() => mediaInputRef.current?.click()}
+                    colorScheme="purple"
+                    variant="outline"
+                  >
+                    Upload Images/Videos
+                  </Button>
+
+                  {mediaFiles.length > 0 && (
+                    <>
+                      <Divider />
+                      <Text fontWeight="bold">Media Pool ({mediaFiles.length})</Text>
+                      <SimpleGrid columns={2} spacing={3}>
+                        {mediaFiles.map((media) => (
+                          <Box
+                            key={media.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("application/json", JSON.stringify({ 
+                                type: "newCueFromForm",
+                                cueName: media.name,
+                                elementType: "media",
+                                mediaId: media.id,
+                                file: media.file
+                              }))
+                            }}
+                            position="relative"
+                            border="2px solid"
+                            borderColor="purple.300"
+                            borderRadius="md"
+                            p={2}
+                            cursor="grab"
+                            _active={{ cursor: "grabbing" }}
+                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                          >
+                            <IconButton
+                              icon={<DeleteIcon />}
+                              size="xs"
+                              colorScheme="red"
+                              position="absolute"
+                              top={1}
+                              right={1}
+                              onClick={() => removeMediaFile(media.id)}
+                              zIndex={1}
+                            />
+                            {media.type.startsWith("image/") && (
+                              <Image 
+                                src={media.preview} 
+                                alt={media.name}
+                                maxH="100px"
+                                objectFit="contain"
+                                w="100%"
+                              />
+                            )}
+                            {media.type.startsWith("video/") && (
+                              <Box bg="gray.200" p={4} textAlign="center">
+                                <Text fontSize="2xl">🎥</Text>
+                              </Box>
+                            )}
+                            <Text fontSize="xs" mt={1} noOfLines={1}>
+                              {media.name}
+                            </Text>
+                          </Box>
+                        ))}
+                      </SimpleGrid>
+                    </>
+                  )}
+                </VStack>
+              </TabPanel>
+
+              {/* SOUNDS TAB */}
+              <TabPanel>
+                <VStack spacing={4} align="stretch">
+                  <FormHelperText>
+                    Upload audio files and drag them to the timeline
+                    <Tooltip
+                      label={
+                        <><strong>Valid audio types: </strong> .mp3 and .wav</>
+                      }
+                      placement="right-end"
+                      p={2}
+                      fontSize="sm"
+                    >
+                      <Button variant="ghost" size="xs" marginLeft={2}>
+                        <InfoOutlineIcon />
+                      </Button>
+                    </Tooltip>
+                  </FormHelperText>
+
+                  <Input
+                    type="file"
+                    id="sound-upload"
+                    ref={soundInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleSoundUpload}
+                    accept="audio/mpeg,audio/wav,audio/vnd.wave"
+                    multiple
+                  />
+                  
+                  <Button 
+                    onClick={() => soundInputRef.current?.click()}
+                    colorScheme="purple"
+                    variant="outline"
+                  >
+                    Upload Audio Files
+                  </Button>
+
+                  {soundFiles.length > 0 && (
+                    <>
+                      <Divider />
+                      <Text fontWeight="bold">Sound Pool ({soundFiles.length})</Text>
+                      <VStack spacing={2} align="stretch">
+                        {soundFiles.map((sound) => (
+                          <Box
+                            key={sound.id}
+                            draggable={true}
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("application/json", JSON.stringify({ 
+                                type: "newCueFromForm",
+                                cueName: sound.name,
+                                elementType: "sound",
+                                soundId: sound.id,
+                                file: sound.file
+                              }))
+                            }}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            border="2px solid"
+                            borderColor="purple.300"
+                            borderRadius="md"
+                            p={3}
+                            cursor="grab"
+                            _active={{ cursor: "grabbing" }}
+                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                          >
+                            <Box display="flex" alignItems="center" flex={1}>
+                              <Text fontSize="2xl" mr={2}>🔊</Text>
+                              <Text fontSize="sm" noOfLines={1}>
+                                {sound.name}
+                              </Text>
+                            </Box>
+                            <IconButton
+                              icon={<DeleteIcon />}
+                              size="sm"
+                              colorScheme="red"
+                              onClick={() => removeSoundFile(sound.id)}
+                            />
+                          </Box>
+                        ))}
+                      </VStack>
+                    </>
+                  )}
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+
+
           {error && <Error error={error} />}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", my: 4 }}>
-            <Divider orientation="horizontal" />
-            <FormHelperText mb={2} whiteSpace="nowrap">or</FormHelperText>
-            <Divider orientation="horizontal" />
-          </div>
-          <div className="App">
-
-            <FormHelperText mb={2}>
-              {"Select a color for the element"
-              }
-            </FormHelperText>
-            {/*Color picker component with preset colors and custom color selection*/}
-            <ColorPickerWithPresets
-              color={color}
-              onChange={setColor}
-              presetColors={presetColors}
-            />
-          </div>
-          <Divider orientation="horizontal" my={4} />
         </FormControl>
-        <Button mb={4} type="submit" colorScheme="purple">
-          Submit
-        </Button>
       </form>
     </ChakraProvider>
   )
