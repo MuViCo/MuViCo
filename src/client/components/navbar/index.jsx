@@ -118,10 +118,11 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
         <Container
           display="flex"
           p={4}
-          maxW="container.lg"
+          maxW="100%"
           wrap="wrap"
           align="center"
           justify="space-between"
+          background={isPresentationPage ? "rgba(3, 0, 0, 0.8)" : "transparent"}
         >
 
             <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
