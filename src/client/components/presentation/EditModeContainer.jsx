@@ -1,12 +1,15 @@
 import React, { useEffect, forwardRef } from "react"
 import {
   extendTheme,
+  Button,
+  Box,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
 import {
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
+import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
@@ -211,50 +214,43 @@ class MyFirstGrid extends React.Component {
           style={{ width: "100%" }}
         >
           
-          <div
-            style={{
-              backgroundColor: "#B494C3",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "12px 20px",
-            }}
+          <Box
+            display="flex"
+            alignItems="center"
+            gap="12px"
+            padding="12px 20px"
+            backgroundColor="#7c5b8a"
+            borderRadius="8px"
             key="header"
           >
-            <button
-              type="button"
-              aria-label="Header placeholder button"
-              style={{
-                border: "1px solid #000",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                backgroundColor: "#ffffff",
-                color: "#000000",
-                cursor: "default",
-              }}
+            <Button
+              aria-label="Presentation Settings"
+              colorScheme="purple"
+              size="sm"
+              p="6px"
             >
-              Presentation Settings
-            </button>
-            <h1 style={{ margin: "0", fontWeight: "bold" }}>EDIT MODE</h1>
-            <button
-              type="button"
-              aria-label="Header placeholder button"
-              style={{
-                marginLeft: "auto",
-                border: "1px solid #000",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                backgroundColor: "#ffffff",
-                color: "#000000",
-                cursor: "default",
-              }}
+              <img src={settingsIcon} alt="" width="24" height="24" />
+            </Button>
+            <Button
+              colorScheme="purple"
+              size="sm"
+            >
+              Go to Show Mode
+            </Button>
+            <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
+              EDIT MODE
+            </Box>
+            <Button
+              marginLeft="auto"
+              colorScheme="purple"
+              variant="solid"
+              size="sm"
             >
               Tutorial
-            </button>
-          </div>
+            </Button>
+          </Box>
           
-          <div style={{ backgroundColor: "#B494C3", borderRadius: "8px" }} key="a">
+          <div style={{ backgroundColor: "#7c5b8a", borderRadius: "8px" }} key="a">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
             
           </div>
@@ -276,7 +272,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div style={{ backgroundColor: "#B494C3", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", borderRadius: "8px" }} key="c">
+          <div style={{ backgroundColor: "#7c5b8a", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", borderRadius: "8px" }} key="c">
             <EditMode
               id={id}
               cues={cues}
@@ -290,7 +286,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: "#B494C3", paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
+          <div style={{ backgroundColor: "#7c5b8a", paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
             <CuesForm
               addCue={addCue}
               onClose={onClose} 
