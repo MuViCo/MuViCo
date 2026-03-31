@@ -1,8 +1,11 @@
-import React, { useEffect, forwardRef } from "react"
+import React, { useEffect, forwardRef, useState } from "react"
 import {
   extendTheme,
-  Button,
   Box,
+  Button,
+  VStack,
+  HStack,
+  Divider,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -15,11 +18,140 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
+import { ColorPickerWithPresets } from "./ColorPicker"
 
 
 const theme = extendTheme({})
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
+
+// Media Pool Tabs Component
+const MediaPoolTabs = ({
+  addCue,
+  onClose,
+  position,
+  cues,
+  cueData,
+  updateCue,
+  screenCount,
+  isAudioMode,
+  indexCount,
+}) => {
+  const [activeTab, setActiveTab] = useState("media")
+  const [selectedColor, setSelectedColor] = useState("#9244ff")
+
+  const presetColors = [
+    "#000000", "#ffffff", "#787878", "#0000ff", "#9142ff",
+    "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff",
+    "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000",
+    "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"
+  ]
+
+  const tabStyles = {
+    button: (isActive) => ({
+      padding: "8px 16px",
+      border: "none",
+      backgroundColor: isActive ? "#9244ff" : "#D6BCFA",
+      color: isActive ? "white" : "black",
+      cursor: "pointer",
+      fontWeight: isActive ? "bold" : "normal",
+      borderRadius: isActive ? "4px 4px 0 0" : "4px",
+      marginRight: "4px",
+      transition: "all 0.2s",
+      width: "100px",
+    }),
+    tabContent: {
+      padding: "16px",
+      backgroundColor: "#D6BCFA",
+      borderRadius: "0 4px 4px 4px",
+      minHeight: "200px",
+      overflowY: "auto",
+    }
+  }
+
+  return (
+    <Box>
+      <HStack spacing={0} mb={0} >
+        <Button
+          onClick={() => setActiveTab("colors")}
+          style={tabStyles.button(activeTab === "colors")}
+          _hover={{ backgroundColor: "#b366ff" }}
+          variant="unstyled"
+        >
+          Colors
+        </Button>
+        <Button
+          onClick={() => setActiveTab("media")}
+          style={tabStyles.button(activeTab === "media")}
+          _hover={{ backgroundColor: "#b366ff" }}
+          variant="unstyled"
+        >
+          Media
+        </Button>
+        <Button
+          onClick={() => setActiveTab("audio")}
+          style={tabStyles.button(activeTab === "audio")}
+          _hover={{ backgroundColor: "#b366ff" }}
+          variant="unstyled"
+        >
+          Audio
+        </Button>
+      </HStack>
+
+      <Box style={tabStyles.tabContent}>
+        {activeTab === "media" && (
+          <VStack align="start" spacing={4}>
+            <Box>
+              <h3 style={{ margin: "0 0 12px 0" }}>Media Library</h3>
+              <p style={{ margin: 0, color: "#D6BCFA", fontSize: "14px" }}>
+                Add and manage media cues for your presentation.
+              </p>
+            </Box>
+            <Divider />
+          </VStack>
+        )}
+
+        {activeTab === "colors" && (
+          <VStack align="start" spacing={4}>
+            <Box>
+              <h3 style={{ margin: "0 0 12px 0" }}>Color Picker</h3>
+              <p style={{ margin: "0 0 12px 0", color: "#D6BCFA", fontSize: "14px" }}>
+                Select a color to apply to your elements
+              </p>
+            </Box>
+            <Box width="100%">
+              <ColorPickerWithPresets
+                color={selectedColor}
+                onChange={setSelectedColor}
+                presetColors={presetColors}
+              />
+            </Box>
+            <Box width="100%" p={3} backgroundColor={selectedColor} borderRadius="4px" minHeight="60px" display="flex" alignItems="center" justifyContent="center">
+              <span style={{ color: "white", fontWeight: "bold", fontSize: "12px", textShadow: "1px 1px 2px rgba(0,0,0,0.5)" }}>
+                {selectedColor}
+              </span>
+            </Box>
+          </VStack>
+        )}
+
+        {activeTab === "audio" && (
+          <VStack align="start" spacing={4}>
+            <Box>
+              <h3 style={{ margin: "0 0 12px 0" }}>Audio Library</h3>
+              <p style={{ margin: 0, color: "#D6BCFA", fontSize: "14px" }}>
+                Your audio files will appear here. Use the form on the right to add audio to your presentation.
+              </p>
+            </Box>
+            <Divider />
+            <Box width="100%" p={4} backgroundColor="#f0f0f0" borderRadius="4px" textAlign="center">
+              <p style={{ margin: 0, color: "#999" }}>No audio files yet</p>
+            </Box>
+          </VStack>
+        )}
+      </Box>
+    </Box>
+  )
+}
 
 // Screens display component
 const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0 }) => {
@@ -150,6 +282,7 @@ class MyFirstGrid extends React.Component {
         { i: "b", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 7, w: 10, h: 10 },
         { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
+        { i: "e", x: 0, y: 17, w: 10, h: 5 },
         {i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
       ],
       md: [
@@ -157,6 +290,7 @@ class MyFirstGrid extends React.Component {
         { i: "b", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 10, h: 14 },
         { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
+        { i: "e", x: 0, y: 16, w: 10, h: 5 },
         {i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
       ],
       sm: [
@@ -164,14 +298,16 @@ class MyFirstGrid extends React.Component {
         { i: "b", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 6, h: 14},
         { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
+        { i: "e", x: 0, y: 16, w: 6, h: 4 },
         {i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-      
+
       ],
       xs: [
         { i: "a", x: 0, y: 0, w: 4, h: 5 },
         { i: "b", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 4, h: 14 },
         { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
+        { i: "e", x: 0, y: 16, w: 4, h: 4 },
         {i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
@@ -179,6 +315,7 @@ class MyFirstGrid extends React.Component {
         { i: "b", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
         { i: "c", x: 0, y: 2, w: 2, h: 14 },
         { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
+        { i: "e", x: 0, y: 13, w: 2, h: 4 },
         {i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
       ],
     }
@@ -289,14 +426,15 @@ class MyFirstGrid extends React.Component {
           <div style={{ backgroundColor: "#7c5b8a", paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
             <CuesForm
               addCue={addCue}
-              onClose={onClose} 
-              position={position} 
-              cues={cues} 
-              cueData={cueData} 
+              onClose={onClose}
+              position={position}
+              cues={cues}
+              cueData={cueData}
               updateCue={updateCue}
-              screenCount={screenCount} 
+              screenCount={screenCount}
               isAudioMode={isAudioMode}
-              indexCount={indexCount}/> 
+              indexCount={indexCount}
+            />
           </div>
         </ResponsiveGridLayout>
       </div>
