@@ -18,7 +18,6 @@ import AdminControls from "../../components/homepage/AdminControls"
 import PresentationFormWrapper from "../../components/homepage/PresentationFormWrapper"
 import PresentationForm from "../../components/homepage/PresentationForm"
 import presentationService from "../../services/presentations"
-import addInitialElements from "../../components/utils/addInitialElements"
 import useDeletePresentation from "../../components/utils/useDeletePresentation"
 
 jest.mock("react-router-dom", () => ({
@@ -40,8 +39,6 @@ jest.mock("../../services/presentations", () => ({
 jest.mock("../../redux/presentationReducer", () => ({
   createPresentation: jest.fn((x) => x),
 }))
-
-jest.mock("../../components/utils/addInitialElements", () => jest.fn())
 
 jest.mock("../../components/utils/useDeletePresentation")
 
@@ -76,7 +73,6 @@ describe("HomePage", () => {
 
     useDispatch.mockReset()
     presentationService.getAll.mockReset()
-    addInitialElements.mockClear()
     useDeletePresentation.mockClear()
 
     const mockPresentations = [
@@ -132,9 +128,6 @@ describe("HomePage", () => {
     await waitFor(() =>
       expect(presentationService.getAll).toHaveBeenCalledTimes(1)
     ) //one call in useEffect
-
-    // TODO: add this back
-    //expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function), "#000000")
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })

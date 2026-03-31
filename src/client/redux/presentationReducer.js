@@ -118,13 +118,34 @@ export const {
 export default presentationSlice.reducer
 
 export const createPresentation = (presentationData) => async (dispatch) => {
+  let presentation
   try {
-    const presentation = await presentationService.create(presentationData)
+    presentation = await presentationService.create(presentationData)
+  } catch (error) {
+    const errorMessage = error.response?.data?.error || error
+    console.error("Failed to create presentation:", errorMessage)
+    throw new Error(errorMessage)
+  }
+  try {
+    for (let screen = 1; screen <= presentation.screenCount; screen++) {
+      const updated = await presentationService.addCue(
+        presentation.id,
+        createFormData(
+          0,
+          `initial element for screen ${screen}`,
+          screen,
+          null,
+          null,
+          presentationData.startingFrameColor
+        )
+      )
+      if (updated) presentation = updated
+    }
     dispatch(setPresentationInfo(presentation))
     return presentation
   } catch (error) {
-    const errorMessage = error.response?.data?.error || "An error occurred"
-    console.error(errorMessage)
+    const errorMessage = error.response?.data?.error || error
+    console.error("Failed to add initial cues", errorMessage)
     throw new Error(errorMessage)
   }
 }

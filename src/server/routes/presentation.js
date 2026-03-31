@@ -374,8 +374,8 @@ router.put(
 )
 
 /**
- * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
- * and aws bucket. Can upload any kind of image or pdf.
+ * Adds a cue to presentation referenced by ID, and adds them to mongoDB
+ * and S3 bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
 router.post(
@@ -388,10 +388,9 @@ router.post(
       const { id } = req.params
       const fileId = generateFileId()
       const { file, user, presentation } = req
-      const { cueName, image, driveId } = req.body
+      const { cueName, image, driveId, loop } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
-      const loop = req.body.loop
       const color = req.body.color || "#000000"
 
       if (!id || isNaN(index) || !cueName || isNaN(screen)) {
