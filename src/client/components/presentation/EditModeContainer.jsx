@@ -3,6 +3,7 @@ import {
   extendTheme,
   Button,
   Box,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -22,7 +23,7 @@ const theme = extendTheme({})
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
 // Screens display component
-const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0 }) => {
+const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBackground }) => {
   // Get the current cue for the screen
   const getCurrentCueForScreen = (screenNumber) => {
     if (!cues || cues.length === 0) return null
@@ -31,7 +32,7 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0 }) => {
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: "", gap: "10px", padding: "10px", width: "100%", height: "100%" }}>
+    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", width: "100%", height: "100%" }}>
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenData = getCurrentCueForScreen(screenNumber)
@@ -143,6 +144,9 @@ class MyFirstGrid extends React.Component {
       toggleAutoplay = () => {},
       isAutoplaying = false,
       toggleAutoplayInterval = () => {},
+      editModeBackground,
+      panelBackground,
+      outlineColor,
     } = this.props
     const layouts = {
       lg: [
@@ -190,7 +194,7 @@ class MyFirstGrid extends React.Component {
     // Each grid item (a, b, c) represents a different component of the editor, 
     // such as the cue list, preview area, and toolbox.
     return (
-      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: "" }}>
+      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: editModeBackground }}>
         <style>{`
           .no-resize-handle .react-resizable-handle {
             display: none !important;
@@ -211,7 +215,7 @@ class MyFirstGrid extends React.Component {
           containerPadding={[80 , 8]}
           resizeHandle={(axis, ref) => <VSCodeVerticalHandle handleAxis={axis} ref={ref} />}
 
-          style={{ width: "100%" }}
+          style={{ width: "100%", backgroundColor: editModeBackground }}
         >
           
           <Box
@@ -219,7 +223,8 @@ class MyFirstGrid extends React.Component {
             alignItems="center"
             gap="12px"
             padding="12px 20px"
-            backgroundColor="#7c5b8a"
+            backgroundColor={panelBackground}
+            outline={outlineColor}
             borderRadius="8px"
             key="header"
           >
@@ -250,11 +255,11 @@ class MyFirstGrid extends React.Component {
             </Button>
           </Box>
           
-          <div style={{ backgroundColor: "#7c5b8a", borderRadius: "8px" }} key="a">
-            <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} />
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="a">
+            <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} editModeBackground={panelBackground} />
             
           </div>
-          <div style= {{ backgroundColor: "", borderRadius: "8px" }} className="no-resize-handle" key="b">
+          <div style= {{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="b">
             <ShowModeButtons 
             screens={screens} 
             toggleScreenVisibility={toggleScreenVisibility} 
@@ -274,11 +279,9 @@ class MyFirstGrid extends React.Component {
 
           <div
             style={{
-              backgroundColor: "#7c5b8a",
-              paddingLeft: "5px",
-              paddingTop: "5px",
-              paddingRight: "5px",
-              paddingBottom: "16px",
+              backgroundColor: panelBackground,
+              outline: outlineColor,
+              padding: "10px",
               borderRadius: "8px",
               boxSizing: "border-box",
               height: "100%",
@@ -302,7 +305,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: "#7c5b8a", paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
             <CuesForm
               addCue={addCue}
               onClose={onClose} 
@@ -339,6 +342,9 @@ const EditModeContainer = ({
   updateCue,
   isAudioMode,
 }) => {
+  const editModeBackground = useColorModeValue("#a081b1", "#120d14")
+  const panelBackground = useColorModeValue("#e2c4ee", "#312238")
+  const outlineColor = useColorModeValue("2px solid #8f6ca1", "2px solid #572b6e")
 
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
@@ -347,6 +353,19 @@ const EditModeContainer = ({
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
+
+  useEffect(() => {
+    const previousBodyBackgroundColor = document.body.style.backgroundColor
+    const previousBodyBackgroundImage = document.body.style.backgroundImage
+
+    document.body.style.backgroundColor = editModeBackground
+    document.body.style.backgroundImage = "none"
+
+    return () => {
+      document.body.style.backgroundColor = previousBodyBackgroundColor
+      document.body.style.backgroundImage = previousBodyBackgroundImage
+    }
+  }, [editModeBackground])
 
   console.log("Rendering EditMode with cues:", id, cues, isToolboxOpen, isShowMode, cueIndex, isAudioMuted, indexCount)
 
@@ -370,6 +389,9 @@ const EditModeContainer = ({
       cueData={cueData}
       updateCue={updateCue}
       isAudioMode={isAudioMode}
+      editModeBackground={editModeBackground}
+      panelBackground={panelBackground}
+      outlineColor={outlineColor}
     />
   </>
 
