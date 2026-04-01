@@ -19,12 +19,8 @@ import {
   extendTheme,
   Select,
   Box,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   VStack,
+  HStack,
   Text,
   SimpleGrid,
   Image,
@@ -59,6 +55,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
   const [color, setColor] = useState()
+  const [selectedColor, setSelectedColor] = useState("#9244ff")
   const presetColors = ["#000000", "#ffffff", "#787878", "#0000ff", "#9142ff", "#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#00ffff",
     "#ff00ff", "#ff69b4", "#800000", "#808000", "#008000", "#800080", "#008080", "#000080", "#4b0082", "#ee82ee", "#a52a2a"]
 
@@ -67,6 +64,19 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const [soundFiles, setSoundFiles] = useState([])
   const mediaInputRef = useRef(null)
   const soundInputRef = useRef(null)
+
+  const getInitialActiveTab = () => {
+    if (typeof window === "undefined") return "media"
+
+    const savedTab = window.localStorage.getItem("editModeMediaPoolActiveTab")
+    if (savedTab === "colors" || savedTab === "media" || savedTab === "audio") {
+      return savedTab
+    }
+
+    return "media"
+  }
+
+  const [activeTab, setActiveTab] = useState(getInitialActiveTab)
 
   const audioRow = getAudioRow(screenCount)
   const allowedTypes = getAllowedMimeTypesForScreen(screen, screenCount)
@@ -81,6 +91,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   }, [position])
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("editModeMediaPoolActiveTab", activeTab)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
     if (!cueData && !position) {
       if (isAudioMode) {
         const audioCues = cues.filter((cue) => cue.cueType === "audio")
@@ -93,7 +109,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         })
       }
     }
-  }, [screen, cues, cueData, isAudioMode, screenCount])
+  }, [screen, cues, cueData, isAudioMode, screenCount, position])
 
   useEffect(() => {
     if (cueData) {
@@ -313,6 +329,48 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const removeSoundFile = (id) => {
     setSoundFiles(prev => prev.filter(f => f.id !== id))
   }
+
+  const getContrastTextColor = (hexColor) => {
+    const current = (hexColor || "").replace("#", "")
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(current)) return "white"
+
+    const normalized =
+      current.length === 3
+        ? current
+            .split("")
+            .map((char) => `${char}${char}`)
+            .join("")
+        : current
+
+    const r = parseInt(normalized.slice(0, 2), 16)
+    const g = parseInt(normalized.slice(2, 4), 16)
+    const b = parseInt(normalized.slice(4, 6), 16)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+
+    return brightness >= 186 ? "black" : "white"
+  }
+
+  const tabStyles = {
+    button: (isActive) => ({
+      padding: "8px 16px",
+      border: "none",
+      backgroundColor: isActive ? "#9244ff" : "#D6BCFA",
+      color: isActive ? "white" : "black",
+      cursor: "pointer",
+      fontWeight: isActive ? "bold" : "normal",
+      borderRadius: isActive ? "4px 4px 0 0" : "4px",
+      marginRight: "4px",
+      transition: "all 0.2s",
+      width: "100px",
+    }),
+    tabContent: {
+      padding: "16px",
+      backgroundColor: "#D6BCFA",
+      borderRadius: "0 4px 4px 4px",
+      minHeight: "200px",
+      overflowY: "auto",
+    },
+  }
   // form with inputs for cue name, index, screen number, file upload, and color selection. 
   // It also includes front end validation for file types and displays error messages when necessary. 
   // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
@@ -327,41 +385,60 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             <Heading size="md" mb={4}>Add element</Heading>
           )}
 
-          <Tabs variant="enclosed" colorScheme="purple">
-            <TabList>
-              <Tab>Colors</Tab>
-              <Tab>Media</Tab>
-              <Tab>Sounds</Tab>
-            </TabList>
+          <Box>
+            <HStack spacing={0} mb={0}>
+              <Button
+                onClick={() => setActiveTab("colors")}
+                style={tabStyles.button(activeTab === "colors")}
+                _hover={{ backgroundColor: "#b366ff" }}
+                variant="unstyled"
+              >
+                Colors
+              </Button>
+              <Button
+                onClick={() => setActiveTab("media")}
+                style={tabStyles.button(activeTab === "media")}
+                _hover={{ backgroundColor: "#b366ff" }}
+                variant="unstyled"
+              >
+                Media
+              </Button>
+              <Button
+                onClick={() => setActiveTab("audio")}
+                style={tabStyles.button(activeTab === "audio")}
+                _hover={{ backgroundColor: "#b366ff" }}
+                variant="unstyled"
+              >
+                Audio
+              </Button>
+            </HStack>
 
-            <TabPanels>
-              {/* COLORS TAB */}
-              <TabPanel>
+            <Box style={tabStyles.tabContent}>
+              {activeTab === "colors" && (
                 <VStack spacing={4} align="stretch">
-                  <FormHelperText>
+                  <FormHelperText color="black">
                     Select a color and drag it to the timeline
                   </FormHelperText>
-                  
+
                   <ColorPickerWithPresets
-                    color={color}
-                    onChange={setColor}
+                    color={selectedColor}
+                    onChange={setSelectedColor}
                     presetColors={presetColors}
                   />
 
                   <Box
                     className="droppable-color-element"
                     draggable={true}
-                    unselectable="on"
                     onDragStart={(e) => {
-                      e.dataTransfer.setData("application/json", JSON.stringify({ 
+                      e.dataTransfer.setData("application/json", JSON.stringify({
                         type: "newCueFromForm",
-                        cueName: cueName || "Color Element", 
-                        color: color || "#e014ee",
-                        elementType: "color"
+                        cueName: "Color Element",
+                        color: selectedColor || "#e014ee",
+                        elementType: "color",
                       }))
                     }}
                     p={6}
-                    bg={color || "purple.100"}
+                    bg={selectedColor || "purple.100"}
                     border="2px dashed"
                     borderColor="purple.400"
                     borderRadius="md"
@@ -370,15 +447,16 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     _active={{ cursor: "grabbing" }}
                     _hover={{ opacity: 0.8 }}
                   >
-                    <Text fontWeight="bold">Drag color to timeline</Text>
+                    <Text color={getContrastTextColor(selectedColor)} fontWeight="bold">
+                      Drag color to timeline
+                    </Text>
                   </Box>
                 </VStack>
-              </TabPanel>
+              )}
 
-              {/* MEDIA TAB */}
-              <TabPanel>
-                <VStack spacing={4} align="stretch">
-                  <FormHelperText>
+              {activeTab === "media" && (
+                <VStack spacing={4} align="stretch" >
+                  <FormHelperText color="black">
                     Upload images or videos and drag them to the timeline
                     <Tooltip
                       label={
@@ -393,7 +471,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                       p={2}
                       fontSize="sm"
                     >
-                      <Button variant="ghost" size="xs" marginLeft={2}>
+                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
                         <InfoOutlineIcon />
                       </Button>
                     </Tooltip>
@@ -408,11 +486,13 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     accept="image/*,video/mp4,video/3gpp"
                     multiple
                   />
-                  
-                  <Button 
+
+                  <Button
                     onClick={() => mediaInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
+                    _hover={{ backgroundColor: "#b366ff" }}
+                    color="black"
                   >
                     Upload Images/Videos
                   </Button>
@@ -427,12 +507,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             key={media.id}
                             draggable={true}
                             onDragStart={(e) => {
-                              e.dataTransfer.setData("application/json", JSON.stringify({ 
+                              e.dataTransfer.setData("application/json", JSON.stringify({
                                 type: "newCueFromForm",
                                 cueName: media.name,
                                 elementType: "media",
                                 mediaId: media.id,
-                                file: media.file
+                                file: media.file,
                               }))
                             }}
                             position="relative"
@@ -455,8 +535,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                               zIndex={1}
                             />
                             {media.type.startsWith("image/") && (
-                              <Image 
-                                src={media.preview} 
+                              <Image
+                                src={media.preview}
                                 alt={media.name}
                                 maxH="100px"
                                 objectFit="contain"
@@ -477,22 +557,19 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     </>
                   )}
                 </VStack>
-              </TabPanel>
+              )}
 
-              {/* SOUNDS TAB */}
-              <TabPanel>
+              {activeTab === "audio" && (
                 <VStack spacing={4} align="stretch">
-                  <FormHelperText>
+                  <FormHelperText color="black">
                     Upload audio files and drag them to the timeline
                     <Tooltip
-                      label={
-                        <><strong>Valid audio types: </strong> .mp3 and .wav</>
-                      }
+                      label={<><strong>Valid audio types: </strong> .mp3 and .wav</>}
                       placement="right-end"
                       p={2}
                       fontSize="sm"
                     >
-                      <Button variant="ghost" size="xs" marginLeft={2}>
+                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
                         <InfoOutlineIcon />
                       </Button>
                     </Tooltip>
@@ -507,8 +584,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     accept="audio/mpeg,audio/wav,audio/vnd.wave"
                     multiple
                   />
-                  
-                  <Button 
+
+                  <Button
                     onClick={() => soundInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
@@ -526,12 +603,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             key={sound.id}
                             draggable={true}
                             onDragStart={(e) => {
-                              e.dataTransfer.setData("application/json", JSON.stringify({ 
+                              e.dataTransfer.setData("application/json", JSON.stringify({
                                 type: "newCueFromForm",
                                 cueName: sound.name,
                                 elementType: "sound",
                                 soundId: sound.id,
-                                file: sound.file
+                                file: sound.file,
                               }))
                             }}
                             display="flex"
@@ -563,9 +640,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     </>
                   )}
                 </VStack>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
+              )}
+            </Box>
+          </Box>
 
 
           {error && <Error error={error} />}
