@@ -144,7 +144,29 @@ const GridLayoutComponent = ({
     return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
   }
 
+  const getCueVisualDuration = (cue) => {
+    const cueIndex = Number(cue?.index)
+    const cueScreen = Number(cue?.screen)
+
+    if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
+      return 1
+    }
+
+    const nextCue = cues
+      .filter((otherCue) => Number(otherCue.screen) === cueScreen && Number(otherCue.index) > cueIndex)
+      .sort((a, b) => Number(a.index) - Number(b.index))[0]
+
+    const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
+    return Math.max(1, endIndex - cueIndex + 1)
+  }
+
   const getCueById = (cueId) => cues.find((cue) => cue._id === cueId)
+
+  const getLayoutWidth = (cueId, fallbackWidth) => {
+    const layoutItem = currentLayout.find((item) => item.i === cueId.toString())
+    const parsedWidth = Number(layoutItem?.w)
+    return Number.isInteger(parsedWidth) && parsedWidth > 0 ? parsedWidth : fallbackWidth
+  }
 
   const hasOverlapWithOtherCues = (cueId, startIndex, screen, duration) => {
     const endIndex = startIndex + duration - 1
@@ -412,7 +434,7 @@ const GridLayoutComponent = ({
       return
     }
 
-    const movedDuration = Number(newItem.w) || getCueDuration(cue)
+    const movedDuration = getCueDuration(cue)
     const movedEndIndex = Number(newItem.x) + movedDuration - 1
 
     if (movedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1), movedDuration)) {
@@ -429,7 +451,6 @@ const GridLayoutComponent = ({
       cueId: newItem.i,
       index: newItem.x,
       screen: newItem.y + 1,
-      duration: movedDuration,
     }
 
     if (cue) {
@@ -463,54 +484,6 @@ const GridLayoutComponent = ({
     }
   }
 
-  const handleResizeStop = async (newLayout, oldItem, newItem) => {
-    const cue = getCueById(newItem.i)
-    if (!cue) {
-      return
-    }
-
-    const resizedDuration = Number(newItem.w) || getCueDuration(cue)
-    const resizedEndIndex = Number(newItem.x) + resizedDuration - 1
-
-    if (resizedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1), resizedDuration)) {
-      showToast({
-        title: "Cannot resize element",
-        description: "Cue duration overlaps another cue or exceeds frame bounds.",
-        status: "error",
-      })
-      revertLayoutItem(newItem.i, oldItem)
-      return
-    }
-
-    const resizedCue = {
-      cueId: newItem.i,
-      cueName: cue.name,
-      index: newItem.x,
-      screen: newItem.y + 1,
-      color: cue.color,
-      file: cue.file,
-      loop: cue.loop,
-      duration: resizedDuration,
-    }
-
-    setStatus("loading")
-    try {
-      await dispatch(updatePresentation(id, resizedCue))
-      setCurrentLayout(newLayout)
-      setTimeout(() => {
-        setStatus("saved")
-      }, 300)
-    } catch (error) {
-      console.error(error)
-      revertLayoutItem(newItem.i, oldItem)
-      showToast({
-        title: "Error updating width",
-        description: "The element has been returned to its previous width.",
-        status: "error",
-      })
-    }
-  }
-
   return (
     <GridLayout
       className="layout"
@@ -518,7 +491,7 @@ const GridLayoutComponent = ({
       cols={indexCount}
       rowHeight={rowHeight}
       width={indexCount * columnWidth + (indexCount - 1) * gap}
-      isResizable={!isShowMode}
+      isResizable={false}
       resizeHandles={["e", "w"]}
       compactType={null}
       isBounded={false}
@@ -527,7 +500,6 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
-      onResizeStop={handleResizeStop}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => (
@@ -537,7 +509,7 @@ const GridLayoutComponent = ({
           data-grid={{
             x: cue.index,
             y: cue.screen - 1,
-            w: getCueDuration(cue),
+            w: getLayoutWidth(cue._id, getCueVisualDuration(cue)),
             h: 1,
             minH: 1,
             maxH: 1,

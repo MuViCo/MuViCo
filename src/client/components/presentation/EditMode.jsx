@@ -97,6 +97,7 @@ const EditMode = ({
   yLabels.push("Audio files")
 
   const [isDragging, setIsDragging] = useState(false)
+  const [dragPreviewPosition, setDragPreviewPosition] = useState(null)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
@@ -129,7 +130,23 @@ const EditMode = ({
     return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
   }
 
-  const getCueEndIndex = (cue) => Number(cue.index) + getCueDuration(cue) - 1
+  const getCueVisualDuration = (cue) => {
+    const cueIndex = Number(cue?.index)
+    const cueScreen = Number(cue?.screen)
+
+    if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
+      return 1
+    }
+
+    const nextCue = cues
+      .filter((otherCue) => Number(otherCue.screen) === cueScreen && Number(otherCue.index) > cueIndex)
+      .sort((a, b) => Number(a.index) - Number(b.index))[0]
+
+    const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
+    return Math.max(1, endIndex - cueIndex + 1)
+  }
+
+  const getCueEndIndex = (cue) => Number(cue.index) + getCueVisualDuration(cue) - 1
 
   const cueOccupiesSlot = (cue, xIndex, yIndex) => (
     Number(cue.screen) === Number(yIndex) &&
@@ -139,6 +156,12 @@ const EditMode = ({
 
   const getCueAtPosition = (xIndex, yIndex) => (
     cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
+  )
+
+  const getAnchorCueAtPosition = (xIndex, yIndex) => (
+    cues.find(
+      (cue) => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex)
+    )
   )
 
   const canPlaceCueAt = (cue, proposedIndex, proposedScreen, excludedCueIds = []) => {
@@ -528,12 +551,14 @@ const EditMode = ({
     if (cueExists(xIndex, yIndex)) {
       const movingCue = getCueAtPosition(xIndex, yIndex)
       setSelectedCue(movingCue)
+      setDragPreviewPosition({ xIndex, yIndex })
 
       if (event.target.closest(".react-grid-item")) {
         setIsDragging(true)
         hideHoverPreview()
       } else {
         setIsDragging(false)
+        setDragPreviewPosition(null)
       }
     }
   }
@@ -635,6 +660,25 @@ const EditMode = ({
 
   const handleMouseMove = (event) => {
     if (isDragging) {
+      const { xIndex, yIndex } = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
+
+      if (
+        xIndex >= 0 &&
+        xIndex < indexCount &&
+        yIndex >= 1 &&
+        yIndex <= getAudioRow(presentation.screenCount)
+      ) {
+        setDragPreviewPosition({ xIndex, yIndex })
+      } else {
+        setDragPreviewPosition(null)
+      }
+
       hideHoverPreview()
       return
     }
@@ -650,9 +694,7 @@ const EditMode = ({
       gap
     )
 
-    const cueExists = cues.some(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const cueExists = Boolean(getCueAtPosition(xIndex, yIndex))
 
     if (
       !cueExists &&
@@ -667,8 +709,10 @@ const EditMode = ({
     }
   }
 
-  const handleMouseUp = (event) => {
+  const handleMouseUp = async (event) => {
+    const wasDragging = isDragging
     setIsDragging(false)
+    setDragPreviewPosition(null)
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -677,16 +721,49 @@ const EditMode = ({
       gap
     )
 
-    if (cueExists(xIndex, yIndex) && isDragging) {
-      const targetCue = cues.find(
-        (cue) => cue.index === xIndex && cue.screen === yIndex
-      )
-      if (selectedCue && targetCue && selectedCue !== targetCue) {
-        handleElementPositionChange(selectedCue, targetCue)
+    if (wasDragging && selectedCue) {
+      const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
+      if (targetCue && selectedCue !== targetCue) {
+        await handleElementPositionChange(selectedCue, targetCue)
+        return
       }
+
+      const moveToSamePosition =
+        Number(selectedCue.index) === Number(xIndex) &&
+        Number(selectedCue.screen) === Number(yIndex)
+
+      if (moveToSamePosition) {
+        return
+      }
+
+      const audioRowIndex = getAudioRow(presentation.screenCount)
+      if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+        return
+      }
+
+      const selectedCueIsAudio = selectedCue.cueType === "audio"
+      if ((selectedCueIsAudio && yIndex !== audioRowIndex) || (!selectedCueIsAudio && yIndex === audioRowIndex)) {
+        showToast({
+          title: "Cannot move this file type here",
+          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+          status: "error",
+        })
+        return
+      }
+
+      const movedCue = {
+        ...selectedCue,
+        index: xIndex,
+        cueName: selectedCue.name,
+        screen: yIndex,
+      }
+
+      setSelectedCue(null)
+      await dispatchUpdateCue(selectedCue._id, movedCue)
+      return
     }
 
-    if (!isDragging) {
+    if (!wasDragging) {
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
         clickTimeout.current = null
@@ -699,12 +776,43 @@ const EditMode = ({
     }
   }
 
+  const getDragPreviewDuration = (cue) => {
+    const baseDuration = getCueVisualDuration(cue)
+
+    if (!isDragging || !selectedCue || !dragPreviewPosition) {
+      return baseDuration
+    }
+
+    if (cue._id === selectedCue._id) {
+      return 1
+    }
+
+    const hoveredCue = getCueAtPosition(dragPreviewPosition.xIndex, dragPreviewPosition.yIndex)
+    const hoveredAnchorCue = getAnchorCueAtPosition(dragPreviewPosition.xIndex, dragPreviewPosition.yIndex)
+
+    if (
+      !hoveredCue ||
+      hoveredCue._id !== cue._id ||
+      hoveredAnchorCue ||
+      Number(cue.screen) !== Number(dragPreviewPosition.yIndex)
+    ) {
+      return baseDuration
+    }
+
+    const contractedDuration = Number(dragPreviewPosition.xIndex) - Number(cue.index)
+    if (contractedDuration < 1) {
+      return 1
+    }
+
+    return Math.min(baseDuration, contractedDuration)
+  }
+
   const layout = cues.map((cue) => {
     const position = {
       i: cue._id.toString(),
       x: cue.index,
       y: cue.screen,
-      w: getCueDuration(cue),
+      w: getDragPreviewDuration(cue),
       h: 1,
       static: false,
     }
@@ -1263,7 +1371,10 @@ const EditMode = ({
               onDoubleClick={handleDoubleClick}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseLeave={hideHoverPreview}
+              onMouseLeave={() => {
+                hideHoverPreview()
+                setDragPreviewPosition(null)
+              }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
             >
