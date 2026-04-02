@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
@@ -144,28 +144,60 @@ const GridLayoutComponent = ({
     return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
   }
 
+  const cueVisualDurationMap = useMemo(() => {
+    const cuesByScreen = new Map()
+
+    cues.forEach((cue) => {
+      const cueIndex = Number(cue?.index)
+      const cueScreen = Number(cue?.screen)
+
+      if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
+        return
+      }
+
+      if (!cuesByScreen.has(cueScreen)) {
+        cuesByScreen.set(cueScreen, [])
+      }
+
+      cuesByScreen.get(cueScreen).push(cue)
+    })
+
+    const durationMap = new Map()
+    cuesByScreen.forEach((screenCues) => {
+      const sortedCues = screenCues
+        .slice()
+        .sort((a, b) => Number(a.index) - Number(b.index))
+
+      sortedCues.forEach((cue, cuePosition) => {
+        const nextCue = sortedCues[cuePosition + 1]
+        const cueIndex = Number(cue.index)
+        const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
+        durationMap.set(cue._id, Math.max(1, endIndex - cueIndex + 1))
+      })
+    })
+
+    return durationMap
+  }, [cues, indexCount])
+
   const getCueVisualDuration = (cue) => {
-    const cueIndex = Number(cue?.index)
-    const cueScreen = Number(cue?.screen)
-
-    if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
-      return 1
-    }
-
-    const nextCue = cues
-      .filter((otherCue) => Number(otherCue.screen) === cueScreen && Number(otherCue.index) > cueIndex)
-      .sort((a, b) => Number(a.index) - Number(b.index))[0]
-
-    const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
-    return Math.max(1, endIndex - cueIndex + 1)
+    return cueVisualDurationMap.get(cue?._id) ?? 1
   }
+
+  const layoutWidthMap = useMemo(() => {
+    const nextMap = new Map()
+    currentLayout.forEach((item) => {
+      const parsedWidth = Number(item?.w)
+      if (Number.isInteger(parsedWidth) && parsedWidth > 0) {
+        nextMap.set(item.i, parsedWidth)
+      }
+    })
+    return nextMap
+  }, [currentLayout])
 
   const getCueById = (cueId) => cues.find((cue) => cue._id === cueId)
 
   const getLayoutWidth = (cueId, fallbackWidth) => {
-    const layoutItem = currentLayout.find((item) => item.i === cueId.toString())
-    const parsedWidth = Number(layoutItem?.w)
-    return Number.isInteger(parsedWidth) && parsedWidth > 0 ? parsedWidth : fallbackWidth
+    return layoutWidthMap.get(cueId.toString()) ?? fallbackWidth
   }
 
   const hasOverlapWithOtherCues = (cueId, startIndex, screen, duration) => {
