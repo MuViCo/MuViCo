@@ -491,6 +491,7 @@ const GridLayoutComponent = ({
       cols={indexCount}
       rowHeight={rowHeight}
       width={indexCount * columnWidth + (indexCount - 1) * gap}
+      isDraggable={false}
       isResizable={false}
       resizeHandles={["e", "w"]}
       compactType={null}

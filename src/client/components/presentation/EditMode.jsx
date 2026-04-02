@@ -98,6 +98,7 @@ const EditMode = ({
 
   const [isDragging, setIsDragging] = useState(false)
   const [dragPreviewPosition, setDragPreviewPosition] = useState(null)
+  const [dragCursorPosition, setDragCursorPosition] = useState(null)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
@@ -540,6 +541,10 @@ const EditMode = ({
   }
 
   const handleMouseDown = (event) => {
+    if (event.target.closest("button, [role='menuitem'], input, textarea, select, a")) {
+      return
+    }
+
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -547,6 +552,14 @@ const EditMode = ({
       rowHeight,
       gap
     )
+
+    const containerRect = containerRef.current?.getBoundingClientRect()
+    const dragX = containerRect
+      ? event.clientX - containerRect.left + containerRef.current.scrollLeft
+      : event.clientX
+    const dragY = containerRect
+      ? event.clientY - containerRect.top + containerRef.current.scrollTop
+      : event.clientY
 
     if (cueExists(xIndex, yIndex)) {
       const movingCue = getCueAtPosition(xIndex, yIndex)
@@ -556,9 +569,11 @@ const EditMode = ({
       if (event.target.closest(".react-grid-item")) {
         setIsDragging(true)
         hideHoverPreview()
+        setDragCursorPosition({ x: dragX, y: dragY })
       } else {
         setIsDragging(false)
         setDragPreviewPosition(null)
+        setDragCursorPosition(null)
       }
     }
   }
@@ -660,6 +675,15 @@ const EditMode = ({
 
   const handleMouseMove = (event) => {
     if (isDragging) {
+      const containerRect = containerRef.current?.getBoundingClientRect()
+      const dragX = containerRect
+        ? event.clientX - containerRect.left + containerRef.current.scrollLeft
+        : event.clientX
+      const dragY = containerRect
+        ? event.clientY - containerRect.top + containerRef.current.scrollTop
+        : event.clientY
+      setDragCursorPosition({ x: dragX, y: dragY })
+
       const { xIndex, yIndex } = getPosition(
         event,
         containerRef,
@@ -713,6 +737,7 @@ const EditMode = ({
     const wasDragging = isDragging
     setIsDragging(false)
     setDragPreviewPosition(null)
+    setDragCursorPosition(null)
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -1369,7 +1394,7 @@ const EditMode = ({
               data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
-              onMouseDown={handleMouseDown}
+              onMouseDownCapture={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseLeave={() => {
                 hideHoverPreview()
@@ -1515,6 +1540,63 @@ const EditMode = ({
                 setAlertData={setAlertData}
                 screenCount={presentation.screenCount}
               />
+
+              {isDragging && selectedCue && dragCursorPosition && (
+                <Box
+                  data-testid="drag-cursor-preview"
+                  position="absolute"
+                  left={`${dragCursorPosition.x}px`}
+                  top={`${dragCursorPosition.y}px`}
+                  transform="translate(10px, 10px)"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px solid"
+                  borderColor="white"
+                  boxShadow="0 12px 30px rgba(0,0,0,0.35)"
+                  overflow="hidden"
+                  pointerEvents="none"
+                  zIndex={30}
+                  opacity={0.92}
+                >
+                  {selectedCue.file?.type?.startsWith("image/") && selectedCue.file?.url ? (
+                    <Box
+                      as="img"
+                      src={selectedCue.file.url}
+                      alt={selectedCue.name}
+                      width="100%"
+                      height="100%"
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <Box
+                      width="100%"
+                      height="100%"
+                      bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                    />
+                  )}
+
+                  <Text
+                    position="absolute"
+                    bottom="6px"
+                    left="8px"
+                    right="8px"
+                    color="white"
+                    fontWeight="bold"
+                    bg="rgba(0, 0, 0, 0.55)"
+                    borderRadius="6px"
+                    px={2}
+                    py={1}
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                    textAlign="center"
+                    style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
+                  >
+                    {selectedCue.name}
+                  </Text>
+                </Box>
+              )}
 
               <Box
                 data-testid="hover-preview"
