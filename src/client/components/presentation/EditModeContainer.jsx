@@ -1,6 +1,5 @@
 import React, { useEffect, forwardRef } from "react"
 import {
-  extendTheme,
   Button,
   Box,
   useColorModeValue,
@@ -16,13 +15,6 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
-import {
-  buttonLabels,
-  buttonStyles,
-} from "../../constants/buttonConfigs"
-
-
-const theme = extendTheme({})
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -233,19 +225,19 @@ class MyFirstGrid extends React.Component {
             key="header"
           >
             <Button
-              aria-label={buttonLabels.settingsAriaLabel}
-              {...buttonStyles.settings}
+              aria-label="Presentation Settings"
+              className="edit-mode-btn edit-mode-btn-settings"
             >
               <img src={settingsIcon} alt="" width="24" height="24" />
             </Button>
-            <Button {...buttonStyles.showMode}>
-              {buttonLabels.showMode}
+            <Button className="edit-mode-btn edit-mode-btn-show-mode">
+              Go to Show Mode
             </Button>
             <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
               EDIT MODE
             </Box>
-            <Button {...buttonStyles.tutorial}>
-              {buttonLabels.tutorial}
+            <Button className="edit-mode-btn edit-mode-btn-tutorial">
+              Tutorial
             </Button>
           </Box>
           
