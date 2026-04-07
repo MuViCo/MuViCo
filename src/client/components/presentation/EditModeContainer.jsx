@@ -105,7 +105,7 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
             .custom-bottom-handle:hover .visible-line {
               background-color: #9244ff !important;
               }
-              /* Keep the line blue while dragging */
+              /* Keep the line purple while dragging */
               .react-resizable-prop-dragging .visible-line {
               background-color: #9244ff !important;
               }
@@ -150,39 +150,39 @@ class MyFirstGrid extends React.Component {
     } = this.props
     const layouts = {
       lg: [
-        { i: "a", x: 0, y: 0, w: 12, h: 5 },
-        { i: "b", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "c", x: 0, y: 7, w: 10, h: 10 },
-        { i: "d", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
+        { i: "showModeControls", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 7, w: 10, h: 10 },
+        { i: "cueEditorForm", x: 10, y: 5, w: 2, h: 14, isResizable: false, resizeHandles: [] },
         {i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
       ],
       md: [
-        { i: "a", x: 0, y: 0, w: 10, h: 5 },
-        { i: "b", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "c", x: 0, y: 2, w: 10, h: 14 },
-        { i: "d", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 10, h: 5 },
+        { i: "showModeControls", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 2, w: 10, h: 14 },
+        { i: "cueEditorForm", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
         {i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
       ],
       sm: [
-        { i: "a", x: 0, y: 0, w: 6, h: 5 },
-        { i: "b", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "c", x: 0, y: 2, w: 6, h: 14},
-        { i: "d", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
+        { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14},
+        { i: "cueEditorForm", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
         {i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
       
       ],
       xs: [
-        { i: "a", x: 0, y: 0, w: 4, h: 5 },
-        { i: "b", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "c", x: 0, y: 2, w: 4, h: 14 },
-        { i: "d", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
+        { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 2, w: 4, h: 14 },
+        { i: "cueEditorForm", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
         {i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
       ],
       xxs: [
-        { i: "a", x: 0, y: 0, w: 2, h: 5 },
-        { i: "b", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
-        { i: "c", x: 0, y: 2, w: 2, h: 14 },
-        { i: "d", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 2, h: 5 },
+        { i: "showModeControls", x: 0, y: 2, w: 2, h: 1 , isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 2, w: 2, h: 14 },
+        { i: "cueEditorForm", x: 0, y: 6, w: 2, h: 7 , isResizable: false, resizeHandles: [] },
         {i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
       ],
     }
@@ -255,11 +255,11 @@ class MyFirstGrid extends React.Component {
             </Button>
           </Box>
           
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="a">
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="screensPreview">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} editModeBackground={panelBackground} />
             
           </div>
-          <div style= {{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="b">
+          <div style= {{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
             <ShowModeButtons 
             screens={screens} 
             toggleScreenVisibility={toggleScreenVisibility} 
@@ -290,7 +290,7 @@ class MyFirstGrid extends React.Component {
               display: "flex",
               flexDirection: "column",
             }}
-            key="c"
+            key="editWorkspace"
           >
             <EditMode
               id={id}
@@ -305,7 +305,7 @@ class MyFirstGrid extends React.Component {
             />
           </div>
             
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="d">
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="cueEditorForm">
             <CuesForm
               addCue={addCue}
               onClose={onClose} 
