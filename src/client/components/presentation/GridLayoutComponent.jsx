@@ -134,7 +134,8 @@ const GridLayoutComponent = ({
   indexCount,
   setShowAlert,
   setAlertData,
-  screenCount
+  screenCount,
+  isDragging = false,
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -325,9 +326,10 @@ const GridLayoutComponent = ({
     </>
   )
   const EditModeCueButtons = (cue) => (
-    <Menu>
+    <Menu isLazy>
       <MenuButton
         as={IconButton}
+        data-testid={`cue-menu-button-${cue._id}`}
         aria-label='Options'
         icon={<ChevronDownIcon />}
         backgroundColor="var(--chakra-colors-gray-700)" 
@@ -337,7 +339,7 @@ const GridLayoutComponent = ({
         position="absolute"
         zIndex="10"
         top="3px"
-        right="3px"
+        left={`${Math.max(columnWidth - 27, 3)}px`}
         size="xs"
       />
       <Portal>
@@ -565,7 +567,7 @@ const GridLayoutComponent = ({
                   ShowModeCueButtons(cue)
                 )
                 : (
-                  EditModeCueButtons(cue)
+                  !isDragging && EditModeCueButtons(cue)
                 )}
 
               {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
@@ -597,7 +599,7 @@ const GridLayoutComponent = ({
                 </>
               )}
 
-              <Tooltip label={cue.name} placement="top" hasArrow>
+              <Tooltip label={cue.name} placement="top" hasArrow isDisabled={!isShowMode || isDragging}>
                 <Text
                   data-testid={`cue-label-${cue._id}`}
                   position="absolute"

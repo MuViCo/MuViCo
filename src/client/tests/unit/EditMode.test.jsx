@@ -358,7 +358,7 @@ describe("EditMode drag swapping", () => {
     expect(hoverPreview).toHaveStyle({ display: "none" })
   })
 
-  it("shows and hides drag placement preview while dragging", () => {
+  it("shows and hides drag placement preview while dragging", async () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
 
@@ -368,13 +368,17 @@ describe("EditMode drag swapping", () => {
       button: 0,
     })
 
+    const placementPreview = screen.getByTestId("drag-placement-preview")
+    expect(placementPreview).toHaveStyle({ display: "none" })
+
     fireEvent.mouseMove(gridContainer, {
       clientX: 170,
       clientY: 120,
     })
 
-    const placementPreview = screen.getByTestId("drag-placement-preview")
-    expect(placementPreview).toBeInTheDocument()
+    await waitFor(() => {
+      expect(placementPreview).toHaveStyle({ display: "block" })
+    })
 
     fireEvent.mouseUp(gridContainer, {
       clientX: 170,

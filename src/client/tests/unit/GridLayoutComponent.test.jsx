@@ -310,5 +310,6 @@ describe("GridLayoutComponent drag constraints", () => {
     expect(screen.queryByTestId("cue-continuation-overlay-visual-1")).not.toBeInTheDocument()
     expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toBeInTheDocument()
     expect(screen.getByTestId("cue-label-visual-1")).toHaveStyle({ left: "8px" })
+    expect(screen.getByTestId("cue-menu-button-visual-2")).toHaveStyle({ left: "123px" })
   })
 })

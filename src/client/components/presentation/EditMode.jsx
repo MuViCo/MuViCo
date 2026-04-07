@@ -111,7 +111,6 @@ const EditMode = ({
   }, [presentation.screenCount])
 
   const [isDragging, setIsDragging] = useState(false)
-  const [dragPreviewPosition, setDragPreviewPosition] = useState(null)
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
@@ -135,7 +134,10 @@ const EditMode = ({
   const hoverPreviewRef = useRef(null)
   const hoverCellRef = useRef(null)
   const dragCursorPreviewRef = useRef(null)
+  const dragPlacementPreviewRef = useRef(null)
   const dragCursorPositionRef = useRef(null)
+  const dragLatestPointerRef = useRef(null)
+  const dragPreviewFrameRef = useRef(null)
   const dragPreviewCellRef = useRef(null)
   const headerActionsRef = useRef({
     addIndex: () => { },
@@ -287,16 +289,16 @@ const EditMode = ({
 
   const updateDragPreviewCell = (nextCell) => {
     if (areSameGridCell(dragPreviewCellRef.current, nextCell)) {
-      return
+      return false
     }
 
     dragPreviewCellRef.current = nextCell
-    setDragPreviewPosition(nextCell)
+    return true
   }
 
-  const updateDragCursorPreview = (event) => {
+  const getPointerPosition = (event) => {
     const containerRect = containerRef.current?.getBoundingClientRect()
-    const nextPosition = {
+    return {
       x: containerRect
         ? event.clientX - containerRect.left + containerRef.current.scrollLeft
         : event.clientX,
@@ -304,13 +306,75 @@ const EditMode = ({
         ? event.clientY - containerRect.top + containerRef.current.scrollTop
         : event.clientY,
     }
+  }
 
-    dragCursorPositionRef.current = nextPosition
+  const hideDragPlacementPreview = () => {
+    if (dragPlacementPreviewRef.current) {
+      dragPlacementPreviewRef.current.style.display = "none"
+    }
+  }
+
+  const applyDragPreviewFromPointer = (pointerPosition) => {
+    if (!pointerPosition) {
+      return
+    }
+
+    dragCursorPositionRef.current = pointerPosition
 
     if (dragCursorPreviewRef.current) {
-      dragCursorPreviewRef.current.style.left = `${nextPosition.x}px`
-      dragCursorPreviewRef.current.style.top = `${nextPosition.y}px`
+      dragCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
     }
+
+    const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
+    const yIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const isInsideGrid =
+      xIndex >= 0 &&
+      xIndex < indexCount &&
+      yIndex >= 1 &&
+      yIndex <= audioRowIndex
+
+    if (!isInsideGrid || !selectedCue) {
+      updateDragPreviewCell(null)
+      hideDragPlacementPreview()
+      return
+    }
+
+    const selectedCueIsAudio = selectedCue.cueType === "audio"
+    const isValidDropCell =
+      (selectedCueIsAudio && yIndex === audioRowIndex) ||
+      (!selectedCueIsAudio && yIndex !== audioRowIndex)
+
+    updateDragPreviewCell({ xIndex, yIndex })
+
+    if (dragPlacementPreviewRef.current) {
+      dragPlacementPreviewRef.current.style.display = "block"
+      dragPlacementPreviewRef.current.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yIndex * (rowHeight + gap)}px, 0)`
+      dragPlacementPreviewRef.current.style.borderColor = isValidDropCell
+        ? dragPreviewValidBorder
+        : dragPreviewInvalidBorder
+      dragPlacementPreviewRef.current.style.background = isValidDropCell
+        ? dragPreviewValidBg
+        : dragPreviewInvalidBg
+    }
+  }
+
+  const cancelDragPreviewFrame = () => {
+    if (dragPreviewFrameRef.current) {
+      cancelAnimationFrame(dragPreviewFrameRef.current)
+      dragPreviewFrameRef.current = null
+    }
+  }
+
+  const scheduleDragPreviewUpdate = () => {
+    if (dragPreviewFrameRef.current) {
+      return
+    }
+
+    dragPreviewFrameRef.current = requestAnimationFrame(() => {
+      dragPreviewFrameRef.current = null
+      applyDragPreviewFromPointer(dragLatestPointerRef.current)
+    })
   }
 
   useEffect(() => {
@@ -318,12 +382,10 @@ const EditMode = ({
   }, [cues, indexCount, presentation.screenCount, isShowMode])
 
   useEffect(() => {
-    if (isDragging && selectedCue && dragCursorPositionRef.current && dragCursorPreviewRef.current) {
-      const position = dragCursorPositionRef.current
-      dragCursorPreviewRef.current.style.left = `${position.x}px`
-      dragCursorPreviewRef.current.style.top = `${position.y}px`
+    return () => {
+      cancelDragPreviewFrame()
     }
-  }, [isDragging, selectedCue])
+  }, [])
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -663,11 +725,16 @@ const EditMode = ({
         event.preventDefault()
         setIsDragging(true)
         hideHoverPreview()
-        updateDragCursorPreview(event)
+        const pointerPosition = getPointerPosition(event)
+        dragLatestPointerRef.current = pointerPosition
+        applyDragPreviewFromPointer(pointerPosition)
       } else {
         setIsDragging(false)
         updateDragPreviewCell(null)
         dragCursorPositionRef.current = null
+        dragLatestPointerRef.current = null
+        hideDragPlacementPreview()
+        cancelDragPreviewFrame()
       }
     }
   }
@@ -769,26 +836,8 @@ const EditMode = ({
 
   const handleMouseMove = (event) => {
     if (isDragging) {
-      updateDragCursorPreview(event)
-
-      const { xIndex, yIndex } = getPosition(
-        event,
-        containerRef,
-        columnWidth,
-        rowHeight,
-        gap
-      )
-
-      if (
-        xIndex >= 0 &&
-        xIndex < indexCount &&
-        yIndex >= 1 &&
-        yIndex <= getAudioRow(presentation.screenCount)
-      ) {
-        updateDragPreviewCell({ xIndex, yIndex })
-      } else {
-        updateDragPreviewCell(null)
-      }
+      dragLatestPointerRef.current = getPointerPosition(event)
+      scheduleDragPreviewUpdate()
 
       hideHoverPreview()
       return
@@ -824,6 +873,9 @@ const EditMode = ({
     const wasDragging = isDragging
     setIsDragging(false)
     updateDragPreviewCell(null)
+    hideDragPlacementPreview()
+    cancelDragPreviewFrame()
+    dragLatestPointerRef.current = null
     dragCursorPositionRef.current = null
     const { xIndex, yIndex } = getPosition(
       event,
@@ -887,30 +939,6 @@ const EditMode = ({
       }
     }
   }
-
-  const dragPreviewState = useMemo(() => {
-    if (!isDragging || !selectedCue || !dragPreviewPosition) {
-      return { isVisible: false, isValid: false }
-    }
-
-    const { xIndex, yIndex } = dragPreviewPosition
-    const audioRowIndex = getAudioRow(presentation.screenCount)
-    const isWithinGrid = yIndex >= 1 && yIndex <= audioRowIndex && xIndex >= 0 && xIndex < indexCount
-
-    if (!isWithinGrid) {
-      return { isVisible: false, isValid: false }
-    }
-
-    const selectedCueIsAudio = selectedCue.cueType === "audio"
-    const isCorrectRowType =
-      (selectedCueIsAudio && yIndex === audioRowIndex) ||
-      (!selectedCueIsAudio && yIndex !== audioRowIndex)
-
-    return {
-      isVisible: true,
-      isValid: isCorrectRowType,
-    }
-  }, [isDragging, selectedCue, dragPreviewPosition, presentation.screenCount, indexCount])
 
   const layout = cues.map((cue) => ({
     i: cue._id.toString(),
@@ -1396,6 +1424,7 @@ const EditMode = ({
               onMouseLeave={() => {
                 hideHoverPreview()
                 updateDragPreviewCell(null)
+                hideDragPlacementPreview()
               }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
@@ -1447,42 +1476,49 @@ const EditMode = ({
               >
                 -
               </Button>
-              <GridLayoutComponent
-                layout={layout}
-                cues={cues}
-                containerRef={containerRef}
-                columnWidth={columnWidth}
-                rowHeight={rowHeight}
-                gap={gap}
-                setStatus={setStatus}
-                setIsCopied={setIsCopied}
-                setCopiedCue={setCopiedCue}
-                id={id}
-                isShowMode={isShowMode}
-                cueIndex={cueIndex}
-                isAudioMuted={isAudioMuted}
-                setSelectedCue={setSelectedCue}
-                setIsToolboxOpen={setIsToolboxOpen}
-                indexCount={indexCount}
-                setShowAlert={setShowAlert}
-                setAlertData={setAlertData}
-                screenCount={presentation.screenCount}
-              />
+              <Box pointerEvents={isDragging ? "none" : "auto"}>
+                <GridLayoutComponent
+                  layout={layout}
+                  cues={cues}
+                  containerRef={containerRef}
+                  columnWidth={columnWidth}
+                  rowHeight={rowHeight}
+                  gap={gap}
+                  setStatus={setStatus}
+                  setIsCopied={setIsCopied}
+                  setCopiedCue={setCopiedCue}
+                  id={id}
+                  isShowMode={isShowMode}
+                  cueIndex={cueIndex}
+                  isAudioMuted={isAudioMuted}
+                  setSelectedCue={setSelectedCue}
+                  setIsToolboxOpen={setIsToolboxOpen}
+                  indexCount={indexCount}
+                  setShowAlert={setShowAlert}
+                  setAlertData={setAlertData}
+                  screenCount={presentation.screenCount}
+                  isDragging={isDragging}
+                />
+              </Box>
 
-              {dragPreviewState.isVisible && dragPreviewPosition && (
+              {isDragging && selectedCue && (
                 <Box
                   data-testid="drag-placement-preview"
+                  ref={dragPlacementPreviewRef}
                   position="absolute"
-                  left={`${dragPreviewPosition.xIndex * (columnWidth + gap)}px`}
-                  top={`${dragPreviewPosition.yIndex * (rowHeight + gap)}px`}
+                  left="0px"
+                  top="0px"
+                  transform="translate3d(0, 0, 0)"
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
                   borderRadius="16px"
                   border="2px dashed"
-                  borderColor={dragPreviewState.isValid ? dragPreviewValidBorder : dragPreviewInvalidBorder}
-                  bg={dragPreviewState.isValid ? dragPreviewValidBg : dragPreviewInvalidBg}
+                  borderColor={dragPreviewInvalidBorder}
+                  bg={dragPreviewInvalidBg}
                   pointerEvents="none"
                   zIndex={20}
+                  display="none"
+                  style={{ willChange: "transform" }}
                 />
               )}
 
@@ -1493,7 +1529,7 @@ const EditMode = ({
                   position="absolute"
                   left="0px"
                   top="0px"
-                  transform="translate(10px, 10px)"
+                  transform="translate3d(10px, 10px, 0)"
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
                   borderRadius="16px"
@@ -1504,6 +1540,7 @@ const EditMode = ({
                   pointerEvents="none"
                   zIndex={30}
                   opacity={0.92}
+                  style={{ willChange: "transform" }}
                 >
                   {selectedCue.file?.type?.startsWith("image/") && selectedCue.file?.url ? (
                     <Box
