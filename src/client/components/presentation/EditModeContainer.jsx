@@ -16,6 +16,10 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
+import {
+  buttonLabels,
+  buttonStyles,
+} from "../../constants/buttonConfigs"
 
 
 const theme = extendTheme({})
@@ -229,29 +233,19 @@ class MyFirstGrid extends React.Component {
             key="header"
           >
             <Button
-              aria-label="Presentation Settings"
-              colorScheme="purple"
-              size="sm"
-              p="6px"
+              aria-label={buttonLabels.settingsAriaLabel}
+              {...buttonStyles.settings}
             >
               <img src={settingsIcon} alt="" width="24" height="24" />
             </Button>
-            <Button
-              colorScheme="purple"
-              size="sm"
-            >
-              Go to Show Mode
+            <Button {...buttonStyles.showMode}>
+              {buttonLabels.showMode}
             </Button>
             <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
               EDIT MODE
             </Box>
-            <Button
-              marginLeft="auto"
-              colorScheme="purple"
-              variant="solid"
-              size="sm"
-            >
-              Tutorial
+            <Button {...buttonStyles.tutorial}>
+              {buttonLabels.tutorial}
             </Button>
           </Box>
           
