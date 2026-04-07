@@ -63,6 +63,16 @@ const EditMode = ({
     "rgba(255, 181, 181, 0.8)",
     "rgba(72, 26, 35, 0.8)"
   )
+  const dragPreviewValidBg = useColorModeValue(
+    "rgba(126, 214, 168, 0.4)",
+    "rgba(39, 94, 66, 0.65)"
+  )
+  const dragPreviewInvalidBg = useColorModeValue(
+    "rgba(236, 94, 94, 0.42)",
+    "rgba(122, 45, 45, 0.72)"
+  )
+  const dragPreviewValidBorder = useColorModeValue("#2f855a", "#68d391")
+  const dragPreviewInvalidBorder = useColorModeValue("#c53030", "#fc8181")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
   const showToast = useCustomToast()
@@ -628,6 +638,10 @@ const EditMode = ({
   }
 
   const handleMouseDown = (event) => {
+    if (event.button !== 0) {
+      return
+    }
+
     if (event.target.closest("button, [role='menuitem'], input, textarea, select, a")) {
       return
     }
@@ -646,6 +660,7 @@ const EditMode = ({
       updateDragPreviewCell({ xIndex, yIndex })
 
       if (event.target.closest(".react-grid-item")) {
+        event.preventDefault()
         setIsDragging(true)
         hideHoverPreview()
         updateDragCursorPreview(event)
@@ -873,42 +888,35 @@ const EditMode = ({
     }
   }
 
-  const getDragPreviewDuration = (cue) => {
-    const baseDuration = getCueVisualDuration(cue)
-
+  const dragPreviewState = useMemo(() => {
     if (!isDragging || !selectedCue || !dragPreviewPosition) {
-      return baseDuration
+      return { isVisible: false, isValid: false }
     }
 
-    if (cue._id === selectedCue._id) {
-      return 1
+    const { xIndex, yIndex } = dragPreviewPosition
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const isWithinGrid = yIndex >= 1 && yIndex <= audioRowIndex && xIndex >= 0 && xIndex < indexCount
+
+    if (!isWithinGrid) {
+      return { isVisible: false, isValid: false }
     }
 
-    const hoveredCue = getCueAtPosition(dragPreviewPosition.xIndex, dragPreviewPosition.yIndex)
-    const hoveredAnchorCue = getAnchorCueAtPosition(dragPreviewPosition.xIndex, dragPreviewPosition.yIndex)
+    const selectedCueIsAudio = selectedCue.cueType === "audio"
+    const isCorrectRowType =
+      (selectedCueIsAudio && yIndex === audioRowIndex) ||
+      (!selectedCueIsAudio && yIndex !== audioRowIndex)
 
-    if (
-      !hoveredCue ||
-      hoveredCue._id !== cue._id ||
-      hoveredAnchorCue ||
-      Number(cue.screen) !== Number(dragPreviewPosition.yIndex)
-    ) {
-      return baseDuration
+    return {
+      isVisible: true,
+      isValid: isCorrectRowType,
     }
-
-    const contractedDuration = Number(dragPreviewPosition.xIndex) - Number(cue.index)
-    if (contractedDuration < 1) {
-      return 1
-    }
-
-    return Math.min(baseDuration, contractedDuration)
-  }
+  }, [isDragging, selectedCue, dragPreviewPosition, presentation.screenCount, indexCount])
 
   const layout = cues.map((cue) => ({
     i: cue._id.toString(),
     x: cue.index,
     y: cue.screen,
-    w: getDragPreviewDuration(cue),
+    w: getCueVisualDuration(cue),
     h: 1,
     static: false,
   }))
@@ -1362,6 +1370,13 @@ const EditMode = ({
                 opacity: 1,
                 transitionDuration: "0s",
               },
+              ".layout .react-grid-item, .layout .react-grid-item *": {
+                userSelect: "none",
+                WebkitUserSelect: "none",
+              },
+              ".layout .react-grid-item img, .layout .react-grid-item video": {
+                WebkitUserDrag: "none",
+              },
             }}
           >
             <Box
@@ -1373,6 +1388,11 @@ const EditMode = ({
               onDoubleClick={handleDoubleClick}
               onMouseDownCapture={handleMouseDown}
               onMouseMove={handleMouseMove}
+              onDragStart={(event) => {
+                if (event.target.closest(".react-grid-item")) {
+                  event.preventDefault()
+                }
+              }}
               onMouseLeave={() => {
                 hideHoverPreview()
                 updateDragPreviewCell(null)
@@ -1448,6 +1468,23 @@ const EditMode = ({
                 setAlertData={setAlertData}
                 screenCount={presentation.screenCount}
               />
+
+              {dragPreviewState.isVisible && dragPreviewPosition && (
+                <Box
+                  data-testid="drag-placement-preview"
+                  position="absolute"
+                  left={`${dragPreviewPosition.xIndex * (columnWidth + gap)}px`}
+                  top={`${dragPreviewPosition.yIndex * (rowHeight + gap)}px`}
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px dashed"
+                  borderColor={dragPreviewState.isValid ? dragPreviewValidBorder : dragPreviewInvalidBorder}
+                  bg={dragPreviewState.isValid ? dragPreviewValidBg : dragPreviewInvalidBg}
+                  pointerEvents="none"
+                  zIndex={20}
+                />
+              )}
 
               {isDragging && selectedCue && (
                 <Box

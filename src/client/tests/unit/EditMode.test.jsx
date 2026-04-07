@@ -357,4 +357,48 @@ describe("EditMode drag swapping", () => {
 
     expect(hoverPreview).toHaveStyle({ display: "none" })
   })
+
+  it("shows and hides drag placement preview while dragging", () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+      button: 0,
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    const placementPreview = screen.getByTestId("drag-placement-preview")
+    expect(placementPreview).toBeInTheDocument()
+
+    fireEvent.mouseUp(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+  })
+
+  it("prevents native default behavior when cue drag starts", () => {
+    renderEditMode()
+    setupGridGeometry()
+
+    const defaultWasNotPrevented = fireEvent(
+      screen.getByTestId("cue-Visual cue 1"),
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 10,
+        clientY: 120,
+        button: 0,
+      })
+    )
+
+    expect(defaultWasNotPrevented).toBe(false)
+  })
 })

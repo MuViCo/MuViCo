@@ -58,11 +58,13 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
     return (
       <video
         src={cue.file.url}
+        draggable={false}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
           borderRadius: "10px",
+          userSelect: "none",
         }}
         muted
         playsInline
@@ -86,11 +88,13 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
       <img // Thumbail for image
         src={cue.file.url || `/${cue.file.name}`}
         alt={cue.name}
+        draggable={false}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
           borderRadius: "10px",
+          userSelect: "none",
         }}
       />
     )
@@ -535,65 +539,101 @@ const GridLayoutComponent = ({
       onDragStop={handlePositionChange}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
-      {cues.map((cue) => (
-        <div
-          key={cue._id}
-          data-testid={`cue-${cue.name}`}
-          data-grid={{
-            x: cue.index,
-            y: cue.screen - 1,
-            w: getLayoutWidth(cue._id, getCueVisualDuration(cue)),
-            h: 1,
-            minH: 1,
-            maxH: 1,
-            minW: 1,
-            static: false,
-          }}
-          id={`cue-screen-${cue.screen}-index-${cue.index}`}
-        >
-          <Box position="relative" h="100%">
-            {isShowMode
-              ? (
-                ShowModeCueButtons(cue)
-              )
-            : (
-                EditModeCueButtons(cue)
-            )}
+      {cues.map((cue) => {
+        const cueVisualSpan = getLayoutWidth(cue._id, getCueVisualDuration(cue))
+        const hasContinuation = cueVisualSpan > 1
 
-            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
+        return (
+          <div
+            key={cue._id}
+            data-testid={`cue-${cue.name}`}
+            data-grid={{
+              x: cue.index,
+              y: cue.screen - 1,
+              w: cueVisualSpan,
+              h: 1,
+              minH: 1,
+              maxH: 1,
+              minW: 1,
+              static: false,
+            }}
+            id={`cue-screen-${cue.screen}-index-${cue.index}`}
+          >
+            <Box position="relative" h="100%" overflow="hidden" borderRadius="10px">
+              {isShowMode
+                ? (
+                  ShowModeCueButtons(cue)
+                )
+                : (
+                  EditModeCueButtons(cue)
+                )}
 
-            <Tooltip label={cue.name} placement="top" hasArrow>
-              <Text
-                position="absolute"
-                top="50%"
-                left="50%"
-                transform="translate(-50%, -50%)"
-                color="white"
-                fontWeight="bold"
-                bg="rgba(0, 0, 0, 0.5)"
-                p={2}
-                borderRadius="md"
-                whiteSpace="nowrap"
-                overflow="hidden"
-                textOverflow="ellipsis"
-                display="inline-block"
-                maxWidth="80%"
-                textAlign="center"
-                cursor="default"
-                style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
-              >
-                {cue.name}
-              </Text>
-            </Tooltip>
-          </Box>
-          <Dialog
-            isOpen={isDialogOpen}
-            onClose={() => setIsDialogOpen(false)}
-            onConfirm={handleConfirmRemove}
-            message="Are you sure you want to remove this element?"
-          />
-        </div>
-      ))}
+              {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
+
+              {hasContinuation && (
+                <>
+                  <Box
+                    data-testid={`cue-continuation-overlay-${cue._id}`}
+                    position="absolute"
+                    top="0"
+                    bottom="0"
+                    left={`${columnWidth}px`}
+                    right="0"
+                    bg="rgba(19, 24, 36, 0.45)"
+                    backdropFilter="saturate(55%) brightness(0.8) blur(24px)"
+                    pointerEvents="none"
+                    zIndex={2}
+                  />
+                  <Box
+                    position="absolute"
+                    top="0"
+                    bottom="0"
+                    left={`${columnWidth - 1}px`}
+                    width="2px"
+                    bg="rgba(255, 255, 255, 0.55)"
+                    pointerEvents="none"
+                    zIndex={3}
+                  />
+                </>
+              )}
+
+              <Tooltip label={cue.name} placement="top" hasArrow>
+                <Text
+                  data-testid={`cue-label-${cue._id}`}
+                  position="absolute"
+                  top="50%"
+                  left="8px"
+                  transform="translateY(-50%)"
+                  color="white"
+                  fontWeight="bold"
+                  bg="rgba(0, 0, 0, 0.5)"
+                  p={2}
+                  borderRadius="md"
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  display="inline-block"
+                  maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
+                  textAlign="left"
+                  cursor="default"
+                  pointerEvents="none"
+                  userSelect="none"
+                  zIndex={4}
+                  style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
+                >
+                  {cue.name}
+                </Text>
+              </Tooltip>
+            </Box>
+            <Dialog
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              onConfirm={handleConfirmRemove}
+              message="Are you sure you want to remove this element?"
+            />
+          </div>
+        )
+      })}
     </GridLayout>
   )
 }
