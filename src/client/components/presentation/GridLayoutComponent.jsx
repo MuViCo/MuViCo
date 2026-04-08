@@ -554,7 +554,9 @@ const GridLayoutComponent = ({
           ? Math.max(gap - continuationDividerOffset, continuationDividerWidth)
           : continuationDividerWidth
         const anchorContinuationSeamLeft = continuationStartLeft
+        const continuationVisualOpacity = 0.76
         const segmentBorderColor = "rgba(255, 255, 255, 0.24)"
+        const segmentBorderHoverColor = "rgba(255, 255, 255, 0.42)"
         const cueMediaUrl = cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
         const cueIsVideo = cue.file?.type?.startsWith("video/")
         const isVisualCue = cue.cueType === "visual"
@@ -583,7 +585,20 @@ const GridLayoutComponent = ({
               borderRadius="10px"
               data-cue-content-id={cue._id}
               opacity={isDraggingOriginCue ? 0.58 : 1}
-              transition="opacity 90ms linear"
+              transform="translateY(0)"
+              transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
+              _hover={isDragging ? {} : { transform: "translateY(-1px)", boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)" }}
+              sx={isDragging ? {} : {
+                "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]": {
+                  borderColor: segmentBorderHoverColor,
+                },
+                "&:hover [data-cue-seam-divider]": {
+                  backgroundColor: segmentBorderHoverColor,
+                },
+                "&:hover [data-cue-anchor-hover-tint]": {
+                  opacity: 0.18,
+                },
+              }}
             >
               {isShowMode
                 ? (
@@ -653,6 +668,20 @@ const GridLayoutComponent = ({
               {hasContinuation && (
                 <>
                   <Box
+                    data-cue-anchor-hover-tint
+                    position="absolute"
+                    top={`${continuationInset}px`}
+                    bottom={`${continuationInset}px`}
+                    left="0"
+                    width={`${columnWidth}px`}
+                    bg="rgba(255, 255, 255, 0.2)"
+                    opacity={0}
+                    transition="opacity 140ms ease"
+                    pointerEvents="none"
+                    zIndex={5}
+                  />
+
+                  <Box
                     data-testid={`cue-continuation-overlay-${cue._id}`}
                     position="absolute"
                     top={`${continuationInset}px`}
@@ -661,7 +690,7 @@ const GridLayoutComponent = ({
                     right="0"
                     borderRadius="0 8px 8px 0"
                     overflow="hidden"
-                    opacity={1}
+                    opacity={continuationVisualOpacity}
                     pointerEvents="none"
                     zIndex={2}
                   >
@@ -715,13 +744,14 @@ const GridLayoutComponent = ({
                           <Box
                             position="absolute"
                             inset="0"
-                            bg="linear-gradient(90deg, rgba(14, 20, 29, 0.12) 0%, rgba(14, 20, 29, 0.24) 45%, rgba(14, 20, 29, 0.4) 100%)"
+                            bg="linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(176, 193, 223, 0.12) 35%, rgba(14, 20, 29, 0.32) 100%)"
                           />
                         </>
                       )}
                   </Box>
 
                   <Box
+                    data-cue-anchor-border
                     position="absolute"
                     top={`${continuationInset}px`}
                     bottom={`${continuationInset}px`}
@@ -731,11 +761,13 @@ const GridLayoutComponent = ({
                     borderColor={segmentBorderColor}
                     borderRightWidth="0"
                     borderRadius="10px 0 0 10px"
+                    transition="border-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
                   />
 
                   <Box
+                    data-cue-continuation-border
                     position="absolute"
                     top={`${continuationInset}px`}
                     bottom={`${continuationInset}px`}
@@ -745,17 +777,20 @@ const GridLayoutComponent = ({
                     borderColor={segmentBorderColor}
                     borderLeftWidth="0"
                     borderRadius="0 8px 8px 0"
+                    transition="border-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
                   />
 
                   <Box
+                    data-cue-seam-divider
                     position="absolute"
                     top={`${continuationInset}px`}
                     bottom={`${continuationInset}px`}
                     left={`${anchorContinuationSeamLeft}px`}
                     width={`${anchorContinuationDividerWidth}px`}
                     bg={segmentBorderColor}
+                    transition="background-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
                   />
@@ -791,10 +826,10 @@ const GridLayoutComponent = ({
                   width={`${columnWidth}px`}
                   height="100%"
                   border="2px dashed"
-                  borderColor="orange.300"
+                  borderColor="#c9b7f8"
                   borderRadius="10px"
-                  bg="rgba(255, 255, 255, 0.12)"
-                  boxShadow="inset 0 0 0 1px rgba(255, 255, 255, 0.24)"
+                  bg="rgba(201, 183, 248, 0.16)"
+                  boxShadow="none"
                   pointerEvents="none"
                   zIndex={8}
                 />

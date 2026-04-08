@@ -64,15 +64,16 @@ const EditMode = ({
     "rgba(72, 26, 35, 0.8)"
   )
   const dragPreviewValidBg = useColorModeValue(
-    "rgba(126, 214, 168, 0.4)",
-    "rgba(39, 94, 66, 0.65)"
+    "rgba(127, 212, 238, 0.18)",
+    "rgba(127, 212, 238, 0.24)"
   )
   const dragPreviewInvalidBg = useColorModeValue(
-    "rgba(236, 94, 94, 0.42)",
-    "rgba(122, 45, 45, 0.72)"
+    "rgba(229, 138, 156, 0.2)",
+    "rgba(229, 138, 156, 0.28)"
   )
-  const dragPreviewValidBorder = useColorModeValue("#2f855a", "#68d391")
-  const dragPreviewInvalidBorder = useColorModeValue("#c53030", "#fc8181")
+  const dragPreviewValidBorder = useColorModeValue("#7fd4ee", "#9be2f7")
+  const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
+  const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
   const showToast = useCustomToast()
@@ -1516,6 +1517,7 @@ const EditMode = ({
                   border="2px dashed"
                   borderColor={dragPreviewInvalidBorder}
                   bg={dragPreviewInvalidBg}
+                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
                   pointerEvents="none"
                   zIndex={20}
                   display="none"
@@ -1535,8 +1537,8 @@ const EditMode = ({
                   height={`${rowHeight}px`}
                   borderRadius="16px"
                   border="2px solid"
-                  borderColor="white"
-                  boxShadow="0 12px 30px rgba(0,0,0,0.35)"
+                  borderColor={dragPreviewOriginBorder}
+                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
                   overflow="hidden"
                   pointerEvents="none"
                   zIndex={30}
