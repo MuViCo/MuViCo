@@ -1498,6 +1498,7 @@ const EditMode = ({
                   setAlertData={setAlertData}
                   screenCount={presentation.screenCount}
                   isDragging={isDragging}
+                  draggingCueId={isDragging && selectedCue ? selectedCue._id : null}
                 />
               </Box>
 
