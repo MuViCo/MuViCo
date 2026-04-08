@@ -112,6 +112,7 @@ const EditMode = ({
   }, [presentation.screenCount])
 
   const [isDragging, setIsDragging] = useState(false)
+  const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
@@ -336,6 +337,7 @@ const EditMode = ({
       yIndex <= audioRowIndex
 
     if (!isInsideGrid || !selectedCue) {
+      setDragCursorMode("grabbing")
       updateDragPreviewCell(null)
       hideDragPlacementPreview()
       return
@@ -345,6 +347,8 @@ const EditMode = ({
     const isValidDropCell =
       (selectedCueIsAudio && yIndex === audioRowIndex) ||
       (!selectedCueIsAudio && yIndex !== audioRowIndex)
+
+    setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
 
     updateDragPreviewCell({ xIndex, yIndex })
 
@@ -725,12 +729,14 @@ const EditMode = ({
       if (event.target.closest(".react-grid-item")) {
         event.preventDefault()
         setIsDragging(true)
+        setDragCursorMode("grabbing")
         hideHoverPreview()
         const pointerPosition = getPointerPosition(event)
         dragLatestPointerRef.current = pointerPosition
         applyDragPreviewFromPointer(pointerPosition)
       } else {
         setIsDragging(false)
+        setDragCursorMode("default")
         updateDragPreviewCell(null)
         dragCursorPositionRef.current = null
         dragLatestPointerRef.current = null
@@ -873,6 +879,7 @@ const EditMode = ({
   const handleMouseUp = async (event) => {
     const wasDragging = isDragging
     setIsDragging(false)
+    setDragCursorMode("default")
     updateDragPreviewCell(null)
     hideDragPlacementPreview()
     cancelDragPreviewFrame()
@@ -1412,6 +1419,7 @@ const EditMode = ({
               height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
               width="100%"
               position="relative"
+              cursor={isDragging ? dragCursorMode : "default"}
               data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
@@ -1426,6 +1434,9 @@ const EditMode = ({
                 hideHoverPreview()
                 updateDragPreviewCell(null)
                 hideDragPlacementPreview()
+                if (!isDragging) {
+                  setDragCursorMode("default")
+                }
               }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}

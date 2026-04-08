@@ -583,6 +583,7 @@ const GridLayoutComponent = ({
               h="100%"
               overflow="hidden"
               borderRadius="10px"
+              cursor={isShowMode ? "default" : (isDragging ? "grabbing" : "grab")}
               data-cue-content-id={cue._id}
               opacity={isDraggingOriginCue ? 0.58 : 1}
               transform="translateY(0)"
