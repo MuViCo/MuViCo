@@ -4,7 +4,6 @@ import presentation from "../../services/presentation"
 import PresentationManual from "../../components/presentation/PresentationManual"
 import "@testing-library/jest-dom"
 
-
 describe("services tests", () => {
   test("presentation service calls remove", async () => {
     const remove = jest.fn()
@@ -46,7 +45,11 @@ describe("services tests", () => {
     formData.append("index", 1)
     formData.append("cueName", "testCue")
     formData.append("screen", 1)
-    formData.append("file", new Blob(["file content"], { type: "text/plain" }), "test.txt")
+    formData.append(
+      "file",
+      new Blob(["file content"], { type: "text/plain" }),
+      "test.txt"
+    )
     const response = await presentation.updateCue("1", "1", formData)
     expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
   })
@@ -59,38 +62,49 @@ describe("services tests", () => {
     formData.append("index", 1)
     formData.append("cueName", "testCue")
     formData.append("screen", 1)
-    formData.append("file", new Blob(["video content"], { type: "video/mp4" }), "test.mp4")
+    formData.append(
+      "file",
+      new Blob(["video content"], { type: "video/mp4" }),
+      "test.mp4"
+    )
     const response = await presentation.updateCue("1", "1", formData)
     expect(JSON.stringify(response)).toBe(JSON.stringify({ data: "updated" }))
   })
 
-  test("presentation service calls saveScreenCountApi", async () => {
-    const saveScreenCountApi = jest.fn()
-    presentation.saveScreenCountApi = saveScreenCountApi
-    saveScreenCountApi.mockResolvedValueOnce({ screenCount: 5, removedCuesCount: 0 })
-    const response = await presentation.saveScreenCountApi("presentation-id", 5)
+  test("presentation service calls saveScreenCount", async () => {
+    const saveScreenCount = jest.fn()
+    presentation.saveScreenCount = saveScreenCount
+    saveScreenCount.mockResolvedValueOnce({
+      screenCount: 5,
+      removedCuesCount: 0,
+    })
+    const response = await presentation.saveScreenCount("presentation-id", 5)
     expect(response).toEqual({ screenCount: 5, removedCuesCount: 0 })
-    expect(saveScreenCountApi).toHaveBeenCalledWith("presentation-id", 5)
+    expect(saveScreenCount).toHaveBeenCalledWith("presentation-id", 5)
   })
 
-  test("presentation service calls saveScreenCountApi with cue removal", async () => {
-    const saveScreenCountApi = jest.fn()
-    presentation.saveScreenCountApi = saveScreenCountApi
-    saveScreenCountApi.mockResolvedValueOnce({ screenCount: 2, removedCuesCount: 3 })
-    const response = await presentation.saveScreenCountApi("presentation-id", 2)
+  test("presentation service calls saveScreenCount with cue removal", async () => {
+    const saveScreenCount = jest.fn()
+    presentation.saveScreenCount = saveScreenCount
+    saveScreenCount.mockResolvedValueOnce({
+      screenCount: 2,
+      removedCuesCount: 3,
+    })
+    const response = await presentation.saveScreenCount("presentation-id", 2)
     expect(response).toEqual({ screenCount: 2, removedCuesCount: 3 })
-    expect(saveScreenCountApi).toHaveBeenCalledWith("presentation-id", 2)
+    expect(saveScreenCount).toHaveBeenCalledWith("presentation-id", 2)
   })
   describe("PresentationManual", () => {
-  test("Checks that the presentation returns first sentence", () => {
-    render(
-      <ChakraProvider>
-        <PresentationManual />
-      </ChakraProvider>
-    )
+    test("Checks that the presentation returns first sentence", () => {
+      render(
+        <ChakraProvider>
+          <PresentationManual />
+        </ChakraProvider>
+      )
 
-    expect(screen.getByText(/Welcome to the user manual/i)).toBeInTheDocument()
- 
+      expect(
+        screen.getByText(/Welcome to the user manual/i)
+      ).toBeInTheDocument()
+    })
   })
-})
 })

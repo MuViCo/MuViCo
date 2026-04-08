@@ -12,7 +12,7 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Portal
+  Portal,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -48,8 +48,6 @@ import {
 
 const theme = extendTheme({})
 
-
-
 const EditMode = ({
   id,
   cues,
@@ -81,13 +79,14 @@ const EditMode = ({
   })
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
-  const [confirmAction, setConfirmAction] = useState(() => () => { })
+  const [confirmAction, setConfirmAction] = useState(() => () => {})
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
 
   const xLabels = Array.from({ length: indexCount }, (_, index) =>
-    index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const visualCues = cues.filter(cue => cue.cueType === "visual")
+    index === 0 ? "Starting Frame" : `Frame ${index}`
+  )
+  const visualCues = cues.filter((cue) => cue.cueType === "visual")
 
   const yLabels = Array.from(
     { length: presentation.screenCount },
@@ -165,6 +164,7 @@ const EditMode = ({
     hideHoverPreview()
   }, [cues, indexCount, presentation.screenCount, isShowMode])
 
+  // TODO: Refactor logic out of React component
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
       `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
@@ -203,6 +203,7 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
+  // TODO: Refactor presentation logic out of component
   const handleAddIndex = async (index) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
@@ -211,9 +212,13 @@ const EditMode = ({
       setStatus("loading")
       try {
         dispatch(incrementIndexCount())
-        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount + 1 }))
+        await dispatch(
+          saveIndexCount({ id, indexCount: originalIndexCount + 1 })
+        )
 
-        const cuesToShift = cuesAfter.slice().sort((a, b) => Number(b.index) - Number(a.index))
+        const cuesToShift = cuesAfter
+          .slice()
+          .sort((a, b) => Number(b.index) - Number(a.index))
 
         // Create new data for the elements in the new positions
         const updatePromises = cuesToShift.map((cue) => {
@@ -251,11 +256,16 @@ const EditMode = ({
         dispatch(decrementIndexCount())
         await dispatch(saveIndexCount({ id, indexCount: originalIndexCount }))
         setStatus("saved")
-        showToast({ title: "Error", description: error.message || "Failed to add index", status: "error" })
+        showToast({
+          title: "Error",
+          description: error.message || "Failed to add index",
+          status: "error",
+        })
       }
     }
   }
 
+  // TODO: Refactor presentation logic out of component
   const handleRemoveIndex = async (index) => {
     if (indexCount <= 1) {
       showToast({
@@ -266,7 +276,9 @@ const EditMode = ({
       return
     }
 
-    const cuesInIndex = cues.filter((cue) => Number(cue.index) === Number(index))
+    const cuesInIndex = cues.filter(
+      (cue) => Number(cue.index) === Number(index)
+    )
     if (cuesInIndex.length > 0) {
       handleIndexHasData(index)
       return
@@ -283,7 +295,9 @@ const EditMode = ({
 
     setStatus("loading")
     try {
-      const cuesToShift = cuesAfter.slice().sort((a, b) => Number(a.index) - Number(b.index))
+      const cuesToShift = cuesAfter
+        .slice()
+        .sort((a, b) => Number(a.index) - Number(b.index))
 
       // Create new data for the elements in the new positions
       const updatePromises = cuesToShift.map((cue) => {
@@ -316,11 +330,16 @@ const EditMode = ({
       })
     } catch (error) {
       console.error("Error shifting cues when removing index:", error)
-      showToast({ title: "Error", description: error.message || "Failed to remove index", status: "error" })
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove index",
+        status: "error",
+      })
       setStatus("saved")
     }
   }
 
+  // TODO: Combine logic into one redux dispatch
   const performRemoveIndex = async (indexToRemove) => {
     if (indexCount > 1) {
       setStatus("loading")
@@ -330,6 +349,7 @@ const EditMode = ({
     }
   }
 
+  // TODO: Refactor logic out of react component
   const handleIncreaseScreenCount = async () => {
     if (presentation.screenCount >= 8) {
       showToast({
@@ -342,10 +362,10 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      const audioCues = cues.filter(cue => cue.cueType === "audio")
+      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(incrementScreenCount())
-      await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
+      await dispatch(saveScreenCount({ id, indexCount: newScreenNumber }))
 
       for (const audioCue of audioCues) {
         const updatedCue = {
@@ -354,13 +374,13 @@ const EditMode = ({
           index: audioCue.index,
           screen: newScreenNumber + 1,
           file: audioCue.file,
-          loop: audioCue.loop
+          loop: audioCue.loop,
         }
         await dispatch(updatePresentation(id, updatedCue))
 
         const updatedCueForState = {
           ...audioCue,
-          screen: updatedCue.screen
+          screen: updatedCue.screen,
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -393,6 +413,7 @@ const EditMode = ({
     }
   }
 
+  // TODO: Refactor logic out of react component
   const handleDecreaseScreenCount = async () => {
     if (presentation.screenCount <= 1) {
       showToast({
@@ -404,7 +425,9 @@ const EditMode = ({
     }
 
     const screenToRemove = presentation.screenCount
-    const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
+    const cuesOnScreen = visualCues.filter(
+      (cue) => cue.screen === screenToRemove
+    )
 
     if (cuesOnScreen.length > 0) {
       setConfirmMessage(
@@ -421,29 +444,32 @@ const EditMode = ({
     await performScreenRemoval()
   }
 
+  // TODO: Refactor logic out of react component
   const performScreenRemoval = async () => {
     try {
       const currentScreenCount = presentation.screenCount
-      const audioCues = cues.filter(cue => cue.cueType === "audio")
+      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(decrementScreenCount())
-      const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
+      const result = await dispatch(
+        saveScreenCount({ id, indexCount: currentScreenCount - 1 })
+      )
 
       for (const audioCue of audioCues) {
         const updatedCue = {
           cueId: audioCue._id,
           cueName: audioCue.name,
           index: audioCue.index,
-          screen: (currentScreenCount - 1) + 1,
+          screen: currentScreenCount - 1 + 1,
           file: audioCue.file,
-          loop: audioCue.loop
+          loop: audioCue.loop,
         }
 
         await dispatch(updatePresentation(id, updatedCue))
 
         const updatedCueForState = {
           ...audioCue,
-          screen: updatedCue.screen
+          screen: updatedCue.screen,
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -533,7 +559,12 @@ const EditMode = ({
 
     const audioRowIndex = getAudioRow(presentation.screenCount)
 
-    if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+    if (
+      yIndex < 1 ||
+      yIndex > audioRowIndex ||
+      xIndex < 0 ||
+      xIndex >= indexCount
+    ) {
       setIsCopied(false)
       setCopiedCue(null)
       setShowAlert(false)
@@ -572,16 +603,11 @@ const EditMode = ({
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
     let fileObj = null
     if (copiedCue.file) {
-
-      fileObj = await fetchFileFromUrl(
-        copiedCue.file.url,
-        copiedCue.file.name
-      )
+      fileObj = await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name)
       if (copiedCue.file.driveId) {
         fileObj.driveId = copiedCue.file.driveId
       }
     }
-
 
     return {
       index: xIndex,
@@ -589,7 +615,7 @@ const EditMode = ({
       screen: yIndex,
       file: fileObj,
 
-      fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
+      fileName: copiedCue.file ? copiedCue.file.name || "blank.png" : null,
       color: copiedCue.color,
       loop: copiedCue.loop,
     }
@@ -673,6 +699,7 @@ const EditMode = ({
     return position
   })
 
+  // TODO: Refactor presentation logic out of React component
   const addCue = async (cueData) => {
     setStatus("loading")
     const { index, cueName, screen, file, loop, color } = cueData
@@ -724,7 +751,8 @@ const EditMode = ({
         cueName: newCueData.cueName,
       }
 
-      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      //await dispatchUpdateCue(existingCue._id, updatedCueData)
+      await dispatch(updatePresentation(id, updatedCueData, existingCue._id))
       setIsConfirmOpen(false)
     })
     setIsConfirmOpen(true)
@@ -753,11 +781,11 @@ const EditMode = ({
       await handleExistingCueUpdate(existingCue, updatedCue, previousCueId)
       return
     }
-    await dispatchUpdateCue(previousCueId, updatedCue)
+    //await dispatchUpdateCue(previousCueId, updatedCue)
+    await dispatch(updatePresentation(id, updatedCue, previousCueId))
   }
 
-
-
+  // TODO: Refactor logic out of react component
   const handleExistingCueUpdate = async (
     existingCue,
     updatedCue,
@@ -769,8 +797,9 @@ const EditMode = ({
 
     setConfirmAction(() => async () => {
       const updatedCueData = await createUpdatedCueData(existingCue, updatedCue)
-      await dispatch(removeCue(id, previousCueId))
-      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      dispatch(removeCue(id, previousCueId))
+      //await dispatchUpdateCue(existingCue._id, updatedCueData)
+      await dispatch(updatePresentation(id, updatedCueData, existingCue._id))
       setIsConfirmOpen(false)
     })
     setIsConfirmOpen(true)
@@ -842,6 +871,7 @@ const EditMode = ({
     }
   }
 
+  // TODO: Disabled for now
   const dispatchUpdateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
@@ -864,12 +894,11 @@ const EditMode = ({
     }
   }
 
+  // TODO: Refactor
   const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
     setStatus("loading")
     try {
-      await dispatch(
-        swapCues(id, newTargetCue, newSelectedCue)
-      )
+      dispatch(swapCues(id, newTargetCue, newSelectedCue))
       setStatus("saved")
     } catch (error) {
       console.error(error)
@@ -913,10 +942,15 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
+    const hasAudioCue =
+      newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (!(newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio")) {
+      if (
+        !(
+          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+        )
+      ) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -951,10 +985,12 @@ const EditMode = ({
       file: file,
     }
 
-    await dispatchUpdateCue(existingCue._id, updatedCue)
+    //await dispatchUpdateCue(existingCue._id, updatedCue)
+    await dispatch(updatePresentation(id, updatedCue, existingCue._id))
     setIsConfirmOpen(false)
   }
 
+  // TODO: Check if refactor is needed
   const handleDrop = useCallback(
     async (event) => {
       event.preventDefault()
@@ -982,7 +1018,11 @@ const EditMode = ({
       const file = mediaFiles[0]
       const audioRowIndex = getAudioRow(presentation.screenCount)
 
-      if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
+      if (
+        isImageOrVideo(file) &&
+        xIndex < indexCount &&
+        yIndex === audioRowIndex
+      ) {
         showToast({
           title: "Only audio files on the audio row.",
           description: "Click on an appropriate row to paste the element.",
@@ -1032,10 +1072,7 @@ const EditMode = ({
 
   return (
     <ChakraProvider theme={theme}>
-      <CustomAlert
-        showAlert={showAlert}
-        alertData={alertData}
-      />
+      <CustomAlert showAlert={showAlert} alertData={alertData} />
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
@@ -1081,52 +1118,62 @@ const EditMode = ({
                 {label !== "Audio files" && !isShowMode && (
                   <>
                     {/* Add screen button - show on last visual screen only */}
-                    {index === presentation.screenCount - 1 && presentation.screenCount < 8 && (
-                      <IconButton
-                        icon={<AddIcon />}
-                        size="sm"
-                        colorScheme="green"
-                        variant="solid"
-                        bg="white"
-                        color="green.600"
-                        border="2px solid"
-                        borderColor="green.500"
-                        position="absolute"
-                        bottom="4px"
-                        right="4px"
-                        aria-label="Add screen"
-                        title="Add screen"
-                        onClick={handleIncreaseScreenCount}
-                        _hover={{ bg: "green.50", borderColor: "green.600", transform: "scale(1.1)" }}
-                        _active={{ bg: "green.100" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                      />
-                    )}
+                    {index === presentation.screenCount - 1 &&
+                      presentation.screenCount < 8 && (
+                        <IconButton
+                          icon={<AddIcon />}
+                          size="sm"
+                          colorScheme="green"
+                          variant="solid"
+                          bg="white"
+                          color="green.600"
+                          border="2px solid"
+                          borderColor="green.500"
+                          position="absolute"
+                          bottom="4px"
+                          right="4px"
+                          aria-label="Add screen"
+                          title="Add screen"
+                          onClick={handleIncreaseScreenCount}
+                          _hover={{
+                            bg: "green.50",
+                            borderColor: "green.600",
+                            transform: "scale(1.1)",
+                          }}
+                          _active={{ bg: "green.100" }}
+                          boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                          zIndex="10"
+                        />
+                      )}
 
                     {/* Remove screen button - show on last visual screen only if more than 1 screen */}
-                    {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
-                      <IconButton
-                        icon={<MinusIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        variant="solid"
-                        bg="white"
-                        color="red.600"
-                        border="2px solid"
-                        borderColor="red.500"
-                        position="absolute"
-                        top="4px"
-                        right="4px"
-                        aria-label="Remove screen"
-                        title="Remove screen"
-                        onClick={handleDecreaseScreenCount}
-                        _hover={{ bg: "red.50", borderColor: "red.600", transform: "scale(1.1)" }}
-                        _active={{ bg: "red.100" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                      />
-                    )}
+                    {index === presentation.screenCount - 1 &&
+                      presentation.screenCount > 1 && (
+                        <IconButton
+                          icon={<MinusIcon />}
+                          size="sm"
+                          colorScheme="red"
+                          variant="solid"
+                          bg="white"
+                          color="red.600"
+                          border="2px solid"
+                          borderColor="red.500"
+                          position="absolute"
+                          top="4px"
+                          right="4px"
+                          aria-label="Remove screen"
+                          title="Remove screen"
+                          onClick={handleDecreaseScreenCount}
+                          _hover={{
+                            bg: "red.50",
+                            borderColor: "red.600",
+                            transform: "scale(1.1)",
+                          }}
+                          _active={{ bg: "red.100" }}
+                          boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                          zIndex="10"
+                        />
+                      )}
                   </>
                 )}
 
@@ -1239,8 +1286,12 @@ const EditMode = ({
                           right="2px"
                           size="xs"
                           backgroundColor="var(--chakra-colors-gray-700)"
-                          _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
-                          _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                          _hover={{
+                            backgroundColor: "var(--chakra-colors-gray-600)",
+                          }}
+                          _active={{
+                            backgroundColor: "var(--chakra-colors-gray-600)",
+                          }}
                         />
                         <Portal>
                           <MenuList
@@ -1252,11 +1303,15 @@ const EditMode = ({
                             flexDirection="column"
                           >
                             <MenuItem
-                              onClick={() => { handleRemoveIndex(index) }}
+                              onClick={() => {
+                                handleRemoveIndex(index)
+                              }}
                               isDisabled={indexCount <= 1 || index === 0}
                               backgroundColor="var(--chakra-colors-red-600)"
                               color="white"
-                              _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
+                              _hover={{
+                                backgroundColor: "var(--chakra-colors-red-700)",
+                              }}
                               borderRadius="5px"
                               fontWeight={700}
                               display="block"
@@ -1265,13 +1320,18 @@ const EditMode = ({
                               Delete Frame
                             </MenuItem>
                             <MenuItem
-                              onClick={() => { handleAddIndex(index) }}
+                              onClick={() => {
+                                handleAddIndex(index)
+                              }}
                               isDisabled={indexCount >= 100}
                               marginTop="10px"
                               marginBottom="10px"
                               backgroundColor="var(--chakra-colors-green-600)"
                               color="white"
-                              _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
+                              _hover={{
+                                backgroundColor:
+                                  "var(--chakra-colors-green-700)",
+                              }}
                               borderRadius="5px"
                               fontWeight={700}
                               display="block"
@@ -1288,7 +1348,9 @@ const EditMode = ({
               </Box>
               <Button
                 colorScheme="gray"
-                onClick={() => { handleAddIndex(indexCount - 1) }}
+                onClick={() => {
+                  handleAddIndex(indexCount - 1)
+                }}
                 isDisabled={indexCount >= 100}
                 position="absolute"
                 right="-50px"
@@ -1300,7 +1362,9 @@ const EditMode = ({
               </Button>
               <Button
                 colorScheme="gray"
-                onClick={() => { handleRemoveIndex(indexCount - 1) }}
+                onClick={() => {
+                  handleRemoveIndex(indexCount - 1)
+                }}
                 isDisabled={indexCount <= 1}
                 position="absolute"
                 right="-50px"

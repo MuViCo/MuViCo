@@ -41,8 +41,8 @@ jest.mock("../../services/presentation.js", () => ({
   remove: jest.fn(),
   updateCue: jest.fn(),
   swapCues: jest.fn(),
-  saveScreenCountApi: jest.fn(),
-  saveIndexCountApi: jest.fn(),
+  saveScreenCount: jest.fn(),
+  saveIndexCount: jest.fn(),
   shiftIndexes: jest.fn(),
   updatePresentationName: jest.fn(),
 }))

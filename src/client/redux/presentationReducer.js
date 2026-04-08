@@ -266,7 +266,7 @@ export const shiftPresentationIndexes =
   }
 
 export const updatePresentationName =
-  (presentationId, newName) => async (dispatch, getState) => {
+  (presentationId, newName) => async (dispatch) => {
     try {
       const updated = await presentationService.updatePresentationName(
         presentationId,

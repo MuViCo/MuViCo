@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from "react"
-import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Text,
+  Menu,
+  MenuButton,
+  MenuList,
+  Portal,
+} from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
   CopyIcon,
   RepeatIcon,
   ArrowForwardIcon,
   EditIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -39,21 +48,27 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount) => {
-  
+const renderMedia = (
+  cue,
+  cueIndex,
+  cues,
+  isShowMode,
+  isAudioMuted,
+  screenCount
+) => {
   if (cue.file == null) {
-      return (
-        <Box
-          style={{
-            width: "100%",
-            height: "100%",
-            backgroundColor: cue.color || "#e014ee",
-            borderRadius: "10px",
-          }}
-        />
-      )
+    return (
+      <Box
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: cue.color || "#e014ee",
+          borderRadius: "10px",
+        }}
+      />
+    )
   }
-  
+
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -130,7 +145,7 @@ const GridLayoutComponent = ({
   indexCount,
   setShowAlert,
   setAlertData,
-  screenCount
+  screenCount,
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -143,6 +158,7 @@ const GridLayoutComponent = ({
     setCurrentLayout(layout)
   }, [layout])
 
+  // TODO: Add loop toggle to redux
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
       cueId: cue._id,
@@ -198,10 +214,8 @@ const GridLayoutComponent = ({
     setIsDialogOpen(false)
   }
 
-  const handleEditItem= (cueId) => {
-    const cue = cues.find(
-      (cue) => cue._id === cueId
-    )
+  const handleEditItem = (cueId) => {
+    const cue = cues.find((cue) => cue._id === cueId)
     setSelectedCue(cue)
     setIsToolboxOpen(true)
   }
@@ -234,12 +248,12 @@ const GridLayoutComponent = ({
     <Menu>
       <MenuButton
         as={IconButton}
-        aria-label='Options'
+        aria-label="Options"
         icon={<ChevronDownIcon />}
-        backgroundColor="var(--chakra-colors-gray-700)" 
-        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}  
-        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }} 
-        variant='outline'
+        backgroundColor="var(--chakra-colors-gray-700)"
+        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+        variant="outline"
         position="absolute"
         zIndex="10"
         top="3px"
@@ -292,7 +306,13 @@ const GridLayoutComponent = ({
             size="xs"
             w="100%"
             h="30px"
-            borderRadius={cue.file!=null ? (cue.cueType === "audio" ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
+            borderRadius={
+              cue.file != null
+                ? cue.cueType === "audio"
+                  ? "0"
+                  : "0 0 0.375rem 0.375rem"
+                : "0 0 0.375rem 0.375rem"
+            }
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
@@ -311,7 +331,7 @@ const GridLayoutComponent = ({
               })
             }}
           />
-          {cue.file!=null && cue.cueType === "audio" && (
+          {cue.file != null && cue.cueType === "audio" && (
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
@@ -338,6 +358,7 @@ const GridLayoutComponent = ({
    * Do not remove the `layout` parameter from the `handlePositionChange` function.
    * It is required for the function to work correctly.
    */
+  // TODO: Logic needs refactoring out of react component
   const handlePositionChange = async (newLayout, oldItem, newItem) => {
     if (oldItem.x === newItem.x && oldItem.y === newItem.y) {
       return
@@ -352,10 +373,14 @@ const GridLayoutComponent = ({
     const movingToAudioRow = newItem.y === audioRowYIndex
     const cueIsAudio = cue.cueType === "audio"
 
-    if ((cueIsAudio && !movingToAudioRow) || (!cueIsAudio && movingToAudioRow)) {
+    if (
+      (cueIsAudio && !movingToAudioRow) ||
+      (!cueIsAudio && movingToAudioRow)
+    ) {
       showToast({
         title: "Cannot move this file type here",
-        description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+        description:
+          "Keep audio elements to the audio row and visual elements to the visual rows.",
         status: "error",
       })
 
@@ -450,7 +475,10 @@ const GridLayoutComponent = ({
       containerPadding={[0, 0]}
       useCSSTransforms={true}
       onDragStop={handlePositionChange}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
+      maxRows={Math.max(
+        ...cues.map((cue) => cue.screen),
+        getAudioRow(screenCount)
+      )}
     >
       {cues.map((cue) => (
         <div
@@ -466,15 +494,16 @@ const GridLayoutComponent = ({
           id={`cue-screen-${cue.screen}-index-${cue.index}`}
         >
           <Box position="relative" h="100%">
-            {isShowMode
-              ? (
-                ShowModeCueButtons(cue)
-              )
-            : (
-                EditModeCueButtons(cue)
-            )}
+            {isShowMode ? ShowModeCueButtons(cue) : EditModeCueButtons(cue)}
 
-            {renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
+            {renderMedia(
+              cue,
+              cueIndex,
+              cues,
+              isShowMode,
+              isAudioMuted,
+              screenCount
+            )}
 
             <Tooltip label={cue.name} placement="top" hasArrow>
               <Text

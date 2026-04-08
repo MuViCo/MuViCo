@@ -77,7 +77,7 @@ const updateCue = async (id, cueId, formData) => {
   return response.data
 }
 
-const saveIndexCountApi = async (id, indexCount) => {
+const saveIndexCount = async (id, indexCount) => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const saveIndexCountApi = async (id, indexCount) => {
   return response.data
 }
 
-const saveScreenCountApi = async (id, screenCount) => {
+const saveScreenCount = async (id, screenCount) => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -143,8 +143,8 @@ export default {
   addCue,
   removeCue,
   updateCue,
-  saveIndexCountApi,
-  saveScreenCountApi,
+  saveIndexCount,
+  saveScreenCount,
   shiftIndexes,
   updatePresentationName,
   swapCues,

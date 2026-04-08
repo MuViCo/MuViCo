@@ -190,7 +190,7 @@ describe("presentation services api tests", () => {
     )
   })
 
-  test("saveIndexCountApi in presentation api call behaves as expected", async () => {
+  test("saveIndexCount in presentation api call behaves as expected", async () => {
     const response = {
       indexCount: 5,
     }
@@ -199,7 +199,7 @@ describe("presentation services api tests", () => {
 
     const indexCount = 5
 
-    const result = await presentation.default.saveIndexCountApi(id, indexCount)
+    const result = await presentation.default.saveIndexCount(id, indexCount)
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/indexCount`,
@@ -213,7 +213,7 @@ describe("presentation services api tests", () => {
     )
   })
 
-  test("saveScreenCountApi in presentation api call behaves as expected", async () => {
+  test("saveScreenCount in presentation api call behaves as expected", async () => {
     const response = {
       screenCount: 3,
     }
@@ -222,10 +222,7 @@ describe("presentation services api tests", () => {
 
     const screenCount = 3
 
-    const result = await presentation.default.saveScreenCountApi(
-      id,
-      screenCount
-    )
+    const result = await presentation.default.saveScreenCount(id, screenCount)
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/screenCount`,
