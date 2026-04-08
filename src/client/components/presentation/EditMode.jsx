@@ -40,6 +40,7 @@ import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
+import screenIcon from "../../public/icons/screen.svg"
 import {
   getAudioRow,
   isAudioMimeType,
@@ -61,8 +62,8 @@ const EditMode = ({
   indexCount,
 }) => {
   const bgColorHover = useColorModeValue(
-    "rgba(255, 181, 181, 0.8)",
-    "rgba(72, 26, 35, 0.8)"
+    "rgba(154, 109, 151, 0.8)",
+    "rgba(72, 26, 68, 0.8)"
   )
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
@@ -92,6 +93,11 @@ const EditMode = ({
     { length: presentation.screenCount },
     (_, index) => `Screen ${index + 1}`
   )
+
+  const getScreenNumberFromLabel = (label) => {
+    const match = /^Screen\s+(\d+)$/.exec(label)
+    return match ? match[1] : null
+  }
 
   // Add audio row separately (always at the end)
   yLabels.push("Audio files")
@@ -1150,15 +1156,70 @@ const EditMode = ({
                 bg={
                   label === "Audio files" ? "rgb(204, 46, 252)" : "purple.200"
                 }
-                borderRadius="md"
+                border="2px solid #b31bff"
                 marginRight={`${gap}px`}
                 h={`${rowHeight}px`}
-                width={`${columnWidth}px`}
+                width={`120px`}
                 position="relative"
               >
-                <Text fontWeight="bold" color="black">
-                  {label}
-                </Text>
+                <Box fontWeight="bold" color="black">
+                  {label === "Audio files" ? (
+                    <IconButton
+                      icon={
+                        isAudioMuted ? (
+                          <SpeakerMutedIcon boxSize="55px" />
+                        ) : (
+                          <SpeakerIcon boxSize="55px" />
+                        )
+                      }
+                      disabled={isShowMode}
+                      _disabled={{
+                        opacity: 0.7,
+                        cursor: "not-allowed",
+                      }}
+                      sx={{
+                        width: "65px",
+                        height: "65px",
+                        padding: "10px",
+                      }}
+                      _hover={{ color: "rgb(99, 76, 107)" }}
+                      textColor={"black"}
+                      variant="ghost"
+                      draggable={false}
+                      aria-label="Mute/unmute audio"
+                      title={isAudioMuted ? "Unmute audio" : "Mute audio"}
+                      onMouseDown={(e) => {
+                        e.stopPropagation()
+                        toggleAudioMute()
+                      }}
+                    />
+                  ) : (
+                    <Box position="relative" width="65px" height="65px">
+                      <Box
+                        as="img"
+                        src={screenIcon}
+                        alt=""
+                        width="65px"
+                        height="65px"
+                        aria-hidden="true"
+                      />
+                      <Text
+                        as="span"
+                        position="absolute"
+                        top="43%"
+                        left="50%"
+                        transform="translate(-50%, -50%)"
+                        fontSize="24px"
+                        fontWeight="700"
+                        lineHeight="1"
+                        color="black"
+                        pointerEvents="none"
+                      >
+                        {getScreenNumberFromLabel(label)}
+                      </Text>
+                    </Box>
+                  )}
+                </Box>
 
                 {/* Screen count controls for visual screens */}
                 {label !== "Audio files" && !isShowMode && (
@@ -1167,21 +1228,17 @@ const EditMode = ({
                     {index === presentation.screenCount - 1 && presentation.screenCount < 8 && (
                       <IconButton
                         icon={<AddIcon />}
-                        size="sm"
-                        colorScheme="green"
+                        size="xs"
                         variant="solid"
-                        bg="white"
-                        color="green.600"
-                        border="2px solid"
-                        borderColor="green.500"
+                        color="black"
                         position="absolute"
-                        bottom="4px"
-                        right="4px"
+                        bottom="1px"
+                        right="1px"
                         aria-label="Add screen"
                         title="Add screen"
                         onClick={handleIncreaseScreenCount}
-                        _hover={{ bg: "green.50", borderColor: "green.600", transform: "scale(1.1)" }}
-                        _active={{ bg: "green.100" }}
+                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
+                        _active={{ bg: "white" }}
                         boxShadow="0 2px 4px rgba(0,0,0,0.2)"
                         zIndex="10"
                       />
@@ -1191,63 +1248,22 @@ const EditMode = ({
                     {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
                       <IconButton
                         icon={<MinusIcon />}
-                        size="sm"
-                        colorScheme="red"
+                        size="xs"
                         variant="solid"
-                        bg="white"
-                        color="red.600"
-                        border="2px solid"
-                        borderColor="red.500"
+                        color="black"
                         position="absolute"
-                        top="4px"
-                        right="4px"
+                        top="1px"
+                        right="1px"
                         aria-label="Remove screen"
                         title="Remove screen"
                         onClick={handleDecreaseScreenCount}
-                        _hover={{ bg: "red.50", borderColor: "red.600", transform: "scale(1.1)" }}
-                        _active={{ bg: "red.100" }}
+                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
+                        _active={{ bg: "white" }}
                         boxShadow="0 2px 4px rgba(0,0,0,0.2)"
                         zIndex="10"
                       />
                     )}
                   </>
-                )}
-
-                {/* Audio mute button */}
-                {label === "Audio files" && (
-                  <IconButton
-                    icon={
-                      isAudioMuted ? (
-                        <SpeakerMutedIcon boxSize="32px" />
-                      ) : (
-                        <SpeakerIcon boxSize="32px" />
-                      )
-                    }
-                    disabled={isShowMode}
-                    _disabled={{
-                      opacity: 0.7,
-                      cursor: "not-allowed",
-                    }}
-                    sx={{
-                      width: "48px",
-                      height: "48px",
-                      padding: "10px",
-                    }}
-                    _hover={{ color: "rgb(99, 76, 107)" }}
-                    textColor={"black"}
-                    variant="ghost"
-                    draggable={false}
-                    position="absolute"
-                    zIndex="10"
-                    top="0px"
-                    right="0px"
-                    aria-label="Mute/unmute audio"
-                    title={isAudioMuted ? "Unmute audio" : "Mute audio"}
-                    onMouseDown={(e) => {
-                      e.stopPropagation()
-                      toggleAudioMute()
-                    }}
-                  />
                 )}
               </Box>
             ))}
@@ -1303,8 +1319,8 @@ const EditMode = ({
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
+                      border="2px solid #b31bff"
                       bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-                      borderRadius="md"
                       h={`${rowHeight}px`}
                       width={`${columnWidth}px`}
                     >
@@ -1312,60 +1328,39 @@ const EditMode = ({
                         {label}
                       </Text>
                       <Menu>
-                        <MenuButton
-                          isDisabled={isShowMode}
-                          as={IconButton}
-                          aria-label="Options"
-                          icon={<ChevronDownIcon />}
-                          variant="outline"
-                          position="absolute"
-                          zIndex="10"
-                          top="2px"
-                          right="2px"
-                          size="xs"
-                          backgroundColor="var(--chakra-colors-gray-700)"
-                          _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
-                          _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+                        <IconButton
+                        icon={<AddIcon />}
+                        size="xs"
+                        variant="solid"
+                        color="black"
+                        position="absolute"
+                        bottom="1px"
+                        right="1px"
+                        aria-label="Add screen"
+                        title="Add screen"
+                        onClick={() => { handleAddIndex(index) }}
+                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
+                        _active={{ bg: "white" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
                         />
-                        <Portal>
-                          <MenuList
-                            backgroundColor="var(--chakra-colors-gray-700)"
-                            margin="-5px 0 0 -166px"
-                            padding="10px 10px 0 10px"
-                            minW="none"
-                            display="flex"
-                            flexDirection="column"
-                          >
-                            <MenuItem
-                              onClick={() => { handleRemoveIndex(index) }}
-                              isDisabled={indexCount <= 1 || index === 0}
-                              backgroundColor="var(--chakra-colors-red-600)"
-                              color="white"
-                              _hover={{ backgroundColor: "var(--chakra-colors-red-700)" }}
-                              borderRadius="5px"
-                              fontWeight={700}
-                              display="block"
-                              textAlign="center"
-                            >
-                              Delete Frame
-                            </MenuItem>
-                            <MenuItem
-                              onClick={() => { handleAddIndex(index) }}
-                              isDisabled={indexCount >= 100}
-                              marginTop="10px"
-                              marginBottom="10px"
-                              backgroundColor="var(--chakra-colors-green-600)"
-                              color="white"
-                              _hover={{ backgroundColor: "var(--chakra-colors-green-700)" }}
-                              borderRadius="5px"
-                              fontWeight={700}
-                              display="block"
-                              textAlign="center"
-                            >
-                              Add Frame After
-                            </MenuItem>
-                          </MenuList>
-                        </Portal>
+                        <IconButton
+                        icon={<MinusIcon />}
+                        size="xs"
+                        variant="solid"
+                        color="black"
+                        position="absolute"
+                        top="1px"
+                        right="1px"
+                        aria-label="Remove screen"
+                        title="Remove screen"
+                        onClick={() => { handleRemoveIndex(index) }}
+                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
+                        _active={{ bg: "white" }}
+                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        zIndex="10"
+                        />
+                        
                       </Menu>
                     </Box>
                   </Box>
