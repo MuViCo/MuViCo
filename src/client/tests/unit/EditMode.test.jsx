@@ -4,6 +4,7 @@ import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
 import { useDispatch, useSelector } from "react-redux"
 import {
+  createCue,
   swapCues,
   updatePresentation,
 } from "../../redux/presentationReducer"
@@ -163,6 +164,22 @@ describe("EditMode drag swapping", () => {
 
     return gridContainer
   }
+
+  const buildPoolColorDragDataTransfer = () => ({
+    files: [],
+    getData: jest.fn((type) => {
+      if (type === "application/json") {
+        return JSON.stringify({
+          type: "newCueFromForm",
+          elementType: "color",
+          cueName: "Pool color",
+          color: "#ff8800",
+        })
+      }
+
+      return ""
+    }),
+  })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -388,6 +405,56 @@ describe("EditMode drag swapping", () => {
     })
 
     expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+  })
+
+  it("shrinks continuation preview when dragging a cue over another cue continuation", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toBeInTheDocument()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+      button: 0,
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("cue-continuation-overlay-visual-2")).not.toBeInTheDocument()
+    })
+  })
+
+  it("allows dropping pool cues on continuation slots", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const dropArea = screen.getByTestId("drop-area")
+    const dataTransfer = buildPoolColorDragDataTransfer()
+
+    fireEvent.dragOver(gridContainer, {
+      dataTransfer,
+      clientX: 330,
+      clientY: 120,
+    })
+
+    await act(async () => {
+      fireEvent.drop(dropArea, {
+        dataTransfer,
+        clientX: 330,
+        clientY: 120,
+      })
+    })
+
+    await waitFor(() => {
+      expect(createCue).toHaveBeenCalledWith("presentation-1", expect.any(FormData))
+    })
+    expect(mockShowToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Cannot drop here" })
+    )
   })
 
   it("prevents native default behavior when cue drag starts", () => {

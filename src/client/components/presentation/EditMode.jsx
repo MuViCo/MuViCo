@@ -34,8 +34,15 @@ import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
+import useEditModeDragPreviewState from "./useEditModeDragPreviewState"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
 import { RowHeaders, ColumnHeaders } from "./EditModeHeaders"
+import {
+  getContinuationShrinkSpanOverrides,
+  getCueTypeFromDragData,
+  getDragDataFromDataTransfer,
+  isValidCueTypeForRow,
+} from "./editModeDragHelpers"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
@@ -120,6 +127,15 @@ const EditMode = ({
   const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
+  const {
+    poolDragPreviewCell,
+    previewCueSpanOverrides,
+    clearExternalDragPreview,
+    clearInternalDragSpanPreview,
+    setExternalDragSpanOverridesIfChanged,
+    setInternalDragSpanOverridesIfChanged,
+    setPoolDragPreviewCellIfChanged,
+  } = useEditModeDragPreviewState()
   useOutsideClick({
     ref: containerRef,
     handler: () => {
@@ -177,6 +193,17 @@ const EditMode = ({
       (cue) => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex)
     )
   )
+
+  const getContinuationPreviewSpanOverrides = (xIndex, yIndex, cueType, draggedCueId) => {
+    return getContinuationShrinkSpanOverrides({
+      xIndex,
+      yIndex,
+      cueType,
+      draggedCueId,
+      screenCount: presentation.screenCount,
+      getCueAtPosition,
+    })
+  }
 
   useEffect(() => {
     if (!isToolboxOpen) {
@@ -280,6 +307,7 @@ const EditMode = ({
       setDragCursorMode("grabbing")
       updateDragPreviewCell(null)
       hideDragPlacementPreview()
+      clearInternalDragSpanPreview()
       return
     }
 
@@ -291,6 +319,14 @@ const EditMode = ({
     setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
 
     updateDragPreviewCell({ xIndex, yIndex })
+
+    const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
+      xIndex,
+      yIndex,
+      selectedCue.cueType,
+      selectedCue._id
+    )
+    setInternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
 
     if (dragPlacementPreviewRef.current) {
       dragPlacementPreviewRef.current.style.display = "block"
@@ -678,6 +714,7 @@ const EditMode = ({
         setIsDragging(false)
         setDragCursorMode("default")
         updateDragPreviewCell(null)
+        clearInternalDragSpanPreview()
         dragCursorPositionRef.current = null
         dragLatestPointerRef.current = null
         hideDragPlacementPreview()
@@ -819,6 +856,7 @@ const EditMode = ({
     setIsDragging(false)
     setDragCursorMode("default")
     updateDragPreviewCell(null)
+    clearInternalDragSpanPreview()
     hideDragPlacementPreview()
     cancelDragPreviewFrame()
     dragLatestPointerRef.current = null
@@ -883,6 +921,67 @@ const EditMode = ({
           clickTimeout.current = null
         }, 300)
       }
+    }
+  }
+
+  const handleGridDragOver = (event) => {
+    event.preventDefault()
+    hideHoverPreview()
+
+    if (isShowMode || !containerRef.current) {
+      clearExternalDragPreview()
+      return
+    }
+
+    const dragData = getDragDataFromDataTransfer(event.dataTransfer)
+    const dragCueType = getCueTypeFromDragData(dragData)
+    if (!dragCueType) {
+      clearExternalDragPreview()
+      return
+    }
+
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const isInsideGrid =
+      xIndex >= 0 &&
+      xIndex < indexCount &&
+      yIndex >= 1 &&
+      yIndex <= audioRowIndex
+
+    if (!isInsideGrid) {
+      clearExternalDragPreview()
+      return
+    }
+
+    const isValidDropCell = isValidCueTypeForRow(dragCueType, yIndex, audioRowIndex)
+    const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
+      xIndex,
+      yIndex,
+      dragCueType,
+      null
+    )
+
+    setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
+    setPoolDragPreviewCellIfChanged({ xIndex, yIndex, isValidDropCell })
+  }
+
+  const handleGridDragLeave = (event) => {
+    const gridRect = event.currentTarget.getBoundingClientRect()
+    const pointerInsideGrid =
+      event.clientX >= gridRect.left &&
+      event.clientX <= gridRect.right &&
+      event.clientY >= gridRect.top &&
+      event.clientY <= gridRect.bottom
+
+    if (!pointerInsideGrid) {
+      clearExternalDragPreview()
     }
   }
 
@@ -1024,6 +1123,10 @@ const EditMode = ({
 
   const cueExists = (xIndex, yIndex) => {
     return Boolean(getCueAtPosition(xIndex, yIndex))
+  }
+
+  const anchorCueExists = (xIndex, yIndex) => {
+    return Boolean(getAnchorCueAtPosition(xIndex, yIndex))
   }
 
   const handleDoubleClick = (event) => {
@@ -1182,6 +1285,7 @@ const EditMode = ({
 
   const handleDrop = async (event) => {
     event.preventDefault()
+    clearExternalDragPreview()
 
     if (isShowMode) {
       return
@@ -1227,7 +1331,7 @@ const EditMode = ({
           color: dragData.color,
         }
         
-        if (cueExists(xIndex, yIndex)) {
+        if (anchorCueExists(xIndex, yIndex)) {
           showToast({
             title: "Cannot drop here",
             description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
@@ -1273,7 +1377,7 @@ const EditMode = ({
           return
         }
         
-        if (cueExists(xIndex, yIndex)) {
+        if (anchorCueExists(xIndex, yIndex)) {
           showToast({
             title: "Cannot drop here",
             description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
@@ -1305,7 +1409,7 @@ const EditMode = ({
         color: dragData.color,
       }
       
-      if (cueExists(xIndex, yIndex)) {
+      if (anchorCueExists(xIndex, yIndex)) {
         showToast({
           title: "Cannot drop here",
           description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
@@ -1337,7 +1441,7 @@ const EditMode = ({
       return
     }
 
-    if (cueExists(xIndex, yIndex)) {
+    if (anchorCueExists(xIndex, yIndex)) {
       setConfirmMessage(
         `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
       )
@@ -1454,6 +1558,8 @@ const EditMode = ({
               onDoubleClick={handleDoubleClick}
               onMouseDownCapture={handleMouseDown}
               onMouseMove={handleMouseMove}
+              onDragOver={handleGridDragOver}
+              onDragLeave={handleGridDragLeave}
               onDragStart={(event) => {
                 if (event.target.closest(".react-grid-item")) {
                   event.preventDefault()
@@ -1462,6 +1568,7 @@ const EditMode = ({
               onMouseLeave={() => {
                 hideHoverPreview()
                 updateDragPreviewCell(null)
+                clearInternalDragSpanPreview()
                 hideDragPlacementPreview()
                 if (!isDragging) {
                   setDragCursorMode("default")
@@ -1539,8 +1646,28 @@ const EditMode = ({
                   screenCount={presentation.screenCount}
                   isDragging={isDragging}
                   draggingCueId={isDragging && selectedCue ? selectedCue._id : null}
+                  previewCueSpanOverrides={previewCueSpanOverrides}
                 />
               </Box>
+
+              {!isDragging && poolDragPreviewCell && (
+                <Box
+                  data-testid="pool-drag-placement-preview"
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  transform={`translate3d(${poolDragPreviewCell.xIndex * (columnWidth + gap)}px, ${poolDragPreviewCell.yIndex * (rowHeight + gap)}px, 0)`}
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px dashed"
+                  borderColor={poolDragPreviewCell.isValidDropCell ? dragPreviewValidBorder : dragPreviewInvalidBorder}
+                  bg={poolDragPreviewCell.isValidDropCell ? dragPreviewValidBg : dragPreviewInvalidBg}
+                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                  pointerEvents="none"
+                  zIndex={20}
+                />
+              )}
 
               {isDragging && selectedCue && (
                 <Box
