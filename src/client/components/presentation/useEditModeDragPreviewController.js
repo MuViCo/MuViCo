@@ -26,6 +26,7 @@ const useEditModeDragPreviewController = ({
   const dragLatestPointerRef = useRef(null)
   const dragPreviewFrameRef = useRef(null)
   const dragPreviewCellRef = useRef(null)
+  const dragPlacementLockedToAnchorRef = useRef(false)
 
   const hideHoverPreview = useCallback(() => {
     hoverCellRef.current = null
@@ -86,7 +87,7 @@ const useEditModeDragPreviewController = ({
     }
   }
 
-  const applyDragPreviewFromPointer = (pointerPosition) => {
+  const applyDragPreviewFromPointer = useCallback((pointerPosition) => {
     if (!pointerPosition) {
       return
     }
@@ -97,8 +98,17 @@ const useEditModeDragPreviewController = ({
       dragCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
     }
 
-    const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const yIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
+    const pointerYIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const lockPlacementToAnchor = Boolean(
+      dragPlacementLockedToAnchorRef.current && selectedCue
+    )
+    const xIndex = lockPlacementToAnchor
+      ? Number(selectedCue.index)
+      : pointerXIndex
+    const yIndex = lockPlacementToAnchor
+      ? Number(selectedCue.screen)
+      : pointerYIndex
     const audioRowIndex = getAudioRow(screenCount)
     const isInsideGrid =
       xIndex >= 0 &&
@@ -141,7 +151,22 @@ const useEditModeDragPreviewController = ({
         ? dragPreviewValidBg
         : dragPreviewInvalidBg
     }
-  }
+  }, [
+    clearInternalDragSpanPreview,
+    columnWidth,
+    dragPreviewInvalidBg,
+    dragPreviewInvalidBorder,
+    dragPreviewValidBg,
+    dragPreviewValidBorder,
+    gap,
+    getContinuationPreviewSpanOverrides,
+    indexCount,
+    rowHeight,
+    screenCount,
+    selectedCue,
+    setDragCursorMode,
+    setInternalDragSpanOverridesIfChanged,
+  ])
 
   const cancelDragPreviewFrame = () => {
     if (dragPreviewFrameRef.current) {
@@ -174,6 +199,19 @@ const useEditModeDragPreviewController = ({
     dragCursorPositionRef.current = null
   }
 
+  const setDragPlacementLockedToAnchor = (isLocked) => {
+    dragPlacementLockedToAnchorRef.current = Boolean(isLocked)
+  }
+
+  useEffect(() => {
+    if (!selectedCue || !dragLatestPointerRef.current) {
+      return
+    }
+
+    // When drag starts, refs mount on the next render; re-apply latest pointer so previews spawn at cursor.
+    applyDragPreviewFromPointer(dragLatestPointerRef.current)
+  }, [selectedCue, applyDragPreviewFromPointer])
+
   useEffect(() => {
     return () => {
       cancelDragPreviewFrame()
@@ -193,6 +231,7 @@ const useEditModeDragPreviewController = ({
     primeDragPreviewFromEvent,
     scheduleDragPreviewFromEvent,
     resetDragPointerTracking,
+    setDragPlacementLockedToAnchor,
   }
 }
 

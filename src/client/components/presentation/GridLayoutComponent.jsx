@@ -358,11 +358,15 @@ const GridLayoutComponent = ({
     >
       {cues.map((cue) => {
         const overriddenCueVisualSpan = Number(previewCueSpanOverrides[cue._id])
-        const cueVisualSpan =
+        const actualCueVisualSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const previewCueVisualSpan =
           Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan > 0
             ? overriddenCueVisualSpan
-            : getCueVisualSpanFromMap(cue, cueVisualSpanMap)
-        const hasContinuation = cueVisualSpan > 1
+            : actualCueVisualSpan
+        const hasContinuation = actualCueVisualSpan > 1
+        const isTerminalContinuationPreview = Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan === 1
+        const hasVisibleContinuation = previewCueVisualSpan > 1 || isTerminalContinuationPreview
+        const cueVisualSpan = previewCueVisualSpan
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0
         const continuationDividerWidth = gap > 2 ? 2 : Math.max(gap, 1)
@@ -435,11 +439,11 @@ const GridLayoutComponent = ({
                     top="0"
                     width={`${columnWidth}px`}
                     height="100%"
-                    borderRadius={hasContinuation ? "10px 0 0 10px" : "10px"}
+                    borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
                     overflow="hidden"
                     pointerEvents="none"
                     zIndex={4}
-                    boxShadow={hasContinuation ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)" : "none"}
+                    boxShadow={hasVisibleContinuation ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)" : "none"}
                   >
                     {cueMediaUrl
                       ? (
@@ -452,7 +456,7 @@ const GridLayoutComponent = ({
                                 width: "100%",
                                 height: "100%",
                                 objectFit: "cover",
-                                  borderRadius: hasContinuation ? "10px 0 0 10px" : "10px",
+                                  borderRadius: hasVisibleContinuation ? "10px 0 0 10px" : "10px",
                               }}
                               muted
                               playsInline
@@ -468,7 +472,7 @@ const GridLayoutComponent = ({
                               width="100%"
                               height="100%"
                               objectFit="cover"
-                              borderRadius={hasContinuation ? "10px 0 0 10px" : "10px"}
+                              borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
                             />
                           )
                       )
@@ -508,7 +512,7 @@ const GridLayoutComponent = ({
                     right="0"
                     borderRadius="0 8px 8px 0"
                     overflow="hidden"
-                    opacity={continuationVisualOpacity}
+                    opacity={hasVisibleContinuation ? continuationVisualOpacity : 0}
                     pointerEvents="none"
                     zIndex={2}
                   >
@@ -577,8 +581,8 @@ const GridLayoutComponent = ({
                     width={`${columnWidth}px`}
                     border="1px solid"
                     borderColor={segmentBorderColor}
-                    borderRightWidth="0"
-                    borderRadius="10px 0 0 10px"
+                    borderRightWidth={hasVisibleContinuation ? "0" : "1px"}
+                    borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
                     transition="border-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
@@ -595,6 +599,7 @@ const GridLayoutComponent = ({
                     borderColor={segmentBorderColor}
                     borderLeftWidth="0"
                     borderRadius="0 8px 8px 0"
+                    opacity={hasVisibleContinuation ? 1 : 0}
                     transition="border-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
@@ -608,6 +613,7 @@ const GridLayoutComponent = ({
                     left={`${anchorContinuationSeamLeft}px`}
                     width={`${anchorContinuationDividerWidth}px`}
                     bg={segmentBorderColor}
+                    opacity={hasVisibleContinuation ? 1 : 0}
                     transition="background-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}

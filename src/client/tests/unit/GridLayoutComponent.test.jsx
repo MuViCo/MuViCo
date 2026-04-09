@@ -190,6 +190,8 @@ describe("GridLayoutComponent", () => {
       />
     )
 
-    expect(screen.queryByTestId("cue-continuation-overlay-visual-1")).not.toBeInTheDocument()
+    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toHaveStyle({
+      opacity: "0.76",
+    })
   })
 })
