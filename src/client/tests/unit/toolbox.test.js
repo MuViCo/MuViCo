@@ -5,27 +5,33 @@ import "@testing-library/jest-dom"
 
 describe("ToolBox Component", () => {
   const mockOnClose = jest.fn()
+  const cue = { _id: "cue-1", name: "Test cue" }
+  const mockOnSave = jest.fn()
 
   it("renders correctly when open", () => {
     render(
       <Toolbox
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
+        cue={cue}
+        onSave={mockOnSave}
       />
     )
     expect(screen.getByRole("dialog")).toBeInTheDocument()
-    expect(screen.getByTestId("close-drawer-button")).toBeInTheDocument()
+    expect(screen.getByText("Edit cue name")).toBeInTheDocument()
   })
 
   it("calls onClose when the close button is clicked", () => {
     render(
       <Toolbox
-        isOpen={true}
+        isOpen
         onClose={mockOnClose}
+        cue={cue}
+        onSave={mockOnSave}
       />
     )
 
-    fireEvent.click(screen.getByTestId("close-drawer-button"))
+    fireEvent.click(screen.getByText("Cancel"))
     expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
 
@@ -34,6 +40,8 @@ describe("ToolBox Component", () => {
       <Toolbox
         isOpen={false}
         onClose={mockOnClose}
+        cue={cue}
+        onSave={mockOnSave}
       />
     )
 
