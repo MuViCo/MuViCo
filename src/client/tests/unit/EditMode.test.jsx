@@ -407,6 +407,39 @@ describe("EditMode drag swapping", () => {
     expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
   })
 
+  it("cancels dragging when cursor leaves the grid container", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+      button: 0,
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({ display: "block" })
+    })
+
+    fireEvent.mouseLeave(gridContainer)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 250,
+      clientY: 120,
+    })
+
+    expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+  })
+
   it("shrinks continuation preview when dragging a cue over another cue continuation", async () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
