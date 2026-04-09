@@ -171,8 +171,7 @@ export const updatePresentation =
         updatedCueData.file,
         updatedCueData.cueId || cueId,
         updatedCueData.color,
-        updatedCueData.loop,
-        updatedCueData.duration
+        updatedCueData.loop
       )
       const updatedCue = await presentationService.updateCue(
         presentationId,
@@ -199,14 +198,6 @@ export const swapCues =
         firstScreen: firstUpdatedCue.screen,
         secondIndex: secondUpdatedCue.index,
         secondScreen: secondUpdatedCue.screen,
-      }
-
-      if (Number.isFinite(firstUpdatedCue.duration)) {
-        swapPayload.firstDuration = firstUpdatedCue.duration
-      }
-
-      if (Number.isFinite(secondUpdatedCue.duration)) {
-        swapPayload.secondDuration = secondUpdatedCue.duration
       }
 
       const { firstCue: updatedFirstCue, secondCue: updatedSecondCue } =
