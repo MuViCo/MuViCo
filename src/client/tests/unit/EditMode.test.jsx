@@ -388,7 +388,7 @@ describe("EditMode drag swapping", () => {
     })
 
     const placementPreview = screen.getByTestId("drag-placement-preview")
-    expect(placementPreview).toHaveStyle({ display: "none" })
+    expect(placementPreview).toHaveStyle({ display: "block" })
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 170,
@@ -458,7 +458,9 @@ describe("EditMode drag swapping", () => {
     })
 
     await waitFor(() => {
-      expect(screen.queryByTestId("cue-continuation-overlay-visual-2")).not.toBeInTheDocument()
+      expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toHaveStyle({
+        opacity: "0.76",
+      })
     })
   })
 
@@ -488,6 +490,145 @@ describe("EditMode drag swapping", () => {
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: "Cannot drop here" })
     )
+  })
+
+  it("clears pool drag preview when drop happens outside grid", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const dataTransfer = buildPoolColorDragDataTransfer()
+
+    const dragOverEvent = new Event("dragover", {
+      bubbles: true,
+      cancelable: true,
+    })
+    Object.defineProperty(dragOverEvent, "dataTransfer", {
+      value: dataTransfer,
+      configurable: true,
+    })
+    Object.defineProperty(dragOverEvent, "clientX", {
+      value: 330,
+      configurable: true,
+    })
+    Object.defineProperty(dragOverEvent, "clientY", {
+      value: 120,
+      configurable: true,
+    })
+    fireEvent(gridContainer, dragOverEvent)
+
+    await waitFor(() => {
+      expect(screen.getByTestId("pool-drag-placement-preview")).toBeInTheDocument()
+    })
+
+    fireEvent(window, new Event("drop"))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("pool-drag-placement-preview")).not.toBeInTheDocument()
+    })
+  })
+
+  it("positions drag cursor preview near pointer on mouse down without move", async () => {
+    renderEditMode()
+    setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 170,
+      clientY: 120,
+      button: 0,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("drag-cursor-preview")).toHaveStyle({
+        transform: "translate3d(180px, 130px, 0)",
+      })
+    })
+  })
+
+  it("starts dragging when clicking continuation area", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    // xIndex=2, yIndex=1 points to continuation area of visual-2 with current test setup.
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
+      clientX: 330,
+      clientY: 120,
+      button: 0,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
+        transform: "translate3d(160px, 110px, 0)",
+      })
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 340,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("drag-cursor-preview")).toBeInTheDocument()
+      expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
+        display: "block",
+        transform: "translate3d(320px, 110px, 0)",
+      })
+    })
+  })
+
+  it("does not move cue when clicking continuation area without moving pointer", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
+      clientX: 330,
+      clientY: 120,
+      button: 0,
+    })
+
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 330,
+        clientY: 120,
+      })
+    })
+
+    expect(updatePresentation).not.toHaveBeenCalled()
+    expect(swapCues).not.toHaveBeenCalled()
+  })
+
+  it("can move cue right when dragging from continuation area", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
+      clientX: 330,
+      clientY: 120,
+      button: 0,
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 340,
+      clientY: 120,
+    })
+
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 340,
+        clientY: 120,
+      })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueName: "Visual cue 2",
+          index: 2,
+          screen: 1,
+        }),
+        "visual-2"
+      )
+    })
+    expect(swapCues).not.toHaveBeenCalled()
   })
 
   it("prevents native default behavior when cue drag starts", () => {
