@@ -38,6 +38,28 @@ describe("CuesForm", () => {
     URL.revokeObjectURL = jest.fn()
   })
 
+  test("uses media tab by default when no tab preference is stored", () => {
+    renderCuesForm()
+
+    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+  })
+
+  test("restores active tab from localStorage", () => {
+    window.localStorage.setItem("editModeMediaPoolActiveTab", "audio")
+
+    renderCuesForm()
+
+    expect(screen.getByText("Upload audio files and drag them to the grid")).toBeInTheDocument()
+  })
+
+  test("ignores invalid stored tab values and falls back to media", () => {
+    window.localStorage.setItem("editModeMediaPoolActiveTab", "invalid")
+
+    renderCuesForm()
+
+    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+  })
+
   test("renders add mode with tabs", () => {
     renderCuesForm()
 
@@ -76,6 +98,32 @@ describe("CuesForm", () => {
     expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
   })
 
+  test("persists selected tab to localStorage", () => {
+    renderCuesForm()
+
+    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
+    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe("colors")
+
+    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
+    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe("audio")
+  })
+
+  test("pre-fills cue name from cueData when editing", () => {
+    renderCuesForm({
+      cueData: {
+        _id: "cue-1",
+        name: "Existing cue",
+        index: 0,
+        screen: 1,
+        file: { name: "example.png", type: "image/png" },
+      },
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
+
+    expect(screen.getByTestId("cue-name")).toHaveValue("Existing cue")
+  })
+
   test("adds uploaded media file to media pool and can remove it", () => {
     renderCuesForm()
 
@@ -93,6 +141,37 @@ describe("CuesForm", () => {
 
     expect(screen.queryByText("Media Pool (1)")).not.toBeInTheDocument()
     expect(screen.queryByText("photo.png")).not.toBeInTheDocument()
+  })
+
+  test("filters invalid files from media uploads", () => {
+    renderCuesForm()
+
+    const mediaInput = document.getElementById("media-upload")
+    const imageFile = new File(["img"], "photo.png", { type: "image/png" })
+    const audioFile = new File(["audio"], "sound.mp3", { type: "audio/mpeg" })
+    const pdfFile = new File(["pdf"], "doc.pdf", { type: "application/pdf" })
+
+    fireEvent.change(mediaInput, { target: { files: [imageFile, audioFile, pdfFile] } })
+
+    expect(screen.getByText("Media Pool (1)")).toBeInTheDocument()
+    expect(screen.getByText("photo.png")).toBeInTheDocument()
+    expect(screen.queryByText("sound.mp3")).not.toBeInTheDocument()
+    expect(screen.queryByText("doc.pdf")).not.toBeInTheDocument()
+  })
+
+  test("revokes media preview URL when media item is removed", () => {
+    renderCuesForm()
+
+    const mediaInput = document.getElementById("media-upload")
+    const imageFile = new File(["img"], "photo.png", { type: "image/png" })
+    fireEvent.change(mediaInput, { target: { files: [imageFile] } })
+
+    const fileNameNode = screen.getByText("photo.png")
+    const fileCard = fileNameNode.closest("[draggable='true']")
+    const removeButton = fileCard.querySelector("button")
+    fireEvent.click(removeButton)
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url")
   })
 
   test("sets drag payload for media item and stores file", () => {
@@ -148,6 +227,22 @@ describe("CuesForm", () => {
     expect(screen.queryByText("Sound Pool (1)")).not.toBeInTheDocument()
   })
 
+  test("filters invalid files from audio uploads", () => {
+    renderCuesForm()
+
+    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
+
+    const soundInput = document.getElementById("sound-upload")
+    const audioFile = new File(["audio"], "sound.wav", { type: "audio/wav" })
+    const imageFile = new File(["img"], "photo.png", { type: "image/png" })
+
+    fireEvent.change(soundInput, { target: { files: [audioFile, imageFile] } })
+
+    expect(screen.getByText("Sound Pool (1)")).toBeInTheDocument()
+    expect(screen.getByText("sound.wav")).toBeInTheDocument()
+    expect(screen.queryByText("photo.png")).not.toBeInTheDocument()
+  })
+
   test("sets drag payload for color element", () => {
     renderCuesForm()
 
@@ -167,5 +262,22 @@ describe("CuesForm", () => {
     expect(payload.elementType).toBe("color")
     expect(payload.cueName).toBe("Warm color")
     expect(payload.color).toBeTruthy()
+  })
+
+  test("normalizes color element cue name when user types blank", () => {
+    renderCuesForm()
+
+    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
+    fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "   Blank   " } })
+
+    const colorDragElement = screen.getByText("Drag color to grid").closest("[draggable='true']")
+    const dataTransfer = createDataTransfer()
+
+    fireEvent.dragStart(colorDragElement, { dataTransfer })
+
+    const [, payloadString] = dataTransfer.setData.mock.calls[0]
+    const payload = JSON.parse(payloadString)
+
+    expect(payload.cueName).toBe("")
   })
 })
