@@ -137,6 +137,7 @@ const GridLayoutComponent = ({
   screenCount,
   isDragging = false,
   draggingCueId = null,
+  previewCueSpanOverrides = {},
 }) => {
   const showToast = useCustomToast()
   const dispatch = useDispatch()
@@ -356,7 +357,11 @@ const GridLayoutComponent = ({
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => {
-        const cueVisualSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const overriddenCueVisualSpan = Number(previewCueSpanOverrides[cue._id])
+        const cueVisualSpan =
+          Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan > 0
+            ? overriddenCueVisualSpan
+            : getCueVisualSpanFromMap(cue, cueVisualSpanMap)
         const hasContinuation = cueVisualSpan > 1
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0
