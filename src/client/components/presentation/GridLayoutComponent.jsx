@@ -15,6 +15,7 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 import { getAudioRow } from "../utils/fileTypeUtils"
+import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
 
 const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   if (cue.index > currentIndex) {
@@ -145,44 +146,7 @@ const GridLayoutComponent = ({
   const [cueToRemove, setCueToRemove] = useState(null)
   const [currentLayout, setCurrentLayout] = useState(layout)
 
-  const cueVisualDurationMap = useMemo(() => {
-    const cuesByScreen = new Map()
-
-    cues.forEach((cue) => {
-      const cueIndex = Number(cue?.index)
-      const cueScreen = Number(cue?.screen)
-
-      if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
-        return
-      }
-
-      if (!cuesByScreen.has(cueScreen)) {
-        cuesByScreen.set(cueScreen, [])
-      }
-
-      cuesByScreen.get(cueScreen).push(cue)
-    })
-
-    const durationMap = new Map()
-    cuesByScreen.forEach((screenCues) => {
-      const sortedCues = screenCues
-        .slice()
-        .sort((a, b) => Number(a.index) - Number(b.index))
-
-      sortedCues.forEach((cue, cuePosition) => {
-        const nextCue = sortedCues[cuePosition + 1]
-        const cueIndex = Number(cue.index)
-        const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
-        durationMap.set(cue._id, Math.max(1, endIndex - cueIndex + 1))
-      })
-    })
-
-    return durationMap
-  }, [cues, indexCount])
-
-  const getCueVisualDuration = (cue) => {
-    return cueVisualDurationMap.get(cue?._id) ?? 1
-  }
+  const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
 
   const layoutWidthMap = useMemo(() => {
     const nextMap = new Map()
@@ -534,7 +498,7 @@ const GridLayoutComponent = ({
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => {
-        const cueVisualSpan = getLayoutWidth(cue._id, getCueVisualDuration(cue))
+        const cueVisualSpan = getLayoutWidth(cue._id, getCueVisualSpanFromMap(cue, cueVisualSpanMap))
         const hasContinuation = cueVisualSpan > 1
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0
