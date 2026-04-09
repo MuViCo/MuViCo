@@ -155,6 +155,8 @@ const EditMode = ({
   })
 
   const clickTimeout = useRef(null)
+  const dragStartPointerRef = useRef(null)
+  const dragHasMovedRef = useRef(false)
   const headerActionsRef = useRef({
     addIndex: () => { },
     removeIndex: () => { },
@@ -166,6 +168,7 @@ const EditMode = ({
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
+  const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
 
@@ -210,6 +213,7 @@ const EditMode = ({
     primeDragPreviewFromEvent,
     scheduleDragPreviewFromEvent,
     resetDragPointerTracking,
+    setDragPlacementLockedToAnchor,
   } = useEditModeDragPreviewController({
     containerRef,
     columnWidth,
@@ -243,6 +247,21 @@ const EditMode = ({
   useEffect(() => {
     hideHoverPreview()
   }, [cues, indexCount, presentation.screenCount, isShowMode, hideHoverPreview])
+
+  useEffect(() => {
+    const clearTransientPreviews = () => {
+      clearExternalDragPreview()
+      hideHoverPreview()
+    }
+
+    window.addEventListener("drop", clearTransientPreviews)
+    window.addEventListener("dragend", clearTransientPreviews)
+
+    return () => {
+      window.removeEventListener("drop", clearTransientPreviews)
+      window.removeEventListener("dragend", clearTransientPreviews)
+    }
+  }, [clearExternalDragPreview, hideHoverPreview])
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -576,17 +595,29 @@ const EditMode = ({
     if (cueExists(xIndex, yIndex)) {
       const movingCue = getCueAtPosition(xIndex, yIndex)
       setSelectedCue(movingCue)
-      updateDragPreviewCell({ xIndex, yIndex })
+      updateDragPreviewCell({
+        xIndex: Number(movingCue.index),
+        yIndex: Number(movingCue.screen),
+      })
 
       if (event.target.closest(".react-grid-item")) {
         event.preventDefault()
         setIsDragging(true)
         setDragCursorMode("grabbing")
+        setDragPlacementLockedToAnchor(true)
+        dragStartPointerRef.current = {
+          clientX: event.clientX,
+          clientY: event.clientY,
+        }
+        dragHasMovedRef.current = false
         hideHoverPreview()
         primeDragPreviewFromEvent(event)
       } else {
         setIsDragging(false)
         setDragCursorMode("default")
+        setDragPlacementLockedToAnchor(false)
+        dragStartPointerRef.current = null
+        dragHasMovedRef.current = false
         updateDragPreviewCell(null)
         clearInternalDragSpanPreview()
         resetDragPointerTracking()
@@ -689,11 +720,16 @@ const EditMode = ({
     }
   }
 
-  const resetDragInteraction = () => {
+  const resetDragInteraction = ({ clearSpanPreview = true } = {}) => {
     setIsDragging(false)
     setDragCursorMode("default")
+    setDragPlacementLockedToAnchor(false)
+    dragStartPointerRef.current = null
+    dragHasMovedRef.current = false
     updateDragPreviewCell(null)
-    clearInternalDragSpanPreview()
+    if (clearSpanPreview) {
+      clearInternalDragSpanPreview()
+    }
     hideDragPlacementPreview()
     cancelDragPreviewFrame()
     resetDragPointerTracking()
@@ -701,6 +737,15 @@ const EditMode = ({
 
   const handleMouseMove = (event) => {
     if (isDragging) {
+      if (!dragHasMovedRef.current && dragStartPointerRef.current) {
+        const deltaX = event.clientX - dragStartPointerRef.current.clientX
+        const deltaY = event.clientY - dragStartPointerRef.current.clientY
+        if (Math.hypot(deltaX, deltaY) >= dragCommitDistancePx) {
+          dragHasMovedRef.current = true
+          setDragPlacementLockedToAnchor(false)
+        }
+      }
+
       scheduleDragPreviewFromEvent(event)
 
       hideHoverPreview()
@@ -735,7 +780,16 @@ const EditMode = ({
 
   const handleMouseUp = async (event) => {
     const wasDragging = isDragging
-    resetDragInteraction()
+    const dragStartPointer = dragStartPointerRef.current
+    const didDragMove = Boolean(
+      dragHasMovedRef.current ||
+      (dragStartPointer &&
+        Math.hypot(
+          event.clientX - dragStartPointer.clientX,
+          event.clientY - dragStartPointer.clientY
+        ) >= dragCommitDistancePx)
+    )
+    resetDragInteraction({ clearSpanPreview: !wasDragging })
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -745,9 +799,15 @@ const EditMode = ({
     )
 
     if (wasDragging && selectedCue) {
+      if (!didDragMove) {
+        clearInternalDragSpanPreview()
+        return
+      }
+
       const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
       if (targetCue && selectedCue !== targetCue) {
         await handleElementPositionChange(selectedCue, targetCue)
+        clearInternalDragSpanPreview()
         return
       }
 
@@ -756,11 +816,13 @@ const EditMode = ({
         Number(selectedCue.screen) === Number(yIndex)
 
       if (moveToSamePosition) {
+        clearInternalDragSpanPreview()
         return
       }
 
       const audioRowIndex = getAudioRow(presentation.screenCount)
       if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+        clearInternalDragSpanPreview()
         return
       }
 
@@ -771,6 +833,7 @@ const EditMode = ({
           description: "Keep audio elements to the audio row and visual elements to the visual rows.",
           status: "error",
         })
+        clearInternalDragSpanPreview()
         return
       }
 
@@ -783,6 +846,12 @@ const EditMode = ({
 
       setSelectedCue(null)
       await dispatchUpdateCue(selectedCue._id, movedCue)
+      clearInternalDragSpanPreview()
+      return
+    }
+
+    if (wasDragging) {
+      clearInternalDragSpanPreview()
       return
     }
 
