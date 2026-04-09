@@ -34,6 +34,7 @@ import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
+import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
 import { RowHeaders, ColumnHeaders } from "./EditModeHeaders"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
@@ -162,46 +163,9 @@ const EditMode = ({
   const rowHeight = 100
   const gap = 10
 
-  const cueVisualDurationMap = useMemo(() => {
-    const cuesByScreen = new Map()
+  const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
 
-    cues.forEach((cue) => {
-      const cueIndex = Number(cue?.index)
-      const cueScreen = Number(cue?.screen)
-
-      if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
-        return
-      }
-
-      if (!cuesByScreen.has(cueScreen)) {
-        cuesByScreen.set(cueScreen, [])
-      }
-
-      cuesByScreen.get(cueScreen).push(cue)
-    })
-
-    const durationMap = new Map()
-    cuesByScreen.forEach((screenCues) => {
-      const sortedCues = screenCues
-        .slice()
-        .sort((a, b) => Number(a.index) - Number(b.index))
-
-      sortedCues.forEach((cue, cuePosition) => {
-        const nextCue = sortedCues[cuePosition + 1]
-        const cueIndex = Number(cue.index)
-        const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
-        durationMap.set(cue._id, Math.max(1, endIndex - cueIndex + 1))
-      })
-    })
-
-    return durationMap
-  }, [cues, indexCount])
-
-  const getCueVisualDuration = (cue) => {
-    return cueVisualDurationMap.get(cue?._id) ?? 1
-  }
-
-  const getCueEndIndex = (cue) => Number(cue.index) + getCueVisualDuration(cue) - 1
+  const getCueEndIndex = (cue) => Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
 
   const cueOccupiesSlot = (cue, xIndex, yIndex) => (
     Number(cue.screen) === Number(yIndex) &&
@@ -931,7 +895,7 @@ const EditMode = ({
     i: cue._id.toString(),
     x: cue.index,
     y: cue.screen,
-    w: getCueVisualDuration(cue),
+    w: getCueVisualSpanFromMap(cue, cueVisualSpanMap),
     h: 1,
     static: false,
   }))
