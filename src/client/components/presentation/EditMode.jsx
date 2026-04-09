@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect, useMemo } from "react"
 import {
   Box,
   Text,
@@ -34,6 +34,7 @@ import { createFormData } from "../utils/formDataUtils"
 import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
+import { RowHeaders, ColumnHeaders } from "./EditModeHeaders"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
@@ -66,6 +67,17 @@ const EditMode = ({
     "rgba(154, 109, 151, 0.8)",
     "rgba(72, 26, 68, 0.8)"
   )
+  const dragPreviewValidBg = useColorModeValue(
+    "rgba(127, 212, 238, 0.18)",
+    "rgba(127, 212, 238, 0.24)"
+  )
+  const dragPreviewInvalidBg = useColorModeValue(
+    "rgba(229, 138, 156, 0.2)",
+    "rgba(229, 138, 156, 0.28)"
+  )
+  const dragPreviewValidBorder = useColorModeValue("#7fd4ee", "#9be2f7")
+  const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
+  const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const bgCurrentFrame = useColorModeValue("purple.500", "purple.200")
   const showToast = useCustomToast()
@@ -86,24 +98,30 @@ const EditMode = ({
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
 
-  const xLabels = Array.from({ length: indexCount }, (_, index) =>
-    index === 0 ? "Starting Frame" : `Frame ${index}`)
-  const visualCues = cues.filter(cue => cue.cueType === "visual")
+  const xLabels = useMemo(() => (
+    Array.from({ length: indexCount }, (_, index) =>
+      index === 0 ? "Starting Frame" : `Frame ${index}`)
+  ), [indexCount])
+  const visualCues = useMemo(() => cues.filter(cue => cue.cueType === "visual"), [cues])
 
-  const yLabels = Array.from(
-    { length: presentation.screenCount },
-    (_, index) => `Screen ${index + 1}`
-  )
+  const yLabels = useMemo(() => {
+    const labels = Array.from(
+      { length: presentation.screenCount },
+      (_, index) => `Screen ${index + 1}`
+    )
 
   const getScreenNumberFromLabel = (label) => {
     const match = /^Screen\s+(\d+)$/.exec(label)
     return match ? match[1] : null
   }
 
-  // Add audio row separately (always at the end)
-  yLabels.push("Audio files")
+    // Add audio row separately (always at the end)
+    labels.push("Audio files")
+    return labels
+  }, [presentation.screenCount])
 
   const [isDragging, setIsDragging] = useState(false)
+  const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   useOutsideClick({
@@ -126,6 +144,19 @@ const EditMode = ({
   const clickTimeout = useRef(null)
   const hoverPreviewRef = useRef(null)
   const hoverCellRef = useRef(null)
+  const dragCursorPreviewRef = useRef(null)
+  const dragPlacementPreviewRef = useRef(null)
+  const dragCursorPositionRef = useRef(null)
+  const dragLatestPointerRef = useRef(null)
+  const dragPreviewFrameRef = useRef(null)
+  const dragPreviewCellRef = useRef(null)
+  const headerActionsRef = useRef({
+    addIndex: () => { },
+    removeIndex: () => { },
+    increaseScreenCount: () => { },
+    decreaseScreenCount: () => { },
+    toggleAudioMute: () => { },
+  })
 
   const columnWidth = 150
   const rowHeight = 100
@@ -136,7 +167,46 @@ const EditMode = ({
     return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
   }
 
-  const getCueEndIndex = (cue) => Number(cue.index) + getCueDuration(cue) - 1
+  const cueVisualDurationMap = useMemo(() => {
+    const cuesByScreen = new Map()
+
+    cues.forEach((cue) => {
+      const cueIndex = Number(cue?.index)
+      const cueScreen = Number(cue?.screen)
+
+      if (!Number.isInteger(cueIndex) || !Number.isInteger(cueScreen)) {
+        return
+      }
+
+      if (!cuesByScreen.has(cueScreen)) {
+        cuesByScreen.set(cueScreen, [])
+      }
+
+      cuesByScreen.get(cueScreen).push(cue)
+    })
+
+    const durationMap = new Map()
+    cuesByScreen.forEach((screenCues) => {
+      const sortedCues = screenCues
+        .slice()
+        .sort((a, b) => Number(a.index) - Number(b.index))
+
+      sortedCues.forEach((cue, cuePosition) => {
+        const nextCue = sortedCues[cuePosition + 1]
+        const cueIndex = Number(cue.index)
+        const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
+        durationMap.set(cue._id, Math.max(1, endIndex - cueIndex + 1))
+      })
+    })
+
+    return durationMap
+  }, [cues, indexCount])
+
+  const getCueVisualDuration = (cue) => {
+    return cueVisualDurationMap.get(cue?._id) ?? 1
+  }
+
+  const getCueEndIndex = (cue) => Number(cue.index) + getCueVisualDuration(cue) - 1
 
   const cueOccupiesSlot = (cue, xIndex, yIndex) => (
     Number(cue.screen) === Number(yIndex) &&
@@ -146,6 +216,12 @@ const EditMode = ({
 
   const getCueAtPosition = (xIndex, yIndex) => (
     cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
+  )
+
+  const getAnchorCueAtPosition = (xIndex, yIndex) => (
+    cues.find(
+      (cue) => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex)
+    )
   )
 
   const canPlaceCueAt = (cue, proposedIndex, proposedScreen, excludedCueIds = []) => {
@@ -207,9 +283,123 @@ const EditMode = ({
     hoverPreviewRef.current.style.top = `${yIndex * (rowHeight + gap)}px`
   }
 
+  const areSameGridCell = (firstCell, secondCell) => {
+    if (!firstCell && !secondCell) {
+      return true
+    }
+
+    if (!firstCell || !secondCell) {
+      return false
+    }
+
+    return (
+      Number(firstCell.xIndex) === Number(secondCell.xIndex) &&
+      Number(firstCell.yIndex) === Number(secondCell.yIndex)
+    )
+  }
+
+  const updateDragPreviewCell = (nextCell) => {
+    if (areSameGridCell(dragPreviewCellRef.current, nextCell)) {
+      return false
+    }
+
+    dragPreviewCellRef.current = nextCell
+    return true
+  }
+
+  const getPointerPosition = (event) => {
+    const containerRect = containerRef.current?.getBoundingClientRect()
+    return {
+      x: containerRect
+        ? event.clientX - containerRect.left + containerRef.current.scrollLeft
+        : event.clientX,
+      y: containerRect
+        ? event.clientY - containerRect.top + containerRef.current.scrollTop
+        : event.clientY,
+    }
+  }
+
+  const hideDragPlacementPreview = () => {
+    if (dragPlacementPreviewRef.current) {
+      dragPlacementPreviewRef.current.style.display = "none"
+    }
+  }
+
+  const applyDragPreviewFromPointer = (pointerPosition) => {
+    if (!pointerPosition) {
+      return
+    }
+
+    dragCursorPositionRef.current = pointerPosition
+
+    if (dragCursorPreviewRef.current) {
+      dragCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
+    }
+
+    const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
+    const yIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const isInsideGrid =
+      xIndex >= 0 &&
+      xIndex < indexCount &&
+      yIndex >= 1 &&
+      yIndex <= audioRowIndex
+
+    if (!isInsideGrid || !selectedCue) {
+      setDragCursorMode("grabbing")
+      updateDragPreviewCell(null)
+      hideDragPlacementPreview()
+      return
+    }
+
+    const selectedCueIsAudio = selectedCue.cueType === "audio"
+    const isValidDropCell =
+      (selectedCueIsAudio && yIndex === audioRowIndex) ||
+      (!selectedCueIsAudio && yIndex !== audioRowIndex)
+
+    setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
+
+    updateDragPreviewCell({ xIndex, yIndex })
+
+    if (dragPlacementPreviewRef.current) {
+      dragPlacementPreviewRef.current.style.display = "block"
+      dragPlacementPreviewRef.current.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yIndex * (rowHeight + gap)}px, 0)`
+      dragPlacementPreviewRef.current.style.borderColor = isValidDropCell
+        ? dragPreviewValidBorder
+        : dragPreviewInvalidBorder
+      dragPlacementPreviewRef.current.style.background = isValidDropCell
+        ? dragPreviewValidBg
+        : dragPreviewInvalidBg
+    }
+  }
+
+  const cancelDragPreviewFrame = () => {
+    if (dragPreviewFrameRef.current) {
+      cancelAnimationFrame(dragPreviewFrameRef.current)
+      dragPreviewFrameRef.current = null
+    }
+  }
+
+  const scheduleDragPreviewUpdate = () => {
+    if (dragPreviewFrameRef.current) {
+      return
+    }
+
+    dragPreviewFrameRef.current = requestAnimationFrame(() => {
+      dragPreviewFrameRef.current = null
+      applyDragPreviewFromPointer(dragLatestPointerRef.current)
+    })
+  }
+
   useEffect(() => {
     hideHoverPreview()
   }, [cues, indexCount, presentation.screenCount, isShowMode])
+
+  useEffect(() => {
+    return () => {
+      cancelDragPreviewFrame()
+    }
+  }, [])
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -524,6 +714,14 @@ const EditMode = ({
   }
 
   const handleMouseDown = (event) => {
+    if (event.button !== 0) {
+      return
+    }
+
+    if (event.target.closest("button, [role='menuitem'], input, textarea, select, a")) {
+      return
+    }
+
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -535,12 +733,24 @@ const EditMode = ({
     if (cueExists(xIndex, yIndex)) {
       const movingCue = getCueAtPosition(xIndex, yIndex)
       setSelectedCue(movingCue)
+      updateDragPreviewCell({ xIndex, yIndex })
 
       if (event.target.closest(".react-grid-item")) {
+        event.preventDefault()
         setIsDragging(true)
+        setDragCursorMode("grabbing")
         hideHoverPreview()
+        const pointerPosition = getPointerPosition(event)
+        dragLatestPointerRef.current = pointerPosition
+        applyDragPreviewFromPointer(pointerPosition)
       } else {
         setIsDragging(false)
+        setDragCursorMode("default")
+        updateDragPreviewCell(null)
+        dragCursorPositionRef.current = null
+        dragLatestPointerRef.current = null
+        hideDragPlacementPreview()
+        cancelDragPreviewFrame()
       }
     }
   }
@@ -642,6 +852,9 @@ const EditMode = ({
 
   const handleMouseMove = (event) => {
     if (isDragging) {
+      dragLatestPointerRef.current = getPointerPosition(event)
+      scheduleDragPreviewUpdate()
+
       hideHoverPreview()
       return
     }
@@ -657,9 +870,7 @@ const EditMode = ({
       gap
     )
 
-    const cueExists = cues.some(
-      (cue) => cue.index === xIndex && cue.screen === yIndex
-    )
+    const cueExists = Boolean(getCueAtPosition(xIndex, yIndex))
 
     if (
       !cueExists &&
@@ -674,8 +885,15 @@ const EditMode = ({
     }
   }
 
-  const handleMouseUp = (event) => {
+  const handleMouseUp = async (event) => {
+    const wasDragging = isDragging
     setIsDragging(false)
+    setDragCursorMode("default")
+    updateDragPreviewCell(null)
+    hideDragPlacementPreview()
+    cancelDragPreviewFrame()
+    dragLatestPointerRef.current = null
+    dragCursorPositionRef.current = null
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -684,16 +902,49 @@ const EditMode = ({
       gap
     )
 
-    if (cueExists(xIndex, yIndex) && isDragging) {
-      const targetCue = cues.find(
-        (cue) => cue.index === xIndex && cue.screen === yIndex
-      )
-      if (selectedCue && targetCue && selectedCue !== targetCue) {
-        handleElementPositionChange(selectedCue, targetCue)
+    if (wasDragging && selectedCue) {
+      const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
+      if (targetCue && selectedCue !== targetCue) {
+        await handleElementPositionChange(selectedCue, targetCue)
+        return
       }
+
+      const moveToSamePosition =
+        Number(selectedCue.index) === Number(xIndex) &&
+        Number(selectedCue.screen) === Number(yIndex)
+
+      if (moveToSamePosition) {
+        return
+      }
+
+      const audioRowIndex = getAudioRow(presentation.screenCount)
+      if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+        return
+      }
+
+      const selectedCueIsAudio = selectedCue.cueType === "audio"
+      if ((selectedCueIsAudio && yIndex !== audioRowIndex) || (!selectedCueIsAudio && yIndex === audioRowIndex)) {
+        showToast({
+          title: "Cannot move this file type here",
+          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+          status: "error",
+        })
+        return
+      }
+
+      const movedCue = {
+        ...selectedCue,
+        index: xIndex,
+        cueName: selectedCue.name,
+        screen: yIndex,
+      }
+
+      setSelectedCue(null)
+      await dispatchUpdateCue(selectedCue._id, movedCue)
+      return
     }
 
-    if (!isDragging) {
+    if (!wasDragging) {
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
         clickTimeout.current = null
@@ -706,17 +957,14 @@ const EditMode = ({
     }
   }
 
-  const layout = cues.map((cue) => {
-    const position = {
-      i: cue._id.toString(),
-      x: cue.index,
-      y: cue.screen,
-      w: getCueDuration(cue),
-      h: 1,
-      static: false,
-    }
-    return position
-  })
+  const layout = cues.map((cue) => ({
+    i: cue._id.toString(),
+    x: cue.index,
+    y: cue.screen,
+    w: getCueVisualDuration(cue),
+    h: 1,
+    static: false,
+  }))
 
   const addCue = async (cueData) => {
     setStatus("loading")
@@ -1234,6 +1482,14 @@ const EditMode = ({
     }
   }
 
+  headerActionsRef.current = {
+    addIndex: handleAddIndex,
+    removeIndex: handleRemoveIndex,
+    increaseScreenCount: handleIncreaseScreenCount,
+    decreaseScreenCount: handleDecreaseScreenCount,
+    toggleAudioMute,
+  }
+
   return (
     <ChakraProvider theme={theme}>
       <CustomAlert
@@ -1271,126 +1527,16 @@ const EditMode = ({
           >
             <Box h={`${rowHeight}px`} bg="transparent" />
 
-            {yLabels.map((label, index) => (
-              <Box
-                key={label}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                bg={
-                  label === "Audio files" ? "rgb(204, 46, 252)" : "purple.200"
-                }
-                border="2px solid #b31bff"
-                marginRight={`${gap}px`}
-                h={`${rowHeight}px`}
-                width={`120px`}
-                position="relative"
-              >
-                <Box fontWeight="bold" color="black">
-                  {label === "Audio files" ? (
-                    <IconButton
-                      icon={
-                        isAudioMuted ? (
-                          <SpeakerMutedIcon boxSize="55px" />
-                        ) : (
-                          <SpeakerIcon boxSize="55px" />
-                        )
-                      }
-                      disabled={isShowMode}
-                      _disabled={{
-                        opacity: 0.7,
-                        cursor: "not-allowed",
-                      }}
-                      sx={{
-                        width: "65px",
-                        height: "65px",
-                        padding: "10px",
-                      }}
-                      _hover={{ color: "rgb(99, 76, 107)" }}
-                      textColor={"black"}
-                      variant="ghost"
-                      draggable={false}
-                      aria-label="Mute/unmute audio"
-                      title={isAudioMuted ? "Unmute audio" : "Mute audio"}
-                      onMouseDown={(e) => {
-                        e.stopPropagation()
-                        toggleAudioMute()
-                      }}
-                    />
-                  ) : (
-                    <Box position="relative" width="65px" height="65px">
-                      <Box
-                        as="img"
-                        src={screenIcon}
-                        alt=""
-                        width="65px"
-                        height="65px"
-                        aria-hidden="true"
-                      />
-                      <Text
-                        as="span"
-                        position="absolute"
-                        top="43%"
-                        left="50%"
-                        transform="translate(-50%, -50%)"
-                        fontSize="24px"
-                        fontWeight="700"
-                        lineHeight="1"
-                        color="black"
-                        pointerEvents="none"
-                      >
-                        {getScreenNumberFromLabel(label)}
-                      </Text>
-                    </Box>
-                  )}
-                </Box>
-
-                {/* Screen count controls for visual screens */}
-                {label !== "Audio files" && !isShowMode && (
-                  <>
-                    {/* Add screen button - show on last visual screen only */}
-                    {index === presentation.screenCount - 1 && presentation.screenCount < 8 && (
-                      <IconButton
-                        icon={<AddIcon />}
-                        size="xs"
-                        variant="solid"
-                        color="black"
-                        position="absolute"
-                        bottom="1px"
-                        right="1px"
-                        aria-label="Add screen"
-                        title="Add screen"
-                        onClick={handleIncreaseScreenCount}
-                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
-                        _active={{ bg: "white" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                      />
-                    )}
-
-                    {/* Remove screen button - show on last visual screen only if more than 1 screen */}
-                    {index === presentation.screenCount - 1 && presentation.screenCount > 1 && (
-                      <IconButton
-                        icon={<MinusIcon />}
-                        size="xs"
-                        variant="solid"
-                        color="black"
-                        position="absolute"
-                        top="1px"
-                        right="1px"
-                        aria-label="Remove screen"
-                        title="Remove screen"
-                        onClick={handleDecreaseScreenCount}
-                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
-                        _active={{ bg: "white" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                      />
-                    )}
-                  </>
-                )}
-              </Box>
-            ))}
+            <RowHeaders
+              yLabels={yLabels}
+              gap={gap}
+              rowHeight={rowHeight}
+              columnWidth={columnWidth}
+              isShowMode={isShowMode}
+              screenCount={presentation.screenCount}
+              isAudioMuted={isAudioMuted}
+              headerActionsRef={headerActionsRef}
+            />
           </Box>
           <Box
             position="relative"
@@ -1403,6 +1549,13 @@ const EditMode = ({
                 opacity: 1,
                 transitionDuration: "0s",
               },
+              ".layout .react-grid-item, .layout .react-grid-item *": {
+                userSelect: "none",
+                WebkitUserSelect: "none",
+              },
+              ".layout .react-grid-item img, .layout .react-grid-item video": {
+                WebkitUserDrag: "none",
+              },
             }}
           >
             <Box
@@ -1410,12 +1563,25 @@ const EditMode = ({
               minHeight="100%"
               width="100%"
               position="relative"
+              cursor={isDragging ? dragCursorMode : "default"}
               data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
-              onMouseDown={handleMouseDown}
+              onMouseDownCapture={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseLeave={hideHoverPreview}
+              onDragStart={(event) => {
+                if (event.target.closest(".react-grid-item")) {
+                  event.preventDefault()
+                }
+              }}
+              onMouseLeave={() => {
+                hideHoverPreview()
+                updateDragPreviewCell(null)
+                hideDragPlacementPreview()
+                if (!isDragging) {
+                  setDragCursorMode("default")
+                }
+              }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
             >
@@ -1430,65 +1596,17 @@ const EditMode = ({
                 bg={"transparent"}
                 mb={`${gap}px`}
               >
-                {xLabels.map((label, index) => (
-                  <Box
-                    key={label}
-                    position="relative"
-                    display="inline-flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Box
-                      className="x-index-label"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      border="2px solid #b31bff"
-                      bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-                      h={`${rowHeight}px`}
-                      width={`${columnWidth}px`}
-                    >
-                      <Text fontWeight="bold" color="black">
-                        {label}
-                      </Text>
-                      <Menu>
-                        <IconButton
-                        icon={<AddIcon />}
-                        size="xs"
-                        variant="solid"
-                        color="black"
-                        position="absolute"
-                        bottom="1px"
-                        right="1px"
-                        aria-label="Add screen"
-                        title="Add screen"
-                        onClick={() => { handleAddIndex(index) }}
-                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
-                        _active={{ bg: "white" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                        />
-                        <IconButton
-                        icon={<MinusIcon />}
-                        size="xs"
-                        variant="solid"
-                        color="black"
-                        position="absolute"
-                        top="1px"
-                        right="1px"
-                        aria-label="Remove screen"
-                        title="Remove screen"
-                        onClick={() => { handleRemoveIndex(index) }}
-                        _hover={{ bg: "white", borderColor: "white", transform: "scale(1.1)" }}
-                        _active={{ bg: "white" }}
-                        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                        zIndex="10"
-                        />
-                        
-                      </Menu>
-                    </Box>
-                  </Box>
-                ))}
+                <ColumnHeaders
+                  xLabels={xLabels}
+                  cueIndex={cueIndex}
+                  bgCurrentFrame={bgCurrentFrame}
+                  bgColorIndex={bgColorIndex}
+                  rowHeight={rowHeight}
+                  columnWidth={columnWidth}
+                  isShowMode={isShowMode}
+                  indexCount={indexCount}
+                  headerActionsRef={headerActionsRef}
+                />
               </Box>
               <Button
                 colorScheme="gray"
@@ -1514,27 +1632,112 @@ const EditMode = ({
               >
                 -
               </Button>
-              <GridLayoutComponent
-                layout={layout}
-                cues={cues}
-                containerRef={containerRef}
-                columnWidth={columnWidth}
-                rowHeight={rowHeight}
-                gap={gap}
-                setStatus={setStatus}
-                setIsCopied={setIsCopied}
-                setCopiedCue={setCopiedCue}
-                id={id}
-                isShowMode={isShowMode}
-                cueIndex={cueIndex}
-                isAudioMuted={isAudioMuted}
-                setSelectedCue={setSelectedCue}
-                setIsToolboxOpen={setIsToolboxOpen}
-                indexCount={indexCount}
-                setShowAlert={setShowAlert}
-                setAlertData={setAlertData}
-                screenCount={presentation.screenCount}
-              />
+              <Box pointerEvents={isDragging ? "none" : "auto"}>
+                <GridLayoutComponent
+                  layout={layout}
+                  cues={cues}
+                  containerRef={containerRef}
+                  columnWidth={columnWidth}
+                  rowHeight={rowHeight}
+                  gap={gap}
+                  setStatus={setStatus}
+                  setIsCopied={setIsCopied}
+                  setCopiedCue={setCopiedCue}
+                  id={id}
+                  isShowMode={isShowMode}
+                  cueIndex={cueIndex}
+                  isAudioMuted={isAudioMuted}
+                  setSelectedCue={setSelectedCue}
+                  setIsToolboxOpen={setIsToolboxOpen}
+                  indexCount={indexCount}
+                  setShowAlert={setShowAlert}
+                  setAlertData={setAlertData}
+                  screenCount={presentation.screenCount}
+                  isDragging={isDragging}
+                  draggingCueId={isDragging && selectedCue ? selectedCue._id : null}
+                />
+              </Box>
+
+              {isDragging && selectedCue && (
+                <Box
+                  data-testid="drag-placement-preview"
+                  ref={dragPlacementPreviewRef}
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  transform="translate3d(0, 0, 0)"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px dashed"
+                  borderColor={dragPreviewInvalidBorder}
+                  bg={dragPreviewInvalidBg}
+                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                  pointerEvents="none"
+                  zIndex={20}
+                  display="none"
+                  style={{ willChange: "transform" }}
+                />
+              )}
+
+              {isDragging && selectedCue && (
+                <Box
+                  data-testid="drag-cursor-preview"
+                  ref={dragCursorPreviewRef}
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  transform="translate3d(10px, 10px, 0)"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px solid"
+                  borderColor={dragPreviewOriginBorder}
+                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                  overflow="hidden"
+                  pointerEvents="none"
+                  zIndex={30}
+                  opacity={0.92}
+                  style={{ willChange: "transform" }}
+                >
+                  {selectedCue.file?.type?.startsWith("image/") && selectedCue.file?.url ? (
+                    <Box
+                      as="img"
+                      src={selectedCue.file.url}
+                      alt={selectedCue.name}
+                      width="100%"
+                      height="100%"
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <Box
+                      width="100%"
+                      height="100%"
+                      bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                    />
+                  )}
+
+                  <Text
+                    position="absolute"
+                    bottom="6px"
+                    left="8px"
+                    right="8px"
+                    color="white"
+                    fontWeight="bold"
+                    bg="rgba(0, 0, 0, 0.55)"
+                    borderRadius="6px"
+                    px={2}
+                    py={1}
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                    textAlign="center"
+                    style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
+                  >
+                    {selectedCue.name}
+                  </Text>
+                </Box>
+              )}
 
               <Box
                 data-testid="hover-preview"

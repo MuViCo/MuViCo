@@ -937,19 +937,25 @@ describe("presentationReducer asynchronous actions", () => {
       duration: 1,
     }
 
-    presentationService.updateCue
-      .mockResolvedValueOnce(firstUpdatedCue)
-      .mockResolvedValueOnce(secondUpdatedCue)
+    presentationService.swapCues.mockResolvedValue({
+      firstCue: firstUpdatedCue,
+      secondCue: secondUpdatedCue,
+    })
 
     await store.dispatch(
-      updatePresentationSwappedCues("123", firstUpdatedCue, secondUpdatedCue)
+      swapCues("123", firstUpdatedCue, secondUpdatedCue)
     )
 
-    const firstCallFormData = presentationService.updateCue.mock.calls.at(-2)[2]
-    const secondCallFormData = presentationService.updateCue.mock.calls.at(-1)[2]
-
-    expect(firstCallFormData.get("duration")).toBe("2")
-    expect(secondCallFormData.get("duration")).toBe("1")
+    expect(presentationService.swapCues).toHaveBeenCalledWith("123", {
+      firstCueId: firstUpdatedCue._id,
+      secondCueId: secondUpdatedCue._id,
+      firstIndex: firstUpdatedCue.index,
+      firstScreen: firstUpdatedCue.screen,
+      secondIndex: secondUpdatedCue.index,
+      secondScreen: secondUpdatedCue.screen,
+      firstDuration: 2,
+      secondDuration: 1,
+    })
   })
 
   it("should shift presentation indices right", async () => {
