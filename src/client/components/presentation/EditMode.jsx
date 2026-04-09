@@ -162,11 +162,6 @@ const EditMode = ({
   const rowHeight = 100
   const gap = 10
 
-  const getCueDuration = (cue) => {
-    const parsedDuration = Number(cue?.duration)
-    return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
-  }
-
   const cueVisualDurationMap = useMemo(() => {
     const cuesByScreen = new Map()
 
@@ -223,29 +218,6 @@ const EditMode = ({
       (cue) => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex)
     )
   )
-
-  const canPlaceCueAt = (cue, proposedIndex, proposedScreen, excludedCueIds = []) => {
-    const cueDuration = getCueDuration(cue)
-    const startIndex = Number(proposedIndex)
-    const endIndex = startIndex + cueDuration - 1
-
-    if (startIndex < 0 || endIndex >= indexCount) {
-      return false
-    }
-
-    return !cues.some((otherCue) => {
-      if (excludedCueIds.includes(otherCue._id)) {
-        return false
-      }
-      if (Number(otherCue.screen) !== Number(proposedScreen)) {
-        return false
-      }
-
-      const otherStart = Number(otherCue.index)
-      const otherEnd = getCueEndIndex(otherCue)
-      return !(endIndex < otherStart || startIndex > otherEnd)
-    })
-  }
 
   useEffect(() => {
     if (!isToolboxOpen) {
@@ -842,8 +814,6 @@ const EditMode = ({
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
       file: fileObj,
-      duration: getCueDuration(copiedCue),
-
       fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
       color: copiedCue.color,
       loop: copiedCue.loop,
@@ -968,7 +938,7 @@ const EditMode = ({
 
   const addCue = async (cueData) => {
     setStatus("loading")
-    const { index, cueName, screen, file, loop, color, duration } = cueData
+    const { index, cueName, screen, file, loop, color } = cueData
 
     //Check if cue with same index and screen already exists
     const existingCue = cues.find(
@@ -987,8 +957,7 @@ const EditMode = ({
       file || "",
       undefined,
       color,
-      loop || false,
-      duration
+      loop || false
     )
 
     try {
@@ -1091,7 +1060,6 @@ const EditMode = ({
       screen: updatedCue.screen,
       file: fileObj,
       fileName: updatedCue.fileName,
-      duration: updatedCue.duration ?? getCueDuration(existingCue),
     }
   }
 
@@ -1201,59 +1169,16 @@ const EditMode = ({
   }
 
   const handleElementPositionChange = async (selectedCue, targetCue) => {
-    const selectedDuration = getCueDuration(selectedCue)
-    const targetDuration = getCueDuration(targetCue)
-
     const newTargetCue = {
       ...targetCue,
       index: selectedCue.index,
       screen: selectedCue.screen,
-      duration: targetDuration,
     }
 
     const newSelectedCue = {
       ...selectedCue,
       index: targetCue.index,
       screen: targetCue.screen,
-      duration: selectedDuration,
-    }
-
-    const sameScreenSwap = Number(selectedCue.screen) === Number(targetCue.screen)
-    if (sameScreenSwap && selectedDuration !== targetDuration) {
-      const excludedCueIds = [selectedCue._id, targetCue._id]
-      const leftMostIndex = Math.min(Number(selectedCue.index), Number(targetCue.index))
-
-      let firstCue = newTargetCue
-      let secondCue = newSelectedCue
-
-      if (Number(newSelectedCue.index) < Number(newTargetCue.index)) {
-        firstCue = newSelectedCue
-        secondCue = newTargetCue
-      }
-
-      firstCue.index = leftMostIndex
-
-      if (!canPlaceCueAt(firstCue, firstCue.index, firstCue.screen, excludedCueIds)) {
-        showToast({
-          title: "Error",
-          description: "Unable to swap these elements in available slots.",
-          status: "error",
-        })
-        setSelectedCue(null)
-        return
-      }
-
-      const secondCueStart = Number(firstCue.index) + getCueDuration(firstCue)
-      if (!canPlaceCueAt(secondCue, secondCueStart, secondCue.screen, excludedCueIds)) {
-        showToast({
-          title: "Error",
-          description: "Unable to swap these elements in available slots.",
-          status: "error",
-        })
-        setSelectedCue(null)
-        return
-      }
-      secondCue.index = secondCueStart
     }
 
     const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"

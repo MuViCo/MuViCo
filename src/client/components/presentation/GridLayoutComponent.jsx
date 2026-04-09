@@ -145,11 +145,6 @@ const GridLayoutComponent = ({
   const [cueToRemove, setCueToRemove] = useState(null)
   const [currentLayout, setCurrentLayout] = useState(layout)
 
-  const getCueDuration = (cue) => {
-    const parsedDuration = Number(cue?.duration)
-    return Number.isInteger(parsedDuration) && parsedDuration > 0 ? parsedDuration : 1
-  }
-
   const cueVisualDurationMap = useMemo(() => {
     const cuesByScreen = new Map()
 
@@ -206,16 +201,14 @@ const GridLayoutComponent = ({
     return layoutWidthMap.get(cueId.toString()) ?? fallbackWidth
   }
 
-  const hasOverlapWithOtherCues = (cueId, startIndex, screen, duration) => {
-    const endIndex = startIndex + duration - 1
+  const hasOverlapWithOtherCues = (cueId, startIndex, screen) => {
     return cues.some((otherCue) => {
       if (otherCue._id === cueId || Number(otherCue.screen) !== Number(screen)) {
         return false
       }
 
       const otherStart = Number(otherCue.index)
-      const otherEnd = otherStart + getCueDuration(otherCue) - 1
-      return !(endIndex < otherStart || startIndex > otherEnd)
+      return Number(startIndex) === otherStart
     })
   }
 
@@ -473,13 +466,12 @@ const GridLayoutComponent = ({
       return
     }
 
-    const movedDuration = getCueDuration(cue)
-    const movedEndIndex = Number(newItem.x) + movedDuration - 1
+    const movedEndIndex = Number(newItem.x)
 
-    if (movedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1), movedDuration)) {
+    if (movedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1))) {
       showToast({
         title: "Cannot place element here",
-        description: "Cue duration overlaps another cue or exceeds frame bounds.",
+        description: "Element overlaps another element or exceeds frame bounds.",
         status: "error",
       })
       revertLayoutItem(newItem.i, oldItem)
@@ -532,7 +524,6 @@ const GridLayoutComponent = ({
       width={indexCount * columnWidth + (indexCount - 1) * gap}
       isDraggable={false}
       isResizable={false}
-      resizeHandles={["e", "w"]}
       compactType={null}
       isBounded={false}
       preventCollision={true}
@@ -573,7 +564,6 @@ const GridLayoutComponent = ({
               h: 1,
               minH: 1,
               maxH: 1,
-              minW: 1,
               static: false,
             }}
             id={`cue-screen-${cue.screen}-index-${cue.index}`}
