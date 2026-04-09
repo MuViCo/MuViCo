@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react" // Ensure Text is imported
 import {
   DeleteIcon,
@@ -121,7 +121,6 @@ const GridLayoutComponent = ({
   id,
   layout,
   cues,
-  setStatus,
   setCopiedCue,
   setIsCopied,
   columnWidth,
@@ -144,57 +143,8 @@ const GridLayoutComponent = ({
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState(null)
-  const [currentLayout, setCurrentLayout] = useState(layout)
 
   const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
-
-  const layoutWidthMap = useMemo(() => {
-    const nextMap = new Map()
-    currentLayout.forEach((item) => {
-      const parsedWidth = Number(item?.w)
-      if (Number.isInteger(parsedWidth) && parsedWidth > 0) {
-        nextMap.set(item.i, parsedWidth)
-      }
-    })
-    return nextMap
-  }, [currentLayout])
-
-  const getCueById = (cueId) => cues.find((cue) => cue._id === cueId)
-
-  const getLayoutWidth = (cueId, fallbackWidth) => {
-    return layoutWidthMap.get(cueId.toString()) ?? fallbackWidth
-  }
-
-  const hasOverlapWithOtherCues = (cueId, startIndex, screen) => {
-    return cues.some((otherCue) => {
-      if (otherCue._id === cueId || Number(otherCue.screen) !== Number(screen)) {
-        return false
-      }
-
-      const otherStart = Number(otherCue.index)
-      return Number(startIndex) === otherStart
-    })
-  }
-
-  const revertLayoutItem = (itemId, previousItem) => {
-    const revertedLayout = currentLayout.map((item) => {
-      if (item.i === itemId) {
-        return {
-          ...item,
-          x: previousItem.x,
-          y: previousItem.y,
-          w: previousItem.w,
-          h: 1,
-        }
-      }
-      return item
-    })
-    setCurrentLayout(revertedLayout)
-  }
-
-  useEffect(() => {
-    setCurrentLayout(layout)
-  }, [layout])
 
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
@@ -388,101 +338,10 @@ const GridLayoutComponent = ({
     </Menu>
   )
 
-  /**
-   * Do not remove the `layout` parameter from the `handlePositionChange` function.
-   * It is required for the function to work correctly.
-   */
-  const handlePositionChange = async (newLayout, oldItem, newItem) => {
-    if (oldItem.x === newItem.x && oldItem.y === newItem.y && oldItem.w === newItem.w) {
-      return
-    }
-
-    const cue = getCueById(newItem.i)
-    if (!cue) {
-      return
-    }
-
-    const audioRowYIndex = getAudioRow(screenCount) - 1
-    const movingToAudioRow = newItem.y === audioRowYIndex
-    const cueIsAudio = cue.cueType === "audio"
-
-    if ((cueIsAudio && !movingToAudioRow) || (!cueIsAudio && movingToAudioRow)) {
-      showToast({
-        title: "Cannot move this file type here",
-        description: "Keep audio elements to the audio row and visual elements to the visual rows.",
-        status: "error",
-      })
-
-      const updatedLayout = currentLayout.map((item) => {
-        // find the item that was moved with its ID and revert it to its old position
-        if (item.i === newItem.i) {
-          return {
-            ...item,
-            x: oldItem.x,
-            y: oldItem.y,
-            w: oldItem.w,
-          }
-        }
-        return item
-      })
-
-      setCurrentLayout(updatedLayout)
-      return
-    }
-
-    const movedEndIndex = Number(newItem.x)
-
-    if (movedEndIndex >= indexCount || hasOverlapWithOtherCues(newItem.i, Number(newItem.x), Number(newItem.y + 1))) {
-      showToast({
-        title: "Cannot place element here",
-        description: "Element overlaps another element or exceeds frame bounds.",
-        status: "error",
-      })
-      revertLayoutItem(newItem.i, oldItem)
-      return
-    }
-
-    const movedCue = {
-      cueId: newItem.i,
-      index: newItem.x,
-      screen: newItem.y + 1,
-    }
-
-    if (cue) {
-      movedCue.cueName = cue.name
-      movedCue.color = cue.color
-    }
-
-    if (movedCue) {
-      setStatus("loading")
-      try {
-        await dispatch(updatePresentation(id, movedCue))
-        setCurrentLayout(newLayout)
-
-        setTimeout(() => {
-          setStatus("saved")
-        }, 300)
-      } catch (error) {
-        console.error(error)
-
-        // additional error handling for if something goes wrong with the API call to update the cue in database
-        // revert the layout to the state that was before the error happened
-        revertLayoutItem(newItem.i, oldItem)
-
-        showToast({
-          title: "Error updating position",
-          description:
-            "The element has been returned to its previous position.",
-          status: "error",
-        })
-      }
-    }
-  }
-
   return (
     <GridLayout
       className="layout"
-      layout={currentLayout}
+      layout={layout}
       cols={indexCount}
       rowHeight={rowHeight}
       width={indexCount * columnWidth + (indexCount - 1) * gap}
@@ -494,11 +353,10 @@ const GridLayoutComponent = ({
       margin={[gap, gap]}
       containerPadding={[0, 0]}
       useCSSTransforms={true}
-      onDragStop={handlePositionChange}
       maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
     >
       {cues.map((cue) => {
-        const cueVisualSpan = getLayoutWidth(cue._id, getCueVisualSpanFromMap(cue, cueVisualSpanMap))
+        const cueVisualSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
         const hasContinuation = cueVisualSpan > 1
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0

@@ -111,11 +111,6 @@ const EditMode = ({
       (_, index) => `Screen ${index + 1}`
     )
 
-  const getScreenNumberFromLabel = (label) => {
-    const match = /^Screen\s+(\d+)$/.exec(label)
-    return match ? match[1] : null
-  }
-
     // Add audio row separately (always at the end)
     labels.push("Audio files")
     return labels
@@ -1530,7 +1525,6 @@ const EditMode = ({
                   columnWidth={columnWidth}
                   rowHeight={rowHeight}
                   gap={gap}
-                  setStatus={setStatus}
                   setIsCopied={setIsCopied}
                   setCopiedCue={setCopiedCue}
                   id={id}

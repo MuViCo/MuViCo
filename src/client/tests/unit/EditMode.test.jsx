@@ -86,7 +86,9 @@ jest.mock("react-grid-layout", () => {
         return
       }
 
-      onDragStop([], scenario.oldItem, scenario.newItem)
+      if (typeof onDragStop === "function") {
+        onDragStop([], scenario.oldItem, scenario.newItem)
+      }
     }
 
     return (
