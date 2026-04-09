@@ -1535,6 +1535,7 @@ const EditMode = ({
               isShowMode={isShowMode}
               screenCount={presentation.screenCount}
               isAudioMuted={isAudioMuted}
+              screenIcon={screenIcon}
               headerActionsRef={headerActionsRef}
             />
           </Box>
@@ -1795,5 +1796,4 @@ const EditMode = ({
     </ChakraProvider>
   )
 }
-
-export default EditMode
+ export default EditMode
