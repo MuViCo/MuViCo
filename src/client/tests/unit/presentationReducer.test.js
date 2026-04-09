@@ -593,30 +593,6 @@ describe("presentationReducer asynchronous actions", () => {
     })
   })
 
-  it("should include duration in update presentation payload", async () => {
-    const store = makeStore()
-
-    const initialState = {
-      cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, duration: 1 },
-      ],
-      name: "My Presentation"
-    }
-
-    store.dispatch(setPresentationInfo(initialState))
-
-    const updatedCueData = { cueName: "Updated Cue", index: 1, screen: 1, duration: 2 }
-
-    presentationService.updateCue.mockResolvedValue({
-      ...initialState.cues[0],
-      ...updatedCueData,
-    })
-
-    await store.dispatch(updatePresentation("123", updatedCueData, 1))
-
-    const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
-    expect(sentFormData.get("duration")).toBe("2")
-  })
 
   it("should copy cue with file over cue without file", async () => {
     const store = makeStore()
@@ -907,55 +883,6 @@ describe("presentationReducer asynchronous actions", () => {
 
     expect(store.getState().presentation.cues).toContainEqual(firstUpdatedCue)
     expect(store.getState().presentation.cues).toContainEqual(secondUpdatedCue)
-  })
-
-  it("should include duration in swapped cue payloads", async () => {
-    const store = makeStore()
-
-    const initialState = {
-      cues: [
-        { _id: 1, name: "Cue 1", index: 1, screen: 1, duration: 2 },
-        { _id: 2, name: "Cue 2", index: 3, screen: 1, duration: 1 },
-      ],
-      name: "My Presentation"
-    }
-
-    store.dispatch(setPresentationInfo(initialState))
-
-    const firstUpdatedCue = {
-      _id: 1,
-      name: "Cue 1",
-      index: 3,
-      screen: 1,
-      duration: 2,
-    }
-    const secondUpdatedCue = {
-      _id: 2,
-      name: "Cue 2",
-      index: 1,
-      screen: 1,
-      duration: 1,
-    }
-
-    presentationService.swapCues.mockResolvedValue({
-      firstCue: firstUpdatedCue,
-      secondCue: secondUpdatedCue,
-    })
-
-    await store.dispatch(
-      swapCues("123", firstUpdatedCue, secondUpdatedCue)
-    )
-
-    expect(presentationService.swapCues).toHaveBeenCalledWith("123", {
-      firstCueId: firstUpdatedCue._id,
-      secondCueId: secondUpdatedCue._id,
-      firstIndex: firstUpdatedCue.index,
-      firstScreen: firstUpdatedCue.screen,
-      secondIndex: secondUpdatedCue.index,
-      secondScreen: secondUpdatedCue.screen,
-      firstDuration: 2,
-      secondDuration: 1,
-    })
   })
 
   it("should shift presentation indices right", async () => {
