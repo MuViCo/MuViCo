@@ -150,4 +150,46 @@ describe("GridLayoutComponent", () => {
 
     expect(screen.getByTestId("cue-drag-origin-indicator-visual-1")).toBeInTheDocument()
   })
+
+  it("applies preview span overrides for continuation shrink rendering", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+      },
+      {
+        _id: "visual-2",
+        index: 3,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      },
+    ]
+
+    const layout = [
+      { i: "visual-1", x: 0, y: 0, w: 3, h: 1, static: false },
+      { i: "visual-2", x: 3, y: 0, w: 1, h: 1, static: false },
+    ]
+
+    const { rerender } = renderGrid(cues, layout)
+    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toBeInTheDocument()
+
+    rerender(
+      <GridLayoutComponent
+        {...baseProps}
+        cues={cues}
+        layout={layout}
+        previewCueSpanOverrides={{ "visual-1": 1 }}
+      />
+    )
+
+    expect(screen.queryByTestId("cue-continuation-overlay-visual-1")).not.toBeInTheDocument()
+  })
 })
