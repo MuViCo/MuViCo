@@ -1,5 +1,5 @@
 import React from "react"
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
 import { useDispatch, useSelector } from "react-redux"
@@ -128,18 +128,18 @@ describe("EditMode drag swapping", () => {
     },
   ]
 
-  const renderEditMode = () => {
+  const renderEditMode = (customCues = cues, customIndexCount = 3) => {
     return render(
       <EditMode
         id="presentation-1"
-        cues={cues}
+        cues={customCues}
         isToolboxOpen={false}
         setIsToolboxOpen={jest.fn()}
         isShowMode={false}
         cueIndex={0}
         isAudioMuted={false}
         toggleAudioMute={jest.fn()}
-        indexCount={3}
+        indexCount={customIndexCount}
       />
     )
   }
@@ -214,6 +214,91 @@ describe("EditMode drag swapping", () => {
     expect(updatePresentation).not.toHaveBeenCalled()
   })
 
+  it("does not swap when dropped on a continuation cell", () => {
+    mockDragScenario = "visualSwapVisual"
+
+    renderEditMode()
+
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+    })
+
+    fireEvent.click(screen.getByTestId("trigger-drag-stop"))
+
+    // xIndex=2, yIndex=1 is a continuation slot of cue-2 in visual-span mode
+    fireEvent.mouseUp(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+
+    expect(swapCues).not.toHaveBeenCalled()
+  })
+
+  it("moves cue when dropped on continuation cell in another row", async () => {
+    const cuesWithContinuation = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 2,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      },
+    ]
+
+    useSelector.mockImplementation((selector) => selector({
+      presentation: {
+        cues: cuesWithContinuation,
+        name: "Test presentation",
+        screenCount: 2,
+        indexCount: 4,
+      },
+    }))
+
+    renderEditMode(cuesWithContinuation, 4)
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+    })
+
+    // xIndex=2, yIndex=2 is continuation area for cue-2 in visual-span mode
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 330,
+        clientY: 230,
+      })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueName: "Visual cue 1",
+          index: 2,
+          screen: 2,
+        }),
+        "visual-1"
+      )
+    })
+
+    expect(swapCues).not.toHaveBeenCalled()
+  })
+
   it("shows and repositions hover preview on empty slots", () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
@@ -221,16 +306,16 @@ describe("EditMode drag swapping", () => {
 
     expect(hoverPreview).toHaveStyle({ display: "none" })
 
-    // Empty slot at xIndex=2, yIndex=1 with current test cues and index count
+    // Empty slot at xIndex=2, yIndex=2 with current test cues and derived visual spans
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: 230,
     })
 
     expect(hoverPreview).toHaveStyle({
       display: "block",
       left: "320px",
-      top: "110px",
+      top: "220px",
     })
   })
 
@@ -241,7 +326,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: 230,
     })
     expect(hoverPreview).toHaveStyle({ display: "block" })
 
@@ -261,7 +346,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: 230,
     })
     expect(hoverPreview).toHaveStyle({ display: "block" })
 
@@ -271,5 +356,53 @@ describe("EditMode drag swapping", () => {
     })
 
     expect(hoverPreview).toHaveStyle({ display: "none" })
+  })
+
+  it("shows and hides drag placement preview while dragging", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: 120,
+      button: 0,
+    })
+
+    const placementPreview = screen.getByTestId("drag-placement-preview")
+    expect(placementPreview).toHaveStyle({ display: "none" })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(placementPreview).toHaveStyle({ display: "block" })
+    })
+
+    fireEvent.mouseUp(gridContainer, {
+      clientX: 170,
+      clientY: 120,
+    })
+
+    expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+  })
+
+  it("prevents native default behavior when cue drag starts", () => {
+    renderEditMode()
+    setupGridGeometry()
+
+    const defaultWasNotPrevented = fireEvent(
+      screen.getByTestId("cue-Visual cue 1"),
+      new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        clientX: 10,
+        clientY: 120,
+        button: 0,
+      })
+    )
+
+    expect(defaultWasNotPrevented).toBe(false)
   })
 })
