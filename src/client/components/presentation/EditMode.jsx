@@ -689,6 +689,16 @@ const EditMode = ({
     }
   }
 
+  const resetDragInteraction = () => {
+    setIsDragging(false)
+    setDragCursorMode("default")
+    updateDragPreviewCell(null)
+    clearInternalDragSpanPreview()
+    hideDragPlacementPreview()
+    cancelDragPreviewFrame()
+    resetDragPointerTracking()
+  }
+
   const handleMouseMove = (event) => {
     if (isDragging) {
       scheduleDragPreviewFromEvent(event)
@@ -725,13 +735,7 @@ const EditMode = ({
 
   const handleMouseUp = async (event) => {
     const wasDragging = isDragging
-    setIsDragging(false)
-    setDragCursorMode("default")
-    updateDragPreviewCell(null)
-    clearInternalDragSpanPreview()
-    hideDragPlacementPreview()
-    cancelDragPreviewFrame()
-    resetDragPointerTracking()
+    resetDragInteraction()
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -1438,12 +1442,16 @@ const EditMode = ({
               }}
               onMouseLeave={() => {
                 hideHoverPreview()
+
+                if (isDragging) {
+                  resetDragInteraction()
+                  return
+                }
+
                 updateDragPreviewCell(null)
                 clearInternalDragSpanPreview()
                 hideDragPlacementPreview()
-                if (!isDragging) {
-                  setDragCursorMode("default")
-                }
+                setDragCursorMode("default")
               }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
