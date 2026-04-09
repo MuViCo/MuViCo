@@ -556,8 +556,8 @@ describe("test presentation", () => {
     )
 
     const invalidCases = [
-      [0, "indexCount must be between 1 and 100"],
-      [101, "indexCount must be between 1 and 100"],
+      [0, "indexCount must be between 1 and 101"],
+      [102, "indexCount must be between 1 and 101"],
       ["asdf", "indexCount must be a number"],
     ]
 

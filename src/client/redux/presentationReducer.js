@@ -192,15 +192,25 @@ export const updatePresentation =
 export const swapCues =
   (presentationId, firstUpdatedCue, secondUpdatedCue) => async (dispatch) => {
     try {
+      const swapPayload = {
+        firstCueId: firstUpdatedCue._id,
+        secondCueId: secondUpdatedCue._id,
+        firstIndex: firstUpdatedCue.index,
+        firstScreen: firstUpdatedCue.screen,
+        secondIndex: secondUpdatedCue.index,
+        secondScreen: secondUpdatedCue.screen,
+      }
+
+      if (Number.isFinite(firstUpdatedCue.duration)) {
+        swapPayload.firstDuration = firstUpdatedCue.duration
+      }
+
+      if (Number.isFinite(secondUpdatedCue.duration)) {
+        swapPayload.secondDuration = secondUpdatedCue.duration
+      }
+
       const { firstCue: updatedFirstCue, secondCue: updatedSecondCue } =
-        await presentationService.swapCues(presentationId, {
-          firstCueId: firstUpdatedCue._id,
-          secondCueId: secondUpdatedCue._id,
-          firstIndex: firstUpdatedCue.index,
-          firstScreen: firstUpdatedCue.screen,
-          secondIndex: secondUpdatedCue.index,
-          secondScreen: secondUpdatedCue.screen,
-        })
+        await presentationService.swapCues(presentationId, swapPayload)
 
       dispatch(editCue(updatedFirstCue))
       dispatch(editCue(updatedSecondCue))

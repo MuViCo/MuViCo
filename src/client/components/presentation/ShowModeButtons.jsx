@@ -78,6 +78,7 @@ const AutoplayControls = ({
   return (
     <Box display="flex" alignItems="center">
       <IconButton
+        aria-label={isAutoplaying ? "Stop Autoplay" : "Start Autoplay"}
         colorScheme={isAutoplaying ? "red" : "blue"}
         onClick={toggleAutoplay}
         p={0}
@@ -90,8 +91,7 @@ const AutoplayControls = ({
             aria-hidden="true"
           />
         }
-      >
-      </IconButton>
+      />
       {/* <NumberInput
        id="autoplaytime"
        value={autoplayInterval}
@@ -111,12 +111,13 @@ const AutoplayControls = ({
   )
 }
 
-const AutoplayInterval = ({ autoplayInterval }) => (
+const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
   <Box display="flex" alignItems="center" gap="10px">
     <NumberInput
       id="autoplaytime"
       value={autoplayInterval}
       width="100px"
+      onChange={(valueString) => toggleAutoplayInterval(valueString)}
       min={0.1}
       step={0.1}
     >
@@ -255,7 +256,7 @@ const ShowModeButtons = ({
 
   <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
     <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
-    {cueIndex > 0 && <Heading size="md">{`Frame ${cueIndex}`}</Heading>}
+    <Heading size="md">{cueIndex > 0 ? `Frame ${cueIndex}` : "Starting Frame"}</Heading>
 
     <AutoplayControls
       autoplayInterval={autoplayInterval}
@@ -271,7 +272,10 @@ const ShowModeButtons = ({
       toggleAllScreens={toggleAllScreens}
       mirroring={mirroring}
     />
-    <AutoplayInterval autoplayInterval={autoplayInterval} />
+    <AutoplayInterval
+      autoplayInterval={autoplayInterval}
+      toggleAutoplayInterval={toggleAutoplayInterval}
+    />
     <ClickablePopover
       label={
         <>
