@@ -46,7 +46,7 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px",paddingBottom: "15px", width: "100%", height: "100%", overflow: "hidden" }}>
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenData = getCurrentCueForScreen(screenNumber)
@@ -303,7 +303,7 @@ class MyFirstGrid extends React.Component {
           </div>
 
           <div style={{ backgroundColor: "panelBackground",outline:"outlineColor",boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", 
-            paddingBottom: "5px", borderRadius: "8px"}}  key="editWorkspace">
+            paddingBottom: "15px", borderRadius: "8px"}}  key="editWorkspace">
             <div style={{overflow: "scroll", height:"100%", width:"100%",outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px" }}>
               <EditMode
                 id={id}
