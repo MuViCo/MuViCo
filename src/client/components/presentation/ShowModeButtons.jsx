@@ -256,7 +256,11 @@ const ShowModeButtons = ({
 
   <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
     <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
-    <Heading size="md">{cueIndex > 0 ? `Frame ${cueIndex}` : "Starting Frame"}</Heading>
+    <Box w="150px" display="flex" justifyContent="center" >
+      <Heading size="md" textAlign="center" whiteSpace="nowrap">
+        {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
+      </Heading>
+    </Box>
 
     <AutoplayControls
       autoplayInterval={autoplayInterval}
