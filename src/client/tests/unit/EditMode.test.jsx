@@ -334,7 +334,7 @@ describe("EditMode drag swapping", () => {
     expect(hoverPreview).toHaveStyle({
       display: "block",
       left: "320px",
-      top: "220px",
+      top: "175px",
     })
   })
 
@@ -556,7 +556,7 @@ describe("EditMode drag swapping", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
-        transform: "translate3d(160px, 110px, 0)",
+        transform: "translate3d(160px, 65px, 0)",
       })
     })
 
@@ -569,7 +569,7 @@ describe("EditMode drag swapping", () => {
       expect(screen.getByTestId("drag-cursor-preview")).toBeInTheDocument()
       expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
         display: "block",
-        transform: "translate3d(320px, 110px, 0)",
+        transform: "translate3d(320px, 65px, 0)",
       })
     })
   })

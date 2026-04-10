@@ -5,6 +5,7 @@ const useEditModeDragPreviewController = ({
   containerRef,
   columnWidth,
   rowHeight,
+  headerRowHeight,
   gap,
   indexCount,
   screenCount,
@@ -27,6 +28,7 @@ const useEditModeDragPreviewController = ({
   const dragPreviewFrameRef = useRef(null)
   const dragPreviewCellRef = useRef(null)
   const dragPlacementLockedToAnchorRef = useRef(false)
+  const dragPreviewYOffset = Math.max(rowHeight - (headerRowHeight ?? rowHeight), 0)
 
   const hideHoverPreview = useCallback(() => {
     hoverCellRef.current = null
@@ -49,7 +51,7 @@ const useEditModeDragPreviewController = ({
     hoverCellRef.current = nextCell
     hoverPreviewRef.current.style.display = "block"
     hoverPreviewRef.current.style.left = `${xIndex * (columnWidth + gap)}px`
-    hoverPreviewRef.current.style.top = `${yIndex * (rowHeight + gap)}px`
+    hoverPreviewRef.current.style.top = `${(yIndex * (rowHeight + gap)) - dragPreviewYOffset}px`
   }
 
   const updateDragPreviewCell = (nextCell) => {
@@ -99,7 +101,7 @@ const useEditModeDragPreviewController = ({
     }
 
     const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const pointerYIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const pointerYIndex = Math.floor((pointerPosition.y + dragPreviewYOffset) / (rowHeight + gap))
     const lockPlacementToAnchor = Boolean(
       dragPlacementLockedToAnchorRef.current && selectedCue
     )
@@ -143,7 +145,7 @@ const useEditModeDragPreviewController = ({
 
     if (dragPlacementPreviewRef.current) {
       dragPlacementPreviewRef.current.style.display = "block"
-      dragPlacementPreviewRef.current.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yIndex * (rowHeight + gap)}px, 0)`
+      dragPlacementPreviewRef.current.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${(yIndex * (rowHeight + gap)) - dragPreviewYOffset}px, 0)`
       dragPlacementPreviewRef.current.style.borderColor = isValidDropCell
         ? dragPreviewValidBorder
         : dragPreviewInvalidBorder
@@ -158,6 +160,7 @@ const useEditModeDragPreviewController = ({
     dragPreviewInvalidBorder,
     dragPreviewValidBg,
     dragPreviewValidBorder,
+    dragPreviewYOffset,
     gap,
     getContinuationPreviewSpanOverrides,
     indexCount,
