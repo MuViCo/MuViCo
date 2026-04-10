@@ -4,12 +4,12 @@ const User = require("../models/user")
 const {
   minPwLength,
   maxPwLength,
-  minUnLength,
-  maxUnLength,
+  minUsernameLength,
+  maxUsernameLength,
   invalidPwCharRegex,
-  unAllowedCharsRegex,
-  unStartEndRegex,
-  unConsecutiveSpecialsRegex,
+  usernameAllowedCharsRegex,
+  usernameStartEndRegex,
+  usernameConsecutiveSpecialsRegex,
 } = require("../../constants.js")
 
 const router = express.Router()
@@ -30,32 +30,32 @@ router.post("/", async (req, res) => {
   }
 
   const trimmedUsername = username.trim()
-  if (trimmedUsername.length < minUnLength) {
+  if (trimmedUsername.length < minUsernameLength) {
     return res.status(400).json({
-      error: `username must be at least ${minUnLength} characters`,
+      error: `username must be at least ${minUsernameLength} characters`,
     })
   }
 
-  if (trimmedUsername.length > maxUnLength) {
+  if (trimmedUsername.length > maxUsernameLength) {
     return res.status(400).json({
-      error: `username can be at most ${maxUnLength} characters`,
+      error: `username can be at most ${maxUsernameLength} characters`,
     })
   }
 
-  if (!unAllowedCharsRegex.test(trimmedUsername)) {
+  if (!usernameAllowedCharsRegex.test(trimmedUsername)) {
     return res.status(400).json({
       error:
         "username can only contain letters, numbers, dots, underscores, and hyphens",
     })
   }
 
-  if (!unStartEndRegex.test(trimmedUsername)) {
+  if (!usernameStartEndRegex.test(trimmedUsername)) {
     return res.status(400).json({
       error: "username must start and end with a letter or number",
     })
   }
 
-  if (unConsecutiveSpecialsRegex.test(trimmedUsername)) {
+  if (usernameConsecutiveSpecialsRegex.test(trimmedUsername)) {
     return res.status(400).json({
       error: "username cannot contain consecutive special characters",
     })

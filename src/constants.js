@@ -9,14 +9,14 @@ export const invalidPwCharRegex =
 
 /* username validation constants */
 
-export const minUnLength = 3
-export const maxUnLength = 30
+export const minUsernameLength = 3
+export const maxUsernameLength = 30
 
-export const unAllowedCharsRegex = /^[A-Za-z0-9._-]+$/ // Username is limited to letters, numbers, dot, underscore and hyphen
+export const usernameAllowedCharsRegex = /^[A-Za-z0-9._-]+$/ // Username is limited to letters, numbers, dot, underscore and hyphen
 
-export const unStartEndRegex = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/ // Username must start and end with alphanumeric characters
+export const usernameStartEndRegex = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/ // Username must start and end with alphanumeric characters
 
-export const unConsecutiveSpecialsRegex = /[._-]{2,}/ // Prevent repetitive separators
+export const usernameConsecutiveSpecialsRegex = /[._-]{2,}/ // Prevent repetitive separators
 
 
 /* bcrypt salt rounds */

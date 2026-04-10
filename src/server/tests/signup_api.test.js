@@ -4,8 +4,8 @@ const app = require("../app")
 const {
   minPwLength,
   maxPwLength,
-  minUnLength,
-  maxUnLength,
+  minUsernameLength,
+  maxUsernameLength,
 } = require("../../constants.js")
 
 const api = supertest(app)
@@ -131,7 +131,7 @@ describe("creation of a new user", () => {
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain(
-      `username must be at least ${minUnLength} characters`
+      `username must be at least ${minUsernameLength} characters`
     )
   })
 
@@ -144,6 +144,19 @@ describe("creation of a new user", () => {
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain("password cannot contain only spaces")
+  })
+
+  test("fails if password is shorter than minimum length", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "a".repeat(minPwLength - 1),
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      `password must be at least ${minPwLength} characters`
+    )
   })
 
   test("fails if username has unsupported characters", async () => {
@@ -187,14 +200,14 @@ describe("creation of a new user", () => {
 
   test("fails if username exceeds maximum length", async () => {
     const invalidUser = {
-      username: "a".repeat(maxUnLength + 1),
+      username: "a".repeat(maxUsernameLength + 1),
       password: "validpassword",
     }
 
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain(
-      `username can be at most ${maxUnLength} characters`
+      `username can be at most ${maxUsernameLength} characters`
     )
   })
 

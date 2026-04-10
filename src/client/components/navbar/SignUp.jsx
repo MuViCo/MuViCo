@@ -19,12 +19,12 @@ import authService from "../../services/auth"
 import {
   minPwLength,
   maxPwLength,
-  minUnLength,
-  maxUnLength,
+  minUsernameLength,
+  maxUsernameLength,
   invalidPwCharRegex,
-  unAllowedCharsRegex,
-  unStartEndRegex,
-  unConsecutiveSpecialsRegex,
+  usernameAllowedCharsRegex,
+  usernameStartEndRegex,
+  usernameConsecutiveSpecialsRegex,
 } from "../../../constants"
 
 const initialValues = {
@@ -38,20 +38,20 @@ const validationSchema = yup.object().shape({
     .string()
     .trim()
     .required("Username is required")
-    .min(minUnLength, `Username must be at least ${minUnLength} characters`)
-    .max(maxUnLength, `Username can be at most ${maxUnLength} characters`)
+    .min(minUsernameLength, `Username must be at least ${minUsernameLength} characters`)
+    .max(maxUsernameLength, `Username can be at most ${maxUsernameLength} characters`)
     .matches(
-      unAllowedCharsRegex,
+      usernameAllowedCharsRegex,
       "Username can only contain letters, numbers, dots, underscores, and hyphens"
     )
     .matches(
-      unStartEndRegex,
+      usernameStartEndRegex,
       "Username must start and end with a letter or number"
     )
     .test(
       "username-no-consecutive-specials",
       "Username cannot contain consecutive special characters",
-      (value) => !value || !unConsecutiveSpecialsRegex.test(value)
+      (value) => !value || !usernameConsecutiveSpecialsRegex.test(value)
     ),
   password: yup
     .string()
