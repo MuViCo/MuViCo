@@ -7,19 +7,14 @@ const changePasswordUrl = "/api/users/change-password"
 
 const login = async (credentials) => {
   const response = await axios.post(loginUrl, credentials)
-  return response.data
+  const user = response.data
+  window.localStorage.setItem("user", JSON.stringify(user))
+  return user
 }
 
 const signup = async (credentials) => {
   const response = await axios.post(signupUrl, credentials)
   return response.data
-}
-
-const signupAndLogin = async (credentials) => {
-  await signup(credentials)
-  const user = await login(credentials)
-  window.localStorage.setItem("user", JSON.stringify(user))
-  return user
 }
 
 const getLoggedUser = () => {
@@ -44,4 +39,4 @@ const changepassword = async (credentials) => {
   return response.data
 }
 
-export default { login, signup, signupAndLogin, changepassword, getLoggedUser }
+export default { login, signup, changepassword, getLoggedUser }

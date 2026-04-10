@@ -274,8 +274,9 @@ const SignUp = ({ onSignup }) => {
   }
   const onSubmit = async ({ username, password }) => {
     try {
-      const user = await authService.signupAndLogin({ username, password })
-      onSignup(user)
+      await authService.signup({ username, password })
+      const loggedInUser = await authService.login({ username, password })
+      onSignup(loggedInUser)
     } catch (e) {
       setError(e.response.data.error)
     }
