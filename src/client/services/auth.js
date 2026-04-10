@@ -22,6 +22,19 @@ const signupAndLogin = async (credentials) => {
   return user
 }
 
+const getLoggedUser = () => {
+  const loggedUserJSON = window.localStorage.getItem("user")
+    if (!loggedUserJSON) {
+      return null
+    }
+  try {
+    return JSON.parse(loggedUserJSON)
+  } catch {
+    window.localStorage.removeItem("user")
+    return null
+  }
+}
+
 const changepassword = async (credentials) => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -31,4 +44,4 @@ const changepassword = async (credentials) => {
   return response.data
 }
 
-export default { login, signup, signupAndLogin, changepassword }
+export default { login, signup, signupAndLogin, changepassword, getLoggedUser }
