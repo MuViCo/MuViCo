@@ -78,10 +78,10 @@ describe("creation of a new user", () => {
     const result = await api
       .post("/api/signup")
       .send(newUser)
-      .expect(401)
+      .expect(400)
       .expect("Content-Type", /application\/json/)
 
-    expect(result.body.error).toContain("Username already exists")
+    expect(result.body.error).toContain("expected `username` to be unique")
 
     const usersAtEnd = await usersInDb()
     expect(usersAtEnd).toHaveLength(usersAtStart.length)

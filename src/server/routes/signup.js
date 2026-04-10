@@ -1,12 +1,9 @@
 const express = require("express")
-const { generateHash } = require("../utils/auth.js")
+const { validatePassword, generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
 const {
-  minPwLength,
-  maxPwLength,
   minUsernameLength,
   maxUsernameLength,
-  invalidPwCharRegex,
   usernameAllowedCharsRegex,
   usernameStartEndRegex,
   usernameConsecutiveSpecialsRegex,
@@ -14,7 +11,7 @@ const {
 
 const router = express.Router()
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   const { username, password } = req.body
 
   if (!username || !password) {
@@ -28,9 +25,11 @@ router.post("/", async (req, res) => {
       error: "username and password must be strings",
     })
   }
+  
 
   const trimmedUsername = username.trim()
-  if (trimmedUsername.length < minUsernameLength) {
+
+    if (trimmedUsername.length < minUsernameLength) {
     return res.status(400).json({
       error: `username must be at least ${minUsernameLength} characters`,
     })
@@ -61,32 +60,11 @@ router.post("/", async (req, res) => {
     })
   }
 
-  if (password.trim().length === 0) {
-    return res.status(400).json({
-      error: "password cannot contain only spaces",
-    })
-  }
-
-  if (password.length < minPwLength) {
-    return res.status(400).json({
-      error: `password must be at least ${minPwLength} characters`,
-    })
-  }
-
-  if (password.length > maxPwLength) {
-    return res.status(400).json({
-      error: `password must be at most ${maxPwLength} characters`,
-    })
-  }
-
-  if (invalidPwCharRegex.test(password)) {
-    return res.status(400).json({
-      error: "password contains unsupported characters",
-    })
-  }
-
-  const passwordHash = await generateHash(password)
   try {
+    validatePassword(password)
+    
+    const passwordHash = await generateHash(password)
+
     const user = new User({
       username: trimmedUsername,
       passwordHash,
@@ -95,8 +73,8 @@ router.post("/", async (req, res) => {
     const savedUser = await user.save({})
 
     return res.status(201).json(savedUser)
-  } catch {
-    return res.status(401).json({ error: "Username already exists" })
+  } catch (error) {
+    return next(error)
   }
 })
 
