@@ -109,7 +109,7 @@ const EditMode = ({
 
   const xLabels = useMemo(() => (
     Array.from({ length: indexCount }, (_, index) =>
-      index === 0 ? "Starting Frame" : `Frame ${index}`)
+      index === 0 ? "Frame 0" : `Frame ${index}`)
   ), [indexCount])
   const visualCues = useMemo(() => cues.filter(cue => cue.cueType === "visual"), [cues])
 
@@ -168,6 +168,8 @@ const EditMode = ({
   const columnWidth = 150
   const rowHeight = 100
   const gap = 10
+  const frameHeaderHeight = Math.max(rowHeight - 45, 0)
+  const dragPreviewYOffset = Math.max(rowHeight - frameHeaderHeight, 0)
   const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
@@ -218,6 +220,7 @@ const EditMode = ({
     containerRef,
     columnWidth,
     rowHeight,
+    headerRowHeight: frameHeaderHeight,
     gap,
     indexCount,
     screenCount: presentation.screenCount,
@@ -1164,11 +1167,12 @@ const EditMode = ({
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
     const dropY = event.clientY - containerRect.top
+    const yAdjustedForHeader = dropY + dragPreviewYOffset
 
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + gap
 
-    const yIndex = Math.floor(dropY / cellHeightWithGap)
+    const yIndex = Math.floor(yAdjustedForHeader / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
     return { xIndex, yIndex }
@@ -1450,14 +1454,14 @@ const EditMode = ({
           <Box
             className="screen-boxes"
             display="grid"
-            gridTemplateRows={`repeat(${yLabels.length + 1}, ${rowHeight}px)`}
+            gridTemplateRows={`${frameHeaderHeight}px repeat(${yLabels.length}, ${rowHeight}px)`}
             gap={`${gap}px`}
             left={0}
             zIndex={2}
             bg={"transparent"}
             flexShrink={0}
           >
-            <Box h={`${rowHeight}px`} bg="transparent" />
+            <Box h={`${frameHeaderHeight}px`} bg="transparent" />
 
             <RowHeaders
               yLabels={yLabels}
@@ -1548,30 +1552,6 @@ const EditMode = ({
                   headerActionsRef={headerActionsRef}
                 />
               </Box>
-              <Button
-                colorScheme="gray"
-                onClick={() => { handleAddIndex(indexCount - 1) }}
-                isDisabled={indexCount >= 100}
-                position="absolute"
-                right="-50px"
-                top="5px"
-                paddingTop="20px"
-                paddingBottom="20px"
-              >
-                +
-              </Button>
-              <Button
-                colorScheme="gray"
-                onClick={() => { handleRemoveIndex(indexCount - 1) }}
-                isDisabled={indexCount <= 1}
-                position="absolute"
-                right="-50px"
-                top="55px"
-                paddingTop="20px"
-                paddingBottom="20px"
-              >
-                -
-              </Button>
               <Box pointerEvents={isDragging ? "none" : "auto"}>
                 <GridLayoutComponent
                   layout={layout}
@@ -1604,7 +1584,7 @@ const EditMode = ({
                   position="absolute"
                   left="0px"
                   top="0px"
-                  transform={`translate3d(${poolDragPreviewCell.xIndex * (columnWidth + gap)}px, ${poolDragPreviewCell.yIndex * (rowHeight + gap)}px, 0)`}
+                  transform={`translate3d(${poolDragPreviewCell.xIndex * (columnWidth + gap)}px, ${(poolDragPreviewCell.yIndex * (rowHeight + gap)) - dragPreviewYOffset}px, 0)`}
                   width={`${columnWidth}px`}
                   height={`${rowHeight}px`}
                   borderRadius="16px"
