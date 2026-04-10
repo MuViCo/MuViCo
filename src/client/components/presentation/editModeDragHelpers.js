@@ -1,4 +1,4 @@
-import { getAudioRow } from "../utils/fileTypeUtils"
+import { isCueTypeCompatibleWithRow } from "../utils/fileTypeUtils"
 
 export const areSpanOverrideMapsEqual = (firstMap, secondMap) => {
   const firstKeys = Object.keys(firstMap)
@@ -27,12 +27,6 @@ export const arePoolDragPreviewCellsEqual = (firstCell, secondCell) => {
   )
 }
 
-export const isValidCueTypeForRow = (cueType, yIndex, audioRowIndex) => {
-  return cueType === "audio"
-    ? Number(yIndex) === Number(audioRowIndex)
-    : Number(yIndex) !== Number(audioRowIndex)
-}
-
 export const getContinuationShrinkSpanOverrides = ({
   xIndex,
   yIndex,
@@ -41,8 +35,7 @@ export const getContinuationShrinkSpanOverrides = ({
   screenCount,
   getCueAtPosition,
 }) => {
-  const audioRowIndex = getAudioRow(screenCount)
-  const isValidDropCell = isValidCueTypeForRow(cueType, yIndex, audioRowIndex)
+  const isValidDropCell = isCueTypeCompatibleWithRow(cueType, yIndex, screenCount)
 
   if (!isValidDropCell) {
     return {}

@@ -526,6 +526,98 @@ describe("EditMode drag swapping", () => {
     })
   })
 
+  it("shows copy preview and continuation shrink while hovering paste target", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
+    })
+
+    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+
+    await waitFor(() => {
+      expect(gridContainer).toHaveStyle({ cursor: "copy" })
+    })
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("copy-drag-placement-preview")).toHaveStyle({
+        transform: "translate3d(320px, 110px, 0)",
+      })
+      expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toHaveStyle({
+        opacity: "0.76",
+      })
+    })
+  })
+
+  it("shows not-allowed state when hovering the same copied cue", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
+    })
+
+    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 10,
+      clientY: 120,
+    })
+
+    await waitFor(() => {
+      expect(gridContainer).toHaveStyle({ cursor: "not-allowed" })
+      expect(screen.getByTestId("copy-drag-placement-preview")).toHaveAttribute(
+        "data-valid-drop-cell",
+        "false"
+      )
+    })
+  })
+
+  it("pastes copied cue when clicking a continuation slot", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const originalFetch = global.fetch
+    global.fetch = jest.fn(async () => ({
+      blob: async () => new Blob(["test"], { type: "image/png" }),
+    }))
+
+    try {
+      fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
+      })
+
+      fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+
+      fireEvent.mouseMove(gridContainer, {
+        clientX: 330,
+        clientY: 120,
+      })
+
+      fireEvent.click(screen.getByTestId("cue-Visual cue 2"), {
+        clientX: 330,
+        clientY: 120,
+      })
+
+      await waitFor(() => {
+        expect(createCue).toHaveBeenCalledWith("presentation-1", expect.any(FormData))
+      })
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
   it("positions drag cursor preview near pointer on mouse down without move", async () => {
     renderEditMode()
     setupGridGeometry()
