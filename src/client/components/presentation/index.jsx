@@ -49,6 +49,14 @@ const PresentationPage = ({ user }) => {
     setIsAudioMuted((prevMuted) => !prevMuted)
   }
 
+  const updateCue = (direction) => {
+    if (direction === "Next") {
+      setCueIndex((prevCueIndex) => Math.min(indexCount - 1, prevCueIndex + 1))
+    } else {
+      setCueIndex((prevCueIndex) => Math.max(0, prevCueIndex - 1))
+    }
+  }
+
   return <EditModeContainer
     id={id}
     cues={presentationInfo}
@@ -60,6 +68,7 @@ const PresentationPage = ({ user }) => {
     setTransitionType={setTransitionType}
     isShowMode={showMode === true}
     cueIndex={cueIndex}
+    updateCue={updateCue}
     isAudioMuted={isAudioMuted}
     toggleAudioMute={toggleAudioMute}
     indexCount={indexCount}
