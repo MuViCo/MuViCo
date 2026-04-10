@@ -42,7 +42,6 @@ import {
   getContinuationShrinkSpanOverrides,
   getCueTypeFromDragData,
   getDragDataFromDataTransfer,
-  isValidCueTypeForRow,
 } from "./editModeDragHelpers"
 import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
@@ -53,6 +52,8 @@ import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
 import screenIcon from "../../public/icons/screen.svg"
 import {
   getAudioRow,
+  isCueTypeCompatibleWithRow,
+  isInsidePresentationGridCell,
   isAudioMimeType,
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
@@ -142,11 +143,13 @@ const EditMode = ({
     ref: containerRef,
     handler: () => {
       if (isCopied && !isConfirmOpen) {
+        clearExternalPlacementPreview()
         showToast({
           title: "Cancelled copying",
           description: "Copying has been cancelled.",
           status: "info",
         })
+        setDragCursorMode("default")
         setIsCopied(false)
         setCopiedCue(null)
         setShowAlert(false)
@@ -156,6 +159,7 @@ const EditMode = ({
   })
 
   const clickTimeout = useRef(null)
+  const wasCopiedRef = useRef(false)
   const dragStartPointerRef = useRef(null)
   const dragHasMovedRef = useRef(false)
   const headerActionsRef = useRef({
@@ -208,13 +212,17 @@ const EditMode = ({
     hoverPreviewRef,
     dragCursorPreviewRef,
     dragPlacementPreviewRef,
+    externalPlacementPreviewRef,
     hideHoverPreview,
     showHoverPreview,
     updateDragPreviewCell,
     hideDragPlacementPreview,
+    hideExternalPlacementPreview,
     cancelDragPreviewFrame,
+    clearExternalPlacementPreview,
     primeDragPreviewFromEvent,
     scheduleDragPreviewFromEvent,
+    scheduleExternalPreviewFromEvent,
     resetDragPointerTracking,
     setDragPlacementLockedToAnchor,
   } = useEditModeDragPreviewController({
@@ -227,7 +235,9 @@ const EditMode = ({
     screenCount: presentation.screenCount,
     selectedCue,
     setDragCursorMode,
+    clearExternalDragPreview,
     clearInternalDragSpanPreview,
+    setExternalDragSpanOverridesIfChanged,
     setInternalDragSpanOverridesIfChanged,
     getContinuationPreviewSpanOverrides,
     dragPreviewValidBorder,
@@ -241,6 +251,19 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }, [isToolboxOpen])
+
+  useEffect(() => {
+    if (isDragging) {
+      return
+    }
+
+    if (isCopied) {
+      setDragCursorMode("copy")
+      return
+    }
+
+    setDragCursorMode("default")
+  }, [isCopied, isDragging])
 
   useEffect(() => {
     if (selectedCue && !cues.some((cue) => cue._id === selectedCue._id)) {
@@ -584,6 +607,10 @@ const EditMode = ({
       return
     }
 
+    if (isCopied) {
+      return
+    }
+
     if (event.target.closest("button, [role='menuitem'], input, textarea, select, a")) {
       return
     }
@@ -636,6 +663,8 @@ const EditMode = ({
     if (!isCopied || !copiedCue) return
 
     if (event.target.closest(".x-index-label")) {
+      clearExternalPlacementPreview()
+      setDragCursorMode("default")
       setIsCopied(false)
       setCopiedCue(null)
       setShowAlert(false)
@@ -661,9 +690,21 @@ const EditMode = ({
       gap
     )
 
-    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const hoveredCue = getCueAtPosition(xIndex, yIndex)
+    const isBlockedCell = Boolean(hoveredCue && hoveredCue._id === copiedCue._id)
+    const isInsideGrid = isInsidePresentationGridCell({
+      xIndex,
+      yIndex,
+      indexCount,
+      screenCount: presentation.screenCount,
+    })
+    const isValidDropCell =
+      isCueTypeCompatibleWithRow(copiedCue.cueType, yIndex, presentation.screenCount) &&
+      !isBlockedCell
 
-    if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+    if (!isInsideGrid) {
+      clearExternalPlacementPreview()
+      setDragCursorMode("default")
       setIsCopied(false)
       setCopiedCue(null)
       setShowAlert(false)
@@ -676,16 +717,11 @@ const EditMode = ({
       return
     }
 
-    if (xIndex === copiedCue.index && yIndex === copiedCue.screen) {
+    if (isBlockedCell) {
       return
     }
 
-    const copiedCueIsAudio = copiedCue.cueType === "audio"
-
-    if (
-      (yIndex === audioRowIndex && !copiedCueIsAudio) ||
-      (copiedCueIsAudio && yIndex !== audioRowIndex)
-    ) {
+    if (!isValidDropCell) {
       showToast({
         title: "Only audio files on the audio row.",
         description: "Click on an appropriate row to paste the element.",
@@ -697,6 +733,19 @@ const EditMode = ({
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
     await addCue(newCueData)
     console.log("Pasted cue data: ", newCueData)
+  }
+
+  const updateCopiedCuePreview = (event) => {
+    scheduleExternalPreviewFromEvent(event, {
+      cueType: copiedCue?.cueType,
+      draggedCueId: copiedCue?._id,
+      idleCursor: "copy",
+      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
+      isBlockedCell: (xIndex, yIndex) => {
+        const hoveredCue = getCueAtPosition(xIndex, yIndex)
+        return Boolean(hoveredCue && hoveredCue._id === copiedCue?._id)
+      },
+    })
   }
 
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
@@ -755,6 +804,13 @@ const EditMode = ({
       hideHoverPreview()
       return
     }
+
+    if (isCopied && copiedCue) {
+      hideHoverPreview()
+      updateCopiedCuePreview(event)
+      return
+    }
+
     if (event.target.closest(".x-index-label")) {
       hideHoverPreview()
       return
@@ -781,6 +837,14 @@ const EditMode = ({
       hideHoverPreview()
     }
   }
+
+  useEffect(() => {
+    if (wasCopiedRef.current && !isCopied) {
+      clearExternalPlacementPreview()
+    }
+
+    wasCopiedRef.current = isCopied
+  }, [clearExternalPlacementPreview, isCopied])
 
   const handleMouseUp = async (event) => {
     const wasDragging = isDragging
@@ -824,14 +888,24 @@ const EditMode = ({
         return
       }
 
-      const audioRowIndex = getAudioRow(presentation.screenCount)
-      if (yIndex < 1 || yIndex > audioRowIndex || xIndex < 0 || xIndex >= indexCount) {
+      const isInsideGrid = isInsidePresentationGridCell({
+        xIndex,
+        yIndex,
+        indexCount,
+        screenCount: presentation.screenCount,
+      })
+      const isValidDropCell = isCueTypeCompatibleWithRow(
+        selectedCue.cueType,
+        yIndex,
+        presentation.screenCount
+      )
+
+      if (!isInsideGrid) {
         clearInternalDragSpanPreview()
         return
       }
 
-      const selectedCueIsAudio = selectedCue.cueType === "audio"
-      if ((selectedCueIsAudio && yIndex !== audioRowIndex) || (!selectedCueIsAudio && yIndex === audioRowIndex)) {
+      if (!isValidDropCell) {
         showToast({
           title: "Cannot move this file type here",
           description: "Keep audio elements to the audio row and visual elements to the visual rows.",
@@ -896,19 +970,23 @@ const EditMode = ({
       gap
     )
 
-    const audioRowIndex = getAudioRow(presentation.screenCount)
-    const isInsideGrid =
-      xIndex >= 0 &&
-      xIndex < indexCount &&
-      yIndex >= 1 &&
-      yIndex <= audioRowIndex
+    const isInsideGrid = isInsidePresentationGridCell({
+      xIndex,
+      yIndex,
+      indexCount,
+      screenCount: presentation.screenCount,
+    })
 
     if (!isInsideGrid) {
       clearExternalDragPreview()
       return
     }
 
-    const isValidDropCell = isValidCueTypeForRow(dragCueType, yIndex, audioRowIndex)
+    const isValidDropCell = isCueTypeCompatibleWithRow(
+      dragCueType,
+      yIndex,
+      presentation.screenCount
+    )
     const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
       xIndex,
       yIndex,
@@ -1213,9 +1291,6 @@ const EditMode = ({
     }
   }
 
-  const isImageOrVideo = (file) => isImageOrVideoMimeType(file?.type)
-  const isAudio = (file) => isAudioMimeType(file?.type)
-
   const handleCueReplace = async (xIndex, yIndex, file) => {
     const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
@@ -1250,7 +1325,7 @@ const EditMode = ({
 
     const files = Array.from(event.dataTransfer.files)
     const mediaFiles = files.filter(
-      (file) => isImageOrVideo(file) || isAudio(file)
+      (file) => isImageOrVideoMimeType(file?.type) || isAudioMimeType(file?.type)
     )
 
     if (mediaFiles.length === 0 && !dragData) {
@@ -1373,7 +1448,7 @@ const EditMode = ({
     const file = mediaFiles[0]
     const audioRowIndex = getAudioRow(presentation.screenCount)
 
-    if (isImageOrVideo(file) && xIndex < indexCount && yIndex === audioRowIndex) {
+    if (isImageOrVideoMimeType(file?.type) && xIndex < indexCount && yIndex === audioRowIndex) {
       showToast({
         title: "Only audio files on the audio row.",
         description: "Click on an appropriate row to paste the element.",
@@ -1381,7 +1456,7 @@ const EditMode = ({
       })
       return
     }
-    if (isAudio(file) && yIndex !== audioRowIndex && xIndex < indexCount) {
+    if (isAudioMimeType(file?.type) && yIndex !== audioRowIndex && xIndex < indexCount) {
       showToast({
         title: "Only images/videos on screen rows.",
         description: "Click on an appropriate row to paste the element.",
@@ -1501,7 +1576,7 @@ const EditMode = ({
               minHeight="100%"
               width="100%"
               position="relative"
-              cursor={isDragging ? dragCursorMode : "default"}
+              cursor={isDragging || isCopied ? dragCursorMode : "default"}
               data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
@@ -1522,10 +1597,17 @@ const EditMode = ({
                   return
                 }
 
+                if (isCopied) {
+                  clearExternalPlacementPreview()
+                  setDragCursorMode("copy")
+                }
+
                 updateDragPreviewCell(null)
                 clearInternalDragSpanPreview()
                 hideDragPlacementPreview()
-                setDragCursorMode("default")
+                if (!isCopied) {
+                  setDragCursorMode("default")
+                }
               }}
               onMouseUp={handleMouseUp}
               onClick={handlePaste}
@@ -1576,12 +1658,15 @@ const EditMode = ({
                   isDragging={isDragging}
                   draggingCueId={isDragging && selectedCue ? selectedCue._id : null}
                   previewCueSpanOverrides={previewCueSpanOverrides}
+                  isCopied={isCopied}
+                  interactionCursor={!isDragging && isCopied ? dragCursorMode : null}
                 />
               </Box>
 
               {!isDragging && poolDragPreviewCell && (
                 <Box
                   data-testid="pool-drag-placement-preview"
+                  data-valid-drop-cell={poolDragPreviewCell.isValidDropCell ? "true" : "false"}
                   position="absolute"
                   left="0px"
                   top="0px"
@@ -1595,6 +1680,29 @@ const EditMode = ({
                   boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
                   pointerEvents="none"
                   zIndex={20}
+                />
+              )}
+
+              {!isDragging && isCopied && (
+                <Box
+                  data-testid="copy-drag-placement-preview"
+                  ref={externalPlacementPreviewRef}
+                  data-valid-drop-cell="false"
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  transform="translate3d(0, 0, 0)"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px dashed"
+                  borderColor={dragPreviewInvalidBorder}
+                  bg={dragPreviewInvalidBg}
+                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                  pointerEvents="none"
+                  zIndex={20}
+                  display="none"
+                  style={{ willChange: "transform" }}
                 />
               )}
 

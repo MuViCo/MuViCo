@@ -39,6 +39,19 @@ export const isAudioCue = (cue, screenCount) => {
   return isAudioRow(cue?.screen, screenCount)
 }
 
+export const isCueTypeCompatibleWithRow = (cueType, row, screenCount) =>
+  cueType === "audio" ? isAudioRow(row, screenCount) : !isAudioRow(row, screenCount)
+
+export const isInsidePresentationGridCell = ({ xIndex, yIndex, indexCount, screenCount }) => {
+  const audioRow = getAudioRow(screenCount)
+  return (
+    Number(xIndex) >= 0 &&
+    Number(xIndex) < Number(indexCount) &&
+    Number(yIndex) >= 1 &&
+    Number(yIndex) <= Number(audioRow)
+  )
+}
+
 export const isAudioMimeType = (mimeType = "") => mimeType.startsWith("audio/")
 
 export const isImageOrVideoMimeType = (mimeType = "") =>
