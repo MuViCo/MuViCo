@@ -187,41 +187,56 @@ class MyFirstGrid extends React.Component {
     } = this.props
     const layouts = {
       lg: [
-        { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
-        { i: "showModeControls", x: 0, y: 5, w: 12, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 7, w: 9, h: 10 },
-        { i: "cueEditorForm", x: 9, y: 5, w: 3, h: 14, isResizable: false, resizeHandles: [] },
-        { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "editWorkspace", x: 0, y: 6, w: 14, h: 10},
+        { i: "cueEditorForm", x: 14, y: 6, w: 2, h: 10},
       ],
       md: [
-        { i: "screensPreview", x: 0, y: 0, w: 10, h: 5 },
-        { i: "showModeControls", x: 0, y: 2, w: 10, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 2, w: 10, h: 14 },
-        { i: "cueEditorForm", x: 8, y: 7, w: 10, h: 14, isResizable: false, resizeHandles: [] },
-        { i: "header", x: 0, y: 0, w: 10, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "editWorkspace", x: 0, y: 6, w: 11, h: 10},
+        { i: "cueEditorForm", x: 11, y: 6, w: 5, h: 10},
+        // { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
+        // { i: "showModeControls", x: 0, y: 6, w: 12, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "editWorkspace", x: 0, y: 7, w: 8, h: 14 },
+        // { i: "cueEditorForm", x: 8, y: 7, w: 4, h: 14, isResizable: false, resizeHandles: [] },
       ],
       sm: [
-        { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
-        { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14 },
-        { i: "cueEditorForm", x: 6, y: 6, w: 7, h: 7, isResizable: false, resizeHandles: [] },
-        { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6},
+        { i: "cueEditorForm", x: 13, y: 0, w: 16, h: 9},
+        // { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
+        // { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14 },
+        // { i: "cueEditorForm", x: 0, y: 7, w: 7, h: 7, isResizable: false, resizeHandles: [] },
 
       ],
       xs: [
-        { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
-        { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 2, w: 4, h: 14 },
-        { i: "cueEditorForm", x: 2, y: 6, w: 4, h: 7, isResizable: false, resizeHandles: [] },
-        { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6},
+        { i: "cueEditorForm", x: 13, y: 0, w: 16, h: 10},
+        // { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
+        // { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
+        // { i: "editWorkspace", x: 0, y: 2, w: 4, h: 14 },
+        // { i: "cueEditorForm", x: 0, y: 7, w: 4, h: 7, isResizable: false, resizeHandles: [] },
       ],
-      xxs: [
-        { i: "screensPreview", x: 0, y: 0, w: 2, h: 5 },
-        { i: "showModeControls", x: 0, y: 2, w: 2, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 2, w: 2, h: 14 },
-        { i: "cueEditorForm", x: 0, y: 6, w: 2, h: 7, isResizable: false, resizeHandles: [] },
-        { i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
-      ],
+      // xxs: [
+      //   { i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
+      //   { i: "screensPreview", x: 0, y: 0, w: 2, h: 5 },
+      //   { i: "showModeControls", x: 0, y: 2, w: 2, h: 1, isResizable: false, resizeHandles: [] },
+      //   { i: "editWorkspace", x: 0, y: 2, w: 2, h: 14 },
+      //   { i: "cueEditorForm", x: 0, y: 7, w: 2, h: 7, isResizable: false, resizeHandles: [] },
+      // ],
     }
 
 
@@ -240,13 +255,13 @@ class MyFirstGrid extends React.Component {
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-          rows={{ lg: 20, md: 14, sm: 10, xs: 10, xxs: 10 }}
+          breakpoints={{md: 1178, sm: 800, xs: 480 }}
+          cols={{ lg: 16, md: 16, sm: 16, xs: 16 }}
+          rows={{ lg: 20, md: 20, sm: 20, xs: 20 }}
           isDraggable={false}
           isResizable={true}
           resizeHandles={["s"]}
-          autoSize={true}
+          autoSize={false}
           rowHeight={60}
           margin={[15, 15]}
           containerPadding={[80, 8]}
@@ -308,11 +323,9 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div style={{
-            backgroundColor: "panelBackground", outline: "outlineColor", boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
-            paddingBottom: "15px", borderRadius: "8px"
-          }} key="editWorkspace">
-            <div style={{ overflow: "scroll", height: "100%", width: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px" }}>
+          <div style={{ backgroundColor: panelBackground,outline: outlineColor, boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", 
+            paddingBottom: "5px", borderRadius: "8px"}}  key="editWorkspace">
+            <div style={{overflow: "scroll", height:"100%", width:"100%",outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px" }}>
               <EditMode
                 id={id}
                 cues={cues}
