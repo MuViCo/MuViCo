@@ -1,4 +1,5 @@
 /* Use !important so Chakra Button defaults do not override these Edit Mode button styles. */
+
 .edit-mode-btn {
 	background-color: #805ad5 !important;
 	color: #ffffff !important;
