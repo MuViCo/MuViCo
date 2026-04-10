@@ -211,6 +211,19 @@ describe("creation of a new user", () => {
     )
   })
 
+  test("fails if password is below minimum length", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "a".repeat(minPwLength - 1),
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      `password must be at least ${minPwLength} characters`
+    )
+  })
+
   test("fails if password exceeds maximum length", async () => {
     const invalidUser = {
       username: "validuser",
