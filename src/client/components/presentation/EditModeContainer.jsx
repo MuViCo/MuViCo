@@ -18,6 +18,8 @@ import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
 import { isType } from "../utils/fileTypeUtils"
+import KeyboardHandler from "../utils/keyboardHandler"
+
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -46,7 +48,7 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px",paddingBottom: "15px", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", paddingBottom: "15px", width: "100%", height: "100%", overflow: "hidden" }}>
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenData = getCurrentCueForScreen(screenNumber)
@@ -279,32 +281,38 @@ class MyFirstGrid extends React.Component {
               Tutorial
             </Button>
           </Box>
-          
+
           <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="screensPreview">
             <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} editModeBackground={panelBackground} />
-            
+
           </div>
-          <div style= {{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
-            <ShowModeButtons 
-            screens={screens} 
-            toggleScreenVisibility={toggleScreenVisibility} 
-            toggleScreenMirroring={toggleScreenMirroring}
-            toggleAllScreens={toggleAllScreens}
-            mirroring={mirroring}
-            cueIndex={cueIndex}
-            updateCue={updateCue}
-            indexCount={indexCount}
-            autoplayInterval={autoplayInterval}
-            toggleAutoplay={toggleAutoplay}
-            isAutoplaying={isAutoplaying}
-            toggleAutoplayInterval={toggleAutoplayInterval}
-            
+          <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
+            <KeyboardHandler
+              onNext={() => updateCue("Next")}
+              onPrevious={() => updateCue("Previous")}
+            />
+            <ShowModeButtons
+              screens={screens}
+              toggleScreenVisibility={toggleScreenVisibility}
+              toggleScreenMirroring={toggleScreenMirroring}
+              toggleAllScreens={toggleAllScreens}
+              mirroring={mirroring}
+              cueIndex={cueIndex}
+              updateCue={updateCue}
+              indexCount={indexCount}
+              autoplayInterval={autoplayInterval}
+              toggleAutoplay={toggleAutoplay}
+              isAutoplaying={isAutoplaying}
+              toggleAutoplayInterval={toggleAutoplayInterval}
+
             />
           </div>
 
-          <div style={{ backgroundColor: "panelBackground",outline:"outlineColor",boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", 
-            paddingBottom: "15px", borderRadius: "8px"}}  key="editWorkspace">
-            <div style={{overflow: "scroll", height:"100%", width:"100%",outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px" }}>
+          <div style={{
+            backgroundColor: "panelBackground", outline: "outlineColor", boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
+            paddingBottom: "15px", borderRadius: "8px"
+          }} key="editWorkspace">
+            <div style={{ overflow: "scroll", height: "100%", width: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px" }}>
               <EditMode
                 id={id}
                 cues={cues}
@@ -318,34 +326,7 @@ class MyFirstGrid extends React.Component {
               />
             </div>
           </div>
-          {/* <div
-            style={{
-              backgroundColor: panelBackground,
-              outline: outlineColor,
-              padding: "10px",
-              borderRadius: "8px",
-              boxSizing: "border-box",
-              height: "100%",
-              minHeight: 0,
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-            }}
-            key="editWorkspace" */}
-          
-            {/* <EditMode
-              id={id}
-              cues={cues}
-              isToolboxOpen={isToolboxOpen}
-              setIsToolboxOpen={setIsToolboxOpen}
-              isShowMode={isShowMode}
-              cueIndex={cueIndex}
-              isAudioMuted={isAudioMuted}
-              toggleAudioMute={toggleAudioMute}
-              indexCount={indexCount}
-            /> */}
-          {/* </div> */}
-            
+
           <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="cueEditorForm">
             <CuesForm
               addCue={addCue}
