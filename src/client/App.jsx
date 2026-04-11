@@ -17,7 +17,7 @@ import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
 import MaintenanceNotice from "./components/maintenancenotice"
-import { getLoggedUser } from "./services/auth"
+import authService from "./services/auth"
 
 const App = () => {
   const [user, setUser] = useState(null)
@@ -31,7 +31,7 @@ const App = () => {
   const isProfile = location.pathname.startsWith("/profile")
 
   useEffect(() => {
-    const loggedUser = getLoggedUser()
+    const loggedUser = authService.getLoggedUser()
     if (loggedUser) {
       setUser(loggedUser)
     }
