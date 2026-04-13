@@ -549,7 +549,7 @@ describe("EditMode drag swapping", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("copy-drag-placement-preview")).toHaveStyle({
-        transform: "translate3d(320px, 110px, 0)",
+        transform: "translate3d(320px, 65px, 0)",
       })
       expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toHaveStyle({
         opacity: "0.76",
