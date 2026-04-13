@@ -385,6 +385,7 @@ const GridLayoutComponent = ({
         const cueIsVideo = cue.file?.type?.startsWith("video/")
         const isVisualCue = cue.cueType === "visual"
         const isDraggingOriginCue = isDragging && draggingCueId === cue._id
+        const suppressCueHoverEffects = isDragging || isCopied
 
         return (
           <div
@@ -411,8 +412,8 @@ const GridLayoutComponent = ({
               opacity={isDraggingOriginCue ? 0.58 : 1}
               transform="translateY(0)"
               transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
-              _hover={isDragging ? {} : { transform: "translateY(-1px)", boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)" }}
-              sx={isDragging ? {} : {
+              _hover={suppressCueHoverEffects ? {} : { transform: "translateY(-1px)", boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)" }}
+              sx={suppressCueHoverEffects ? {} : {
                 "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]": {
                   borderColor: segmentBorderHoverColor,
                 },
