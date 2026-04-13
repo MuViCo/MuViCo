@@ -322,7 +322,7 @@ const useEditModeDragPreviewController = ({
     }
 
     const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const yIndex = Math.floor(pointerPosition.y / (rowHeight + gap))
+    const yIndex = Math.floor((pointerPosition.y + dragPreviewYOffset) / (rowHeight + gap))
     const isInsideGrid = isInsidePresentationGridCell({
       xIndex,
       yIndex,
@@ -361,6 +361,7 @@ const useEditModeDragPreviewController = ({
       columnWidth,
       rowHeight,
       gap,
+      yOffset: dragPreviewYOffset,
       isValidDropCell,
       validBorder: dragPreviewValidBorder,
       invalidBorder: dragPreviewInvalidBorder,
@@ -376,6 +377,7 @@ const useEditModeDragPreviewController = ({
     dragPreviewInvalidBorder,
     dragPreviewValidBg,
     dragPreviewValidBorder,
+    dragPreviewYOffset,
     gap,
     getContinuationPreviewSpanOverrides,
     indexCount,
