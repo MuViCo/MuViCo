@@ -60,8 +60,27 @@ jest.mock("../../components/utils/CustomAlert", () => {
 })
 
 jest.mock("../../components/utils/AlertDialog", () => {
-  return function MockAlertDialog() {
-    return null
+  return function MockAlertDialog({ isOpen, onConfirm, message }) {
+    if (!isOpen) {
+      return null
+    }
+
+    return (
+      <div data-testid="mock-alert-dialog">
+        <span>{message}</span>
+        <button
+          type="button"
+          data-testid="confirm-dialog-confirm"
+          onClick={() => {
+            if (typeof onConfirm === "function") {
+              onConfirm()
+            }
+          }}
+        >
+          confirm
+        </button>
+      </div>
+    )
   }
 })
 
@@ -173,6 +192,22 @@ describe("EditMode drag swapping", () => {
           type: "newCueFromForm",
           elementType: "color",
           cueName: "Pool color",
+          color: "#ff8800",
+        })
+      }
+
+      return ""
+    }),
+  })
+
+  const buildPoolEmptyNameColorDragDataTransfer = () => ({
+    files: [],
+    getData: jest.fn((type) => {
+      if (type === "application/json") {
+        return JSON.stringify({
+          type: "newCueFromForm",
+          elementType: "color",
+          cueName: "",
           color: "#ff8800",
         })
       }
@@ -490,6 +525,72 @@ describe("EditMode drag swapping", () => {
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: "Cannot drop here" })
     )
+  })
+
+  it("does not block pool cue drops on occupied anchor slots", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const dropArea = screen.getByTestId("drop-area")
+    const dataTransfer = buildPoolColorDragDataTransfer()
+
+    fireEvent.dragOver(gridContainer, {
+      dataTransfer,
+      clientX: 170,
+      clientY: 120,
+    })
+
+    await act(async () => {
+      fireEvent.drop(dropArea, {
+        dataTransfer,
+        clientX: 170,
+        clientY: 120,
+      })
+    })
+
+    expect(mockShowToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Cannot drop here" })
+    )
+  })
+
+  it("replaces occupied cue with empty-name color payload and cleared file", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const dropArea = screen.getByTestId("drop-area")
+    const dataTransfer = buildPoolEmptyNameColorDragDataTransfer()
+
+    fireEvent.dragOver(gridContainer, {
+      dataTransfer,
+      clientX: 170,
+      clientY: 120,
+    })
+
+    await act(async () => {
+      fireEvent.drop(dropArea, {
+        dataTransfer,
+        clientX: 170,
+        clientY: 120,
+      })
+    })
+
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-alert-dialog")).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueName: "",
+          file: null,
+          color: "#ff8800",
+          index: 1,
+          screen: 1,
+        }),
+        "visual-2"
+      )
+    })
   })
 
   it("clears pool drag preview when drop happens outside grid", async () => {
