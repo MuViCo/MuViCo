@@ -1741,25 +1741,27 @@ const EditMode = ({
                     />
                   )}
 
-                  <Text
-                    position="absolute"
-                    bottom="6px"
-                    left="8px"
-                    right="8px"
-                    color="white"
-                    fontWeight="bold"
-                    bg="rgba(0, 0, 0, 0.55)"
-                    borderRadius="6px"
-                    px={2}
-                    py={1}
-                    whiteSpace="nowrap"
-                    overflow="hidden"
-                    textOverflow="ellipsis"
-                    textAlign="center"
-                    style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
-                  >
-                    {selectedCue.name}
-                  </Text>
+                  {selectedCue.name?.trim() && (
+                    <Text
+                      position="absolute"
+                      bottom="6px"
+                      left="8px"
+                      right="8px"
+                      color="white"
+                      fontWeight="bold"
+                      bg="rgba(0, 0, 0, 0.55)"
+                      borderRadius="6px"
+                      px={2}
+                      py={1}
+                      whiteSpace="nowrap"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      textAlign="center"
+                      style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
+                    >
+                      {selectedCue.name}
+                    </Text>
+                  )}
                 </Box>
               )}
 
