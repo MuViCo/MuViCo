@@ -1342,27 +1342,19 @@ const EditMode = ({
 
     if (dragData && dragData.type === "newCueFromForm") {
       const audioRowIndex = getAudioRow(presentation.screenCount)
+      const colorCueName = (dragData.cueName || "").trim()
       
       // Handle different element types from the three boxes
       if (dragData.elementType === "color") {
-        const colorCueName = (dragData.cueName || "").trim()
-
         // Color element - no file
         const dataToSave = {
           index: xIndex,
           cueName: colorCueName,
           screen: yIndex,
+          file: null,
           color: dragData.color,
         }
-        
-        if (anchorCueExists(xIndex, yIndex)) {
-          showToast({
-            title: "Cannot drop here",
-            description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
-            status: "error",
-          })
-          return
-        }
+
         await addCue(dataToSave)
         return
       } 
@@ -1401,15 +1393,6 @@ const EditMode = ({
           return
         }
         
-        if (anchorCueExists(xIndex, yIndex)) {
-          showToast({
-            title: "Cannot drop here",
-            description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
-            status: "error",
-          })
-          return
-        }
-
         // Create cue with the actual file
         const dataToSave = {
           index: xIndex,
@@ -1428,19 +1411,12 @@ const EditMode = ({
       // Default color-based element (legacy support)
       const dataToSave = {
         index: xIndex,
-        cueName: dragData.cueName,
+        cueName: colorCueName,
         screen: yIndex,
+        file: null,
         color: dragData.color,
       }
-      
-      if (anchorCueExists(xIndex, yIndex)) {
-        showToast({
-          title: "Cannot drop here",
-          description: `Index ${xIndex} element already exists on screen ${yIndex}.`,
-          status: "error",
-        })
-        return
-      }
+
       await addCue(dataToSave)
       return
     }
