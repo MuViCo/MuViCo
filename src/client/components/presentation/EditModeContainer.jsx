@@ -191,14 +191,14 @@ class MyFirstGrid extends React.Component {
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
         { i: "editWorkspace", x: 0, y: 6, w: 14, h: 10},
-        { i: "cueEditorForm", x: 14, y: 6, w: 2, h: 10},
+        { i: "cueEditorForm", x: 14, y: 6, w: 2, h: 10 },
       ],
       md: [
         { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "editWorkspace", x: 0, y: 6, w: 11, h: 10},
-        { i: "cueEditorForm", x: 11, y: 6, w: 5, h: 10},
+        { i: "editWorkspace", x: 0, y: 6, w: 13, h: 10},
+        { i: "cueEditorForm", x: 13, y: 6, w: 3, h: 10},
         // { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
         // { i: "showModeControls", x: 0, y: 6, w: 12, h: 1, isResizable: false, resizeHandles: [] },
@@ -255,7 +255,7 @@ class MyFirstGrid extends React.Component {
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
-          breakpoints={{md: 1178, sm: 800, xs: 480 }}
+          breakpoints={{ lg: 1200, md: 1200, sm: 600, xs: 600 }}
           cols={{ lg: 16, md: 16, sm: 16, xs: 16 }}
           rows={{ lg: 20, md: 20, sm: 20, xs: 20 }}
           isDraggable={false}
@@ -340,7 +340,9 @@ class MyFirstGrid extends React.Component {
             </div>
           </div>
 
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle" key="cueEditorForm">
+ 
+
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm">
             <CuesForm
               addCue={addCue}
               onClose={onClose}
