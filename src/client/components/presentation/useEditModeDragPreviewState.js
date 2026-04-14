@@ -1,17 +1,12 @@
 import { useMemo, useRef, useState } from "react"
-import {
-  arePoolDragPreviewCellsEqual,
-  areSpanOverrideMapsEqual,
-} from "./editModeDragHelpers"
+import { areSpanOverrideMapsEqual } from "./editModeDragHelpers"
 
 const useEditModeDragPreviewState = () => {
   const [internalDragSpanOverrides, setInternalDragSpanOverrides] = useState({})
   const [externalDragSpanOverrides, setExternalDragSpanOverrides] = useState({})
-  const [poolDragPreviewCell, setPoolDragPreviewCell] = useState(null)
 
   const internalDragSpanOverridesRef = useRef({})
   const externalDragSpanOverridesRef = useRef({})
-  const poolDragPreviewCellRef = useRef(null)
 
   const setInternalDragSpanOverridesIfChanged = (nextOverrides) => {
     const normalizedOverrides = nextOverrides || {}
@@ -33,22 +28,12 @@ const useEditModeDragPreviewState = () => {
     setExternalDragSpanOverrides(normalizedOverrides)
   }
 
-  const setPoolDragPreviewCellIfChanged = (nextCell) => {
-    if (arePoolDragPreviewCellsEqual(poolDragPreviewCellRef.current, nextCell)) {
-      return
-    }
-
-    poolDragPreviewCellRef.current = nextCell
-    setPoolDragPreviewCell(nextCell)
-  }
-
   const clearInternalDragSpanPreview = () => {
     setInternalDragSpanOverridesIfChanged({})
   }
 
   const clearExternalDragPreview = () => {
     setExternalDragSpanOverridesIfChanged({})
-    setPoolDragPreviewCellIfChanged(null)
   }
 
   const previewCueSpanOverrides = useMemo(() => ({
@@ -57,13 +42,11 @@ const useEditModeDragPreviewState = () => {
   }), [externalDragSpanOverrides, internalDragSpanOverrides])
 
   return {
-    poolDragPreviewCell,
     previewCueSpanOverrides,
     clearExternalDragPreview,
     clearInternalDragSpanPreview,
     setExternalDragSpanOverridesIfChanged,
     setInternalDragSpanOverridesIfChanged,
-    setPoolDragPreviewCellIfChanged,
   }
 }
 

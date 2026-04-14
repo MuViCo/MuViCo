@@ -131,13 +131,11 @@ const EditMode = ({
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState(null)
   const {
-    poolDragPreviewCell,
     previewCueSpanOverrides,
     clearExternalDragPreview,
     clearInternalDragSpanPreview,
     setExternalDragSpanOverridesIfChanged,
     setInternalDragSpanOverridesIfChanged,
-    setPoolDragPreviewCellIfChanged,
   } = useEditModeDragPreviewState()
   useOutsideClick({
     ref: containerRef,
@@ -213,6 +211,10 @@ const EditMode = ({
     dragCursorPreviewRef,
     dragPlacementPreviewRef,
     externalPlacementPreviewRef,
+    externalCursorPreviewRef,
+    externalCursorSurfaceRef,
+    externalCursorImageRef,
+    externalCursorLabelRef,
     hideHoverPreview,
     showHoverPreview,
     updateDragPreviewCell,
@@ -277,7 +279,7 @@ const EditMode = ({
 
   useEffect(() => {
     const clearTransientPreviews = () => {
-      clearExternalDragPreview()
+      clearExternalPlacementPreview()
       hideHoverPreview()
     }
 
@@ -288,7 +290,44 @@ const EditMode = ({
       window.removeEventListener("drop", clearTransientPreviews)
       window.removeEventListener("dragend", clearTransientPreviews)
     }
-  }, [clearExternalDragPreview, hideHoverPreview])
+  }, [clearExternalPlacementPreview, hideHoverPreview])
+
+  const buildPoolCursorPreview = (dragData) => {
+    if (!dragData || dragData.type !== "newCueFromForm") {
+      return null
+    }
+
+    const cueName = (dragData.cueName || "").trim()
+
+    if (dragData.elementType === "color") {
+      return {
+        name: cueName,
+        color: dragData.color || "rgba(32,32,32,0.9)",
+        imageUrl: "",
+      }
+    }
+
+    if (dragData.elementType === "media") {
+      const mimeType = dragData.mimeType || ""
+      const isImagePreview = mimeType.startsWith("image/") && Boolean(dragData.previewUrl)
+
+      return {
+        name: cueName,
+        color: "rgba(32,32,32,0.9)",
+        imageUrl: isImagePreview ? dragData.previewUrl : "",
+      }
+    }
+
+    if (dragData.elementType === "sound") {
+      return {
+        name: cueName,
+        color: "rgba(32,32,32,0.9)",
+        imageUrl: "",
+      }
+    }
+
+    return null
+  }
 
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
@@ -951,51 +990,24 @@ const EditMode = ({
     hideHoverPreview()
 
     if (isShowMode || !containerRef.current) {
-      clearExternalDragPreview()
+      clearExternalPlacementPreview()
       return
     }
 
     const dragData = getDragDataFromDataTransfer(event.dataTransfer)
     const dragCueType = getCueTypeFromDragData(dragData)
     if (!dragCueType) {
-      clearExternalDragPreview()
+      clearExternalPlacementPreview()
       return
     }
 
-    const { xIndex, yIndex } = getPosition(
-      event,
-      containerRef,
-      columnWidth,
-      rowHeight,
-      gap
-    )
-
-    const isInsideGrid = isInsidePresentationGridCell({
-      xIndex,
-      yIndex,
-      indexCount,
-      screenCount: presentation.screenCount,
+    scheduleExternalPreviewFromEvent(event, {
+      cueType: dragCueType,
+      idleCursor: "copy",
+      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
+      cursorPreview: buildPoolCursorPreview(dragData),
+      enableContinuationPreview: false,
     })
-
-    if (!isInsideGrid) {
-      clearExternalDragPreview()
-      return
-    }
-
-    const isValidDropCell = isCueTypeCompatibleWithRow(
-      dragCueType,
-      yIndex,
-      presentation.screenCount
-    )
-    const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
-      xIndex,
-      yIndex,
-      dragCueType,
-      null
-    )
-
-    setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
-    setPoolDragPreviewCellIfChanged({ xIndex, yIndex, isValidDropCell })
   }
 
   const handleGridDragLeave = (event) => {
@@ -1007,7 +1019,7 @@ const EditMode = ({
       event.clientY <= gridRect.bottom
 
     if (!pointerInsideGrid) {
-      clearExternalDragPreview()
+      clearExternalPlacementPreview()
     }
   }
 
@@ -1309,7 +1321,7 @@ const EditMode = ({
 
   const handleDrop = async (event) => {
     event.preventDefault()
-    clearExternalDragPreview()
+    clearExternalPlacementPreview()
 
     if (isShowMode) {
       return
@@ -1639,29 +1651,9 @@ const EditMode = ({
                 />
               </Box>
 
-              {!isDragging && poolDragPreviewCell && (
+              {!isDragging && (
                 <Box
-                  data-testid="pool-drag-placement-preview"
-                  data-valid-drop-cell={poolDragPreviewCell.isValidDropCell ? "true" : "false"}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform={`translate3d(${poolDragPreviewCell.xIndex * (columnWidth + gap)}px, ${(poolDragPreviewCell.yIndex * (rowHeight + gap)) - dragPreviewYOffset}px, 0)`}
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px dashed"
-                  borderColor={poolDragPreviewCell.isValidDropCell ? dragPreviewValidBorder : dragPreviewInvalidBorder}
-                  bg={poolDragPreviewCell.isValidDropCell ? dragPreviewValidBg : dragPreviewInvalidBg}
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
-                  pointerEvents="none"
-                  zIndex={20}
-                />
-              )}
-
-              {!isDragging && isCopied && (
-                <Box
-                  data-testid="copy-drag-placement-preview"
+                  data-testid={isCopied ? "copy-drag-placement-preview" : "pool-drag-placement-preview"}
                   ref={externalPlacementPreviewRef}
                   data-valid-drop-cell="false"
                   position="absolute"
@@ -1680,6 +1672,64 @@ const EditMode = ({
                   display="none"
                   style={{ willChange: "transform" }}
                 />
+              )}
+
+              {!isDragging && !isCopied && (
+                <Box
+                  data-testid="pool-drag-cursor-preview"
+                  ref={externalCursorPreviewRef}
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  transform="translate3d(10px, 10px, 0)"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  borderRadius="16px"
+                  border="2px solid"
+                  borderColor={dragPreviewOriginBorder}
+                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                  overflow="hidden"
+                  pointerEvents="none"
+                  zIndex={30}
+                  opacity={0.92}
+                  display="none"
+                  style={{ willChange: "transform" }}
+                >
+                  <Box
+                    ref={externalCursorSurfaceRef}
+                    width="100%"
+                    height="100%"
+                    bg="rgba(32,32,32,0.9)"
+                  />
+                  <Box
+                    as="img"
+                    ref={externalCursorImageRef}
+                    alt=""
+                    width="100%"
+                    height="100%"
+                    objectFit="cover"
+                    display="none"
+                  />
+
+                  <Text
+                    ref={externalCursorLabelRef}
+                    position="absolute"
+                    bottom="6px"
+                    left="8px"
+                    right="8px"
+                    color="white"
+                    fontWeight="bold"
+                    bg="rgba(0, 0, 0, 0.55)"
+                    borderRadius="6px"
+                    px={2}
+                    py={1}
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                    textAlign="center"
+                    style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)", display: "none" }}
+                  />
+                </Box>
               )}
 
               {isDragging && selectedCue && (

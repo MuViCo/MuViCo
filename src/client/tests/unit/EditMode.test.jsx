@@ -597,6 +597,7 @@ describe("EditMode drag swapping", () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
     const dataTransfer = buildPoolColorDragDataTransfer()
+    const poolPreview = screen.getByTestId("pool-drag-placement-preview")
 
     const dragOverEvent = new Event("dragover", {
       bubbles: true,
@@ -617,13 +618,13 @@ describe("EditMode drag swapping", () => {
     fireEvent(gridContainer, dragOverEvent)
 
     await waitFor(() => {
-      expect(screen.getByTestId("pool-drag-placement-preview")).toBeInTheDocument()
+      expect(poolPreview).toHaveStyle({ display: "block" })
     })
 
     fireEvent(window, new Event("drop"))
 
     await waitFor(() => {
-      expect(screen.queryByTestId("pool-drag-placement-preview")).not.toBeInTheDocument()
+      expect(poolPreview).toHaveStyle({ display: "none" })
     })
   })
 
