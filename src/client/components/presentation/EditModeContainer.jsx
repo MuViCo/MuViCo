@@ -211,18 +211,16 @@ class MyFirstGrid extends React.Component {
     } = this.props
     const layouts = {
       lg: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "editWorkspace", x: 0, y: 6, w: 14, h: 10},
-        { i: "cueEditorForm", x: 14, y: 6, w: 2, h: 10 },
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 6, w: 16, h: 10 },
       ],
       md: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "editWorkspace", x: 0, y: 6, w: 13, h: 10},
-        { i: "cueEditorForm", x: 13, y: 6, w: 3, h: 10},
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 0, y: 6, w: 16, h: 10 },
         // { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
         // { i: "showModeControls", x: 0, y: 6, w: 12, h: 1, isResizable: false, resizeHandles: [] },
@@ -230,11 +228,10 @@ class MyFirstGrid extends React.Component {
         // { i: "cueEditorForm", x: 8, y: 7, w: 4, h: 14, isResizable: false, resizeHandles: [] },
       ],
       sm: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6},
-        { i: "cueEditorForm", x: 13, y: 0, w: 16, h: 9},
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6 },
         // { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
         // { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
@@ -243,11 +240,10 @@ class MyFirstGrid extends React.Component {
 
       ],
       xs: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5},
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: []},
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6},
-        { i: "cueEditorForm", x: 13, y: 0, w: 16, h: 10},
+        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
+        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6 },
         // { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
         // { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
@@ -270,7 +266,7 @@ class MyFirstGrid extends React.Component {
     // Each grid item (a, b, c) represents a different component of the editor, 
     // such as the cue list, preview area, and toolbox.
     return (
-      <div style={{ width: "100vw", minHeight: "100vh", backgroundColor: editModeBackground }}>
+      <div style={{ width: "100%", minHeight: "100vh", backgroundColor: editModeBackground }}>
         <style>{`
           .no-resize-handle .react-resizable-handle {
             display: none !important;
@@ -279,7 +275,7 @@ class MyFirstGrid extends React.Component {
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}
-          breakpoints={{ lg: 1200, md: 1200, sm: 600, xs: 600 }}
+          breakpoints={{ lg: 1200, md: 1200, sm: 700, xs: 600 }}
           cols={{ lg: 16, md: 16, sm: 16, xs: 16 }}
           rows={{ lg: 20, md: 20, sm: 20, xs: 20 }}
           isDraggable={false}
@@ -321,7 +317,7 @@ class MyFirstGrid extends React.Component {
             </Button>
           </Box>
 
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="screensPreview">
+          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} classname="screenspreview" key="screensPreview">
             <ScreensDisplay
               screenCount={screenCount}
               cues={cues}
@@ -353,38 +349,51 @@ class MyFirstGrid extends React.Component {
             />
           </div>
 
-          <div style={{ backgroundColor: panelBackground,outline: outlineColor, boxSizing: "border-box", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px", 
-            paddingBottom: "5px", borderRadius: "8px"}}  key="editWorkspace">
-            <div style={{overflow: "scroll", height:"100%", width:"100%",outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px" }}>
-              <EditMode
-                id={id}
-                cues={cues}
-                isToolboxOpen={isToolboxOpen}
-                setIsToolboxOpen={setIsToolboxOpen}
-                isShowMode={isShowMode}
-                cueIndex={cueIndex}
-                isAudioMuted={isAudioMuted}
-                toggleAudioMute={toggleAudioMute}
-                indexCount={indexCount}
-              />
+          <div style={{}} className="edit-workspace" key="editWorkspace">
+            <div style={{}}>
+              <div className="edit-mode-workspace">
+
+                <div className="edit-mode-timeline" style={{
+                  overflow: "scroll", height: "100%", width: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", flexGrow: "1"
+                }}>
+
+                  <EditMode
+                    id={id}
+                    cues={cues}
+                    isToolboxOpen={isToolboxOpen}
+                    setIsToolboxOpen={setIsToolboxOpen}
+                    isShowMode={isShowMode}
+                    cueIndex={cueIndex}
+                    isAudioMuted={isAudioMuted}
+                    toggleAudioMute={toggleAudioMute}
+                    indexCount={indexCount}
+                  />
+                </div>
+
+                <div className="edit-mode-cue-form" style={{
+                  height: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
+                  paddingBottom: "5px"
+                }}>
+
+                  {/* <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm"> */}
+                  <CuesForm
+                    className="cue-editor-form"
+                    addCue={addCue}
+                    onClose={onClose}
+                    position={position}
+                    cues={cues}
+                    cueData={cueData}
+                    updateCue={updateCue}
+                    screenCount={screenCount}
+                    isAudioMode={isAudioMode}
+                    indexCount={indexCount}
+                  />
+                  {/* </div> */}
+                </div>
+              </div>
             </div>
           </div>
 
- 
-
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm">
-            <CuesForm
-              addCue={addCue}
-              onClose={onClose}
-              position={position}
-              cues={cues}
-              cueData={cueData}
-              updateCue={updateCue}
-              screenCount={screenCount}
-              isAudioMode={isAudioMode}
-              indexCount={indexCount}
-            />
-          </div>
         </ResponsiveGridLayout>
       </div>
     )
@@ -438,6 +447,7 @@ const EditModeContainer = ({
   console.log("Rendering EditMode with cues:", id, cues, isToolboxOpen, isShowMode, cueIndex, isAudioMuted, indexCount)
 
   console.log("Fetched presentation info:", cues, presentation)
+
 
   return <>
     <MyFirstGrid
