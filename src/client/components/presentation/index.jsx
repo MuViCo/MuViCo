@@ -69,6 +69,7 @@ const PresentationPage = ({ user }) => {
     setTransitionType={setTransitionType}
     isShowMode={showMode === true}
     cueIndex={cueIndex}
+    setCueIndex={setCueIndex}
     updateCue={updateCue}
     isAudioMuted={isAudioMuted}
     toggleAudioMute={toggleAudioMute}
