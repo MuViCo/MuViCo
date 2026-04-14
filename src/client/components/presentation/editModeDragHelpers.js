@@ -11,22 +11,6 @@ export const areSpanOverrideMapsEqual = (firstMap, secondMap) => {
   return firstKeys.every((key) => Number(firstMap[key]) === Number(secondMap[key]))
 }
 
-export const arePoolDragPreviewCellsEqual = (firstCell, secondCell) => {
-  if (!firstCell && !secondCell) {
-    return true
-  }
-
-  if (!firstCell || !secondCell) {
-    return false
-  }
-
-  return (
-    Number(firstCell.xIndex) === Number(secondCell.xIndex) &&
-    Number(firstCell.yIndex) === Number(secondCell.yIndex) &&
-    Boolean(firstCell.isValidDropCell) === Boolean(secondCell.isValidDropCell)
-  )
-}
-
 export const getContinuationShrinkSpanOverrides = ({
   xIndex,
   yIndex,
