@@ -1,4 +1,4 @@
-import React, { useEffect, forwardRef, useMemo } from "react"
+import React, { useCallback, useEffect, forwardRef, useMemo, useState } from "react"
 import {
   Box,
   Button,
@@ -17,6 +17,7 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
+import Screen from "./Screen"
 import { isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
@@ -427,6 +428,82 @@ const EditModeContainer = ({
   const presentation = useSelector((state) => state.presentation)
   const screenCount = presentation?.screenCount
 
+  const [screens, setScreens] = useState({})
+  const [mirroring, setMirroring] = useState({})
+
+  const cuesByScreen = useMemo(() => {
+    return (cues || []).reduce((acc, cue) => {
+      if (!acc[cue.screen]) {
+        acc[cue.screen] = {}
+      }
+      acc[cue.screen][cue.index] = cue
+      return acc
+    }, {})
+  }, [cues])
+
+  useEffect(() => {
+    const screenNumbers = [...new Set((cues || []).map((cue) => cue.screen))]
+    const visibility = {}
+    screenNumbers.forEach((screenNumber) => {
+      visibility[screenNumber] = false
+    })
+    setScreens(visibility)
+    setMirroring({})
+  }, [cues])
+
+  const toggleScreenVisibility = (screenNumber) => {
+    setScreens((prev) => ({
+      ...prev,
+      [screenNumber]: !prev[screenNumber],
+    }))
+  }
+
+  const toggleAllScreens = () => {
+    setScreens((prev) => {
+      const updated = { ...prev }
+      const allScreenNumbers = Object.keys(updated)
+      const hasOpenScreen = allScreenNumbers.some((screenNumber) => updated[screenNumber])
+
+      allScreenNumbers.forEach((screenNumber) => {
+        updated[screenNumber] = !hasOpenScreen
+      })
+
+      return updated
+    })
+  }
+
+  const toggleScreenMirroring = (screenNumber, targetScreen) => {
+    setMirroring((prevMirroring) => {
+      const updatedMirroring = { ...prevMirroring }
+      if (targetScreen) {
+        updatedMirroring[screenNumber] = targetScreen
+      } else {
+        delete updatedMirroring[screenNumber]
+      }
+      return updatedMirroring
+    })
+  }
+
+  const getLastValidCue = (screenNumber, index) => {
+    let currentIndex = index
+
+    while (currentIndex >= 0) {
+      if (cuesByScreen[screenNumber]?.[currentIndex]) {
+        return cuesByScreen[screenNumber][currentIndex]
+      }
+      currentIndex -= 1
+    }
+
+    return {}
+  }
+
+  const handleScreenClose = useCallback((screenNumber) => {
+    setScreens((prev) => ({
+      ...prev,
+      [screenNumber]: false,
+    }))
+  }, [])
+
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
@@ -467,10 +544,32 @@ const EditModeContainer = ({
       cueData={cueData}
       updateCue={updateCue}
       isAudioMode={isAudioMode}
+      screens={screens}
+      toggleScreenVisibility={toggleScreenVisibility}
+      toggleScreenMirroring={toggleScreenMirroring}
+      toggleAllScreens={toggleAllScreens}
+      mirroring={mirroring}
       editModeBackground={editModeBackground}
       panelBackground={panelBackground}
       outlineColor={outlineColor}
     />
+
+    {Object.keys(screens).map((screenNumber) => {
+      const mirroredScreen = mirroring[screenNumber]
+      const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
+      const screenData = getLastValidCue(sourceScreen, cueIndex)
+
+      return (
+        <Screen
+          key={screenNumber}
+          screenData={screenData}
+          screenNumber={screenNumber}
+          isVisible={screens[screenNumber]}
+          onClose={handleScreenClose}
+          transitionType="fade"
+        />
+      )
+    })}
   </>
 
 
