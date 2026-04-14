@@ -32,29 +32,13 @@ const App = () => {
 
 
   useEffect(() => {
-    if (!isInitialized) {
-      const loggedUserJSON = window.localStorage.getItem("user")
-      if (loggedUserJSON) {
-        const parsedUser = JSON.parse(loggedUserJSON)
-        setUser(parsedUser)
-      }
-      setIsInitialized(true)
+    const loggedUserJSON = window.localStorage.getItem("user")
+    if (loggedUserJSON) {
+      const parsedUser = JSON.parse(loggedUserJSON)
+      setUser(parsedUser)
     }
-
-
-    if (!location.pathname.startsWith("/presentation")) {
-      if (document.querySelector(".footer")) {
-        document.querySelector(".footer").style.display = "block"
-      }
-    }
-    else {
-      if (document.querySelector(".footer")) {
-        document.querySelector(".footer").style.display = "none"
-      }
-    }
-
-
-  }, [location])
+    setIsInitialized(true)
+  }, [])
 
   if (!isInitialized) {
     return <div>Loading...</div>
@@ -65,10 +49,11 @@ const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <Fonts />
-      <Box>
+      <Box minH="100vh" display="flex" flexDirection="column">
         <MaintenanceNotice onHeightChange={setBannerHeight} />
         <NavBar user={user} setUser={setUser} topOffset={bannerHeight} />
         <Container
+          flex="1"
           pt={isPresentation || isHome || isProfile ? 36 : 30}
           maxW={isPresentation ? "none" : "container.xl"}
           pl={isPresentation ? 0 : 4}
