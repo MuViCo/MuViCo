@@ -11,6 +11,24 @@ const {
 
 const router = express.Router()
 
+router.get("/check-username", async (req, res, next) => {
+  const { username } = req.query
+
+  if (typeof username !== "string" || username.trim().length === 0) {
+    return res.status(400).json({
+      error: "username query parameter is required",
+    })
+  }
+
+  try {
+    const trimmedUsername = username.trim()
+    const existingUser = await User.findOne({ username: trimmedUsername })
+    return res.status(200).json({ available: !existingUser })
+  } catch (error) {
+    return next(error)
+  }
+})
+
 router.post("/", async (req, res, next) => {
   const { username, password } = req.body
 

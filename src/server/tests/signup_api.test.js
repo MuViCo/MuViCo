@@ -49,6 +49,26 @@ describe("creation of a new user", () => {
     expect(usernames).toContain(newUser.username)
   })
 
+  test("check-username returns available false for existing username", async () => {
+    const response = await api
+      .get("/api/signup/check-username")
+      .query({ username: "testuser" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body).toEqual({ available: false })
+  })
+
+  test("check-username returns available true for unused username", async () => {
+    const response = await api
+      .get("/api/signup/check-username")
+      .query({ username: "new_unique_user" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body).toEqual({ available: true })
+  })
+
   test("fails with status code 400 if username is not string", async () => {
     const usersAtStart = await usersInDb()
 

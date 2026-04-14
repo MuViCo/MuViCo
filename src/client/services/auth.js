@@ -17,6 +17,13 @@ const signup = async (credentials) => {
   return response.data
 }
 
+const checkUsernameAvailability = async (username) => {
+  const response = await axios.get(`${signupUrl}/check-username`, {
+    params: { username },
+  })
+  return response.data
+}
+
 const getLoggedUser = () => {
   const loggedUserJSON = window.localStorage.getItem("user")
     if (!loggedUserJSON) {
@@ -39,4 +46,10 @@ const changepassword = async (credentials) => {
   return response.data
 }
 
-export default { login, signup, changepassword, getLoggedUser }
+export default {
+  login,
+  signup,
+  changepassword,
+  getLoggedUser,
+  checkUsernameAvailability,
+}

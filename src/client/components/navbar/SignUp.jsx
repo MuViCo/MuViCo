@@ -84,6 +84,8 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const passwordagainRef = useRef(null)
   const submitButtonRef = useRef(null)
   const termsRef = useRef(null)
+  const usernameCheckTimeoutRef = useRef(null)
+  const usernameCheckRequestIdRef = useRef(0)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -97,12 +99,71 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
       delete nextErrors[name]
       return nextErrors
     })
+
+    if (name !== "username") {
+      return
+    }
+
+    if (usernameCheckTimeoutRef.current) {
+      clearTimeout(usernameCheckTimeoutRef.current)
+      usernameCheckTimeoutRef.current = null
+    }
+
+    const trimmedUsername = value.trim()
+    if (
+      trimmedUsername.length < minUsernameLength ||
+      trimmedUsername.length > maxUsernameLength ||
+      !usernameAllowedCharsRegex.test(trimmedUsername) ||
+      !usernameStartEndRegex.test(trimmedUsername) ||
+      usernameConsecutiveSpecialsRegex.test(trimmedUsername)
+    ) {
+      return
+    }
+
+    const requestId = usernameCheckRequestIdRef.current + 1
+    usernameCheckRequestIdRef.current = requestId
+
+    usernameCheckTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { available } = await authService.checkUsernameAvailability(value)
+
+        if (requestId !== usernameCheckRequestIdRef.current) {
+          return
+        }
+
+        setFormErrors((prevErrors) => {
+          const nextErrors = { ...prevErrors }
+
+          if (!available) {
+            nextErrors.username = "Username already exists"
+          } else if (nextErrors.username === "Username already exists") {
+            delete nextErrors.username
+          }
+
+          return nextErrors
+        })
+      } catch {
+        // Ignore realtime availability errors to keep typing experience smooth.
+      }
+    }, 350)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       await validationSchema.validate(formData, { abortEarly: false })
+
+      const { available } = await authService.checkUsernameAvailability(
+        formData.username
+      )
+      if (!available) {
+        setFormErrors((prevErrors) => ({
+          ...prevErrors,
+          username: "Username already exists",
+        }))
+        return
+      }
+
       setIsSubmitting(true)
       await onSubmit(formData)
     } catch (validationErrors) {
