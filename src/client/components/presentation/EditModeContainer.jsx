@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, forwardRef, useMemo, useState } from "react"
+import React, { useCallback, useEffect, forwardRef, useMemo, useRef, useState } from "react"
 import {
   Box,
   Button,
@@ -431,6 +431,7 @@ const EditModeContainer = ({
   isShowMode,
   transitionType,
   cueIndex,
+  setCueIndex,
   isAudioMuted,
   toggleAudioMute,
   indexCount,
@@ -451,6 +452,10 @@ const EditModeContainer = ({
 
   const [screens, setScreens] = useState({})
   const [mirroring, setMirroring] = useState({})
+  const [isAutoplaying, setIsAutoplaying] = useState(false)
+  const [autoplayInterval, setAutoplayInterval] = useState(5)
+  const autoplayTimerRef = useRef(null)
+  const cueIndexRef = useRef(cueIndex)
 
   const cuesByScreen = useMemo(() => {
     return (cues || []).reduce((acc, cue) => {
@@ -526,6 +531,65 @@ const EditModeContainer = ({
   }, [])
 
   useEffect(() => {
+    cueIndexRef.current = cueIndex
+  }, [cueIndex])
+
+  const toggleAutoplay = () => {
+    setIsAutoplaying((prev) => {
+      const next = !prev
+      if (next && typeof setCueIndex === "function") {
+        setCueIndex(0)
+      }
+      return next
+    })
+  }
+
+  const toggleAutoplayInterval = (valueString) => {
+    const parsed = Number(valueString)
+    if (!Number.isFinite(parsed)) {
+      return
+    }
+
+    setAutoplayInterval(Math.max(0.1, parsed))
+  }
+
+  useEffect(() => {
+    if (!isAutoplaying) {
+      if (autoplayTimerRef.current) {
+        clearInterval(autoplayTimerRef.current)
+      }
+      return
+    }
+
+    autoplayTimerRef.current = setInterval(() => {
+      const currentIndex = cueIndexRef.current
+      if (currentIndex >= indexCount - 1) {
+        setIsAutoplaying(false)
+        return
+      }
+
+      if (typeof setCueIndex === "function") {
+        setCueIndex((prevIndex) => Math.min(indexCount - 1, prevIndex + 1))
+        return
+      }
+
+      updateCue("Next")
+    }, autoplayInterval * 1000)
+
+    return () => {
+      if (autoplayTimerRef.current) {
+        clearInterval(autoplayTimerRef.current)
+      }
+    }
+  }, [isAutoplaying, autoplayInterval, indexCount, setCueIndex, updateCue])
+
+  useEffect(() => {
+    if (isAutoplaying && cueIndex >= indexCount - 1) {
+      setIsAutoplaying(false)
+    }
+  }, [cueIndex, indexCount, isAutoplaying])
+
+  useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
 
@@ -537,6 +601,9 @@ const EditModeContainer = ({
     document.body.style.backgroundImage = "none"
 
     return () => {
+      if (autoplayTimerRef.current) {
+        clearInterval(autoplayTimerRef.current)
+      }
       document.body.style.backgroundColor = previousBodyBackgroundColor
       document.body.style.backgroundImage = previousBodyBackgroundImage
     }
@@ -570,6 +637,10 @@ const EditModeContainer = ({
       toggleScreenMirroring={toggleScreenMirroring}
       toggleAllScreens={toggleAllScreens}
       mirroring={mirroring}
+      autoplayInterval={autoplayInterval}
+      toggleAutoplay={toggleAutoplay}
+      isAutoplaying={isAutoplaying}
+      toggleAutoplayInterval={toggleAutoplayInterval}
       editModeBackground={editModeBackground}
       panelBackground={panelBackground}
       outlineColor={outlineColor}
