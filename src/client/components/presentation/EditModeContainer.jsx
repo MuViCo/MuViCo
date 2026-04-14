@@ -1,4 +1,4 @@
-import React, { useEffect, forwardRef } from "react"
+import React, { useEffect, forwardRef, useMemo } from "react"
 import {
   Box,
   Button,
@@ -19,12 +19,24 @@ import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
 import { isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
+import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
 
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
 // Screens display component
-const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBackground }) => {
+const ScreensDisplay = ({
+  screenCount = 3,
+  cues = [],
+  cueIndex = 0,
+  indexCount = 0,
+  editModeBackground,
+}) => {
+  const cueVisualSpanMap = useMemo(
+    () => buildCueVisualSpanMap(cues, indexCount),
+    [cues, indexCount]
+  )
+
   const getCleanUrl = (file = {}) => {
     const url = file?.url || ""
     return String(url).split("?")[0].split("#")[0]
@@ -43,7 +55,19 @@ const ScreensDisplay = ({ screenCount = 3, cues = [], cueIndex = 0, editModeBack
   // Get the current cue for the screen
   const getCurrentCueForScreen = (screenNumber) => {
     if (!cues || cues.length === 0) return null
-    const cueForScreen = cues.find(cue => cue.screen === screenNumber && cue.index === cueIndex)
+
+    const currentIndex = Number(cueIndex)
+
+    const cueForScreen = cues
+      .filter((cue) => Number(cue.screen) === Number(screenNumber))
+      .sort((firstCue, secondCue) => Number(secondCue.index) - Number(firstCue.index))
+      .find((cue) => {
+        const cueStartIndex = Number(cue.index)
+        const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const cueEndIndex = cueStartIndex + cueSpan - 1
+        return currentIndex >= cueStartIndex && currentIndex <= cueEndIndex
+      })
+
     return cueForScreen || null
   }
 
@@ -298,7 +322,13 @@ class MyFirstGrid extends React.Component {
           </Box>
 
           <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} key="screensPreview">
-            <ScreensDisplay screenCount={screenCount} cues={cues} cueIndex={cueIndex} editModeBackground={panelBackground} />
+            <ScreensDisplay
+              screenCount={screenCount}
+              cues={cues}
+              cueIndex={cueIndex}
+              indexCount={indexCount}
+              editModeBackground={panelBackground}
+            />
 
           </div>
           <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
