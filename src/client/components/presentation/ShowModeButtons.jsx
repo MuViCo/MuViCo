@@ -79,9 +79,9 @@ const AutoplayControls = ({
     <Box display="flex" alignItems="center">
       <IconButton
         aria-label={isAutoplaying ? "Stop Autoplay" : "Start Autoplay"}
-        colorScheme={isAutoplaying ? "red" : "blue"}
         onClick={toggleAutoplay}
         p={0}
+        className={`show-mode-autoplay-btn ${isAutoplaying ? "show-mode-autoplay-btn-stop" : "show-mode-autoplay-btn-start"}`}
         icon={
           <img
             src={isAutoplaying ? pausebutton : playbutton}
@@ -148,9 +148,9 @@ const ScreenToggleButtons = ({
   return (
     <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
       <Button
-        colorScheme={hasOpenScreen ? "red" : "blue"}
         onClick={toggleAllScreens}
         size="md"
+        className={`show-mode-open-all-btn ${hasOpenScreen ? "show-mode-open-all-btn-close" : "show-mode-open-all-btn-open"}`}
       >
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
@@ -219,8 +219,8 @@ const CueNavigationPrevious = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Previous Cue"
     icon={<img src={previousbutton} alt="" width="35" height="35" aria-hidden="true" />}
+    className="show-mode-nav-btn"
     onClick={() => updateCue("Previous")}
-    colorScheme="purple"
     isDisabled={cueIndex === 0}
   />
 )
@@ -229,8 +229,8 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Next Cue"
     icon={<img src={nextbutton} alt="" width="35" height="35" aria-hidden="true" />}
+    className="show-mode-nav-btn"
     onClick={() => updateCue("Next")}
-    colorScheme="purple"
     isDisabled={cueIndex === indexCount - 1}
   />
 )
