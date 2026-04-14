@@ -32,6 +32,8 @@ const ScreensDisplay = ({
   cueIndex = 0,
   indexCount = 0,
   editModeBackground,
+  screens = {},
+  toggleScreenVisibility = () => { },
 }) => {
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
@@ -81,6 +83,14 @@ const ScreensDisplay = ({
         return (
           <div key={screenNumber} style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "black", color: "white", overflow: "hidden", position: "relative" }}>
             <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 10 }}>Screen {screenNumber}</div>
+            <Button
+              size="xs"
+              colorScheme={screens[screenNumber] ? "red" : "purple"}
+              onClick={() => toggleScreenVisibility(screenNumber)}
+              style={{ position: "absolute", top: "10px", right: "10px", zIndex: 10 }}
+            >
+              {screens[screenNumber] ? "Close" : "Open"}
+            </Button>
             {screenData ? (
               screenData?.file?.url ? (
                 isImageFile(screenData.file) ? (
@@ -325,6 +335,8 @@ class MyFirstGrid extends React.Component {
               cueIndex={cueIndex}
               indexCount={indexCount}
               editModeBackground={panelBackground}
+              screens={screens}
+              toggleScreenVisibility={toggleScreenVisibility}
             />
 
           </div>
@@ -409,6 +421,7 @@ const EditModeContainer = ({
   isToolboxOpen,
   setIsToolboxOpen,
   isShowMode,
+  transitionType,
   cueIndex,
   isAudioMuted,
   toggleAudioMute,
@@ -566,7 +579,7 @@ const EditModeContainer = ({
           screenNumber={screenNumber}
           isVisible={screens[screenNumber]}
           onClose={handleScreenClose}
-          transitionType="fade"
+          transitionType={transitionType}
         />
       )
     })}
