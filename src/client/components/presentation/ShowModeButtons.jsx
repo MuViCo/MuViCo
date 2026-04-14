@@ -155,7 +155,7 @@ const ScreenToggleButtons = ({
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
       <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
-        {allScreenNumbers
+        {/* {allScreenNumbers
           .map((screenNumber) => (
             <Box key={screenNumber}>
               <Button
@@ -182,7 +182,7 @@ const ScreenToggleButtons = ({
                 toggleScreenMirroring={toggleScreenMirroring}
               />
             </Box>
-          ))}
+          ))} */}
       </Box>
     </Box>
   )
