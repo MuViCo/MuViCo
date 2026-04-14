@@ -220,18 +220,26 @@ class MyFirstGrid extends React.Component {
       panelBackground,
       outlineColor,
     } = this.props
+
+    const safeScreenCount = Number(screenCount) || 1
+    const timelineRows = safeScreenCount + 2 // screen rows + audio row + frame header row
+    const timelineHeightPx = (timelineRows * 110) + 20 // row(100px) + gap(10px) + buffer
+    const rowStepPx = 75 // react-grid rowHeight(60) + vertical margin(15)
+    const editWorkspaceRowsWide = Math.max(10, Math.ceil(timelineHeightPx / rowStepPx))
+    const editWorkspaceRowsNarrow = editWorkspaceRowsWide + 6 // room for media pool under timeline
+
     const layouts = {
       lg: [
         { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 6, w: 16, h: 10 },
+        { i: "editWorkspace", x: 0, y: 6, w: 16, h: editWorkspaceRowsWide },
       ],
       md: [
         { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 6, w: 16, h: 10 },
+        { i: "editWorkspace", x: 0, y: 6, w: 16, h: editWorkspaceRowsWide },
         // { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
         // { i: "showModeControls", x: 0, y: 6, w: 12, h: 1, isResizable: false, resizeHandles: [] },
@@ -242,7 +250,7 @@ class MyFirstGrid extends React.Component {
         { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6 },
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: editWorkspaceRowsNarrow },
         // { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
         // { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
@@ -254,7 +262,7 @@ class MyFirstGrid extends React.Component {
         { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
         { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
         { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: 6 },
+        { i: "editWorkspace", x: 7, y: 0, w: 16, h: editWorkspaceRowsNarrow },
         // { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
         // { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
         // { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
@@ -292,7 +300,7 @@ class MyFirstGrid extends React.Component {
           isDraggable={false}
           isResizable={true}
           resizeHandles={["s"]}
-          autoSize={false}
+          autoSize={true}
           rowHeight={60}
           margin={[15, 15]}
           containerPadding={[80, 8]}
