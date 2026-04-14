@@ -44,6 +44,25 @@ import mediaStore from "./mediaFileStore"
 
 const theme = extendTheme({})
 
+const transparentDragImage = (() => {
+  if (typeof document === "undefined") {
+    return null
+  }
+
+  const canvas = document.createElement("canvas")
+  canvas.width = 1
+  canvas.height = 1
+  return canvas
+})()
+
+const suppressNativeDragGhost = (dataTransfer) => {
+  if (!dataTransfer?.setDragImage || !transparentDragImage) {
+    return
+  }
+
+  dataTransfer.setDragImage(transparentDragImage, 0, 0)
+}
+
 
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState(isAudioMode ? "" : "")
@@ -442,6 +461,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     className="droppable-color-element"
                     draggable={true}
                     onDragStart={(e) => {
+                      suppressNativeDragGhost(e.dataTransfer)
                       const normalizedCueName = cueName.trim()
 
                       e.dataTransfer.setData("application/json", JSON.stringify({
@@ -521,6 +541,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             key={media.id}
                             draggable={true}
                             onDragStart={(e) => {
+                              suppressNativeDragGhost(e.dataTransfer)
                               // Store the file in mediaStore so it can be retrieved on drop
                               mediaStore.addFile(media.id, media.file)
                               
@@ -529,6 +550,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                                 cueName: media.name,
                                 elementType: "media",
                                 mediaId: media.id,
+                                mimeType: media.type,
+                                previewUrl: media.preview,
                               }))
                             }}
                             position="relative"
@@ -620,6 +643,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             key={sound.id}
                             draggable={true}
                             onDragStart={(e) => {
+                              suppressNativeDragGhost(e.dataTransfer)
                               // Store the file in mediaStore so it can be retrieved on drop
                               mediaStore.addFile(sound.id, sound.file)
                               
@@ -628,6 +652,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                                 cueName: sound.name,
                                 elementType: "sound",
                                 soundId: sound.id,
+                                mimeType: sound.type,
                               }))
                             }}
                             display="flex"

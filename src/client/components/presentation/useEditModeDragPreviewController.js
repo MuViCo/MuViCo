@@ -71,6 +71,15 @@ const useEditModeDragPreviewController = ({
   const dragPlacementLockedToAnchorRef = useRef(false)
   const dragPreviewYOffset = Math.max(rowHeight - (headerRowHeight ?? rowHeight), 0)
   const externalPlacementPreviewRef = useRef(null)
+  const externalCursorPreviewRef = useRef(null)
+  const externalCursorSurfaceRef = useRef(null)
+  const externalCursorImageRef = useRef(null)
+  const externalCursorLabelRef = useRef(null)
+  const externalCursorContentRef = useRef({
+    name: "",
+    imageUrl: "",
+    color: "rgba(32,32,32,0.9)",
+  })
   const externalLatestPreviewInputRef = useRef(null)
   const externalPreviewFrameRef = useRef(null)
   const externalPreviewCellRef = useRef(null)
@@ -137,6 +146,32 @@ const useEditModeDragPreviewController = ({
   const hideExternalPlacementPreview = () => {
     if (externalPlacementPreviewRef.current) {
       externalPlacementPreviewRef.current.style.display = "none"
+    }
+  }
+
+  const hideExternalCursorPreview = () => {
+    if (externalCursorPreviewRef.current) {
+      externalCursorPreviewRef.current.style.display = "none"
+    }
+
+    if (externalCursorLabelRef.current) {
+      externalCursorLabelRef.current.style.display = "none"
+      externalCursorLabelRef.current.textContent = ""
+    }
+
+    if (externalCursorImageRef.current) {
+      externalCursorImageRef.current.style.display = "none"
+      externalCursorImageRef.current.removeAttribute("src")
+    }
+
+    if (externalCursorSurfaceRef.current) {
+      externalCursorSurfaceRef.current.style.display = "block"
+    }
+
+    externalCursorContentRef.current = {
+      name: "",
+      imageUrl: "",
+      color: "rgba(32,32,32,0.9)",
     }
   }
 
@@ -297,6 +332,7 @@ const useEditModeDragPreviewController = ({
     externalLatestPreviewInputRef.current = null
     updateExternalPreviewCell(null)
     hideExternalPlacementPreview()
+    hideExternalCursorPreview()
     clearExternalDragPreview()
   }, [clearExternalDragPreview])
 
@@ -336,22 +372,70 @@ const useEditModeDragPreviewController = ({
       return
     }
 
+    if (externalCursorPreviewRef.current) {
+      if (input.cursorPreview) {
+        externalCursorPreviewRef.current.style.display = "block"
+        externalCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
+
+        const previewName = (input.cursorPreview.name || "").trim()
+        const previewImageUrl = input.cursorPreview.imageUrl || ""
+        const previewColor = input.cursorPreview.color || "rgba(32,32,32,0.9)"
+        const previousCursorContent = externalCursorContentRef.current
+
+        if (
+          previousCursorContent.name !== previewName ||
+          previousCursorContent.imageUrl !== previewImageUrl ||
+          previousCursorContent.color !== previewColor
+        ) {
+          if (externalCursorLabelRef.current) {
+            externalCursorLabelRef.current.textContent = previewName
+            externalCursorLabelRef.current.style.display = previewName ? "block" : "none"
+          }
+
+          if (externalCursorImageRef.current && externalCursorSurfaceRef.current) {
+            if (previewImageUrl) {
+              externalCursorImageRef.current.src = previewImageUrl
+              externalCursorImageRef.current.style.display = "block"
+              externalCursorSurfaceRef.current.style.display = "none"
+            } else {
+              externalCursorImageRef.current.style.display = "none"
+              externalCursorImageRef.current.removeAttribute("src")
+              externalCursorSurfaceRef.current.style.display = "block"
+              externalCursorSurfaceRef.current.style.background = previewColor
+            }
+          }
+
+          externalCursorContentRef.current = {
+            name: previewName,
+            imageUrl: previewImageUrl,
+            color: previewColor,
+          }
+        }
+      } else {
+        hideExternalCursorPreview()
+      }
+    }
+
     const isValidDropCell =
       isCueTypeCompatibleWithRow(input.cueType, yIndex, screenCount) &&
       !input.isBlockedCell?.(xIndex, yIndex)
-
-    const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
-      xIndex,
-      yIndex,
-      input.cueType,
-      input.draggedCueId || null
-    )
-    setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
     setDragCursorMode(isValidDropCell ? idleCursor : "not-allowed")
 
     const didCellChange = updateExternalPreviewCell({ xIndex, yIndex, isValidDropCell })
     if (!didCellChange) {
       return
+    }
+
+    if (input.enableContinuationPreview === false) {
+      setExternalDragSpanOverridesIfChanged({})
+    } else {
+      const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
+        xIndex,
+        yIndex,
+        input.cueType,
+        input.draggedCueId || null
+      )
+      setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
     }
 
     applyPlacementPreviewStyles({
@@ -395,6 +479,8 @@ const useEditModeDragPreviewController = ({
       idleCursor: options.idleCursor || "copy",
       isHeaderCell: Boolean(options.isHeaderCell),
       isBlockedCell: options.isBlockedCell,
+      cursorPreview: options.cursorPreview || null,
+      enableContinuationPreview: options.enableContinuationPreview !== false,
     }
 
     if (externalPreviewFrameRef.current) {
@@ -432,6 +518,10 @@ const useEditModeDragPreviewController = ({
     dragCursorPreviewRef,
     dragPlacementPreviewRef,
     externalPlacementPreviewRef,
+    externalCursorPreviewRef,
+    externalCursorSurfaceRef,
+    externalCursorImageRef,
+    externalCursorLabelRef,
     hideHoverPreview,
     showHoverPreview,
     updateDragPreviewCell,
