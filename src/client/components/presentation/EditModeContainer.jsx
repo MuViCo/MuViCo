@@ -380,9 +380,9 @@ const EditModeContainer = ({
   updateCue,
   isAudioMode,
 }) => {
-  const editModeBackground = useColorModeValue("#a081b1", "#120d14")
-  const panelBackground = useColorModeValue("#e2c4ee", "#312238")
-  const outlineColor = useColorModeValue("2px solid #8f6ca1", "2px solid #572b6e")
+  const editModeBackground = useColorModeValue("#ffffff", "#120d14")
+  const panelBackground = useColorModeValue("#eedef7", "#312238")
+  const outlineColor = useColorModeValue("2px solid #572b6e", "2px solid #572b6e")
 
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)

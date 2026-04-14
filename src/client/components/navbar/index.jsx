@@ -38,6 +38,16 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
 
   const { colorMode } = useColorMode()
 
+  const navBackground = colorMode === "light"
+    ? "rgba(255, 255, 255, 0.96)"
+    : isPresentationPage
+      ? "rgba(3, 0, 0, 0.8)"
+      : "rgba(23, 25, 35, 0.82)"
+
+  const navBorderBottom = colorMode === "light"
+    ? "1px solid rgba(0, 0, 0, 0.08)"
+    : "1px solid rgba(255, 255, 255, 0.08)"
+
   const pulse = colorMode === "dark"
   ? keyframes`
     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
@@ -108,6 +118,7 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
         position="fixed"
         as="nav"
         w="100%"
+        borderBottom={navBorderBottom}
         style={{
           backdropFilter: isPresentationPage ? "none" : "blur(10px)",
           zIndex: 1000,
@@ -121,7 +132,7 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
           wrap="wrap"
           align="center"
           justify="space-between"
-          background={isPresentationPage ? "rgba(3, 0, 0, 0.8)" : "transparent"}
+          background={navBackground}
         >
 
             <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>

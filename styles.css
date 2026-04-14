@@ -1,7 +1,7 @@
 /* Use !important so Chakra Button defaults do not override these Edit Mode button styles. */
 
 .edit-mode-btn {
-	background-color: #805ad5 !important;
+	background-color: #BD5BFF !important;
 	color: #ffffff !important;
 	border: 0 !important;
 	border-radius: 0.375rem !important;
@@ -12,7 +12,7 @@
 
 .edit-mode-btn:hover,
 .edit-mode-btn[data-hover] {
-	background-color: #6b46c1 !important;
+	background-color: #8941b9 !important;
 }
 
 .edit-mode-btn:active,
@@ -30,4 +30,97 @@
 
 .edit-mode-btn-tutorial {
 	margin-left: auto !important;
+}
+
+.show-mode-nav-btn {
+	background-color: #BD5BFF !important;
+	color: #ffffff !important;
+	border: 0 !important;
+	border-radius: 0.375rem !important;
+	width: 2.75rem !important;
+	height: 2.75rem !important;
+	min-width: 2.75rem !important;
+	padding: 0 !important;
+	transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.show-mode-nav-btn:hover,
+.show-mode-nav-btn[data-hover] {
+	background-color: #8941b9 !important;
+	transform: translateY(-1px) !important;
+}
+
+.show-mode-nav-btn:active,
+.show-mode-nav-btn[data-active] {
+	background-color: #553c9a !important;
+	transform: translateY(0) !important;
+}
+
+.show-mode-nav-btn:focus-visible {
+	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
+}
+
+.show-mode-autoplay-btn,
+.show-mode-open-all-btn {
+	border: 0 !important;
+	border-radius: 0.375rem !important;
+	font-weight: 600 !important;
+	height: 2.75rem !important;
+	color: #ffffff !important;
+	transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.show-mode-autoplay-btn {
+	min-width: 2.75rem !important;
+	min-height: 2.75rem !important;
+	padding: 0 !important;
+}
+
+.show-mode-autoplay-btn-start,
+.show-mode-open-all-btn-open {
+	background-color: #BD5BFF !important;
+	color: #ffffff !important;
+}
+
+.show-mode-autoplay-btn-stop,
+.show-mode-open-all-btn-close {
+	background-color: #e53e3e !important;
+	color: #ffffff !important;
+}
+
+.show-mode-autoplay-btn-start:hover,
+.show-mode-autoplay-btn-start[data-hover],
+.show-mode-open-all-btn-open:hover,
+.show-mode-open-all-btn-open[data-hover] {
+	background-color: #8941b9 !important;
+	transform: translateY(-1px) !important;
+}
+
+.show-mode-autoplay-btn-stop:hover,
+.show-mode-autoplay-btn-stop[data-hover],
+.show-mode-open-all-btn-close:hover,
+.show-mode-open-all-btn-close[data-hover] {
+	background-color: #c53030 !important;
+	transform: translateY(-1px) !important;
+}
+
+.show-mode-autoplay-btn-start:active,
+.show-mode-autoplay-btn-start[data-active],
+.show-mode-open-all-btn-open:active,
+.show-mode-open-all-btn-open[data-active] {
+	background-color: #553c9a !important;
+	transform: translateY(0) !important;
+}
+
+.show-mode-autoplay-btn-stop:active,
+.show-mode-autoplay-btn-stop[data-active],
+.show-mode-open-all-btn-close:active,
+.show-mode-open-all-btn-close[data-active] {
+	background-color: #9b2c2c !important;
+	transform: translateY(0) !important;
+}
+
+.show-mode-autoplay-btn:focus-visible,
+.show-mode-open-all-btn:focus-visible {
+	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
