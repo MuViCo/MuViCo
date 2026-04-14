@@ -377,7 +377,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   // It also includes front end validation for file types and displays error messages when necessary. 
   // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
   return (
-    <ChakraProvider theme={theme}>
+    <div className="cue-editor-form">
+
+    <ChakraProvider theme={theme} >
 
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
@@ -666,6 +668,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         </FormControl>
       </form>
     </ChakraProvider>
+    </div>
+
   )
 }
 

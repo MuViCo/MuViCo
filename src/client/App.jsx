@@ -30,18 +30,37 @@ const App = () => {
   const isHome = location.pathname.startsWith("/home")
   const isProfile = location.pathname.startsWith("/profile")
 
+
   useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("user")
-    if (loggedUserJSON) {
-      const parsedUser = JSON.parse(loggedUserJSON)
-      setUser(parsedUser)
+    if (!isInitialized) {
+      const loggedUserJSON = window.localStorage.getItem("user")
+      if (loggedUserJSON) {
+        const parsedUser = JSON.parse(loggedUserJSON)
+        setUser(parsedUser)
+      }
+      setIsInitialized(true)
     }
-    setIsInitialized(true)
-  }, [])
+
+
+    if (!location.pathname.startsWith("/presentation")) {
+      if (document.querySelector(".footer")) {
+        document.querySelector(".footer").style.display = "block"
+      }
+    }
+    else {
+      if (document.querySelector(".footer")) {
+        document.querySelector(".footer").style.display = "none"
+      }
+    }
+
+
+  }, [location])
 
   if (!isInitialized) {
     return <div>Loading...</div>
   }
+
+
 
   return (
     <ChakraProvider theme={theme}>
@@ -52,8 +71,10 @@ const App = () => {
         <Container
           pt={isPresentation || isHome || isProfile ? 36 : 30}
           maxW={isPresentation ? "none" : "container.xl"}
+          pl={isPresentation ? 0 : 4}
+          pr={isPresentation ? 0 : 4}
         >
-          <Routes>
+          <Routes >
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"

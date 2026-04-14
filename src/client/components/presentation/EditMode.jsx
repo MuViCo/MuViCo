@@ -1809,7 +1809,7 @@ const EditMode = ({
           alignItems="center"
           zIndex={1}
         >
-          <StatusTooltip status={status} />
+          {/* <StatusTooltip status={status}/> */}
         </Box>
         <Dialog
           isOpen={isConfirmOpen}

@@ -58,6 +58,7 @@ const PresentationPage = ({ user }) => {
   }
 
   return <EditModeContainer
+    className="presentation-page"
     id={id}
     cues={presentationInfo}
     isToolboxOpen={isToolboxOpen}
