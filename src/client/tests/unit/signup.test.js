@@ -4,8 +4,20 @@ import "@testing-library/jest-dom"
 import userEvent from "@testing-library/user-event"
 
 import { SignUpForm } from "../../components/navbar/SignUp"
+import authService from "../../services/auth"
 import { describe } from "node:test"
 import { minPwLength } from "../../../constants"
+
+jest.mock("../../services/auth", () => ({
+  __esModule: true,
+  default: {
+    checkUsernameAvailability: jest.fn(),
+  },
+}))
+
+beforeEach(() => {
+  authService.checkUsernameAvailability.mockResolvedValue({ available: true })
+})
 
 describe("SignUp", () => {
   test("renders content", () => {
