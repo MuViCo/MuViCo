@@ -18,6 +18,8 @@ import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
 import Screen from "./Screen"
+import TutorialGuide from "../tutorial/TutorialGuide"
+import { presentationTutorialSteps } from "../data/tutorialSteps"
 import { isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
@@ -216,6 +218,7 @@ class MyFirstGrid extends React.Component {
       toggleAutoplay = () => { },
       isAutoplaying = false,
       toggleAutoplayInterval = () => { },
+      onOpenTutorial = () => { },
       editModeBackground,
       panelBackground,
       outlineColor,
@@ -331,7 +334,10 @@ class MyFirstGrid extends React.Component {
             <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
               EDIT MODE
             </Box>
-            <Button className="edit-mode-btn edit-mode-btn-tutorial">
+            <Button
+              className="edit-mode-btn edit-mode-btn-tutorial"
+              onClick={onOpenTutorial}
+            >
               Tutorial
             </Button>
           </Box>
@@ -454,6 +460,7 @@ const EditModeContainer = ({
   const [mirroring, setMirroring] = useState({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false)
   const autoplayTimerRef = useRef(null)
   const cueIndexRef = useRef(cueIndex)
 
@@ -553,6 +560,16 @@ const EditModeContainer = ({
     setAutoplayInterval(Math.max(0.1, parsed))
   }
 
+  const handleOpenTutorial = useCallback(() => {
+    const helpButton = document.querySelector(".help-button")
+    if (helpButton && typeof helpButton.click === "function") {
+      helpButton.click()
+      return
+    }
+
+    setIsTutorialOpen(true)
+  }, [])
+
   useEffect(() => {
     if (!isAutoplaying) {
       if (autoplayTimerRef.current) {
@@ -592,6 +609,13 @@ const EditModeContainer = ({
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem("hasSeenHelp_presentation")
+    if (!hasSeenTutorial) {
+      setIsTutorialOpen(true)
+    }
+  }, [])
 
   useEffect(() => {
     const previousBodyBackgroundColor = document.body.style.backgroundColor
@@ -641,9 +665,17 @@ const EditModeContainer = ({
       toggleAutoplay={toggleAutoplay}
       isAutoplaying={isAutoplaying}
       toggleAutoplayInterval={toggleAutoplayInterval}
+      onOpenTutorial={handleOpenTutorial}
       editModeBackground={editModeBackground}
       panelBackground={panelBackground}
       outlineColor={outlineColor}
+    />
+
+    <TutorialGuide
+      steps={presentationTutorialSteps}
+      isOpen={isTutorialOpen}
+      onClose={() => setIsTutorialOpen(false)}
+      storageKey={"hasSeenHelp_presentation"}
     />
 
     {Object.keys(screens).map((screenNumber) => {
