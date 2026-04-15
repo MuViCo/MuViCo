@@ -53,7 +53,8 @@ jobs:
       - name: Run E2E tests
         run: npm run e2e-headless
         env:
-          CI: true
+          PORT: 8000
+          VITE_DEV_PORT: 3000
           TEST_MONGODB_URI: "mongodb://localhost/test"
           PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
           BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
