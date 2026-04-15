@@ -16,3 +16,17 @@ test("signup api call works", async () => {
 
   expect(axios.post).toHaveBeenCalledWith("/api/signup", credentials)
 })
+
+test("check username availability api call works", async () => {
+  const payload = { data: { available: true } }
+
+  axios.get.mockResolvedValue(payload)
+
+  await expect(authService.checkUsernameAvailability("test_user")).resolves.toEqual({
+    available: true,
+  })
+
+  expect(axios.get).toHaveBeenCalledWith("/api/signup/check-username", {
+    params: { username: "test_user" },
+  })
+})

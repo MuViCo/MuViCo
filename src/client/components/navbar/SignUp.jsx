@@ -16,6 +16,16 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
 import authService from "../../services/auth"
+import {
+  minPwLength,
+  maxPwLength,
+  minUsernameLength,
+  maxUsernameLength,
+  invalidPwCharRegex,
+  usernameAllowedCharsRegex,
+  usernameStartEndRegex,
+  usernameConsecutiveSpecialsRegex,
+} from "../../../constants"
 
 const initialValues = {
   username: "",
@@ -26,12 +36,38 @@ const initialValues = {
 const validationSchema = yup.object().shape({
   username: yup
     .string()
+    .trim()
     .required("Username is required")
-    .min(3, "Username must be at least 3 characters"),
+    .min(minUsernameLength, `Username must be at least ${minUsernameLength} characters`)
+    .max(maxUsernameLength, `Username can be at most ${maxUsernameLength} characters`)
+    .matches(
+      usernameAllowedCharsRegex,
+      "Username can only contain letters, numbers, dots, underscores, and hyphens"
+    )
+    .matches(
+      usernameStartEndRegex,
+      "Username must start and end with a letter or number"
+    )
+    .test(
+      "username-no-consecutive-specials",
+      "Username cannot contain consecutive special characters",
+      (value) => !value || !usernameConsecutiveSpecialsRegex.test(value)
+    ),
   password: yup
     .string()
     .required("Password is required")
-    .min(3, "Password must be at least 3 characters"),
+    .min(minPwLength, `Password must be at least ${minPwLength} characters`)
+    .max(maxPwLength, `Password must be at most ${maxPwLength} characters`)
+    .test(
+      "password-not-whitespace-only",
+      "Password cannot contain only spaces",
+      (value) => !value || value.trim().length > 0
+    )
+    .test(
+      "allowed-password-characters",
+      "Password contains unsupported characters",
+      (value) => !value || !invalidPwCharRegex.test(value)
+    ),
   password_confirmation: yup
     .string()
     .oneOf([yup.ref("password"), null], "Passwords must match")
@@ -42,28 +78,104 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   const [formData, setFormData] = useState(initialValues)
   const [formErrors, setFormErrors] = useState({})
   const [showPasswords, setShowPasswords] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const usernameRef = useRef(null)
   const passwordRef = useRef(null)
   const passwordagainRef = useRef(null)
   const submitButtonRef = useRef(null)
   const termsRef = useRef(null)
+  const usernameCheckTimeoutRef = useRef(null)
+  const usernameCheckRequestIdRef = useRef(0)
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
+    setFormErrors((prevErrors) => {
+      if (!prevErrors[name]) {
+        return prevErrors
+      }
+
+      const nextErrors = { ...prevErrors }
+      delete nextErrors[name]
+      return nextErrors
+    })
+
+    if (name !== "username") {
+      return
+    }
+
+    if (usernameCheckTimeoutRef.current) {
+      clearTimeout(usernameCheckTimeoutRef.current)
+      usernameCheckTimeoutRef.current = null
+    }
+
+    const trimmedUsername = value.trim()
+    if (
+      trimmedUsername.length < minUsernameLength ||
+      trimmedUsername.length > maxUsernameLength ||
+      !usernameAllowedCharsRegex.test(trimmedUsername) ||
+      !usernameStartEndRegex.test(trimmedUsername) ||
+      usernameConsecutiveSpecialsRegex.test(trimmedUsername)
+    ) {
+      return
+    }
+
+    const requestId = usernameCheckRequestIdRef.current + 1
+    usernameCheckRequestIdRef.current = requestId
+
+    usernameCheckTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { available } = await authService.checkUsernameAvailability(value)
+
+        if (requestId !== usernameCheckRequestIdRef.current) {
+          return
+        }
+
+        setFormErrors((prevErrors) => {
+          const nextErrors = { ...prevErrors }
+
+          if (!available) {
+            nextErrors.username = "Username already exists"
+          } else if (nextErrors.username === "Username already exists") {
+            delete nextErrors.username
+          }
+
+          return nextErrors
+        })
+      } catch {
+        // Ignore realtime availability errors to keep typing experience smooth.
+      }
+    }, 350)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       await validationSchema.validate(formData, { abortEarly: false })
+
+      const { available } = await authService.checkUsernameAvailability(
+        formData.username
+      )
+      if (!available) {
+        setFormErrors((prevErrors) => ({
+          ...prevErrors,
+          username: "Username already exists",
+        }))
+        return
+      }
+
+      setIsSubmitting(true)
       await onSubmit(formData)
     } catch (validationErrors) {
-      const errors = {}
-      validationErrors.inner.forEach((validationError) => {
-        errors[validationError.path] = validationError.message
-      })
-      setFormErrors(errors)
+      if (validationErrors?.name === "ValidationError") {
+        const errors = {}
+        validationErrors.inner.forEach((validationError) => {
+          errors[validationError.path] = validationError.message
+        })
+        setFormErrors(errors)
+      }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -199,6 +311,9 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
             data-testid="signup_inform"
             colorScheme="purple"
             type="submit"
+            isLoading={isSubmitting}
+            loadingText="Signing up"
+            isDisabled={isSubmitting}
             ref={submitButtonRef}
             onKeyDown={handleKeyDown}
             mt={3}
@@ -221,10 +336,8 @@ const SignUp = ({ onSignup }) => {
   const onSubmit = async ({ username, password }) => {
     try {
       await authService.signup({ username, password })
-      const user = await authService.login({ username, password })
-      const userJSON = JSON.stringify(user)
-      window.localStorage.setItem("user", userJSON)
-      onSignup(userJSON)
+      const loggedInUser = await authService.login({ username, password })
+      onSignup(loggedInUser)
     } catch (e) {
       setError(e.response.data.error)
     }

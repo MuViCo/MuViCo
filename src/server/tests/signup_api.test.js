@@ -1,7 +1,12 @@
 const mongoose = require("mongoose")
 const supertest = require("supertest")
 const app = require("../app")
-const { minPwLength, maxPwLength } = require("../../constants.js")
+const {
+  minPwLength,
+  maxPwLength,
+  minUsernameLength,
+  maxUsernameLength,
+} = require("../../constants.js")
 
 const api = supertest(app)
 const Presentation = require("../models/presentation")
@@ -44,6 +49,26 @@ describe("creation of a new user", () => {
     expect(usernames).toContain(newUser.username)
   })
 
+  test("check-username returns available false for existing username", async () => {
+    const response = await api
+      .get("/api/signup/check-username")
+      .query({ username: "testuser" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body).toEqual({ available: false })
+  })
+
+  test("check-username returns available true for unused username", async () => {
+    const response = await api
+      .get("/api/signup/check-username")
+      .query({ username: "new_unique_user" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body).toEqual({ available: true })
+  })
+
   test("fails with status code 400 if username is not string", async () => {
     const usersAtStart = await usersInDb()
 
@@ -73,10 +98,10 @@ describe("creation of a new user", () => {
     const result = await api
       .post("/api/signup")
       .send(newUser)
-      .expect(401)
+      .expect(400)
       .expect("Content-Type", /application\/json/)
 
-    expect(result.body.error).toContain("Username already exists")
+    expect(result.body.error).toContain("expected `username` to be unique")
 
     const usersAtEnd = await usersInDb()
     expect(usersAtEnd).toHaveLength(usersAtStart.length)
@@ -126,20 +151,122 @@ describe("creation of a new user", () => {
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain(
-      "username must be at least 3 characters long"
+      `username must be at least ${minUsernameLength} characters`
     )
   })
 
   test("fails if password is only whitespace", async () => {
     const invalidUser = {
       username: "validuser",
-      password: "   ",
+      password: "        ",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain("password cannot contain only spaces")
+  })
+
+  test("fails if password is shorter than minimum length", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "a".repeat(minPwLength - 1),
     }
 
     const result = await api.post("/api/signup").send(invalidUser).expect(400)
 
     expect(result.body.error).toContain(
-      `password must be between ${minPwLength} and ${maxPwLength} bytes long`
+      `password must be at least ${minPwLength} characters`
+    )
+  })
+
+  test("fails if username has unsupported characters", async () => {
+    const invalidUser = {
+      username: "test@user",
+      password: "validpassword",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      "username can only contain letters, numbers, dots, underscores, and hyphens"
+    )
+  })
+
+  test("fails if username starts with special character", async () => {
+    const invalidUser = {
+      username: ".testuser",
+      password: "validpassword",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      "username must start and end with a letter or number"
+    )
+  })
+
+  test("fails if username has consecutive special characters", async () => {
+    const invalidUser = {
+      username: "test..user",
+      password: "validpassword",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      "username cannot contain consecutive special characters"
+    )
+  })
+
+  test("fails if username exceeds maximum length", async () => {
+    const invalidUser = {
+      username: "a".repeat(maxUsernameLength + 1),
+      password: "validpassword",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      `username can be at most ${maxUsernameLength} characters`
+    )
+  })
+
+  test("fails if password is below minimum length", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "a".repeat(minPwLength - 1),
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      `password must be at least ${minPwLength} characters`
+    )
+  })
+
+  test("fails if password exceeds maximum length", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "a".repeat(maxPwLength + 1),
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      `password must be at most ${maxPwLength} characters`
+    )
+  })
+
+  test("fails if password contains unsupported characters", async () => {
+    const invalidUser = {
+      username: "validuser",
+      password: "validpass😀",
+    }
+
+    const result = await api.post("/api/signup").send(invalidUser).expect(400)
+
+    expect(result.body.error).toContain(
+      "password contains unsupported characters"
     )
   })
 

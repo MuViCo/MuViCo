@@ -1,11 +1,35 @@
 const express = require("express")
 const { validatePassword, generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
-const { minPwLength, maxPwLength } = require("../../constants.js")
+const {
+  minUsernameLength,
+  maxUsernameLength,
+  usernameAllowedCharsRegex,
+  usernameStartEndRegex,
+  usernameConsecutiveSpecialsRegex,
+} = require("../../constants.js")
 
 const router = express.Router()
 
-router.post("/", async (req, res) => {
+router.get("/check-username", async (req, res, next) => {
+  const { username } = req.query
+
+  if (typeof username !== "string" || username.trim().length === 0) {
+    return res.status(400).json({
+      error: "username query parameter is required",
+    })
+  }
+
+  try {
+    const trimmedUsername = username.trim()
+    const existingUser = await User.findOne({ username: trimmedUsername })
+    return res.status(200).json({ available: !existingUser })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+router.post("/", async (req, res, next) => {
   const { username, password } = req.body
 
   if (!username || !password) {
@@ -19,23 +43,46 @@ router.post("/", async (req, res) => {
       error: "username and password must be strings",
     })
   }
+  
 
   const trimmedUsername = username.trim()
-  if (trimmedUsername.length < 3) {
+
+    if (trimmedUsername.length < minUsernameLength) {
+    return res.status(400).json({
+      error: `username must be at least ${minUsernameLength} characters`,
+    })
+  }
+
+  if (trimmedUsername.length > maxUsernameLength) {
+    return res.status(400).json({
+      error: `username can be at most ${maxUsernameLength} characters`,
+    })
+  }
+
+  if (!usernameAllowedCharsRegex.test(trimmedUsername)) {
     return res.status(400).json({
       error:
-        "username must be at least 3 characters long and not just whitespace",
+        "username can only contain letters, numbers, dots, underscores, and hyphens",
     })
   }
 
-  if (!validatePassword(password)) {
+  if (!usernameStartEndRegex.test(trimmedUsername)) {
     return res.status(400).json({
-      error: `password must be between ${minPwLength} and ${maxPwLength} bytes long`,
+      error: "username must start and end with a letter or number",
     })
   }
 
-  const passwordHash = await generateHash(password)
+  if (usernameConsecutiveSpecialsRegex.test(trimmedUsername)) {
+    return res.status(400).json({
+      error: "username cannot contain consecutive special characters",
+    })
+  }
+
   try {
+    validatePassword(password)
+    
+    const passwordHash = await generateHash(password)
+
     const user = new User({
       username: trimmedUsername,
       passwordHash,
@@ -44,8 +91,8 @@ router.post("/", async (req, res) => {
     const savedUser = await user.save({})
 
     return res.status(201).json(savedUser)
-  } catch {
-    return res.status(401).json({ error: "Username already exists" })
+  } catch (error) {
+    return next(error)
   }
 })
 
