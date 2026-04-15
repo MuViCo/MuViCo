@@ -12,7 +12,6 @@ import {
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
-import { Responsive, WidthProvider } from "react-grid-layout"
 import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
@@ -23,9 +22,9 @@ import { presentationTutorialSteps } from "../data/tutorialSteps"
 import { isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
+import makeResizable from "../utils/ResizeElement"
 
 
-const ResponsiveGridLayout = WidthProvider(Responsive)
 
 // Screens display component
 const ScreensDisplay = ({
@@ -142,290 +141,188 @@ const ScreensDisplay = ({
   )
 }
 
-// Custom resize handle component for the bottom edge (South) of the layout items.
-const VSCodeVerticalHandle = forwardRef((props, ref) => {
-  const { handleAxis, ...restProps } = props
 
-  // Only render for the "South" (bottom) axis
-  if (handleAxis !== "s") return null
 
+
+// Base component for different subcomponents of the editor
+function EditorLayout(props) {
+  const {
+    id,
+    screenCount,
+    cues,
+    isToolboxOpen,
+    setIsToolboxOpen,
+    isShowMode,
+    cueIndex,
+    isAudioMuted,
+    toggleAudioMute,
+    indexCount,
+    addCue = () => { },
+    onClose = () => { },
+    position,
+    cueData,
+    updateCue = () => { },
+    isAudioMode = false,
+    screens = {},
+    toggleScreenVisibility = () => { },
+    toggleScreenMirroring = () => { },
+    toggleAllScreens = () => { },
+    mirroring = {},
+    autoplayInterval = 1,
+    toggleAutoplay = () => { },
+    isAutoplaying = false,
+    toggleAutoplayInterval = () => { },
+    onOpenTutorial = () => { },
+    editModeBackground,
+    panelBackground,
+    outlineColor,
+  } = props
+
+
+  useEffect(() => {
+    const screen_preview_element = document.querySelector("#screen_preview")
+    const resize_handle_element = document.querySelector("#screen_resize_handle")
+
+    makeResizable(screen_preview_element, resize_handle_element) // Using the entire container as the handle for resizing
+
+    const timeline_element = document.querySelector("#timeline")
+    const timeline_resize_handle_element = document.querySelector("#timeline_resize_handle")
+
+    makeResizable(timeline_element, timeline_resize_handle_element) // Using the entire container as the handle for resizing
+  }, [])
+
+
+  // Formatting the grid layout for the editor, using react-grid-layout. 
+  // The layout is responsive and changes based on the screen size. 
+  // Each grid item (a, b, c) represents a different component of the editor, 
+  // such as the cue list, preview area, and toolbox.
   return (
-    <div
-      ref={ref}
-      className="custom-bottom-handle"
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: "0px", // Centers the hit area on the bottom edge
-        height: "16px",  // The "Hit Area"
-        cursor: "ns-resize", // North-South resize cursor
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        transition: "background 0.2s",
-      }}
-      {...restProps}
-    >
-      {/* The actual visible line */}
-      <div className="visible-line" style={{
-        width: "100%",
-        height: "2px",
-        backgroundColor: "transparent",
-        transition: "background-color 0.2s"
-      }} />
-
-      <style>{`
-            .custom-bottom-handle:hover .visible-line {
-              background-color: #9244ff !important;
-              }
-              /* Keep the line purple while dragging */
-              .react-resizable-prop-dragging .visible-line {
-              background-color: #9244ff !important;
-              }
-          `}</style>
-    </div>
-  )
-})
-
-
-// Layout for different components of the editor
-class MyFirstGrid extends React.Component {
-  render() {
-    const {
-      id,
-      screenCount,
-      cues,
-      isToolboxOpen,
-      setIsToolboxOpen,
-      isShowMode,
-      cueIndex,
-      isAudioMuted,
-      toggleAudioMute,
-      indexCount,
-      addCue = () => { },
-      onClose = () => { },
-      position,
-      cueData,
-      updateCue = () => { },
-      isAudioMode = false,
-      screens = {},
-      toggleScreenVisibility = () => { },
-      toggleScreenMirroring = () => { },
-      toggleAllScreens = () => { },
-      mirroring = {},
-      autoplayInterval = 1,
-      toggleAutoplay = () => { },
-      isAutoplaying = false,
-      toggleAutoplayInterval = () => { },
-      onOpenTutorial = () => { },
-      editModeBackground,
-      panelBackground,
-      outlineColor,
-    } = this.props
-
-    const safeScreenCount = Number(screenCount) || 1
-    const timelineRows = safeScreenCount + 2 // screen rows + audio row + frame header row
-    const timelineHeightPx = (timelineRows * 110) + 20 // row(100px) + gap(10px) + buffer
-    const rowStepPx = 75 // react-grid rowHeight(60) + vertical margin(15)
-    const editWorkspaceRowsWide = Math.max(10, Math.ceil(timelineHeightPx / rowStepPx))
-    const editWorkspaceRowsNarrow = editWorkspaceRowsWide + 6 // room for media pool under timeline
-
-    const layouts = {
-      lg: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 6, w: 16, h: editWorkspaceRowsWide },
-      ],
-      md: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 0, y: 6, w: 16, h: editWorkspaceRowsWide },
-        // { i: "header", x: 0, y: 0, w: 12, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "screensPreview", x: 0, y: 0, w: 12, h: 5 },
-        // { i: "showModeControls", x: 0, y: 6, w: 12, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "editWorkspace", x: 0, y: 7, w: 8, h: 14 },
-        // { i: "cueEditorForm", x: 8, y: 7, w: 4, h: 14, isResizable: false, resizeHandles: [] },
-      ],
-      sm: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: editWorkspaceRowsNarrow },
-        // { i: "header", x: 0, y: 0, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "screensPreview", x: 0, y: 0, w: 6, h: 5 },
-        // { i: "showModeControls", x: 0, y: 2, w: 6, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "editWorkspace", x: 0, y: 2, w: 6, h: 14 },
-        // { i: "cueEditorForm", x: 0, y: 7, w: 7, h: 7, isResizable: false, resizeHandles: [] },
-
-      ],
-      xs: [
-        { i: "header", x: 0, y: 0, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "screensPreview", x: 0, y: 0, w: 16, h: 5 },
-        { i: "showModeControls", x: 0, y: 6, w: 16, h: 1, isResizable: false, resizeHandles: [] },
-        { i: "editWorkspace", x: 7, y: 0, w: 16, h: editWorkspaceRowsNarrow },
-        // { i: "header", x: 0, y: 0, w: 4, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "screensPreview", x: 0, y: 0, w: 4, h: 5 },
-        // { i: "showModeControls", x: 0, y: 2, w: 4, h: 1, isResizable: false, resizeHandles: [] },
-        // { i: "editWorkspace", x: 0, y: 2, w: 4, h: 14 },
-        // { i: "cueEditorForm", x: 0, y: 7, w: 4, h: 7, isResizable: false, resizeHandles: [] },
-      ],
-      // xxs: [
-      //   { i: "header", x: 0, y: 0, w: 2, h: 1, isResizable: false, resizeHandles: [] },
-      //   { i: "screensPreview", x: 0, y: 0, w: 2, h: 5 },
-      //   { i: "showModeControls", x: 0, y: 2, w: 2, h: 1, isResizable: false, resizeHandles: [] },
-      //   { i: "editWorkspace", x: 0, y: 2, w: 2, h: 14 },
-      //   { i: "cueEditorForm", x: 0, y: 7, w: 2, h: 7, isResizable: false, resizeHandles: [] },
-      // ],
-    }
+    <div style={{ width: "100%", minHeight: "100vh", backgroundColor: editModeBackground, display: "flex", flexDirection: "column", gap: "2rem", padding: "2rem" }}>
 
 
 
-    // Formatting the grid layout for the editor, using react-grid-layout. 
-    // The layout is responsive and changes based on the screen size. 
-    // Each grid item (a, b, c) represents a different component of the editor, 
-    // such as the cue list, preview area, and toolbox.
-    return (
-      <div style={{ width: "100%", minHeight: "100vh", backgroundColor: editModeBackground }}>
-        <style>{`
-          .no-resize-handle .react-resizable-handle {
-            display: none !important;
-          }
-        `}</style>
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={layouts}
-          breakpoints={{ lg: 1200, md: 1200, sm: 700, xs: 600 }}
-          cols={{ lg: 16, md: 16, sm: 16, xs: 16 }}
-          rows={{ lg: 20, md: 20, sm: 20, xs: 20 }}
-          isDraggable={false}
-          isResizable={true}
-          resizeHandles={["s"]}
-          autoSize={true}
-          rowHeight={60}
-          margin={[15, 15]}
-          containerPadding={[80, 8]}
-          resizeHandle={(axis, ref) => <VSCodeVerticalHandle handleAxis={axis} ref={ref} />}
 
-          style={{ width: "100%", backgroundColor: editModeBackground }}
+      <Box
+        display="flex"
+        alignItems="center"
+        gap="12px"
+        padding="12px 20px"
+        backgroundColor={panelBackground}
+        outline={outlineColor}
+        borderRadius="8px"
+        key="header"
+      >
+        <Button
+          aria-label="Presentation Settings"
+          className="edit-mode-btn edit-mode-btn-settings"
         >
-
-          <Box
-            display="flex"
-            alignItems="center"
-            gap="12px"
-            padding="12px 20px"
-            backgroundColor={panelBackground}
-            outline={outlineColor}
-            borderRadius="8px"
-            key="header"
-          >
-            <Button
-              aria-label="Presentation Settings"
-              className="edit-mode-btn edit-mode-btn-settings"
-            >
-              <img src={settingsIcon} alt="" width="24" height="24" />
-            </Button>
-            <Button className="edit-mode-btn edit-mode-btn-show-mode">
-              Go to Show Mode
-            </Button>
-            <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
-              EDIT MODE
-            </Box>
+          <img src={settingsIcon} alt="" width="24" height="24" />
+        </Button>
+        <Button className="edit-mode-btn edit-mode-btn-show-mode">
+          Go to Show Mode
+        </Button>
+        <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
+          EDIT MODE
+        </Box>
             <Button
               className="edit-mode-btn edit-mode-btn-tutorial"
               onClick={onOpenTutorial}
             >
               Tutorial
             </Button>
-          </Box>
+      </Box>
 
-          <div style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} classname="screenspreview" key="screensPreview">
-            <ScreensDisplay
-              screenCount={screenCount}
-              cues={cues}
-              cueIndex={cueIndex}
-              indexCount={indexCount}
-              editModeBackground={panelBackground}
-              screens={screens}
-              toggleScreenVisibility={toggleScreenVisibility}
-            />
+      <div id="screen_preview" style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} classname="screenspreview" key="screensPreview">
+        <ScreensDisplay
+          screenCount={screenCount}
+          cues={cues}
+          cueIndex={cueIndex}
+          indexCount={indexCount}
+          editModeBackground={panelBackground}
+          screens={screens}
+          toggleScreenVisibility={toggleScreenVisibility}
+        />
 
-          </div>
-          <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
-            <KeyboardHandler
-              onNext={() => updateCue("Next")}
-              onPrevious={() => updateCue("Previous")}
-            />
-            <ShowModeButtons
-              screens={screens}
-              toggleScreenVisibility={toggleScreenVisibility}
-              toggleScreenMirroring={toggleScreenMirroring}
-              toggleAllScreens={toggleAllScreens}
-              mirroring={mirroring}
-              cueIndex={cueIndex}
-              updateCue={updateCue}
-              indexCount={indexCount}
-              autoplayInterval={autoplayInterval}
-              toggleAutoplay={toggleAutoplay}
-              isAutoplaying={isAutoplaying}
-              toggleAutoplayInterval={toggleAutoplayInterval}
+        <div id="screen_resize_handle" class="resize_handle"></div>
 
-            />
-          </div>
+      </div>
+      <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
+        <KeyboardHandler
+          onNext={() => updateCue("Next")}
+          onPrevious={() => updateCue("Previous")}
+        />
+        <ShowModeButtons
+          screens={screens}
+          toggleScreenVisibility={toggleScreenVisibility}
+          toggleScreenMirroring={toggleScreenMirroring}
+          toggleAllScreens={toggleAllScreens}
+          mirroring={mirroring}
+          cueIndex={cueIndex}
+          updateCue={updateCue}
+          indexCount={indexCount}
+          autoplayInterval={autoplayInterval}
+          toggleAutoplay={toggleAutoplay}
+          isAutoplaying={isAutoplaying}
+          toggleAutoplayInterval={toggleAutoplayInterval}
 
-          <div style={{}} className="edit-workspace" key="editWorkspace">
-            <div style={{}}>
-              <div className="edit-mode-workspace">
+        />
+      </div>
 
-                <div className="edit-mode-timeline" style={{
-                  overflow: "scroll", height: "100%", width: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", flexGrow: "1"
-                }}>
+      <div style={{}} className="edit-workspace" key="editWorkspace">
+        <div style={{}}>
+          <div className="edit-mode-workspace">
 
-                  <EditMode
-                    id={id}
-                    cues={cues}
-                    isToolboxOpen={isToolboxOpen}
-                    setIsToolboxOpen={setIsToolboxOpen}
-                    isShowMode={isShowMode}
-                    cueIndex={cueIndex}
-                    isAudioMuted={isAudioMuted}
-                    toggleAudioMute={toggleAudioMute}
-                    indexCount={indexCount}
-                  />
-                </div>
+            <div id="timeline" className="edit-mode-timeline" style={{
+              height: "100%", width: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", flexGrow: "1"
+            }}>
 
-                <div className="edit-mode-cue-form" style={{
-                  height: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
-                  paddingBottom: "5px"
-                }}>
+              <div id="edit-mode-scroll" >
+                <EditMode
+                  id={id}
+                  cues={cues}
+                  isToolboxOpen={isToolboxOpen}
+                  setIsToolboxOpen={setIsToolboxOpen}
+                  isShowMode={isShowMode}
+                  cueIndex={cueIndex}
+                  isAudioMuted={isAudioMuted}
+                  toggleAudioMute={toggleAudioMute}
+                  indexCount={indexCount}
+                  style={{ zIndex: 1 }}
+                />
 
-                  {/* <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm"> */}
-                  <CuesForm
-                    className="cue-editor-form"
-                    addCue={addCue}
-                    onClose={onClose}
-                    position={position}
-                    cues={cues}
-                    cueData={cueData}
-                    updateCue={updateCue}
-                    screenCount={screenCount}
-                    isAudioMode={isAudioMode}
-                    indexCount={indexCount}
-                  />
-                  {/* </div> */}
-                </div>
               </div>
+              <div id="timeline_resize_handle" class="resize_handle"></div>
+
+            </div>
+
+            <div className="edit-mode-cue-form" style={{
+              height: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
+              paddingBottom: "5px"
+            }}>
+
+              {/* <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm"> */}
+              <CuesForm
+                className="cue-editor-form"
+                addCue={addCue}
+                onClose={onClose}
+                position={position}
+                cues={cues}
+                cueData={cueData}
+                updateCue={updateCue}
+                screenCount={screenCount}
+                isAudioMode={isAudioMode}
+                indexCount={indexCount}
+              />
+              {/* </div> */}
             </div>
           </div>
-
-        </ResponsiveGridLayout>
+        </div>
       </div>
-    )
-  }
+
+    </div>
+  )
 }
+
 
 
 
@@ -639,7 +536,7 @@ const EditModeContainer = ({
 
 
   return <>
-    <MyFirstGrid
+    <EditorLayout
       id={id}
       screenCount={screenCount}
       cues={cues}
