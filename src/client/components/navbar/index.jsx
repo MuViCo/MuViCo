@@ -21,8 +21,8 @@ import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
 import SignUp from "./SignUp"
-import hyLogo from "../../public/hy_logo.png"
-import bHyLogo from "../../public/b_hy_logo.png"
+import hyLogo from "../../public/hy_logo.svg"
+import bHyLogo from "../../public/b_hy_logo.svg"
 import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 import UserManualModal from "./UserManualModal"
@@ -66,7 +66,7 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
     ? undefined
     : `${pulse} 2s infinite`
 
-  const navbarLogo = colorMode === "dark" ? bHyLogo : hyLogo
+  const navbarLogo = colorMode === "dark" ? hyLogo : bHyLogo
 
   const handleLogout = (navigate, setUser) => {
     window.localStorage.removeItem("user")
@@ -275,8 +275,8 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
               <img
                 src={navbarLogo}
                 alt="HY logo"
-                width="70"
-                height="70"
+                width="50"
+                height="50"
                 style={{ objectFit: "contain", display: "block" }}
               />
             </Box>
