@@ -1,23 +1,31 @@
-import { loginWith, addPresentation, addBlankCue} from "./helper"
+import {
+  loginWith,
+  disableTutorials,
+  addPresentation,
+  addBlankCue,
+} from "./helper"
 
 const { test, describe, expect, beforeEach } = require("@playwright/test")
+
+const testuser = "user1"
+const testPw = "test12345"
 
 describe("Homepage", () => {
   beforeEach(async ({ page, request }) => {
     await request.post("http:localhost:8000/api/testing/reset")
     await request.post("http:localhost:8000/api/signup", {
       data: {
-        username: "testuser",
-        password: "test",
+        username: testuser,
+        password: testPw,
       },
     })
-    page.goto("http://localhost:3000/")
-    await loginWith(page, "testuser", "test")
+    await page.goto("http://localhost:3000/")
+    await disableTutorials(page)
+    await loginWith(page, testuser, testPw)
     await addPresentation(page, "testi")
-    page.goto("http://localhost:3000/home")
+    await page.goto("http://localhost:3000/home")
     await addPresentation(page, "test_to_delete")
-    page.goto("http://localhost:3000/home")
-
+    await page.goto("http://localhost:3000/home")
   })
 
   test("user can add a presentation", async ({ page }) => {
@@ -37,15 +45,21 @@ describe("Homepage", () => {
   test("user can add blank cue", async ({ page }) => {
     await page.getByText("testi").click()
     await addBlankCue(page, "test cue", "1", "1")
-    await expect(page.getByText("Element test cue added to screen").first()).toBeVisible()
+    await expect(
+      page.getByText("Element test cue added to screen").first()
+    ).toBeVisible()
   })
 
   test("user can enter showmode", async ({ page }) => {
     await page.getByText("testi").click()
     await addBlankCue(page, "test cue", "1", "1")
-    await expect(page.getByText("Element test cue added to screen").first()).toBeVisible()
+    await expect(
+      page.getByText("Element test cue added to screen").first()
+    ).toBeVisible()
     await page.getByRole("button", { name: "Show mode" }).click()
-    await expect(page.getByRole("button", { name: "Open screen: 1" })).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: "Open screen: 1" })
+    ).toBeVisible()
   })
 
   test("user can delete a presentation", async ({ page }) => {
@@ -53,7 +67,9 @@ describe("Homepage", () => {
     const card = heading.locator("..").locator("..")
     await expect(card).toBeVisible()
     await card.click()
-    const deleteButton = await page.locator('button:has-text("Delete presentation")')
+    const deleteButton = await page.locator(
+      'button:has-text("Delete presentation")'
+    )
     await expect(deleteButton).toBeVisible()
     await deleteButton.click()
 
@@ -62,5 +78,4 @@ describe("Homepage", () => {
     await confirmYes.click()
     await expect(card).not.toBeVisible()
   })
-  
 })
