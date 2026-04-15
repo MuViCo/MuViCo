@@ -251,7 +251,8 @@ const ShowModeButtons = ({
   autoplayInterval,
   toggleAutoplay,
   isAutoplaying,
-  toggleAutoplayInterval
+  toggleAutoplayInterval,
+  audioTimeLabel,
 }) => (
 
   <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
@@ -276,6 +277,7 @@ const ShowModeButtons = ({
       toggleAllScreens={toggleAllScreens}
       mirroring={mirroring}
     />
+
     <AutoplayInterval
       autoplayInterval={autoplayInterval}
       toggleAutoplayInterval={toggleAutoplayInterval}
@@ -333,6 +335,17 @@ const ShowModeButtons = ({
         colorScheme="purple"
       />
     </ClickablePopover>
+        {audioTimeLabel && (
+      <Box
+        as="span"
+        fontSize="xs"
+        fontWeight="medium"
+        color="gray.500"
+        whiteSpace="nowrap"
+      >
+        Audio: {audioTimeLabel}
+      </Box>
+    )}
   </Box>
 )
 
