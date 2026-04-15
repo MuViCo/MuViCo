@@ -19,7 +19,7 @@ import ShowModeButtons from "./ShowModeButtons"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
-import { isType } from "../utils/fileTypeUtils"
+import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
 import makeResizable from "../utils/ResizeElement"
@@ -171,6 +171,7 @@ function EditorLayout(props) {
     autoplayInterval = 1,
     toggleAutoplay = () => { },
     isAutoplaying = false,
+    audioTimeLabel = "",
     toggleAutoplayInterval = () => { },
     onOpenTutorial = () => { },
     editModeBackground,
@@ -264,7 +265,7 @@ function EditorLayout(props) {
           toggleAutoplay={toggleAutoplay}
           isAutoplaying={isAutoplaying}
           toggleAutoplayInterval={toggleAutoplayInterval}
-
+          audioTimeLabel={audioTimeLabel}
         />
       </div>
 
@@ -358,7 +359,11 @@ const EditModeContainer = ({
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0)
+  const [audioDuration, setAudioDuration] = useState(0)
   const autoplayTimerRef = useRef(null)
+  const audioPreloadedUrlsRef = useRef(new Set())
+  const activeAudioRef = useRef(null)
   const cueIndexRef = useRef(cueIndex)
 
   const cuesByScreen = useMemo(() => {
@@ -372,14 +377,18 @@ const EditModeContainer = ({
   }, [cues])
 
   useEffect(() => {
-    const screenNumbers = [...new Set((cues || []).map((cue) => cue.screen))]
+    const screenNumbers = [...new Set(
+      (cues || [])
+        .filter((cue) => !isAudioRow(cue.screen, screenCount))
+        .map((cue) => cue.screen)
+    )]
     const visibility = {}
     screenNumbers.forEach((screenNumber) => {
       visibility[screenNumber] = false
     })
     setScreens(visibility)
     setMirroring({})
-  }, [cues])
+  }, [cues, screenCount])
 
   const toggleScreenVisibility = (screenNumber) => {
     setScreens((prev) => ({
@@ -426,6 +435,23 @@ const EditModeContainer = ({
 
     return {}
   }
+
+  const audioRow = getAudioRow(screenCount)
+  const currentAudioCue = getLastValidCue(audioRow, cueIndex)
+  const currentAudioFile = currentAudioCue?.file
+  const currentAudioSrc = currentAudioFile?.url || (currentAudioFile?.name ? `/${currentAudioFile.name}` : "")
+  const isCurrentCueAudio = Boolean(currentAudioCue && isType.audio(currentAudioFile))
+
+  const formatTime = (secondsValue) => {
+    const seconds = Math.max(0, Math.floor(Number(secondsValue) || 0))
+    const minutesPart = String(Math.floor(seconds / 60)).padStart(2, "0")
+    const secondsPart = String(seconds % 60).padStart(2, "0")
+    return `${minutesPart}:${secondsPart}`
+  }
+
+  const audioTimeLabel = isCurrentCueAudio
+    ? `${formatTime(audioCurrentTime)} / ${formatTime(audioDuration)}`
+    : ""
 
   const handleScreenClose = useCallback((screenNumber) => {
     setScreens((prev) => ({
@@ -504,6 +530,31 @@ const EditModeContainer = ({
   }, [cueIndex, indexCount, isAutoplaying])
 
   useEffect(() => {
+    const audioCues = (cues || []).filter((cue) =>
+      isAudioRow(cue.screen, screenCount) && cue.file?.url && isType.audio(cue.file)
+    )
+
+    audioCues.forEach((cue) => {
+      const url = cue.file.url
+      if (audioPreloadedUrlsRef.current.has(url)) {
+        return
+      }
+
+      const audio = new Audio()
+      audio.src = url
+      audio.preload = "auto"
+      audio.load()
+
+      audioPreloadedUrlsRef.current.add(url)
+    })
+  }, [cues, screenCount])
+
+  useEffect(() => {
+    setAudioCurrentTime(0)
+    setAudioDuration(0)
+  }, [currentAudioSrc])
+
+  useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
 
@@ -536,6 +587,29 @@ const EditModeContainer = ({
 
 
   return <>
+    {isCurrentCueAudio && currentAudioSrc && (
+      <audio
+        ref={activeAudioRef}
+        key={`${currentAudioSrc}-${currentAudioCue?.index ?? cueIndex}`}
+        src={currentAudioSrc}
+        autoPlay
+        loop
+        muted={isAudioMuted}
+        onLoadedMetadata={(event) => {
+          const duration = event.currentTarget.duration
+          setAudioDuration(Number.isFinite(duration) ? duration : 0)
+        }}
+        onDurationChange={(event) => {
+          const duration = event.currentTarget.duration
+          setAudioDuration(Number.isFinite(duration) ? duration : 0)
+        }}
+        onTimeUpdate={(event) => {
+          setAudioCurrentTime(event.currentTarget.currentTime || 0)
+        }}
+        style={{ display: "none" }}
+      />
+    )}
+
     <EditorLayout
       id={id}
       screenCount={screenCount}
@@ -563,6 +637,7 @@ const EditModeContainer = ({
       isAutoplaying={isAutoplaying}
       toggleAutoplayInterval={toggleAutoplayInterval}
       onOpenTutorial={handleOpenTutorial}
+      audioTimeLabel={audioTimeLabel}
       editModeBackground={editModeBackground}
       panelBackground={panelBackground}
       outlineColor={outlineColor}
