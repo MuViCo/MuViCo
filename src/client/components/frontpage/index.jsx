@@ -88,14 +88,20 @@ const FrontPage = () => {
           <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
             support functions
           </Text>{" "}
-          for live music performances
+          for live music performances.
+          <br />
+          <br />
+          {/* Alempi rivi */}
+          <Text as="span" fontFamily="'Boldonse', system-ui">
+            MuViCo is developed by University of Helsinki students.
+          </Text>{" "}
         </Text>
 
         {/* Feature cards */}
         <SimpleGrid
           spacing={6}
           columns={{ base: 1, md: 3 }}
-          pt={6}
+          pt={0}
         >
           <InfoCard
             title="Upload Media"
