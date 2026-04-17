@@ -41,9 +41,13 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
-app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms :data")
-)
+if (!process.env.CI) {
+  app.use(
+    morgan(
+      ":method :url :status :res[content-length] - :response-time ms :data"
+    )
+  )
+}
 
 app.use("/api/login", loginRouter)
 app.use("/api/signup", signupRouter)
