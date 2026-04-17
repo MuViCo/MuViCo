@@ -8,8 +8,6 @@ import {
   EditIcon,
   ChevronDownIcon
 } from "@chakra-ui/icons"
-import GridLayout from "react-grid-layout"
-import "react-grid-layout/css/styles.css"
 import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
@@ -119,7 +117,6 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
 
 const GridLayoutComponent = ({
   id,
-  layout,
   cues,
   setCopiedCue,
   setIsCopied,
@@ -148,6 +145,11 @@ const GridLayoutComponent = ({
   const [cueToRemove, setCueToRemove] = useState(null)
 
   const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
+  const maxGridRows = Math.max(
+    1,
+    ...cues.map((cue) => Number(cue.screen) || 0),
+    getAudioRow(screenCount)
+  )
 
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
@@ -342,21 +344,18 @@ const GridLayoutComponent = ({
   )
 
   return (
-    <GridLayout
+    <div
       className="layout"
-      layout={layout}
-      cols={indexCount}
-      rowHeight={rowHeight}
-      width={indexCount * columnWidth + (indexCount - 1) * gap}
-      isDraggable={false}
-      isResizable={false}
-      compactType={null}
-      isBounded={false}
-      preventCollision={true}
-      margin={[gap, gap]}
-      containerPadding={[0, 0]}
-      useCSSTransforms={true}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
+      data-testid="cue-grid-layout"
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${indexCount}, ${columnWidth}px)`,
+        gridTemplateRows: `repeat(${maxGridRows}, ${rowHeight}px)`,
+        columnGap: `${gap}px`,
+        rowGap: `${gap}px`,
+        width: `${indexCount * columnWidth + (indexCount - 1) * gap}px`,
+        alignContent: "start",
+      }}
     >
       {cues.map((cue) => {
         const overriddenCueVisualSpan = Number(previewCueSpanOverrides[cue._id])
@@ -369,6 +368,7 @@ const GridLayoutComponent = ({
         const isTerminalContinuationPreview = Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan === 1
         const hasVisibleContinuation = previewCueVisualSpan > 1 || isTerminalContinuationPreview
         const cueVisualSpan = previewCueVisualSpan
+        const cueVisualWidthPx = cueVisualSpan * columnWidth + Math.max(cueVisualSpan - 1, 0) * gap
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0
         const continuationDividerWidth = gap > 2 ? 2 : Math.max(gap, 1)
@@ -390,17 +390,24 @@ const GridLayoutComponent = ({
         return (
           <div
             key={cue._id}
+            className="react-grid-item"
             data-testid={`cue-${cue.name}`}
             data-grid={{
               x: cue.index,
-              y: cue.screen - 1,
+              y: cue.screen,
               w: cueVisualSpan,
               h: 1,
-              minH: 1,
-              maxH: 1,
-              static: false,
             }}
             id={`cue-screen-${cue.screen}-index-${cue.index}`}
+            style={{
+              gridColumn: `${Number(cue.index) + 1} / span ${cueVisualSpan}`,
+              gridRow: `${Number(cue.screen)}`,
+              width: `${cueVisualWidthPx}px`,
+              transition: "width 200ms ease-in-out",
+              willChange: "width",
+              minWidth: 0,
+              minHeight: 0,
+            }}
           >
             <Box
               position="relative"
@@ -701,7 +708,7 @@ const GridLayoutComponent = ({
           </div>
         )
       })}
-    </GridLayout>
+    </div>
   )
 }
 
