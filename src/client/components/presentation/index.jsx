@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
-import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
 import EditModeContainer from "./EditModeContainer"
