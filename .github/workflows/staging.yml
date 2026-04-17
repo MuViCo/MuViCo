@@ -22,14 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install playwright browsers
-        run: npx playwright install --with-deps
-
       - name: Run linter
         run: npm run lint
 
       - name: Run unit tests
-        run: npm run test-all
+        run: npm test -- --coverage
         env:
           TEST_MONGODB_URI: "mongodb://localhost/test"
           PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
@@ -48,7 +45,11 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/frontend/lcov.info,coverage/backend/lcov.info
+          files: coverage/lcov.info
+
+
+      - name: Install playwright browsers
+        run: npx playwright install --with-deps
 
       - name: Run E2E tests
         run: npm run e2e-headless
