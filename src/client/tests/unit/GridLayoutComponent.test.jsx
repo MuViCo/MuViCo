@@ -6,6 +6,9 @@ import { useDispatch } from "react-redux"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
+const mockGridLayout = jest.fn(({ children }) => (
+  <div data-testid="mock-grid-layout">{children}</div>
+))
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -19,6 +22,12 @@ jest.mock("../../redux/presentationReducer", () => ({
 jest.mock("../../components/utils/toastUtils", () => ({
   useCustomToast: () => mockShowToast,
 }))
+
+jest.mock("react-grid-layout", () => {
+  return function MockGridLayout(props) {
+    return mockGridLayout(props)
+  }
+})
 
 describe("GridLayoutComponent", () => {
   const baseProps = {
@@ -55,7 +64,7 @@ describe("GridLayoutComponent", () => {
     useDispatch.mockReturnValue(mockDispatch)
   })
 
-  it("renders cues inside the native grid container", () => {
+  it("does not wire deprecated onDragStop behavior", () => {
     const cues = [
       {
         _id: "visual-1",
@@ -70,8 +79,9 @@ describe("GridLayoutComponent", () => {
 
     renderGrid(cues, [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }])
 
-    expect(screen.getByTestId("cue-grid-layout")).toBeInTheDocument()
-    expect(screen.getByTestId("cue-Visual cue")).toBeInTheDocument()
+    const firstCallProps = mockGridLayout.mock.calls[0][0]
+    expect(firstCallProps.isDraggable).toBe(false)
+    expect(firstCallProps.onDragStop).toBeUndefined()
   })
 
   it("renders continuation overlay only for auto-expanded cue area", () => {
