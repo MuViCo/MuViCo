@@ -173,7 +173,7 @@ function EditorLayout(props) {
     autoplayInterval = 1,
     toggleAutoplay = () => { },
     isAutoplaying = false,
-    audioTimeLabel = "",
+    audioSourceURL = "",
     toggleAutoplayInterval = () => { },
     onOpenTutorial = () => { },
     editModeBackground,
@@ -233,15 +233,15 @@ function EditorLayout(props) {
             showMode={isShowMode}
           />
         </Box>
-            <Button
-              className="edit-mode-btn edit-mode-btn-tutorial"
-              onClick={onOpenTutorial}
-            >
-              Tutorial
-            </Button>
+        <Button
+          className="edit-mode-btn edit-mode-btn-tutorial"
+          onClick={onOpenTutorial}
+        >
+          Tutorial
+        </Button>
       </Box>
 
-      <div id="screen_preview" style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} classname="screenspreview" key="screensPreview">
+      <div id="screen_preview" style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} className="screenspreview" key="screensPreview">
         <ScreensDisplay
           screenCount={screenCount}
           cues={cues}
@@ -252,7 +252,7 @@ function EditorLayout(props) {
           toggleScreenVisibility={toggleScreenVisibility}
         />
 
-        <div id="screen_resize_handle" class="resize_handle"></div>
+        <div id="screen_resize_handle" className="resize_handle"></div>
 
       </div>
       <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
@@ -273,7 +273,7 @@ function EditorLayout(props) {
           toggleAutoplay={toggleAutoplay}
           isAutoplaying={isAutoplaying}
           toggleAutoplayInterval={toggleAutoplayInterval}
-          audioTimeLabel={audioTimeLabel}
+          audioSourceURL={audioSourceURL}
         />
       </div>
 
@@ -300,7 +300,7 @@ function EditorLayout(props) {
                 />
 
               </div>
-              <div id="timeline_resize_handle" class="resize_handle"></div>
+              <div id="timeline_resize_handle" className="resize_handle"></div>
 
             </div>
 
@@ -368,11 +368,8 @@ const EditModeContainer = ({
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0)
-  const [audioDuration, setAudioDuration] = useState(0)
   const autoplayTimerRef = useRef(null)
   const audioPreloadedUrlsRef = useRef(new Set())
-  const activeAudioRef = useRef(null)
   const cueIndexRef = useRef(cueIndex)
 
   const cuesByScreen = useMemo(() => {
@@ -450,17 +447,6 @@ const EditModeContainer = ({
   const currentAudioFile = currentAudioCue?.file
   const currentAudioSrc = currentAudioFile?.url || (currentAudioFile?.name ? `/${currentAudioFile.name}` : "")
   const isCurrentCueAudio = Boolean(currentAudioCue && isType.audio(currentAudioFile))
-
-  const formatTime = (secondsValue) => {
-    const seconds = Math.max(0, Math.floor(Number(secondsValue) || 0))
-    const minutesPart = String(Math.floor(seconds / 60)).padStart(2, "0")
-    const secondsPart = String(seconds % 60).padStart(2, "0")
-    return `${minutesPart}:${secondsPart}`
-  }
-
-  const audioTimeLabel = isCurrentCueAudio
-    ? `${formatTime(audioCurrentTime)} / ${formatTime(audioDuration)}`
-    : ""
 
   const handleScreenClose = useCallback((screenNumber) => {
     setScreens((prev) => ({
@@ -559,11 +545,6 @@ const EditModeContainer = ({
   }, [cues, screenCount])
 
   useEffect(() => {
-    setAudioCurrentTime(0)
-    setAudioDuration(0)
-  }, [currentAudioSrc])
-
-  useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, dispatch])
 
@@ -596,28 +577,6 @@ const EditModeContainer = ({
 
 
   return <>
-    {isCurrentCueAudio && currentAudioSrc && (
-      <audio
-        ref={activeAudioRef}
-        key={`${currentAudioSrc}-${currentAudioCue?.index ?? cueIndex}`}
-        src={currentAudioSrc}
-        autoPlay
-        loop
-        muted={isAudioMuted}
-        onLoadedMetadata={(event) => {
-          const duration = event.currentTarget.duration
-          setAudioDuration(Number.isFinite(duration) ? duration : 0)
-        }}
-        onDurationChange={(event) => {
-          const duration = event.currentTarget.duration
-          setAudioDuration(Number.isFinite(duration) ? duration : 0)
-        }}
-        onTimeUpdate={(event) => {
-          setAudioCurrentTime(event.currentTarget.currentTime || 0)
-        }}
-        style={{ display: "none" }}
-      />
-    )}
 
     <EditorLayout
       id={id}
@@ -647,7 +606,7 @@ const EditModeContainer = ({
       isAutoplaying={isAutoplaying}
       toggleAutoplayInterval={toggleAutoplayInterval}
       onOpenTutorial={handleOpenTutorial}
-      audioTimeLabel={audioTimeLabel}
+      audioSourceURL={currentAudioSrc}
       editModeBackground={editModeBackground}
       panelBackground={panelBackground}
       outlineColor={outlineColor}

@@ -252,7 +252,7 @@ const ShowModeButtons = ({
   toggleAutoplay,
   isAutoplaying,
   toggleAutoplayInterval,
-  audioTimeLabel,
+  audioSourceURL,
 }) => (
 
   <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
@@ -335,17 +335,9 @@ const ShowModeButtons = ({
         colorScheme="purple"
       />
     </ClickablePopover>
-        {audioTimeLabel && (
-      <Box
-        as="span"
-        fontSize="xs"
-        fontWeight="medium"
-        color="gray.500"
-        whiteSpace="nowrap"
-      >
-        Audio: {audioTimeLabel}
-      </Box>
-    )}
+    {audioSourceURL ? (
+      <audio autoPlay loop controls src={audioSourceURL}></audio>
+    ) : null}
   </Box>
 )
 
