@@ -92,21 +92,6 @@ const AutoplayControls = ({
           />
         }
       />
-      {/* <NumberInput
-       id="autoplaytime"
-       value={autoplayInterval}
-       width="100px"
-       onChange={(valueString) => toggleAutoplayInterval(valueString)}
-       min={0.1}
-       step={0.1}
-      >
-        <NumberInputField placeholder="sec" />
-        <NumberInputStepper>
-          <NumberIncrementStepper />
-          <NumberDecrementStepper />
-        </NumberInputStepper>
-      </NumberInput> */}
-      {/* <Text fontSize="sm" fontWeight="bold">sec / frame</Text> */}
     </Box>
   )
 }
@@ -131,7 +116,6 @@ const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
   </Box>
 )
 
-
 const ScreenToggleButtons = ({
   screens,
   toggleScreenVisibility,
@@ -155,65 +139,10 @@ const ScreenToggleButtons = ({
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
       <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
-        {/* {allScreenNumbers
-          .map((screenNumber) => (
-            <Box key={screenNumber}>
-              <Button
-                colorScheme={screens[screenNumber] ? "pink" : "purple"}
-                onClick={() => toggleScreenVisibility(screenNumber)}
-                m={2}
-                flexDirection="column"
-              >
-                <Box>
-                  {screens[screenNumber]
-                    ? `Close screen: ${screenNumber}`
-                    : `Open screen: ${screenNumber}`}
-                </Box>
-
-                {mirroring[screenNumber] && (
-                  <Box fontSize="sm">
-                    (Mirroring screen: {mirroring[screenNumber]})
-                  </Box>
-                )}
-              </Button>
-              <DropdownButton
-                screenNumber={screenNumber}
-                screens={screens}
-                toggleScreenMirroring={toggleScreenMirroring}
-              />
-            </Box>
-          ))} */}
       </Box>
     </Box>
   )
 }
-
-// // Component for rendering the cue navigation buttons
-// const CueNavigationButtons = ({ cueIndex, updateCue, indexCount }) => (
-//   <Box display="flex" gap={4} alignItems="center">
-
-//     <IconButton
-//       aria-label="Previous Cue"
-//       icon={<ChevronLeftIcon />}
-//       onClick={() => updateCue("Previous")}
-//       colorScheme="purple"
-//       isDisabled={cueIndex === 0}
-//     />
-
-//     <Heading size="md">{cueIndex === 0 ? "" : `Frame ${cueIndex}`}</Heading>
-
-//     <IconButton
-//       aria-label="Next Cue"
-//       icon={<ChevronRightIcon />}
-//       onClick={() => updateCue("Next")}
-//       colorScheme="purple"
-//       isDisabled={cueIndex === indexCount - 1}
-//     />
-
-
-
-//   </Box>
-// )
 
 const CueNavigationPrevious = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
@@ -234,9 +163,6 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
     isDisabled={cueIndex === indexCount - 1}
   />
 )
-
-
-
 
 // ShowModeButtons component to handle screen visibility and cue navigation
 const ShowModeButtons = ({

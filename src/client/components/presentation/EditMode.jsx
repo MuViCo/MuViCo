@@ -1116,8 +1116,6 @@ const EditMode = ({
     await dispatchUpdateCue(previousCueId, updatedCue)
   }
 
-
-
   const handleExistingCueUpdate = async (
     existingCue,
     updatedCue,

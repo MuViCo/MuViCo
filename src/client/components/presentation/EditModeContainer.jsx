@@ -26,7 +26,6 @@ import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisu
 import makeResizable from "../utils/ResizeElement"
 
 
-
 // Screens display component
 const ScreensDisplay = ({
   screenCount = 3,
@@ -142,9 +141,6 @@ const ScreensDisplay = ({
   )
 }
 
-
-
-
 // Base component for different subcomponents of the editor
 function EditorLayout(props) {
   const {
@@ -201,10 +197,6 @@ function EditorLayout(props) {
   // such as the cue list, preview area, and toolbox.
   return (
     <div style={{ width: "100%", minHeight: "100vh", backgroundColor: editModeBackground, display: "flex", flexDirection: "column", gap: "2rem", padding: "2rem" }}>
-
-
-
-
       <Box
         display="flex"
         alignItems="center"
@@ -308,8 +300,6 @@ function EditorLayout(props) {
               height: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
               paddingBottom: "5px"
             }}>
-
-              {/* <div style={{ backgroundColor: panelBackground, outline: outlineColor, paddingLeft: "25px", paddingTop: "25px", paddingRight: "25px", borderRadius: "8px" }} className="no-resize-handle force-no-resize" key="cueEditorForm"> */}
               <CuesForm
                 className="cue-editor-form"
                 addCue={addCue}
@@ -322,7 +312,6 @@ function EditorLayout(props) {
                 isAudioMode={isAudioMode}
                 indexCount={indexCount}
               />
-              {/* </div> */}
             </div>
           </div>
         </div>
@@ -331,8 +320,6 @@ function EditorLayout(props) {
     </div>
   )
 }
-
-
 
 
 const EditModeContainer = ({
@@ -571,10 +558,6 @@ const EditModeContainer = ({
     }
   }, [editModeBackground])
 
-  console.log("Rendering EditMode with cues:", id, cues, isToolboxOpen, isShowMode, cueIndex, isAudioMuted, indexCount)
-
-  console.log("Fetched presentation info:", cues, presentation)
-
 
   return <>
 
@@ -636,8 +619,6 @@ const EditModeContainer = ({
       )
     })}
   </>
-
-
-
 }
+
 export default EditModeContainer
