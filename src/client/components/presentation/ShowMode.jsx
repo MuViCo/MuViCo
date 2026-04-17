@@ -17,7 +17,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isH
     }, {})
   })
 
-  const [mirroring] = useState({})
+  const [mirroring, setMirroring] = useState({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const autoplayTimerRef = useRef(null)
@@ -117,6 +117,26 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isH
     setScreenVisibility(visibility)
   }, [cues])
 
+  // Toggle screen visibility
+  const toggleScreenVisibility = (screenNumber) => {
+    setScreenVisibility((prevVisibility) => ({
+      ...prevVisibility,
+      [screenNumber]: !prevVisibility[screenNumber],
+    }))
+  }
+
+  const toggleScreenMirroring = (screenNumber, targetScreen) => {
+    setMirroring((prevMirroring) => {
+      const updatedMirroring = { ...prevMirroring }
+      if (targetScreen) {
+        updatedMirroring[screenNumber] = targetScreen
+      } else {
+        delete updatedMirroring[screenNumber]
+      }
+      return updatedMirroring
+    })
+  }
+
   const toggleAllScreens = () => {
     setScreenVisibility((prevVisibility) => {
       const updatedVisibility = { ...prevVisibility }
@@ -200,7 +220,7 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isH
 
   return (
     <div className="show-mode" style={isHidden ? { display: "none" } : undefined}>
-      {/* Pass screen visibility and cue navigation to controls */}
+      {/* Pass screen visibility and cue navigation to ShowModeButtons */}
       <KeyboardHandler
         onNext={() => updateCue("Next")}
         onPrevious={() => updateCue("Previous")}
@@ -208,7 +228,10 @@ const ShowMode = ({ cues, cueIndex, setCueIndex, indexCount, transitionType, isH
 
       <PresentationPlaybackControls
         screens={screenVisibility}
+        toggleScreenVisibility={toggleScreenVisibility}
+        toggleScreenMirroring={toggleScreenMirroring}
         toggleAllScreens={toggleAllScreens}
+        mirroring={mirroring}
         cueIndex={cueIndex}
         updateCue={updateCue}
         indexCount={indexCount}

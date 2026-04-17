@@ -63,9 +63,18 @@ const suppressNativeDragGhost = (dataTransfer) => {
   dataTransfer.setDragImage(transparentDragImage, 0, 0)
 }
 
+const BLANK_ELEMENT_FILES = new Set([
+  "/blank.png",
+  "/blank-white.png",
+  "/blank-indigo.png",
+  "/blank-tropicalindigo.png",
+])
+
+const isBlankElementFile = (value) => BLANK_ELEMENT_FILES.has(value)
+
 
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
-  const [file, setFile] = useState(isAudioMode ? "" : "")
+  const [file, setFile] = useState("")
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
@@ -84,6 +93,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   // Media pool states
   const [mediaFiles, setMediaFiles] = useState([])
   const [soundFiles, setSoundFiles] = useState([])
+  const mediaFilesRef = useRef([])
   const mediaInputRef = useRef(null)
   const soundInputRef = useRef(null)
 
@@ -101,7 +111,6 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const [activeTab, setActiveTab] = useState(getInitialActiveTab)
 
   const audioRow = getAudioRow(screenCount)
-  const allowedTypes = getAllowedMimeTypesForScreen(screen, screenCount)
 
   const isAudioFile = () => isAudioMimeType(file?.type)
 
@@ -117,6 +126,20 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       window.localStorage.setItem("editModeMediaPoolActiveTab", activeTab)
     }
   }, [activeTab])
+
+  useEffect(() => {
+    mediaFilesRef.current = mediaFiles
+  }, [mediaFiles])
+
+  useEffect(() => {
+    return () => {
+      mediaFilesRef.current.forEach((media) => {
+        if (media?.preview) {
+          URL.revokeObjectURL(media.preview)
+        }
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (!cueData && !position) {
@@ -191,10 +214,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const onAddCue = (event) => {
     event.preventDefault()
 
-    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
+    const isBlankImage = isBlankElementFile(file)
 
     if (!isBlankImage && file !== "") {
-      if (checkFileType(file) == false) {
+      if (!checkFileType(file)) {
         return
       }
     }
@@ -239,10 +262,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       fileName,
     }
     
-    const isBlankImage = file === "/blank.png" || file === "/blank-white.png" || file === "/blank-indigo.png" || file === "/blank-tropicalindigo.png"
+    const isBlankImage = isBlankElementFile(file)
 
     if (!isBlankImage && !actualFile) {
-      if (checkFileType(file) == false) {
+      if (!checkFileType(file)) {
         return
       }
     }
