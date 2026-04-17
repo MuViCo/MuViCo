@@ -38,6 +38,16 @@ const ScreensDisplay = ({
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
+  const screenSortedCuesByScreen = useMemo(() => {
+    return (cues || []).reduce((acc, cue) => {
+      const screenNumber = Number(cue.screen)
+      if (!acc[screenNumber]) {
+        acc[screenNumber] = []
+      }
+      acc[screenNumber].push(cue)
+      return acc
+    }, {})
+  }, [cues])
 
   const getCleanUrl = (file = {}) => {
     const url = file?.url || ""
@@ -56,12 +66,12 @@ const ScreensDisplay = ({
 
   // Get the current cue for the screen
   const getCurrentCueForScreen = (screenNumber) => {
-    if (!cues || cues.length === 0) return null
+    const cuesOnScreen = screenSortedCuesByScreen[Number(screenNumber)] || []
+    if (cuesOnScreen.length === 0) return null
 
     const currentIndex = Number(cueIndex)
 
-    const cueForScreen = cues
-      .filter((cue) => Number(cue.screen) === Number(screenNumber))
+    const cueForScreen = cuesOnScreen
       .sort((firstCue, secondCue) => Number(secondCue.index) - Number(firstCue.index))
       .find((cue) => {
         const cueStartIndex = Number(cue.index)
@@ -262,12 +272,12 @@ function EditorLayout(props) {
         />
       </div>
 
-      <div style={{}} className="edit-workspace" key="editWorkspace">
-        <div style={{}}>
+      <div className="edit-workspace" key="editWorkspace">
+        <div>
           <div className="edit-mode-workspace">
 
             <div id="timeline" className="edit-mode-timeline" style={{
-              height: "100%", width: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", flexGrow: "1"
+              height: "100%", width: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", flexGrow: "1"
             }}>
 
               <div id="edit-mode-scroll" >
@@ -290,7 +300,7 @@ function EditorLayout(props) {
             </div>
 
             <div className="edit-mode-cue-form" style={{
-              height: "100%", outline: "outlineColor", borderRadius: "8px", backgroundColor: "panelBackground", boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
+              height: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
               paddingBottom: "5px"
             }}>
               <CuesForm
