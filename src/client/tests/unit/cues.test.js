@@ -187,8 +187,14 @@ describe("CuesForm", () => {
 
     fireEvent.dragStart(mediaItem, { dataTransfer })
 
-    expect(dataTransfer.setData).toHaveBeenCalledTimes(1)
-    const [, payloadString] = dataTransfer.setData.mock.calls[0]
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      "application/json",
+      expect.any(String)
+    )
+    const applicationJsonCall = dataTransfer.setData.mock.calls.find(
+      ([mimeType]) => mimeType === "application/json"
+    )
+    const [, payloadString] = applicationJsonCall
     const payload = JSON.parse(payloadString)
 
     expect(payload.type).toBe("newCueFromForm")
@@ -213,8 +219,14 @@ describe("CuesForm", () => {
     const dataTransfer = createDataTransfer()
     fireEvent.dragStart(soundItem, { dataTransfer })
 
-    expect(dataTransfer.setData).toHaveBeenCalledTimes(1)
-    const [, payloadString] = dataTransfer.setData.mock.calls[0]
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      "application/json",
+      expect.any(String)
+    )
+    const applicationJsonCall = dataTransfer.setData.mock.calls.find(
+      ([mimeType]) => mimeType === "application/json"
+    )
+    const [, payloadString] = applicationJsonCall
     const payload = JSON.parse(payloadString)
 
     expect(payload.type).toBe("newCueFromForm")
@@ -254,8 +266,14 @@ describe("CuesForm", () => {
 
     fireEvent.dragStart(colorDragElement, { dataTransfer })
 
-    expect(dataTransfer.setData).toHaveBeenCalledTimes(1)
-    const [, payloadString] = dataTransfer.setData.mock.calls[0]
+    expect(dataTransfer.setData).toHaveBeenCalledWith(
+      "application/json",
+      expect.any(String)
+    )
+    const applicationJsonCall = dataTransfer.setData.mock.calls.find(
+      ([mimeType]) => mimeType === "application/json"
+    )
+    const [, payloadString] = applicationJsonCall
     const payload = JSON.parse(payloadString)
 
     expect(payload.type).toBe("newCueFromForm")

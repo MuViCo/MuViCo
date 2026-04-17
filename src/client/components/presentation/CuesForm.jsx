@@ -466,14 +466,19 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     onDragStart={(e) => {
                       suppressNativeDragGhost(e.dataTransfer)
                       const normalizedCueName = cueName.trim()
-
-                      e.dataTransfer.setData("application/json", JSON.stringify({
+                      const dragData = {
                         type: "newCueFromForm",
                         cueName: normalizedCueName.toLowerCase() !== "blank" ? normalizedCueName : "",
                         color: selectedColor || "#e014ee",
                         elementType: "color",
-                      }))
+                      }
+
+                      mediaStore.setActiveDragData(dragData)
+
+                      e.dataTransfer.setData("application/json", JSON.stringify(dragData))
+                      e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
                     }}
+                    onDragEnd={() => mediaStore.clearActiveDragData()}
                     p={6}
                     bg={selectedColor || "purple.100"}
                     border="2px dashed"
@@ -547,16 +552,20 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                               suppressNativeDragGhost(e.dataTransfer)
                               // Store the file in mediaStore so it can be retrieved on drop
                               mediaStore.addFile(media.id, media.file)
-                              
-                              e.dataTransfer.setData("application/json", JSON.stringify({
+                              const dragData = {
                                 type: "newCueFromForm",
                                 cueName: media.name,
                                 elementType: "media",
                                 mediaId: media.id,
                                 mimeType: media.type,
                                 previewUrl: media.preview,
-                              }))
+                              }
+                              mediaStore.setActiveDragData(dragData)
+                              
+                              e.dataTransfer.setData("application/json", JSON.stringify(dragData))
+                              e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
                             }}
+                            onDragEnd={() => mediaStore.clearActiveDragData()}
                             position="relative"
                             border="2px solid"
                             borderColor="purple.300"
@@ -649,15 +658,19 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                               suppressNativeDragGhost(e.dataTransfer)
                               // Store the file in mediaStore so it can be retrieved on drop
                               mediaStore.addFile(sound.id, sound.file)
-                              
-                              e.dataTransfer.setData("application/json", JSON.stringify({
+                              const dragData = {
                                 type: "newCueFromForm",
                                 cueName: sound.name,
                                 elementType: "sound",
                                 soundId: sound.id,
                                 mimeType: sound.type,
-                              }))
+                              }
+                              mediaStore.setActiveDragData(dragData)
+                              
+                              e.dataTransfer.setData("application/json", JSON.stringify(dragData))
+                              e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
                             }}
+                            onDragEnd={() => mediaStore.clearActiveDragData()}
                             display="flex"
                             alignItems="center"
                             justifyContent="space-between"

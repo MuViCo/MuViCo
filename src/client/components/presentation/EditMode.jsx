@@ -281,6 +281,7 @@ const EditMode = ({
     const clearTransientPreviews = () => {
       clearExternalPlacementPreview()
       hideHoverPreview()
+      mediaStore.clearActiveDragData()
     }
 
     window.addEventListener("drop", clearTransientPreviews)

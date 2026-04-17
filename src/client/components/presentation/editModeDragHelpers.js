@@ -1,4 +1,5 @@
 import { isCueTypeCompatibleWithRow } from "../utils/fileTypeUtils"
+import mediaStore from "./mediaFileStore"
 
 export const areSpanOverrideMapsEqual = (firstMap, secondMap) => {
   const firstKeys = Object.keys(firstMap)
@@ -54,14 +55,21 @@ export const getCueTypeFromDragData = (dragData) => {
 
 export const getDragDataFromDataTransfer = (dataTransfer) => {
   try {
-    const dataStr = dataTransfer?.getData("application/json")
-    if (!dataStr) {
-      return null
+    const dataStr =
+      dataTransfer?.getData("application/json") ||
+      dataTransfer?.getData("text/plain")
+
+    if (dataStr) {
+      const dragData = JSON.parse(dataStr)
+      if (dragData?.type === "newCueFromForm") {
+        return dragData
+      }
     }
 
-    const dragData = JSON.parse(dataStr)
-    return dragData?.type === "newCueFromForm" ? dragData : null
+    const cachedDragData = mediaStore.getActiveDragData()
+    return cachedDragData?.type === "newCueFromForm" ? cachedDragData : null
   } catch (error) {
-    return null
+    const cachedDragData = mediaStore.getActiveDragData()
+    return cachedDragData?.type === "newCueFromForm" ? cachedDragData : null
   }
 }
