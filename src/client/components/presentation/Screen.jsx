@@ -319,7 +319,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
       })
       setEmotionCache(cache)
     }
-  }, [emotionCache])
+  }, [windowRef.current, emotionCache])
 
   useEffect(() => {
     // After the window is ready, copy the Chakra styles
