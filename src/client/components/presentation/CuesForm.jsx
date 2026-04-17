@@ -26,8 +26,8 @@ import {
   Image,
   IconButton,
 } from "@chakra-ui/react"
-import { CheckIcon, CloseIcon, InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
-import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
+import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
+import { SpeakerIcon } from "../../lib/icons"
 import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
 import {
