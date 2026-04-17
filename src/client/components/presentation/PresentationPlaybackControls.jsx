@@ -3,15 +3,9 @@ import ClickablePopover from "../utils/ClickablePopover"
 
 import {
   Button,
-  Tooltip,
-  Icon,
   Box,
   IconButton,
   Heading,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -21,58 +15,15 @@ import {
 } from "@chakra-ui/react"
 import {
   QuestionIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
 } from "@chakra-ui/icons"
 import nextbutton from "../../public/icons/nextbutton.svg"
 import previousbutton from "../../public/icons/previousbutton.svg"
 import pausebutton from "../../public/icons/pausebutton.svg"
 import playbutton from "../../public/icons/playbutton.svg"
 
-
-
-const DropdownButton = ({ screenNumber, screens, toggleScreenMirroring }) => {
-  const allScreenNumbers = Object.keys(screens)
-
-  return (
-    <Menu>
-      <MenuButton
-        as={Button}
-        colorScheme="gray"
-        p={1}
-        aria-label={`Dropdown for screen ${screenNumber}`}
-      >
-        <ChevronDownIcon />
-      </MenuButton>
-      <MenuList>
-        <MenuItem onClick={() => toggleScreenMirroring(screenNumber, null)}>
-          No mirroring
-        </MenuItem>
-        {allScreenNumbers
-          .filter(
-            (targetScreen) =>
-              targetScreen !== screenNumber
-          )
-          .map((targetScreen) => (
-            <MenuItem
-              key={targetScreen}
-              onClick={() => toggleScreenMirroring(screenNumber, targetScreen)}
-            >
-              Mirror screen: {targetScreen}
-            </MenuItem>
-          ))}
-      </MenuList>
-    </Menu>
-  )
-}
-
-
 const AutoplayControls = ({
-  autoplayInterval,
   toggleAutoplay,
   isAutoplaying,
-  toggleAutoplayInterval,
 }) => {
 
   return (
@@ -118,10 +69,7 @@ const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
 
 const ScreenToggleButtons = ({
   screens,
-  toggleScreenVisibility,
-  toggleScreenMirroring,
   toggleAllScreens,
-  mirroring,
 }) => {
 
   const allScreenNumbers = Object.keys(screens)
@@ -138,13 +86,11 @@ const ScreenToggleButtons = ({
       >
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
-      <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
-      </Box>
     </Box>
   )
 }
 
-const CueNavigationPrevious = ({ cueIndex, updateCue, indexCount }) => (
+const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
   <IconButton
     aria-label="Previous Cue"
     icon={<img src={previousbutton} alt="" width="35" height="35" aria-hidden="true" />}
@@ -164,13 +110,10 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   />
 )
 
-// ShowModeButtons component to handle screen visibility and cue navigation
-const ShowModeButtons = ({
+// Shared playback controls for presentation navigation and autoplay.
+const PresentationPlaybackControls = ({
   screens,
-  toggleScreenVisibility,
-  toggleScreenMirroring,
   toggleAllScreens,
-  mirroring,
   cueIndex,
   updateCue,
   indexCount,
@@ -182,7 +125,7 @@ const ShowModeButtons = ({
 }) => (
 
   <Box bg="" display="flex" flexDirection="row" alignItems="center" justifyContent="left" gap={4} ml={2.5} mt={1.5}>
-    <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
+    <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
     <Box w="150px" display="flex" justifyContent="center" >
       <Heading size="md" textAlign="center" whiteSpace="nowrap">
         {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
@@ -190,18 +133,13 @@ const ShowModeButtons = ({
     </Box>
 
     <AutoplayControls
-      autoplayInterval={autoplayInterval}
       toggleAutoplay={toggleAutoplay}
       isAutoplaying={isAutoplaying}
-      toggleAutoplayInterval={toggleAutoplayInterval}
     />
     <CueNavigationNext cueIndex={cueIndex} updateCue={updateCue} indexCount={indexCount} />
     <ScreenToggleButtons
       screens={screens}
-      toggleScreenVisibility={toggleScreenVisibility}
-      toggleScreenMirroring={toggleScreenMirroring}
       toggleAllScreens={toggleAllScreens}
-      mirroring={mirroring}
     />
 
     <AutoplayInterval
@@ -267,4 +205,4 @@ const ShowModeButtons = ({
   </Box>
 )
 
-export default ShowModeButtons
+export default PresentationPlaybackControls
