@@ -5,6 +5,7 @@
 
 const mediaStore = {
   files: new Map(), // Maps file ID to file object
+  activeDragData: null,
   
   addFile(id, file) {
     this.files.set(id, file)
@@ -20,7 +21,19 @@ const mediaStore = {
   
   clear() {
     this.files.clear()
-  }
+  },
+
+  setActiveDragData(dragData) {
+    this.activeDragData = dragData || null
+  },
+
+  getActiveDragData() {
+    return this.activeDragData
+  },
+
+  clearActiveDragData() {
+    this.activeDragData = null
+  },
 }
 
 export default mediaStore
