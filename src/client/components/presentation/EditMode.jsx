@@ -6,13 +6,6 @@ import {
   extendTheme,
   useOutsideClick,
   useColorModeValue,
-  IconButton,
-  Button,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Portal
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -43,12 +36,9 @@ import {
   getCueTypeFromDragData,
   getDragDataFromDataTransfer,
 } from "./editModeDragHelpers"
-import StatusTooltip from "./StatusToolTip"
 import CustomAlert from "../utils/CustomAlert"
 import Dialog from "../utils/AlertDialog"
 import { useCustomToast } from "../utils/toastUtils"
-import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
-import { AddIcon, ChevronDownIcon, MinusIcon } from "@chakra-ui/icons"
 import screenIcon from "../../public/icons/screen.svg"
 import {
   getAudioRow,
@@ -99,7 +89,7 @@ const EditMode = ({
   const [status, setStatus] = useState("saved")
   const [selectedCue, setSelectedCue] = useState(null)
 
-  const [doubleClickPosition, setDoubleClickPosition] = useState({
+  const [, setDoubleClickPosition] = useState({
     xIndex: 0,
     yIndex: 0,
   })
@@ -219,7 +209,6 @@ const EditMode = ({
     showHoverPreview,
     updateDragPreviewCell,
     hideDragPlacementPreview,
-    hideExternalPlacementPreview,
     cancelDragPreviewFrame,
     clearExternalPlacementPreview,
     primeDragPreviewFromEvent,

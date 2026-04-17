@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, forwardRef, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
   Button,
-  VStack,
-  HStack,
   useColorModeValue,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
@@ -15,7 +13,7 @@ import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
-import ShowModeButtons from "./ShowModeButtons"
+import PresentationPlaybackControls from "./PresentationPlaybackControls"
 import PresentationTitle from "./PresentationTitle"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
@@ -163,9 +161,7 @@ function EditorLayout(props) {
     isAudioMode = false,
     screens = {},
     toggleScreenVisibility = () => { },
-    toggleScreenMirroring = () => { },
     toggleAllScreens = () => { },
-    mirroring = {},
     autoplayInterval = 1,
     toggleAutoplay = () => { },
     isAutoplaying = false,
@@ -252,12 +248,9 @@ function EditorLayout(props) {
           onNext={() => updateCue("Next")}
           onPrevious={() => updateCue("Previous")}
         />
-        <ShowModeButtons
+        <PresentationPlaybackControls
           screens={screens}
-          toggleScreenVisibility={toggleScreenVisibility}
-          toggleScreenMirroring={toggleScreenMirroring}
           toggleAllScreens={toggleAllScreens}
-          mirroring={mirroring}
           cueIndex={cueIndex}
           updateCue={updateCue}
           indexCount={indexCount}
@@ -401,18 +394,6 @@ const EditModeContainer = ({
       })
 
       return updated
-    })
-  }
-
-  const toggleScreenMirroring = (screenNumber, targetScreen) => {
-    setMirroring((prevMirroring) => {
-      const updatedMirroring = { ...prevMirroring }
-      if (targetScreen) {
-        updatedMirroring[screenNumber] = targetScreen
-      } else {
-        delete updatedMirroring[screenNumber]
-      }
-      return updatedMirroring
     })
   }
 
@@ -581,9 +562,7 @@ const EditModeContainer = ({
       isAudioMode={isAudioMode}
       screens={screens}
       toggleScreenVisibility={toggleScreenVisibility}
-      toggleScreenMirroring={toggleScreenMirroring}
       toggleAllScreens={toggleAllScreens}
-      mirroring={mirroring}
       autoplayInterval={autoplayInterval}
       toggleAutoplay={toggleAutoplay}
       isAutoplaying={isAutoplaying}
