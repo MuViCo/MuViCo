@@ -405,7 +405,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           {cueData ? (
             <Heading size="md" mb={4}>Edit Element</Heading>
           ) : (
-            <Heading size="md" mb={4}>Add element</Heading>
+            <Heading size="md" mb={4} color="white">Add element</Heading>
           )}
 
           <Box>
