@@ -14,17 +14,16 @@
     "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
     "format": "prettier --write '*.{js,json,css,md}'",
-    "test": "NODE_ENV=test jest --runInBand",
+    "test": "jest --runInBand",
     "test-frontend": "jest --coverage --selectProjects Frontend",
-    "test-backend": "NODE_ENV=test jest --coverage --runInBand --selectProjects Backend",
-    "coverage": "NODE_ENV=test jest --runInBand --coverage && xdg-open coverage/lcov-report/index.html",
+    "test-backend": "jest --coverage --runInBand --selectProjects Backend",
+    "coverage": "jest --runInBand --coverage && xdg-open coverage/lcov-report/index.html",
     "build": "vite build",
     "e2e": "concurrently --kill-others 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium --ui'",
     "e2e-headless": "concurrently --success command-playwright --kill-others --names node,vite,playwright 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium'",
     "e2e:report": "playwright show-report"
   },
   "jest": {
-    "collectCoverage": false,
     "coverageReporters": ["lcov"],
     "projects": [
       {
@@ -44,9 +43,6 @@
         "displayName": "Backend",
         "testMatch": [
           "<rootDir>/src/server/tests/*"
-        ],
-        "testPathIgnorePatterns": [
-          "/helper\\.js$"
         ]
       }
     ]
