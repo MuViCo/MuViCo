@@ -14,17 +14,19 @@
     "prod": "NODE_ENV=production node src/server/index.js",
     "lint": "eslint 'src/**/*.js' 'src/**/*.jsx'",
     "format": "prettier --write '*.{js,json,css,md}'",
-    "test": "jest --runInBand",
+    "test": "jest",
     "test-frontend": "jest --coverage --selectProjects Frontend",
-    "test-backend": "jest --coverage --runInBand --selectProjects Backend",
-    "coverage": "jest --runInBand --coverage && xdg-open coverage/lcov-report/index.html",
+    "test-backend": "jest --coverage --selectProjects Backend",
+    "coverage": "jest --coverage && xdg-open coverage/lcov-report/index.html",
     "build": "vite build",
     "e2e": "concurrently --kill-others 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium --ui'",
     "e2e-headless": "concurrently --success command-playwright --kill-others --names node,vite,playwright 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium'",
     "e2e:report": "playwright show-report"
   },
   "jest": {
-    "coverageReporters": ["lcov"],
+    "coverageReporters": [
+      "lcov"
+    ],
     "projects": [
       {
         "displayName": "Frontend",
@@ -41,6 +43,7 @@
       },
       {
         "displayName": "Backend",
+        "preset": "@shelf/jest-mongodb",
         "testMatch": [
           "<rootDir>/src/server/tests/*"
         ]
@@ -96,6 +99,7 @@
     "@babel/preset-react": "^7.26.3",
     "@eslint/compat": "^1.2.7",
     "@playwright/test": "^1.56.1",
+    "@shelf/jest-mongodb": "^4.3.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
