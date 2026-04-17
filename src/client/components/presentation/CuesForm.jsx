@@ -77,8 +77,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const fileInputRef = useRef(null)
   const [color, setColor] = useState()
   const [selectedColor, setSelectedColor] = useState("#9244ff")
-  const presetColors = ["#000000","#787878", "#ffffff","#ffff00","#ff7f00","#ff0000","#ff00ff","#9142ff","#00ffff","#0000ff","#00ff00", 
+  const presetColors = ["#000000","#787878", "#c0c0c0", "#ffffff","#ff0000","#ff8000","#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#7f00ff", "#ff00ff", "#ff007f",
       ]
+
 
   // Media pool states
   const [mediaFiles, setMediaFiles] = useState([])
