@@ -453,6 +453,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                       placeholder="Color Element"
                       mb={2}
                       color="black"
+                      sx={{ color: "black !important", caretColor: "black" }}
+                      _placeholder={{ color: "#acacac" }}
                       onChange={(e) => setCueName(e.target.value)}
                       required
                     />
