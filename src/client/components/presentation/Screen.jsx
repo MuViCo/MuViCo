@@ -319,7 +319,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
       })
       setEmotionCache(cache)
     }
-  }, [windowRef.current, emotionCache])
+  }, [emotionCache])
 
   useEffect(() => {
     // After the window is ready, copy the Chakra styles
@@ -353,7 +353,7 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         setCurrentScreenData(screenData)
       }
     } windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}`
-  }, [screenData, currentScreenData, isWindowReady])
+  }, [screenData, currentScreenData, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
