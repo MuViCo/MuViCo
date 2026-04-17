@@ -16,6 +16,7 @@ import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import ShowModeButtons from "./ShowModeButtons"
+import PresentationTitle from "./PresentationTitle"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
@@ -148,6 +149,7 @@ const ScreensDisplay = ({
 function EditorLayout(props) {
   const {
     id,
+    presentationName,
     screenCount,
     cues,
     isToolboxOpen,
@@ -206,11 +208,13 @@ function EditorLayout(props) {
       <Box
         display="flex"
         alignItems="center"
+        justifyContent="space-between"
         gap="12px"
         padding="12px 20px"
         backgroundColor={panelBackground}
         outline={outlineColor}
         borderRadius="8px"
+        position="relative"
         key="header"
       >
         <Button
@@ -222,8 +226,12 @@ function EditorLayout(props) {
         <Button className="edit-mode-btn edit-mode-btn-show-mode">
           Go to Show Mode
         </Button>
-        <Box as="h1" fontSize="30px" margin="0" fontWeight="bold">
-          EDIT MODE
+        <Box position="absolute" left="50%" transform="translateX(-50%)">
+          <PresentationTitle
+            id={id}
+            presentationName={presentationName}
+            showMode={isShowMode}
+          />
         </Box>
             <Button
               className="edit-mode-btn edit-mode-btn-tutorial"
@@ -352,6 +360,7 @@ const EditModeContainer = ({
 
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
+  const presentationName = presentation?.name
   const screenCount = presentation?.screenCount
 
   const [screens, setScreens] = useState({})
@@ -612,6 +621,7 @@ const EditModeContainer = ({
 
     <EditorLayout
       id={id}
+      presentationName={presentationName}
       screenCount={screenCount}
       cues={cues}
       isToolboxOpen={isToolboxOpen}
