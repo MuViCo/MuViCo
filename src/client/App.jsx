@@ -18,6 +18,7 @@ import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
 import MaintenanceNotice from "./components/maintenancenotice"
+import authService from "./services/auth"
 
 const App = () => {
   const [user, setUser] = useState(null)

@@ -74,13 +74,13 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
     setUser(null)
     navigate("/")
   }
-  const onLogin = (userJSON) => {
-    setUser(userJSON)
+  const onLogin = (user) => {
+    setUser(user)
     navigate("/home")
   }
 
-  const onSignup = (userJSON) => {
-    setUser(userJSON)
+  const onSignup = (user) => {
+    setUser(user)
     navigate("/home")
   }
 
@@ -100,6 +100,7 @@ const NavBar = ({ user, setUser, topOffset = 40 }) => {
     if (isTokenExpired(token)) {
       handleLogout(navigate, setUser)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) //run only once
 
 
