@@ -403,15 +403,16 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       color: isActive ? "white" : "black",
       cursor: "pointer",
       fontWeight: isActive ? "bold" : "normal",
-      borderRadius: isActive ? "4px 4px 0 0" : "4px",
-      marginRight: "4px",
+      borderRadius: "4px 4px 0 0",
+      borderBottomLeftRadius: "0px",
+      borderBottomRightRadius: "0px",
       transition: "all 0.2s",
       width: "100px",
     }),
     tabContent: {
       padding: "16px",
       backgroundColor: "#D6BCFA",
-      borderRadius: "0 4px 4px 4px",
+      borderRadius: "0 0 4px 4px",
       minHeight: "200px",
       overflowY: "auto",
     },
@@ -433,7 +434,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           )}
 
           <Box>
-            <HStack spacing={0} mb={0}>
+            <div style={{width:"100%", display:"flex", flexDirection:"row", justifyContent: "space-between"}}>
               <Button
                 onClick={() => setActiveTab("colors")}
                 style={tabStyles.button(activeTab === "colors")}
@@ -455,7 +456,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
               >
                 Audio
               </Button>
-            </HStack>
+            </div>
 
             <Box style={tabStyles.tabContent}>
               {activeTab === "colors" && (
