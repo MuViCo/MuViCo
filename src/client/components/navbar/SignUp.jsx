@@ -16,16 +16,17 @@ import {
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
 import authService from "../../services/auth"
-import {
+
+const {
   minPwLength,
   maxPwLength,
+  invalidPwCharRegex,
   minUsernameLength,
   maxUsernameLength,
-  invalidPwCharRegex,
   usernameAllowedCharsRegex,
   usernameStartEndRegex,
   usernameConsecutiveSpecialsRegex,
-} from "../../../constants"
+} = import("../../../constants.js")
 
 const initialValues = {
   username: "",
