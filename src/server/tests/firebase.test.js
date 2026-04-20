@@ -12,13 +12,6 @@ jest.mock("firebase-admin", () => {
   }
 })
 
-jest.mock("@aws-sdk/client-secrets-manager", () => ({
-  SecretsManagerClient: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({ SecretString: "{}" }),
-  })),
-  GetSecretValueCommand: jest.fn(),
-}))
-
 describe("verifyToken middleware", () => {
   let req, res, next
 

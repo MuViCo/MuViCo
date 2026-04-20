@@ -7,6 +7,49 @@ on:
 
 jobs:
   test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm test -- --coverage
+        env: &testing_env
+          PORT: 8000
+          VITE_DEV_PORT: 3000
+          TEST_MONGODB_URI: "mongodb://localhost/test"
+          PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
+          BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
+          BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
+          ACCESS_KEY: ${{ secrets.UPCLOUD_ACCESS_KEY }}
+          SECRET_ACCESS_KEY: ${{ secrets.UPCLOUD_SECRET_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_KEY: ${{ secrets.FIREBASE_SERVICE_KEY }}
+          SECRET: ${{ secrets.SECRET }}
+
+      - name: Upload frontend & backend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+
+  e2e:
+    needs: test
+    name: End-to-End tests
     runs-on: ubuntu-latest
 
     steps:
@@ -25,52 +68,12 @@ jobs:
       - name: Install playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run linter
-        run: npm run lint
-
-      - name: Run unit tests
-        run: npm run test-all
-        env:
-          TEST_MONGODB_URI: "mongodb://localhost/test"
-          PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
-          BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
-          BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
-          ACCESS_KEY: ${{ secrets.UPCLOUD_ACCESS_KEY }}
-          SECRET_ACCESS_KEY: ${{ secrets.UPCLOUD_SECRET_KEY }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          FIREBASE_SERVICE_KEY: ${{ secrets.FIREBASE_SERVICE_KEY }}
-          SECRET: ${{ secrets.SECRET }}
-
-      - name: Upload frontend & backend coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/frontend/lcov.info,coverage/backend/lcov.info
-
       - name: Run E2E tests
         run: npm run e2e-headless
-        env:
-          PORT: 8000
-          VITE_DEV_PORT: 3000
-          TEST_MONGODB_URI: "mongodb://localhost/test"
-          PUBLIC_S3_ENDPOINT: ${{ secrets.UPCLOUD_ENDPOINT }}
-          BUCKET_NAME: ${{ secrets.UPCLOUD_BUCKET }}
-          BUCKET_REGION: ${{ secrets.UPCLOUD_REGION }}
-          ACCESS_KEY: ${{ secrets.UPCLOUD_ACCESS_KEY }}
-          SECRET_ACCESS_KEY: ${{ secrets.UPCLOUD_SECRET_KEY }}
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          FIREBASE_SERVICE_KEY: ${{ secrets.FIREBASE_SERVICE_KEY }}
-          SECRET: ${{ secrets.SECRET }}
-
+        env: *testing_env
 
   build:
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
 
     steps:

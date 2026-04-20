@@ -93,7 +93,7 @@ export default defineConfig([
       "no-underscore-dangle": [
         "error",
         {
-          allow: ["_id", "__v"],
+          allow: ["_id", "__v", "__MONGO_URI__"],
         },
       ],
 

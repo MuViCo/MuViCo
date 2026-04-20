@@ -11,7 +11,11 @@ const {
 const api = supertest(app)
 const Presentation = require("../models/presentation")
 const User = require("../models/user")
-const { usersInDb } = require("./test_helper")
+
+const usersInDb = async () => {
+  const users = await User.find({})
+  return users.map((user) => user.toJSON())
+}
 
 const presentation1 = new Presentation({ name: "Test Presentation 1" })
 const presentation2 = new Presentation({ name: "Another Presentation" })
