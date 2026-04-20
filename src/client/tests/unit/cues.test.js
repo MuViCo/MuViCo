@@ -1,26 +1,29 @@
 import CuesForm from "../../components/presentation/CuesForm"
 import mediaStore from "../../components/presentation/mediaFileStore"
-import { render, screen, fireEvent, within } from "@testing-library/react"
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { MemoryRouter } from "react-router-dom"
 
 const renderCuesForm = (props = {}) => {
   const defaults = {
     addCue: jest.fn(),
+    updateCue: jest.fn(),
     onClose: jest.fn(),
     cues: [],
     screenCount: 4,
     indexCount: 5,
   }
 
-  render(
+  const view = render(
     <MemoryRouter>
       <CuesForm {...defaults} {...props} />
     </MemoryRouter>
   )
 
   return {
+    ...view,
     addCue: props.addCue || defaults.addCue,
+    updateCue: props.updateCue || defaults.updateCue,
     onClose: props.onClose || defaults.onClose,
   }
 }
@@ -297,5 +300,72 @@ describe("CuesForm", () => {
     const payload = JSON.parse(payloadString)
 
     expect(payload.cueName).toBe("")
+  })
+
+  test("submits add mode form and calls addCue with current values", () => {
+    const { addCue, onClose } = renderCuesForm()
+
+    const form = screen.getByText("Add element").closest("form")
+    fireEvent.submit(form)
+
+    expect(addCue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file: "",
+        cueName: "",
+        screen: 1,
+      })
+    )
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  test("submits edit mode form and calls updateCue", async () => {
+    const updateCue = jest.fn().mockResolvedValue({})
+    const onClose = jest.fn()
+    renderCuesForm({
+      updateCue,
+      onClose,
+      cueData: {
+        _id: "cue-123",
+        name: "Existing cue",
+        index: 2,
+        screen: 3,
+        color: "#ffffff",
+        file: {
+          name: "existing.png",
+          type: "image/png",
+          url: "https://example.com/existing.png",
+        },
+      },
+    })
+
+    const form = screen.getByText("Edit Element").closest("form")
+    fireEvent.submit(form)
+
+    await waitFor(() => {
+      expect(updateCue).toHaveBeenCalledWith(
+        "cue-123",
+        expect.objectContaining({
+          cueId: "cue-123",
+          cueName: "Existing cue",
+          index: 2,
+          screen: 3,
+        })
+      )
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
+
+  test("revokes media preview URLs on unmount cleanup", () => {
+    const { unmount } = renderCuesForm()
+
+    const mediaInput = document.getElementById("media-upload")
+    const firstImage = new File(["img1"], "photo1.png", { type: "image/png" })
+    const secondImage = new File(["img2"], "photo2.png", { type: "image/png" })
+    fireEvent.change(mediaInput, { target: { files: [firstImage, secondImage] } })
+
+    unmount()
+
+    expect(URL.revokeObjectURL).toHaveBeenCalled()
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
   })
 })
