@@ -22,6 +22,5 @@ const generateUniqueUsername = async (preferredUsername, userModel) => {
 }
 
 module.exports = {
-  normalizeUsername,
   generateUniqueUsername,
 }
