@@ -1,8 +1,9 @@
 import React from "react"
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"
 import { useDispatch } from "react-redux"
+import { removeCue, updatePresentation } from "../../redux/presentationReducer"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -192,6 +193,198 @@ describe("GridLayoutComponent", () => {
 
     expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toHaveStyle({
       opacity: "0.76",
+    })
+  })
+
+  it("renders video media for visual video cues", () => {
+    const cues = [
+      {
+        _id: "video-1",
+        index: 0,
+        screen: 1,
+        name: "Video cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: { type: "video/mp4", url: "https://example.com/video.mp4", name: "video.mp4" },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      },
+    ]
+
+    const { container } = renderGrid(cues, [
+      { i: "video-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    expect(container.querySelector('video[src="https://example.com/video.mp4"]')).toBeInTheDocument()
+  })
+
+  it("renders audio media in show mode when cue index is active", () => {
+    const cues = [
+      {
+        _id: "audio-1",
+        index: 0,
+        screen: 3,
+        name: "Audio cue 1",
+        color: "#ffffff",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/audio-1.mp3", name: "audio-1.mp3" },
+        loop: true,
+      },
+      {
+        _id: "audio-2",
+        index: 5,
+        screen: 3,
+        name: "Audio cue 2",
+        color: "#ffffff",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/audio-2.mp3", name: "audio-2.mp3" },
+        loop: false,
+      },
+    ]
+
+    const { container } = renderGrid(
+      cues,
+      [
+        { i: "audio-1", x: 0, y: 2, w: 5, h: 1, static: false },
+        { i: "audio-2", x: 5, y: 2, w: 5, h: 1, static: false },
+      ],
+      {
+        isShowMode: true,
+        cueIndex: 3,
+        screenCount: 2,
+      }
+    )
+
+    expect(container.querySelector('audio[src="https://example.com/audio-1.mp3"]')).toBeInTheDocument()
+  })
+
+  it("does not render audio media in show mode when cue index is before cue", () => {
+    const cues = [
+      {
+        _id: "audio-1",
+        index: 1,
+        screen: 3,
+        name: "Audio cue 1",
+        color: "#ffffff",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/audio-1.mp3", name: "audio-1.mp3" },
+        loop: false,
+      },
+    ]
+
+    const { container } = renderGrid(
+      cues,
+      [{ i: "audio-1", x: 1, y: 2, w: 9, h: 1, static: false }],
+      {
+        isShowMode: true,
+        cueIndex: 0,
+        screenCount: 2,
+      }
+    )
+
+    expect(container.querySelector("audio")).not.toBeInTheDocument()
+  })
+
+  it("handles copy action from cue menu", async () => {
+    const setCopiedCue = jest.fn()
+    const setIsCopied = jest.fn()
+    const setShowAlert = jest.fn()
+    const setAlertData = jest.fn()
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }],
+      {
+        setCopiedCue,
+        setIsCopied,
+        setShowAlert,
+        setAlertData,
+      }
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue"))
+
+    await waitFor(() => {
+      expect(setIsCopied).toHaveBeenCalledWith(true)
+      expect(setCopiedCue).toHaveBeenCalledWith(cue)
+      expect(setShowAlert).toHaveBeenCalledWith(true)
+      expect(setAlertData).toHaveBeenCalled()
+    })
+  })
+
+  it("handles delete action from cue menu", async () => {
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
+    }
+
+    renderGrid([cue], [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }])
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Delete Visual cue"))
+
+    fireEvent.click(await screen.findByRole("button", { name: "Yes" }))
+
+    await waitFor(() => {
+      expect(removeCue).toHaveBeenCalledWith("presentation-1", "visual-1")
+    })
+  })
+
+  it("handles loop toggle action for audio cue", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        loop: true,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: { type: "audio/mpeg", url: "https://example.com/audio.mp3", name: "audio.mp3" },
+      loop: false,
+    }
+
+    renderGrid([cue], [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }])
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Loop audio Audio cue"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueId: "audio-1",
+          loop: true,
+        })
+      )
     })
   })
 })
