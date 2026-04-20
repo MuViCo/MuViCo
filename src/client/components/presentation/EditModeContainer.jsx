@@ -10,7 +10,6 @@ import {
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
-import "react-resizable/css/styles.css"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"

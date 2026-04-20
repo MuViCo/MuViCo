@@ -60,9 +60,6 @@ const isAllowedMimeType = (mimeType = "") => {
 
 module.exports = {
   VALID_CUE_TYPES,
-  VALID_VIDEO_MIME_TYPES,
-  VALID_IMAGE_MIME_TYPES,
-  VALID_AUDIO_MIME_TYPES,
   getAudioRow,
   isAudioScreen,
   getCueTypeFromScreen,
