@@ -1,5 +1,12 @@
 import React from "react"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import {
+  act,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
 import { useDispatch, useSelector } from "react-redux"
@@ -564,19 +571,26 @@ describe("EditMode drag swapping", () => {
       clientY: 120,
     })
 
+    const dropEvent = createEvent.drop(dropArea)
+    Object.defineProperty(dropEvent, "dataTransfer", {
+      value: dataTransfer,
+      configurable: true,
+    })
+    Object.defineProperty(dropEvent, "clientX", {
+      value: 170,
+      configurable: true,
+    })
+    Object.defineProperty(dropEvent, "clientY", {
+      value: 120,
+      configurable: true,
+    })
+
     await act(async () => {
-      fireEvent.drop(dropArea, {
-        dataTransfer,
-        clientX: 170,
-        clientY: 120,
-      })
+      fireEvent(dropArea, dropEvent)
     })
 
-    await waitFor(() => {
-      expect(screen.getByTestId("mock-alert-dialog")).toBeInTheDocument()
-    })
-
-    fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+    const confirmButton = await screen.findByTestId("confirm-dialog-confirm")
+    fireEvent.click(confirmButton)
 
     await waitFor(() => {
       expect(updatePresentation).toHaveBeenCalledWith(
