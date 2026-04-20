@@ -16,52 +16,52 @@
  */
 
 function makeResizable(base_element, handle_element) {
-    const resizableBox = base_element;
-    const resizeHandle = handle_element;
+    const resizableBox = base_element
+    const resizeHandle = handle_element
 
     // --- State Variables for Dragging ---
-    let isResizing = false;
+    let isResizing = false
 
     // 1. MOUSE DOWN: Start the resizing process
-    resizeHandle.addEventListener('mousedown', (e) => {
+    resizeHandle.addEventListener("mousedown", (e) => {
         // Prevent text selection while dragging
-        e.preventDefault();
-        isResizing = true;
+        e.preventDefault()
+        isResizing = true
         // Change cursor globally while resizing
-        document.body.style.cursor = 'ns-resize';
-    });
+        document.body.style.cursor = "ns-resize"
+    })
 
     // 2. MOUSE MOVE: Update the size while the mouse is held down
-    document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
+    document.addEventListener("mousemove", (e) => {
+        if (!isResizing) return
 
         // Calculate the new width: 
         // Original Right Edge Position - Current Mouse X Position + Original Width
 
         // Get the current right edge position of the box
-        const boxRect = resizableBox.getBoundingClientRect();
+        const boxRect = resizableBox.getBoundingClientRect()
 
         // Calculate the new width based on the mouse's horizontal position relative to the box's top edge
         // e.clientY gives the absolute X position of the mouse on the screen.
         // e.clientY - boxRect.top gives the mouse position relative to the box's top edge.
-        let newHeight = e.clientY - boxRect.top;
+        let newHeight = e.clientY - boxRect.top
 
         // Ensure the minimum width is not zero or negative
         if (newHeight < 50) {
-            newHeight = 50;
+            newHeight = 50
         }
 
         // Apply the new width
-        resizableBox.style.height = `${newHeight}px`;
-    });
+        resizableBox.style.height = `${newHeight}px`
+    })
 
     // 3. MOUSE UP: Stop the resizing process
-    document.addEventListener('mouseup', () => {
+    document.addEventListener("mouseup", () => {
         if (isResizing) {
-            isResizing = false;
-            document.body.style.cursor = 'default';
+            isResizing = false
+            document.body.style.cursor = "default"
         }
-    });
+    })
 }
 
 

@@ -24,6 +24,10 @@ describe("Screen", () => {
     delete window.open
   })
 
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   test("sets window title to Starting Frame at index 0", async () => {
     const screenData = {
       file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
@@ -108,5 +112,88 @@ describe("Screen", () => {
 
     expect(consoleLogSpy).toHaveBeenCalledWith("Rendering media with file:", null)
     consoleLogSpy.mockRestore()
+  })
+
+  test("does not open popup when screen is not visible", () => {
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={{
+          file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
+          index: 1,
+          name: "hidden-cue",
+          screen: 1,
+          _id: "hidden-cue",
+          loop: false,
+        }}
+        isVisible={false}
+        onClose={() => {}}
+      />
+    )
+
+    expect(window.open).not.toHaveBeenCalled()
+  })
+
+  test("renders video media when cue is a video", async () => {
+    const screenData = {
+      file: { url: "http://example.com/video.mp4", type: "video/mp4", name: "video.mp4" },
+      index: 2,
+      name: "video-cue",
+      screen: 1,
+      _id: "id-video",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.body.querySelector('video[src="http://example.com/video.mp4"]')).toBeTruthy()
+    })
+  })
+
+  test("renders audio media when cue is audio", async () => {
+    const screenData = {
+      file: { url: "http://example.com/audio.mp3", type: "audio/mpeg", name: "audio.mp3" },
+      index: 3,
+      name: "audio-cue",
+      screen: 1,
+      _id: "id-audio",
+      loop: true,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.body.querySelector("audio")).toBeTruthy()
+      expect(popup.document.body.textContent).toContain("Your browser does not support the audio element")
+    })
+  })
+
+  test("falls back to local image path when image url is missing", async () => {
+    const screenData = {
+      file: { url: "", type: "image/jpg", name: "fallback.jpg" },
+      index: 5,
+      name: "fallback-cue",
+      screen: 1,
+      _id: "id-fallback",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      const image = popup.document.body.querySelector('img[alt="fallback-cue"]')
+      expect(image).toBeTruthy()
+      expect(image.getAttribute("src")).toContain("/fallback.jpg")
+    })
   })
 })
