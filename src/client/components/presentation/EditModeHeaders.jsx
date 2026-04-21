@@ -1,3 +1,6 @@
+/*
+* components for rendering the row and column headers in the presentation editor, including controls for adding/removing screens and frames, and toggling audio mute.
+ */
 import React from "react"
 import {
   Box,
@@ -8,6 +11,7 @@ import { AddIcon, MinusIcon } from "@chakra-ui/icons"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import trashIcon from "../../public/icons/trash.svg"
 
+// Base component for rendering row headers, memoized for performance optimization. Displays screen labels and an audio row with a mute/unmute button, as well as controls for adding/removing screens.
 const RowHeadersBase = ({
   yLabels,
   gap,
@@ -137,6 +141,7 @@ const RowHeadersBase = ({
   ))
 }
 
+// Base component for rendering column headers, memoized for performance optimization. Displays frame labels and controls for adding/removing frames.
 const ColumnHeadersBase = ({
   xLabels,
   cueIndex,

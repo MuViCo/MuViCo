@@ -1,3 +1,7 @@
+/*
+* Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library.
+* The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
+ */
 import React, { useState, useMemo } from "react"
 import {
   Box,
@@ -106,6 +110,8 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
   }
 }
 
+// Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library. 
+// The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
 const GridLayoutComponent = ({
   id,
   layout,
@@ -201,6 +207,7 @@ const GridLayoutComponent = ({
     setIsToolboxOpen(true)
   }
 
+  // helper component for rendering edit mode buttons for each cue, including options to edit, copy, delete, and toggle loop for audio cues
   const EditModeCueButtons = (cue) => (
     <Menu isLazy>
       <MenuButton
@@ -311,7 +318,8 @@ const GridLayoutComponent = ({
       </Portal>
     </Menu>
   )
-
+  
+  // helper functions for managing drag-and-drop interactions in the presentation editor
   return (
     <GridLayout
       className="layout"
