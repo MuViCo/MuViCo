@@ -1,3 +1,8 @@
+/** Footer component
+ * Displays the footer of the application with copyright information, 
+ * version number, and links to terms, privacy policy, and GitHub repository.
+ */
+
 import { Box } from "@chakra-ui/react"
 import { Link } from "react-router-dom"
 
