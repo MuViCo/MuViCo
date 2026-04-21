@@ -17,12 +17,11 @@ import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
-import MaintenanceNotice from "./components/maintenancenotice"
 import authService from "./services/auth"
 
 const App = () => {
   const [user, setUser] = useState(null)
-  const [bannerHeight, setBannerHeight] = useState(40)
+  // const [bannerHeight, setBannerHeight] = useState(40)
 
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -51,8 +50,7 @@ const App = () => {
     <ChakraProvider theme={theme}>
       <Fonts />
       <Box minH="100vh" display="flex" flexDirection="column">
-        <MaintenanceNotice onHeightChange={setBannerHeight} />
-        <NavBar user={user} setUser={setUser} topOffset={bannerHeight} />
+        <NavBar user={user} setUser={setUser} />
         <Container
           flex="1"
           pt={isPresentation || isHome || isProfile ? 36 : 30}

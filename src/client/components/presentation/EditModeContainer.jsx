@@ -88,12 +88,17 @@ function EditorLayout(props) {
         position="relative"
         key="header"
       >
-        <Button
+
+        {/* TODO: 
+            The presentation settings button is not yet functional. Consider adding for example the 
+            cue transition animation selection into the settings */}
+        {/* <Button
           aria-label="Presentation Settings"
           className="edit-mode-btn edit-mode-btn-settings"
         >
           <img src={settingsIcon} alt="" width="24" height="24" />
-        </Button>
+        </Button> */}
+
         <Box position="absolute" left="50%" transform="translateX(-50%)">
           <PresentationTitle
             id={id}
