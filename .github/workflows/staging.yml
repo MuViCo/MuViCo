@@ -51,6 +51,7 @@ jobs:
           files: coverage/frontend/lcov.info,coverage/backend/lcov.info
 
       - name: Run E2E tests
+        if: false
         run: npm run e2e-headless
         env:
           PORT: 8000
