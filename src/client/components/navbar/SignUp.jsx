@@ -1,3 +1,10 @@
+/**
+ * SignUp component for the MuViCo application.
+ * Provides a form for users to create a new account with username and password.
+ * Validates input fields and checks username availability in real-time.
+ * Displays error messages for validation issues and server errors.
+ */
+
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import * as yup from "yup"
@@ -149,7 +156,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
       }
     }, 350)
   }
-
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -180,7 +187,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
       setIsSubmitting(false)
     }
   }
-
+  // Handle Enter and Tab key navigation between form fields and submission
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault()
@@ -328,6 +335,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
     </>
   )
 }
+
 const SignUp = ({ onSignup }) => {
   const [error, setError] = useState(null)
   const navigate = useNavigate()

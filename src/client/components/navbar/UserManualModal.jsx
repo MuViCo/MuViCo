@@ -1,4 +1,8 @@
-import React from "react"
+/**
+ * UserManualModal component for the MuViCo application.
+ * Displays a modal with user manuals for different pages (frontpage, homepage, presentation page).
+ * The content of the manual is determined by the props passed to the component.
+ */
 
 import {
   Modal,

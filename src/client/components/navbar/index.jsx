@@ -1,3 +1,9 @@
+/**
+ * NavBar component for the MuViCo application.
+ * Displays navigation links, user authentication options, and a theme toggle button.
+ * Adapts its appearance based on the current route and user authentication state.
+ */
+
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 import {
@@ -105,7 +111,7 @@ const NavBar = ({ user, setUser }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) //run only once
 
-
+  // Check if user has seen the help tooltip for the current page
   useEffect(() => {
     // Unique key depending on the page
     const key = isHomepage
@@ -118,7 +124,7 @@ const NavBar = ({ user, setUser }) => {
       setHighlight(true) // show highlight on first visit
     }
   }, [isHomepage, isPresentationPage])
-
+  
   return (
     <>
       <Box
