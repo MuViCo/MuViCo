@@ -46,6 +46,7 @@ describe("Drive API", () => {
   })
 
   test("catches error streaming file", async () => {
+    global.console = { ...console, error: jest.fn() }
     getDriveFileStream.mockRejectedValue(new Error("Some error"))
 
     const response = await api

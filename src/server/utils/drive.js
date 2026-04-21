@@ -2,6 +2,8 @@ const { google } = require("googleapis")
 const { OAuth2Client } = require("google-auth-library")
 const { Readable } = require("stream")
 
+const logger = require("../utils/logger")
+
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
@@ -54,7 +56,7 @@ const uploadDriveFile = async (fileBuffer, fileName, mimeType, accessToken) => {
     })
     return res.data
   } catch (error) {
-    console.error("Drive upload error:", error)
+    logger.error("Drive upload error:", error)
     throw error
   }
 }
@@ -65,7 +67,7 @@ const deleteDriveFile = async (fileId, accessToken) => {
     await drive.files.delete({ fileId })
     return { success: true, message: `File ${fileId} deleted successfully.` }
   } catch (error) {
-    console.error("Drive delete error:", error)
+    logger.error("Drive delete error:", error)
     throw error
   }
 }
@@ -84,7 +86,7 @@ const getDriveFileMetadata = async (fileId, accessToken) => {
       size: res.data.size,
     }
   } catch (error) {
-    console.error("Drive metadata error:", error)
+    logger.error("Drive metadata error:", error)
     throw error
   }
 }
@@ -98,7 +100,7 @@ const getDriveFileStream = async (fileId, accessToken) => {
     )
     return res.data
   } catch (error) {
-    console.error("Drive fetch file error:", error)
+    logger.error("Drive fetch file error:", error)
     throw error
   }
 }

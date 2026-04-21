@@ -28,6 +28,7 @@ const user1 = new User({
 
 describe("creation of a new user", () => {
   beforeEach(async () => {
+    global.console = { ...console, error: jest.fn() }
     await User.deleteMany({})
     await User.insertMany(user1)
   })

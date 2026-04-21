@@ -49,7 +49,6 @@ export const LoginForm = ({ onSubmit, error, onLogin }) => {
     try {
       await onSubmit(formData)
     } catch (err) {
-      console.log(err)
       setSubmissionError(err.response.data.error)
     }
   }

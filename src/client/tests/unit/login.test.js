@@ -2,7 +2,6 @@ import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { LoginForm } from "../../components/navbar/Login"
-import { describe } from "node:test"
 
 jest.mock("../../components/utils/firebase", () => ({
   apikey: "testkey",

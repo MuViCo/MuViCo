@@ -4,7 +4,10 @@ const crypto = require("crypto")
 const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
 const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
 const Presentation = require("../models/presentation")
-const { userExtractor, requirePresentationAccess } = require("../utils/middleware")
+const {
+  userExtractor,
+  requirePresentationAccess,
+} = require("../utils/middleware")
 const { BUCKET_NAME } = require("../utils/config")
 const {
   generateSignedUrlForS3,
@@ -26,7 +29,9 @@ const upload = multer({ storage })
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
   return cues.some((cue) => {
-    const samePosition = Number(cue.index) === Number(index) && Number(cue.screen) === Number(screen)
+    const samePosition =
+      Number(cue.index) === Number(index) &&
+      Number(cue.screen) === Number(screen)
     if (!samePosition) {
       return false
     }
@@ -56,8 +61,10 @@ const hasSwapTargetConflict = (
     }
 
     return (
-      (Number(cue.index) === firstTargetIndex && Number(cue.screen) === firstTargetScreen) ||
-      (Number(cue.index) === secondTargetIndex && Number(cue.screen) === secondTargetScreen)
+      (Number(cue.index) === firstTargetIndex &&
+        Number(cue.screen) === firstTargetScreen) ||
+      (Number(cue.index) === secondTargetIndex &&
+        Number(cue.screen) === secondTargetScreen)
     )
   })
 }
@@ -106,480 +113,583 @@ const deletObject = async (id, cueId, driveToken) => {
  * Returns all files related to a presentation.
  * Adds an expiring signed url to AWS Bucket for each file.
  */
-router.get("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { user, presentation } = req
+router.get(
+  "/:id",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { user, presentation } = req
 
-    // Update lastUsed for MRU sorting
-    presentation.lastUsed = new Date()
-    await presentation.save()
+      // Update lastUsed for MRU sorting
+      presentation.lastUsed = new Date()
+      await presentation.save()
 
-    if (user.driveToken) {
-      const driveToken = user.driveToken
-      presentation.cues = await processDriveCueFiles(
-        presentation.cues,
-        driveToken
-      )
-    } else {
-      presentation.cues = await processS3Files(presentation.cues, presentation._id)
+      if (user.driveToken) {
+        const driveToken = user.driveToken
+        presentation.cues = await processDriveCueFiles(
+          presentation.cues,
+          driveToken
+        )
+      } else {
+        presentation.cues = await processS3Files(
+          presentation.cues,
+          presentation._id
+        )
+      }
+
+      res.json(presentation)
+    } catch (error) {
+      next(error)
     }
-
-    res.json(presentation)
-  } catch (error) {
-    next(error)
   }
-})
+)
 
-router.delete("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { user, presentation } = req
+router.delete(
+  "/:id",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { user, presentation } = req
 
-    for (const cue of presentation.cues) {
-      await deletObject(presentation._id, cue._id, user.driveToken)
+      for (const cue of presentation.cues) {
+        await deletObject(presentation._id, cue._id, user.driveToken)
+      }
+
+      await Presentation.findByIdAndDelete(presentation._id)
+      return res.status(204).end()
+    } catch (error) {
+      next(error)
     }
-
-    await Presentation.findByIdAndDelete(presentation._id)
-    return res.status(204).end()
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 /**
  * Updates presentation by ID, setting the new index count and adding them to mongoDB
  */
-router.put("/:id/indexCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { presentation } = req
-    const { indexCount } = req.body
-    
-    const newIndexCount = Math.round(Number(indexCount))
-    
-    if (isNaN(newIndexCount)) {
-      return res.status(400).json({ error: "indexCount must be a number" })
-    }
+router.put(
+  "/:id/indexCount",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { indexCount } = req.body
 
-    if (newIndexCount < 1 || newIndexCount > 101) {
-      return res.status(400).json({ error: "indexCount must be between 1 and 101"})
-    }
-    
+      const newIndexCount = Math.round(Number(indexCount))
 
-    const updateQuery = {
-      $set: { indexCount: newIndexCount }
-    }
+      if (isNaN(newIndexCount)) {
+        return res.status(400).json({ error: "indexCount must be a number" })
+      }
 
-    // If reducing index count, remove cues from indexes that will be removed
-    let removedCuesCount = 0
-    if (newIndexCount < presentation.indexCount) {
-      const cuesToRemove = presentation.cues.filter((cue) => Number(cue.index) >= newIndexCount)
-      removedCuesCount = cuesToRemove.length
+      if (newIndexCount < 1 || newIndexCount > 101) {
+        return res
+          .status(400)
+          .json({ error: "indexCount must be between 1 and 101" })
+      }
 
-      updateQuery.$pull = {
-        cues: {
-          _id: { $in: cuesToRemove.map((cue) => cue._id) }
+      const updateQuery = {
+        $set: { indexCount: newIndexCount },
+      }
+
+      // If reducing index count, remove cues from indexes that will be removed
+      let removedCuesCount = 0
+      if (newIndexCount < presentation.indexCount) {
+        const cuesToRemove = presentation.cues.filter(
+          (cue) => Number(cue.index) >= newIndexCount
+        )
+        removedCuesCount = cuesToRemove.length
+
+        updateQuery.$pull = {
+          cues: {
+            _id: { $in: cuesToRemove.map((cue) => cue._id) },
+          },
         }
       }
+
+      const updatedPresentation = await Presentation.findByIdAndUpdate(
+        presentation._id,
+        updateQuery,
+        { new: true }
+      )
+
+      res.json({
+        indexCount: updatedPresentation.indexCount,
+        removedCuesCount: removedCuesCount,
+      })
+    } catch (err) {
+      next(err)
     }
-
-    const updatedPresentation = await Presentation.findByIdAndUpdate(
-      presentation._id,
-      updateQuery,
-      { new: true }
-    )
-
-    res.json({
-      indexCount: updatedPresentation.indexCount,
-      removedCuesCount: removedCuesCount
-    })
-  } catch (err) {
-    next(err)
   }
-})
+)
 
 /**
  * Update presentation screenCount by ID
  */
-router.put("/:id/screenCount", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { presentation } = req
-    const { screenCount } = req.body
+router.put(
+  "/:id/screenCount",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { screenCount } = req.body
 
-    const newScreenCount = Math.round(Number(screenCount))
+      const newScreenCount = Math.round(Number(screenCount))
 
-    if (isNaN(newScreenCount)) {
-      return res.status(400).json({ error: "screenCount must be a number" })
-    }
+      if (isNaN(newScreenCount)) {
+        return res.status(400).json({ error: "screenCount must be a number" })
+      }
 
-    if (newScreenCount < 1 || newScreenCount > 8) {
-      return res.status(400).json({ error: "screenCount must be between 1 and 8" })
-    }
+      if (newScreenCount < 1 || newScreenCount > 8) {
+        return res
+          .status(400)
+          .json({ error: "screenCount must be between 1 and 8" })
+      }
 
-    const updateQuery = {
-      $set: { screenCount: newScreenCount }
-    }
-    
-    // If reducing screen count, remove cues from screens that will be removed
-    let removedCuesCount = 0
-    if (newScreenCount < presentation.screenCount) {
-      const cuesToRemove = presentation.cues.filter(
-        cue => cue.screen > newScreenCount && cue.screen <= presentation.screenCount
-      )
-      removedCuesCount = cuesToRemove.length
+      const updateQuery = {
+        $set: { screenCount: newScreenCount },
+      }
 
-      // Remove cues from screens being deleted
-      updateQuery.$pull = {
-        cues: {
-          screen: { $gt: newScreenCount }
+      // If reducing screen count, remove cues from screens that will be removed
+      let removedCuesCount = 0
+      if (newScreenCount < presentation.screenCount) {
+        const cuesToRemove = presentation.cues.filter(
+          (cue) =>
+            cue.screen > newScreenCount &&
+            cue.screen <= presentation.screenCount
+        )
+        removedCuesCount = cuesToRemove.length
+
+        // Remove cues from screens being deleted
+        updateQuery.$pull = {
+          cues: {
+            screen: { $gt: newScreenCount },
+          },
         }
       }
-    }
-    
-    const updated = await Presentation.findByIdAndUpdate(
-      presentation._id,
-      updateQuery,
-      { new: true }
-    )
 
-    res.json({ 
-      screenCount: updated.screenCount,
-      removedCuesCount: removedCuesCount
-    })
-  } catch (err) {
-    next(err)
+      const updated = await Presentation.findByIdAndUpdate(
+        presentation._id,
+        updateQuery,
+        { new: true }
+      )
+
+      res.json({
+        screenCount: updated.screenCount,
+        removedCuesCount: removedCuesCount,
+      })
+    } catch (err) {
+      next(err)
+    }
   }
-})
+)
 
-router.put("/:id/name", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { presentation } = req
-    const { name } = req.body
+router.put(
+  "/:id/name",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { name } = req.body
 
-    if (typeof name !== "string") {
-      return res.status(400).json({ error: "Presentation name must be a string" })
+      if (typeof name !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Presentation name must be a string" })
+      }
+
+      const trimmedName = name.trim()
+      if (trimmedName.length === 0 || trimmedName.length > 100) {
+        return res
+          .status(400)
+          .json({
+            error:
+              "Presentation name must be between 1 and 100 characters long",
+          })
+      }
+
+      presentation.name = trimmedName
+      const updated = await presentation.save({ validateModifiedOnly: true })
+
+      res.json({ name: updated.name })
+    } catch (err) {
+      next(err)
     }
-    
-    const trimmedName = name.trim()
-    if (trimmedName.length === 0 || trimmedName.length > 100) {
-      return res.status(400).json({ error: "Presentation name must be between 1 and 100 characters long" })
-    }
-
-    presentation.name = trimmedName
-    const updated = await presentation.save({validateModifiedOnly: true})
-
-    res.json({ name: updated.name })
-  } catch (err) {
-    next(err)
   }
-})
+)
 
 /**
  * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
  * and aws bucket. Can upload any kind of image or pdf.
  * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
  */
-router.put("/:id", userExtractor, requirePresentationAccess, upload.single("image"), async (req, res, next) => {
-  try {
-    const { id } = req.params
-    const fileId = generateFileId()
-    const { file, user, presentation } = req
-    const { cueName, driveId } = req.body
-    const index = Number(req.body.index)
-    const screen = Number(req.body.screen)
-    const loop = req.body.loop
-    const color = req.body.color || "#000000"
+router.put(
+  "/:id",
+  userExtractor,
+  requirePresentationAccess,
+  upload.single("image"),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params
+      const fileId = generateFileId()
+      const { file, user, presentation } = req
+      const { cueName, driveId } = req.body
+      const index = Number(req.body.index)
+      const screen = Number(req.body.screen)
+      const loop = req.body.loop
+      const color = req.body.color || "#000000"
 
-    if (!id || isNaN(index) || isNaN(screen)) {
-      return res.status(400).json({ error: "Missing required fields" })
-    }
+      if (!id || isNaN(index) || isNaN(screen)) {
+        return res.status(400).json({ error: "Missing required fields" })
+      }
 
-    if (cueName !== undefined && cueName !== null && typeof cueName !== "string") {
-      return res.status(400).json({ error: "Cue name must be a string" })
-    }
+      if (
+        cueName !== undefined &&
+        cueName !== null &&
+        typeof cueName !== "string"
+      ) {
+        return res.status(400).json({ error: "Cue name must be a string" })
+      }
 
-    const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
-    if (trimmedCueName.length > 100) {
-      return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
-    }
+      const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
+      if (trimmedCueName.length > 100) {
+        return res
+          .status(400)
+          .json({ error: "Cue name must be between 1 and 100 characters long" })
+      }
 
-    const audioRow = getAudioRow(presentation.screenCount)
+      const audioRow = getAudioRow(presentation.screenCount)
 
-    if (screen < 1 || screen > audioRow) {
-      return res.status(400).json({
-        error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${audioRow}.`,
-      })
-    }
-
-    if (index < 0 || index > 100) {
-      return res.status(400).json({
-        error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
-      })
-    }
-
-    if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
-      return res.status(400).json({ error: "File size exceeds 50 MB limit" })
-    }
-
-    if (file && !isAllowedMimeType(file.mimetype)) {
-      return res
-        .status(400)
-        .json({ error: `Invalid filetype: ${file.originalname}` })
-    }
-
-    const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
-
-    if (cueType === "audio") {
-      if (file && !isAudioMimeType(file.mimetype)) {
-        return res.status(400).json({ 
-          error: "Only audio files are allowed on the audio screen." 
+      if (screen < 1 || screen > audioRow) {
+        return res.status(400).json({
+          error: `Invalid cue screen: ${screen}. Screen must be between 1 and ${audioRow}.`,
         })
       }
-    } else {
-      if (file && isAudioMimeType(file.mimetype)) {
-        return res.status(400).json({ 
-          error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+
+      if (index < 0 || index > 100) {
+        return res.status(400).json({
+          error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
         })
       }
-    }
 
-    const isColorOnlyCue = cueType === "visual" && !file
-    if (!isColorOnlyCue && trimmedCueName.length === 0) {
-      return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
-    }
+      if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+        return res.status(400).json({ error: "File size exceeds 50 MB limit" })
+      }
 
-    if (hasPositionConflict(presentation.cues, index, screen)) {
-      return res.status(400).json({ error: "A cue with the same index and screen already exists." })
-    }
+      if (file && !isAllowedMimeType(file.mimetype)) {
+        return res
+          .status(400)
+          .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
 
-    const fileObject = {
-              id: fileId,
-              name: file?.originalname || `file-${fileId}`,
-              url: "",
-              ...(driveId && { driveId }),
-            }
+      const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
 
-    const updatedPresentation = await Presentation.findByIdAndUpdate(
-      presentation._id,
-      {
-        $push: {
-          cues: {
-            cueType,
-            index: index,
-            name: trimmedCueName,
-            screen: screen,
-            file: file ? fileObject : null,
-            color: color,
-            loop: loop,
-          },
-        },
-      },
-      { new: true }
-    )
-
-    if (user.driveToken) {
-      if (file) {
-        if (driveId) {
-          updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
-            if (cue.file.id === fileId) {
-              cue.file.driveId = driveId
-            }
-            return cue
+      if (cueType === "audio") {
+        if (file && !isAudioMimeType(file.mimetype)) {
+          return res.status(400).json({
+            error: "Only audio files are allowed on the audio screen.",
           })
-        } else {
-          const fileName = `${id}/${fileId}`
-          const driveToken = user.driveToken
-          const driveResponse = await uploadDriveFile(
-            file.buffer,
-            fileName,
-            file.mimetype,
-            driveToken
-          )
-
-          updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
-            if (cue.file.id === fileId) {
-              cue.file.driveId = driveResponse.id
-            }
-            return cue
+        }
+      } else {
+        if (file && isAudioMimeType(file.mimetype)) {
+          return res.status(400).json({
+            error:
+              "Audio files are not allowed on visual screens. Please use the audio screen.",
           })
         }
       }
 
-      const driveToken = user.driveToken
-      updatedPresentation.cues = await processDriveCueFiles(
-        updatedPresentation.cues,
-        driveToken
+      const isColorOnlyCue = cueType === "visual" && !file
+      if (!isColorOnlyCue && trimmedCueName.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "Cue name must be between 1 and 100 characters long" })
+      }
+
+      if (hasPositionConflict(presentation.cues, index, screen)) {
+        return res
+          .status(400)
+          .json({
+            error: "A cue with the same index and screen already exists.",
+          })
+      }
+
+      const fileObject = {
+        id: fileId,
+        name: file?.originalname || `file-${fileId}`,
+        url: "",
+        ...(driveId && { driveId }),
+      }
+
+      const updatedPresentation = await Presentation.findByIdAndUpdate(
+        presentation._id,
+        {
+          $push: {
+            cues: {
+              cueType,
+              index: index,
+              name: trimmedCueName,
+              screen: screen,
+              file: file ? fileObject : null,
+              color: color,
+              loop: loop,
+            },
+          },
+        },
+        { new: true }
       )
 
-      await updatedPresentation.save()
-      res.json(updatedPresentation)
-    } else {
-      if (file) {
-        const fileName = `${id}/${fileId}`
+      if (user.driveToken) {
+        if (file) {
+          if (driveId) {
+            updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
+              if (cue.file.id === fileId) {
+                cue.file.driveId = driveId
+              }
+              return cue
+            })
+          } else {
+            const fileName = `${id}/${fileId}`
+            const driveToken = user.driveToken
+            const driveResponse = await uploadDriveFile(
+              file.buffer,
+              fileName,
+              file.mimetype,
+              driveToken
+            )
 
-        await uploadFileS3(file.buffer, fileName, file.mimetype)
-        updatedPresentation.cues = await processS3Files(
-        updatedPresentation.cues,
-        id
+            updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
+              if (cue.file.id === fileId) {
+                cue.file.driveId = driveResponse.id
+              }
+              return cue
+            })
+          }
+        }
+
+        const driveToken = user.driveToken
+        updatedPresentation.cues = await processDriveCueFiles(
+          updatedPresentation.cues,
+          driveToken
         )
+
+        await updatedPresentation.save()
+        res.json(updatedPresentation)
+      } else {
+        if (file) {
+          const fileName = `${id}/${fileId}`
+
+          await uploadFileS3(file.buffer, fileName, file.mimetype)
+          updatedPresentation.cues = await processS3Files(
+            updatedPresentation.cues,
+            id
+          )
+        }
+        res.json(updatedPresentation)
       }
-      res.json(updatedPresentation)
+    } catch (error) {
+      next(error)
     }
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 /**
  * Shift cue indices in bulk starting after startIndex.
  * body: { startIndex: number, direction: 'left'|'right' }
  */
-router.put("/:id/shiftIndexes", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { presentation } = req
-    const { startIndex, direction } = req.body
+router.put(
+  "/:id/shiftIndexes",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { startIndex, direction } = req.body
 
-    if (typeof startIndex !== "number" || !["left", "right"].includes(direction)) {
-      return res.status(400).json({ error: "Invalid parameters" })
-    }
+      if (
+        typeof startIndex !== "number" ||
+        !["left", "right"].includes(direction)
+      ) {
+        return res.status(400).json({ error: "Invalid parameters" })
+      }
 
-    let modified = false
-    for (const cue of presentation.cues) {
-      if (cue.index > startIndex) {
-        if (direction === "left") {
-          cue.index = Number(cue.index) - 1
-          modified = true
-        } else if (direction === "right") {
-          cue.index = Number(cue.index) + 1
-          modified = true
+      let modified = false
+      for (const cue of presentation.cues) {
+        if (cue.index > startIndex) {
+          if (direction === "left") {
+            cue.index = Number(cue.index) - 1
+            modified = true
+          } else if (direction === "right") {
+            cue.index = Number(cue.index) + 1
+            modified = true
+          }
         }
       }
-    }
 
-    if (modified) {
-      await presentation.save({validateModifiedOnly: true})
-    }
+      if (modified) {
+        await presentation.save({ validateModifiedOnly: true })
+      }
 
-    res.json({ shifted: modified })
-  } catch (err) {
-    next(err)
+      res.json({ shifted: modified })
+    } catch (err) {
+      next(err)
+    }
   }
-})
+)
 
-router.put("/:id/swapCues", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { id } = req.params
-    const { presentation, user } = req
-    const {
-      firstCueId,
-      secondCueId,
-      firstIndex,
-      firstScreen,
-      secondIndex,
-      secondScreen,
-    } = req.body
-
-    const parsedFirstIndex = Number(firstIndex)
-    const parsedFirstScreen = Number(firstScreen)
-    const parsedSecondIndex = Number(secondIndex)
-    const parsedSecondScreen = Number(secondScreen)
-    const maxScreen = presentation.screenCount + 1
-
-    // Validate request payload.
-    if (
-      !firstCueId ||
-      !secondCueId ||
-      isNaN(parsedFirstIndex) ||
-      isNaN(parsedFirstScreen) ||
-      isNaN(parsedSecondIndex) ||
-      isNaN(parsedSecondScreen)
-    ) {
-      return res.status(400).json({ error: "Missing required swap fields" })
-    }
-
-    if (
-      !Number.isInteger(parsedFirstIndex) ||
-      !Number.isInteger(parsedFirstScreen) ||
-      !Number.isInteger(parsedSecondIndex) ||
-      !Number.isInteger(parsedSecondScreen)
-    ) {
-      return res.status(400).json({ error: "Swap coordinates must be integers" })
-    }
-
-    if (firstCueId === secondCueId) {
-      return res.status(400).json({ error: "Cannot swap a cue with itself" })
-    }
-
-    if (
-      parsedFirstIndex < 0 ||
-      parsedFirstIndex >= presentation.indexCount ||
-      parsedSecondIndex < 0 ||
-      parsedSecondIndex >= presentation.indexCount ||
-      parsedFirstScreen < 1 ||
-      parsedFirstScreen > maxScreen ||
-      parsedSecondScreen < 1 ||
-      parsedSecondScreen > maxScreen
-    ) {
-      return res.status(400).json({ error: "Invalid swap target position" })
-    }
-
-    // Resolve and validate the cues being swapped.
-    const firstCue = presentation.cues.id(firstCueId)
-    const secondCue = presentation.cues.id(secondCueId)
-
-    if (!firstCue || !secondCue) {
-      return res.status(404).json({ error: "Cue not found" })
-    }
-
-    const firstTargetCueType = getCueTypeFromScreen(parsedFirstScreen, presentation.screenCount)
-    const secondTargetCueType = getCueTypeFromScreen(parsedSecondScreen, presentation.screenCount)
-    const firstCurrentCueType = firstCue.cueType ?? getCueTypeFromScreen(firstCue.screen, presentation.screenCount)
-    const secondCurrentCueType = secondCue.cueType ?? getCueTypeFromScreen(secondCue.screen, presentation.screenCount)
-    const firstCueMatchesTargetRow = firstCurrentCueType === firstTargetCueType
-    const secondCueMatchesTargetRow = secondCurrentCueType === secondTargetCueType
-
-    if (!firstCueMatchesTargetRow || !secondCueMatchesTargetRow) {
-      return res.status(400).json({ error: "Cue type does not match swap target screen" })
-    }
-
-    // Reject swaps that would collide with a third cue.
-    if (
-      hasSwapTargetConflict(
-        presentation.cues,
+router.put(
+  "/:id/swapCues",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params
+      const { presentation, user } = req
+      const {
         firstCueId,
         secondCueId,
-        parsedFirstIndex,
+        firstIndex,
+        firstScreen,
+        secondIndex,
+        secondScreen,
+      } = req.body
+
+      const parsedFirstIndex = Number(firstIndex)
+      const parsedFirstScreen = Number(firstScreen)
+      const parsedSecondIndex = Number(secondIndex)
+      const parsedSecondScreen = Number(secondScreen)
+      const maxScreen = presentation.screenCount + 1
+
+      // Validate request payload.
+      if (
+        !firstCueId ||
+        !secondCueId ||
+        isNaN(parsedFirstIndex) ||
+        isNaN(parsedFirstScreen) ||
+        isNaN(parsedSecondIndex) ||
+        isNaN(parsedSecondScreen)
+      ) {
+        return res.status(400).json({ error: "Missing required swap fields" })
+      }
+
+      if (
+        !Number.isInteger(parsedFirstIndex) ||
+        !Number.isInteger(parsedFirstScreen) ||
+        !Number.isInteger(parsedSecondIndex) ||
+        !Number.isInteger(parsedSecondScreen)
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Swap coordinates must be integers" })
+      }
+
+      if (firstCueId === secondCueId) {
+        return res.status(400).json({ error: "Cannot swap a cue with itself" })
+      }
+
+      if (
+        parsedFirstIndex < 0 ||
+        parsedFirstIndex >= presentation.indexCount ||
+        parsedSecondIndex < 0 ||
+        parsedSecondIndex >= presentation.indexCount ||
+        parsedFirstScreen < 1 ||
+        parsedFirstScreen > maxScreen ||
+        parsedSecondScreen < 1 ||
+        parsedSecondScreen > maxScreen
+      ) {
+        return res.status(400).json({ error: "Invalid swap target position" })
+      }
+
+      // Resolve and validate the cues being swapped.
+      const firstCue = presentation.cues.id(firstCueId)
+      const secondCue = presentation.cues.id(secondCueId)
+
+      if (!firstCue || !secondCue) {
+        return res.status(404).json({ error: "Cue not found" })
+      }
+
+      const firstTargetCueType = getCueTypeFromScreen(
         parsedFirstScreen,
-        parsedSecondIndex,
-        parsedSecondScreen
+        presentation.screenCount
       )
-    ) {
-      return res.status(400).json({ error: "Swap target position is already occupied by another cue." })
-    }
+      const secondTargetCueType = getCueTypeFromScreen(
+        parsedSecondScreen,
+        presentation.screenCount
+      )
+      const firstCurrentCueType =
+        firstCue.cueType ??
+        getCueTypeFromScreen(firstCue.screen, presentation.screenCount)
+      const secondCurrentCueType =
+        secondCue.cueType ??
+        getCueTypeFromScreen(secondCue.screen, presentation.screenCount)
+      const firstCueMatchesTargetRow =
+        firstCurrentCueType === firstTargetCueType
+      const secondCueMatchesTargetRow =
+        secondCurrentCueType === secondTargetCueType
 
-    // Apply the swap and persist the normalized cue types.
-    firstCue.index = parsedFirstIndex
-    firstCue.screen = parsedFirstScreen
-    firstCue.cueType = firstTargetCueType
-    secondCue.index = parsedSecondIndex
-    secondCue.screen = parsedSecondScreen
-    secondCue.cueType = secondTargetCueType
+      if (!firstCueMatchesTargetRow || !secondCueMatchesTargetRow) {
+        return res
+          .status(400)
+          .json({ error: "Cue type does not match swap target screen" })
+      }
 
-    await presentation.save({ validateModifiedOnly: true })
+      // Reject swaps that would collide with a third cue.
+      if (
+        hasSwapTargetConflict(
+          presentation.cues,
+          firstCueId,
+          secondCueId,
+          parsedFirstIndex,
+          parsedFirstScreen,
+          parsedSecondIndex,
+          parsedSecondScreen
+        )
+      ) {
+        return res
+          .status(400)
+          .json({
+            error: "Swap target position is already occupied by another cue.",
+          })
+      }
 
-    // Rehydrate file URLs for the response.
-    if (user.driveToken) {
-      const [updatedFirstCue, updatedSecondCue] = await processDriveCueFiles(
+      // Apply the swap and persist the normalized cue types.
+      firstCue.index = parsedFirstIndex
+      firstCue.screen = parsedFirstScreen
+      firstCue.cueType = firstTargetCueType
+      secondCue.index = parsedSecondIndex
+      secondCue.screen = parsedSecondScreen
+      secondCue.cueType = secondTargetCueType
+
+      await presentation.save({ validateModifiedOnly: true })
+
+      // Rehydrate file URLs for the response.
+      if (user.driveToken) {
+        const [updatedFirstCue, updatedSecondCue] = await processDriveCueFiles(
+          [firstCue, secondCue],
+          user.driveToken
+        )
+        return res.json({
+          firstCue: updatedFirstCue,
+          secondCue: updatedSecondCue,
+        })
+      }
+
+      const [updatedFirstCue, updatedSecondCue] = await processS3Files(
         [firstCue, secondCue],
-        user.driveToken
+        id
       )
-      return res.json({ firstCue: updatedFirstCue, secondCue: updatedSecondCue })
+      return res.json({
+        firstCue: updatedFirstCue,
+        secondCue: updatedSecondCue,
+      })
+    } catch (error) {
+      next(error)
     }
-
-    const [updatedFirstCue, updatedSecondCue] = await processS3Files([firstCue, secondCue], id)
-    return res.json({ firstCue: updatedFirstCue, secondCue: updatedSecondCue })
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 router.put(
   "/:id/:cueId",
@@ -604,13 +714,19 @@ router.put(
         return res.status(400).json({ error: "Missing required fields" })
       }
 
-        if (cueName !== undefined && cueName !== null && typeof cueName !== "string") {
+      if (
+        cueName !== undefined &&
+        cueName !== null &&
+        typeof cueName !== "string"
+      ) {
         return res.status(400).json({ error: "Cue name must be a string" })
       }
 
-        const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
-        if (trimmedCueName.length > 100) {
-        return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
+      const trimmedCueName = typeof cueName === "string" ? cueName.trim() : ""
+      if (trimmedCueName.length > 100) {
+        return res
+          .status(400)
+          .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
       const audioRow = getAudioRow(presentation.screenCount)
@@ -631,14 +747,15 @@ router.put(
 
       if (cueType === "audio") {
         if (file && !isAudioMimeType(file.mimetype)) {
-          return res.status(400).json({ 
-            error: "Only audio files are allowed on the audio screen." 
+          return res.status(400).json({
+            error: "Only audio files are allowed on the audio screen.",
           })
         }
       } else {
         if (file && isAudioMimeType(file.mimetype)) {
-          return res.status(400).json({ 
-            error: "Audio files are not allowed on visual screens. Please use the audio screen." 
+          return res.status(400).json({
+            error:
+              "Audio files are not allowed on visual screens. Please use the audio screen.",
           })
         }
       }
@@ -648,16 +765,22 @@ router.put(
         return res.status(404).json({ error: "Cue not found" })
       }
 
-      const willHaveFileAfterUpdate = Boolean(file) || (!shouldClearFile && Boolean(cue.file))
+      const willHaveFileAfterUpdate =
+        Boolean(file) || (!shouldClearFile && Boolean(cue.file))
       const isColorOnlyCue = cueType === "visual" && !willHaveFileAfterUpdate
       if (!isColorOnlyCue && trimmedCueName.length === 0) {
-        return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
+        return res
+          .status(400)
+          .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
       if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
-        return res.status(400).json({ error: "A cue with the same index and screen already exists." })
+        return res
+          .status(400)
+          .json({
+            error: "A cue with the same index and screen already exists.",
+          })
       }
-
 
       // Update cue fields
       cue.index = index
@@ -699,11 +822,11 @@ router.put(
 
             cue.file.driveId = driveResponse.id
           } catch (error) {
-            console.error("File upload error:", error)
+            logger.error("File upload error:", error)
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save({validateModifiedOnly: true})
+        await presentation.save({ validateModifiedOnly: true })
 
         const driveToken = user.driveToken
         const updatedCue = await processDriveCueFiles([cue], driveToken)
@@ -726,11 +849,11 @@ router.put(
             }
             await generateSignedUrlForS3(cue, id)
           } catch (error) {
-            console.error("File upload error:", error)
+            logger.error("File upload error:", error)
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save({validateModifiedOnly: true})
+        await presentation.save({ validateModifiedOnly: true })
 
         const updatedCue = await processS3Files([cue], id)
         res.json(updatedCue[0])
@@ -744,16 +867,25 @@ router.put(
 /**
  * Update the presentation by removing a file from the files array.
  */
-router.delete("/:id/:cueId", userExtractor, requirePresentationAccess, async (req, res, next) => {
-  try {
-    const { cueId } = req.params
-    const { user, presentation } = req
-    const updatedPresentation = await deletObject(presentation._id, cueId, user.driveToken)
-    res.json(updatedPresentation)
-    res.status(204).end()
-  } catch (error) {
-    next(error)
+router.delete(
+  "/:id/:cueId",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { cueId } = req.params
+      const { user, presentation } = req
+      const updatedPresentation = await deletObject(
+        presentation._id,
+        cueId,
+        user.driveToken
+      )
+      res.json(updatedPresentation)
+      res.status(204).end()
+    } catch (error) {
+      next(error)
+    }
   }
-})
+)
 
 module.exports = router

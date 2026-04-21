@@ -67,6 +67,7 @@ describe("Helper utility functions", () => {
     })
 
     test("handles metadata fetch errors without crashing", async () => {
+      global.console = { ...console, error: jest.fn() }
       const cue = { file: { driveId: "drive-123" } }
 
       getDriveFileMetadata.mockRejectedValue(new Error("Metadata fetch failed"))

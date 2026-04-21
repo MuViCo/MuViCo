@@ -1,5 +1,13 @@
 import React from "react"
-import { render, screen, fireEvent, waitFor, within, waitForElementToBeRemoved } from "@testing-library/react"
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+  waitForElementToBeRemoved,
+} from "@testing-library/react"
 import { useNavigate } from "react-router-dom"
 import "@testing-library/jest-dom"
 
@@ -82,6 +90,8 @@ describe("HomePage", () => {
 
   test("navigates to /users when All users -button is clicked", async () => {
     render(<HomePage user={{ isAdmin: true }} />)
+    // Wait for the async useEffect to complete and load presentations
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
     fireEvent.click(screen.getByText("All users"))
     expect(navigate).toHaveBeenCalledWith("/users")
   })
@@ -91,7 +101,7 @@ describe("HomePage", () => {
       id: 3,
       name: "Presentation 3",
       screenCount: 1,
-      startingFrameColor: "#000000"
+      startingFrameColor: "#000000",
     })
 
     render(<HomePage user={{ isAdmin: true }} />)
@@ -109,7 +119,7 @@ describe("HomePage", () => {
         description: "",
         name: "Presentation 3",
         screenCount: 1,
-        startingFrameColor: "#000000"
+        startingFrameColor: "#000000",
       })
     )
 
@@ -117,25 +127,42 @@ describe("HomePage", () => {
       expect(presentationService.getAll).toHaveBeenCalledTimes(2)
     ) //one call in useEffect and one call in createPresentation
 
-    expect(addInitialElements).toHaveBeenCalledWith(3, 1, expect.any(Function), "#000000")
+    expect(addInitialElements).toHaveBeenCalledWith(
+      3,
+      1,
+      expect.any(Function),
+      "#000000"
+    )
 
     expect(navigate).toHaveBeenCalledWith("/presentation/3")
   })
 
-  test("calls toggleVisibility when handleCancel is invoked", async () => {
-    const toggleVisibilityMock = jest.fn()
-    const fakeRef = { current: { toggleVisibility: toggleVisibilityMock } }
-    const useRefSpy = jest.spyOn(React, "useRef").mockReturnValue(fakeRef)
-
+  test("form visibility toggles when handleCancel is invoked", async () => {
     render(<HomePage user={{ isAdmin: true }} />)
 
+    // Wait for the async useEffect to complete and load presentations
+    await waitFor(() => expect(presentationService.getAll).toHaveBeenCalled())
+
+    // Initially, the form should NOT be visible (button should be visible)
+    expect(screen.getByText("New presentation")).toBeInTheDocument()
+
+    // Click "New presentation" to show the form
     fireEvent.click(screen.getByText("New presentation"))
+
+    // The form should now be visible
+    await waitFor(() => {
+      expect(screen.getByTestId("presentation-name")).toBeInTheDocument()
+    })
+
+    // Click cancel to hide the form
     const cancelButton = screen.getByRole("button", { name: /cancel/i })
     fireEvent.click(cancelButton)
 
-    expect(toggleVisibilityMock).toHaveBeenCalled()
-
-    useRefSpy.mockRestore()
+    // The form should be hidden and the "New presentation" button should be visible again
+    await waitFor(() => {
+      expect(screen.getByText("New presentation")).toBeInTheDocument()
+      expect(screen.queryByTestId("presentation-name")).not.toBeInTheDocument()
+    })
   })
 
   test("navigates to / on 401 Unauthorized error", async () => {
@@ -272,19 +299,22 @@ describe("HomePage", () => {
 
   test("shows user manual when clicking info button", async () => {
     render(
-      <UserManualModal 
-        isOpen={true} 
-        onClose={() => {}} 
+      <UserManualModal
+        isOpen={true}
+        onClose={() => {}}
         isHomepage={true}
         isPresentationPage={false}
       />
     )
 
     await waitFor(() => {
-      expect(screen.getByText("Welcome to the user manual. This modal provides guidance on how to use the application.")).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "Welcome to the user manual. This modal provides guidance on how to use the application."
+        )
+      ).toBeInTheDocument()
     })
   })
-
 })
 
 describe("PresentationForm", () => {
@@ -298,6 +328,7 @@ describe("PresentationForm", () => {
     )
     expect(screen.getByText("New presentation")).toBeInTheDocument()
   })
+
   test("renders the form with name input field and buttons", () => {
     render(<PresentationForm />)
 
@@ -323,8 +354,6 @@ describe("PresentationForm", () => {
     expect(screenCountInput.value).toBe("3")
   })
 
-
-
   test("calls createPresentation function when create button is clicked", () => {
     const createPresentationMock = jest.fn()
     render(
@@ -344,7 +373,7 @@ describe("PresentationForm", () => {
       description: "",
       name: "Test Presentation",
       screenCount: 1,
-      startingFrameColor: "#000000"
+      startingFrameColor: "#000000",
     })
   })
 
@@ -443,7 +472,7 @@ describe("PresentationsGrid", () => {
     fireEvent.click(screen.getByText("Test Presentation"))
     expect(handlePresentationClickMock).toHaveBeenCalledWith("123")
   })
-  
+
   test("calls handleDeletePresentation when delete button is clicked", () => {
     const handleDeletePresentationMock = jest.fn()
     render(
@@ -462,7 +491,7 @@ describe("PresentationsGrid", () => {
   test("prevents event propagation when delete button is clicked", () => {
     const handlePresentationClickMock = jest.fn()
     const handleDeletePresentationMock = jest.fn()
-    
+
     render(
       <PresentationsGrid
         presentations={mock_data}
@@ -472,7 +501,7 @@ describe("PresentationsGrid", () => {
     )
 
     fireEvent.click(screen.getAllByLabelText("Delete presentation")[0])
-    
+
     expect(handleDeletePresentationMock).toHaveBeenCalledWith("123")
     expect(handlePresentationClickMock).not.toHaveBeenCalled()
   })
@@ -483,7 +512,7 @@ describe("PresentationsGrid", () => {
       getItem: jest.fn(() => "list"),
       setItem: jest.fn(),
     }
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, "localStorage", {
       value: mockLocalStorage,
       writable: true,
     })
@@ -496,7 +525,9 @@ describe("PresentationsGrid", () => {
     )
 
     // Should initialize to "list" from localStorage
-    expect(mockLocalStorage.getItem).toHaveBeenCalledWith("presentationsLayoutMode")
+    expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+      "presentationsLayoutMode"
+    )
 
     // List view should be active (list button should have different styling or check the rendered view)
     const listBtn = screen.getByTestId("list-button")
@@ -512,7 +543,7 @@ describe("PresentationsGrid", () => {
       getItem: jest.fn(() => "grid"), // default
       setItem: jest.fn(),
     }
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, "localStorage", {
       value: mockLocalStorage,
       writable: true,
     })
@@ -525,14 +556,20 @@ describe("PresentationsGrid", () => {
     )
 
     // Initially called once on mount with "grid"
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith("presentationsLayoutMode", "grid")
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+      "presentationsLayoutMode",
+      "grid"
+    )
 
     // Click list button
     const listBtn = screen.getByTestId("list-button")
     fireEvent.click(listBtn)
 
     // Should save "list" to localStorage
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith("presentationsLayoutMode", "list")
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+      "presentationsLayoutMode",
+      "list"
+    )
   })
 
   test("defaults to grid view when localStorage is empty", () => {
@@ -541,7 +578,7 @@ describe("PresentationsGrid", () => {
       getItem: jest.fn(() => null),
       setItem: jest.fn(),
     }
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(window, "localStorage", {
       value: mockLocalStorage,
       writable: true,
     })
@@ -562,7 +599,11 @@ describe("PresentationsGrid", () => {
 
   test("opens modal from edit action with prefilled name and description", async () => {
     const dataWithDescription = [
-      { id: "123", name: "Test Presentation", description: "Existing description" },
+      {
+        id: "123",
+        name: "Test Presentation",
+        description: "Existing description",
+      },
     ]
 
     render(
@@ -581,7 +622,8 @@ describe("PresentationsGrid", () => {
     })
 
     const dialog = screen.getByRole("dialog")
-    const [titleInput, descriptionInput] = within(dialog).getAllByRole("textbox")
+    const [titleInput, descriptionInput] =
+      within(dialog).getAllByRole("textbox")
 
     expect(titleInput).toHaveValue("Test Presentation")
     expect(descriptionInput).toHaveValue("Existing description")
@@ -589,7 +631,11 @@ describe("PresentationsGrid", () => {
 
   test("disables save when title is empty", async () => {
     const dataWithDescription = [
-      { id: "123", name: "Test Presentation", description: "Existing description" },
+      {
+        id: "123",
+        name: "Test Presentation",
+        description: "Existing description",
+      },
     ]
 
     render(
@@ -613,7 +659,11 @@ describe("PresentationsGrid", () => {
   test("save calls handler with trimmed title and description", async () => {
     const handleEditPresentationMock = jest.fn().mockResolvedValue({})
     const dataWithDescription = [
-      { id: "123", name: "Test Presentation", description: "Existing description" },
+      {
+        id: "123",
+        name: "Test Presentation",
+        description: "Existing description",
+      },
     ]
 
     render(
@@ -628,10 +678,13 @@ describe("PresentationsGrid", () => {
     fireEvent.click(screen.getByLabelText("Edit presentation"))
 
     const dialog = await screen.findByRole("dialog")
-    const [titleInput, descriptionInput] = within(dialog).getAllByRole("textbox")
+    const [titleInput, descriptionInput] =
+      within(dialog).getAllByRole("textbox")
 
     fireEvent.change(titleInput, { target: { value: "  Updated Title  " } })
-    fireEvent.change(descriptionInput, { target: { value: "Updated description" } })
+    fireEvent.change(descriptionInput, {
+      target: { value: "Updated description" },
+    })
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }))
 
     await waitFor(() => {
@@ -645,7 +698,11 @@ describe("PresentationsGrid", () => {
   test("successful save closes modal", async () => {
     const handleEditPresentationMock = jest.fn().mockResolvedValue({})
     const dataWithDescription = [
-      { id: "123", name: "Test Presentation", description: "Existing description" },
+      {
+        id: "123",
+        name: "Test Presentation",
+        description: "Existing description",
+      },
     ]
 
     render(
@@ -666,9 +723,15 @@ describe("PresentationsGrid", () => {
   })
 
   test("failed save keeps modal open and shows failure state", async () => {
-    const handleEditPresentationMock = jest.fn().mockRejectedValue(new Error("Save failed"))
+    const handleEditPresentationMock = jest
+      .fn()
+      .mockRejectedValue(new Error("Save failed"))
     const dataWithDescription = [
-      { id: "123", name: "Test Presentation", description: "Existing description" },
+      {
+        id: "123",
+        name: "Test Presentation",
+        description: "Existing description",
+      },
     ]
 
     render(

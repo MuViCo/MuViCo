@@ -2,6 +2,8 @@ const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
 
+const logger = require("../utils/logger")
+
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (!cue.file) {
     return cue
@@ -19,7 +21,7 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
 
       cue.file.url = `${baseUrl}/api/media/${cue.file.driveId}?access_token=${accessToken}`
     } catch (error) {
-      console.error("Error fetching file metadata:", error)
+      logger.error("Error fetching file metadata:", error)
     }
   }
 

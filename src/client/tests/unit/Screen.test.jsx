@@ -26,11 +26,16 @@ describe("Screen", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    global.console = { ...console, log: jest.fn() }
   })
 
   test("sets window title to Starting Frame at index 0", async () => {
     const screenData = {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
       index: 0,
       name: "cue-start",
       screen: 1,
@@ -39,7 +44,14 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
@@ -50,7 +62,11 @@ describe("Screen", () => {
 
   test("sets window title when index is 4", async () => {
     const screenData = {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
       index: 4,
       name: "cue-4",
       screen: 1,
@@ -59,7 +75,14 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
@@ -70,7 +93,11 @@ describe("Screen", () => {
 
   test("sets window title when index is 7", async () => {
     const screenData = {
-      file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
       index: 7,
       name: "cue-7",
       screen: 1,
@@ -79,7 +106,14 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
@@ -89,8 +123,6 @@ describe("Screen", () => {
   })
 
   test("renders a color background when cue has no file but has color", async () => {
-    const consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {})
-
     const screenData = {
       file: null,
       color: "#ff0000",
@@ -102,7 +134,14 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
@@ -110,8 +149,10 @@ describe("Screen", () => {
       expect(popup.document.title).toBe("Screen 1 • Frame 2")
     })
 
-    expect(consoleLogSpy).toHaveBeenCalledWith("Rendering media with file:", null)
-    consoleLogSpy.mockRestore()
+    expect(global.console.log).toHaveBeenCalledWith(
+      "Rendering media with file:",
+      null
+    )
   })
 
   test("does not open popup when screen is not visible", () => {
@@ -119,7 +160,11 @@ describe("Screen", () => {
       <Screen
         screenNumber={1}
         screenData={{
-          file: { url: "http://example.com/image.jpg", type: "image/jpg", name: "image.jpg" },
+          file: {
+            url: "http://example.com/image.jpg",
+            type: "image/jpg",
+            name: "image.jpg",
+          },
           index: 1,
           name: "hidden-cue",
           screen: 1,
@@ -136,7 +181,11 @@ describe("Screen", () => {
 
   test("renders video media when cue is a video", async () => {
     const screenData = {
-      file: { url: "http://example.com/video.mp4", type: "video/mp4", name: "video.mp4" },
+      file: {
+        url: "http://example.com/video.mp4",
+        type: "video/mp4",
+        name: "video.mp4",
+      },
       index: 2,
       name: "video-cue",
       screen: 1,
@@ -145,18 +194,33 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
       const popup = window.open.mock.results.at(-1).value
-      expect(popup.document.body.querySelector('video[src="http://example.com/video.mp4"]')).toBeTruthy()
+      expect(
+        popup.document.body.querySelector(
+          'video[src="http://example.com/video.mp4"]'
+        )
+      ).toBeTruthy()
     })
   })
 
   test("renders audio media when cue is audio", async () => {
     const screenData = {
-      file: { url: "http://example.com/audio.mp3", type: "audio/mpeg", name: "audio.mp3" },
+      file: {
+        url: "http://example.com/audio.mp3",
+        type: "audio/mpeg",
+        name: "audio.mp3",
+      },
       index: 3,
       name: "audio-cue",
       screen: 1,
@@ -165,13 +229,22 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
       const popup = window.open.mock.results.at(-1).value
       expect(popup.document.body.querySelector("audio")).toBeTruthy()
-      expect(popup.document.body.textContent).toContain("Your browser does not support the audio element")
+      expect(popup.document.body.textContent).toContain(
+        "Your browser does not support the audio element"
+      )
     })
   })
 
@@ -186,7 +259,14 @@ describe("Screen", () => {
     }
 
     await act(async () => {
-      render(<Screen screenNumber={1} screenData={screenData} isVisible={true} onClose={() => {}} />)
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
     })
 
     await waitFor(() => {
