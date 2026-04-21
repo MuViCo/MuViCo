@@ -1,3 +1,8 @@
+/** RadialCircle.jsx
+ * Renders the animated radial circle logo element on the front page.
+ * The colors of the circle adapt to light and dark modes using Chakra UI's useColorMode hook.
+ */
+
 import { useColorMode } from "@chakra-ui/react"
 
 const RadialCircle = () => {

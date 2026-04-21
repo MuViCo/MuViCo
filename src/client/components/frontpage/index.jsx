@@ -1,3 +1,8 @@
+/** FrontPage component
+ * Renders the main front page of the application.
+ * Includes the title, subtitle, animated logo, feature cards, and video demonstrations.
+ */
+
 import {
   Container,
   Box,
@@ -41,7 +46,7 @@ const FrontPage = () => {
         spacing={{ base: 10, md: 14 }}
         py={{ base: 20, md: 32 }}
       >
-        {/* Title */}
+      {/* Title */}
       <Heading
         fontSize={{ base: "60px", md: "160px" }}
         fontWeight="extrabold"
@@ -62,7 +67,7 @@ const FrontPage = () => {
           Music Visualization in Concerts
         </Text>
 
-        {/* Logo */}
+        {/* Animated radial logo element */}
         <SimpleGrid justifyContent="center"
           mt={20}
           mb={20}
@@ -83,14 +88,15 @@ const FrontPage = () => {
           letterSpacing="0.01em"
           color={lightTextColor}
         >
-          {/* Ylempi rivi */}
+          {/* Topmost row */}
+          <br />
           Designed to provide{" "}
           <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
             visual elements
           </Text>{" "}
           and
           <br />
-          {/* Alempi rivi */}
+          {/* Middle row */}
           <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
             support functions
           </Text>{" "}
@@ -98,7 +104,7 @@ const FrontPage = () => {
           <br />
         </Text>
 
-        {/* Feature cards */}
+        {/* Feature cards section */}
         <SimpleGrid
           spacing={6}
           columns={{ base: 1, md: 3 }}

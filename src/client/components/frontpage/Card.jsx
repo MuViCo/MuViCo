@@ -1,4 +1,7 @@
-import React from "react"
+/** InfoCard component
+ * Renders a card with a title, description, and a button that opens a modal with more information.
+ */
+
 import {
   Card,
   CardHeader,
