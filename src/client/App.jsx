@@ -32,10 +32,9 @@ const App = () => {
 
 
   useEffect(() => {
-    const loggedUserJSON = window.localStorage.getItem("user")
-    if (loggedUserJSON) {
-      const parsedUser = JSON.parse(loggedUserJSON)
-      setUser(parsedUser)
+    const loggedUser = authService.getLoggedUser()
+    if (loggedUser) {
+      setUser(loggedUser)
     }
     setIsInitialized(true)
   }, [])
