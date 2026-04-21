@@ -1,9 +1,12 @@
+/** AlertDialog.jsx
+ * A reusable confirmation dialog component using Chakra UI's AlertDialog.
+ */
+
 import React, { useRef } from "react"
 import {
   AlertDialog,
   AlertDialogBody,
   AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
   Button,

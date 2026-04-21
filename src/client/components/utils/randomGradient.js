@@ -1,3 +1,7 @@
+/** randomGradient.js
+ * Utility function to generate random linear gradients with a focus on darker shades of purple.
+ */
+
 // Function to generate random color values within a certain range, focusing on darker shades of purple
 const randomColor = () => {
   const red = 200 // R: 218

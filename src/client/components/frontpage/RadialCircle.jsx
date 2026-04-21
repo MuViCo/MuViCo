@@ -18,7 +18,7 @@ const RadialCircle = () => {
 
   const color1 = colorMode === "dark" ? darkColor1 : lightColor1
   const color2 = colorMode === "dark" ? darkColor2 : lightColor2
-
+  
   return (
     <svg
       width="130"

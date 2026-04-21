@@ -1,3 +1,8 @@
+/** FeatureSection.jsx
+ * A reusable component to display a section of features with a title and a list.
+ * Each feature can optionally have a nested list of items.
+ */
+
 import { Text, List, ListItem } from "@chakra-ui/react"
 import NestedList from "./NestedList"
 

@@ -1,3 +1,7 @@
+/** KeyboardHandler.jsx
+ * A reusable component for handling keyboard events for navigation.
+ */
+
 import { useEffect } from "react"
 
 const KeyboardHandler = ({ onNext, onPrevious }) => {

@@ -1,3 +1,7 @@
+/** ClickablePopover.jsx
+ * A reusable popover component that can be triggered by a click.
+ */
+
 import React from "react"
 import { Popover, PopoverTrigger, PopoverContent, PopoverBody, useDisclosure } from "@chakra-ui/react"
 
