@@ -96,7 +96,6 @@ describe("EditModeContainer playback behavior", () => {
     cues: baseCues,
     isToolboxOpen: false,
     setIsToolboxOpen: jest.fn(),
-    isShowMode: false,
     transitionType: "none",
     cueIndex: 0,
     setCueIndex: jest.fn(),

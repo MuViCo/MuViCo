@@ -40,7 +40,7 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount) => {
+const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
   
   if (cue.file == null) {
       return (
@@ -73,18 +73,6 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
       />
     )
   } else if (cue.file.type.startsWith("image/")) {
-    if (cue.file.name.includes("blank")) {
-      return (
-        <Box
-          style={{
-            width: "100%",
-            height: "100%",
-            backgroundColor: cue.color || "#e014ee",
-            borderRadius: "10px",
-          }}
-        />
-      )
-    }
     return (
       <img // Thumbail for image
         src={cue.file.url || `/${cue.file.name}`}
@@ -100,7 +88,6 @@ const renderMedia = (cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)
       />
     )
   } else if (
-    isShowMode &&
     cue.cueType === "audio" &&
     renderElementBasedOnIndex(cueIndex, cues, cue)
   ) {
@@ -126,7 +113,6 @@ const GridLayoutComponent = ({
   columnWidth,
   rowHeight,
   gap,
-  isShowMode,
   cueIndex,
   isAudioMuted,
   setSelectedCue,
@@ -212,30 +198,6 @@ const GridLayoutComponent = ({
     setIsToolboxOpen(true)
   }
 
-  const ShowModeCueButtons = (cue) => (
-    <>
-      {cue.file && cue.cueType === "audio" && (
-        <IconButton
-          icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-          disabled={true}
-          _disabled={{
-            cursor: "default",
-            pointerEvents: "auto",
-          }}
-          size="lg"
-          position="absolute"
-          _hover={{}}
-          backgroundColor="transparent"
-          draggable={false}
-          zIndex="10"
-          top="60px"
-          right="50px"
-          aria-label={cue.loop ? `${cue.name} loops` : `${cue.name} plays once`}
-          title={cue.loop ? "Loop enabled" : "Plays once"}
-        />
-      )}
-    </>
-  )
   const EditModeCueButtons = (cue) => (
     <Menu isLazy>
       <MenuButton
@@ -407,7 +369,7 @@ const GridLayoutComponent = ({
               h="100%"
               overflow="hidden"
               borderRadius="10px"
-              cursor={isShowMode ? "default" : (isDragging ? "grabbing" : (isCopied ? (interactionCursor || "copy") : "grab"))}
+              cursor={isDragging ? "grabbing" : (isCopied ? (interactionCursor || "copy") : "grab")}
               data-cue-content-id={cue._id}
               opacity={isDraggingOriginCue ? 0.58 : 1}
               transform="translateY(0)"
@@ -425,13 +387,7 @@ const GridLayoutComponent = ({
                 },
               }}
             >
-              {isShowMode
-                ? (
-                  ShowModeCueButtons(cue)
-                )
-                : (
-                  !isDragging && EditModeCueButtons(cue)
-                )}
+              {!isDragging && EditModeCueButtons(cue)}
 
               {hasContinuation && isVisualCue
                 ? (
@@ -488,7 +444,7 @@ const GridLayoutComponent = ({
                       )}
                   </Box>
                 )
-                : renderMedia(cue, cueIndex, cues, isShowMode, isAudioMuted, screenCount)}
+                : renderMedia(cue, cueIndex, cues, isAudioMuted, screenCount)}
 
               {hasContinuation && (
                 <>
@@ -663,7 +619,7 @@ const GridLayoutComponent = ({
               )}
 
               {cue.name?.trim() && (
-                <Tooltip label={cue.name} placement="top" hasArrow isDisabled={!isShowMode || isDragging}>
+                <Tooltip label={cue.name} placement="top" hasArrow isDisabled={isDragging}>
                   <Text
                     data-testid={`cue-label-${cue._id}`}
                     position="absolute"

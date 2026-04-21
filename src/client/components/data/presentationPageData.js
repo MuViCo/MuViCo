@@ -82,7 +82,7 @@ export const stepsToAddElementData = [
     ],
   },
   {
-    title: "Upload media or select a blank element from the color picker or color palette:",
+    title: "Upload media or choose a color element from the color picker or palette:",
     items: [
       "Click Upload media to add an image or video.",
       "The information button (ℹ️) will show you the allowed file types.",

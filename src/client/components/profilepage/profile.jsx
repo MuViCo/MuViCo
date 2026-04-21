@@ -4,11 +4,13 @@ import * as yup from "yup"
 import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
 import authService from "../../services/auth"
 import Error from "../utils/Error" 
+
 import {
   minPwLength,
   maxPwLength,
   invalidPwCharRegex,
-} from "../../../constants"
+} from "../../../constants.js"
+
 import {
   Box,
   Heading,

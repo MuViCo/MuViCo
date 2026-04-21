@@ -38,7 +38,6 @@ describe("GridLayoutComponent", () => {
     columnWidth: 150,
     rowHeight: 100,
     gap: 10,
-    isShowMode: false,
     cueIndex: 0,
     isAudioMuted: false,
     setSelectedCue: jest.fn(),
@@ -226,7 +225,7 @@ describe("GridLayoutComponent", () => {
     expect(container.querySelector('video[src="https://example.com/video.mp4"]')).toBeInTheDocument()
   })
 
-  it("renders audio media in show mode when cue index is active", () => {
+  it("renders audio media when cue index is active", () => {
     const cues = [
       {
         _id: "audio-1",
@@ -257,7 +256,6 @@ describe("GridLayoutComponent", () => {
         { i: "audio-2", x: 5, y: 2, w: 5, h: 1, static: false },
       ],
       {
-        isShowMode: true,
         cueIndex: 3,
         screenCount: 2,
       }
@@ -266,7 +264,7 @@ describe("GridLayoutComponent", () => {
     expect(container.querySelector('audio[src="https://example.com/audio-1.mp3"]')).toBeInTheDocument()
   })
 
-  it("does not render audio media in show mode when cue index is before cue", () => {
+  it("does not render audio media when cue index is before cue", () => {
     const cues = [
       {
         _id: "audio-1",
@@ -284,7 +282,6 @@ describe("GridLayoutComponent", () => {
       cues,
       [{ i: "audio-1", x: 1, y: 2, w: 9, h: 1, static: false }],
       {
-        isShowMode: true,
         cueIndex: 0,
         screenCount: 2,
       }

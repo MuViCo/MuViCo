@@ -58,7 +58,6 @@ const EditMode = ({
   cues,
   isToolboxOpen,
   setIsToolboxOpen,
-  isShowMode,
   cueIndex,
   isAudioMuted,
   toggleAudioMute,
@@ -264,7 +263,7 @@ const EditMode = ({
 
   useEffect(() => {
     hideHoverPreview()
-  }, [cues, indexCount, presentation.screenCount, isShowMode, hideHoverPreview])
+  }, [cues, indexCount, presentation.screenCount, hideHoverPreview])
 
   useEffect(() => {
     const clearTransientPreviews = () => {
@@ -796,7 +795,7 @@ const EditMode = ({
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
       file: fileObj,
-      fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
+      fileName: copiedCue.file?.name || null,
       color: copiedCue.color,
       loop: copiedCue.loop,
     }
@@ -979,7 +978,7 @@ const EditMode = ({
     event.preventDefault()
     hideHoverPreview()
 
-    if (isShowMode || !containerRef.current) {
+    if (!containerRef.current) {
       clearExternalPlacementPreview()
       return
     }
@@ -1311,10 +1310,6 @@ const EditMode = ({
     event.preventDefault()
     clearExternalPlacementPreview()
 
-    if (isShowMode) {
-      return
-    }
-
     let dragData = null
     try {
       const dataStr = event.dataTransfer.getData("application/json")
@@ -1520,7 +1515,6 @@ const EditMode = ({
               gap={gap}
               rowHeight={rowHeight}
               columnWidth={columnWidth}
-              isShowMode={isShowMode}
               screenCount={presentation.screenCount}
               isAudioMuted={isAudioMuted}
               screenIcon={screenIcon}
@@ -1529,7 +1523,7 @@ const EditMode = ({
           </Box>
           <Box
             position="relative"
-            pointerEvents={isShowMode ? "none" : "auto"}
+            pointerEvents="auto"
             minHeight={0}
             sx={{
               ".layout > .react-grid-placeholder": {
@@ -1606,7 +1600,6 @@ const EditMode = ({
                   bgColorIndex={bgColorIndex}
                   rowHeight={rowHeight}
                   columnWidth={columnWidth}
-                  isShowMode={isShowMode}
                   indexCount={indexCount}
                   headerActionsRef={headerActionsRef}
                 />
@@ -1622,7 +1615,6 @@ const EditMode = ({
                   setIsCopied={setIsCopied}
                   setCopiedCue={setCopiedCue}
                   id={id}
-                  isShowMode={isShowMode}
                   cueIndex={cueIndex}
                   isAudioMuted={isAudioMuted}
                   setSelectedCue={setSelectedCue}

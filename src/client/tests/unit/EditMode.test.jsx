@@ -164,7 +164,6 @@ describe("EditMode drag swapping", () => {
         cues={customCues}
         isToolboxOpen={false}
         setIsToolboxOpen={jest.fn()}
-        isShowMode={false}
         cueIndex={0}
         isAudioMuted={false}
         toggleAudioMute={jest.fn()}

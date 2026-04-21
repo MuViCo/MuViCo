@@ -5,7 +5,7 @@ import { EditIcon } from "@chakra-ui/icons"
 import { updatePresentationName } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 
-const PresentationTitle = ({ id, presentationName, showMode }) => {
+const PresentationTitle = ({ id, presentationName }) => {
     const [isEditingPresentationName, setIsEditingPresentationName] = useState(false)
     const [newPresentationName, setNewPresentationName] = useState("")
     const showToast = useCustomToast()
@@ -56,7 +56,7 @@ const PresentationTitle = ({ id, presentationName, showMode }) => {
             fontWeight={700}
           />
         )}
-        {!showMode && !isEditingPresentationName && (
+        {!isEditingPresentationName && (
           <IconButton
             id="edit-presentation-name-button"
             data-testid="edit-presentation-name-button"

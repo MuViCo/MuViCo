@@ -32,7 +32,6 @@ function EditorLayout(props) {
     cues,
     isToolboxOpen,
     setIsToolboxOpen,
-    isShowMode,
     cueIndex,
     isAudioMuted,
     toggleAudioMute,
@@ -89,20 +88,21 @@ function EditorLayout(props) {
         position="relative"
         key="header"
       >
-        <Button
+
+        {/* TODO: 
+            The presentation settings button is not yet functional. Consider adding for example the 
+            cue transition animation selection into the settings */}
+        {/* <Button
           aria-label="Presentation Settings"
           className="edit-mode-btn edit-mode-btn-settings"
         >
           <img src={settingsIcon} alt="" width="24" height="24" />
-        </Button>
-        <Button className="edit-mode-btn edit-mode-btn-show-mode">
-          Go to Show Mode
-        </Button>
+        </Button> */}
+
         <Box position="absolute" left="50%" transform="translateX(-50%)">
           <PresentationTitle
             id={id}
             presentationName={presentationName}
-            showMode={isShowMode}
           />
         </Box>
         <Button
@@ -127,7 +127,7 @@ function EditorLayout(props) {
         <div id="screen_resize_handle" className="resize_handle"></div>
 
       </div>
-      <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="showModeControls">
+      <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="playbackControls">
         <KeyboardHandler
           onNext={() => updateCue("Next")}
           onPrevious={() => updateCue("Previous")}
@@ -160,7 +160,6 @@ function EditorLayout(props) {
                   cues={cues}
                   isToolboxOpen={isToolboxOpen}
                   setIsToolboxOpen={setIsToolboxOpen}
-                  isShowMode={isShowMode}
                   cueIndex={cueIndex}
                   isAudioMuted={isAudioMuted}
                   toggleAudioMute={toggleAudioMute}
@@ -204,7 +203,6 @@ const EditModeContainer = ({
   cues,
   isToolboxOpen,
   setIsToolboxOpen,
-  isShowMode,
   transitionType,
   cueIndex,
   setCueIndex,
@@ -433,7 +431,6 @@ const EditModeContainer = ({
       cues={cues}
       isToolboxOpen={isToolboxOpen}
       setIsToolboxOpen={setIsToolboxOpen}
-      isShowMode={isShowMode}
       cueIndex={cueIndex}
       isAudioMuted={isAudioMuted}
       toggleAudioMute={toggleAudioMute}

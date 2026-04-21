@@ -39,68 +39,16 @@ const renderMedia = (file, name, color) => {
   }
 
   if (isType.image(file)) {
-    // Handle blank images by using local file path when URL is null
-    // This is intended to be temporary until blank files are replaced in the database with actual color values and the blank file type is removed
-    // TODO: Refactor to remove blank file type and use color value directly from cue data instead of relying on file name parsing
-    if (file.name.includes("blank")) {
-      if (file.name.includes("blank-black")) {
-        return (
-          <Image
-            bg="#000000"
-            alt={name}
-            width="100%"
-            height="100vh"
-            objectFit="cover"
-          />
-        )
-      }
-      if (file.name.includes("blank-white")) {
-        return (
-          <Image
-            bg="#ffffff"
-            alt={name}
-            width="100%"
-            height="100vh"
-            objectFit="cover"
-          />
-        )
-      }
-      if (file.name.includes("blank-indigo")) {
-        return (
-          <Image
-            bg="#5700a3"
-            alt={name}
-            width="100%"
-            height="100vh"
-            objectFit="cover"
-          />
-        )
-      }
-      if (file.name.includes("blank-tropical-indigo")) {
-        return (
-          <Image
-            bg="#8f94f6"
-            alt={name}
-            width="100%"
-            height="100vh"
-            objectFit="cover"
-          />
-        )
-      }
-      // show other images as normal  
-    } else {
-      const imageSrc = file.url || `/${file.name}`
-      return (
-        <Image
-          src={imageSrc}
-          alt={name}
-          width="100%"
-          height="100vh"
-          objectFit="cover"
-        />
-      )
-    }
-
+    const imageSrc = file.url || `/${file.name}`
+    return (
+      <Image
+        src={imageSrc}
+        alt={name}
+        width="100%"
+        height="100vh"
+        objectFit="cover"
+      />
+    )
   }
   // check if media is video
   if (isType.video(file)) {
