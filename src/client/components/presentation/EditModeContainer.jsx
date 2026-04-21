@@ -95,9 +95,9 @@ function EditorLayout(props) {
         >
           <img src={settingsIcon} alt="" width="24" height="24" />
         </Button>
-        <Button className="edit-mode-btn edit-mode-btn-show-mode">
+        {/* <Button className="edit-mode-btn edit-mode-btn-show-mode">
           Go to Show Mode
-        </Button>
+        </Button> */}
         <Box position="absolute" left="50%" transform="translateX(-50%)">
           <PresentationTitle
             id={id}

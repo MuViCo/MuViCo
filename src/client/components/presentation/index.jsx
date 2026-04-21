@@ -5,7 +5,6 @@ import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import "reactflow/dist/style.css"
 import { useDispatch, useSelector } from "react-redux"
 
-import ShowMode from "./ShowMode"
 import EditModeContainer from "./EditModeContainer"
 import PresentationTitle from "./PresentationTitle"
 import Dialog from "../utils/AlertDialog"
