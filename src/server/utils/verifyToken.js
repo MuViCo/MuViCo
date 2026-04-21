@@ -2,6 +2,8 @@ const admin = require("firebase-admin")
 
 const { FIREBASE_SERVICE_KEY } = require("./config")
 
+const logger = require("./logger")
+
 const initializeFirebase = async () => {
   if (admin.apps.length) {
     return
@@ -10,7 +12,7 @@ const initializeFirebase = async () => {
   admin.initializeApp({
     credential: admin.credential.cert(service_account),
   })
-  console.log("Firebase initialized successfully")
+  logger.info("Firebase initialized successfully")
 }
 
 const verifyToken = async (req, res, next) => {
@@ -31,7 +33,7 @@ const verifyToken = async (req, res, next) => {
 }
 
 initializeFirebase().catch((err) => {
-  console.error("Failed to initialize Firebase:", err)
+  logger.error("Failed to initialize Firebase:", err)
 })
 
 module.exports = verifyToken

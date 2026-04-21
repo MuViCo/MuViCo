@@ -62,6 +62,7 @@ describe("GET /presentations", () => {
   })
 
   test("returns 400 with invalid presentation id", async () => {
+    global.console = { ...console, error: jest.fn() }
     await api
       .get("/api/home/invalid-id")
       .set("Authorization", authHeader)
@@ -225,7 +226,10 @@ describe("PUT /presentations", () => {
     const response = await api
       .put(`/api/home/${presentationId}`)
       .set("Authorization", authHeader)
-      .send({ name: "   Trimmed title   ", description: "   Trimmed description   " })
+      .send({
+        name: "   Trimmed title   ",
+        description: "   Trimmed description   ",
+      })
       .expect(200)
 
     expect(response.body.name).toBe("Trimmed title")
@@ -242,7 +246,9 @@ describe("PUT /presentations", () => {
       .expect(400)
       .expect("Content-Type", /application\/json/)
       .expect((res) => {
-        expect(res.body.error).toBe("description must be at most 500 characters long")
+        expect(res.body.error).toBe(
+          "description must be at most 500 characters long"
+        )
       })
   })
 
@@ -262,7 +268,9 @@ describe("PUT /presentations", () => {
       .send({ name: "   ", description: "Desc" })
       .expect(400)
       .expect((res) => {
-        expect(res.body.error).toBe("name must be between 1 and 100 characters long")
+        expect(res.body.error).toBe(
+          "name must be between 1 and 100 characters long"
+        )
       })
   })
 

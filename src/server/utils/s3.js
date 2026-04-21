@@ -7,6 +7,8 @@ const {
 } = require("@aws-sdk/client-s3")
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner")
 
+const logger = require("../utils/logger")
+
 const {
   BUCKET_REGION,
   BUCKET_NAME,
@@ -78,7 +80,7 @@ const getFileSize = async (cue, presentationId) => {
       throw new Error("Content-Length header is missing.")
     }
   } catch (error) {
-    console.error("Error getting file size:", error)
+    logger.error("Error getting file size:", error)
     throw error
   }
 }
@@ -102,7 +104,7 @@ const getFileType = async (cue, presentationId) => {
       throw new Error("Content-Type header is missing.")
     }
   } catch (error) {
-    console.error("Error getting file type:", error)
+    logger.error("Error getting file type:", error)
     throw error
   }
 }

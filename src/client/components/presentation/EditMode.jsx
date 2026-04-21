@@ -29,7 +29,10 @@ import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import useEditModeDragPreviewState from "./useEditModeDragPreviewState"
 import useEditModeDragPreviewController from "./useEditModeDragPreviewController"
-import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
+import {
+  buildCueVisualSpanMap,
+  getCueVisualSpanFromMap,
+} from "../utils/cueVisualSpanUtils"
 import { RowHeaders, ColumnHeaders } from "./EditModeHeaders"
 import {
   getContinuationShrinkSpanOverrides,
@@ -49,9 +52,7 @@ import {
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
 
-
 const theme = extendTheme({})
-
 
 const EditMode = ({
   id,
@@ -90,15 +91,21 @@ const EditMode = ({
   const [selectedCue, setSelectedCue] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
-  const [confirmAction, setConfirmAction] = useState(() => () => { })
+  const [confirmAction, setConfirmAction] = useState(() => () => {})
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
 
-  const xLabels = useMemo(() => (
-    Array.from({ length: indexCount }, (_, index) =>
-      index === 0 ? "Frame 0" : `Frame ${index}`)
-  ), [indexCount])
-  const visualCues = useMemo(() => cues.filter(cue => cue.cueType === "visual"), [cues])
+  const xLabels = useMemo(
+    () =>
+      Array.from({ length: indexCount }, (_, index) =>
+        index === 0 ? "Frame 0" : `Frame ${index}`
+      ),
+    [indexCount]
+  )
+  const visualCues = useMemo(
+    () => cues.filter((cue) => cue.cueType === "visual"),
+    [cues]
+  )
 
   const yLabels = useMemo(() => {
     const labels = Array.from(
@@ -146,11 +153,11 @@ const EditMode = ({
   const dragStartPointerRef = useRef(null)
   const dragHasMovedRef = useRef(false)
   const headerActionsRef = useRef({
-    addIndex: () => { },
-    removeIndex: () => { },
-    increaseScreenCount: () => { },
-    decreaseScreenCount: () => { },
-    toggleAudioMute: () => { },
+    addIndex: () => {},
+    removeIndex: () => {},
+    increaseScreenCount: () => {},
+    decreaseScreenCount: () => {},
+    toggleAudioMute: () => {},
   })
 
   const columnWidth = 150
@@ -160,27 +167,35 @@ const EditMode = ({
   const dragPreviewYOffset = Math.max(rowHeight - frameHeaderHeight, 0)
   const dragCommitDistancePx = 4
 
-  const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
+  const cueVisualSpanMap = useMemo(
+    () => buildCueVisualSpanMap(cues, indexCount),
+    [cues, indexCount]
+  )
 
-  const getCueEndIndex = (cue) => Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
+  const getCueEndIndex = (cue) =>
+    Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
 
-  const cueOccupiesSlot = (cue, xIndex, yIndex) => (
+  const cueOccupiesSlot = (cue, xIndex, yIndex) =>
     Number(cue.screen) === Number(yIndex) &&
     Number(xIndex) >= Number(cue.index) &&
     Number(xIndex) <= getCueEndIndex(cue)
-  )
 
-  const getCueAtPosition = (xIndex, yIndex) => (
+  const getCueAtPosition = (xIndex, yIndex) =>
     cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
-  )
 
-  const getAnchorCueAtPosition = (xIndex, yIndex) => (
+  const getAnchorCueAtPosition = (xIndex, yIndex) =>
     cues.find(
-      (cue) => Number(cue.index) === Number(xIndex) && Number(cue.screen) === Number(yIndex)
+      (cue) =>
+        Number(cue.index) === Number(xIndex) &&
+        Number(cue.screen) === Number(yIndex)
     )
-  )
 
-  const getContinuationPreviewSpanOverrides = (xIndex, yIndex, cueType, draggedCueId) => {
+  const getContinuationPreviewSpanOverrides = (
+    xIndex,
+    yIndex,
+    cueType,
+    draggedCueId
+  ) => {
     return getContinuationShrinkSpanOverrides({
       xIndex,
       yIndex,
@@ -294,7 +309,8 @@ const EditMode = ({
 
     if (dragData.elementType === "media") {
       const mimeType = dragData.mimeType || ""
-      const isImagePreview = mimeType.startsWith("image/") && Boolean(dragData.previewUrl)
+      const isImagePreview =
+        mimeType.startsWith("image/") && Boolean(dragData.previewUrl)
 
       return {
         name: cueName,
@@ -360,9 +376,13 @@ const EditMode = ({
       setStatus("loading")
       try {
         dispatch(incrementIndexCount())
-        await dispatch(saveIndexCount({ id, indexCount: originalIndexCount + 1 }))
+        await dispatch(
+          saveIndexCount({ id, indexCount: originalIndexCount + 1 })
+        )
 
-        const cuesToShift = cuesAfter.slice().sort((a, b) => Number(b.index) - Number(a.index))
+        const cuesToShift = cuesAfter
+          .slice()
+          .sort((a, b) => Number(b.index) - Number(a.index))
 
         // Create new data for the elements in the new positions
         const updatePromises = cuesToShift.map((cue) => {
@@ -400,7 +420,11 @@ const EditMode = ({
         dispatch(decrementIndexCount())
         await dispatch(saveIndexCount({ id, indexCount: originalIndexCount }))
         setStatus("saved")
-        showToast({ title: "Error", description: error.message || "Failed to add index", status: "error" })
+        showToast({
+          title: "Error",
+          description: error.message || "Failed to add index",
+          status: "error",
+        })
       }
     }
   }
@@ -415,7 +439,9 @@ const EditMode = ({
       return
     }
 
-    const cuesInIndex = cues.filter((cue) => Number(cue.index) === Number(index))
+    const cuesInIndex = cues.filter(
+      (cue) => Number(cue.index) === Number(index)
+    )
     if (cuesInIndex.length > 0) {
       handleIndexHasData(index)
       return
@@ -432,7 +458,9 @@ const EditMode = ({
 
     setStatus("loading")
     try {
-      const cuesToShift = cuesAfter.slice().sort((a, b) => Number(a.index) - Number(b.index))
+      const cuesToShift = cuesAfter
+        .slice()
+        .sort((a, b) => Number(a.index) - Number(b.index))
 
       // Create new data for the elements in the new positions
       const updatePromises = cuesToShift.map((cue) => {
@@ -465,7 +493,11 @@ const EditMode = ({
       })
     } catch (error) {
       console.error("Error shifting cues when removing index:", error)
-      showToast({ title: "Error", description: error.message || "Failed to remove index", status: "error" })
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove index",
+        status: "error",
+      })
       setStatus("saved")
     }
   }
@@ -491,7 +523,7 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      const audioCues = cues.filter(cue => cue.cueType === "audio")
+      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
@@ -503,13 +535,13 @@ const EditMode = ({
           index: audioCue.index,
           screen: newScreenNumber + 1,
           file: audioCue.file,
-          loop: audioCue.loop
+          loop: audioCue.loop,
         }
         await dispatch(updatePresentation(id, updatedCue))
 
         const updatedCueForState = {
           ...audioCue,
-          screen: updatedCue.screen
+          screen: updatedCue.screen,
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -553,7 +585,9 @@ const EditMode = ({
     }
 
     const screenToRemove = presentation.screenCount
-    const cuesOnScreen = visualCues.filter(cue => cue.screen === screenToRemove)
+    const cuesOnScreen = visualCues.filter(
+      (cue) => cue.screen === screenToRemove
+    )
 
     if (cuesOnScreen.length > 0) {
       setConfirmMessage(
@@ -573,26 +607,28 @@ const EditMode = ({
   const performScreenRemoval = async () => {
     try {
       const currentScreenCount = presentation.screenCount
-      const audioCues = cues.filter(cue => cue.cueType === "audio")
+      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(decrementScreenCount())
-      const result = await dispatch(saveScreenCount({ id, screenCount: currentScreenCount - 1 }))
+      const result = await dispatch(
+        saveScreenCount({ id, screenCount: currentScreenCount - 1 })
+      )
 
       for (const audioCue of audioCues) {
         const updatedCue = {
           cueId: audioCue._id,
           cueName: audioCue.name,
           index: audioCue.index,
-          screen: (currentScreenCount - 1) + 1,
+          screen: currentScreenCount - 1 + 1,
           file: audioCue.file,
-          loop: audioCue.loop
+          loop: audioCue.loop,
         }
 
         await dispatch(updatePresentation(id, updatedCue))
 
         const updatedCueForState = {
           ...audioCue,
-          screen: updatedCue.screen
+          screen: updatedCue.screen,
         }
         dispatch(editCue(updatedCueForState))
       }
@@ -635,7 +671,11 @@ const EditMode = ({
       return
     }
 
-    if (event.target.closest("button, [role='menuitem'], input, textarea, select, a")) {
+    if (
+      event.target.closest(
+        "button, [role='menuitem'], input, textarea, select, a"
+      )
+    ) {
       return
     }
 
@@ -715,7 +755,9 @@ const EditMode = ({
     )
 
     const hoveredCue = getCueAtPosition(xIndex, yIndex)
-    const isBlockedCell = Boolean(hoveredCue && hoveredCue._id === copiedCue._id)
+    const isBlockedCell = Boolean(
+      hoveredCue && hoveredCue._id === copiedCue._id
+    )
     const isInsideGrid = isInsidePresentationGridCell({
       xIndex,
       yIndex,
@@ -723,8 +765,11 @@ const EditMode = ({
       screenCount: presentation.screenCount,
     })
     const isValidDropCell =
-      isCueTypeCompatibleWithRow(copiedCue.cueType, yIndex, presentation.screenCount) &&
-      !isBlockedCell
+      isCueTypeCompatibleWithRow(
+        copiedCue.cueType,
+        yIndex,
+        presentation.screenCount
+      ) && !isBlockedCell
 
     if (!isInsideGrid) {
       clearExternalPlacementPreview()
@@ -756,7 +801,6 @@ const EditMode = ({
 
     const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
     await addCue(newCueData)
-    console.log("Pasted cue data: ", newCueData)
   }
 
   const updateCopiedCuePreview = (event) => {
@@ -775,16 +819,11 @@ const EditMode = ({
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
     let fileObj = null
     if (copiedCue.file) {
-
-      fileObj = await fetchFileFromUrl(
-        copiedCue.file.url,
-        copiedCue.file.name
-      )
+      fileObj = await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name)
       if (copiedCue.file.driveId) {
         fileObj.driveId = copiedCue.file.driveId
       }
     }
-
 
     return {
       index: xIndex,
@@ -875,11 +914,11 @@ const EditMode = ({
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-      (dragStartPointer &&
-        Math.hypot(
-          event.clientX - dragStartPointer.clientX,
-          event.clientY - dragStartPointer.clientY
-        ) >= dragCommitDistancePx)
+        (dragStartPointer &&
+          Math.hypot(
+            event.clientX - dragStartPointer.clientX,
+            event.clientY - dragStartPointer.clientY
+          ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const { xIndex, yIndex } = getPosition(
@@ -932,7 +971,8 @@ const EditMode = ({
       if (!isValidDropCell) {
         showToast({
           title: "Cannot move this file type here",
-          description: "Keep audio elements to the audio row and visual elements to the visual rows.",
+          description:
+            "Keep audio elements to the audio row and visual elements to the visual rows.",
           status: "error",
         })
         clearInternalDragSpanPreview()
@@ -1214,9 +1254,7 @@ const EditMode = ({
   const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
     setStatus("loading")
     try {
-      await dispatch(
-        swapCues(id, newTargetCue, newSelectedCue)
-      )
+      await dispatch(swapCues(id, newTargetCue, newSelectedCue))
       setStatus("saved")
     } catch (error) {
       console.error(error)
@@ -1261,10 +1299,15 @@ const EditMode = ({
       screen: targetCue.screen,
     }
 
-    const hasAudioCue = newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
+    const hasAudioCue =
+      newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (!(newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio")) {
+      if (
+        !(
+          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+        )
+      ) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -1312,7 +1355,8 @@ const EditMode = ({
 
     const files = Array.from(event.dataTransfer.files)
     const mediaFiles = files.filter(
-      (file) => isImageOrVideoMimeType(file?.type) || isAudioMimeType(file?.type)
+      (file) =>
+        isImageOrVideoMimeType(file?.type) || isAudioMimeType(file?.type)
     )
 
     if (mediaFiles.length === 0 && !dragData) {
@@ -1330,7 +1374,7 @@ const EditMode = ({
     if (dragData && dragData.type === "newCueFromForm") {
       const audioRowIndex = getAudioRow(presentation.screenCount)
       const colorCueName = (dragData.cueName || "").trim()
-      
+
       // Handle different element types from the three boxes
       if (dragData.elementType === "color") {
         // Color element - no file
@@ -1344,24 +1388,27 @@ const EditMode = ({
 
         await addCue(dataToSave)
         return
-      } 
-      else if (dragData.elementType === "media" || dragData.elementType === "sound") {
+      } else if (
+        dragData.elementType === "media" ||
+        dragData.elementType === "sound"
+      ) {
         // Media or sound element - has a file
         const isSound = dragData.elementType === "sound"
         const fileId = isSound ? dragData.soundId : dragData.mediaId
-        
+
         // Retrieve the file from mediaStore
         const file = mediaStore.getFile(fileId)
-        
+
         if (!file) {
           showToast({
             title: "File not found",
-            description: "The file could not be found. Please try uploading again.",
+            description:
+              "The file could not be found. Please try uploading again.",
             status: "error",
           })
           return
         }
-        
+
         // Validate screen placement
         if (isSound && yIndex !== audioRowIndex && xIndex < indexCount) {
           showToast({
@@ -1379,7 +1426,7 @@ const EditMode = ({
           })
           return
         }
-        
+
         // Create cue with the actual file
         const dataToSave = {
           index: xIndex,
@@ -1387,14 +1434,14 @@ const EditMode = ({
           screen: yIndex,
           file: file,
         }
-        
+
         await addCue(dataToSave)
-        
+
         // Clean up the file from store after successful creation
         mediaStore.removeFile(fileId)
         return
       }
-      
+
       // Default color-based element (legacy support)
       const dataToSave = {
         index: xIndex,
@@ -1411,7 +1458,11 @@ const EditMode = ({
     const file = mediaFiles[0]
     const audioRowIndex = getAudioRow(presentation.screenCount)
 
-    if (isImageOrVideoMimeType(file?.type) && xIndex < indexCount && yIndex === audioRowIndex) {
+    if (
+      isImageOrVideoMimeType(file?.type) &&
+      xIndex < indexCount &&
+      yIndex === audioRowIndex
+    ) {
       showToast({
         title: "Only audio files on the audio row.",
         description: "Click on an appropriate row to paste the element.",
@@ -1419,7 +1470,11 @@ const EditMode = ({
       })
       return
     }
-    if (isAudioMimeType(file?.type) && yIndex !== audioRowIndex && xIndex < indexCount) {
+    if (
+      isAudioMimeType(file?.type) &&
+      yIndex !== audioRowIndex &&
+      xIndex < indexCount
+    ) {
       showToast({
         title: "Only images/videos on screen rows.",
         description: "Click on an appropriate row to paste the element.",
@@ -1467,10 +1522,7 @@ const EditMode = ({
 
   return (
     <ChakraProvider theme={theme}>
-      <CustomAlert
-        showAlert={showAlert}
-        alertData={alertData}
-      />
+      <CustomAlert showAlert={showAlert} alertData={alertData} />
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
@@ -1618,16 +1670,24 @@ const EditMode = ({
                   setAlertData={setAlertData}
                   screenCount={presentation.screenCount}
                   isDragging={isDragging}
-                  draggingCueId={isDragging && selectedCue ? selectedCue._id : null}
+                  draggingCueId={
+                    isDragging && selectedCue ? selectedCue._id : null
+                  }
                   previewCueSpanOverrides={previewCueSpanOverrides}
                   isCopied={isCopied}
-                  interactionCursor={!isDragging && isCopied ? dragCursorMode : null}
+                  interactionCursor={
+                    !isDragging && isCopied ? dragCursorMode : null
+                  }
                 />
               </Box>
 
               {!isDragging && (
                 <Box
-                  data-testid={isCopied ? "copy-drag-placement-preview" : "pool-drag-placement-preview"}
+                  data-testid={
+                    isCopied
+                      ? "copy-drag-placement-preview"
+                      : "pool-drag-placement-preview"
+                  }
                   ref={externalPlacementPreviewRef}
                   data-valid-drop-cell="false"
                   position="absolute"
@@ -1701,7 +1761,10 @@ const EditMode = ({
                     overflow="hidden"
                     textOverflow="ellipsis"
                     textAlign="center"
-                    style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)", display: "none" }}
+                    style={{
+                      textShadow: "1px 1px 2px rgb(0, 0, 0)",
+                      display: "none",
+                    }}
                   />
                 </Box>
               )}
@@ -1748,7 +1811,8 @@ const EditMode = ({
                   opacity={0.92}
                   style={{ willChange: "transform" }}
                 >
-                  {selectedCue.file?.type?.startsWith("image/") && selectedCue.file?.url ? (
+                  {selectedCue.file?.type?.startsWith("image/") &&
+                  selectedCue.file?.url ? (
                     <Box
                       as="img"
                       src={selectedCue.file.url}
@@ -1845,4 +1909,4 @@ const EditMode = ({
     </ChakraProvider>
   )
 }
- export default EditMode
+export default EditMode

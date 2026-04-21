@@ -7,10 +7,9 @@ const {
   maxPwLength,
   invalidPwCharRegex,
 } = require("../../constants.js")
-const {
-  generateHash,
-  checkPassword,
-} = require("../utils/auth.js")
+const { generateHash, checkPassword } = require("../utils/auth.js")
+
+const logger = require("../utils/logger")
 
 router.post("/link-drive", userExtractor, async (req, res) => {
   try {
@@ -28,7 +27,7 @@ router.post("/link-drive", userExtractor, async (req, res) => {
       id: user.id,
     })
   } catch (error) {
-    console.error("Error linking Drive:", error)
+    logger.error("Error linking Drive:", error)
     res.status(500).json({ error: "Failed to link Google Drive" })
   }
 })
@@ -48,7 +47,7 @@ router.post("/unlink-drive", userExtractor, async (req, res) => {
       id: user.id,
     })
   } catch (error) {
-    console.error("Error unlinking Drive:", error)
+    logger.error("Error unlinking Drive:", error)
     res.status(500).json({ error: "Failed to link Google Drive" })
   }
 })
@@ -119,7 +118,7 @@ router.post("/change-password", userExtractor, async (req, res) => {
     )
     return res.status(201).json(updatedUser)
   } catch (error) {
-    console.error("Password change failed:", error)
+    logger.error("Password change failed:", error)
     res.status(400).json({ error: "Failed to change password" })
   }
 })

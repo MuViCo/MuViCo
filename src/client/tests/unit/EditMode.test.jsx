@@ -32,11 +32,17 @@ jest.mock("../../redux/presentationReducer", () => ({
   swapCues: jest.fn(() => ({ type: "MOCK_SWAP_CUES" })),
   incrementIndexCount: jest.fn(() => ({ type: "MOCK_INCREMENT_INDEX_COUNT" })),
   decrementIndexCount: jest.fn(() => ({ type: "MOCK_DECREMENT_INDEX_COUNT" })),
-  incrementScreenCount: jest.fn(() => ({ type: "MOCK_INCREMENT_SCREEN_COUNT" })),
-  decrementScreenCount: jest.fn(() => ({ type: "MOCK_DECREMENT_SCREEN_COUNT" })),
+  incrementScreenCount: jest.fn(() => ({
+    type: "MOCK_INCREMENT_SCREEN_COUNT",
+  })),
+  decrementScreenCount: jest.fn(() => ({
+    type: "MOCK_DECREMENT_SCREEN_COUNT",
+  })),
   editCue: jest.fn(() => ({ type: "MOCK_EDIT_CUE" })),
   shiftPresentationIndexes: jest.fn(() => ({ type: "MOCK_SHIFT_INDEXES" })),
-  fetchPresentationInfo: jest.fn(() => ({ type: "MOCK_FETCH_PRESENTATION_INFO" })),
+  fetchPresentationInfo: jest.fn(() => ({
+    type: "MOCK_FETCH_PRESENTATION_INFO",
+  })),
 }))
 
 jest.mock("../../redux/presentationThunks", () => ({
@@ -144,7 +150,11 @@ describe("EditMode drag swapping", () => {
       name: "Visual cue 1",
       color: "#ffffff",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/1.png",
+        name: "1.png",
+      },
     },
     {
       _id: "visual-2",
@@ -153,7 +163,11 @@ describe("EditMode drag swapping", () => {
       name: "Visual cue 2",
       color: "#000000",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/2.png",
+        name: "2.png",
+      },
     },
   ]
 
@@ -225,14 +239,16 @@ describe("EditMode drag swapping", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
-    useSelector.mockImplementation((selector) => selector({
-      presentation: {
-        cues,
-        name: "Test presentation",
-        screenCount: 2,
-        indexCount: 3,
-      },
-    }))
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues,
+          name: "Test presentation",
+          screenCount: 2,
+          indexCount: 3,
+        },
+      })
+    )
     mockDragScenario = null
   })
 
@@ -306,7 +322,11 @@ describe("EditMode drag swapping", () => {
         name: "Visual cue 1",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
       },
       {
         _id: "visual-2",
@@ -315,18 +335,24 @@ describe("EditMode drag swapping", () => {
         name: "Visual cue 2",
         color: "#000000",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
       },
     ]
 
-    useSelector.mockImplementation((selector) => selector({
-      presentation: {
-        cues: cuesWithContinuation,
-        name: "Test presentation",
-        screenCount: 2,
-        indexCount: 4,
-      },
-    }))
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: cuesWithContinuation,
+          name: "Test presentation",
+          screenCount: 2,
+          indexCount: 4,
+        },
+      })
+    )
 
     renderEditMode(cuesWithContinuation, 4)
     const gridContainer = setupGridGeometry()
@@ -445,7 +471,11 @@ describe("EditMode drag swapping", () => {
       clientY: 120,
     })
 
-    expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("drag-placement-preview")
+      ).not.toBeInTheDocument()
+    )
   })
 
   it("cancels dragging when cursor leaves the grid container", async () => {
@@ -464,13 +494,17 @@ describe("EditMode drag swapping", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({ display: "block" })
+      expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
+        display: "block",
+      })
     })
 
     fireEvent.mouseLeave(gridContainer)
 
     await waitFor(() => {
-      expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId("drag-placement-preview")
+      ).not.toBeInTheDocument()
     })
 
     fireEvent.mouseMove(gridContainer, {
@@ -478,14 +512,18 @@ describe("EditMode drag swapping", () => {
       clientY: 120,
     })
 
-    expect(screen.queryByTestId("drag-placement-preview")).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId("drag-placement-preview")
+    ).not.toBeInTheDocument()
   })
 
   it("shrinks continuation preview when dragging a cue over another cue continuation", async () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
 
-    expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
@@ -499,7 +537,9 @@ describe("EditMode drag swapping", () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toHaveStyle({
+      expect(
+        screen.getByTestId("cue-continuation-overlay-visual-2")
+      ).toHaveStyle({
         opacity: "0.76",
       })
     })
@@ -526,7 +566,10 @@ describe("EditMode drag swapping", () => {
     })
 
     await waitFor(() => {
-      expect(createCue).toHaveBeenCalledWith("presentation-1", expect.any(FormData))
+      expect(createCue).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.any(FormData)
+      )
     })
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: "Cannot drop here" })
@@ -666,7 +709,9 @@ describe("EditMode drag swapping", () => {
       expect(screen.getByTestId("copy-drag-placement-preview")).toHaveStyle({
         transform: "translate3d(320px, 65px, 0)",
       })
-      expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toHaveStyle({
+      expect(
+        screen.getByTestId("cue-continuation-overlay-visual-2")
+      ).toHaveStyle({
         opacity: "0.76",
       })
     })
@@ -726,7 +771,10 @@ describe("EditMode drag swapping", () => {
       })
 
       await waitFor(() => {
-        expect(createCue).toHaveBeenCalledWith("presentation-1", expect.any(FormData))
+        expect(createCue).toHaveBeenCalledWith(
+          "presentation-1",
+          expect.any(FormData)
+        )
       })
     } finally {
       global.fetch = originalFetch

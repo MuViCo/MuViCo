@@ -72,7 +72,9 @@ describe("test presentation", () => {
 
   const createAudioCue = async (index, cueName, screen) => {
     if (!testPresentationId) {
-      throw new Error("Error in createAudioCue: testPresentationId is undefined")
+      throw new Error(
+        "Error in createAudioCue: testPresentationId is undefined"
+      )
     }
 
     const url = `/api/presentation/${testPresentationId}`
@@ -148,6 +150,7 @@ describe("test presentation", () => {
     })
 
     it("GET /api/presentation/:id with invalid ID should return 404", async () => {
+      global.console = { ...console, error: jest.fn() }
       const response = await api
         .get("/api/presentation/000000000000000000000000")
         .set("Authorization", authHeader)
@@ -388,8 +391,12 @@ describe("test presentation", () => {
       await createCue(1, "Swap Cue 2", 1)
 
       const presentation = await Presentation.findById(testPresentationId)
-      const firstCue = presentation.cues.find((cue) => cue.name === "Swap Cue 1")
-      const secondCue = presentation.cues.find((cue) => cue.name === "Swap Cue 2")
+      const firstCue = presentation.cues.find(
+        (cue) => cue.name === "Swap Cue 1"
+      )
+      const secondCue = presentation.cues.find(
+        (cue) => cue.name === "Swap Cue 2"
+      )
 
       firstCueId = firstCue._id.toString()
       secondCueId = secondCue._id.toString()
@@ -416,7 +423,8 @@ describe("test presentation", () => {
       expect(response.body.secondCue.index).toBe(0)
       expect(response.body.secondCue.screen).toBe(1)
 
-      const updatedPresentation = await Presentation.findById(testPresentationId)
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
       const updatedFirstCue = updatedPresentation.cues.id(firstCueId)
       const updatedSecondCue = updatedPresentation.cues.id(secondCueId)
 
@@ -459,7 +467,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Swap target position is already occupied by another cue.")
+      expect(response.body.error).toBe(
+        "Swap target position is already occupied by another cue."
+      )
     })
 
     test("rejects swap when cue types do not match target screens", async () => {
@@ -479,7 +489,9 @@ describe("test presentation", () => {
       await createAudioCue(0, "Audio Cue", 5)
 
       const presentation = await Presentation.findById(testPresentationId)
-      const visualCue = presentation.cues.find((cue) => cue.name === "Visual Cue")
+      const visualCue = presentation.cues.find(
+        (cue) => cue.name === "Visual Cue"
+      )
       const audioCue = presentation.cues.find((cue) => cue.name === "Audio Cue")
 
       const response = await api
@@ -495,7 +507,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Cue type does not match swap target screen")
+      expect(response.body.error).toBe(
+        "Cue type does not match swap target screen"
+      )
     })
   })
 

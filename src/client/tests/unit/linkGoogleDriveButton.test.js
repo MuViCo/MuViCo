@@ -276,6 +276,8 @@ describe("LinkGoogleDriveButton", () => {
   })
 
   test("handles Firebase authentication error", async () => {
+    // Suppress error printing during test
+    global.console = { ...console, error: jest.fn() }
     const authError = new Error("Auth failed")
 
     firebaseAuth.signInWithPopup.mockRejectedValue(authError)
@@ -366,9 +368,9 @@ describe("LinkGoogleDriveButton", () => {
     await userEvent.click(button)
 
     await waitFor(() => {
-      expect(firebaseAuth.GoogleAuthProvider.credentialFromResult).toHaveBeenCalledWith(
-        mockResult
-      )
+      expect(
+        firebaseAuth.GoogleAuthProvider.credentialFromResult
+      ).toHaveBeenCalledWith(mockResult)
     })
   })
 
@@ -396,7 +398,7 @@ describe("LinkGoogleDriveButton", () => {
     renderComponent()
 
     const button = screen.getByRole("button")
-    
+
     // Should not crash even if user is null in localStorage
     expect(() => {
       userEvent.click(button)

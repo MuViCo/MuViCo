@@ -192,7 +192,9 @@ describe("Drive API Utilities", () => {
         message: "File test-file-id deleted successfully.",
       })
     })
+
     it("should throw error when delete fails", async () => {
+      global.console = { ...console, error: jest.fn() }
       const testError = new Error("Delete failed")
       mockDrive.files.delete.mockRejectedValueOnce(testError)
 

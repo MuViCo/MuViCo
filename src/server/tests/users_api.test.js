@@ -44,6 +44,7 @@ describe("POST /link-drive and /unlink-drive", () => {
   })
 
   test("linking drive unsuccesfully", async () => {
+    global.console = { ...console, error: jest.fn() }
     await api
       .post("/api/users/link-drive")
       .send({ driveAccessToken: "test-token" })
@@ -70,6 +71,7 @@ describe("POST /link-drive and /unlink-drive", () => {
   })
 
   test("unlinking drive unsuccesfully", async () => {
+    global.console = { ...console, error: jest.fn() }
     await api
       .post("/api/users/link-drive")
       .set("Authorization", authHeader)
@@ -88,7 +90,7 @@ describe("POST /change-password", () => {
   beforeEach(async () => {
     await User.deleteMany({})
     await Presentation.deleteMany({})
-    
+
     await api
       .post("/api/signup")
       .send({ username: "testuser", password: "testpassword" })
@@ -104,9 +106,9 @@ describe("POST /change-password", () => {
     const response = await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
       .expect("Content-Type", /application\/json/)
@@ -119,9 +121,9 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "wrongpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "wrongpassword",
+        newPassword: "newpassword123",
       })
       .expect(401)
       .expect("Content-Type", /application\/json/)
@@ -131,14 +133,16 @@ describe("POST /change-password", () => {
     const response = await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "wk" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "wk",
       })
       .expect(400)
       .expect("Content-Type", /application\/json/)
 
-    expect(response.body.error).toBe(`Password must be at least ${minPwLength} characters long`)
+    expect(response.body.error).toBe(
+      `Password must be at least ${minPwLength} characters long`
+    )
   })
 
   test("changing password fails when current password is missing", async () => {
@@ -214,9 +218,9 @@ describe("POST /change-password", () => {
   test("changing password fails without authentication", async () => {
     await api
       .post("/api/users/change-password")
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(401)
   })
@@ -225,17 +229,17 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
 
     const loginResponse = await api
       .post("/api/login")
-      .send({ 
-        username: "testuser", 
-        password: "newpassword123" 
+      .send({
+        username: "testuser",
+        password: "newpassword123",
       })
       .expect(200)
 
@@ -246,17 +250,17 @@ describe("POST /change-password", () => {
     await api
       .post("/api/users/change-password")
       .set("Authorization", authHeader)
-      .send({ 
-        currentPassword: "testpassword", 
-        newPassword: "newpassword123" 
+      .send({
+        currentPassword: "testpassword",
+        newPassword: "newpassword123",
       })
       .expect(201)
 
     await api
       .post("/api/login")
-      .send({ 
-        username: "testuser", 
-        password: "testpassword" 
+      .send({
+        username: "testuser",
+        password: "testpassword",
       })
       .expect(401)
   })
