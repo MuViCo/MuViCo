@@ -1,3 +1,10 @@
+/**
+ * ThemeToggleButton component for the MuViCo application.
+ * Provides a button to toggle between light and dark themes.
+ * Uses Framer Motion for smooth animations when switching themes.
+ * Adapts its icon and color scheme based on the current theme.
+ */
+
 import { AnimatePresence, motion } from "framer-motion"
 import { IconButton, useColorMode, useColorModeValue } from "@chakra-ui/react"
 import { SunIcon, MoonIcon } from "@chakra-ui/icons"

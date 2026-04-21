@@ -1,3 +1,10 @@
+/**
+ * Login component for the MuViCo application.
+ * Provides a form for users to log in with their username and password.
+ * Also includes a Google Sign-In button for alternative authentication.
+ * Displays error messages for invalid input or failed login attempts.
+ */
+
 import { useState, useRef } from "react"
 import {
   Button,
@@ -53,6 +60,7 @@ export const LoginForm = ({ onSubmit, error, onLogin }) => {
     }
   }
 
+  // Handle Enter and Tab key navigation between form fields and submission
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault()
