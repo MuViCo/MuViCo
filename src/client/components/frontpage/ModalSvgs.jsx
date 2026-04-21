@@ -1,3 +1,7 @@
+/** ModalSvgs.jsx
+ * Contains SVG components for the front page "Learn more" feature cards.
+ */
+
 const Upload = () => (
   <svg
     width="100px"

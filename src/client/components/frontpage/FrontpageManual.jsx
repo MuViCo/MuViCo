@@ -1,3 +1,7 @@
+/** FrontpageManual component
+ * Renders the user manual content for the front page.
+ */
+
 import { Text } from "@chakra-ui/react"
 import { frontpageFeaturesData } from "../data/frontpageData"
 import FeatureSection from "../utils/FeatureSection"
