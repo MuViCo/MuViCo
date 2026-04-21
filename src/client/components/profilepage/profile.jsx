@@ -1,3 +1,12 @@
+/* 
+* Profile page component for displaying user information and allowing password changes.
+* Includes form validation using Yup and error handling for both validation and API errors.
+* Features:
+* - Displays username (and email if available) in a read-only format.
+* - Provides a form for changing the password with fields for current password, new password, and confirm password.
+* - Validates form inputs with specific rules for password complexity and matching.
+* - Shows error messages for validation errors and API errors using Chakra UI's toast notifications.
+ */
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import * as yup from "yup"
@@ -155,14 +164,6 @@ const Profile = ({ user }) => {
               </Heading>
               <VStack align="start" spacing={3}>
                 <FormLabel fontWeight="bold">Username:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{fontWeight: "normal"}}>{user.username || "N/A"}</span></FormLabel>
-                {/* <Box>
-                  <FormLabel fontWeight="bold">Email</FormLabel>
-                  <Input
-                    value={user.email || "N/A"}
-                    isReadOnly
-                    bg="gray.100"
-                  />
-                </Box> */}
               </VStack>
             </CardBody>
           </Card>
