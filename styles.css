@@ -227,3 +227,34 @@
 		}
 	}
 }
+
+@media (min-width: 1200px) {
+	.force-no-resize {
+		width: 20rem !important;
+	}
+
+	.edit-mode-workspace {
+		flex-direction: row;
+
+		.cue-editor-form {
+			form {
+				width: 20rem;
+			}
+		}
+	}
+
+	.cue-form-tabs {
+		justify-content: space-between !important;
+		gap: unset !important;
+	}
+}
+
+/* Cue form */
+
+.cue-form-tabs {
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	justify-content: start;
+	gap: 0.5rem;
+}
