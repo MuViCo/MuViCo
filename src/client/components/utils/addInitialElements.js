@@ -1,6 +1,9 @@
+/** addInitialElements.js
+ * Adds initial elements to screens on frame 0.
+ */
+
 import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"      
-import { color } from "framer-motion"
 
 const addInitialElements = async (presentationId, screenCount, showToast, startingFrameColor = "#000000") => {
   if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {

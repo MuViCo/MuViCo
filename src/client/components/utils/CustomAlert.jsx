@@ -1,4 +1,7 @@
-import React from "react"
+/** CustomAlert.jsx
+ * A reusable alert component using Chakra UI's Alert.
+ */
+
 import { Slide, Alert, AlertIcon, AlertTitle, AlertDescription, Box } from "@chakra-ui/react"
 
 const CustomAlert = ({ showAlert = false, alertData = {} }) => {

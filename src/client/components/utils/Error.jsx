@@ -1,4 +1,6 @@
-import React from "react"
+/** Error.jsx
+ * A reusable error component.
+ */
 
 const Error = ({ error }) => {
   if (error) {

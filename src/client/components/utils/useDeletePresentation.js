@@ -1,3 +1,7 @@
+/** useDeletePresentation.js
+ * Custom hook for handling the deletion of presentations, including confirmation dialog state and toast notifications.
+ */
+
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"

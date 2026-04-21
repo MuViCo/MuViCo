@@ -1,3 +1,7 @@
+/** NestedList.jsx
+ * A reusable component for displaying a nested list of items.
+ */
+
 import { List, ListItem } from "@chakra-ui/react"
 
 const NestedList = ({ items, styleType = "circle", ...props }) => {

@@ -1,3 +1,8 @@
+/**
+ * fileTypeUtils.js
+ * Utility functions for handling file types and determining allowed MIME types for cues based on their screen.
+ */
+
 export const isType = {
   image: (file) => file?.type?.includes("image"),
   video: (file) => file?.type?.includes("video"),
