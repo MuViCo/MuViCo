@@ -5,11 +5,11 @@ import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
 import authService from "../../services/auth"
 import Error from "../utils/Error" 
 
-const {
+import {
   minPwLength,
   maxPwLength,
   invalidPwCharRegex,
-} = import("../../../constants.js")
+} from "../../../constants.js"
 
 import {
   Box,
