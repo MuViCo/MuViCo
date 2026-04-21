@@ -1,3 +1,7 @@
+/** buildCueVisualSpanMap.js
+ * Builds a map of visual spans for each cue in a presentation.
+ */
+
 export const buildCueVisualSpanMap = (cues, indexCount) => {
   const cuesByScreen = new Map()
 
@@ -16,7 +20,9 @@ export const buildCueVisualSpanMap = (cues, indexCount) => {
 
     cuesByScreen.get(cueScreen).push(cue)
   })
-
+  // Sort cues within each screen by index and calculate visual spans
+  // Visual span is determined by the distance to the next cue on the same screen, 
+  // or to the end of the index range if it's the last cue.
   const spanMap = new Map()
   cuesByScreen.forEach((screenCues) => {
     const sortedCues = screenCues

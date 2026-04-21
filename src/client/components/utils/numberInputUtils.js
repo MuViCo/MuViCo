@@ -1,4 +1,6 @@
-// utils/numberInputUtils.js
+/** numberInputUtils.js
+ * Utility functions for handling numeric input fields, including validation and index management for cues.
+ */
 
 /**
  * Allows users to type freely, accepting an empty field but blocking non-numeric characters.

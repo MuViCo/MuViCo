@@ -1,5 +1,8 @@
+/** PrivacyPage component
+ * Renders the privacy and cookie notice page.
+ */
+
 import { Box, Heading, Text, UnorderedList, ListItem, useColorModeValue } from "@chakra-ui/react"
-import React from "react"
 
 const PrivacyPage = () => (
   <Box
