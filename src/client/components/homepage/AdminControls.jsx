@@ -1,3 +1,6 @@
+/*
+ * admin controls for the homepage, only visible to admins
+ */
 import { SimpleGrid, Button, Text } from "@chakra-ui/react"
 
 const AdminControls = ({ isAdmin, navigate }) => (

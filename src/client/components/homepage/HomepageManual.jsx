@@ -1,3 +1,7 @@
+/*
+* This component provides a user manual for the homepage, guiding users on how to navigate and utilize the features of the homepage effectively. 
+*It includes instructions on managing presentations and highlights key features available on the homepage.
+ */
 import { Text, Button } from "@chakra-ui/react"
 import { homefeaturesData } from "../data/homepageData"
 import FeatureSection from "../utils/FeatureSection"

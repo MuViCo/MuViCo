@@ -1,3 +1,8 @@
+/*
+* presentation form component for creating a new presentation, includes fields for name, description and  screen count.
+* The form is used in the homepage component when the user clicks on the "New Presentation" button.
+* The form also includes a cancel button that closes the form without creating a new presentation.
+ */
 import { useState } from "react"
 import {
   FormControl,
@@ -21,13 +26,13 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
       name,
       description,
       screenCount: parseInt(screenCount, 10),
-      startingFrameColor
+      startingFrameColor 
     })
 
     setName("")
     setDescription("")
     setScreenCount(1)
-    setStartingFrameColor("#FF0000")
+    setStartingFrameColor("#FF0000") // this is a debugging color, it should be set to black by default, but it is set to red for testing purposes
     onCancel()
   }
 

@@ -1,3 +1,8 @@
+/*
+* Home page component for displaying user's presentations (Presentations) and providing navigation options.
+* It includes features for creating, editing, and deleting all of users'presentations, as well as linking Google Drive for storage.
+* The component also incorporates a tutorial guide for new users and admin controls for users with admin privileges.
+ */
 import {
   Button,
   Container,
