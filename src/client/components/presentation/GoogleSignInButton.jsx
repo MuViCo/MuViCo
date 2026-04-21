@@ -1,3 +1,7 @@
+/*
+* Component for rendering a Google Sign-In button that allows users to authenticate with their Google account and grant access to their Google Drive files.
+* The component uses Firebase Authentication to handle the sign-in process and retrieves an access token for the Google Drive API, which is then sent to the backend for further processing.
+ */
 import React from "react"
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import {

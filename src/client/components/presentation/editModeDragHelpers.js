@@ -1,3 +1,8 @@
+/*
+* helper functions for managing drag-and-drop interactions in the presentation editor, including calculating span overrides for cues being dragged over occupied cells, 
+extracting cue type from drag data, and retrieving drag data from the data transfer object during a drag event. 
+* These functions help ensure that cues are placed correctly on the grid and that the appropriate previews are shown during dragging.
+ */
 import { isCueTypeCompatibleWithRow } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
 

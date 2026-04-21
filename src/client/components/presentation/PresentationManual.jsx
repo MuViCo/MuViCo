@@ -1,3 +1,8 @@
+/*
+* Component for rendering the presentation manual, providing guidance on how to use the edit and show mode.
+* The manual is organized into sections using an accordion component, with each section covering different aspects of the presentation editor and show mode features.
+* The manual also includes a button to restart the tutorial by clearing the relevant local storage item and reloading the page.
+*/
 import {
   Text,
   Accordion,

@@ -1,3 +1,16 @@
+/*
+* edit mode component for presentation view, includes the grid and toolbox for adding/editing cues
+* Props:
+- id: presentation id
+- cues: list of cues in the presentation
+- isToolboxOpen: whether the toolbox is open
+- setIsToolboxOpen: function to set whether the toolbox is open
+- isShowMode: whether currently in show mode (vs edit mode)
+- cueIndex: index of the cue currently being edited (if any)
+- isAudioMuted: whether audio is currently muted in show mode
+- toggleAudioMute: function to toggle audio mute in show mode
+- indexCount: number of indexes (frames) in the presentation
+ */
 import React, { useState, useRef, useEffect, useMemo } from "react"
 import {
   Box,
@@ -54,6 +67,20 @@ import mediaStore from "./mediaFileStore"
 
 const theme = extendTheme({})
 
+/**
+ * EditMode Component - Main editing interface for presentations
+ * Manages grid layout, drag-and-drop, frame/screen management
+ * Props:
+ * - id: presentation ID
+ * - cues: array of cues in the presentation
+ * - isToolboxOpen: toolbox visibility state
+ * - setIsToolboxOpen: function to toggle toolbox
+ * - isShowMode: whether in presentation show mode vs edit mode
+ * - cueIndex: current cue index being edited
+ * - isAudioMuted: audio mute state
+ * - toggleAudioMute: function to toggle audio mute
+ * - indexCount: number of frames/indexes
+ */
 const EditMode = ({
   id,
   cues,
@@ -95,6 +122,7 @@ const EditMode = ({
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
 
+  // Generate frame labels for grid columns (Frame 0, Frame 1, etc.)
   const xLabels = useMemo(
     () =>
       Array.from({ length: indexCount }, (_, index) =>
@@ -102,11 +130,14 @@ const EditMode = ({
       ),
     [indexCount]
   )
+  
+  // Filter visual cues only (excludes audio cues)
   const visualCues = useMemo(
     () => cues.filter((cue) => cue.cueType === "visual"),
     [cues]
   )
 
+  // Generate screen labels for grid rows (Screen 1, Screen 2, ... Audio files)
   const yLabels = useMemo(() => {
     const labels = Array.from(
       { length: presentation.screenCount },
@@ -180,9 +211,11 @@ const EditMode = ({
     Number(xIndex) >= Number(cue.index) &&
     Number(xIndex) <= getCueEndIndex(cue)
 
+  // Get cue at grid position (including ones spanning multiple cells)
   const getCueAtPosition = (xIndex, yIndex) =>
     cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
 
+  // Get cue at grid position (only anchor cell - first cell of the cue)
   const getAnchorCueAtPosition = (xIndex, yIndex) =>
     cues.find(
       (cue) =>
@@ -205,7 +238,7 @@ const EditMode = ({
       getCueAtPosition,
     })
   }
-
+  // Check if a cue exists at the given grid position
   const {
     hoverPreviewRef,
     dragCursorPreviewRef,
@@ -246,7 +279,7 @@ const EditMode = ({
     dragPreviewValidBg,
     dragPreviewInvalidBg,
   })
-
+  
   useEffect(() => {
     if (!isToolboxOpen) {
       setSelectedCue(null)
@@ -329,7 +362,7 @@ const EditMode = ({
 
     return null
   }
-
+  // Handle case where trying to delete a frame that has existing cues - show confirmation and delete cues if confirmed
   const handleIndexHasData = async (index) => {
     setConfirmMessage(
       `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
@@ -368,6 +401,7 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
+  // Add a new frame at specified index - shifts existing cues to the right
   const handleAddIndex = async (index) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
@@ -429,6 +463,7 @@ const EditMode = ({
     }
   }
 
+  // Remove frame at specified index - shifts existing cues to the left
   const handleRemoveIndex = async (index) => {
     if (indexCount <= 1) {
       showToast({
@@ -511,6 +546,7 @@ const EditMode = ({
     }
   }
 
+  // Add a new screen - updates audio cue row numbers and creates initial element
   const handleIncreaseScreenCount = async () => {
     if (presentation.screenCount >= 8) {
       showToast({
@@ -574,6 +610,7 @@ const EditMode = ({
     }
   }
 
+  // Remove a screen - deletes all cues on that screen
   const handleDecreaseScreenCount = async () => {
     if (presentation.screenCount <= 1) {
       showToast({
@@ -662,6 +699,7 @@ const EditMode = ({
     }
   }
 
+  // Handle mouse down - select cue and start drag if clicking on grid item
   const handleMouseDown = (event) => {
     if (event.button !== 0) {
       return
@@ -722,6 +760,7 @@ const EditMode = ({
     }
   }
 
+  // Handle pasting copied cue - validates drop location and creates new cue
   const handlePaste = async (event) => {
     if (event.target.closest("button")) return
     if (!isCopied || !copiedCue) return
@@ -745,7 +784,7 @@ const EditMode = ({
       console.error("Container ref is not available")
       return
     }
-
+    // Get grid position from mouse event
     const { xIndex, yIndex } = getPosition(
       event,
       containerRef,
@@ -753,7 +792,7 @@ const EditMode = ({
       rowHeight,
       gap
     )
-
+    // Validate drop position - must be within grid, compatible with cue type, and not the same cell as the original cue
     const hoveredCue = getCueAtPosition(xIndex, yIndex)
     const isBlockedCell = Boolean(
       hoveredCue && hoveredCue._id === copiedCue._id
@@ -816,6 +855,7 @@ const EditMode = ({
     })
   }
 
+  // Create new cue data from copied cue - fetches file if needed and appends " copy" to name
   const createNewCueData = async (xIndex, yIndex, copiedCue) => {
     let fileObj = null
     if (copiedCue.file) {
@@ -835,7 +875,7 @@ const EditMode = ({
       loop: copiedCue.loop,
     }
   }
-
+  // Fetch file object from URL - used for copying cues with files
   const resetDragInteraction = ({ clearSpanPreview = true } = {}) => {
     setIsDragging(false)
     setDragCursorMode("default")
@@ -851,6 +891,7 @@ const EditMode = ({
     resetDragPointerTracking()
   }
 
+  // Handle mouse move - show hover previews and update drag preview position
   const handleMouseMove = (event) => {
     if (isDragging) {
       if (!dragHasMovedRef.current && dragStartPointerRef.current) {
@@ -909,6 +950,7 @@ const EditMode = ({
     wasCopiedRef.current = isCopied
   }, [clearExternalPlacementPreview, isCopied])
 
+  // Handle mouse up - drop cue if dragged, handle double-click otherwise
   const handleMouseUp = async (event) => {
     const wasDragging = isDragging
     const dragStartPointer = dragStartPointerRef.current
@@ -1010,6 +1052,7 @@ const EditMode = ({
     }
   }
 
+  // Handle drag over grid - show preview of where element will be placed
   const handleGridDragOver = (event) => {
     event.preventDefault()
     hideHoverPreview()
@@ -1035,6 +1078,7 @@ const EditMode = ({
     })
   }
 
+  // Handle drag leave grid - clear preview when leaving grid boundary
   const handleGridDragLeave = (event) => {
     const gridRect = event.currentTarget.getBoundingClientRect()
     const pointerInsideGrid =
@@ -1048,6 +1092,7 @@ const EditMode = ({
     }
   }
 
+  // Compute grid layout from cues - determines cue position and size on grid
   const layout = cues.map((cue) => ({
     i: cue._id.toString(),
     x: cue.index,
@@ -1057,6 +1102,7 @@ const EditMode = ({
     static: false,
   }))
 
+  // Add a new cue - checks for conflicts and saves to backend
   const addCue = async (cueData) => {
     setStatus("loading")
     const { index, cueName, screen, file, loop, color } = cueData
@@ -1121,6 +1167,7 @@ const EditMode = ({
     return new File([blob], fileName, { type: blob.type })
   }
 
+  // Update existing cue - checks for conflicts with other cues at same position
   const updateCue = async (previousCueId, updatedCue) => {
     const previousStillExists = cues.some((cue) => cue._id === previousCueId)
     if (!previousStillExists) {
@@ -1182,10 +1229,12 @@ const EditMode = ({
     }
   }
 
+  // Check if cue exists at grid position
   const cueExists = (xIndex, yIndex) => {
     return Boolean(getCueAtPosition(xIndex, yIndex))
   }
 
+  // Check if anchor cue (first cell) exists at grid position
   const anchorCueExists = (xIndex, yIndex) => {
     return Boolean(getAnchorCueAtPosition(xIndex, yIndex))
   }
@@ -1218,7 +1267,7 @@ const EditMode = ({
       setIsToolboxOpen(true)
     }
   }
-
+  // Dispatch cue update to backend - used for moving cues and updating from toolbox
   const dispatchUpdateCue = async (cueId, updatedCue) => {
     setStatus("loading")
     try {
@@ -1251,6 +1300,7 @@ const EditMode = ({
     setIsToolboxOpen(false)
   }
 
+  // Swap two cues positions - handles element reordering on grid
   const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
     setStatus("loading")
     try {
@@ -1267,6 +1317,7 @@ const EditMode = ({
     }
   }
 
+  // Calculate grid cell position from mouse coordinates
   const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
     const dropX = event.clientX
     const containerRect = containerRef.current.getBoundingClientRect()
@@ -1286,19 +1337,20 @@ const EditMode = ({
     return { xIndex, yIndex }
   }
 
+  // Handle swapping elements when dragging one to another's position
   const handleElementPositionChange = async (selectedCue, targetCue) => {
     const newTargetCue = {
       ...targetCue,
       index: selectedCue.index,
       screen: selectedCue.screen,
     }
-
+    // We need to create new objects to avoid mutating state directly when swapping
     const newSelectedCue = {
       ...selectedCue,
       index: targetCue.index,
       screen: targetCue.screen,
     }
-
+    // If either cue is audio, both must be audio - prevent swapping audio with visual elements
     const hasAudioCue =
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
@@ -1324,7 +1376,7 @@ const EditMode = ({
       setSelectedCue(null)
     }
   }
-
+  // Handle replacing existing cue when dropping new element on occupied cell
   const handleCueReplace = async (xIndex, yIndex, file) => {
     const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
@@ -1341,6 +1393,7 @@ const EditMode = ({
     setIsConfirmOpen(false)
   }
 
+  // Handle dropping elements on grid - creates new cues or replaces existing ones
   const handleDrop = async (event) => {
     event.preventDefault()
     clearExternalPlacementPreview()
@@ -1519,7 +1572,7 @@ const EditMode = ({
     decreaseScreenCount: handleDecreaseScreenCount,
     toggleAudioMute,
   }
-
+  // Render the grid layout with headers and cues, and handle drag-and-drop interactions
   return (
     <ChakraProvider theme={theme}>
       <CustomAlert showAlert={showAlert} alertData={alertData} />
@@ -1682,6 +1735,7 @@ const EditMode = ({
               </Box>
 
               {!isDragging && (
+                // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked
                 <Box
                   data-testid={
                     isCopied
@@ -1709,6 +1763,7 @@ const EditMode = ({
               )}
 
               {!isDragging && !isCopied && (
+                // Show cursor preview for pool element being dragged - shows a preview of the actual element being dragged from the pool following the cursor
                 <Box
                   data-testid="pool-drag-cursor-preview"
                   ref={externalCursorPreviewRef}
@@ -1770,6 +1825,7 @@ const EditMode = ({
               )}
 
               {isDragging && selectedCue && (
+                // Show placement preview for dragged cue - shows where the cue being dragged from the grid would be placed following the cursor
                 <Box
                   data-testid="drag-placement-preview"
                   ref={dragPlacementPreviewRef}
@@ -1792,6 +1848,7 @@ const EditMode = ({
               )}
 
               {isDragging && selectedCue && (
+                // Show cursor preview for dragged cue - shows a preview of the actual element being dragged from the grid following the cursor
                 <Box
                   data-testid="drag-cursor-preview"
                   ref={dragCursorPreviewRef}
@@ -1830,6 +1887,7 @@ const EditMode = ({
                   )}
 
                   {selectedCue.name?.trim() && (
+                    // Show cue name on cursor preview if it exists - helps identify the element being dragged, especially for color-based cues without a file preview
                     <Text
                       position="absolute"
                       bottom="6px"
@@ -1852,7 +1910,7 @@ const EditMode = ({
                   )}
                 </Box>
               )}
-
+            
               <Box
                 data-testid="hover-preview"
                 ref={hoverPreviewRef}

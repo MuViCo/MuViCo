@@ -1,3 +1,9 @@
+/*
+* the main component for the presentation editor, responsible for rendering the overall layout and managing state for the editor. 
+* It includes the header with presentation title and settings, the screen preview area, playback controls, and the workspace which contains the cue list and cue form. 
+* It also handles interactions such as toggling screen visibility, autoplaying cues, and opening the tutorial guide. 
+* The component uses react-grid-layout for responsive layout and Chakra UI for styling.
+ */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
@@ -112,7 +118,6 @@ function EditorLayout(props) {
           Tutorial
         </Button>
       </Box>
-
       <div id="screen_preview" style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} className="screenspreview" key="screensPreview">
         <ScreensDisplay
           screenCount={screenCount}
@@ -197,7 +202,7 @@ function EditorLayout(props) {
   )
 }
 
-
+// The main container component for the presentation editor, responsible for managing state and rendering the EditorLayout and other components such as the tutorial guide and screen previews.
 const EditModeContainer = ({
   id,
   cues,
@@ -234,6 +239,7 @@ const EditModeContainer = ({
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
 
+  // organize cues by screen number and index for quick lookup
   const cuesByScreen = useMemo(() => {
     return (cues || []).reduce((acc, cue) => {
       if (!acc[cue.screen]) {
@@ -244,6 +250,9 @@ const EditModeContainer = ({
     }, {})
   }, [cues])
 
+  // Initialize screen visibility state based on cues and screen count 
+  // - creates a visibility object with keys for each screen number and 
+  // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
   useEffect(() => {
     const screenNumbers = [...new Set(
       (cues || [])
@@ -258,13 +267,15 @@ const EditModeContainer = ({
     setMirroring({})
   }, [cues, screenCount])
 
+  // Open or close a window for a specific screen
   const toggleScreenVisibility = (screenNumber) => {
     setScreens((prev) => ({
       ...prev,
       [screenNumber]: !prev[screenNumber],
     }))
   }
-
+  
+  // Open or close windows for all screens at once - if any screen is currently open, this will close all screens, otherwise it will open all screens
   const toggleAllScreens = () => {
     setScreens((prev) => {
       const updated = { ...prev }
