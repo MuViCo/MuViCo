@@ -252,7 +252,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const fileSelected = (event) => {
     const selected = event.target.files[0]
     if (selected) {
-      if (cueName === "" || cueName === fileName || cueName === "Blank") {
+      if (cueName === "" || cueName === fileName) {
         setCueName(selected.name)
       }
       setFile(selected)
@@ -438,7 +438,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                       const normalizedCueName = cueName.trim()
                       const dragData = {
                         type: "newCueFromForm",
-                        cueName: normalizedCueName.toLowerCase() !== "blank" ? normalizedCueName : "",
+                        cueName: normalizedCueName,
                         color: selectedColor || "#e014ee",
                         elementType: "color",
                       }
