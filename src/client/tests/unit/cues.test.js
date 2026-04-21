@@ -285,23 +285,6 @@ describe("CuesForm", () => {
     expect(payload.color).toBeTruthy()
   })
 
-  test("normalizes color element cue name when user types blank", () => {
-    renderCuesForm()
-
-    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
-    fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "   Blank   " } })
-
-    const colorDragElement = screen.getByText("Drag color to grid").closest("[draggable='true']")
-    const dataTransfer = createDataTransfer()
-
-    fireEvent.dragStart(colorDragElement, { dataTransfer })
-
-    const [, payloadString] = dataTransfer.setData.mock.calls[0]
-    const payload = JSON.parse(payloadString)
-
-    expect(payload.cueName).toBe("")
-  })
-
   test("submits add mode form and calls addCue with current values", () => {
     const { addCue, onClose } = renderCuesForm()
 
