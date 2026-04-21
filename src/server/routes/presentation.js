@@ -62,15 +62,6 @@ const hasSwapTargetConflict = (
   })
 }
 
-const BLANK_IMAGE_VALUES = [
-  "/blank.png",
-  "/blank-white.png",
-  "/blank-indigo.png",
-  "/blank-tropicalindigo.png",
-]
-
-const isBlankImageValue = (image) => BLANK_IMAGE_VALUES.includes(image)
-
 const deletObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
@@ -291,7 +282,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     const { id } = req.params
     const fileId = generateFileId()
     const { file, user, presentation } = req
-    const { cueName, image, driveId } = req.body
+    const { cueName, driveId } = req.body
     const index = Number(req.body.index)
     const screen = Number(req.body.screen)
     const loop = req.body.loop
@@ -335,15 +326,8 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
     }
 
     const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
-    
-    const hasBlankImage = isBlankImageValue(image)
 
     if (cueType === "audio") {
-      if (hasBlankImage) {
-        return res.status(400).json({ 
-          error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
-        })
-      }
       if (file && !isAudioMimeType(file.mimetype)) {
         return res.status(400).json({ 
           error: "Only audio files are allowed on the audio screen." 
@@ -357,7 +341,7 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
       }
     }
 
-    const isColorOnlyCue = cueType === "visual" && !file && !hasBlankImage && !image
+    const isColorOnlyCue = cueType === "visual" && !file
     if (!isColorOnlyCue && trimmedCueName.length === 0) {
       return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
     }
@@ -368,8 +352,8 @@ router.put("/:id", userExtractor, requirePresentationAccess, upload.single("imag
 
     const fileObject = {
               id: fileId,
-              name: file && file.originalname ? file.originalname : (image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank2.png"),
-              url: hasBlankImage ? null : "",
+              name: file?.originalname || `file-${fileId}`,
+              url: "",
               ...(driveId && { driveId }),
             }
 
@@ -644,15 +628,8 @@ router.put(
       }
 
       const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
-      
-      const hasBlankImage = isBlankImageValue(image)
 
       if (cueType === "audio") {
-        if (hasBlankImage) {
-          return res.status(400).json({ 
-            error: "Blank elements are not allowed on the audio screen. Please upload an audio file." 
-          })
-        }
         if (file && !isAudioMimeType(file.mimetype)) {
           return res.status(400).json({ 
             error: "Only audio files are allowed on the audio screen." 
@@ -671,7 +648,7 @@ router.put(
         return res.status(404).json({ error: "Cue not found" })
       }
 
-      const willHaveFileAfterUpdate = Boolean(file) || hasBlankImage || (!shouldClearFile && Boolean(cue.file))
+      const willHaveFileAfterUpdate = Boolean(file) || (!shouldClearFile && Boolean(cue.file))
       const isColorOnlyCue = cueType === "visual" && !willHaveFileAfterUpdate
       if (!isColorOnlyCue && trimmedCueName.length === 0) {
         return res.status(400).json({ error: "Cue name must be between 1 and 100 characters long" })
@@ -689,17 +666,6 @@ router.put(
       cue.name = trimmedCueName
       cue.loop = loop
       cue.color = color
-
-      
-      if (hasBlankImage) {
-        const newFileId = generateFileId()
-        cue.file = {
-          id: newFileId,
-          name: image === "/blank-white.png" ? "blank-white.png" : image === "/blank-indigo.png" ? "blank-indigo.png" : image === "/blank-tropicalindigo.png" ? "blank-tropicalindigo.png" : "blank.png",
-          url: null,
-          type: "image/png",
-        }
-      }
 
       if (shouldClearFile) {
         cue.file = null

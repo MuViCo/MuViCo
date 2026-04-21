@@ -3,7 +3,11 @@ const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
 
 const generateDriveFileUrlForCue = async (cue, accessToken) => {
-  if (cue.file && cue.file.driveId) {
+  if (!cue.file) {
+    return cue
+  }
+
+  if (cue.file.driveId) {
     try {
       const metadata = await getDriveFileMetadata(cue.file.driveId, accessToken)
       cue.file.type = metadata.mimeType
@@ -17,12 +21,8 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
     } catch (error) {
       console.error("Error fetching file metadata:", error)
     }
-  } else {
-    cue.file.url =
-      process.env.NODE_ENV === "production"
-        ? "/blank.png"
-        : "/src/server/public/blank.png"
   }
+
   return cue
 }
 
@@ -38,22 +38,13 @@ const processDriveCueFiles = async (cues, accessToken) => {
 }
 
 const generateSignedUrlForS3 = async (cue, presentationId) => {
-  if (typeof cue.file.url === "string") {
-    const key = `${presentationId}/${cue.file.id.toString()}`
-    cue.file.url = await getObjectSignedUrl(key)
-  } else {
-    // Handle blank images by using the correct filename
-    const filename = cue.file.name || "blank.png"
-
-    if (
-      process.env.NODE_ENV === "development" ||
-      process.env.NODE_ENV === "test"
-    ) {
-      cue.file.url = `/src/server/public/${filename}`
-    } else if (process.env.NODE_ENV === "production") {
-      cue.file.url = `/${filename}`
-    }
+  if (!cue.file?.id) {
+    return cue
   }
+
+  const key = `${presentationId}/${cue.file.id.toString()}`
+  cue.file.url = await getObjectSignedUrl(key)
+
   return cue
 }
 
@@ -68,16 +59,7 @@ const processS3Files = async (cues, presentationId) => {
       }
 
       await generateSignedUrlForS3(cue, presentationId)
-      if (
-        cue.file.url !== "/src/server/public/blank.png" &&
-        cue.file.url !== "/blank.png" &&
-        cue.file.url !== "/src/server/public/blank-white.png" &&
-        cue.file.url !== "/blank-white.png" &&
-        cue.file.url !== "/src/server/public/blank-indigo.png" &&
-        cue.file.url !== "/blank-indigo.png" &&
-        cue.file.url !== "/src/server/public/blank-tropicalindigo.png" &&
-        cue.file.url !== "/blank-tropicalindigo.png"
-      ) {
+      if (cue.file.url) {
         await getFileType(cue, presentationId)
         await getFileSize(cue, presentationId)
       }

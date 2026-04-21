@@ -796,7 +796,7 @@ const EditMode = ({
       cueName: `${copiedCue.name} copy`,
       screen: yIndex,
       file: fileObj,
-      fileName: copiedCue.file ? (copiedCue.file.name || "blank.png") : null,
+      fileName: copiedCue.file?.name || null,
       color: copiedCue.color,
       loop: copiedCue.loop,
     }
