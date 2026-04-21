@@ -399,8 +399,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     button: (isActive) => ({
       padding: "8px 16px",
       border: "none",
-      backgroundColor: isActive ? "#9244ff" : "#D6BCFA",
-      color: isActive ? "white" : "black",
+      backgroundColor: isActive ?  "#D6BCFA" : "#9244ff",
+      color: !isActive ? "white" : "black",
       cursor: "pointer",
       fontWeight: isActive ? "bold" : "normal",
       borderRadius: "4px 4px 0 0",
@@ -434,7 +434,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           )}
 
           <Box>
-            <div style={{width:"100%", display:"flex", flexDirection:"row", justifyContent: "space-between"}}>
+            <div class="cue-form-tabs">
               <Button
                 onClick={() => setActiveTab("colors")}
                 style={tabStyles.button(activeTab === "colors")}

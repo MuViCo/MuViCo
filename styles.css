@@ -226,4 +226,19 @@
 			}
 		}
 	}
+
+	.cue-form-tabs {
+		justify-content: space-between !important;
+		gap: unset !important;
+	}
+}
+
+/* Cue form */
+
+.cue-form-tabs {
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+	justify-content: start;
+	gap: 0.5rem;
 }
