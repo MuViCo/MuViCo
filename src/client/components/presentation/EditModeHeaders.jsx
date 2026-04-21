@@ -12,7 +12,6 @@ const RowHeadersBase = ({
   yLabels,
   gap,
   rowHeight,
-  isShowMode,
   screenCount,
   isAudioMuted,
   screenIcon,
@@ -40,11 +39,6 @@ const RowHeadersBase = ({
         {label === "Audio files" ? (
           <IconButton
             icon={isAudioMuted ? <SpeakerMutedIcon boxSize="55px" /> : <SpeakerIcon boxSize="55px" />}
-            disabled={isShowMode}
-            _disabled={{
-              opacity: 0.7,
-              cursor: "not-allowed",
-            }}
             sx={{
               width: "65px",
               height: "65px",
@@ -89,7 +83,7 @@ const RowHeadersBase = ({
         )}
       </Box>
 
-      {label !== "Audio files" && !isShowMode && (
+      {label !== "Audio files" && (
         <>
           {index === screenCount - 1 && screenCount < 8 && (
             <IconButton
@@ -150,7 +144,6 @@ const ColumnHeadersBase = ({
   bgColorIndex,
   rowHeight,
   columnWidth,
-  isShowMode,
   indexCount,
   headerActionsRef,
 }) => {
@@ -200,7 +193,7 @@ const ColumnHeadersBase = ({
           w="30px"
           minW="20px"
           borderRadius="0"
-          isDisabled={isShowMode || indexCount >= 100}
+          isDisabled={indexCount >= 100}
           aria-label="Add Frame"
           title="Add Frame"
           onClick={() => {
@@ -238,7 +231,7 @@ const ColumnHeadersBase = ({
             w="30px"
             minW="20px"
             borderRadius="0"
-            isDisabled={isShowMode || indexCount >= 100}
+            isDisabled={indexCount >= 100}
             aria-label="Add Frame Before"
             title="Add Frame Before"
             onClick={() => {
@@ -246,7 +239,7 @@ const ColumnHeadersBase = ({
             }}
             opacity="0"
             pointerEvents="none"
-            _groupHover={isShowMode || indexCount >= 100 ? {} : {
+            _groupHover={indexCount >= 100 ? {} : {
               opacity: 1,
               pointerEvents: "auto",
             }}
@@ -274,7 +267,7 @@ const ColumnHeadersBase = ({
             transform="translate(-50%, -50%)"
             w="36px"
             minW="36px"
-            isDisabled={isShowMode || indexCount <= 1}
+            isDisabled={indexCount <= 1}
             aria-label="Remove Frame"
             title="Remove Frame"
             onClick={() => {
@@ -282,7 +275,7 @@ const ColumnHeadersBase = ({
             }}
             opacity="0"
             pointerEvents="none"
-            _groupHover={isShowMode || indexCount <= 1 ? {} : {
+            _groupHover={indexCount <= 1 ? {} : {
               opacity: 1,
               pointerEvents: "auto",
             }}
