@@ -43,6 +43,7 @@ import mediaStore from "./mediaFileStore"
 
 const theme = extendTheme({})
 
+// Create a transparent 1x1 pixel image to suppress the default browser drag ghost image
 const transparentDragImage = (() => {
   if (typeof document === "undefined") {
     return null
@@ -54,6 +55,7 @@ const transparentDragImage = (() => {
   return canvas
 })()
 
+// Suppress the native browser drag ghost by setting it to the transparent image
 const suppressNativeDragGhost = (dataTransfer) => {
   if (!dataTransfer?.setDragImage || !transparentDragImage) {
     return
@@ -63,6 +65,19 @@ const suppressNativeDragGhost = (dataTransfer) => {
 }
 
 
+/**
+ * CuesForm component - a form for adding and editing presentation cues
+ * Props:
+ * - addCue: Function to add a new cue
+ * - onClose: Function to close the form
+ * - position: Current position/index of the cue being edited
+ * - cues: Array of existing cues
+ * - cueData: Cue data when editing (null when adding new)
+ * - updateCue: Function to update an existing cue
+ * - screenCount: Total number of screens in the presentation
+ * - isAudioMode: Boolean indicating if in audio mode
+ * - indexCount: Count of indices
+ */
 const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
   const [file, setFile] = useState("")
   const [actualFile, setActualFile] = useState(null)
@@ -78,8 +93,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   const presetColors = ["#000000","#787878", "#c0c0c0", "#ffffff","#ff0000","#ff8000","#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#7f00ff", "#ff00ff", "#ff007f",
       ]
 
-
-  // Media pool states
+  // Media pool management state - for uploading and displaying media/audio files before adding to cue
   const [mediaFiles, setMediaFiles] = useState([])
   const [soundFiles, setSoundFiles] = useState([])
   const mediaFilesRef = useRef([])
@@ -103,6 +117,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
 
   const isAudioFile = () => isAudioMimeType(file?.type)
 
+  // Update form fields when position changes
   useEffect(() => {
     if (position) {
       setIndex(position.index)
@@ -130,6 +145,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     }
   }, [])
 
+  // Auto-calculate the next available index when adding a new cue
   useEffect(() => {
     if (!cueData && !position) {
       if (isAudioMode) {
@@ -191,6 +207,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
   }
 
   
+  // Handle adding a new cue - validates and calls addCue callback
   const onAddCue = (event) => {
     event.preventDefault()
 
@@ -200,7 +217,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       }
     }
 
-
+    // Additional validation for audio mode
     if (isAudioMode || isAudioRow(screen, screenCount)) {
       if (!isAudioFile()) {
         setError("Please select a valid audio file for the audio cue")
@@ -275,6 +292,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     setError(null)
   }
 
+
+  // Handle uploading images/videos to media pool - creates preview URLs for drag-and-drop
   const handleMediaUpload = (event) => {
     const files = Array.from(event.target.files)
     const validMediaFiles = files.filter(file => {
@@ -283,6 +302,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       return isImage || isVideo
     })
     
+    // Create media objects with preview URLs
     const newMediaFiles = validMediaFiles.map((file, idx) => ({
       id: `media-${Date.now()}-${idx}`,
       file,
@@ -298,6 +318,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     const files = Array.from(event.target.files)
     const validAudioFiles = files.filter(file => isAudioMimeType(file.type))
     
+    // Create sound objects
     const newSoundFiles = validAudioFiles.map((file, idx) => ({
       id: `sound-${Date.now()}-${idx}`,
       file,
@@ -322,10 +343,13 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     setSoundFiles(prev => prev.filter(f => f.id !== id))
   }
 
+  // Calculate contrasting text color (black or white) based on background color brightness
   const getContrastTextColor = (hexColor) => {
     const current = (hexColor || "").replace("#", "")
+    // Validate hex color format
     if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(current)) return "white"
 
+    // Normalize 3-char hex to 6-char
     const normalized =
       current.length === 3
         ? current
@@ -365,9 +389,11 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       overflowY: "auto",
     },
   }
-  // form with inputs for cue name, index, screen number, file upload, and color selection. 
-  // It also includes front end validation for file types and displays error messages when necessary. 
-  // The form supports both adding new cues and editing existing cues, with appropriate handling for each case.
+  
+  // Render the form with three tabs: Colors, Media, and Audio
+  // The colors tab allows creating colored elements by dragging them to the grid
+  // The media tab allows uploading and dragging images/videos to the grid
+  // The audio tab allows uploading and dragging audio files to the grid
   return (
     <div className="cue-editor-form">
 
@@ -407,6 +433,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             </div>
 
             <Box style={tabStyles.tabContent}>
+              {/* COLORS TAB - Create colored elements */}
               {activeTab === "colors" && (
                 <VStack spacing={4} align="stretch">
                   <FormHelperText color="black">
@@ -468,6 +495,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                 </VStack>
               )}
 
+              {/* MEDIA TAB - Upload and manage images/videos */}
               {activeTab === "media" && (
                 <VStack spacing={4} align="stretch" >
                   <FormHelperText color="black">
@@ -582,6 +610,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                 </VStack>
               )}
 
+              {/* AUDIO TAB - Upload and manage audio files */}
               {activeTab === "audio" && (
                 <VStack spacing={4} align="stretch">
                   <FormHelperText color="black">

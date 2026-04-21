@@ -1,3 +1,9 @@
+/*
+* Main component for rendering the presentation page, which includes both edit mode and show mode functionality.
+* The component manages state for the current cue index, presentation size, show mode toggle, and various UI states such as toolbox and transition menu visibility.
+* It also handles user authentication and presentation deletion through custom hooks and utility functions. 
+* The component fetches presentation information from the Redux store and passes necessary props down to the EditModeContainer component for rendering the appropriate UI based on the current mode. 
+ */
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
