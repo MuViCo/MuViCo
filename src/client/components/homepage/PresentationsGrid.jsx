@@ -1,3 +1,8 @@
+/*
+* This component renders a grid of presentations on the homepage, allowing users to view, edit, and delete their presentations.
+* It supports both grid and list views, with a toggle button to switch between them. Each presentation card displays the presentation name and description, and includes edit and delete buttons.
+* The component also includes an edit modal for updating presentation details, with validation for the description length.
+ */
 import React, { useState, useEffect } from "react"
 import {
   SimpleGrid,
@@ -170,8 +175,8 @@ const PresentationsGrid = ({
     onClose()
     setEditingPresentation(null)
   }
-
-  const renderGrid = () => (
+// Render functions for grid and list views
+  const renderGrid = () => ( // this is the default view, it shows presentations in a grid format with cards
     <SimpleGrid columns={[1, 2, 3]} gap={5} id="presentations-grid" minH="400px">
       {presentations.map((presentation) => (
         <motion.div
@@ -250,7 +255,7 @@ const PresentationsGrid = ({
     </SimpleGrid>
   )
 
-  const renderList = () => (
+  const renderList = () => ( // this view shows presentations in a list format, with the name and description on the left and edit/delete buttons on the right
     <List id="presentations-grid" spacing={3} minH="400px">
       {presentations.map((presentation) => (
         <motion.div
@@ -364,6 +369,7 @@ const PresentationsGrid = ({
             }}
             data-testid="grid-button"
           >
+          {/* SVG icons for grid and list views */}
             <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fillRule="evenodd" clipRule="evenodd" d="M3 2C2.44772 2 2 2.44772 2 3V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V3C11 2.44772 10.5523 2 10 2H3ZM4 9V4H9V9H4Z" fill="#ffffff"/>
               <path fillRule="evenodd" clipRule="evenodd" d="M14 2C13.4477 2 13 2.44772 13 3V10C13 10.5523 13.4477 11 14 11H21C21.5523 11 22 10.5523 22 10V3C22 2.44772 21.5523 2 21 2H14ZM15 9V4H20V9H15Z" fill="#ffffff"/>
