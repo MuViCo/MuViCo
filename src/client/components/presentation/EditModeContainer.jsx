@@ -455,12 +455,13 @@ const EditModeContainer = ({
       outlineColor={outlineColor}
     />
 
-    <TutorialGuide
+    {/* TODO: The presentation tutorial guide needs to be updated for the new editor UI */}
+    {/* <TutorialGuide
       steps={presentationTutorialSteps}
       isOpen={isTutorialOpen}
       onClose={() => setIsTutorialOpen(false)}
       storageKey={"hasSeenHelp_presentation"}
-    />
+    /> */}
 
     {Object.keys(screens).map((screenNumber) => {
       const mirroredScreen = mirroring[screenNumber]
