@@ -1,12 +1,21 @@
 import React, { useState, useMemo } from "react"
-import { Box, IconButton, Tooltip, Text, Menu, MenuButton, MenuList, Portal } from "@chakra-ui/react"
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Text,
+  Menu,
+  MenuButton,
+  MenuList,
+  Portal,
+} from "@chakra-ui/react"
 import {
   DeleteIcon,
   CopyIcon,
   RepeatIcon,
   ArrowForwardIcon,
   EditIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -15,7 +24,10 @@ import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
 import { getAudioRow } from "../utils/fileTypeUtils"
-import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
+import {
+  buildCueVisualSpanMap,
+  getCueVisualSpanFromMap,
+} from "../utils/cueVisualSpanUtils"
 
 const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   if (cue.index > currentIndex) {
@@ -41,20 +53,19 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
 }
 
 const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
-  
   if (cue.file == null) {
-      return (
-        <Box
-          style={{
-            width: "100%",
-            height: "100%",
-            backgroundColor: cue.color || "#e014ee",
-            borderRadius: "10px",
-          }}
-        />
-      )
+    return (
+      <Box
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: cue.color || "#e014ee",
+          borderRadius: "10px",
+        }}
+      />
+    )
   }
-  
+
   if (cue.file.type.startsWith("video/")) {
     return (
       <video
@@ -91,16 +102,7 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
     cue.cueType === "audio" &&
     renderElementBasedOnIndex(cueIndex, cues, cue)
   ) {
-    return (
-      <audio
-        src={cue.file.url}
-        autoPlay
-        loop={cue.loop}
-        controls
-        muted={isAudioMuted}
-        style={{ width: "100%", pointerEvents: "auto" }}
-      />
-    )
+    return null
   }
 }
 
@@ -133,7 +135,10 @@ const GridLayoutComponent = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState(null)
 
-  const cueVisualSpanMap = useMemo(() => buildCueVisualSpanMap(cues, indexCount), [cues, indexCount])
+  const cueVisualSpanMap = useMemo(
+    () => buildCueVisualSpanMap(cues, indexCount),
+    [cues, indexCount]
+  )
 
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
@@ -190,10 +195,8 @@ const GridLayoutComponent = ({
     setIsDialogOpen(false)
   }
 
-  const handleEditItem= (cueId) => {
-    const cue = cues.find(
-      (cue) => cue._id === cueId
-    )
+  const handleEditItem = (cueId) => {
+    const cue = cues.find((cue) => cue._id === cueId)
     setSelectedCue(cue)
     setIsToolboxOpen(true)
   }
@@ -203,12 +206,12 @@ const GridLayoutComponent = ({
       <MenuButton
         as={IconButton}
         data-testid={`cue-menu-button-${cue._id}`}
-        aria-label='Options'
+        aria-label="Options"
         icon={<ChevronDownIcon />}
-        backgroundColor="var(--chakra-colors-gray-700)" 
-        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}  
-        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }} 
-        variant='outline'
+        backgroundColor="var(--chakra-colors-gray-700)"
+        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
+        variant="outline"
         position="absolute"
         zIndex="10"
         top="3px"
@@ -261,7 +264,13 @@ const GridLayoutComponent = ({
             size="xs"
             w="100%"
             h="30px"
-            borderRadius={cue.file!=null ? (cue.cueType === "audio" ? "0" : "0 0 0.375rem 0.375rem") : "0 0 0.375rem 0.375rem"}
+            borderRadius={
+              cue.file != null
+                ? cue.cueType === "audio"
+                  ? "0"
+                  : "0 0 0.375rem 0.375rem"
+                : "0 0 0.375rem 0.375rem"
+            }
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
             draggable={false}
@@ -280,7 +289,7 @@ const GridLayoutComponent = ({
               })
             }}
           />
-          {cue.file!=null && cue.cueType === "audio" && (
+          {cue.file != null && cue.cueType === "audio" && (
             <IconButton
               icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
               size="xs"
@@ -318,32 +327,50 @@ const GridLayoutComponent = ({
       margin={[gap, gap]}
       containerPadding={[0, 0]}
       useCSSTransforms={true}
-      maxRows={Math.max(...cues.map((cue) => cue.screen), getAudioRow(screenCount))}
+      maxRows={Math.max(
+        ...cues.map((cue) => cue.screen),
+        getAudioRow(screenCount)
+      )}
     >
       {cues.map((cue) => {
         const overriddenCueVisualSpan = Number(previewCueSpanOverrides[cue._id])
-        const actualCueVisualSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const actualCueVisualSpan = getCueVisualSpanFromMap(
+          cue,
+          cueVisualSpanMap
+        )
         const previewCueVisualSpan =
-          Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan > 0
+          Number.isInteger(overriddenCueVisualSpan) &&
+          overriddenCueVisualSpan > 0
             ? overriddenCueVisualSpan
             : actualCueVisualSpan
         const hasContinuation = actualCueVisualSpan > 1
-        const isTerminalContinuationPreview = Number.isInteger(overriddenCueVisualSpan) && overriddenCueVisualSpan === 1
-        const hasVisibleContinuation = previewCueVisualSpan > 1 || isTerminalContinuationPreview
+        const isTerminalContinuationPreview =
+          Number.isInteger(overriddenCueVisualSpan) &&
+          overriddenCueVisualSpan === 1
+        const hasVisibleContinuation =
+          previewCueVisualSpan > 1 || isTerminalContinuationPreview
         const cueVisualSpan = previewCueVisualSpan
         const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
         const continuationInset = 0
         const continuationDividerWidth = gap > 2 ? 2 : Math.max(gap, 1)
-        const continuationDividerOffset = Math.max((gap - continuationDividerWidth) / 2, 0)
+        const continuationDividerOffset = Math.max(
+          (gap - continuationDividerWidth) / 2,
+          0
+        )
         const continuationStartLeft = columnWidth
-        const anchorContinuationDividerWidth = gap > 0
-          ? Math.max(gap - continuationDividerOffset, continuationDividerWidth)
-          : continuationDividerWidth
+        const anchorContinuationDividerWidth =
+          gap > 0
+            ? Math.max(
+                gap - continuationDividerOffset,
+                continuationDividerWidth
+              )
+            : continuationDividerWidth
         const anchorContinuationSeamLeft = continuationStartLeft
         const continuationVisualOpacity = 0.76
         const segmentBorderColor = "rgba(255, 255, 255, 0.24)"
         const segmentBorderHoverColor = "rgba(255, 255, 255, 0.42)"
-        const cueMediaUrl = cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
+        const cueMediaUrl =
+          cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
         const cueIsVideo = cue.file?.type?.startsWith("video/")
         const isVisualCue = cue.cueType === "visual"
         const isDraggingOriginCue = isDragging && draggingCueId === cue._id
@@ -369,82 +396,106 @@ const GridLayoutComponent = ({
               h="100%"
               overflow="hidden"
               borderRadius="10px"
-              cursor={isDragging ? "grabbing" : (isCopied ? (interactionCursor || "copy") : "grab")}
+              cursor={
+                isDragging
+                  ? "grabbing"
+                  : isCopied
+                    ? interactionCursor || "copy"
+                    : "grab"
+              }
               data-cue-content-id={cue._id}
               opacity={isDraggingOriginCue ? 0.58 : 1}
               transform="translateY(0)"
               transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
-              _hover={suppressCueHoverEffects ? {} : { transform: "translateY(-1px)", boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)" }}
-              sx={suppressCueHoverEffects ? {} : {
-                "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]": {
-                  borderColor: segmentBorderHoverColor,
-                },
-                "&:hover [data-cue-seam-divider]": {
-                  backgroundColor: segmentBorderHoverColor,
-                },
-                "&:hover [data-cue-anchor-hover-tint]": {
-                  opacity: 0.18,
-                },
-              }}
+              _hover={
+                suppressCueHoverEffects
+                  ? {}
+                  : {
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
+                    }
+              }
+              sx={
+                suppressCueHoverEffects
+                  ? {}
+                  : {
+                      "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]":
+                        {
+                          borderColor: segmentBorderHoverColor,
+                        },
+                      "&:hover [data-cue-seam-divider]": {
+                        backgroundColor: segmentBorderHoverColor,
+                      },
+                      "&:hover [data-cue-anchor-hover-tint]": {
+                        opacity: 0.18,
+                      },
+                    }
+              }
             >
               {!isDragging && EditModeCueButtons(cue)}
 
-              {hasContinuation && isVisualCue
-                ? (
-                  <Box
-                    data-testid={`cue-anchor-media-overlay-${cue._id}`}
-                    position="absolute"
-                    left="0"
-                    top="0"
-                    width={`${columnWidth}px`}
-                    height="100%"
-                    borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
-                    overflow="hidden"
-                    pointerEvents="none"
-                    zIndex={4}
-                    boxShadow={hasVisibleContinuation ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)" : "none"}
-                  >
-                    {cueMediaUrl
-                      ? (
-                        cueIsVideo
-                          ? (
-                            <video
-                              src={cueMediaUrl}
-                              draggable={false}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                  borderRadius: hasVisibleContinuation ? "10px 0 0 10px" : "10px",
-                              }}
-                              muted
-                              playsInline
-                              controls={false}
-                            />
-                          )
-                          : (
-                            <Box
-                              as="img"
-                              src={cueMediaUrl}
-                              alt={cue.name}
-                              draggable={false}
-                              width="100%"
-                              height="100%"
-                              objectFit="cover"
-                              borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
-                            />
-                          )
-                      )
-                      : (
-                        <Box
-                          width="100%"
-                          height="100%"
-                          bg={cue.color || "#e014ee"}
-                        />
-                      )}
-                  </Box>
-                )
-                : renderMedia(cue, cueIndex, cues, isAudioMuted, screenCount)}
+              {hasContinuation && isVisualCue ? (
+                <Box
+                  data-testid={`cue-anchor-media-overlay-${cue._id}`}
+                  position="absolute"
+                  left="0"
+                  top="0"
+                  width={`${columnWidth}px`}
+                  height="100%"
+                  borderRadius={
+                    hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                  }
+                  overflow="hidden"
+                  pointerEvents="none"
+                  zIndex={4}
+                  boxShadow={
+                    hasVisibleContinuation
+                      ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)"
+                      : "none"
+                  }
+                >
+                  {cueMediaUrl ? (
+                    cueIsVideo ? (
+                      <video
+                        src={cueMediaUrl}
+                        draggable={false}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: hasVisibleContinuation
+                            ? "10px 0 0 10px"
+                            : "10px",
+                        }}
+                        muted
+                        playsInline
+                        controls={false}
+                      />
+                    ) : (
+                      <Box
+                        as="img"
+                        src={cueMediaUrl}
+                        alt={cue.name}
+                        draggable={false}
+                        width="100%"
+                        height="100%"
+                        objectFit="cover"
+                        borderRadius={
+                          hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                        }
+                      />
+                    )
+                  ) : (
+                    <Box
+                      width="100%"
+                      height="100%"
+                      bg={cue.color || "#e014ee"}
+                    />
+                  )}
+                </Box>
+              ) : (
+                renderMedia(cue, cueIndex, cues, isAudioMuted, screenCount)
+              )}
 
               {hasContinuation && (
                 <>
@@ -471,64 +522,63 @@ const GridLayoutComponent = ({
                     right="0"
                     borderRadius="0 8px 8px 0"
                     overflow="hidden"
-                    opacity={hasVisibleContinuation ? continuationVisualOpacity : 0}
+                    opacity={
+                      hasVisibleContinuation ? continuationVisualOpacity : 0
+                    }
                     pointerEvents="none"
                     zIndex={2}
                   >
-                    {isVisualCue && cueMediaUrl
-                      ? (
-                        <>
-                          {cueIsVideo
-                            ? (
-                              <video
-                                src={cueMediaUrl}
-                                draggable={false}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                  filter: "saturate(48%) brightness(0.8) contrast(0.94) blur(6px)",
-                                }}
-                                muted
-                                playsInline
-                                controls={false}
-                              />
-                            )
-                            : (
-                              <Box
-                                as="img"
-                                src={cueMediaUrl}
-                                alt={`${cue.name} continuation`}
-                                draggable={false}
-                                width="100%"
-                                height="100%"
-                                objectFit="cover"
-                                filter="saturate(48%) brightness(0.8) contrast(0.94) blur(6px)"
-                              />
-                            )}
-
-                          <Box
-                            position="absolute"
-                            inset="0"
-                            bg="linear-gradient(90deg, rgba(14, 20, 29, 0.1) 0%, rgba(14, 20, 29, 0.22) 50%, rgba(14, 20, 29, 0.5) 100%)"
+                    {isVisualCue && cueMediaUrl ? (
+                      <>
+                        {cueIsVideo ? (
+                          <video
+                            src={cueMediaUrl}
+                            draggable={false}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              filter:
+                                "saturate(48%) brightness(0.8) contrast(0.94) blur(6px)",
+                            }}
+                            muted
+                            playsInline
+                            controls={false}
                           />
-                        </>
-                      )
-                      : (
-                        <>
+                        ) : (
                           <Box
+                            as="img"
+                            src={cueMediaUrl}
+                            alt={`${cue.name} continuation`}
+                            draggable={false}
                             width="100%"
                             height="100%"
-                            bg={cue.color || "rgba(20, 24, 33, 0.72)"}
-                            filter="saturate(50%) brightness(0.88)"
+                            objectFit="cover"
+                            filter="saturate(48%) brightness(0.8) contrast(0.94) blur(6px)"
                           />
-                          <Box
-                            position="absolute"
-                            inset="0"
-                            bg="linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(176, 193, 223, 0.12) 35%, rgba(14, 20, 29, 0.32) 100%)"
-                          />
-                        </>
-                      )}
+                        )}
+
+                        <Box
+                          position="absolute"
+                          inset="0"
+                          bg="linear-gradient(90deg, rgba(14, 20, 29, 0.1) 0%, rgba(14, 20, 29, 0.22) 50%, rgba(14, 20, 29, 0.5) 100%)"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Box
+                          width="100%"
+                          height="100%"
+                          bg={cue.color || "rgba(20, 24, 33, 0.72)"}
+                          filter="saturate(50%) brightness(0.88)"
+                        />
+                        <Box
+                          position="absolute"
+                          inset="0"
+                          bg="linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(176, 193, 223, 0.12) 35%, rgba(14, 20, 29, 0.32) 100%)"
+                        />
+                      </>
+                    )}
                   </Box>
 
                   <Box
@@ -541,7 +591,9 @@ const GridLayoutComponent = ({
                     border="1px solid"
                     borderColor={segmentBorderColor}
                     borderRightWidth={hasVisibleContinuation ? "0" : "1px"}
-                    borderRadius={hasVisibleContinuation ? "10px 0 0 10px" : "10px"}
+                    borderRadius={
+                      hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                    }
                     transition="border-color 140ms ease"
                     pointerEvents="none"
                     zIndex={6}
@@ -578,25 +630,30 @@ const GridLayoutComponent = ({
                     zIndex={6}
                   />
 
-                  {gap > 0 && continuationSlotCount > 1 && (
-                    Array.from({ length: continuationSlotCount - 1 }).map((_, dividerIndex) => {
-                      const dividerLeft = continuationStartLeft + (dividerIndex + 1) * (columnWidth + gap) + continuationDividerOffset
-                      return (
-                        <Box
-                          key={`${cue._id}-continuation-divider-${dividerIndex}`}
-                          data-testid={`cue-continuation-divider-${cue._id}-${dividerIndex}`}
-                          position="absolute"
-                          top={`${continuationInset}px`}
-                          bottom={`${continuationInset}px`}
-                          left={`${dividerLeft}px`}
-                          width={`${continuationDividerWidth}px`}
-                          bg="linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%)"
-                          pointerEvents="none"
-                          zIndex={3}
-                        />
-                      )
-                    })
-                  )}
+                  {gap > 0 &&
+                    continuationSlotCount > 1 &&
+                    Array.from({ length: continuationSlotCount - 1 }).map(
+                      (_, dividerIndex) => {
+                        const dividerLeft =
+                          continuationStartLeft +
+                          (dividerIndex + 1) * (columnWidth + gap) +
+                          continuationDividerOffset
+                        return (
+                          <Box
+                            key={`${cue._id}-continuation-divider-${dividerIndex}`}
+                            data-testid={`cue-continuation-divider-${cue._id}-${dividerIndex}`}
+                            position="absolute"
+                            top={`${continuationInset}px`}
+                            bottom={`${continuationInset}px`}
+                            left={`${dividerLeft}px`}
+                            width={`${continuationDividerWidth}px`}
+                            bg="linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%)"
+                            pointerEvents="none"
+                            zIndex={3}
+                          />
+                        )
+                      }
+                    )}
                 </>
               )}
 
@@ -619,7 +676,12 @@ const GridLayoutComponent = ({
               )}
 
               {cue.name?.trim() && (
-                <Tooltip label={cue.name} placement="top" hasArrow isDisabled={isDragging}>
+                <Tooltip
+                  label={cue.name}
+                  placement="top"
+                  hasArrow
+                  isDisabled={isDragging}
+                >
                   <Text
                     data-testid={`cue-label-${cue._id}`}
                     position="absolute"
