@@ -142,6 +142,8 @@ const ColumnHeadersBase = ({
   cueIndex,
   bgCurrentFrame,
   bgColorIndex,
+  activeFrameBorderColor = "#7a15b8",
+  inactiveFrameBorderColor = "#b31bff",
   rowHeight,
   columnWidth,
   indexCount,
@@ -165,7 +167,10 @@ const ColumnHeadersBase = ({
         alignItems="center"
         justifyContent="center"
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-        border="2px solid #b31bff"
+        border={`${index === cueIndex ? 4 : 2}px solid`}
+        borderColor={index === cueIndex ? activeFrameBorderColor : inactiveFrameBorderColor}
+        boxShadow={index === cueIndex ? "0 0 0 1px rgba(255, 255, 255, 0.36), 0 8px 16px rgba(60, 16, 96, 0.26)" : "none"}
+        transition="border-color 120ms ease, box-shadow 140ms ease"
         h={frameHeaderHeight}
         width={`${columnWidth}px`}
       >
