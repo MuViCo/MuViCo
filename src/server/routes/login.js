@@ -1,3 +1,9 @@
+/**
+ * this module defines the routes for user login and authentication, including both traditional username/password login and Firebase-based authentication. 
+ * It uses JWT for token generation and includes error handling for invalid credentials. The routes interact with the User model to retrieve user data and manage authentication state. 
+ * The Firebase route also handles linking legacy accounts based on email prefixes to ensure a smooth transition for users authenticating with Google.
+ */
+
 const jwt = require("jsonwebtoken")
 const express = require("express")
 const { checkPassword } = require("../utils/auth.js")
