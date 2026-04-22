@@ -1,3 +1,10 @@
+/** Presentation Reducer
+ * This reducer manages the state of the presentation, including cues, name, screen count,
+ * and index count. It also handles actions related to fetching presentation info,
+ * adding/editing/deleting cues, and updating presentation settings. The reducer uses
+ * Redux Toolkit's createSlice for cleaner code and better state management.
+ */
+
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
@@ -10,7 +17,10 @@ const initialState = {
   indexCount: 5,
   saving: false,
 }
-
+/** * The presentationSlice manages the state of the presentation, including cues, name, screen count,
+ * and index count. It defines reducers for setting presentation info, adding/editing/deleting cues,
+ * and updating presentation settings. It also handles asynchronous actions for saving index and screen counts.
+ */
 const presentationSlice = createSlice({
   name: "presentation",
   initialState,
