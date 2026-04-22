@@ -1,9 +1,11 @@
-import React from 'react'
+
+
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import HomepageManual from '../../components/homepage/HomepageManual'
 import PresentationManual from '../../components/presentation/PresentationManual'
 
+//  Tests for the manual restart buttons in HomepageManual and PresentationManual
 describe('Manual restart buttons', () => {
   beforeEach(() => {
     // ensure clean storage for each test

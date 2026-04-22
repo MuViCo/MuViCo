@@ -1,13 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import '@testing-library/jest-dom'
-import React from 'react'
 import NavBar from '../../components/navbar/index'
 
 jest.mock('../../components/utils/firebase', () => ({
   apikey: 'testkey'
   }))
 
+// Tests for the logout functionality in NavBar
 describe('logout', () => {
   test('render content', () => {
     const setUser = jest.fn()
