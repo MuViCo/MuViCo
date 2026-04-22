@@ -35,10 +35,11 @@ const presentationSlice = createSlice({
       state.cues = updatedCues
     },
     removePresentation(state) {
-      state.cues = null
-      state.name = ""
-      state.screenCount = null
-      state.indexCount = null
+      state.cues = initialState.cues
+      state.name = initialState.name
+      state.screenCount = initialState.screenCount
+      state.indexCount = initialState.indexCount
+      state.saving = initialState.saving
     },
     incrementIndexCount(state) {
       state.indexCount += 1
@@ -52,46 +53,48 @@ const presentationSlice = createSlice({
       state.screenCount += 1
     },
     decrementScreenCount(state) {
-       if (state.screenCount > 1) {
-         state.screenCount -= 1
-       }
+      if (state.screenCount > 1) {
+        state.screenCount -= 1
+      }
     },
     updateNameOnly(state, action) {
       state.name = action.payload
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
-      .addCase(saveIndexCount.pending, state => {
+      .addCase(saveIndexCount.pending, (state) => {
         state.saving = true
       })
       .addCase(saveIndexCount.fulfilled, (state, action) => {
         state.saving = false
         const newIndexCount = action.payload.indexCount
         state.indexCount = newIndexCount
-        state.cues = state.cues.filter(cue => cue.index < newIndexCount)
+        state.cues = state.cues.filter((cue) => cue.index < newIndexCount)
       })
-      .addCase(saveIndexCount.rejected, state => {
+      .addCase(saveIndexCount.rejected, (state) => {
         state.saving = false
       })
-      .addCase(saveScreenCount.pending, state => {
+      .addCase(saveScreenCount.pending, (state) => {
         state.saving = true
       })
       .addCase(saveScreenCount.fulfilled, (state, action) => {
         state.saving = false
-        
+
         if (action.payload.screenCount !== undefined) {
           const newScreenCount = action.payload.screenCount
           const removedCuesCount = action.payload.removedCuesCount
-          
+
           state.screenCount = newScreenCount
-          
+
           if (removedCuesCount > 0) {
-            state.cues = state.cues.filter(cue => cue.screen <= newScreenCount)
+            state.cues = state.cues.filter(
+              (cue) => cue.screen <= newScreenCount
+            )
           }
         }
       })
-      .addCase(saveScreenCount.rejected, state => {
+      .addCase(saveScreenCount.rejected, (state) => {
         state.saving = false
       })
   },
@@ -212,25 +215,34 @@ export const swapCues =
     }
   }
 
-export const shiftPresentationIndexes = (presentationId, startIndex, direction) => async (dispatch) => {
-  try {
-    const result = await presentationService.shiftIndexes(presentationId, startIndex, direction)
-    await dispatch(fetchPresentationInfo(presentationId))
-    return result
-  } catch (error) {
-    const errorMessage = error.response?.data?.error || "An error occurred"
-    console.error(errorMessage)
-    throw new Error(errorMessage)
+export const shiftPresentationIndexes =
+  (presentationId, startIndex, direction) => async (dispatch) => {
+    try {
+      const result = await presentationService.shiftIndexes(
+        presentationId,
+        startIndex,
+        direction
+      )
+      await dispatch(fetchPresentationInfo(presentationId))
+      return result
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
-}
 
-export const updatePresentationName = (presentationId, newName) => async (dispatch, getState) => {
-  try {
-    const updated = await presentationService.updatePresentationName(presentationId, newName)
-    dispatch(updateNameOnly(updated.name))
-  } catch (error) {
-    const errorMessage = error.response?.data?.error || "An error occurred"
-    console.error(errorMessage)
-    throw new Error(errorMessage)
+export const updatePresentationName =
+  (presentationId, newName) => async (dispatch, getState) => {
+    try {
+      const updated = await presentationService.updatePresentationName(
+        presentationId,
+        newName
+      )
+      dispatch(updateNameOnly(updated.name))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
   }
-}
