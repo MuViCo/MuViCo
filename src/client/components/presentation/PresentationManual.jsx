@@ -13,7 +13,7 @@ import {
   editModeFeaturesData,
   stepsToAddElementData,
   editingElementData,
-  showModeFeaturesData,
+  screenAndPlaybackData,
 } from "../data/presentationPageData"
 
 import FeatureSection from "../utils/FeatureSection"
@@ -23,7 +23,7 @@ const PresentationManual = () => {
     <>
       <Text mb={4}>
         Welcome to the user manual. This modal provides guidance on how to use
-        the edit and show mode.
+        the editor.
         <br/>
         <br/>
         <Button
@@ -38,22 +38,19 @@ const PresentationManual = () => {
       </Text>
 
       <Accordion allowMultiple>
-        {/* Presentation editor page */}
+        {/* Presentation basics */}
         <AccordionItem>
           <h2>
             <AccordionButton>
               <Box flex="1" textAlign="left" fontWeight="bold" fontSize="2xl">
-                Presentation editor page
+                Presentation basics
               </Box>
               <AccordionIcon />
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-            <Text mb={3}>
-              Here you will see all the elements in the current presentation.
-            </Text>
             <FeatureSection
-              title="Features on this page"
+              title="How to navigate the editor"
               data={editModeFeaturesData}
             />
           </AccordionPanel>
@@ -64,14 +61,14 @@ const PresentationManual = () => {
           <h2>
             <AccordionButton>
               <Box flex="1" textAlign="left" fontWeight="bold" fontSize="2xl">
-                Adding an element
+                Add a new element
               </Box>
               <AccordionIcon />
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
             <FeatureSection
-              title="Steps to add an element"
+              title="Steps to add a new element"
               data={stepsToAddElementData}
               listAs="ol"
               listStyleType="inside"
@@ -84,43 +81,38 @@ const PresentationManual = () => {
           <h2>
             <AccordionButton>
               <Box flex="1" textAlign="left" fontWeight="bold" fontSize="2xl">
-                Editing an existing element
+                Edit existing element
               </Box>
               <AccordionIcon />
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
             <FeatureSection
-              title="Editing an existing element"
+              title="Options for editing an element"
               data={editingElementData}
             />
           </AccordionPanel>
         </AccordionItem>
 
-        {/* Show mode page */}
+        {/* Screen and Playback controls */}
         <AccordionItem>
           <h2>
             <AccordionButton>
               <Box flex="1" textAlign="left" fontWeight="bold" fontSize="2xl">
-                Show mode page
+                Screen and playback controls
               </Box>
               <AccordionIcon />
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-            <Text mb={2}>
-              When you click on the Show mode button on the edit presentation
-              page, you will be directed to the show mode page, which allows you
-              to view and control your presentation in real-time.
-            </Text>
             <FeatureSection
-              title="Features on this page"
-              data={showModeFeaturesData}
+              data={screenAndPlaybackData}
             />
           </AccordionPanel>
         </AccordionItem>
       </Accordion>
     </>
+
   )
 }
 
