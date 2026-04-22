@@ -18,8 +18,8 @@ import showModeVideo from "../../public/muvico_showmode.mp4"
 import editModeVideo from "../../public/muvico_intro_editmode.mp4"
 import hyLogo from "../../public/hy_logo.svg"
 import bHyLogo from "../../public/b_hy_logo.svg"
-import showModePreviewLight from "../../public/showmodepreview-light.png"
-import showModePreviewDark from "../../public/showmodepreview-dark.png"
+import introVideoPreviewLight from "../../public/introvideopreview-light.png"
+import introVideoPreviewDark from "../../public/introvideopreview-dark.png"
 
 const FrontPage = () => {
   const bgGradient = useColorModeValue(
@@ -31,7 +31,7 @@ const FrontPage = () => {
   const videoBg = useColorModeValue("white", "gray.700")
   const underlineColor = useColorModeValue("#9D4EDD", "#E9B8FF")
   const hyLogoSrc = useColorModeValue(bHyLogo, hyLogo)
-  const showModePoster = useColorModeValue(showModePreviewLight, showModePreviewDark)
+  const IntroVideoPoster = useColorModeValue(introVideoPreviewLight, introVideoPreviewDark)
 
   return (
     <Container maxW="3xl">
@@ -182,7 +182,7 @@ const FrontPage = () => {
             >
               <video
                 src={showModeVideo}
-                poster={showModePoster}
+                poster={IntroVideoPoster}
                 controls
                 preload="none"
                 style={{ width: "100%", display: "block" }}
