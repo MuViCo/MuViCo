@@ -1,3 +1,10 @@
+/**
+ * This module defines the routes for user-related operations, including linking and unlinking Google Drive accounts and changing user passwords.
+ * It uses middleware to extract the user from the request and to ensure that the user is authenticated before performing any operations. 
+ * The routes interact with the User model to perform database operations and return JSON responses. 
+ * Input validation is included to ensure that required fields are present and meet specified criteria, such as password strength requirements.
+ */
+
 const express = require("express")
 const { userExtractor } = require("../utils/middleware")
 const router = express.Router()

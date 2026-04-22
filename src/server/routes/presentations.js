@@ -1,13 +1,17 @@
+/**
+ * This module defines the routes for managing presentations, including retrieving a list of presentations for a user, getting details of a specific presentation, creating new presentations, and updating existing ones.
+ * It uses middleware to extract the user from the request and to check if the user has access to the requested presentation. 
+ * The routes interact with the Presentation model to perform database operations and return JSON responses. 
+ * Input validation is included to ensure that required fields are present and meet specified criteria.
+ */
+
 const express = require("express")
 const { userExtractor, requirePresentationAccess } = require("../utils/middleware")
 const Presentation = require("../models/presentation")
 
 const router = express.Router()
 
-/**
- * Retrieves presentations for a specific user.
- * @var {Middleware} userExtractor - Extracts user from request.
- */
+// Retrieves a list of presentations for the authenticated user, sorted by last used date
 router.get("/", userExtractor, async (req, res, next) => {
   try {
     const { user } = req
@@ -28,17 +32,14 @@ router.get("/", userExtractor, async (req, res, next) => {
   }
 })
 
-/**
- * Retrieves a specific presentation by ID for the user.
- */
+// Retrieves details of a specific presentation by ID, ensuring the user has access to it
 router.get("/:id", userExtractor, requirePresentationAccess, async (req, res) => {
   const { presentation } = req
   return res.json(presentation.toJSON())
 })
 
-/**
- * Creates a new presentation for the user
- */
+
+// Creates a new presentation for the user
 router.post("/", userExtractor, async (req, res, next) => {
   try {
     const { name, description, screenCount} = req.body
@@ -84,7 +85,7 @@ router.post("/", userExtractor, async (req, res, next) => {
     next(error)
   }
 })
-
+// Updates the name and description of an existing presentation, ensuring the user has access to it
 router.put("/:id", userExtractor, requirePresentationAccess, async (req, res, next) => {
   try {
     const { presentation } = req

@@ -1,3 +1,11 @@
+/**
+ * This module defines the routes for managing presentations, including:
+ * retrieving presentation details, updating presentation properties (like index and screen count), uploading and managing cues (which can be files or colors associated with specific screens and indices), and deleting presentations.
+ * It uses multer for handling file uploads, integrates with AWS S3 and Google Drive for file storage, and includes middleware for user authentication and presentation access control.
+ * The routes interact with the Presentation model to perform CRUD operations and ensure that users can only access and modify presentations they have permissions for. 
+ * The module also includes error handling for various edge cases, such as file size limits, invalid input data, and conflicts in cue positioning.
+ */
+
 const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
@@ -44,6 +52,7 @@ const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
   })
 }
 
+// Checks if there is a cue (other than the two being swapped) that already occupies one of the target positions
 const hasSwapTargetConflict = (
   cues,
   firstCueId,
@@ -145,6 +154,9 @@ router.get(
   }
 )
 
+/**
+ * Deletes a presentation and all associated cues and files.
+ */
 router.delete(
   "/:id",
   userExtractor,
@@ -286,6 +298,9 @@ router.put(
   }
 )
 
+/**
+ * Updates presentation name by ID.
+ */
 router.put(
   "/:id/name",
   userExtractor,
@@ -322,9 +337,10 @@ router.put(
 )
 
 /**
- * Updates presentation by ID, uploading new files to presentation and adding them to mongoDB
- * and aws bucket. Can upload any kind of image or pdf.
- * @var {Middleware} upload.single - Exports the image from requests and adds it on multer cache
+ * Creates a new cue for a presentation, uploading files to mongoDB and AWS bucket or Google Drive.
+ * Can upload any kind of image, pdf, or audio file depending on the target screen.
+ * Validates cue type matches the target screen type and checks for position conflicts.
+ * @var {Middleware} upload.single - Exports the file from requests and adds it to multer cache
  */
 router.put(
   "/:id",
@@ -540,6 +556,10 @@ router.put(
   }
 )
 
+/**
+ * Swaps two cues to different positions, validating that cue types match target screens.
+ * Rejects swaps that would collide with a third cue at either target position.
+ */
 router.put(
   "/:id/swapCues",
   userExtractor,
@@ -691,6 +711,11 @@ router.put(
   }
 )
 
+/**
+ * Updates a specific cue by ID, allowing modification of position, name, color, loop status, and file.
+ * Handles file upload/replacement and deletion, managing storage on AWS S3 or Google Drive.
+ * Validates that the updated cue type matches the target screen type.
+ */
 router.put(
   "/:id/:cueId",
   userExtractor,

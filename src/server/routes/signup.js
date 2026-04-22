@@ -1,3 +1,10 @@
+/**
+ * This module defines the routes for user signup, including checking username availability and creating new user accounts.
+ * It includes input validation for usernames and passwords, ensuring that usernames meet specified criteria and that passwords are strong enough. 
+ * The routes interact with the User model to perform database operations and return JSON responses. 
+ * Error handling is included to manage invalid input and other issues that may arise during the signup process.
+ */
+
 const express = require("express")
 const { validatePassword, generateHash } = require("../utils/auth.js")
 const User = require("../models/user")
