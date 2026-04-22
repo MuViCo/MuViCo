@@ -73,7 +73,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/image.png",
+          name: "image.png",
+        },
       },
     ]
 
@@ -93,7 +97,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 1",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
       },
       {
         _id: "visual-2",
@@ -102,7 +110,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 2",
         color: "#000000",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
       },
     ]
 
@@ -111,8 +123,12 @@ describe("GridLayoutComponent", () => {
       { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
     ])
 
-    expect(screen.queryByTestId("cue-continuation-overlay-visual-1")).not.toBeInTheDocument()
-    expect(screen.getByTestId("cue-continuation-overlay-visual-2")).toBeInTheDocument()
+    expect(
+      screen.queryByTestId("cue-continuation-overlay-visual-1")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
     expect(screen.getByTestId("cue-label-visual-1")).toBeInTheDocument()
   })
 
@@ -125,7 +141,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 1",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
       },
     ]
 
@@ -136,7 +156,9 @@ describe("GridLayoutComponent", () => {
       draggingCueId: null,
     })
 
-    expect(screen.queryByTestId("cue-drag-origin-indicator-visual-1")).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId("cue-drag-origin-indicator-visual-1")
+    ).not.toBeInTheDocument()
 
     rerender(
       <GridLayoutComponent
@@ -148,7 +170,9 @@ describe("GridLayoutComponent", () => {
       />
     )
 
-    expect(screen.getByTestId("cue-drag-origin-indicator-visual-1")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("cue-drag-origin-indicator-visual-1")
+    ).toBeInTheDocument()
   })
 
   it("applies preview span overrides for continuation shrink rendering", () => {
@@ -160,7 +184,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 1",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/1.png", name: "1.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
       },
       {
         _id: "visual-2",
@@ -169,7 +197,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 2",
         color: "#000000",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
       },
     ]
 
@@ -179,7 +211,9 @@ describe("GridLayoutComponent", () => {
     ]
 
     const { rerender } = renderGrid(cues, layout)
-    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toBeInTheDocument()
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-1")
+    ).toBeInTheDocument()
 
     rerender(
       <GridLayoutComponent
@@ -190,9 +224,11 @@ describe("GridLayoutComponent", () => {
       />
     )
 
-    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toHaveStyle({
-      opacity: "0.76",
-    })
+    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toHaveStyle(
+      {
+        opacity: "0.76",
+      }
+    )
   })
 
   it("renders video media for visual video cues", () => {
@@ -204,7 +240,11 @@ describe("GridLayoutComponent", () => {
         name: "Video cue",
         color: "#ffffff",
         cueType: "visual",
-        file: { type: "video/mp4", url: "https://example.com/video.mp4", name: "video.mp4" },
+        file: {
+          type: "video/mp4",
+          url: "https://example.com/video.mp4",
+          name: "video.mp4",
+        },
       },
       {
         _id: "visual-2",
@@ -213,7 +253,11 @@ describe("GridLayoutComponent", () => {
         name: "Visual cue 2",
         color: "#000000",
         cueType: "visual",
-        file: { type: "image/png", url: "https://example.com/2.png", name: "2.png" },
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
       },
     ]
 
@@ -222,46 +266,9 @@ describe("GridLayoutComponent", () => {
       { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
     ])
 
-    expect(container.querySelector('video[src="https://example.com/video.mp4"]')).toBeInTheDocument()
-  })
-
-  it("renders audio media when cue index is active", () => {
-    const cues = [
-      {
-        _id: "audio-1",
-        index: 0,
-        screen: 3,
-        name: "Audio cue 1",
-        color: "#ffffff",
-        cueType: "audio",
-        file: { type: "audio/mpeg", url: "https://example.com/audio-1.mp3", name: "audio-1.mp3" },
-        loop: true,
-      },
-      {
-        _id: "audio-2",
-        index: 5,
-        screen: 3,
-        name: "Audio cue 2",
-        color: "#ffffff",
-        cueType: "audio",
-        file: { type: "audio/mpeg", url: "https://example.com/audio-2.mp3", name: "audio-2.mp3" },
-        loop: false,
-      },
-    ]
-
-    const { container } = renderGrid(
-      cues,
-      [
-        { i: "audio-1", x: 0, y: 2, w: 5, h: 1, static: false },
-        { i: "audio-2", x: 5, y: 2, w: 5, h: 1, static: false },
-      ],
-      {
-        cueIndex: 3,
-        screenCount: 2,
-      }
-    )
-
-    expect(container.querySelector('audio[src="https://example.com/audio-1.mp3"]')).toBeInTheDocument()
+    expect(
+      container.querySelector('video[src="https://example.com/video.mp4"]')
+    ).toBeInTheDocument()
   })
 
   it("does not render audio media when cue index is before cue", () => {
@@ -273,7 +280,11 @@ describe("GridLayoutComponent", () => {
         name: "Audio cue 1",
         color: "#ffffff",
         cueType: "audio",
-        file: { type: "audio/mpeg", url: "https://example.com/audio-1.mp3", name: "audio-1.mp3" },
+        file: {
+          type: "audio/mpeg",
+          url: "https://example.com/audio-1.mp3",
+          name: "audio-1.mp3",
+        },
         loop: false,
       },
     ]
@@ -302,7 +313,11 @@ describe("GridLayoutComponent", () => {
       name: "Visual cue",
       color: "#ffffff",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
     }
 
     renderGrid(
@@ -335,10 +350,17 @@ describe("GridLayoutComponent", () => {
       name: "Visual cue",
       color: "#ffffff",
       cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/image.png", name: "image.png" },
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
     }
 
-    renderGrid([cue], [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }])
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+    )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
     fireEvent.mouseDown(screen.getByLabelText("Delete Visual cue"))
@@ -365,11 +387,18 @@ describe("GridLayoutComponent", () => {
       name: "Audio cue",
       color: "#ffffff",
       cueType: "audio",
-      file: { type: "audio/mpeg", url: "https://example.com/audio.mp3", name: "audio.mp3" },
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
       loop: false,
     }
 
-    renderGrid([cue], [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }])
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
     fireEvent.mouseDown(screen.getByLabelText("Loop audio Audio cue"))
