@@ -146,59 +146,6 @@ const PresentationPlaybackControls = ({
       autoplayInterval={autoplayInterval}
       toggleAutoplayInterval={toggleAutoplayInterval}
     />
-    <ClickablePopover
-      label={
-        <>
-          <b>Autoplay</b>
-          <br /><br />
-          Each frame is displayed for the number of seconds you enter in the box.
-          <br /><br />
-          Open the wanted screens and click “Start Autoplay” to begin playing the frames automatically.
-          Autoplay always starts from the Starting Frame.
-          <br /><br />
-          You can also switch the frames manually and change the sec/frame during the Autoplay.
-          <br /><br />
-          Autoplay stops automatically after the last frame.
-          You can stop it manually at anytime by clicking “Stop Autoplay.”
-        </>
-      }
-      placement="top"
-      fontSize="sm"
-    >
-      <IconButton
-        aria-label="Autoplay Help"
-        icon={<QuestionIcon />}
-        size="lg"
-        variant="ghost"
-        colorScheme="purple"
-      />
-    </ClickablePopover>
-    <ClickablePopover
-      label={
-        <>
-          Make sure this window is in focus!
-          <br />
-          <br />
-          You can use the following keyboard shortcuts:
-          <br />
-          <br />
-          Next index: → ArrowRight, ↑ ArrowUp, PageDown
-          <br />
-          <br />
-          Previous index: ← ArrowLeft, ↓ ArrowDown, PageUp
-        </>
-      }
-      placement="top"
-      fontSize="sm"
-    >
-      <IconButton
-        aria-label="Keyboard Shortcuts"
-        icon={<QuestionIcon />}
-        size="lg"
-        variant="ghost"
-        colorScheme="purple"
-      />
-    </ClickablePopover>
     {audioSourceURL ? (
       <audio autoPlay loop controls src={audioSourceURL}></audio>
     ) : null}
