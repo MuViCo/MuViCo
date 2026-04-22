@@ -1,7 +1,6 @@
 import { render, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import '@testing-library/jest-dom'
-import React from 'react'
 import NavBar from '../../components/navbar/index'
 import { isTokenExpired } from '../../auth'
 
