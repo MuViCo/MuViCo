@@ -84,14 +84,8 @@ const EditMode = ({
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
   const containerRef = useRef(null)
-
   const [status, setStatus] = useState("saved")
   const [selectedCue, setSelectedCue] = useState(null)
-
-  const [, setDoubleClickPosition] = useState({
-    xIndex: 0,
-    yIndex: 0,
-  })
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState(() => () => { })
@@ -1179,10 +1173,6 @@ const EditMode = ({
 
     if (cue) {
       setSelectedCue(cue)
-      setIsToolboxOpen(true)
-    } else {
-      setSelectedCue(null)
-      setDoubleClickPosition({ index: xIndex, screen: yIndex })
       setIsToolboxOpen(true)
     }
   }
