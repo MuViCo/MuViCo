@@ -1,3 +1,9 @@
+/**
+ * presentation title component - displays presentation name and allows editing
+ * When edit button is clicked, shows input field and save/cancel buttons. On save, updates presentation name in redux store and shows success toast. 
+ * On cancel, reverts to original name and hides input field.
+ */
+
 import React, { useState, useEffect } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import { Box, IconButton, Input, Button } from "@chakra-ui/react"
