@@ -1,3 +1,7 @@
+/** Togglable.jsx
+ * A reusable component for creating toggleable content sections.
+ */
+
 import { useState, useImperativeHandle, forwardRef } from "react"
 import { Button, Box } from "@chakra-ui/react"
 
