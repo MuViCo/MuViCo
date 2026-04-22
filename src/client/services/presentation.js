@@ -1,3 +1,15 @@
+/**
+ * This module provides functions to interact with a SINGLE presentation's detailed operations.
+ * It handles in-depth manipulation of one presentation via /api/presentation/:id endpoints.
+ *
+ * KEY DIFFERENCE from presentations.js:
+ * - presentation.js (THIS FILE): Operates on ONE specific presentation (get, edit, manage cues, etc.)
+ * - presentations.js: Operates on MULTIPLE presentations (list all, create new, basic CRUD)
+ *
+ * Functions include: get, remove, add/remove/update cues, save counts, shift indexes,
+ * update name, and swap cues.
+ */
+
 import axios from "axios"
 import getToken from "../auth"
 

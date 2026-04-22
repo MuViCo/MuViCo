@@ -1,3 +1,8 @@
+/**
+ * This module provides authentication services for the client application, including login, signup, password change, and user retrieval. 
+ * It uses axios for HTTP requests and localStorage for storing the logged-in user's information.
+ */
+
 import axios from "axios"
 import getToken from "../auth"
 
