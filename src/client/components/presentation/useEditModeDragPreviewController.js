@@ -1,3 +1,13 @@
+/**
+ * Custom hook to manage drag preview state and behavior in presentation edit mode
+ * - Manages refs for hover preview, drag cursor preview, and drag placement preview elements
+ * - Calculates valid drop targets based on cue type and grid layout
+ * - Applies styles to drag previews based on validity of drop target
+ * - Handles both internal drag operations (reordering cues) and external drag operations (dragging in from media pool)
+ * - Uses requestAnimationFrame to optimize drag preview updates based on pointer movement
+ * - Provides functions to show/hide previews, update preview positions, and clear previews when drag ends
+ */
+
 import { useCallback, useEffect, useRef } from "react"
 import {
   isCueTypeCompatibleWithRow,
@@ -60,6 +70,7 @@ const useEditModeDragPreviewController = ({
   dragPreviewValidBg,
   dragPreviewInvalidBg,
 }) => {
+  // Refs for internal drag preview (dragging existing cues)
   const hoverPreviewRef = useRef(null)
   const hoverCellRef = useRef(null)
   const dragCursorPreviewRef = useRef(null)
@@ -69,7 +80,11 @@ const useEditModeDragPreviewController = ({
   const dragPreviewFrameRef = useRef(null)
   const dragPreviewCellRef = useRef(null)
   const dragPlacementLockedToAnchorRef = useRef(false)
+
+  // Offset to account for header row height in preview positioning
   const dragPreviewYOffset = Math.max(rowHeight - (headerRowHeight ?? rowHeight), 0)
+
+  // Refs for external drag preview (dragging from media pool)
   const externalPlacementPreviewRef = useRef(null)
   const externalCursorPreviewRef = useRef(null)
   const externalCursorSurfaceRef = useRef(null)
@@ -188,6 +203,7 @@ const useEditModeDragPreviewController = ({
 
     const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
     const pointerYIndex = Math.floor((pointerPosition.y + dragPreviewYOffset) / (rowHeight + gap))
+    // When dragging a cue and locking occurs, constrain placement to the cue's original position columns
     const lockPlacementToAnchor = Boolean(
       dragPlacementLockedToAnchorRef.current && selectedCue
     )

@@ -1,3 +1,14 @@
+/**
+ * presentation playback controls used in both presentation navigation and autoplay
+ * Includes:
+ * - Cue navigation buttons (previous/next)
+ * - Autoplay toggle button
+ * - Autoplay interval input
+ * - Open/close all screens button
+ * - Keyboard shortcuts popover
+ * - Autoplay instructions popover
+ * - Audio player (if audio source URL is provided)
+ */
 import React from "react"
 import ClickablePopover from "../utils/ClickablePopover"
 
@@ -21,6 +32,7 @@ import previousbutton from "../../public/icons/previousbutton.svg"
 import pausebutton from "../../public/icons/pausebutton.svg"
 import playbutton from "../../public/icons/playbutton.svg"
 
+// autoplay controls component used in both presentation navigation and autoplay
 const AutoplayControls = ({
   toggleAutoplay,
   isAutoplaying,
@@ -47,6 +59,7 @@ const AutoplayControls = ({
   )
 }
 
+// Component for adjusting autoplay interval (seconds per frame)
 const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
   <Box display="flex" alignItems="center" gap="10px">
     <NumberInput
@@ -67,6 +80,7 @@ const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
   </Box>
 )
 
+// Component for toggling all screens open/closed
 const ScreenToggleButtons = ({
   screens,
   toggleAllScreens,
@@ -90,6 +104,7 @@ const ScreenToggleButtons = ({
   )
 }
 
+// Component for cue navigation buttons (previous/next)
 const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
   <IconButton
     aria-label="Previous Cue"
@@ -100,6 +115,7 @@ const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
   />
 )
 
+// Component for cue navigation buttons (previous/next)
 const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Next Cue"
