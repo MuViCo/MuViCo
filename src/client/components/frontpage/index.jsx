@@ -6,6 +6,7 @@ import {
   Stack,
   Text,
   useColorModeValue,
+  Flex,
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 
@@ -15,8 +16,10 @@ import { Upload, Desktop, Globe } from "./ModalSvgs"
 
 import showModeVideo from "../../public/muvico_showmode.mp4"
 import editModeVideo from "../../public/muvico_intro_editmode.mp4"
-import showModePreview from "../../public/showmodepreview.png"
-import editModePreview from "../../public/editmodepreview.png"
+import hyLogo from "../../public/hy_logo.svg"
+import bHyLogo from "../../public/b_hy_logo.svg"
+import showModePreviewLight from "../../public/showmodepreview-light.png"
+import showModePreviewDark from "../../public/showmodepreview-dark.png"
 
 const FrontPage = () => {
   const bgGradient = useColorModeValue(
@@ -26,6 +29,9 @@ const FrontPage = () => {
   const textColor = useColorModeValue("gray.800", "gray.50")
   const lightTextColor = useColorModeValue("gray.700", "whiteAlpha.700")
   const videoBg = useColorModeValue("white", "gray.700")
+  const underlineColor = useColorModeValue("#9D4EDD", "#E9B8FF")
+  const hyLogoSrc = useColorModeValue(bHyLogo, hyLogo)
+  const showModePoster = useColorModeValue(showModePreviewLight, showModePreviewDark)
 
   return (
     <Container maxW="3xl">
@@ -90,11 +96,6 @@ const FrontPage = () => {
           </Text>{" "}
           for live music performances.
           <br />
-          <br />
-          {/* Alempi rivi */}
-          <Text as="span" fontFamily="'Boldonse', system-ui">
-            MuViCo is developed by University of Helsinki students.
-          </Text>{" "}
         </Text>
 
         {/* Feature cards */}
@@ -102,6 +103,7 @@ const FrontPage = () => {
           spacing={6}
           columns={{ base: 1, md: 3 }}
           pt={0}
+          mb={-5}
         >
           <InfoCard
             title="Upload Media"
@@ -126,24 +128,51 @@ const FrontPage = () => {
           />
         </SimpleGrid>
 
+        {/* Middle section box */}
+        <Box
+          bg={videoBg}
+          borderRadius="lg"
+          p={10}
+          boxShadow="md"
+          mt={1}
+          mb={1}
+        >
+          <Flex align="center" justify="space-between">
+            <Box flex="1">
+              <Heading fontSize="17px" fontFamily="'Zalando Sans Expanded', sans-serif" mb={3}>
+                MuViCo is a project developed by students from the University of Helsinki.
+              </Heading>
+
+            </Box>
+            <Box ml={6}>
+              <img
+                src={hyLogoSrc}
+                alt="University of Helsinki logo"
+                width="80"
+                height="80"
+                style={{ objectFit: "contain" }}
+              />
+            </Box>
+          </Flex>
+        </Box>
+        
         {/* Video section */}
         <Box
           bg={videoBg}
           borderRadius="lg"
           p={{ base: 5, md: 6 }}
           boxShadow="md"
-          mt={1}
+          mt={-5}
         >
           <Heading size="lg" mb={2} fontFamily="'Zalando Sans Expanded', sans-serif">
             What Does MuViCo Do?
           </Heading>
 
           <Text mb={6} color={lightTextColor} fontFamily="'Zalando Sans Expanded', sans-serif">
-            Watch MuViCo's live performance and editing workflow in the videos below.
+            Watch MuViCo's live performance and editing workflow in the video below.
           </Text>
 
           <Box mb={6}>
-            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Show Mode in Action</Heading>
             <Box
               overflow="hidden"
               borderRadius="lg"
@@ -153,27 +182,7 @@ const FrontPage = () => {
             >
               <video
                 src={showModeVideo}
-                poster={showModePreview}
-                controls
-                preload="none"
-                style={{ width: "100%", display: "block" }}
-              />
-            </Box>
-          </Box>
-
-
-          <Box mb={6}>
-            <Heading size="md" mb={6} fontFamily="'Zalando Sans Expanded', sans-serif">Creating and Editing a Presentation</Heading>
-            <Box
-              overflow="hidden"
-              borderRadius="lg"
-              boxShadow="sm"
-              _hover={{ boxShadow: "lg", transform: "scale(1.01)" }}
-              transition="all 0.25s ease"
-            >
-              <video
-                src={editModeVideo}
-                poster={editModePreview}
+                poster={showModePoster}
                 controls
                 preload="none"
                 style={{ width: "100%", display: "block" }}

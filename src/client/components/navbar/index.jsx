@@ -40,11 +40,13 @@ const NavBar = ({ user, setUser }) => {
 
   const { colorMode } = useColorMode()
 
-  const navBackground = colorMode === "light"
-    ? "rgba(255, 255, 255, 0.96)"
-    : isPresentationPage
-      ? "rgba(3, 0, 0, 0.8)"
-      : "rgba(23, 25, 35, 0.82)"
+  const navBackground = isPresentationPage
+    ? colorMode === "light"
+      ? "rgba(255, 255, 255, 0.96)"
+      : "rgba(3, 0, 0, 0.8)"
+    : colorMode === "light"
+      ? "rgba(255, 255, 255, 0.4)"
+      : "rgba(23, 25, 35, 0.3)"
 
   const navBorderBottom = colorMode === "light"
     ? "1px solid rgba(0, 0, 0, 0.08)"
@@ -125,7 +127,7 @@ const NavBar = ({ user, setUser }) => {
         w="100%"
         borderBottom={navBorderBottom}
         style={{
-          backdropFilter: isPresentationPage ? "none" : "blur(10px)",
+          backdropFilter: isPresentationPage ? "none" : "blur(12px)",
           zIndex: 1000,
         }}
       >
