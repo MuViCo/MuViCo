@@ -1,3 +1,13 @@
+/**
+ * screens display component for presentation mode, showing the content of each screen based on the cues and their timing
+ * - Displays the content for each screen based on the cues and their timing
+ * - Supports images, videos, and colored backgrounds as screen content
+ * - Shows "No content" message if there are no cues for a screen at the current cue index
+ * - Includes buttons to open/close each screen in edit mode
+ * - Uses useMemo to optimize performance by memoizing the cue visual span map and cues sorted by screen
+ * - Determines the current cue for each screen based on the cue index and the visual span of each cue
+ */
+
 import { Button } from "@chakra-ui/react"
 import React, { useMemo } from "react"
 import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
@@ -29,12 +39,12 @@ export const ScreensDisplay = ({
 
   const isImageFile = (file = {}) => {
     if (isType.image(file)) return true
-    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file))
+    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file)) // check common image file extensions
   }
 
   const isVideoFile = (file = {}) => {
     if (isType.video(file)) return true
-    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file))
+    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file)) // check common video file extensions
   }
 
   // Get the current cue for the screen
@@ -44,6 +54,7 @@ export const ScreensDisplay = ({
 
     const currentIndex = Number(cueIndex)
 
+    // Find the cue that should be displayed on the screen based on the current cue index and the visual span of each cue
     const cueForScreen = [...cuesOnScreen]
       .sort((firstCue, secondCue) => Number(secondCue.index) - Number(firstCue.index))
       .find((cue) => {

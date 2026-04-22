@@ -1,3 +1,11 @@
+/**
+ * Toolbox component for editing cue properties in presentation mode
+ * - Displays a modal with a form for editing cue properties such as name
+ * - Uses Chakra UI components for styling and layout
+ * - Validates input and calls onSave callback with updated cue data when the form is submitted
+ * - Resets form state when the modal is opened or closed
+ */
+
 import { useEffect, useState } from "react"
 import {
   Button,
