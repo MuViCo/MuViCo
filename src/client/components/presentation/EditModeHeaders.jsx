@@ -208,7 +208,7 @@ const ColumnHeadersBase = ({
             pointerEvents: "auto",
           }}
           _hover={{
-              bg: "rgba(0, 255, 21, 1)",
+              bg: "rgba(125, 252, 135, 0.75)",
               borderColor: "green.400",
               color: "black",
               borderRadius: "6px",
@@ -244,7 +244,7 @@ const ColumnHeadersBase = ({
               pointerEvents: "auto",
             }}
             _hover={{
-              bg: "rgba(0, 255, 21, 1)",
+              bg: "rgba(125, 252, 135, 0.75)",
               borderColor: "green.400",
               color: "black",
               borderRadius: "6px",
@@ -280,7 +280,7 @@ const ColumnHeadersBase = ({
               pointerEvents: "auto",
             }}
             _hover={{
-              bg: "rgba(255, 31, 31, 1)",
+              bg: "rgba(253, 97, 97, 0.75)",
               borderColor: "red.400",
               color: "black",
               borderRadius: "6px",
