@@ -1,3 +1,14 @@
+/**
+ * This module provides functions to interact with MULTIPLE presentations (listing/CRUD operations).
+ * It handles listing all presentations and basic create/update operations via /api/home/ endpoints.
+ *
+ * KEY DIFFERENCE from presentation.js:
+ * - presentations.js (THIS FILE): Operates on MULTIPLE presentations (list all, create new, basic CRUD)
+ * - presentation.js: Operates on ONE specific presentation (detailed edits, cue management, etc.)
+ *
+ * Functions include: getAll, getById, create, and update.
+ */
+
 import axios from "axios"
 
 import getToken from "../auth"
