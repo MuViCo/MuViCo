@@ -15,6 +15,7 @@
 const mongoose = require("mongoose")
 const { VALID_CUE_TYPES, getAudioRow, getCueTypeFromScreen } = require("../utils/cueType")
 
+// Normalizes and validates cues, ensuring they have the correct cueType and screen assignments
 const normalizePresentationCues = (presentationObject) => {
   const screenCount = Number(presentationObject.screenCount) || 1
   const cues = Array.isArray(presentationObject.cues) ? presentationObject.cues : []
@@ -23,6 +24,7 @@ const normalizePresentationCues = (presentationObject) => {
       ? cue.toObject()
       : { ...cue }
 
+    // Determine cueType: use stored type if valid, otherwise infer from screen
     const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
       ? normalizedCue.cueType
       : getCueTypeFromScreen(normalizedCue.screen, screenCount)
@@ -35,7 +37,9 @@ const normalizePresentationCues = (presentationObject) => {
   })
 }
 
+// Define the presentation schema with all required fields and validation
 const presentationSchema = mongoose.Schema({
+  // Presentation title
   name: {
     type: String,
     required: true,
@@ -43,16 +47,19 @@ const presentationSchema = mongoose.Schema({
     maxlength: 100,
   },
 
+  // Optional longer description of the presentation
   description: {
     type: String,
     maxlength: 500,
   },
 
+  // Reference to the User who owns this presentation
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
 
+  // Where media files are stored: AWS S3 or Google Drive
   storage: {
     type: String,
     required: true,
@@ -63,6 +70,7 @@ const presentationSchema = mongoose.Schema({
     }
   },
 
+  // Number of display screens (1-8). Determines valid cue positions and audio cue row
   screenCount: {
     type: Number,
     required: true,
@@ -76,6 +84,7 @@ const presentationSchema = mongoose.Schema({
     }
   },
 
+  // Number of index positions (1-101) for the cue timeline
   indexCount: {
     type: Number,
     default: 5,
@@ -124,11 +133,13 @@ const presentationSchema = mongoose.Schema({
           message: "screen must be an integer"
         }
       },
+      // Hex color code for visual cues 
       color: {
         type: String,
         match: /^#([0-9A-F]{3}){1,2}$/i,
         default: "#000000",
       },
+      // Media file metadata (stored locally or on Google Drive)
       file: {
         id: String,
         name: String,
@@ -196,6 +207,7 @@ presentationSchema.pre("save", function (next) {
 })
 
 
+// Transform document when converting to JSON: format IDs and extract audio cues
 presentationSchema.set("toJSON", {
   transform: (document, returnedObject) => {
     normalizePresentationCues(returnedObject)
@@ -204,7 +216,6 @@ presentationSchema.set("toJSON", {
     delete returnedObject._id
     delete returnedObject.__v
   },
-
 })
 
 module.exports = mongoose.model("Presentation", presentationSchema)
