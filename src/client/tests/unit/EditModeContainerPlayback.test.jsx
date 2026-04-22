@@ -1,3 +1,11 @@
+/**
+ * This test suite focuses on the playback behavior of the EditModeContainer component,
+ * particularly how it handles autoplay functionality. It verifies that autoplay starts
+ * from the correct frame, advances at the specified interval, and stops at the last frame.
+ * Additionally, it checks that the fetchPresentationInfo action is dispatched on mount
+ * to load presentation data.
+ */
+
 import React from "react"
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"

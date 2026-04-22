@@ -196,7 +196,7 @@ describe("HomePage", () => {
       .mockImplementation(() => {})
 
     render(<HomePage user={{ isAdmin: true }} />)
-
+e
     fireEvent.click(screen.getByText("New presentation"))
     fireEvent.change(screen.getByTestId("presentation-name"), {
       target: { value: "Faulty Presentation" },
@@ -317,6 +317,7 @@ describe("HomePage", () => {
   })
 })
 
+// Tests for the user manual restart buttons in HomepageManual and PresentationManual
 describe("PresentationForm", () => {
   test("Renders the 'New presentation'-button", () => {
     render(
@@ -446,6 +447,7 @@ describe("PresentationsGrid", () => {
     expect(gridBtn).toBeInTheDocument()
     expect(listBtn).toBeInTheDocument()
   })
+
 
   test("switches to list view when list button is clicked", () => {
     render(

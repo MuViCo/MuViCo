@@ -1,4 +1,8 @@
-import React from "react"
+/**
+ * This test suite verifies the functionality of the EditMode component,
+ * particularly focusing on the drag-and-drop behavior for swapping cues.
+ */
+
 import {
   act,
   createEvent,

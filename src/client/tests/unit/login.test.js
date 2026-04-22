@@ -1,4 +1,3 @@
-import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { LoginForm } from "../../components/navbar/Login"
@@ -7,6 +6,7 @@ jest.mock("../../components/utils/firebase", () => ({
   apikey: "testkey",
 }))
 
+// Tests for the login functionality in LoginForm
 describe("Login", () => {
   test("renders content", () => {
     const onSubmit = jest.fn()
@@ -119,7 +119,7 @@ describe("Login", () => {
     })
   })
 })
-
+// Tests for the keyboard navigation in LoginForm
 describe("HandleKeyDown", () => {
   test("handleKeyDown shifts focus correctly from username", () => {
     const onSubmit = jest.fn()

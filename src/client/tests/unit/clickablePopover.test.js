@@ -1,3 +1,11 @@
+/**
+ * This test suite verifies the functionality of the ClickablePopover component,
+ * which is a reusable component that displays a popover with custom content when
+ * a trigger element (like an icon button) is clicked. The tests ensure that the
+ * popover opens and closes correctly, renders the provided content, and handles
+ * HTML content in the label prop.
+ */
+
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { ChakraProvider } from "@chakra-ui/react"
