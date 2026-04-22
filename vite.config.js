@@ -20,7 +20,7 @@ export default defineConfig({
       },
     },
     watch: {
-      cwd: process.cwd(),
+      // cwd: process.cwd(),
       ignored: ["playwright-report", "coverage"],
       usePolling: true,
     },

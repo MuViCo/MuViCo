@@ -342,27 +342,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     return brightness >= 186 ? "black" : "white"
   }
 
-  // const tabStyles = {
-  //   button: (isActive) => ({
-  //     padding: "8px 16px",
-  //     border: "none",
-  //     backgroundColor: isActive ? "#9244ff" : "#D6BCFA",
-  //     color: isActive ? "white" : "black",
-  //     cursor: "pointer",
-  //     fontWeight: isActive ? "bold" : "normal",
-  //     borderRadius: isActive ? "4px 4px 0 0" : "4px",
-  //     marginRight: "4px",
-  //     transition: "all 0.2s",
-  //     width: "100px",
-  //   }),
-  //   tabContent: {
-  //     padding: "16px",
-  //     backgroundColor: "#D6BCFA",
-  //     borderRadius: "0 4px 4px 4px",
-  //     minHeight: "200px",
-  //     overflowY: "auto",
-  //   },
-  // }
+
   const tabStyles = {
     button: (isActive) => ({
       padding: "8px 16px",
@@ -402,7 +382,7 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
           )}
 
           <Box>
-            <div class="cue-form-tabs">
+            <div className="cue-form-tabs">
               <Button
                 onClick={() => setActiveTab("colors")}
                 style={tabStyles.button(activeTab === "colors")}
