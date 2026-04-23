@@ -16,7 +16,7 @@ When you open MuViCo, the first thing you will see is the front page:
 - **Sign Up button**: Click to create a new account if you are using the app for the first time.
 - **Theme button (🌙/☀️ button)**: Adjust the theme between light and dark modes.
 
-You can learn more about the key features **(Ease of use, Multiple screens, and Remote access)** of the application by clicking the **"Learn more"** buttons at the bottom of the page.
+You can learn more about the key features **(Upload Media, Build Presentation, and Show Time)** of the application by clicking the **"Learn more"** buttons at the bottom of the page.
 
 By scrolling down, you can also access the MuViCo introduction videos and learn how it is used, all without needing to log in.
 
