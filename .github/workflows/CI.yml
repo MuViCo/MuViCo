@@ -49,6 +49,7 @@ jobs:
 
   e2e:
     needs: test
+    if: false
     name: End-to-End tests
     runs-on: ubuntu-latest
 
@@ -69,12 +70,11 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run E2E tests
-        if: false
         run: npm run e2e-headless
         env: *testing_env
 
   build:
-    needs: [test, e2e]
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
