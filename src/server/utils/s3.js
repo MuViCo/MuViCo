@@ -1,3 +1,7 @@
+/*
+ * S3 utility module for cue media files.
+ * Handles upload/delete and creates signed URLs for read access and metadata checks.
+ */
 const {
   S3Client,
   PutObjectCommand,
