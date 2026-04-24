@@ -1,3 +1,7 @@
+/*
+ * Google Drive utility for cue media files.
+ * Handles Drive authentication, MuViCo folder management, and file upload/delete/read operations.
+ */
 const { google } = require("googleapis")
 const { OAuth2Client } = require("google-auth-library")
 const { Readable } = require("stream")
@@ -49,7 +53,6 @@ const uploadDriveFile = async (fileBuffer, fileName, mimeType, accessToken) => {
       media: { mimeType, body: stream },
       fields: "id",
     })
-
     await drive.permissions.create({
       fileId: res.data.id,
       requestBody: { role: "reader", type: "anyone" },

@@ -1,3 +1,7 @@
+/*
+ * Authentication utility for password handling.
+ * Validates password rules and provides bcrypt compare/hash helpers.
+ */
 const bcrypt = require("bcrypt")
 const {
   minPwLength,
@@ -13,7 +17,6 @@ const validationError = (message) => {
 }
 
 const validatePassword = (password) => {
-
   if (password.trim().length === 0) {
     throw validationError("password cannot contain only spaces")
   }
@@ -29,7 +32,6 @@ const validatePassword = (password) => {
   if (invalidPwCharRegex.test(password)) {
     throw validationError("password contains unsupported characters")
   }
-
 }
 
 const checkPassword = (plaintextPassword, pwHash) => {
