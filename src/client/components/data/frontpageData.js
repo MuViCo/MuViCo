@@ -1,3 +1,7 @@
+/**
+ *  This file contains the data for the features of the front page of the application.
+ */ 
+
 export const frontpageFeaturesData = [
     {
         title: "Presentations button: click this to go to the homepage where you can see your presentations.",
