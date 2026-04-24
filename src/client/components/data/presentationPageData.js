@@ -1,3 +1,7 @@
+/**
+ * This file contains the data for the features of the presentation page of the application.
+ */
+
 export const editModeFeaturesData = [
   {
     title: "Rename the presentation title",

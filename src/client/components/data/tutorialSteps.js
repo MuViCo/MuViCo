@@ -1,3 +1,7 @@
+/**
+ * This file contains the data for the tutorial steps of the presentation page and the home page of the application.
+ */
+
 const presentationTutorialSteps = [
     { id: "start", center: true, title: "Presentation Page",
     description: `This is the presentation page where you can edit and view your presentation.
