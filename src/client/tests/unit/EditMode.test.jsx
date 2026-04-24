@@ -798,6 +798,45 @@ describe("EditMode drag swapping", () => {
     })
   })
 
+  it("renders video thumbnail in drag cursor preview for video cues", async () => {
+    const videoCues = [
+      {
+        _id: "video-1",
+        index: 0,
+        screen: 1,
+        name: "Video cue 1",
+        color: "#6f3ac9",
+        cueType: "visual",
+        file: {
+          type: "video/mp4",
+          url: "https://example.com/video-1.mp4",
+          name: "video-1.mp4",
+        },
+      },
+    ]
+
+    renderEditMode(videoCues, 2)
+    setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Video cue 1"), {
+      clientX: 10,
+      clientY: 120,
+      button: 0,
+    })
+
+    await waitFor(() => {
+      const preview = screen.getByTestId("drag-cursor-preview")
+      const previewVideo = preview.querySelector("video")
+
+      expect(previewVideo).toBeInTheDocument()
+      expect(preview.querySelector("img")).not.toBeInTheDocument()
+      expect(previewVideo).toHaveAttribute(
+        "src",
+        "https://example.com/video-1.mp4"
+      )
+    })
+  })
+
   it("starts dragging when clicking continuation area", async () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()
