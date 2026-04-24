@@ -1,3 +1,7 @@
+/**
+ * This file contains the data for the features of the homepage of the application.
+ */
+
 export const homefeaturesData = [
   {
     title: "New presentation button: click this to create a new presentation.",
