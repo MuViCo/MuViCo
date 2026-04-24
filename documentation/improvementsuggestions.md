@@ -1,5 +1,20 @@
 # Future Improvement Suggestions
 
+### New features or improvements
+24.04.2026
+
+-
+-
+-
+-
+
+For more details, see Spring 2026 Backlog [here](https://github.com/orgs/MuViCo/projects/13/views/1).
+
+
+## Suggestions from earlier teams
+
+*Note: This is a list of suggestions from previous teams. If you wish to read through these, make sure to note any that have potentially already been implemented.*
+
 ### New features
 
 - **Look into adding the functionality to:**
