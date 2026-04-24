@@ -1,3 +1,7 @@
+/*
+ * Login API integration tests.
+ * Covers password login, Firebase login account linking rules, drive token persistence, and failure cases.
+ */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const { generateHash } = require("../utils/auth.js")

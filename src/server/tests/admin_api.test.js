@@ -1,3 +1,11 @@
+/*
+ * Admin API integration tests.
+ * Verifies access control and behavior for:
+ * - GET /api/admin
+ * - DELETE /api/admin/user/:id
+ * - PUT /api/admin/makeadmin/:id
+ * - GET /api/admin/userspresentations/:id
+ */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const User = require("../models/user")
@@ -9,6 +17,7 @@ let authHeader
 
 describe("Get /admin as admin", () => {
   beforeEach(async () => {
+    // Prepare one normal user and one admin user.
     await User.deleteMany({})
     await api
       .post("/api/signup")
@@ -16,14 +25,13 @@ describe("Get /admin as admin", () => {
     await api
       .post("/api/signup")
       .send({ username: "testadmin", password: "testpassword" })
-    // Set the admin status for the testadmin user
     await User.findOneAndUpdate({ username: "testadmin" }, { isAdmin: true })
-    // Login and get the token
+
+    // Use admin token for protected admin routes in this suite.
     const response = await api
       .post("/api/login")
       .send({ username: "testadmin", password: "testpassword" })
 
-    // Set the token in the authHeader
     authHeader = `Bearer ${response.body.token}`
     await api
       .post("/api/home")
@@ -64,12 +72,12 @@ describe("Get /admin as not admin", () => {
     await api
       .post("/api/signup")
       .send({ username: "testuser", password: "testpassword" })
-    // Login and get the token
+
+    // Non-admin token should be rejected by /api/admin.
     const response = await api
       .post("/api/login")
       .send({ username: "testuser", password: "testpassword" })
 
-    // Set the token in the authHeader
     authHeader = `Bearer ${response.body.token}`
   })
 
@@ -80,6 +88,7 @@ describe("Get /admin as not admin", () => {
 
 describe("Delete /admin/user/:id", () => {
   beforeEach(async () => {
+    // Baseline data: one deletable user and one admin actor.
     await User.deleteMany({})
     await api
       .post("/api/signup")
@@ -87,7 +96,6 @@ describe("Delete /admin/user/:id", () => {
     await api
       .post("/api/signup")
       .send({ username: "testadmin", password: "testpassword" })
-    // Set the admin status for the testadmin user
     await User.findOneAndUpdate({ username: "testadmin" }, { isAdmin: true })
   })
 
@@ -119,6 +127,7 @@ describe("Delete /admin/user/:id", () => {
 
 describe("Put /admin/makeadmin/:id", () => {
   beforeEach(async () => {
+    // Baseline data: one standard user and one admin actor.
     await User.deleteMany({})
     await api
       .post("/api/signup")
@@ -126,7 +135,6 @@ describe("Put /admin/makeadmin/:id", () => {
     await api
       .post("/api/signup")
       .send({ username: "testadmin", password: "testpassword" })
-    // Set the admin status for the testadmin user
     await User.findOneAndUpdate({ username: "testadmin" }, { isAdmin: true })
   })
 
@@ -206,35 +214,30 @@ describe("Put /admin/makeadmin/:id", () => {
 
 describe("Get /admin/userspresentations/:id", () => {
   let userId
-  let adminToken
 
   beforeEach(async () => {
     await User.deleteMany({})
     const Presentation = require("../models/presentation")
     await Presentation.deleteMany({})
 
-    // Create test users
+    // Create normal/admin users and seed two presentations for the normal user.
     await api
       .post("/api/signup")
       .send({ username: "testuser", password: "testpassword" })
     await api
       .post("/api/signup")
       .send({ username: "testadmin", password: "testpassword" })
-    
-    // Set admin status
+
     await User.findOneAndUpdate({ username: "testadmin" }, { isAdmin: true })
-    
-    // Get admin token
+
     const response = await api
       .post("/api/login")
       .send({ username: "testadmin", password: "testpassword" })
     authHeader = `Bearer ${response.body.token}`
 
-    // Get user id
     const user = await User.findOne({ username: "testuser" })
     userId = user.id
 
-    // Create presentations for testuser
     await api
       .post("/api/home")
       .set("Authorization", authHeader)
@@ -305,7 +308,7 @@ describe("Get /admin/userspresentations/:id", () => {
   })
 
   test("getting presentations for user with no presentations", async () => {
-    // Create a new user with no presentations
+    // This user has no presentations, so API should return an empty array.
     await api
       .post("/api/signup")
       .send({ username: "emptyuser", password: "testpassword" })

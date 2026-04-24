@@ -1,3 +1,8 @@
+/*
+ * Users API integration tests.
+ * Covers Google Drive link/unlink flows and password change behavior,
+ * including auth requirements and validation/error cases.
+ */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const Presentation = require("../models/presentation")

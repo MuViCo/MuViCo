@@ -1,3 +1,7 @@
+/*
+ * Google Drive utility tests.
+ * Verifies Drive client setup, folder creation logic, file upload/delete, and metadata/stream fetching.
+ */
 const { Readable } = require("stream")
 const { google } = require("googleapis")
 

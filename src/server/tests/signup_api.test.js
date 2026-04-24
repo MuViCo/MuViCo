@@ -1,3 +1,7 @@
+/*
+ * Signup API integration tests.
+ * Covers user creation, username availability checks, and username/password validation rules.
+ */
 const mongoose = require("mongoose")
 const supertest = require("supertest")
 const app = require("../app")

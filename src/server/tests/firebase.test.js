@@ -1,3 +1,7 @@
+/*
+ * Firebase token middleware tests.
+ * Verifies missing token handling, successful token verification, and invalid token responses.
+ */
 const admin = require("firebase-admin")
 const verifyToken = require("../utils/verifyToken")
 

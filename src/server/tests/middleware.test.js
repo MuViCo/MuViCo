@@ -1,3 +1,8 @@
+/*
+ * Middleware unit tests.
+ * Covers request logging, token extraction, auth/user extraction, presentation access checks,
+ * unknown endpoint handling, and centralized error handling behavior.
+ */
 const jwt = require("jsonwebtoken")
 const mongoose = require("mongoose")
 const User = require("../models/user")
