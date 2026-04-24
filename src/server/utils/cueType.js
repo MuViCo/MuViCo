@@ -1,3 +1,7 @@
+/*
+ * Cue type utility for screen-based cue classification and MIME validation.
+ * Defines allowed cue types and whitelisted MIME types for visual/audio media.
+ */
 const VALID_CUE_TYPES = ["visual", "audio"]
 
 const VALID_VIDEO_MIME_TYPES = ["video/mp4", "video/3gpp"]

@@ -1,3 +1,7 @@
+/*
+ * Firebase token verification middleware.
+ * Initializes Firebase Admin once and validates bearer tokens for protected routes.
+ */
 const admin = require("firebase-admin")
 
 const { FIREBASE_SERVICE_KEY } = require("./config")

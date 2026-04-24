@@ -1,3 +1,7 @@
+/*
+ * Configuration utility for server environment variables.
+ * Loads .env values and exposes runtime config, including test-safe MongoDB URI selection.
+ */
 require("dotenv").config()
 
 const {

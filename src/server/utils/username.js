@@ -1,3 +1,7 @@
+/*
+ * Username utility for normalization and uniqueness generation.
+ * Sanitizes preferred usernames and appends numeric suffixes when names already exist.
+ */
 const normalizeUsername = (value) => {
   const sanitized = (value || "")
     .toLowerCase()

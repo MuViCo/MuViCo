@@ -1,3 +1,7 @@
+/*
+ * Helper utility for cue file URL enrichment.
+ * Builds Drive proxy URLs and S3 signed URLs, then attaches file metadata for cue responses.
+ */
 const { getDriveFileMetadata } = require("./drive")
 const { getObjectSignedUrl } = require("./s3")
 const { getFileSize, getFileType } = require("../utils/s3")
