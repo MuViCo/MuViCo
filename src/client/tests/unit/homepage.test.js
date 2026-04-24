@@ -196,7 +196,6 @@ describe("HomePage", () => {
       .mockImplementation(() => {})
 
     render(<HomePage user={{ isAdmin: true }} />)
-e
     fireEvent.click(screen.getByText("New presentation"))
     fireEvent.change(screen.getByTestId("presentation-name"), {
       target: { value: "Faulty Presentation" },
@@ -447,7 +446,6 @@ describe("PresentationsGrid", () => {
     expect(gridBtn).toBeInTheDocument()
     expect(listBtn).toBeInTheDocument()
   })
-
 
   test("switches to list view when list button is clicked", () => {
     render(
