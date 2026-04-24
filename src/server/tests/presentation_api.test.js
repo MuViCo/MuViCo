@@ -1,3 +1,8 @@
+/*
+ * Presentation API integration tests.
+ * Covers presentation CRUD, cue create/update/swap flows, index/screen count updates,
+ * authorization/admin access rules, shiftIndexes behavior, and MRU sorting updates.
+ */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const { generateHash } = require("../utils/auth.js")

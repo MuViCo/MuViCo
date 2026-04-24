@@ -1,3 +1,7 @@
+/*
+ * Drive proxy route integration tests.
+ * Verifies token requirement, successful media streaming, and error handling for stream failures.
+ */
 jest.mock("../utils/drive", () => ({
   getDriveFileStream: jest.fn(),
   getDriveFileMetadata: jest.fn(),

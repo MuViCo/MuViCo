@@ -1,3 +1,7 @@
+/*
+ * S3 utility tests.
+ * Covers file upload, file deletion, and signed URL generation behavior.
+ */
 import { mockClient } from "aws-sdk-client-mock"
 import {
   S3Client,
@@ -44,6 +48,7 @@ describe("S3 operations", () => {
   })
 
   it("should get signed URL", async () => {
+    // We assert URL signing behavior, not object download content.
     S3Mock.on(GetObjectCommand).resolves({
       url: "https://s3.example.com/bucket/object",
     })

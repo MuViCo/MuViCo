@@ -1,3 +1,7 @@
+/*
+ * Helper utility tests.
+ * Verifies Drive cue URL generation, S3 signed URL creation, and S3 metadata enrichment flows.
+ */
 const {
   processDriveCueFiles,
   generateSignedUrlForS3,
