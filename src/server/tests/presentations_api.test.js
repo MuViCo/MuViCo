@@ -1,3 +1,8 @@
+/*
+ * Presentations API integration tests.
+ * Covers listing, fetching, creating, and updating presentations,
+ * including auth rules, validation errors, and user access boundaries.
+ */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const Presentation = require("../models/presentation")
