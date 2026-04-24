@@ -60,6 +60,10 @@
 	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
 
+/*
+ * Common shape, height and interaction feel for show mode actions.
+ * State-specific colors are defined below.
+ */
 .show-mode-autoplay-btn,
 .show-mode-open-all-btn {
 	border: 0 !important;
@@ -76,12 +80,14 @@
 	padding: 0 !important;
 }
 
+/* Primary action state (start autoplay / open all). */
 .show-mode-autoplay-btn-start,
 .show-mode-open-all-btn-open {
 	background-color: #BD5BFF !important;
 	color: #ffffff !important;
 }
 
+/* Opposite action state (stop autoplay / close all). */
 .show-mode-autoplay-btn-stop,
 .show-mode-open-all-btn-close {
 	background-color: #e53e3e !important;
@@ -167,6 +173,7 @@
 
 
 #timeline_resize_handle{
+	/* High z-index keeps the drag handle clickable above timeline content. */
 	z-index: 9999;
 	position: absolute;
 	bottom: 0;
@@ -206,6 +213,7 @@
 .cue-editor-form {
 	width: 100%;
 
+	/* Keep form width tied to its parent editor container. */
 	form {
 		width: 100%;
 
@@ -213,6 +221,7 @@
 }
 
 @media (min-width: 1200px) {
+	/* Separate block: this one also updates cue form tabs for wide screens. */
 	.force-no-resize {
 		width: 20rem !important;
 	}
