@@ -1,3 +1,9 @@
+/*
+ * Profile page unit tests.
+ * Covers password change form rendering, client-side validation,
+ * API success/error handling with toasts, password visibility toggle,
+ * and navigation back to frontpage.
+ */
 import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
@@ -185,6 +191,7 @@ describe("Profile", () => {
     })
 
     await waitFor(() => {
+      // UX contract: successful password change clears sensitive inputs.
       expect(screen.getByTestId("current-password-input")).toHaveValue("")
       expect(screen.getByTestId("new-password-input")).toHaveValue("")
       expect(screen.getByTestId("confirm-password-input")).toHaveValue("")

@@ -1,3 +1,8 @@
+/**
+ * Tests TermsPage static content rendering.
+ * Verifies that key legal section headings are visible to the user.
+ */
+
 import React from "react"
 import { render } from "@testing-library/react"
 import "@testing-library/jest-dom"

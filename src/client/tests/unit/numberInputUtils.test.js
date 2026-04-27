@@ -1,3 +1,7 @@
+/*
+ * Number input utility tests.
+ * Covers numeric parsing, bounded value validation, and next available cue index lookup.
+ */
 import {
   handleNumericInputChange,
   validateAndSetNumber,
@@ -50,6 +54,7 @@ describe("validateAndSetNumber", () => {
 
 describe("getNextAvailableIndex", () => {
   test("should return 1 if screen is invalid", () => {
+    // Fallback contract: invalid screen input always resolves to first usable index.
     expect(getNextAvailableIndex(0, [])).toBe(1)
     expect(getNextAvailableIndex(6, [])).toBe(1)
     expect(getNextAvailableIndex(NaN, [])).toBe(1)

@@ -1,3 +1,7 @@
+/*
+ * File type utility tests.
+ * Verifies image/video/audio MIME detection for valid and invalid file types.
+ */
 import { isType } from "../../components/utils/fileTypeUtils"
 
 describe("isType utility function", () => {

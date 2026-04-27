@@ -1,14 +1,16 @@
 
-
+/*
+ * Manual restart button unit tests.
+ * Verifies tutorial reset behavior for homepage and presentation manuals:
+ * prevent default, clear localStorage flag, and trigger page reload.
+ */
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import HomepageManual from '../../components/homepage/HomepageManual'
 import PresentationManual from '../../components/presentation/PresentationManual'
 
-//  Tests for the manual restart buttons in HomepageManual and PresentationManual
 describe('Manual restart buttons', () => {
   beforeEach(() => {
-    // ensure clean storage for each test
     localStorage.clear()
   })
 
@@ -18,21 +20,18 @@ describe('Manual restart buttons', () => {
   })
 
   test('HomepageManual restart button prevents default, removes storage key and reloads', () => {
-    // prepare storage and spies
     localStorage.setItem('hasSeenHelp_homepage', 'true')
     const removeSpy = jest.spyOn(Storage.prototype, 'removeItem')
 
 
     const originalLocation = window.location
     const reloadMock = jest.fn()
-    // try to replace location.reload; assign a mutated location if possible
+    // JSDOM may lock window.location; guard delete and replace only reload.
     try {
-      // delete may fail in some jsdom environments, so guard
       // eslint-disable-next-line no-delete
       delete window.location
     } catch (e) {}
-    // assign a shallow copy with reload replaced
-    // eslint-disable-next-line no-undef
+
     // @ts-ignore
     window.location = { ...originalLocation, reload: reloadMock }
 
@@ -46,10 +45,8 @@ describe('Manual restart buttons', () => {
     expect(preventSpy).toHaveBeenCalled()
     expect(removeSpy).toHaveBeenCalledWith('hasSeenHelp_homepage')
     expect(reloadMock).toHaveBeenCalled()
-    // storage item should be removed
     expect(localStorage.getItem('hasSeenHelp_homepage')).toBeNull()
-    // restore original location
-    // eslint-disable-next-line no-undef
+
     // @ts-ignore
     window.location = originalLocation
   })
@@ -65,7 +62,7 @@ describe('Manual restart buttons', () => {
       // eslint-disable-next-line no-delete
       delete window.location
     } catch (e) {}
-    // eslint-disable-next-line no-undef
+
     // @ts-ignore
     window.location = { ...originalLocation, reload: reloadMock }
 
@@ -80,8 +77,7 @@ describe('Manual restart buttons', () => {
     expect(removeSpy).toHaveBeenCalledWith('hasSeenHelp_presentation')
     expect(reloadMock).toHaveBeenCalled()
     expect(localStorage.getItem('hasSeenHelp_presentation')).toBeNull()
-    // restore
-    // eslint-disable-next-line no-undef
+
     // @ts-ignore
     window.location = originalLocation
   })

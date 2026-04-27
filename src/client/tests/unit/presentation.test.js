@@ -1,3 +1,7 @@
+/*
+ * Presentation-related unit tests.
+ * Covers basic presentation service method wrappers and a smoke check for PresentationManual rendering.
+ */
 import { render, screen } from "@testing-library/react"
 import { ChakraProvider } from "@chakra-ui/react"
 import presentation from "../../services/presentation"
@@ -42,6 +46,7 @@ describe("services tests", () => {
     const updateCue = jest.fn()
     presentation.updateCue = updateCue
     updateCue.mockResolvedValueOnce({ data: "updated" })
+    // FormData path for text/image-like payload updates.
     const formData = new FormData()
     formData.append("index", 1)
     formData.append("cueName", "testCue")
@@ -76,6 +81,7 @@ describe("services tests", () => {
   test("presentation service calls saveScreenCountApi with cue removal", async () => {
     const saveScreenCountApi = jest.fn()
     presentation.saveScreenCountApi = saveScreenCountApi
+    // When reducing screen count, backend reports how many cues were removed.
     saveScreenCountApi.mockResolvedValueOnce({ screenCount: 2, removedCuesCount: 3 })
     const response = await presentation.saveScreenCountApi("presentation-id", 2)
     expect(response).toEqual({ screenCount: 2, removedCuesCount: 3 })

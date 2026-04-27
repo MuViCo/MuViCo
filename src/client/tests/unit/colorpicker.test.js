@@ -1,3 +1,7 @@
+/*
+ * Color picker unit tests.
+ * Verifies preset swatch rendering, swatch click callbacks, and manual hex input changes.
+ */
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { ColorPickerWithPresets } from "../../components/presentation/ColorPicker"

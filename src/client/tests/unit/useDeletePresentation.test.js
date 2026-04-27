@@ -1,3 +1,8 @@
+/**
+ * Tests useDeletePresentation hook flow for delete confirmation, side effects,
+ * and cleanup of local dialog state in success and failure scenarios.
+ */
+
 import { renderHook, act } from "@testing-library/react"
 import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -105,6 +110,7 @@ describe("useDeletePresentation", () => {
     const { result } = renderHook(() => useDeletePresentation())
 
     await act(async () => {
+      // Guard clause: confirm is a no-op when no target presentation was selected.
       await result.current.handleConfirmDelete()
     })
 
@@ -135,6 +141,7 @@ describe("useDeletePresentation", () => {
     expect(dispatch).toHaveBeenCalledWith(deletePresentation("123"))
     expect(showToast).toHaveBeenCalledWith({
       title: "Error",
+      // Fallback keeps user feedback meaningful even when error.message is empty.
       description: "An error occurred",
       status: "error",
     })
