@@ -1,3 +1,8 @@
+/**
+ * Tests Toolbox modal behavior for rendering, closing, and cue name saving rules.
+ * Verifies visibility state, button interactions, and save payload normalization.
+ */
+
 import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import Toolbox from "../../components/presentation/ToolBox.jsx"
@@ -71,6 +76,7 @@ describe("ToolBox Component", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
 
     await waitFor(() => {
+      // The component currently keeps backward compatibility by setting both fields.
       expect(mockOnSave).toHaveBeenCalledWith({
         ...cue,
         cueName: "Updated Name",
@@ -91,6 +97,7 @@ describe("ToolBox Component", () => {
     )
 
     fireEvent.change(screen.getByPlaceholderText("Cue name"), {
+      // Whitespace-only input is treated as empty after normalization.
       target: { value: "   " },
     })
     fireEvent.click(screen.getByRole("button", { name: "Save" }))

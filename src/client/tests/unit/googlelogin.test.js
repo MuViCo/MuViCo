@@ -1,3 +1,7 @@
+/*
+ * Google login button unit tests.
+ * Verifies rendering, successful sign-in flow with backend login call, and sign-in error handling.
+ */
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import GoogleSignInButton from "../../components/presentation/GoogleSignInButton"

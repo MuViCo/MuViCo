@@ -1,3 +1,8 @@
+/*
+ * Screen component unit tests.
+ * Verifies popup title formatting, media rendering (image/video/audio),
+ * color-only cue handling, visibility guard, and image fallback behavior.
+ */
 import React from "react"
 import { render, waitFor, act } from "@testing-library/react"
 import "@testing-library/jest-dom"
@@ -5,6 +10,7 @@ import Screen from "../../components/presentation/Screen"
 
 describe("Screen", () => {
   beforeAll(() => {
+    // Use a lightweight popup stub so tests can assert DOM written to external window.
     window.open = jest.fn(() => {
       const fakeDoc = {
         title: "",

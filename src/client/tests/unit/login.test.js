@@ -1,3 +1,8 @@
+/*
+ * Login form unit tests.
+ * Covers rendering, submit/validation behavior, server error feedback,
+ * and keyboard navigation/submit accessibility flows.
+ */
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { LoginForm } from "../../components/navbar/Login"
@@ -6,7 +11,6 @@ jest.mock("../../components/utils/firebase", () => ({
   apikey: "testkey",
 }))
 
-// Tests for the login functionality in LoginForm
 describe("Login", () => {
   test("renders content", () => {
     const onSubmit = jest.fn()
@@ -119,9 +123,9 @@ describe("Login", () => {
     })
   })
 })
-// Tests for the keyboard navigation in LoginForm
 describe("HandleKeyDown", () => {
   test("handleKeyDown shifts focus correctly from username", () => {
+    // Focus cycle is custom: username -> password -> submit -> username.
     const onSubmit = jest.fn()
     const { getByLabelText } = render(<LoginForm onSubmit={onSubmit} />)
     const usernameInput = getByLabelText("Username")
@@ -140,6 +144,7 @@ describe("HandleKeyDown", () => {
     expect(document.activeElement).toBe(submitButton)
   })
   test("handleKeyDown calls handleSubmit when pressing enter on password", () => {
+    // Enter on password should submit without requiring mouse interaction.
     const onSubmit = jest.fn()
     const { getByLabelText } = render(<LoginForm onSubmit={onSubmit} />)
     const usernameInput = getByLabelText("Username")

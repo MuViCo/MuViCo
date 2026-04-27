@@ -1,4 +1,9 @@
 
+/*
+ * Grid layout component unit tests.
+ * Covers cue rendering states, drag indicators, media/audio behavior, and cue menu actions
+ * such as copy, delete, and loop toggle updates.
+ */
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"

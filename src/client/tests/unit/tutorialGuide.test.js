@@ -1,3 +1,9 @@
+/**
+ * Tests TutorialGuide behavior across centered and selector-based steps.
+ * Covers navigation, keyboard handling, storage side effects, body scroll locks,
+ * and tooltip positioning edge cases.
+ */
+
 import React from 'react'
 import { render, screen, fireEvent, act, waitForElementToBeRemoved, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
@@ -49,7 +55,7 @@ describe('TutorialGuide', () => {
 
     // click skip/quit -> tutorial should close; wait for the centered element to be removed
     fireEvent.click(skip)
-    // Force prop-based close by re-rendering with isOpen=false (simulate wrapper onClose)
+    // The component is controlled via isOpen, so tests close it by parent re-render.
     const { rerender } = utils
     rerender(
       <MemoryRouter initialEntries={["/home"]}>
@@ -175,6 +181,7 @@ describe('TutorialGuide', () => {
     renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
 
     const tooltip = screen.getByTestId('tutorial-step-0')
+    // This verifies the exact placement formula under narrow viewport conditions.
     // computed left = scrollX(0) + left(100) + width(50) + 12 + mobileOffset(-280) = -118
     expect(tooltip).toHaveStyle({ left: '-118px' })
 
@@ -196,6 +203,7 @@ describe('TutorialGuide', () => {
     renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
 
     const tooltip = screen.getByTestId('tutorial-step-0')
+    // Explicit left position should take precedence over auto-calculated placement.
     expect(tooltip).toHaveStyle({ left: '42px' })
 
     document.body.removeChild(btn)

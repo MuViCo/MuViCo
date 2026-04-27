@@ -1,3 +1,8 @@
+/*
+ * Presentations home service API unit tests.
+ * Verifies endpoint paths, authorization header usage, and payload forwarding
+ * for list/create/update operations.
+ */
 import axios from "axios"
 import presentationsService from "../../services/presentations"
 
@@ -47,6 +52,7 @@ describe("presentations home service api", () => {
   })
 
   test("update sends name and description to PUT /api/home/:id", async () => {
+    // Edit dialog contract: both name and description are forwarded to the same update endpoint.
     const payload = {
       name: "Updated title",
       description: "Updated description for list/grid edit",

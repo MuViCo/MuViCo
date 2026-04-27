@@ -1,3 +1,8 @@
+/*
+ * Presentation service API unit tests.
+ * Verifies axios request contracts for presentation fetch/delete,
+ * cue CRUD, index/screen count updates, shiftIndexes, and name updates.
+ */
 const axios = require("axios")
 const presentation = require("../../services/presentation")
 const get = presentation.default.get
@@ -37,6 +42,7 @@ const new_mockCue = {
 }
 
 const cueId = "123456789"
+// Shared multipart payload fixture for addCue/updateCue request contract checks.
 const formData = new FormData()
 formData.append("index", 1)
 formData.append("cueName", "testCue")
@@ -145,6 +151,7 @@ describe("presentation services api tests", () => {
   })
 
   test("shiftIndexes in presentation api call behaves as expected", async () => {
+    // Contract: shiftIndexes sends JSON body with startIndex + direction.
     const response = {
       shifted: true,
       cues: [

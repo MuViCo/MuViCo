@@ -1,3 +1,8 @@
+/*
+ * Homepage-related unit tests.
+ * Covers HomePage flows, presentation creation/deletion handling, admin controls,
+ * presentation grid behaviors, and edit modal save interactions.
+ */
 import React from "react"
 import {
   act,

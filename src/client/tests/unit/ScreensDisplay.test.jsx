@@ -1,3 +1,8 @@
+/*
+ * Screens display unit tests.
+ * Verifies per-screen open/close controls, empty-state rendering,
+ * and cue preview rendering for active screens.
+ */
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"

@@ -1,3 +1,11 @@
+/**
+ * Tests SignUpForm rendering, validation, keyboard navigation, and password visibility behavior.
+ * Verifies that:
+ * - form submission and validation rules work with expected payloads
+ * - keyboard interactions follow the intended accessibility focus flow
+ * - password visibility toggles update both password fields consistently
+ */
+
 import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
@@ -151,6 +159,7 @@ describe("HandleKeyDown", () => {
     const submitButton = getByTestId("signup_inform")
     const usernameInput = getByPlaceholderText("Username")
 
+    // Focus should wrap back to the first field to keep keyboard navigation cyclic.
     fireEvent.keyDown(submitButton, { key: "Tab" })
     expect(document.activeElement).toBe(usernameInput)
   })
@@ -276,6 +285,7 @@ describe("Password visibility toggle", () => {
     )
     const passwordInput = getByTestId("password_signup")
 
+    // Both toggles are expected to control one shared visibility state.
     // Click second button (on password confirmation field)
     const showButtons = getAllByLabelText("Show password")
     fireEvent.click(showButtons[1])

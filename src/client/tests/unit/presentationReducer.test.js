@@ -1,3 +1,9 @@
+/*
+ * Presentation reducer and thunk tests.
+ * Covers synchronous action creators, reducer state transitions,
+ * and async service/thunk flows including cue copy/swap, index/screen updates,
+ * and presentation name updates.
+ */
 import reducer, {
   setPresentationInfo,
   deleteCue,
@@ -752,6 +758,7 @@ describe("presentationReducer asynchronous actions", () => {
 
     await store.dispatch(updatePresentation("123", copiedCueData, 2))
 
+    // Contract: empty source file must be sent as "null" to clear existing target media.
     const sentFormData = presentationService.updateCue.mock.calls.at(-1)[2]
     expect(presentationService.updateCue).toHaveBeenCalledWith(
       "123",
@@ -1115,6 +1122,7 @@ describe("presentationReducer asynchronous actions", () => {
 
     store.dispatch(setPresentationInfo(initialState))
 
+    // Simulate pending/fulfilled/rejected action sequence without running the thunk body.
     // pending should set saving true
     store.dispatch({ type: saveIndexCount.pending.type })
     expect(store.getState().presentation.saving).toBe(true)

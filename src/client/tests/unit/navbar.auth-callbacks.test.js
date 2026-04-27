@@ -1,3 +1,8 @@
+/*
+ * NavBar auth callback wiring tests.
+ * Verifies that Login and SignUp callback payloads update user state
+ * and route the user to /home.
+ */
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
@@ -61,6 +66,7 @@ describe("NavBar auth callback wiring", () => {
       </MemoryRouter>
     )
 
+    // MockLogin calls onLogin directly so this test focuses on NavBar wiring only.
     fireEvent.click(screen.getByRole("button", { name: "Login" }))
     fireEvent.click(screen.getByTestId("mock-login-trigger"))
 
@@ -77,6 +83,7 @@ describe("NavBar auth callback wiring", () => {
       </MemoryRouter>
     )
 
+    // MockSignUp calls onSignup directly so this test focuses on NavBar wiring only.
     fireEvent.click(screen.getByRole("button", { name: "Sign Up" }))
     fireEvent.click(screen.getByTestId("mock-signup-trigger"))
 

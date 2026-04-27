@@ -1,3 +1,8 @@
+/*
+ * Presentation playback controls unit tests.
+ * Covers frame label rendering, previous/next navigation, screen toggle controls,
+ * autoplay start/stop behavior, and autoplay interval input handling.
+ */
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
@@ -94,6 +99,7 @@ describe("PresentationPlaybackControls", () => {
   })
 
   test("calls toggleAutoplayInterval on interval input changes", () => {
+    // Input emits string values; handler is responsible for normalization.
     const toggleAutoplayInterval = jest.fn()
     renderControls({ toggleAutoplayInterval, autoplayInterval: 5 })
 
