@@ -1,6 +1,11 @@
 /**
  * @jest-environment jsdom
  */
+/*
+ * Link Google Drive button unit tests.
+ * Covers successful linking flow, token persistence in localStorage,
+ * callback behavior, scope setup, and authentication/API error handling.
+ */
 import "@testing-library/jest-dom"
 import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"

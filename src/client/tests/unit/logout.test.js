@@ -1,3 +1,7 @@
+/*
+ * Logout behavior unit tests for NavBar.
+ * Verifies logout control rendering and user state reset when logging out.
+ */
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import '@testing-library/jest-dom'
@@ -7,7 +11,6 @@ jest.mock('../../components/utils/firebase', () => ({
   apikey: 'testkey'
   }))
 
-// Tests for the logout functionality in NavBar
 describe('logout', () => {
   test('render content', () => {
     const setUser = jest.fn()
@@ -20,6 +23,7 @@ describe('logout', () => {
   })
 
   test('handleLogout', () => {
+    // Core logout contract: active user is cleared from app state.
     const navigate = jest.fn()
     const setUser = jest.fn()
 

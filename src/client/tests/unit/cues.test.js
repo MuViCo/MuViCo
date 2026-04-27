@@ -1,3 +1,8 @@
+/*
+ * Cues form unit tests.
+ * Covers tab behavior, media/audio pool handling, drag payloads, form submit flows,
+ * and preview URL cleanup in add/edit modes.
+ */
 import CuesForm from "../../components/presentation/CuesForm"
 import mediaStore from "../../components/presentation/mediaFileStore"
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"

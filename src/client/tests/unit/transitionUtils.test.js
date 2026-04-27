@@ -1,3 +1,9 @@
+/**
+ * Tests animation preset selection in getAnims.
+ * Verifies that each transition key maps to the correct enter/exit pair,
+ * including the explicit no-animation mode and the default fallback.
+ */
+
 import { getAnims, fadeIn, fadeOut, zoomIn, zoomOut, slideInLeft, slideOutRight, slideInRight, slideOutLeft } from '../../utils/transitionUtils'
 
 describe('getAnims', () => {
@@ -32,6 +38,7 @@ describe('getAnims', () => {
   })
 
   test('falls back to fade by default', () => {
+    // Unknown keys should still produce a safe default transition pair.
     const { enter, exit } = getAnims('unknown')
     expect(enter).toBe(fadeIn)
     expect(exit).toBe(fadeOut)

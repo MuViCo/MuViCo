@@ -1,3 +1,7 @@
+/*
+ * Auto-logout unit test.
+ * Verifies that an expired token clears the user state and redirects to home.
+ */
 import { render, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import '@testing-library/jest-dom'
