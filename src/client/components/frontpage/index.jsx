@@ -14,8 +14,7 @@ import InfoCard from "./Card"
 import RadialCircle from "./RadialCircle"
 import { Upload, Desktop, Globe } from "./ModalSvgs"
 
-import showModeVideo from "../../public/muvico_showmode.mp4"
-import editModeVideo from "../../public/muvico_intro_editmode.mp4"
+import MuViCoIntroVideo from "../../public/MuViCoIntro.mp4"
 import hyLogo from "../../public/hy_logo.svg"
 import bHyLogo from "../../public/b_hy_logo.svg"
 import introVideoPreviewLight from "../../public/introvideopreview-light.png"
@@ -181,7 +180,7 @@ const FrontPage = () => {
               transition="all 0.25s ease"
             >
               <video
-                src={showModeVideo}
+                src={MuViCoIntroVideo}
                 poster={IntroVideoPoster}
                 controls
                 preload="none"
