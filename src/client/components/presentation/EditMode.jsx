@@ -1811,16 +1811,36 @@ const EditMode = ({
                   opacity={0.92}
                   style={{ willChange: "transform" }}
                 >
-                  {selectedCue.file?.type?.startsWith("image/") &&
+                  {(selectedCue.file?.type?.startsWith("image/") ||
+                    selectedCue.file?.type?.startsWith("video/")) &&
                   selectedCue.file?.url ? (
-                    <Box
-                      as="img"
-                      src={selectedCue.file.url}
-                      alt={selectedCue.name}
-                      width="100%"
-                      height="100%"
-                      objectFit="cover"
-                    />
+                    selectedCue.file?.type?.startsWith("video/") ? (
+                      <Box
+                        as="video"
+                        src={selectedCue.file?.url}
+                        width="100%"
+                        height="100%"
+                        objectFit="cover"
+                        muted
+                        playsInline
+                        controls={false}
+                        preload="auto"
+                        style={{
+                          transform: "translateZ(0)",
+                          backfaceVisibility: "hidden",
+                          WebkitBackfaceVisibility: "hidden",
+                        }}
+                      />
+                    ) : (
+                      <Box
+                        as="img"
+                        src={selectedCue.file?.url}
+                        alt={selectedCue.name}
+                        width="100%"
+                        height="100%"
+                        objectFit="cover"
+                      />
+                    )
                   ) : (
                     <Box
                       width="100%"
