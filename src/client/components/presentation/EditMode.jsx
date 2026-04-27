@@ -1813,13 +1813,11 @@ const EditMode = ({
                 >
                   {(selectedCue.file?.type?.startsWith("image/") ||
                     selectedCue.file?.type?.startsWith("video/")) &&
-                  (selectedCue.file?.url || selectedCue.file?.name) ? (
+                  selectedCue.file?.url ? (
                     selectedCue.file?.type?.startsWith("video/") ? (
                       <Box
                         as="video"
-                        src={
-                          selectedCue.file?.url || `/${selectedCue.file?.name}`
-                        }
+                        src={selectedCue.file?.url}
                         width="100%"
                         height="100%"
                         objectFit="cover"
@@ -1836,9 +1834,7 @@ const EditMode = ({
                     ) : (
                       <Box
                         as="img"
-                        src={
-                          selectedCue.file?.url || `/${selectedCue.file?.name}`
-                        }
+                        src={selectedCue.file?.url}
                         alt={selectedCue.name}
                         width="100%"
                         height="100%"
