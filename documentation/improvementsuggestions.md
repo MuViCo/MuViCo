@@ -1,5 +1,27 @@
 # Future Improvement Suggestions
 
+### New features or improvements
+24.04.2026
+
+- Thumbnails for the presentation list/card view
+- In the presentation editor grid, replace full-size image files with thumbnails to improve loading performance
+- Add lyrics automatically to presentations
+- Add transition types to the editor
+- Improve the presentation list colors on the home page
+- Enable login with email
+- Allow users to change their username
+- Finalize light mode
+- Complete the media pool migration so files are not stored locally, but for example in an UpCloud folder containing all user data
+- Unify the visual style
+- Add a new element above/below in the media pool for editing or viewing cue details
+
+For more details, see Spring 2026 Backlog [here](https://github.com/orgs/MuViCo/projects/13/views/1).
+
+
+## Suggestions from earlier teams
+
+*Note: This is a list of suggestions from previous teams. If you wish to read through these, make sure to note any that have potentially already been implemented.*
+
 ### New features
 
 - **Look into adding the functionality to:**
