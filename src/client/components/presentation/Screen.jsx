@@ -25,7 +25,7 @@ const renderMedia = (file, name, color) => {
 
   if (!file) {
     return (
-      <Image
+      <Box
         bg={color}
         // alt={name}
         width="100%"
@@ -72,7 +72,7 @@ const renderMedia = (file, name, color) => {
   }
   // if no media file, render a solid color background
   return (
-    <Image
+    <Box
       bg={color}
       // alt={name}
       width="100%"
