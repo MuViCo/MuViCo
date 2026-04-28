@@ -232,12 +232,12 @@ const Screen = ({
         setIsWindowReady(true)
 
         // Reset default browser margins in the new window to avoid the 8px offset.
-        if (newWindow?.document) {
+        if (newWindow?.document?.documentElement?.style) {
           const { document: doc } = newWindow
           doc.documentElement.style.margin = "0"
           doc.documentElement.style.padding = "0"
           doc.documentElement.style.overflow = "hidden"
-          if (doc.body) {
+          if (doc.body?.style) {
             doc.body.style.margin = "0"
             doc.body.style.padding = "0"
             doc.body.style.overflow = "hidden"
