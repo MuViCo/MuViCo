@@ -1,7 +1,7 @@
 /**
  * Screen.jsx
- * Component responsible for rendering media cues on individual screens during presentation mode. 
- * 
+ * Component responsible for rendering media cues on individual screens during presentation mode.
+ *
  * Key Features:
  * - Opens a new browser window for each screen and renders media cues based on the current presentation state.
  * - Supports images, videos, and audio files, with conditional rendering based on file type.
@@ -19,11 +19,8 @@ import createCache from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 
-
-
 //conditional rendering helper function based on file type
 const renderMedia = (file, name, color) => {
-
   console.log("Rendering media with file:", file) // Debug log to check file object
 
   if (!file) {
@@ -73,7 +70,7 @@ const renderMedia = (file, name, color) => {
       </audio>
     )
   }
-  // if no media file, render a solid color background  
+  // if no media file, render a solid color background
   return (
     <Image
       bg={color}
@@ -93,7 +90,6 @@ const ScreenContent = ({
   showText,
   transitionType,
 }) => {
-
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
   const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
 
@@ -150,7 +146,10 @@ const ScreenContent = ({
           {(previousScreenData.file?.url || previousScreenData.file?.name) &&
             (isType.image(previousScreenData.file) ? (
               <Image
-                src={previousScreenData.file.url || `/${previousScreenData.file.name}`}
+                src={
+                  previousScreenData.file.url ||
+                  `/${previousScreenData.file.name}`
+                }
                 alt={previousScreenData.name}
                 width="100%"
                 height="100vh"
@@ -167,7 +166,6 @@ const ScreenContent = ({
                 style={{ objectFit: "contain" }}
               />
             ))}
-
         </Box>
       )}
 
@@ -185,7 +183,11 @@ const ScreenContent = ({
         animation={animStyle(enterAnim)}
       >
         {currentScreenData.name != undefined ? (
-          renderMedia(currentScreenData.file, currentScreenData.name, currentScreenData.color)
+          renderMedia(
+            currentScreenData.file,
+            currentScreenData.name,
+            currentScreenData.color
+          )
         ) : (
           <Text>No media available for this cue.</Text>
         )}
@@ -194,7 +196,13 @@ const ScreenContent = ({
   )
 }
 
-const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }) => {
+const Screen = ({
+  screenNumber,
+  screenData,
+  isVisible,
+  onClose,
+  transitionType,
+}) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
   const [currentScreenData, setCurrentScreenData] = useState(null)
@@ -222,6 +230,19 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         )
         windowRef.current = newWindow
         setIsWindowReady(true)
+
+        // Reset default browser margins in the new window to avoid the 8px offset.
+        if (newWindow?.document) {
+          const { document: doc } = newWindow
+          doc.documentElement.style.margin = "0"
+          doc.documentElement.style.padding = "0"
+          doc.documentElement.style.overflow = "hidden"
+          if (doc.body) {
+            doc.body.style.margin = "0"
+            doc.body.style.padding = "0"
+            doc.body.style.overflow = "hidden"
+          }
+        }
 
         // Handle window close event to reset the reference
         newWindow.addEventListener("beforeunload", () => {
@@ -300,7 +321,8 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(screenData)
       }
-    } windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}`
+    }
+    windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}`
   }, [screenData, currentScreenData, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens
@@ -332,19 +354,18 @@ const Screen = ({ screenNumber, screenData, isVisible, onClose, transitionType }
     emotionCache &&
     (currentScreenData || previousScreenData)
     ? ReactDOM.createPortal(
-      //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
-      <CacheProvider value={emotionCache}>
-        <ScreenContent
-          screenNumber={screenNumber}
-          currentScreenData={currentScreenData}
-          previousScreenData={previousScreenData}
-          showText={showText}
-          transitionType={transitionType}
-        />
-      </CacheProvider>,
-      windowRef.current.document.body // render to new window's document.body
-
-    )
+        //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
+        <CacheProvider value={emotionCache}>
+          <ScreenContent
+            screenNumber={screenNumber}
+            currentScreenData={currentScreenData}
+            previousScreenData={previousScreenData}
+            showText={showText}
+            transitionType={transitionType}
+          />
+        </CacheProvider>,
+        windowRef.current.document.body // render to new window's document.body
+      )
     : null
 }
 
