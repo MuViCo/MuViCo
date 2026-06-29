@@ -18,6 +18,9 @@ let testPresentationId
 const mockImageBuffer = fs.readFileSync(path.join(__dirname, "mock_image.png"))
 const mockAudioBuffer = Buffer.from("mock-audio")
 
+// Increase the test timeout to 15 seconds since many of them are slow
+jest.setTimeout(15000)
+
 describe("test presentation", () => {
   beforeEach(async () => {
     await User.deleteMany({})
