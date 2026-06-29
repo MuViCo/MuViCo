@@ -1,21 +1,30 @@
 import React from "react"
-import { render, waitFor, act } from "@testing-library/react"
+import { render, waitFor, act, fireEvent, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import Screen from "../../components/presentation/Screen"
 
 describe("Screen", () => {
   beforeAll(() => {
     window.open = jest.fn(() => {
+      const listeners = {}
       const fakeDoc = {
         title: "",
+        documentElement: {
+          style: {},
+        },
         body: document.createElement("body"),
         head: document.createElement("head"),
       }
       return {
         document: fakeDoc,
         close: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
+        addEventListener: jest.fn((eventName, handler) => {
+          listeners[eventName] = handler
+        }),
+        removeEventListener: jest.fn((eventName) => {
+          delete listeners[eventName]
+        }),
+        listeners,
       }
     })
   })
@@ -274,6 +283,349 @@ describe("Screen", () => {
       const image = popup.document.body.querySelector('img[alt="fallback-cue"]')
       expect(image).toBeTruthy()
       expect(image.getAttribute("src")).toContain("/fallback.jpg")
+    })
+  })
+
+  test("does not update media when rerendered with the same cue data", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 1,
+      name: "stable-cue",
+      screen: 1,
+      _id: "id-stable",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.body.querySelectorAll("img")).toHaveLength(1)
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={{ ...screenData }}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.body.querySelectorAll("img")).toHaveLength(1)
+    })
+  })
+
+  test("keeps the previous cue while transitioning to a new cue", async () => {
+    const firstScreenData = {
+      file: {
+        url: "http://example.com/first.jpg",
+        type: "image/jpg",
+        name: "first.jpg",
+      },
+      index: 1,
+      name: "first-cue",
+      screen: 1,
+      _id: "id-first",
+      loop: false,
+    }
+
+    const nextScreenData = {
+      file: {
+        url: "http://example.com/second.jpg",
+        type: "image/jpg",
+        name: "second.jpg",
+      },
+      index: 2,
+      name: "second-cue",
+      screen: 1,
+      _id: "id-second",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={firstScreenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/first.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={nextScreenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/first.jpg"]'
+        )
+      ).toBeTruthy()
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/second.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+  })
+
+  test("shows and hides cue metadata with the Shift key", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 3,
+      name: "shift-cue",
+      screen: 1,
+      _id: "id-shift",
+      loop: false,
+    }
+
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    const popup = window.open.mock.results.at(-1).value
+    const popupBody = popup.document.body
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: "Shift" })
+    })
+
+    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
+      visibility: "visible",
+    })
+    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
+      visibility: "visible",
+    })
+
+    await act(async () => {
+      fireEvent.keyUp(window, { key: "Shift" })
+    })
+
+    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
+      visibility: "hidden",
+    })
+    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
+      visibility: "hidden",
+    })
+  })
+
+  test("cleans up the popup window when unmounted", async () => {
+    const onClose = jest.fn()
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 6,
+      name: "cleanup-cue",
+      screen: 1,
+      _id: "id-cleanup",
+      loop: false,
+    }
+
+    const { unmount } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    const popup = window.open.mock.results.at(-1).value
+
+    await act(async () => {
+      unmount()
+    })
+
+    expect(popup.close).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledWith(1)
+  })
+
+  test("responds to the popup beforeunload event", async () => {
+    const onClose = jest.fn()
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 8,
+      name: "beforeunload-cue",
+      screen: 1,
+      _id: "id-beforeunload",
+      loop: false,
+    }
+
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    const popup = window.open.mock.results.at(-1).value
+
+    await act(async () => {
+      popup.listeners.beforeunload()
+    })
+
+    expect(onClose).toHaveBeenCalledWith(1)
+    expect(popup.close).not.toHaveBeenCalled()
+  })
+
+  test("copies Chakra styles into the popup document head", async () => {
+    const style = document.createElement("style")
+    style.setAttribute("data-emotion", "chakra-test")
+    style.textContent = ".chakra-test { color: red; }"
+    document.head.appendChild(style)
+
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 9,
+      name: "style-cue",
+      screen: 1,
+      _id: "id-style",
+      loop: false,
+    }
+
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    const popup = window.open.mock.results.at(-1).value
+
+    await waitFor(() => {
+      expect(
+        popup.document.head.querySelector('style[data-emotion="chakra-test"]')
+      ).toBeTruthy()
+    })
+
+    style.remove()
+  })
+
+  test("closes the popup when the screen becomes hidden", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 10,
+      name: "hide-cue",
+      screen: 1,
+      _id: "id-hide",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    const popup = window.open.mock.results.at(-1).value
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={false}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    expect(popup.close).toHaveBeenCalled()
+  })
+
+  test("renders the unsupported-media fallback when the file type is unknown", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/document.pdf",
+        type: "application/pdf",
+        name: "document.pdf",
+      },
+      color: "#123456",
+      index: 11,
+      name: "unsupported-cue",
+      screen: 1,
+      _id: "id-unsupported",
+      loop: false,
+    }
+
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelectorAll("img,video,audio")
+      ).toHaveLength(0)
     })
   })
 })
