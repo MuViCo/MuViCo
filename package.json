@@ -75,7 +75,7 @@
     "@reduxjs/toolkit": "^2.6.1",
     "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.8.3",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
