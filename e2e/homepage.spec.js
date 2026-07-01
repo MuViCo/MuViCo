@@ -30,7 +30,7 @@ describe("Homepage", () => {
 
   test("user can add a presentation", async ({ page }) => {
     await addPresentation(page, "testpresentation")
-    await expect(page.getByRole("button", { name: "Show mode" })).toBeVisible()
+    await expect(page.getByText("testpresentation")).toBeVisible()
   })
 
   test("user can enter a presentation", async ({ page }) => {
@@ -39,7 +39,7 @@ describe("Homepage", () => {
     await expect(card).toBeVisible()
     await card.click()
 
-    await expect(page.getByRole("button", { name: "Show mode" })).toBeVisible()
+    await expect(page.getByTestId("edit-mode-grid-container")).toBeVisible()
   })
 
   test("user can add blank cue", async ({ page }) => {
@@ -50,15 +50,17 @@ describe("Homepage", () => {
     ).toBeVisible()
   })
 
-  test("user can enter showmode", async ({ page }) => {
+  test("user can see per-screen open/close controls", async ({ page }) => {
     await page.getByText("testi").click()
     await addBlankCue(page, "test cue", "1", "1")
     await expect(
       page.getByText("Element test cue added to screen").first()
     ).toBeVisible()
-    await page.getByRole("button", { name: "Show mode" }).click()
     await expect(
-      page.getByRole("button", { name: "Open screen: 1" })
+      page
+        .getByText("Screen 1", { exact: true })
+        .locator("..")
+        .getByRole("button", { name: "Open" })
     ).toBeVisible()
   })
 
@@ -66,12 +68,8 @@ describe("Homepage", () => {
     const heading = page.getByText("test_to_delete")
     const card = heading.locator("..").locator("..")
     await expect(card).toBeVisible()
-    await card.click()
-    const deleteButton = await page.locator(
-      'button:has-text("Delete presentation")'
-    )
-    await expect(deleteButton).toBeVisible()
-    await deleteButton.click()
+
+    await card.getByRole("button", { name: "Delete presentation" }).click()
 
     const confirmYes = page.getByRole("button", { name: "Yes" })
     await expect(confirmYes).toBeVisible()

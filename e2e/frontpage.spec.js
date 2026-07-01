@@ -29,7 +29,7 @@ describe("Frontpage", () => {
   })
 
   test("user can login", async ({ page }) => {
-    loginWith(page, testuser, testPw)
+    await loginWith(page, testuser, testPw)
     await expect(page).toHaveURL(/\/home/)
     await expect(page.getByText("Welcome to MuViCo").first()).toBeDefined()
   })

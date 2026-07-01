@@ -30,16 +30,32 @@ const addPresentation = async (
 }
 
 const addBlankCue = async (page, name, index, screen) => {
-  await page.getByRole("button", { name: "Add element" }).click()
-  await page.getByTestId("screen-number").fill("")
-  await page.getByTestId("screen-number").type(screen.toString())
+  const gridContainer = page.locator('[data-testid="edit-mode-grid-container"]')
+  const dropArea = page.locator('[data-testid="drop-area"]')
 
-  await page.getByTestId("index-number").fill("")
-  await page.getByTestId("index-number").type(index.toString())
+  const containerBox = await gridContainer.boundingBox()
+  if (!containerBox) throw new Error("Grid container bounding box not found")
 
-  await page.getByTestId("cue-name").fill(name)
+  const clientX = containerBox.x + Number(index) * 160 + 80
+  const clientY = containerBox.y + Number(screen) * 110 + 10
 
-  await page.getByRole("button", { name: "Submit" }).click()
+  const dragData = {
+    type: "newCueFromForm",
+    cueName: name,
+    color: "#9244ff",
+    elementType: "color",
+  }
+
+  const dataTransfer = await page.evaluateHandle((data) => {
+    const dt = new DataTransfer()
+    dt.setData("application/json", JSON.stringify(data))
+    dt.setData("text/plain", JSON.stringify(data))
+    return dt
+  }, dragData)
+
+  await dropArea.dispatchEvent("dragenter", { clientX, clientY, dataTransfer })
+  await dropArea.dispatchEvent("dragover", { clientX, clientY, dataTransfer })
+  await dropArea.dispatchEvent("drop", { clientX, clientY, dataTransfer })
 }
 
 export { loginWith, disableTutorials, addPresentation, addBlankCue }
