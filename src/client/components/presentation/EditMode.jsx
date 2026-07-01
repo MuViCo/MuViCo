@@ -130,7 +130,7 @@ const EditMode = ({
       ),
     [indexCount]
   )
-  
+
   // Filter visual cues only (excludes audio cues)
   const visualCues = useMemo(
     () => cues.filter((cue) => cue.cueType === "visual"),
@@ -279,7 +279,7 @@ const EditMode = ({
     dragPreviewValidBg,
     dragPreviewInvalidBg,
   })
-  
+
   useEffect(() => {
     if (!isToolboxOpen) {
       setSelectedCue(null)
@@ -1040,6 +1040,14 @@ const EditMode = ({
     }
 
     if (!wasDragging) {
+      if (
+        event.target.closest(
+          "button, [role='menuitem'], input, textarea, select, a"
+        )
+      ) {
+        return
+      }
+
       if (clickTimeout.current) {
         clearTimeout(clickTimeout.current)
         clickTimeout.current = null
@@ -1930,7 +1938,7 @@ const EditMode = ({
                   )}
                 </Box>
               )}
-            
+
               <Box
                 data-testid="hover-preview"
                 ref={hoverPreviewRef}
