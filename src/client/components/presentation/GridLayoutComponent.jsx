@@ -1,6 +1,6 @@
 /*
-* Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library.
-* The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
+ * Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library.
+ * The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
  */
 import React, { useState, useMemo } from "react"
 import {
@@ -110,7 +110,7 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
   }
 }
 
-// Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library. 
+// Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library.
 // The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
 const GridLayoutComponent = ({
   id,
@@ -318,416 +318,420 @@ const GridLayoutComponent = ({
       </Portal>
     </Menu>
   )
-  
+
   // helper functions for managing drag-and-drop interactions in the presentation editor
   return (
-    <GridLayout
-      className="layout"
-      layout={layout}
-      cols={indexCount}
-      rowHeight={rowHeight}
-      width={indexCount * columnWidth + (indexCount - 1) * gap}
-      isDraggable={false}
-      isResizable={false}
-      compactType={null}
-      isBounded={false}
-      preventCollision={true}
-      margin={[gap, gap]}
-      containerPadding={[0, 0]}
-      useCSSTransforms={true}
-      maxRows={Math.max(
-        ...cues.map((cue) => cue.screen),
-        getAudioRow(screenCount)
-      )}
-    >
-      {cues.map((cue) => {
-        const overriddenCueVisualSpan = Number(previewCueSpanOverrides[cue._id])
-        const actualCueVisualSpan = getCueVisualSpanFromMap(
-          cue,
-          cueVisualSpanMap
-        )
-        const previewCueVisualSpan =
-          Number.isInteger(overriddenCueVisualSpan) &&
-          overriddenCueVisualSpan > 0
-            ? overriddenCueVisualSpan
-            : actualCueVisualSpan
-        const hasContinuation = actualCueVisualSpan > 1
-        const isTerminalContinuationPreview =
-          Number.isInteger(overriddenCueVisualSpan) &&
-          overriddenCueVisualSpan === 1
-        const hasVisibleContinuation =
-          previewCueVisualSpan > 1 || isTerminalContinuationPreview
-        const cueVisualSpan = previewCueVisualSpan
-        const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
-        const continuationInset = 0
-        const continuationDividerWidth = gap > 2 ? 2 : Math.max(gap, 1)
-        const continuationDividerOffset = Math.max(
-          (gap - continuationDividerWidth) / 2,
-          0
-        )
-        const continuationStartLeft = columnWidth
-        const anchorContinuationDividerWidth =
-          gap > 0
-            ? Math.max(
-                gap - continuationDividerOffset,
-                continuationDividerWidth
-              )
-            : continuationDividerWidth
-        const anchorContinuationSeamLeft = continuationStartLeft
-        const continuationVisualOpacity = 0.76
-        const segmentBorderColor = "rgba(255, 255, 255, 0.24)"
-        const segmentBorderHoverColor = "rgba(255, 255, 255, 0.42)"
-        const cueMediaUrl =
-          cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
-        const cueIsVideo = cue.file?.type?.startsWith("video/")
-        const isVisualCue = cue.cueType === "visual"
-        const isDraggingOriginCue = isDragging && draggingCueId === cue._id
-        const suppressCueHoverEffects = isDragging || isCopied
+    <>
+      <GridLayout
+        className="layout"
+        layout={layout}
+        cols={indexCount}
+        rowHeight={rowHeight}
+        width={indexCount * columnWidth + (indexCount - 1) * gap}
+        isDraggable={false}
+        isResizable={false}
+        compactType={null}
+        isBounded={false}
+        preventCollision={true}
+        margin={[gap, gap]}
+        containerPadding={[0, 0]}
+        useCSSTransforms={true}
+        maxRows={Math.max(
+          ...cues.map((cue) => cue.screen),
+          getAudioRow(screenCount)
+        )}
+      >
+        {cues.map((cue) => {
+          const overriddenCueVisualSpan = Number(
+            previewCueSpanOverrides[cue._id]
+          )
+          const actualCueVisualSpan = getCueVisualSpanFromMap(
+            cue,
+            cueVisualSpanMap
+          )
+          const previewCueVisualSpan =
+            Number.isInteger(overriddenCueVisualSpan) &&
+            overriddenCueVisualSpan > 0
+              ? overriddenCueVisualSpan
+              : actualCueVisualSpan
+          const hasContinuation = actualCueVisualSpan > 1
+          const isTerminalContinuationPreview =
+            Number.isInteger(overriddenCueVisualSpan) &&
+            overriddenCueVisualSpan === 1
+          const hasVisibleContinuation =
+            previewCueVisualSpan > 1 || isTerminalContinuationPreview
+          const cueVisualSpan = previewCueVisualSpan
+          const continuationSlotCount = Math.max(cueVisualSpan - 1, 0)
+          const continuationInset = 0
+          const continuationDividerWidth = gap > 2 ? 2 : Math.max(gap, 1)
+          const continuationDividerOffset = Math.max(
+            (gap - continuationDividerWidth) / 2,
+            0
+          )
+          const continuationStartLeft = columnWidth
+          const anchorContinuationDividerWidth =
+            gap > 0
+              ? Math.max(
+                  gap - continuationDividerOffset,
+                  continuationDividerWidth
+                )
+              : continuationDividerWidth
+          const anchorContinuationSeamLeft = continuationStartLeft
+          const continuationVisualOpacity = 0.76
+          const segmentBorderColor = "rgba(255, 255, 255, 0.24)"
+          const segmentBorderHoverColor = "rgba(255, 255, 255, 0.42)"
+          const cueMediaUrl =
+            cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
+          const cueIsVideo = cue.file?.type?.startsWith("video/")
+          const isVisualCue = cue.cueType === "visual"
+          const isDraggingOriginCue = isDragging && draggingCueId === cue._id
+          const suppressCueHoverEffects = isDragging || isCopied
 
-        return (
-          <div
-            key={cue._id}
-            data-testid={`cue-${cue.name}`}
-            data-grid={{
-              x: cue.index,
-              y: cue.screen - 1,
-              w: cueVisualSpan,
-              h: 1,
-              minH: 1,
-              maxH: 1,
-              static: false,
-            }}
-            id={`cue-screen-${cue.screen}-index-${cue.index}`}
-          >
-            <Box
-              position="relative"
-              h="100%"
-              overflow="hidden"
-              borderRadius="10px"
-              cursor={
-                isDragging
-                  ? "grabbing"
-                  : isCopied
-                    ? interactionCursor || "copy"
-                    : "grab"
-              }
-              data-cue-content-id={cue._id}
-              opacity={isDraggingOriginCue ? 0.58 : 1}
-              transform="translateY(0)"
-              transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
-              _hover={
-                suppressCueHoverEffects
-                  ? {}
-                  : {
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
-                    }
-              }
-              sx={
-                suppressCueHoverEffects
-                  ? {}
-                  : {
-                      "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]":
-                        {
-                          borderColor: segmentBorderHoverColor,
-                        },
-                      "&:hover [data-cue-seam-divider]": {
-                        backgroundColor: segmentBorderHoverColor,
-                      },
-                      "&:hover [data-cue-anchor-hover-tint]": {
-                        opacity: 0.18,
-                      },
-                    }
-              }
+          return (
+            <div
+              key={cue._id}
+              data-testid={`cue-${cue.name}`}
+              data-grid={{
+                x: cue.index,
+                y: cue.screen - 1,
+                w: cueVisualSpan,
+                h: 1,
+                minH: 1,
+                maxH: 1,
+                static: false,
+              }}
+              id={`cue-screen-${cue.screen}-index-${cue.index}`}
             >
-              {!isDragging && EditModeCueButtons(cue)}
+              <Box
+                position="relative"
+                h="100%"
+                overflow="hidden"
+                borderRadius="10px"
+                cursor={
+                  isDragging
+                    ? "grabbing"
+                    : isCopied
+                      ? interactionCursor || "copy"
+                      : "grab"
+                }
+                data-cue-content-id={cue._id}
+                opacity={isDraggingOriginCue ? 0.58 : 1}
+                transform="translateY(0)"
+                transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
+                _hover={
+                  suppressCueHoverEffects
+                    ? {}
+                    : {
+                        transform: "translateY(-1px)",
+                        boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
+                      }
+                }
+                sx={
+                  suppressCueHoverEffects
+                    ? {}
+                    : {
+                        "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]":
+                          {
+                            borderColor: segmentBorderHoverColor,
+                          },
+                        "&:hover [data-cue-seam-divider]": {
+                          backgroundColor: segmentBorderHoverColor,
+                        },
+                        "&:hover [data-cue-anchor-hover-tint]": {
+                          opacity: 0.18,
+                        },
+                      }
+                }
+              >
+                {!isDragging && EditModeCueButtons(cue)}
 
-              {hasContinuation && isVisualCue ? (
-                <Box
-                  data-testid={`cue-anchor-media-overlay-${cue._id}`}
-                  position="absolute"
-                  left="0"
-                  top="0"
-                  width={`${columnWidth}px`}
-                  height="100%"
-                  borderRadius={
-                    hasVisibleContinuation ? "10px 0 0 10px" : "10px"
-                  }
-                  overflow="hidden"
-                  pointerEvents="none"
-                  zIndex={4}
-                  boxShadow={
-                    hasVisibleContinuation
-                      ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)"
-                      : "none"
-                  }
-                >
-                  {cueMediaUrl ? (
-                    cueIsVideo ? (
-                      <video
-                        src={cueMediaUrl}
-                        draggable={false}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: hasVisibleContinuation
-                            ? "10px 0 0 10px"
-                            : "10px",
-                        }}
-                        muted
-                        playsInline
-                        controls={false}
-                      />
-                    ) : (
-                      <Box
-                        as="img"
-                        src={cueMediaUrl}
-                        alt={cue.name}
-                        draggable={false}
-                        width="100%"
-                        height="100%"
-                        objectFit="cover"
-                        borderRadius={
-                          hasVisibleContinuation ? "10px 0 0 10px" : "10px"
-                        }
-                      />
-                    )
-                  ) : (
-                    <Box
-                      width="100%"
-                      height="100%"
-                      bg={cue.color || "#e014ee"}
-                    />
-                  )}
-                </Box>
-              ) : (
-                renderMedia(cue, cueIndex, cues, isAudioMuted, screenCount)
-              )}
-
-              {hasContinuation && (
-                <>
+                {hasContinuation && isVisualCue ? (
                   <Box
-                    data-cue-anchor-hover-tint
+                    data-testid={`cue-anchor-media-overlay-${cue._id}`}
                     position="absolute"
-                    top={`${continuationInset}px`}
-                    bottom={`${continuationInset}px`}
                     left="0"
+                    top="0"
                     width={`${columnWidth}px`}
-                    bg="rgba(255, 255, 255, 0.2)"
-                    opacity={0}
-                    transition="opacity 140ms ease"
-                    pointerEvents="none"
-                    zIndex={5}
-                  />
-
-                  <Box
-                    data-testid={`cue-continuation-overlay-${cue._id}`}
-                    position="absolute"
-                    top={`${continuationInset}px`}
-                    bottom={`${continuationInset}px`}
-                    left={`${continuationStartLeft}px`}
-                    right="0"
-                    borderRadius="0 8px 8px 0"
-                    overflow="hidden"
-                    opacity={
-                      hasVisibleContinuation ? continuationVisualOpacity : 0
-                    }
-                    pointerEvents="none"
-                    zIndex={2}
-                  >
-                    {isVisualCue && cueMediaUrl ? (
-                      <>
-                        {cueIsVideo ? (
-                          <video
-                            src={cueMediaUrl}
-                            draggable={false}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              filter:
-                                "saturate(48%) brightness(0.8) contrast(0.94) blur(6px)",
-                            }}
-                            muted
-                            playsInline
-                            controls={false}
-                          />
-                        ) : (
-                          <Box
-                            as="img"
-                            src={cueMediaUrl}
-                            alt={`${cue.name} continuation`}
-                            draggable={false}
-                            width="100%"
-                            height="100%"
-                            objectFit="cover"
-                            filter="saturate(48%) brightness(0.8) contrast(0.94) blur(6px)"
-                          />
-                        )}
-
-                        <Box
-                          position="absolute"
-                          inset="0"
-                          bg="linear-gradient(90deg, rgba(14, 20, 29, 0.1) 0%, rgba(14, 20, 29, 0.22) 50%, rgba(14, 20, 29, 0.5) 100%)"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Box
-                          width="100%"
-                          height="100%"
-                          bg={cue.color || "rgba(20, 24, 33, 0.72)"}
-                          filter="saturate(50%) brightness(0.88)"
-                        />
-                        <Box
-                          position="absolute"
-                          inset="0"
-                          bg="linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(176, 193, 223, 0.12) 35%, rgba(14, 20, 29, 0.32) 100%)"
-                        />
-                      </>
-                    )}
-                  </Box>
-
-                  <Box
-                    data-cue-anchor-border
-                    position="absolute"
-                    top={`${continuationInset}px`}
-                    bottom={`${continuationInset}px`}
-                    left="0"
-                    width={`${columnWidth}px`}
-                    border="1px solid"
-                    borderColor={segmentBorderColor}
-                    borderRightWidth={hasVisibleContinuation ? "0" : "1px"}
+                    height="100%"
                     borderRadius={
                       hasVisibleContinuation ? "10px 0 0 10px" : "10px"
                     }
-                    transition="border-color 140ms ease"
-                    pointerEvents="none"
-                    zIndex={6}
-                  />
-
-                  <Box
-                    data-cue-continuation-border
-                    position="absolute"
-                    top={`${continuationInset}px`}
-                    bottom={`${continuationInset}px`}
-                    left={`${continuationStartLeft}px`}
-                    right="0"
-                    border="1px solid"
-                    borderColor={segmentBorderColor}
-                    borderLeftWidth="0"
-                    borderRadius="0 8px 8px 0"
-                    opacity={hasVisibleContinuation ? 1 : 0}
-                    transition="border-color 140ms ease"
-                    pointerEvents="none"
-                    zIndex={6}
-                  />
-
-                  <Box
-                    data-cue-seam-divider
-                    position="absolute"
-                    top={`${continuationInset}px`}
-                    bottom={`${continuationInset}px`}
-                    left={`${anchorContinuationSeamLeft}px`}
-                    width={`${anchorContinuationDividerWidth}px`}
-                    bg={segmentBorderColor}
-                    opacity={hasVisibleContinuation ? 1 : 0}
-                    transition="background-color 140ms ease"
-                    pointerEvents="none"
-                    zIndex={6}
-                  />
-
-                  {gap > 0 &&
-                    continuationSlotCount > 1 &&
-                    Array.from({ length: continuationSlotCount - 1 }).map(
-                      (_, dividerIndex) => {
-                        const dividerLeft =
-                          continuationStartLeft +
-                          (dividerIndex + 1) * (columnWidth + gap) +
-                          continuationDividerOffset
-                        return (
-                          <Box
-                            key={`${cue._id}-continuation-divider-${dividerIndex}`}
-                            data-testid={`cue-continuation-divider-${cue._id}-${dividerIndex}`}
-                            position="absolute"
-                            top={`${continuationInset}px`}
-                            bottom={`${continuationInset}px`}
-                            left={`${dividerLeft}px`}
-                            width={`${continuationDividerWidth}px`}
-                            bg="linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%)"
-                            pointerEvents="none"
-                            zIndex={3}
-                          />
-                        )
-                      }
-                    )}
-                </>
-              )}
-
-              {isDraggingOriginCue && (
-                <Box
-                  data-testid={`cue-drag-origin-indicator-${cue._id}`}
-                  position="absolute"
-                  left="0"
-                  top="0"
-                  width={`${columnWidth}px`}
-                  height="100%"
-                  border="2px dashed"
-                  borderColor="#c9b7f8"
-                  borderRadius="10px"
-                  bg="rgba(201, 183, 248, 0.16)"
-                  boxShadow="none"
-                  pointerEvents="none"
-                  zIndex={8}
-                />
-              )}
-
-              {cue.name?.trim() && (
-                <Tooltip
-                  label={cue.name}
-                  placement="top"
-                  hasArrow
-                  isDisabled={isDragging}
-                >
-                  <Text
-                    data-testid={`cue-label-${cue._id}`}
-                    position="absolute"
-                    top="50%"
-                    left="8px"
-                    transform="translateY(-50%)"
-                    color="white"
-                    fontWeight="bold"
-                    bg="rgba(0, 0, 0, 0.5)"
-                    p={2}
-                    borderRadius="md"
-                    whiteSpace="nowrap"
                     overflow="hidden"
-                    textOverflow="ellipsis"
-                    display="inline-block"
-                    maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
-                    textAlign="left"
-                    cursor="default"
                     pointerEvents="none"
-                    userSelect="none"
-                    zIndex={7}
-                    style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
+                    zIndex={4}
+                    boxShadow={
+                      hasVisibleContinuation
+                        ? "inset 0 0 0 1px rgba(255, 255, 255, 0.14), 2px 6px 12px rgba(0, 0, 0, 0.18)"
+                        : "none"
+                    }
                   >
-                    {cue.name}
-                  </Text>
-                </Tooltip>
-              )}
-            </Box>
-            <Dialog
-              isOpen={isDialogOpen}
-              onClose={() => setIsDialogOpen(false)}
-              onConfirm={handleConfirmRemove}
-              message="Are you sure you want to remove this element?"
-            />
-          </div>
-        )
-      })}
-    </GridLayout>
+                    {cueMediaUrl ? (
+                      cueIsVideo ? (
+                        <video
+                          src={cueMediaUrl}
+                          draggable={false}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            borderRadius: hasVisibleContinuation
+                              ? "10px 0 0 10px"
+                              : "10px",
+                          }}
+                          muted
+                          playsInline
+                          controls={false}
+                        />
+                      ) : (
+                        <Box
+                          as="img"
+                          src={cueMediaUrl}
+                          alt={cue.name}
+                          draggable={false}
+                          width="100%"
+                          height="100%"
+                          objectFit="cover"
+                          borderRadius={
+                            hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                          }
+                        />
+                      )
+                    ) : (
+                      <Box
+                        width="100%"
+                        height="100%"
+                        bg={cue.color || "#e014ee"}
+                      />
+                    )}
+                  </Box>
+                ) : (
+                  renderMedia(cue, cueIndex, cues, isAudioMuted, screenCount)
+                )}
+
+                {hasContinuation && (
+                  <>
+                    <Box
+                      data-cue-anchor-hover-tint
+                      position="absolute"
+                      top={`${continuationInset}px`}
+                      bottom={`${continuationInset}px`}
+                      left="0"
+                      width={`${columnWidth}px`}
+                      bg="rgba(255, 255, 255, 0.2)"
+                      opacity={0}
+                      transition="opacity 140ms ease"
+                      pointerEvents="none"
+                      zIndex={5}
+                    />
+
+                    <Box
+                      data-testid={`cue-continuation-overlay-${cue._id}`}
+                      position="absolute"
+                      top={`${continuationInset}px`}
+                      bottom={`${continuationInset}px`}
+                      left={`${continuationStartLeft}px`}
+                      right="0"
+                      borderRadius="0 8px 8px 0"
+                      overflow="hidden"
+                      opacity={
+                        hasVisibleContinuation ? continuationVisualOpacity : 0
+                      }
+                      pointerEvents="none"
+                      zIndex={2}
+                    >
+                      {isVisualCue && cueMediaUrl ? (
+                        <>
+                          {cueIsVideo ? (
+                            <video
+                              src={cueMediaUrl}
+                              draggable={false}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                filter:
+                                  "saturate(48%) brightness(0.8) contrast(0.94) blur(6px)",
+                              }}
+                              muted
+                              playsInline
+                              controls={false}
+                            />
+                          ) : (
+                            <Box
+                              as="img"
+                              src={cueMediaUrl}
+                              alt={`${cue.name} continuation`}
+                              draggable={false}
+                              width="100%"
+                              height="100%"
+                              objectFit="cover"
+                              filter="saturate(48%) brightness(0.8) contrast(0.94) blur(6px)"
+                            />
+                          )}
+
+                          <Box
+                            position="absolute"
+                            inset="0"
+                            bg="linear-gradient(90deg, rgba(14, 20, 29, 0.1) 0%, rgba(14, 20, 29, 0.22) 50%, rgba(14, 20, 29, 0.5) 100%)"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <Box
+                            width="100%"
+                            height="100%"
+                            bg={cue.color || "rgba(20, 24, 33, 0.72)"}
+                            filter="saturate(50%) brightness(0.88)"
+                          />
+                          <Box
+                            position="absolute"
+                            inset="0"
+                            bg="linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(176, 193, 223, 0.12) 35%, rgba(14, 20, 29, 0.32) 100%)"
+                          />
+                        </>
+                      )}
+                    </Box>
+
+                    <Box
+                      data-cue-anchor-border
+                      position="absolute"
+                      top={`${continuationInset}px`}
+                      bottom={`${continuationInset}px`}
+                      left="0"
+                      width={`${columnWidth}px`}
+                      border="1px solid"
+                      borderColor={segmentBorderColor}
+                      borderRightWidth={hasVisibleContinuation ? "0" : "1px"}
+                      borderRadius={
+                        hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                      }
+                      transition="border-color 140ms ease"
+                      pointerEvents="none"
+                      zIndex={6}
+                    />
+
+                    <Box
+                      data-cue-continuation-border
+                      position="absolute"
+                      top={`${continuationInset}px`}
+                      bottom={`${continuationInset}px`}
+                      left={`${continuationStartLeft}px`}
+                      right="0"
+                      border="1px solid"
+                      borderColor={segmentBorderColor}
+                      borderLeftWidth="0"
+                      borderRadius="0 8px 8px 0"
+                      opacity={hasVisibleContinuation ? 1 : 0}
+                      transition="border-color 140ms ease"
+                      pointerEvents="none"
+                      zIndex={6}
+                    />
+
+                    <Box
+                      data-cue-seam-divider
+                      position="absolute"
+                      top={`${continuationInset}px`}
+                      bottom={`${continuationInset}px`}
+                      left={`${anchorContinuationSeamLeft}px`}
+                      width={`${anchorContinuationDividerWidth}px`}
+                      bg={segmentBorderColor}
+                      opacity={hasVisibleContinuation ? 1 : 0}
+                      transition="background-color 140ms ease"
+                      pointerEvents="none"
+                      zIndex={6}
+                    />
+
+                    {gap > 0 &&
+                      continuationSlotCount > 1 &&
+                      Array.from({ length: continuationSlotCount - 1 }).map(
+                        (_, dividerIndex) => {
+                          const dividerLeft =
+                            continuationStartLeft +
+                            (dividerIndex + 1) * (columnWidth + gap) +
+                            continuationDividerOffset
+                          return (
+                            <Box
+                              key={`${cue._id}-continuation-divider-${dividerIndex}`}
+                              data-testid={`cue-continuation-divider-${cue._id}-${dividerIndex}`}
+                              position="absolute"
+                              top={`${continuationInset}px`}
+                              bottom={`${continuationInset}px`}
+                              left={`${dividerLeft}px`}
+                              width={`${continuationDividerWidth}px`}
+                              bg="linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%)"
+                              pointerEvents="none"
+                              zIndex={3}
+                            />
+                          )
+                        }
+                      )}
+                  </>
+                )}
+
+                {isDraggingOriginCue && (
+                  <Box
+                    data-testid={`cue-drag-origin-indicator-${cue._id}`}
+                    position="absolute"
+                    left="0"
+                    top="0"
+                    width={`${columnWidth}px`}
+                    height="100%"
+                    border="2px dashed"
+                    borderColor="#c9b7f8"
+                    borderRadius="10px"
+                    bg="rgba(201, 183, 248, 0.16)"
+                    boxShadow="none"
+                    pointerEvents="none"
+                    zIndex={8}
+                  />
+                )}
+
+                {cue.name?.trim() && (
+                  <Tooltip
+                    label={cue.name}
+                    placement="top"
+                    hasArrow
+                    isDisabled={isDragging}
+                  >
+                    <Text
+                      data-testid={`cue-label-${cue._id}`}
+                      position="absolute"
+                      top="50%"
+                      left="8px"
+                      transform="translateY(-50%)"
+                      color="white"
+                      fontWeight="bold"
+                      bg="rgba(0, 0, 0, 0.5)"
+                      p={2}
+                      borderRadius="md"
+                      whiteSpace="nowrap"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      display="inline-block"
+                      maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
+                      textAlign="left"
+                      cursor="default"
+                      pointerEvents="none"
+                      userSelect="none"
+                      zIndex={7}
+                      style={{ textShadow: "2px 2px 4px rgb(0, 0, 0)" }}
+                    >
+                      {cue.name}
+                    </Text>
+                  </Tooltip>
+                )}
+              </Box>
+            </div>
+          )
+        })}
+      </GridLayout>
+      <Dialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onConfirm={handleConfirmRemove}
+        message="Are you sure you want to remove this element?"
+      />
+    </>
   )
 }
 
