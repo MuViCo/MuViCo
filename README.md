@@ -96,6 +96,11 @@ Follow these steps to set up the project on your local machine:
    ```
    This will start the backend server and the frontend development server with live updates.
 
+### Running Tests
+
+- **Unit tests** (Jest): `npm test`, or `npm run test-frontend` / `npm run test-backend` to run just one side.
+- **End-to-end tests** (Playwright): `npm run e2e` (interactive UI mode) or `npm run e2e-headless`. These start their own backend (`NODE_ENV=test`) and frontend servers automatically, so make sure ports 3000 and 8000 are free first (e.g. stop `npm run dev` if it's running) and that a MongoDB instance is reachable at `TEST_MONGODB_URI`.
+
 ### Developing the Application in Docker
 
 If you prefer to develop inside a Docker container (to match the production environment), follow these steps:
@@ -128,6 +133,7 @@ If you prefer to develop inside a Docker container (to match the production envi
    ```bash
    npm run start
    ```
+
    This will spin up the necessary containers for the backend, frontend, and database.
 
 ### Running the Application in Production Mode
@@ -147,6 +153,7 @@ To simulate the production environment locally, follow these steps:
    ```bash
    npm run start-prod
    ```
+
    This will build and run the application in a production-like environment.
 
 ### Note on Branch Switching
