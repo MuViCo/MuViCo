@@ -83,12 +83,10 @@ module.exports = defineConfig({
     {
       command: "NODE_ENV=test node src/server/index.js",
       port: 8000,
-      reuseExistingServer: !process.env.CI,
     },
     {
       command: "vite --host",
       port: 3000,
-      reuseExistingServer: !process.env.CI,
     },
   ],
 })
