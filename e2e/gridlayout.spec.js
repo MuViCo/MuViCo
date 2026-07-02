@@ -239,6 +239,13 @@ describe("GridLayout", () => {
     await expect(removeButton).toBeVisible()
     await removeButton.click()
 
+    await expect(
+      page.getByText(
+        "Screen 2 has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?"
+      )
+    ).toBeVisible()
+    await page.getByRole("button", { name: "Yes" }).click()
+
     await expect(page.getByText("Screen removed").first()).toBeVisible()
     await expect(page.getByText("Screen removed").first()).not.toBeVisible({
       timeout: 5000,

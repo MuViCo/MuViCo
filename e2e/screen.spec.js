@@ -58,7 +58,6 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "0", "2")
       //Goes to frame 4
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
@@ -85,14 +84,14 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "0", "2")
+
       await addBlankCue(page, "test cue2", "4", "3")
       await addBlankCue(page, "test cue2", "4", "4")
+      // Goes to frame 4
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
       }
 
-      //Opens three screen because there are elements in three different screens
       const [popup] = await Promise.all([
         context.waitForEvent("page"),
         page.getByRole("button", { name: "Open all screens" }).click(),
@@ -103,7 +102,7 @@ describe("Screen", () => {
       })
 
       const pages = context.pages()
-      expect(pages.length).toBe(4)
+      expect(pages.length).toBe(5)
     })
 
     test("user can open screen and close it", async ({ page, context }) => {
@@ -111,7 +110,7 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
-      await addBlankCue(page, "test cue", "0", "2")
+      // Goes to frame 4
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
       }

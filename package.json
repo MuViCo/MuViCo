@@ -19,8 +19,8 @@
     "test-backend": "jest --coverage --selectProjects Backend",
     "coverage": "jest --coverage && xdg-open coverage/lcov-report/index.html",
     "build": "vite build",
-    "e2e": "concurrently --kill-others 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium --ui'",
-    "e2e-headless": "concurrently --success command-playwright --kill-others --names node,vite,playwright 'NODE_ENV=test node src/server/index.js' 'vite --host' 'playwright test --project=chromium'",
+    "e2e": "playwright test --project=chromium --ui",
+    "e2e-headless": "playwright test --project=chromium",
     "e2e:report": "playwright show-report",
     "prepare": "husky || true"
   },

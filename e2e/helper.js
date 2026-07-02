@@ -27,6 +27,8 @@ const addPresentation = async (
   await screenInput.type(screenCount.toString())
 
   await page.getByRole("button", { name: "create" }).click()
+
+  await page.waitForURL(/\/presentation\//)
 }
 
 const addBlankCue = async (page, name, index, screen) => {

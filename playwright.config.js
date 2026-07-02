@@ -78,10 +78,17 @@ module.exports = defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://127.0.0.1:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  // Start the backend and frontend servers before running e2e tests
+  webServer: [
+    {
+      command: "NODE_ENV=test node src/server/index.js",
+      port: 8000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "vite --host",
+      port: 3000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 })
