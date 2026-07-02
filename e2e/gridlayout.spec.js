@@ -4,6 +4,9 @@ import {
   disableTutorials,
   addPresentation,
   addBlankCue,
+  openCueMenu,
+  uploadMediaFile,
+  dragPoolItemToGrid,
 } from "./helper"
 
 const {
@@ -16,9 +19,6 @@ const {
 
 const testuser = "gridlayoutuser"
 const testPw = "test12345"
-
-const path = require("path")
-const fs = require("fs")
 
 describe("GridLayout", () => {
   beforeEach(async ({ page, request }) => {
@@ -99,19 +99,14 @@ describe("GridLayout", () => {
     await addBlankCue(page, "testcue", "1", "1")
     const source = page.locator('[data-testid="cue-testcue"]')
 
-    const filePath = path.resolve(
-      __dirname,
-      "../src/client/public/introvideopreview-light.png"
-    )
-
-    const buffer = fs.readFileSync(filePath)
-
-    const dataTransfer = await page.evaluateHandle((data) => {
+    const dataTransfer = await page.evaluateHandle(() => {
       const dt = new DataTransfer()
-      const file = new File([data], "blank.png", { type: "image/png" })
+      const file = new File(["fake image content"], "blank.png", {
+        type: "image/png",
+      })
       dt.items.add(file)
       return dt
-    }, buffer)
+    })
 
     const sourceBox = await source.boundingBox()
     if (!sourceBox) throw new Error("Source element bounding box not found")
@@ -186,6 +181,27 @@ describe("GridLayout", () => {
       page.getByText("Element dragged cue added to screen 1").first()
     ).toBeVisible()
     await expect(page.getByTestId("cue-dragged cue")).toBeVisible()
+  })
+
+  test("user can upload a file into the Media tab and drag it onto the grid", async ({
+    page,
+  }) => {
+    await page.getByText("testi").click()
+
+    await uploadMediaFile(page, {
+      name: "test-image.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("fake image content"),
+    })
+    await expect(page.getByText("test-image.png")).toBeVisible()
+    await expect(page.getByText("Media Pool (1)")).toBeVisible()
+
+    await dragPoolItemToGrid(page, "test-image.png", 1, 1)
+
+    await expect(
+      page.getByText("Element test-image.png added to screen 1").first()
+    ).toBeVisible()
+    await expect(page.getByTestId("cue-test-image.png")).toBeVisible()
   })
 
   test("element is updated correctly", async ({ page }) => {
@@ -308,5 +324,53 @@ describe("GridLayout", () => {
     await expect(
       page.getByRole("button", { name: "Remove screen" })
     ).toHaveCount(1)
+  })
+
+  test("user can copy a cue and paste it onto an empty compatible slot", async ({
+    page,
+  }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "copysource", "1", "1")
+
+    const cue = page.getByTestId("cue-copysource")
+    await openCueMenu(cue)
+    await page.getByRole("button", { name: "Copy copysource" }).click()
+
+    await expect(
+      page.getByText('Copying in progress for element "copysource".')
+    ).toBeVisible()
+
+    const gridContainer = page.locator(
+      '[data-testid="edit-mode-grid-container"]'
+    )
+
+    await gridContainer.click({
+      position: { x: 1 * 160 + 80, y: 2 * 110 + 10 },
+    })
+
+    await expect(page.getByTestId("cue-copysource copy")).toBeVisible()
+  })
+
+  test("clicking outside the grid while copying cancels the copy", async ({
+    page,
+  }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "copysource2", "1", "1")
+
+    const cue = page.getByTestId("cue-copysource2")
+    await openCueMenu(cue)
+    await page.getByRole("button", { name: "Copy copysource2" }).click()
+
+    await expect(
+      page.getByText('Copying in progress for element "copysource2".')
+    ).toBeVisible()
+
+    await page.getByRole("button", { name: "Colors" }).click()
+
+    await expect(page.getByText("Cancelled copying").first()).toBeVisible()
+    await expect(
+      page.getByText("Copying has been cancelled.").first()
+    ).toBeVisible()
+    await expect(page.getByTestId("cue-copysource2 copy")).not.toBeVisible()
   })
 })
