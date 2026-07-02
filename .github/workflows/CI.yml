@@ -49,7 +49,6 @@ jobs:
 
   e2e:
     needs: test
-    if: false
     name: End-to-End tests
     runs-on: ubuntu-latest
 

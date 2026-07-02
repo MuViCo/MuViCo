@@ -2,9 +2,9 @@
 
 # MuViCo
 
-[![Test and deploy to staging](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/staging.yml)
+[![Test and deploy to staging](https://github.com/MuViCo/MuViCo/actions/workflows/CI.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/github/MuViCo/MuViCo/graph/badge.svg?token=B5NR45ODV2)](https://codecov.io/github/MuViCo/MuViCo)
-[![Build release image](https://github.com/MuViCo/MuViCo/actions/workflows/production.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/production.yml)
+[![Build release image](https://github.com/MuViCo/MuViCo/actions/workflows/prod.yml/badge.svg)](https://github.com/MuViCo/MuViCo/actions/workflows/prod.yml)
 
 ### Introduction
 
