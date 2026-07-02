@@ -12,7 +12,6 @@ import HomePage from "./components/homepage"
 import PresentationPage from "./components/presentation"
 import TermsPage from "./components/termspage"
 import PrivacyPage from "./components/privacypage"
-import UserMedia from "./components/admin/UserMedia"
 import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
@@ -87,12 +86,6 @@ const App = () => {
               path="/users"
               element={
                 user && user.isAdmin ? <UsersList /> : <Navigate to="/" />
-              }
-            />
-            <Route
-              path="/media"
-              element={
-                user && user.isAdmin ? <UserMedia /> : <Navigate to="/" />
               }
             />
             <Route path="/terms" element={<TermsPage />} />
