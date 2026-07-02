@@ -1,4 +1,3 @@
-import { time } from "console"
 import {
   loginWith,
   disableTutorials,
@@ -14,7 +13,6 @@ const {
   describe,
   expect,
   beforeEach,
-  chromium,
 } = require("@playwright/test")
 
 const testuser = "gridlayoutuser"
