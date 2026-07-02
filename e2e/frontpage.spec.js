@@ -6,8 +6,8 @@ const testPw = "test12345"
 
 describe("Frontpage", () => {
   beforeEach(async ({ page, request }) => {
-    await request.post("http:localhost:8000/api/testing/reset")
-    await request.post("http:localhost:8000/api/signup", {
+    await request.post("http://localhost:8000/api/testing/reset")
+    await request.post("http://localhost:8000/api/signup", {
       data: {
         username: testuser,
         password: testPw,
