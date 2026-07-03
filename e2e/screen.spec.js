@@ -76,7 +76,7 @@ describe("Screen", () => {
     })
   })
   describe("Open screens", () => {
-    test("user can open all screens that have content", async ({
+    test("user can open all screens with one click and close them all", async ({
       page,
       context,
     }) => {
@@ -84,13 +84,6 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
-
-      await addBlankCue(page, "test cue2", "4", "3")
-      await addBlankCue(page, "test cue2", "4", "4")
-      // Goes to frame 4
-      for (let i = 0; i < 4; i++) {
-        await page.keyboard.press("ArrowRight")
-      }
 
       const [popup] = await Promise.all([
         context.waitForEvent("page"),
@@ -101,8 +94,24 @@ describe("Screen", () => {
         timeout: 100,
       })
 
-      const pages = context.pages()
+      let pages = context.pages()
       expect(pages.length).toBe(5)
+
+      const screenPopups = pages.filter((openedPage) => openedPage !== page)
+      const closePromises = screenPopups.map((screenPopup) =>
+        screenPopup.waitForEvent("close").catch(() => null)
+      )
+
+      await page.getByRole("button", { name: "Close all screens" }).click()
+
+      // Wait a bit and check if the popups actually closed
+      await Promise.race([
+        Promise.all(closePromises),
+        page.waitForTimeout(2000),
+      ])
+
+      pages = context.pages()
+      expect(pages.length).toBe(1)
     })
 
     test("user can open screen and close it", async ({ page, context }) => {
