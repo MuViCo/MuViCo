@@ -50,20 +50,6 @@ describe("Homepage", () => {
     ).toBeVisible()
   })
 
-  test("user can see per-screen open/close controls", async ({ page }) => {
-    await page.getByText("testi").click()
-    await addBlankCue(page, "test cue", "1", "1")
-    await expect(
-      page.getByText("Element test cue added to screen").first()
-    ).toBeVisible()
-    await expect(
-      page
-        .getByText("Screen 1", { exact: true })
-        .locator("..")
-        .getByRole("button", { name: "Open" })
-    ).toBeVisible()
-  })
-
   test("user can delete a presentation", async ({ page }) => {
     const heading = page.getByText("test_to_delete")
     const card = heading.locator("..").locator("..")

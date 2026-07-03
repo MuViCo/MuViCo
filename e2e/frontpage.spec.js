@@ -31,6 +31,6 @@ describe("Frontpage", () => {
   test("user can login", async ({ page }) => {
     await loginWith(page, testuser, testPw)
     await expect(page).toHaveURL(/\/home/)
-    await expect(page.getByText("Welcome to MuViCo").first()).toBeDefined()
+    await expect(page.getByText("Welcome to MuViCo").first()).toBeVisible()
   })
 })
