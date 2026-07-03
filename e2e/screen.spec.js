@@ -76,6 +76,20 @@ describe("Screen", () => {
     })
   })
   describe("Open screens", () => {
+    test("user can see per-screen open controls", async ({ page }) => {
+      await addPresentation(page, "title-test")
+
+      await page.goto("http://localhost:3000/home")
+      await page.getByText("title-test").click()
+
+      await expect(
+        page
+          .getByText("Screen 1", { exact: true })
+          .locator("..")
+          .getByRole("button", { name: "Open" })
+      ).toBeVisible()
+    })
+
     test("user can open all screens with one click and close them all", async ({
       page,
       context,
