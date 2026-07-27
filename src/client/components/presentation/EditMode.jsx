@@ -1652,6 +1652,7 @@ const EditMode = ({
               width="100%"
               position="relative"
               cursor={isDragging || isCopied ? dragCursorMode : "default"}
+              // id="presentations-grid"
               data-testid="edit-mode-grid-container"
               ref={containerRef}
               onDoubleClick={handleDoubleClick}
@@ -1711,7 +1712,10 @@ const EditMode = ({
                   headerActionsRef={headerActionsRef}
                 />
               </Box>
-              <Box pointerEvents={isDragging ? "none" : "auto"}>
+              <Box
+                pointerEvents={isDragging ? "none" : "auto"}
+                id="presentations-grid"
+              >
                 <GridLayoutComponent
                   layout={layout}
                   cues={cues}
