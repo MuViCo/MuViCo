@@ -153,22 +153,30 @@ const PresentationPlaybackControls = ({
     ml={2.5}
     mt={1.5}
   >
-    <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
-    <Box w="150px" display="flex" justifyContent="center">
-      <Heading size="md" textAlign="center" whiteSpace="nowrap">
-        {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
-      </Heading>
-    </Box>
+    <Box
+      id="presentation-frame-navigation"
+      display="flex"
+      flexDirection="row"
+      alignItems="center"
+      gap={4}
+    >
+      <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
+      <Box w="150px" display="flex" justifyContent="center">
+        <Heading size="md" textAlign="center" whiteSpace="nowrap">
+          {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
+        </Heading>
+      </Box>
 
-    <AutoplayControls
-      toggleAutoplay={toggleAutoplay}
-      isAutoplaying={isAutoplaying}
-    />
-    <CueNavigationNext
-      cueIndex={cueIndex}
-      updateCue={updateCue}
-      indexCount={indexCount}
-    />
+      <AutoplayControls
+        toggleAutoplay={toggleAutoplay}
+        isAutoplaying={isAutoplaying}
+      />
+      <CueNavigationNext
+        cueIndex={cueIndex}
+        updateCue={updateCue}
+        indexCount={indexCount}
+      />
+    </Box>
     <ScreenToggleButtons
       screens={screens}
       toggleAllScreens={toggleAllScreens}
