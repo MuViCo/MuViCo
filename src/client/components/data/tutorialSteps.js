@@ -9,11 +9,11 @@ const presentationTutorialSteps = [
     title: "Presentation Page",
     description: `This is the presentation page where you can edit and view your presentation.
     
-Click "Next" to continue the tutorial.
-
-You can also press Enter or the right arrow key on your keyboard to go forward, and the left arrow key to go backward.
-
-Click "Quit Tutorial" or Esc to end the tutorial.`,
+    Click "Next" to continue the tutorial.
+    
+    You can also press Enter or the right arrow key on your keyboard to go forward, and the left arrow key to go backward.
+    
+    Click "Quit Tutorial" or Esc to end the tutorial.`,
   },
   {
     id: "help",
@@ -23,11 +23,10 @@ Click "Quit Tutorial" or Esc to end the tutorial.`,
     description: "View the manual related to the presentation page.",
   },
   {
-    id: "open-all-screens-button",
-    selector: "#open-all-screens-button",
-    title: "Open All Screens",
-    description:
-      "Click this button to open every screen in its own window and present your show. Each screen can also be opened or closed individually from the screens preview below.",
+    id: "edit-presentation-name-button",
+    selector: "#edit-presentation-name-button",
+    title: "Edit Presentation Name",
+    description: "Click this button to edit the name of your presentation.",
   },
   {
     id: "presentation-size-info",
@@ -37,10 +36,18 @@ Click "Quit Tutorial" or Esc to end the tutorial.`,
       "This area shows a preview of each screen in your presentation.",
   },
   {
-    id: "edit-presentation-name-button",
-    selector: "#edit-presentation-name-button",
-    title: "Edit Presentation Name",
-    description: "Click this button to edit the name of your presentation.",
+    id: "presentation-playback-controls",
+    selector: "#presentation-frame-navigation",
+    title: "Playback Controls",
+    description:
+      "Use the Previous/Next buttons to move between frames, or click the play button to autoplay through them automatically. The number field to the right sets how many seconds each frame stays visible during autoplay.",
+  },
+  {
+    id: "open-all-screens-button",
+    selector: "#open-all-screens-button",
+    title: "Open All Screens",
+    description:
+      "Click this button to open every screen in its own window and present your show. Each screen can also be opened or closed individually from the preview panel above.",
   },
   {
     id: "presentations-grid",
@@ -55,8 +62,7 @@ Click "Quit Tutorial" or Esc to end the tutorial.`,
     selector: ".index-boxes",
     title: "Frames",
     description:
-      "These are the frames of your presentation. To add/remove frames, click the +/- buttons. To adjust a specific frame, \
-click the dropdown arrow on the top right of it.",
+      "These are the frames of your presentation. Press the + button to add new frames, or x to delete them.",
   },
   {
     id: "screen-boxes",
@@ -78,7 +84,7 @@ click the dropdown arrow on the top right of it.",
     selector: "#cue-screen-1-index-0 [data-testid^=cue-menu-button-]",
     title: "Element Menu",
     description:
-      "Click the arrow icon on an element to delete, edit, or copy it. Audio elements also get a loop toggle here.",
+      "Click the arrow icon on an element to delete, edit, or copy it. Additionally, audio elements will also have a loop toggle.",
   },
   {
     id: "specific-cue",
