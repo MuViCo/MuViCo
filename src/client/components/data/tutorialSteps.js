@@ -74,10 +74,17 @@ click the dropdown arrow on the top right of it.",
       "Add a new element by dragging a color, image, video or audio file from here onto the grid. You can also drop a file from your computer directly onto a cell.",
   },
   {
+    id: "cue-menu",
+    selector: "#cue-screen-1-index-0 [data-testid^=cue-menu-button-]",
+    title: "Element Menu",
+    description:
+      "Click the arrow icon on an element to delete, edit, or copy it. Audio elements also get a loop toggle here.",
+  },
+  {
     id: "specific-cue",
     selector: "#cue-screen-1-index-0",
     title: "Editing an Element",
-    description: "You can double-click cues to edit their properties.",
+    description: "You can also double-click a cue to edit its name.",
   },
   {
     id: "navbar-title",

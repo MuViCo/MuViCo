@@ -1,6 +1,9 @@
-import fs from 'fs'
-import path from 'path'
-import { presentationTutorialSteps, homePageTutorialSteps } from '../../components/data/tutorialSteps'
+import fs from "fs"
+import path from "path"
+import {
+  presentationTutorialSteps,
+  homePageTutorialSteps,
+} from "../../components/data/tutorialSteps"
 
 /*
 #########################################################################
@@ -22,9 +25,9 @@ should be excluded from this test by adding them to the excludeSelectors array.
 
 // Helper to search files under src for a given regex
 function searchRepoForPattern(regex) {
-  const root = path.resolve(__dirname, '..', '..', '..', '..') // project root
-  const src = path.join(root, 'src')
-  const exts = ['.js', '.jsx', '.ts', '.tsx', '.html']
+  const root = path.resolve(__dirname, "..", "..", "..", "..") // project root
+  const src = path.join(root, "src")
+  const exts = [".js", ".jsx", ".ts", ".tsx", ".html"]
 
   const files = []
   function walk(dir) {
@@ -42,7 +45,7 @@ function searchRepoForPattern(regex) {
   walk(src)
 
   for (const f of files) {
-    const content = fs.readFileSync(f, 'utf8')
+    const content = fs.readFileSync(f, "utf8")
     if (regex.test(content)) return true
   }
   return false
@@ -50,43 +53,48 @@ function searchRepoForPattern(regex) {
 
 function normalizeSelectorToPatterns(selector) {
   if (!selector) return []
-  const escape = (s) => s.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&')
-  if (selector.startsWith('#')) {
+  const escape = (s) => s.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
+  if (selector.startsWith("#")) {
     const name = escape(selector.slice(1))
     return [
-      new RegExp(`id\\s*=\\s*["']${name}["']`, 'm'),
-      new RegExp(`querySelector\\([^"']*["']#${name}["']\\)`, 'm'),
-      new RegExp(`getElementById\\(\\s*["']${name}["']\\s*\\)`, 'm'),
+      new RegExp(`id\\s*=\\s*["']${name}["']`, "m"),
+      new RegExp(`querySelector\\([^"']*["']#${name}["']\\)`, "m"),
+      new RegExp(`getElementById\\(\\s*["']${name}["']\\s*\\)`, "m"),
       // also accept the literal string appearing in source (e.g., passed as a prop)
-      new RegExp(`["']${name}["']`, 'm'),
+      new RegExp(`["']${name}["']`, "m"),
     ]
   }
-  if (selector.startsWith('.')) {
+  if (selector.startsWith(".")) {
     const name = escape(selector.slice(1))
     return [
-      new RegExp(`class(Name)?\\s*=\\s*["'][^"']*\\b${name}\\b[^"']*["']`, 'm'),
-      new RegExp(`querySelector\\([^"']*["']\\.${name}["']\\)`, 'm'),
+      new RegExp(`class(Name)?\\s*=\\s*["'][^"']*\\b${name}\\b[^"']*["']`, "m"),
+      new RegExp(`querySelector\\([^"']*["']\\.${name}["']\\)`, "m"),
     ]
   }
   // fallback: literal search
-  return [new RegExp(escape(selector), 'm')]
+  return [new RegExp(escape(selector), "m")]
 }
 
-describe('tutorial selectors are referenced in source', () => {
+describe("tutorial selectors are referenced in source", () => {
   const allSteps = [...presentationTutorialSteps, ...homePageTutorialSteps]
   const excludeSelectors = [
-    "#cue-screen-1-index-0" // dynamically generated, cannot check existence
+    "#cue-screen-1-index-0", // dynamically generated, cannot check existence
+    "#cue-screen-1-index-0 [data-testid^=cue-menu-button-]", // same cue, compound selector on its dynamic per-cue menu button
   ]
-  const stepsWithSelectors = allSteps.filter(s => s.selector && !excludeSelectors.includes(s.selector))
+  const stepsWithSelectors = allSteps.filter(
+    (s) => s.selector && !excludeSelectors.includes(s.selector)
+  )
 
-  test.each(stepsWithSelectors.map(s => [s.selector, s.id || s.selector]))(
-    'selector %s (%s) is used in source files',
+  test.each(stepsWithSelectors.map((s) => [s.selector, s.id || s.selector]))(
+    "selector %s (%s) is used in source files",
     (selector, id) => {
       const patterns = normalizeSelectorToPatterns(selector)
       expect(patterns.length).toBeGreaterThan(0)
       const found = patterns.some((pat) => searchRepoForPattern(pat))
       if (!found) {
-        throw new Error(`Selector ${selector} (step ${id}) not found in source files. Tutorial will break.`) 
+        throw new Error(
+          `Selector ${selector} (step ${id}) not found in source files. Tutorial will break.`
+        )
       }
     }
   )
