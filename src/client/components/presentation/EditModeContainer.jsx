@@ -1,20 +1,14 @@
 /*
-* the main component for the presentation editor, responsible for rendering the overall layout and managing state for the editor. 
-* It includes the header with presentation title and settings, the screen preview area, playback controls, and the workspace which contains the cue list and cue form. 
-* It also handles interactions such as toggling screen visibility, autoplaying cues, and opening the tutorial guide. 
-* The component uses react-grid-layout for responsive layout and Chakra UI for styling.
+ * the main component for the presentation editor, responsible for rendering the overall layout and managing state for the editor.
+ * It includes the header with presentation title and settings, the screen preview area, playback controls, and the workspace which contains the cue list and cue form.
+ * It also handles interactions such as toggling screen visibility, autoplaying cues, and opening the tutorial guide.
+ * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Box,
-  Button,
-  useColorModeValue,
-} from "@chakra-ui/react"
+import { Box, Button, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
-import {
-  fetchPresentationInfo,
-} from "../../redux/presentationReducer"
+import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
@@ -27,7 +21,6 @@ import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
-
 
 // Base component for different subcomponents of the editor
 function EditorLayout(props) {
@@ -42,46 +35,58 @@ function EditorLayout(props) {
     isAudioMuted,
     toggleAudioMute,
     indexCount,
-    addCue = () => { },
-    onClose = () => { },
+    addCue = () => {},
+    onClose = () => {},
     position,
     cueData,
-    updateCue = () => { },
+    updateCue = () => {},
     isAudioMode = false,
     screens = {},
-    toggleScreenVisibility = () => { },
-    toggleAllScreens = () => { },
+    toggleScreenVisibility = () => {},
+    toggleAllScreens = () => {},
     autoplayInterval = 1,
-    toggleAutoplay = () => { },
+    toggleAutoplay = () => {},
     isAutoplaying = false,
     audioSourceURL = "",
-    toggleAutoplayInterval = () => { },
-    onOpenTutorial = () => { },
+    toggleAutoplayInterval = () => {},
+    onOpenTutorial = () => {},
     editModeBackground,
     panelBackground,
     outlineColor,
   } = props
 
-
   useEffect(() => {
     const screen_preview_element = document.querySelector("#screen_preview")
-    const resize_handle_element = document.querySelector("#screen_resize_handle")
+    const resize_handle_element = document.querySelector(
+      "#screen_resize_handle"
+    )
 
     makeResizable(screen_preview_element, resize_handle_element) // Using the entire container as the handle for resizing
 
     const timeline_element = document.querySelector("#timeline")
-    const timeline_resize_handle_element = document.querySelector("#timeline_resize_handle")
+    const timeline_resize_handle_element = document.querySelector(
+      "#timeline_resize_handle"
+    )
 
     makeResizable(timeline_element, timeline_resize_handle_element) // Using the entire container as the handle for resizing
   }, [])
 
-
-  // Formatting the grid layout for the editor, using react-grid-layout. 
-  // The layout is responsive and changes based on the screen size. 
-  // Each grid item (a, b, c) represents a different component of the editor, 
+  // Formatting the grid layout for the editor, using react-grid-layout.
+  // The layout is responsive and changes based on the screen size.
+  // Each grid item (a, b, c) represents a different component of the editor,
   // such as the cue list, preview area, and toolbox.
   return (
-    <div style={{ width: "100%", minHeight: "100vh", backgroundColor: editModeBackground, display: "flex", flexDirection: "column", gap: "2rem", padding: "2rem" }}>
+    <div
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        backgroundColor: editModeBackground,
+        display: "flex",
+        flexDirection: "column",
+        gap: "2rem",
+        padding: "2rem",
+      }}
+    >
       <Box
         display="flex"
         alignItems="center"
@@ -94,7 +99,6 @@ function EditorLayout(props) {
         position="relative"
         key="header"
       >
-
         {/* TODO: 
             The presentation settings button is not yet functional. Consider adding for example the 
             cue transition animation selection into the settings */}
@@ -106,10 +110,7 @@ function EditorLayout(props) {
         </Button> */}
 
         <Box position="absolute" left="50%" transform="translateX(-50%)">
-          <PresentationTitle
-            id={id}
-            presentationName={presentationName}
-          />
+          <PresentationTitle id={id} presentationName={presentationName} />
         </Box>
         <Button
           className="edit-mode-btn edit-mode-btn-tutorial"
@@ -118,7 +119,16 @@ function EditorLayout(props) {
           Tutorial
         </Button>
       </Box>
-      <div id="screen_preview" style={{ backgroundColor: panelBackground, outline: outlineColor, borderRadius: "8px" }} className="screenspreview" key="screensPreview">
+      <div
+        id="screen_preview"
+        style={{
+          backgroundColor: panelBackground,
+          outline: outlineColor,
+          borderRadius: "8px",
+        }}
+        className="screenspreview"
+        key="screensPreview"
+      >
         <ScreensDisplay
           screenCount={screenCount}
           cues={cues}
@@ -130,9 +140,12 @@ function EditorLayout(props) {
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
-
       </div>
-      <div style={{ backgroundColor: editModeBackground, borderRadius: "8px" }} className="no-resize-handle" key="playbackControls">
+      <div
+        style={{ backgroundColor: editModeBackground, borderRadius: "8px" }}
+        className="no-resize-handle"
+        key="playbackControls"
+      >
         <KeyboardHandler
           onNext={() => updateCue("Next")}
           onPrevious={() => updateCue("Previous")}
@@ -154,12 +167,20 @@ function EditorLayout(props) {
       <div className="edit-workspace" key="editWorkspace">
         <div>
           <div className="edit-mode-workspace">
-
-            <div id="timeline" className="edit-mode-timeline" style={{
-              height: "100%", width: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", flexGrow: "1"
-            }}>
-
-              <div id="edit-mode-scroll" >
+            <div
+              id="timeline"
+              className="edit-mode-timeline"
+              style={{
+                height: "100%",
+                width: "100%",
+                outline: outlineColor,
+                borderRadius: "8px",
+                backgroundColor: panelBackground,
+                boxSizing: "border-box",
+                flexGrow: "1",
+              }}
+            >
+              <div id="edit-mode-scroll">
                 <EditMode
                   id={id}
                   cues={cues}
@@ -171,16 +192,25 @@ function EditorLayout(props) {
                   indexCount={indexCount}
                   style={{ zIndex: 1 }}
                 />
-
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>
-
             </div>
 
-            <div className="edit-mode-cue-form" style={{
-              height: "100%", outline: outlineColor, borderRadius: "8px", backgroundColor: panelBackground, boxSizing: "border-box", padding: "10px", paddingLeft: "5px", paddingTop: "5px", paddingRight: "5px",
-              paddingBottom: "5px"
-            }}>
+            <div
+              className="edit-mode-cue-form"
+              style={{
+                height: "100%",
+                outline: outlineColor,
+                borderRadius: "8px",
+                backgroundColor: panelBackground,
+                boxSizing: "border-box",
+                padding: "10px",
+                paddingLeft: "5px",
+                paddingTop: "5px",
+                paddingRight: "5px",
+                paddingBottom: "5px",
+              }}
+            >
               <CuesForm
                 className="cue-editor-form"
                 addCue={addCue}
@@ -197,7 +227,6 @@ function EditorLayout(props) {
           </div>
         </div>
       </div>
-
     </div>
   )
 }
@@ -223,7 +252,10 @@ const EditModeContainer = ({
 }) => {
   const editModeBackground = useColorModeValue("#ffffff", "#120d14")
   const panelBackground = useColorModeValue("#eedef7", "#312238")
-  const outlineColor = useColorModeValue("2px solid #572b6e", "2px solid #572b6e")
+  const outlineColor = useColorModeValue(
+    "2px solid #572b6e",
+    "2px solid #572b6e"
+  )
 
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
@@ -250,15 +282,17 @@ const EditModeContainer = ({
     }, {})
   }, [cues])
 
-  // Initialize screen visibility state based on cues and screen count 
-  // - creates a visibility object with keys for each screen number and 
+  // Initialize screen visibility state based on cues and screen count
+  // - creates a visibility object with keys for each screen number and
   // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
   useEffect(() => {
-    const screenNumbers = [...new Set(
-      (cues || [])
-        .filter((cue) => !isAudioRow(cue.screen, screenCount))
-        .map((cue) => cue.screen)
-    )]
+    const screenNumbers = [
+      ...new Set(
+        (cues || [])
+          .filter((cue) => !isAudioRow(cue.screen, screenCount))
+          .map((cue) => cue.screen)
+      ),
+    ]
     const visibility = {}
     screenNumbers.forEach((screenNumber) => {
       visibility[screenNumber] = false
@@ -274,13 +308,15 @@ const EditModeContainer = ({
       [screenNumber]: !prev[screenNumber],
     }))
   }
-  
+
   // Open or close windows for all screens at once - if any screen is currently open, this will close all screens, otherwise it will open all screens
   const toggleAllScreens = () => {
     setScreens((prev) => {
       const updated = { ...prev }
       const allScreenNumbers = Object.keys(updated)
-      const hasOpenScreen = allScreenNumbers.some((screenNumber) => updated[screenNumber])
+      const hasOpenScreen = allScreenNumbers.some(
+        (screenNumber) => updated[screenNumber]
+      )
 
       allScreenNumbers.forEach((screenNumber) => {
         updated[screenNumber] = !hasOpenScreen
@@ -306,8 +342,12 @@ const EditModeContainer = ({
   const audioRow = getAudioRow(screenCount)
   const currentAudioCue = getLastValidCue(audioRow, cueIndex)
   const currentAudioFile = currentAudioCue?.file
-  const currentAudioSrc = currentAudioFile?.url || (currentAudioFile?.name ? `/${currentAudioFile.name}` : "")
-  const isCurrentCueAudio = Boolean(currentAudioCue && isType.audio(currentAudioFile))
+  const currentAudioSrc =
+    currentAudioFile?.url ||
+    (currentAudioFile?.name ? `/${currentAudioFile.name}` : "")
+  const isCurrentCueAudio = Boolean(
+    currentAudioCue && isType.audio(currentAudioFile)
+  )
 
   const handleScreenClose = useCallback((screenNumber) => {
     setScreens((prev) => ({
@@ -340,12 +380,6 @@ const EditModeContainer = ({
   }
 
   const handleOpenTutorial = useCallback(() => {
-    const helpButton = document.querySelector(".help-button")
-    if (helpButton && typeof helpButton.click === "function") {
-      helpButton.click()
-      return
-    }
-
     setIsTutorialOpen(true)
   }, [])
 
@@ -386,8 +420,11 @@ const EditModeContainer = ({
   }, [cueIndex, indexCount, isAutoplaying])
 
   useEffect(() => {
-    const audioCues = (cues || []).filter((cue) =>
-      isAudioRow(cue.screen, screenCount) && cue.file?.url && isType.audio(cue.file)
+    const audioCues = (cues || []).filter(
+      (cue) =>
+        isAudioRow(cue.screen, screenCount) &&
+        cue.file?.url &&
+        isType.audio(cue.file)
     )
 
     audioCues.forEach((cue) => {
@@ -432,65 +469,64 @@ const EditModeContainer = ({
     }
   }, [editModeBackground])
 
+  return (
+    <>
+      <EditorLayout
+        id={id}
+        presentationName={presentationName}
+        screenCount={screenCount}
+        cues={cues}
+        isToolboxOpen={isToolboxOpen}
+        setIsToolboxOpen={setIsToolboxOpen}
+        cueIndex={cueIndex}
+        isAudioMuted={isAudioMuted}
+        toggleAudioMute={toggleAudioMute}
+        indexCount={indexCount}
+        addCue={addCue}
+        onClose={onClose}
+        position={position}
+        cueData={cueData}
+        updateCue={updateCue}
+        isAudioMode={isAudioMode}
+        screens={screens}
+        toggleScreenVisibility={toggleScreenVisibility}
+        toggleAllScreens={toggleAllScreens}
+        autoplayInterval={autoplayInterval}
+        toggleAutoplay={toggleAutoplay}
+        isAutoplaying={isAutoplaying}
+        toggleAutoplayInterval={toggleAutoplayInterval}
+        onOpenTutorial={handleOpenTutorial}
+        audioSourceURL={currentAudioSrc}
+        editModeBackground={editModeBackground}
+        panelBackground={panelBackground}
+        outlineColor={outlineColor}
+      />
 
-  return <>
+      <TutorialGuide
+        steps={presentationTutorialSteps}
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        storageKey={"hasSeenHelp_presentation"}
+      />
 
-    <EditorLayout
-      id={id}
-      presentationName={presentationName}
-      screenCount={screenCount}
-      cues={cues}
-      isToolboxOpen={isToolboxOpen}
-      setIsToolboxOpen={setIsToolboxOpen}
-      cueIndex={cueIndex}
-      isAudioMuted={isAudioMuted}
-      toggleAudioMute={toggleAudioMute}
-      indexCount={indexCount}
-      addCue={addCue}
-      onClose={onClose}
-      position={position}
-      cueData={cueData}
-      updateCue={updateCue}
-      isAudioMode={isAudioMode}
-      screens={screens}
-      toggleScreenVisibility={toggleScreenVisibility}
-      toggleAllScreens={toggleAllScreens}
-      autoplayInterval={autoplayInterval}
-      toggleAutoplay={toggleAutoplay}
-      isAutoplaying={isAutoplaying}
-      toggleAutoplayInterval={toggleAutoplayInterval}
-      onOpenTutorial={handleOpenTutorial}
-      audioSourceURL={currentAudioSrc}
-      editModeBackground={editModeBackground}
-      panelBackground={panelBackground}
-      outlineColor={outlineColor}
-    />
+      {Object.keys(screens).map((screenNumber) => {
+        const mirroredScreen = mirroring[screenNumber]
+        const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
+        const screenData = getLastValidCue(sourceScreen, cueIndex)
 
-    {/* TODO: The presentation tutorial guide needs to be updated for the new editor UI */}
-    {/* <TutorialGuide
-      steps={presentationTutorialSteps}
-      isOpen={isTutorialOpen}
-      onClose={() => setIsTutorialOpen(false)}
-      storageKey={"hasSeenHelp_presentation"}
-    /> */}
-
-    {Object.keys(screens).map((screenNumber) => {
-      const mirroredScreen = mirroring[screenNumber]
-      const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
-      const screenData = getLastValidCue(sourceScreen, cueIndex)
-
-      return (
-        <Screen
-          key={screenNumber}
-          screenData={screenData}
-          screenNumber={screenNumber}
-          isVisible={screens[screenNumber]}
-          onClose={handleScreenClose}
-          transitionType={transitionType}
-        />
-      )
-    })}
-  </>
+        return (
+          <Screen
+            key={screenNumber}
+            screenData={screenData}
+            screenNumber={screenNumber}
+            isVisible={screens[screenNumber]}
+            onClose={handleScreenClose}
+            transitionType={transitionType}
+          />
+        )
+      })}
+    </>
+  )
 }
 
 export default EditModeContainer

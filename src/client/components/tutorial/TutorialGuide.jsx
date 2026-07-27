@@ -3,7 +3,12 @@ import { createPortal } from "react-dom"
 import { Box, Button, Text, VStack, HStack } from "@chakra-ui/react"
 import { keyframes } from "@emotion/react"
 
-const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storageKey }) => {
+const TutorialGuide = ({
+  steps = [],
+  isOpen = false,
+  onClose = () => {},
+  storageKey,
+}) => {
   const [open, setOpen] = useState(isOpen)
   const [index, setIndex] = useState(0)
   const [pos, setPos] = useState(null)
@@ -22,7 +27,8 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
     const ae = document.activeElement
     if (!ae) return false
     const tag = ae.tagName
-    if (tag === "INPUT" || tag === "TEXTAREA" || ae.isContentEditable) return true
+    if (tag === "INPUT" || tag === "TEXTAREA" || ae.isContentEditable)
+      return true
     return false
   }
 
@@ -113,13 +119,28 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
       return
     }
     const r = el.getBoundingClientRect()
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth
-    const mobileOffset = (viewportWidth  < 1400 && steps[index].posLeftNeeded) ? -280 : 0
+    const viewportWidth =
+      window.innerWidth || document.documentElement.clientWidth
+    const mobileOffset =
+      viewportWidth < 1400 && steps[index].posLeftNeeded ? -280 : 0
     const manualLeftPos = steps[index].manualLeftPos
     // position tooltip near bottom-right of target by default (left adjusted for mobile if needed)
+    const rawLeft =
+      manualLeftPos != null
+        ? manualLeftPos
+        : window.scrollX + r.left + r.width + 12 + mobileOffset
+
+    // Clamp so the tooltip always stays fully on-screen. Otherwise targets near the right edge
+    // or targets that span most of the viewport width push the tooltip off-screen.
+    const tooltipWidth = 200
+    const margin = 12
+    const minLeft = window.scrollX + margin
+    const maxLeft = window.scrollX + viewportWidth - tooltipWidth - margin
+    const left = Math.min(Math.max(rawLeft, minLeft), maxLeft)
+
     const tooltip = {
       top: window.scrollY + r.top - 10,
-      left: manualLeftPos != null ? manualLeftPos : window.scrollX + r.left + r.width + 12 + mobileOffset,
+      left,
       targetRect: r,
     }
     setPos(tooltip)
@@ -157,11 +178,17 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
       zIndex={1500}
       pointerEvents="none"
     >
-      <Box position="absolute" inset={0} bg="blackAlpha.600" pointerEvents="auto" />
+      <Box
+        position="absolute"
+        inset={0}
+        bg="blackAlpha.600"
+        pointerEvents="auto"
+      />
 
       {/* Centered box, not related to a specific selector */}
       {pos && pos.centered && (
-        <Box key={`tutorial-centered-${index}`}
+        <Box
+          key={`tutorial-centered-${index}`}
           position="fixed"
           top="50%"
           left="50%"
@@ -180,8 +207,12 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
         >
           <VStack alignItems="stretch" spacing={4}>
             <Box>
-              <Text fontWeight={700} fontSize="lg">{steps[index].title}</Text>
-              <Text whiteSpace="pre-wrap" fontSize="sm" mt={2}>{steps[index].description}</Text>
+              <Text fontWeight={700} fontSize="lg">
+                {steps[index].title}
+              </Text>
+              <Text whiteSpace="pre-wrap" fontSize="sm" mt={2}>
+                {steps[index].description}
+              </Text>
             </Box>
             <HStack justifyContent="space-between">
               <Button size="sm" colorScheme="purple" onClick={next}>
@@ -197,7 +228,8 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
 
       {/* Specific selector box, aligns with the item */}
       {pos && !pos.centered && (
-        <Box key={`tutorial-step-${index}`}
+        <Box
+          key={`tutorial-step-${index}`}
           position="absolute"
           top={`${pos.top}px`}
           left={`${pos.left}px`}
@@ -215,7 +247,9 @@ const TutorialGuide = ({ steps = [], isOpen = false, onClose = () => {}, storage
           <VStack alignItems="stretch" spacing={3}>
             <Box>
               <Text fontWeight={600}>{steps[index].title}</Text>
-              <Text whiteSpace="pre-wrap" fontSize="sm">{steps[index].description}</Text>
+              <Text whiteSpace="pre-wrap" fontSize="sm">
+                {steps[index].description}
+              </Text>
             </Box>
             <HStack justifyContent="space-between">
               <Button size="sm" colorScheme="purple" onClick={prev}>

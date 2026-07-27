@@ -4,27 +4,34 @@
  * and tooltip positioning edge cases.
  */
 
-import React from 'react'
-import { render, screen, fireEvent, act, waitForElementToBeRemoved, waitFor } from '@testing-library/react'
-import '@testing-library/jest-dom'
-import { MemoryRouter } from 'react-router-dom'
-import TutorialGuide from '../../components/tutorial/TutorialGuide'
+import React from "react"
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitForElementToBeRemoved,
+  waitFor,
+} from "@testing-library/react"
+import "@testing-library/jest-dom"
+import { MemoryRouter } from "react-router-dom"
+import TutorialGuide from "../../components/tutorial/TutorialGuide"
 
 // Helper to render with router context
-const renderWithRouter = (ui, { route = '/home' } = {}) =>
+const renderWithRouter = (ui, { route = "/home" } = {}) =>
   render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
 
-describe('TutorialGuide', () => {
+describe("TutorialGuide", () => {
   beforeEach(() => {
     // ensure tutorial doesn't persist between tests
-    localStorage.removeItem('hasSeenHelp_homepage')
-    localStorage.removeItem('hasSeenHelp_presentation')
+    localStorage.removeItem("hasSeenHelp_homepage")
+    localStorage.removeItem("hasSeenHelp_presentation")
   })
 
-  test('renders centered welcome step and Next/Skip work', async () => {
+  test("renders centered welcome step and Next/Skip work", async () => {
     const steps = [
-      { id: 'welcome', center: true, title: 'Welcome', description: 'Hello' },
-      { id: 'end', center: true, title: 'End', description: 'Bye' },
+      { id: "welcome", center: true, title: "Welcome", description: "Hello" },
+      { id: "end", center: true, title: "End", description: "Bye" },
     ]
 
     // Render with a small controller so onClose actually closes the guide (isOpen prop is controlled)
@@ -40,18 +47,18 @@ describe('TutorialGuide', () => {
         />
       )
     }
-  const utils = renderWithRouter(<Wrapper />)
+    const utils = renderWithRouter(<Wrapper />)
 
-    const title = await screen.findByText('Welcome')
+    const title = await screen.findByText("Welcome")
     expect(title).toBeInTheDocument()
 
-  const next = screen.getByRole('button', { name: /next/i })
-  // specifically target the Quit Tutorial button text to avoid ambiguity
-  const skip = screen.getByText('Quit Tutorial')
+    const next = screen.getByRole("button", { name: /next/i })
+    // specifically target the Quit Tutorial button text to avoid ambiguity
+    const skip = screen.getByText("Quit Tutorial")
 
     // click next -> moves to second step
     fireEvent.click(next)
-    expect(await screen.findByText('End')).toBeInTheDocument()
+    expect(await screen.findByText("End")).toBeInTheDocument()
 
     // click skip/quit -> tutorial should close; wait for the centered element to be removed
     fireEvent.click(skip)
@@ -64,75 +71,93 @@ describe('TutorialGuide', () => {
     )
     const el = document.querySelector('[data-testid^="tutorial-centered"]')
     if (el) {
-      await waitForElementToBeRemoved(() => document.querySelector('[data-testid^="tutorial-centered"]'), { timeout: 1000 })
+      await waitForElementToBeRemoved(
+        () => document.querySelector('[data-testid^="tutorial-centered"]'),
+        { timeout: 1000 }
+      )
     }
   })
 
-  test('renders selector-based tooltip and highlight when target exists', () => {
+  test("renders selector-based tooltip and highlight when target exists", () => {
     // create a target element in document
-  const btn = document.createElement('button')
-    btn.id = 'test-target'
-    btn.textContent = 'Target'
+    const btn = document.createElement("button")
+    btn.id = "test-target"
+    btn.textContent = "Target"
     document.body.appendChild(btn)
 
     const steps = [
-      { id: 'target', selector: '#test-target', title: 'Target section', description: 'Click it' },
+      {
+        id: "target",
+        selector: "#test-target",
+        title: "Target section",
+        description: "Click it",
+      },
     ]
 
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+        />
       )
     }
     renderWithRouter(<Wrapper />)
 
     // tooltip title
-    expect(screen.getByText('Target section')).toBeInTheDocument()
+    expect(screen.getByText("Target section")).toBeInTheDocument()
     // highlight box should exist (use data-testid)
-  const highlight = document.querySelector('[data-testid="tutorial-highlight"]')
-  expect(highlight).toBeTruthy()
+    const highlight = document.querySelector(
+      '[data-testid="tutorial-highlight"]'
+    )
+    expect(highlight).toBeTruthy()
 
     // cleanup
     document.body.removeChild(btn)
   })
 
-  test('keyboard navigation: Enter advances, Escape quits, ArrowLeft goes back', () => {
+  test("keyboard navigation: Enter advances, Escape quits, ArrowLeft goes back", () => {
     const steps = [
-      { id: 'one', center: true, title: 'One', description: '1' },
-      { id: 'two', center: true, title: 'Two', description: '2' },
+      { id: "one", center: true, title: "One", description: "1" },
+      { id: "two", center: true, title: "Two", description: "2" },
     ]
 
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+        />
       )
     }
     renderWithRouter(<Wrapper />)
 
-    expect(screen.getByText('One')).toBeInTheDocument()
+    expect(screen.getByText("One")).toBeInTheDocument()
 
     act(() => {
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(window, { key: "Enter" })
     })
-    expect(screen.getByText('Two')).toBeInTheDocument()
+    expect(screen.getByText("Two")).toBeInTheDocument()
 
     act(() => {
-      fireEvent.keyDown(window, { key: 'ArrowLeft' })
+      fireEvent.keyDown(window, { key: "ArrowLeft" })
     })
-    expect(screen.getByText('One')).toBeInTheDocument()
+    expect(screen.getByText("One")).toBeInTheDocument()
 
     act(() => {
-      fireEvent.keyDown(window, { key: 'Escape' })
+      fireEvent.keyDown(window, { key: "Escape" })
     })
-    expect(screen.queryByText('One')).not.toBeInTheDocument()
+    expect(screen.queryByText("One")).not.toBeInTheDocument()
   })
 
-  test('does not respond to navigation keys while typing in an input', () => {
+  test("does not respond to navigation keys while typing in an input", () => {
     const steps = [
-      { id: 'one', center: true, title: 'One', description: '1' },
-      { id: 'two', center: true, title: 'Two', description: '2' },
+      { id: "one", center: true, title: "One", description: "1" },
+      { id: "two", center: true, title: "Two", description: "2" },
     ]
 
     const Wrapper = () => {
@@ -140,7 +165,11 @@ describe('TutorialGuide', () => {
       return (
         <div>
           <input data-testid="chat-input" />
-          <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} />
+          <TutorialGuide
+            steps={steps}
+            isOpen={open}
+            onClose={() => setOpen(false)}
+          />
         </div>
       )
     }
@@ -148,82 +177,228 @@ describe('TutorialGuide', () => {
     renderWithRouter(<Wrapper />)
 
     // focus the input so isTyping() returns true
-    const input = screen.getByTestId('chat-input')
+    const input = screen.getByTestId("chat-input")
     input.focus()
 
     // pressing Enter while typing should NOT advance the tutorial
     act(() => {
-      fireEvent.keyDown(window, { key: 'Enter' })
+      fireEvent.keyDown(window, { key: "Enter" })
     })
 
     // still on the first step
-    expect(screen.getByText('One')).toBeInTheDocument()
+    expect(screen.getByText("One")).toBeInTheDocument()
   })
 
-  test('applies mobile offset when posLeftNeeded and viewport is narrow', () => {
-    const btn = document.createElement('button')
-    btn.id = 'mobile-target'
-    btn.textContent = 'Target'
+  test("applies mobile offset when posLeftNeeded and viewport is narrow", () => {
+    const btn = document.createElement("button")
+    btn.id = "mobile-target"
+    btn.textContent = "Target"
     document.body.appendChild(btn)
 
     // mock bounding rect for deterministic placement
-    const fakeRect = { top: 100, left: 100, width: 50, height: 20, right: 0, bottom: 0 }
-    jest.spyOn(btn, 'getBoundingClientRect').mockReturnValue(fakeRect)
+    const fakeRect = {
+      top: 100,
+      left: 100,
+      width: 50,
+      height: 20,
+      right: 0,
+      bottom: 0,
+    }
+    jest.spyOn(btn, "getBoundingClientRect").mockReturnValue(fakeRect)
 
     // set a narrow viewport
     const prevWidth = window.innerWidth
-    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1366 })
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1366,
+    })
 
     const steps = [
-      { id: 't', selector: '#mobile-target', title: 'T', description: 'd', posLeftNeeded: true },
+      {
+        id: "t",
+        selector: "#mobile-target",
+        title: "T",
+        description: "d",
+        posLeftNeeded: true,
+      },
     ]
 
-    renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
 
-    const tooltip = screen.getByTestId('tutorial-step-0')
-    // This verifies the exact placement formula under narrow viewport conditions.
-    // computed left = scrollX(0) + left(100) + width(50) + 12 + mobileOffset(-280) = -118
-    expect(tooltip).toHaveStyle({ left: '-118px' })
+    const tooltip = screen.getByTestId("tutorial-step-0")
+    // Raw placement formula: scrollX(0) + left(100) + width(50) + 12 + mobileOffset(-280) = -118,
+    // which is clamped to the minimum on-screen left (scrollX(0) + margin(12) = 12).
+    expect(tooltip).toHaveStyle({ left: "12px" })
 
     // cleanup / restore
     document.body.removeChild(btn)
-    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: prevWidth })
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: prevWidth,
+    })
   })
 
-  test('manualLeftPos overrides computed left', () => {
-    const btn = document.createElement('button')
-    btn.id = 'manual-target'
+  test("clamps tooltip left within viewport when target sits at the right edge", () => {
+    const btn = document.createElement("button")
+    btn.id = "edge-target"
     document.body.appendChild(btn)
-    jest.spyOn(btn, 'getBoundingClientRect').mockReturnValue({ top: 10, left: 10, width: 20, height: 10, right: 0, bottom: 0 })
+
+    const prevWidth = window.innerWidth
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1440,
+    })
+
+    // target flush against the right edge, e.g. the navbar help button
+    jest
+      .spyOn(btn, "getBoundingClientRect")
+      .mockReturnValue({
+        top: 20,
+        left: 1400,
+        width: 40,
+        height: 40,
+        right: 0,
+        bottom: 0,
+      })
 
     const steps = [
-      { id: 't', selector: '#manual-target', title: 'Manual', description: 'd', manualLeftPos: 42 },
+      { id: "t", selector: "#edge-target", title: "Edge", description: "d" },
     ]
 
-    renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
 
-    const tooltip = screen.getByTestId('tutorial-step-0')
+    const tooltip = screen.getByTestId("tutorial-step-0")
+    // naive placement would be left(1400) + width(40) + 12 = 1452, which overflows a 1440px
+    // viewport; the tooltip (200px wide, 12px margin) must be clamped to 1440 - 200 - 12 = 1228
+    expect(tooltip).toHaveStyle({ left: "1228px" })
+
+    document.body.removeChild(btn)
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: prevWidth,
+    })
+  })
+
+  test("clamps tooltip left within viewport when target spans almost the full width", () => {
+    const panel = document.createElement("div")
+    panel.id = "wide-target"
+    document.body.appendChild(panel)
+
+    const prevWidth = window.innerWidth
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1440,
+    })
+
+    // target stretches across nearly the whole content width, e.g. #screen_preview
+    jest
+      .spyOn(panel, "getBoundingClientRect")
+      .mockReturnValue({
+        top: 60,
+        left: 32,
+        width: 1376,
+        height: 300,
+        right: 0,
+        bottom: 0,
+      })
+
+    const steps = [
+      { id: "t", selector: "#wide-target", title: "Wide", description: "d" },
+    ]
+
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
+
+    const tooltip = screen.getByTestId("tutorial-step-0")
+    // naive placement would be left(32) + width(1376) + 12 = 1420, which overflows a 1440px
+    // viewport; clamped to the same 1228 ceiling as above
+    expect(tooltip).toHaveStyle({ left: "1228px" })
+
+    document.body.removeChild(panel)
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: prevWidth,
+    })
+  })
+
+  test("manualLeftPos overrides computed left", () => {
+    const btn = document.createElement("button")
+    btn.id = "manual-target"
+    document.body.appendChild(btn)
+    jest
+      .spyOn(btn, "getBoundingClientRect")
+      .mockReturnValue({
+        top: 10,
+        left: 10,
+        width: 20,
+        height: 10,
+        right: 0,
+        bottom: 0,
+      })
+
+    const steps = [
+      {
+        id: "t",
+        selector: "#manual-target",
+        title: "Manual",
+        description: "d",
+        manualLeftPos: 42,
+      },
+    ]
+
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
+
+    const tooltip = screen.getByTestId("tutorial-step-0")
     // Explicit left position should take precedence over auto-calculated placement.
-    expect(tooltip).toHaveStyle({ left: '42px' })
+    expect(tooltip).toHaveStyle({ left: "42px" })
 
     document.body.removeChild(btn)
   })
 
-  test('missing selector produces no tooltip or highlight', () => {
-    const steps = [ { id: 'missing', selector: '#does-not-exist', title: 'X', description: 'no' } ]
-    renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
+  test("missing selector produces no tooltip or highlight", () => {
+    const steps = [
+      {
+        id: "missing",
+        selector: "#does-not-exist",
+        title: "X",
+        description: "no",
+      },
+    ]
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
 
     // no tooltip or highlight should be rendered for missing selector
-    expect(screen.queryByTestId('tutorial-step-0')).toBeNull()
-    expect(screen.queryByTestId('tutorial-highlight')).toBeNull()
+    expect(screen.queryByTestId("tutorial-step-0")).toBeNull()
+    expect(screen.queryByTestId("tutorial-highlight")).toBeNull()
   })
 
-  test('finish stores storageKey and restores body styles', async () => {
-    const steps = [ { id: 'welcome', center: true, title: 'Welcome', description: 'Hello' } ]
+  test("finish stores storageKey and restores body styles", async () => {
+    const steps = [
+      { id: "welcome", center: true, title: "Welcome", description: "Hello" },
+    ]
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} storageKey="test_tut_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          storageKey="test_tut_key"
+        />
       )
     }
 
@@ -233,104 +408,141 @@ describe('TutorialGuide', () => {
     const { rerender } = renderWithRouter(<Wrapper />)
 
     // tutorial should be open and body styles changed
-    expect(document.body.style.overflow).toBe('hidden')
-    expect(document.body.style.touchAction).toBe('none')
+    expect(document.body.style.overflow).toBe("hidden")
+    expect(document.body.style.touchAction).toBe("none")
 
     // click Quit Tutorial to finish
-    const quit = await screen.findByText('Quit Tutorial')
+    const quit = await screen.findByText("Quit Tutorial")
     fireEvent.click(quit)
 
     // simulate parent closing by re-rendering with isOpen=false
     rerender(
       <MemoryRouter initialEntries={["/home"]}>
-        <TutorialGuide steps={steps} isOpen={false} onClose={() => {}} storageKey="test_tut_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={false}
+          onClose={() => {}}
+          storageKey="test_tut_key"
+        />
       </MemoryRouter>
     )
 
     // storage key must be set
-    expect(localStorage.getItem('test_tut_key')).toBe('true')
+    expect(localStorage.getItem("test_tut_key")).toBe("true")
 
     // styles restored
     expect(document.body.style.overflow).toBe(prevOverflow)
     expect(document.body.style.touchAction).toBe(prevTouch)
   })
 
-  test('preventDefault is called for wheel and touchmove while open', () => {
-    const steps = [ { id: 'one', center: true, title: 'One', description: '1' } ]
-    renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
+  test("preventDefault is called for wheel and touchmove while open", () => {
+    const steps = [{ id: "one", center: true, title: "One", description: "1" }]
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
 
-    const spy = jest.spyOn(Event.prototype, 'preventDefault')
+    const spy = jest.spyOn(Event.prototype, "preventDefault")
 
     // dispatch synthetic events
-    window.dispatchEvent(new Event('wheel', { bubbles: true, cancelable: true }))
-    window.dispatchEvent(new Event('touchmove', { bubbles: true, cancelable: true }))
+    window.dispatchEvent(
+      new Event("wheel", { bubbles: true, cancelable: true })
+    )
+    window.dispatchEvent(
+      new Event("touchmove", { bubbles: true, cancelable: true })
+    )
 
     expect(spy).toHaveBeenCalled()
     spy.mockRestore()
   })
 
-  test('calls finish when opened with no steps', async () => {
+  test("calls finish when opened with no steps", async () => {
     const onClose = jest.fn()
-    renderWithRouter(<TutorialGuide steps={[]} isOpen={true} onClose={onClose} />)
+    renderWithRouter(
+      <TutorialGuide steps={[]} isOpen={true} onClose={onClose} />
+    )
 
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
 
-  test('step without selector and not centered yields no tooltip/highlight', () => {
-    const steps = [ { id: 'no', title: 'X', description: 'x' } ]
-    renderWithRouter(<TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />)
+  test("step without selector and not centered yields no tooltip/highlight", () => {
+    const steps = [{ id: "no", title: "X", description: "x" }]
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
 
-    expect(screen.queryByTestId('tutorial-step-0')).toBeNull()
-    expect(screen.queryByTestId('tutorial-centered-0')).toBeNull()
-    expect(screen.queryByTestId('tutorial-highlight')).toBeNull()
+    expect(screen.queryByTestId("tutorial-step-0")).toBeNull()
+    expect(screen.queryByTestId("tutorial-centered-0")).toBeNull()
+    expect(screen.queryByTestId("tutorial-highlight")).toBeNull()
   })
 
-  test('Next on final step triggers finish and sets storageKey', async () => {
-    const steps = [ { id: 'only', center: true, title: 'Only', description: 'end' } ]
+  test("Next on final step triggers finish and sets storageKey", async () => {
+    const steps = [
+      { id: "only", center: true, title: "Only", description: "end" },
+    ]
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} storageKey="final_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          storageKey="final_key"
+        />
       )
     }
 
     const utils = renderWithRouter(<Wrapper />)
 
-    const next = await screen.findByRole('button', { name: /done/i })
+    const next = await screen.findByRole("button", { name: /done/i })
     fireEvent.click(next)
 
     // simulate parent closing
     const { rerender } = utils
     rerender(
       <MemoryRouter initialEntries={["/home"]}>
-        <TutorialGuide steps={steps} isOpen={false} onClose={() => {}} storageKey="final_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={false}
+          onClose={() => {}}
+          storageKey="final_key"
+        />
       </MemoryRouter>
     )
 
-    expect(localStorage.getItem('final_key')).toBe('true')
+    expect(localStorage.getItem("final_key")).toBe("true")
   })
 
-  test('selector tooltip shows Done on final step and sets storageKey', async () => {
-    const btn = document.createElement('button')
-    btn.id = 'sel-target'
-    btn.textContent = 'Target'
+  test("selector tooltip shows Done on final step and sets storageKey", async () => {
+    const btn = document.createElement("button")
+    btn.id = "sel-target"
+    btn.textContent = "Target"
     document.body.appendChild(btn)
 
     const steps = [
-      { id: 'only', selector: '#sel-target', title: 'Only', description: 'end' },
+      {
+        id: "only",
+        selector: "#sel-target",
+        title: "Only",
+        description: "end",
+      },
     ]
 
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} storageKey="sel_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+          storageKey="sel_key"
+        />
       )
     }
 
     const utils = renderWithRouter(<Wrapper />)
 
     // Next button should be labeled Done for the only step
-    const done = await screen.findByRole('button', { name: /done/i })
+    const done = await screen.findByRole("button", { name: /done/i })
     expect(done).toBeInTheDocument()
 
     fireEvent.click(done)
@@ -339,48 +551,57 @@ describe('TutorialGuide', () => {
     const { rerender } = utils
     rerender(
       <MemoryRouter initialEntries={["/home"]}>
-        <TutorialGuide steps={steps} isOpen={false} onClose={() => {}} storageKey="sel_key" />
+        <TutorialGuide
+          steps={steps}
+          isOpen={false}
+          onClose={() => {}}
+          storageKey="sel_key"
+        />
       </MemoryRouter>
     )
 
-    expect(localStorage.getItem('sel_key')).toBe('true')
+    expect(localStorage.getItem("sel_key")).toBe("true")
 
     document.body.removeChild(btn)
   })
 
-  test('selector tooltip Prev/Next navigation works and Quit closes', () => {
-    const btn = document.createElement('button')
-    btn.id = 'nav-target'
-    btn.textContent = 'Target'
+  test("selector tooltip Prev/Next navigation works and Quit closes", () => {
+    const btn = document.createElement("button")
+    btn.id = "nav-target"
+    btn.textContent = "Target"
     document.body.appendChild(btn)
 
     const steps = [
-      { id: 'one', selector: '#nav-target', title: 'Step1', description: '1' },
-      { id: 'two', selector: '#nav-target', title: 'Step2', description: '2' },
+      { id: "one", selector: "#nav-target", title: "Step1", description: "1" },
+      { id: "two", selector: "#nav-target", title: "Step2", description: "2" },
     ]
 
     const Wrapper = () => {
       const [open, setOpen] = React.useState(true)
       return (
-        <TutorialGuide steps={steps} isOpen={open} onClose={() => setOpen(false)} />
+        <TutorialGuide
+          steps={steps}
+          isOpen={open}
+          onClose={() => setOpen(false)}
+        />
       )
     }
 
     renderWithRouter(<Wrapper />)
 
-    expect(screen.getByText('Step1')).toBeInTheDocument()
+    expect(screen.getByText("Step1")).toBeInTheDocument()
 
-    const next = screen.getByRole('button', { name: /next/i })
+    const next = screen.getByRole("button", { name: /next/i })
     fireEvent.click(next)
-    expect(screen.getByText('Step2')).toBeInTheDocument()
+    expect(screen.getByText("Step2")).toBeInTheDocument()
 
-    const prev = screen.getByRole('button', { name: /prev/i })
+    const prev = screen.getByRole("button", { name: /prev/i })
     fireEvent.click(prev)
-    expect(screen.getByText('Step1')).toBeInTheDocument()
+    expect(screen.getByText("Step1")).toBeInTheDocument()
 
-    const quit = screen.getByRole('button', { name: /quit/i })
+    const quit = screen.getByRole("button", { name: /quit/i })
     fireEvent.click(quit)
-    expect(screen.queryByText('Step1')).not.toBeInTheDocument()
+    expect(screen.queryByText("Step1")).not.toBeInTheDocument()
 
     document.body.removeChild(btn)
   })
