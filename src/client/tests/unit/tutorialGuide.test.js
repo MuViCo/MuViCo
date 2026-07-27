@@ -118,6 +118,59 @@ describe("TutorialGuide", () => {
     document.body.removeChild(btn)
   })
 
+  test("tooltip and highlight align with target even when the page has been scrolled", () => {
+    const btn = document.createElement("button")
+    btn.id = "scrolled-target"
+    document.body.appendChild(btn)
+
+    // simulate the page already being scrolled down when the tutorial opens
+    const prevScrollY = window.scrollY
+    Object.defineProperty(window, "scrollY", {
+      writable: true,
+      configurable: true,
+      value: 500,
+    })
+
+    // getBoundingClientRect always reports viewport-relative coordinates, regardless of scroll
+    jest.spyOn(btn, "getBoundingClientRect").mockReturnValue({
+      top: 120,
+      left: 60,
+      width: 80,
+      height: 30,
+      right: 0,
+      bottom: 0,
+    })
+
+    const steps = [
+      {
+        id: "t",
+        selector: "#scrolled-target",
+        title: "Scrolled",
+        description: "d",
+      },
+    ]
+
+    renderWithRouter(
+      <TutorialGuide steps={steps} isOpen={true} onClose={() => {}} />
+    )
+
+    const tooltip = screen.getByTestId("tutorial-step-0")
+    const highlight = screen.getByTestId("tutorial-highlight")
+
+    // The overlay is position:fixed (viewport-relative), so its absolute children must use the
+    // raw viewport-relative rect, not rect + scrollY, or they drift by the scroll offset.
+    expect(tooltip).toHaveStyle({ top: "110px" }) // r.top(120) - 10
+    expect(highlight).toHaveStyle({ top: "114px" }) // r.top(120) - 6
+    expect(highlight).toHaveStyle({ left: "54px" }) // r.left(60) - 6
+
+    document.body.removeChild(btn)
+    Object.defineProperty(window, "scrollY", {
+      writable: true,
+      configurable: true,
+      value: prevScrollY,
+    })
+  })
+
   test("keyboard navigation: Enter advances, Escape quits, ArrowLeft goes back", () => {
     const steps = [
       { id: "one", center: true, title: "One", description: "1" },
@@ -255,16 +308,14 @@ describe("TutorialGuide", () => {
     })
 
     // target flush against the right edge, e.g. the navbar help button
-    jest
-      .spyOn(btn, "getBoundingClientRect")
-      .mockReturnValue({
-        top: 20,
-        left: 1400,
-        width: 40,
-        height: 40,
-        right: 0,
-        bottom: 0,
-      })
+    jest.spyOn(btn, "getBoundingClientRect").mockReturnValue({
+      top: 20,
+      left: 1400,
+      width: 40,
+      height: 40,
+      right: 0,
+      bottom: 0,
+    })
 
     const steps = [
       { id: "t", selector: "#edge-target", title: "Edge", description: "d" },
@@ -300,16 +351,14 @@ describe("TutorialGuide", () => {
     })
 
     // target stretches across nearly the whole content width, e.g. #screen_preview
-    jest
-      .spyOn(panel, "getBoundingClientRect")
-      .mockReturnValue({
-        top: 60,
-        left: 32,
-        width: 1376,
-        height: 300,
-        right: 0,
-        bottom: 0,
-      })
+    jest.spyOn(panel, "getBoundingClientRect").mockReturnValue({
+      top: 60,
+      left: 32,
+      width: 1376,
+      height: 300,
+      right: 0,
+      bottom: 0,
+    })
 
     const steps = [
       { id: "t", selector: "#wide-target", title: "Wide", description: "d" },
@@ -336,16 +385,14 @@ describe("TutorialGuide", () => {
     const btn = document.createElement("button")
     btn.id = "manual-target"
     document.body.appendChild(btn)
-    jest
-      .spyOn(btn, "getBoundingClientRect")
-      .mockReturnValue({
-        top: 10,
-        left: 10,
-        width: 20,
-        height: 10,
-        right: 0,
-        bottom: 0,
-      })
+    jest.spyOn(btn, "getBoundingClientRect").mockReturnValue({
+      top: 10,
+      left: 10,
+      width: 20,
+      height: 10,
+      right: 0,
+      bottom: 0,
+    })
 
     const steps = [
       {

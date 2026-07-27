@@ -128,18 +128,18 @@ const TutorialGuide = ({
     const rawLeft =
       manualLeftPos != null
         ? manualLeftPos
-        : window.scrollX + r.left + r.width + 12 + mobileOffset
+        : r.left + r.width + 12 + mobileOffset
 
     // Clamp so the tooltip always stays fully on-screen. Otherwise targets near the right edge
     // or targets that span most of the viewport width push the tooltip off-screen.
     const tooltipWidth = 200
     const margin = 12
-    const minLeft = window.scrollX + margin
-    const maxLeft = window.scrollX + viewportWidth - tooltipWidth - margin
+    const minLeft = margin
+    const maxLeft = viewportWidth - tooltipWidth - margin
     const left = Math.min(Math.max(rawLeft, minLeft), maxLeft)
 
     const tooltip = {
-      top: window.scrollY + r.top - 10,
+      top: r.top - 10,
       left,
       targetRect: r,
     }
@@ -270,8 +270,8 @@ const TutorialGuide = ({
       {pos && !pos.centered && (
         <Box
           position="absolute"
-          top={`${window.scrollY + pos.targetRect.top - 6}px`}
-          left={`${window.scrollX + pos.targetRect.left - 6}px`}
+          top={`${pos.targetRect.top - 6}px`}
+          left={`${pos.targetRect.left - 6}px`}
           width={`${pos.targetRect.width + 12}px`}
           height={`${pos.targetRect.height + 12}px`}
           borderRadius="6px"
