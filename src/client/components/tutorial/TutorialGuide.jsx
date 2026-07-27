@@ -82,17 +82,21 @@ const TutorialGuide = ({
     const onKey = (e) => {
       if (isTyping()) return
       if (e.key === "Escape") {
+        e.stopPropagation()
         finish()
       } else if (e.key === "Enter" || e.key === "ArrowRight") {
         e.preventDefault()
+        // Prevents key presses from propagating to presentation playback controls
+        e.stopPropagation()
         next()
       } else if (e.key === "ArrowLeft") {
         e.preventDefault()
+        e.stopPropagation()
         prev()
       }
     }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    window.addEventListener("keydown", onKey, true)
+    return () => window.removeEventListener("keydown", onKey, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, index])
 
