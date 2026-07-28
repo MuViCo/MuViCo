@@ -5,11 +5,18 @@
  * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Box, Button, useColorModeValue } from "@chakra-ui/react"
+import {
+  Box,
+  Button,
+  FormLabel,
+  Select,
+  useColorModeValue,
+} from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
+import ClickablePopover from "../utils/ClickablePopover"
 import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
@@ -41,6 +48,8 @@ function EditorLayout(props) {
     cueData,
     updateCue = () => {},
     isAudioMode = false,
+    transitionType,
+    onTransitionChange = () => {},
     screens = {},
     toggleScreenVisibility = () => {},
     toggleAllScreens = () => {},
@@ -99,15 +108,38 @@ function EditorLayout(props) {
         position="relative"
         key="header"
       >
-        {/* TODO: 
-            The presentation settings button is not yet functional. Consider adding for example the 
-            cue transition animation selection into the settings */}
-        {/* <Button
-          aria-label="Presentation Settings"
-          className="edit-mode-btn edit-mode-btn-settings"
+        <ClickablePopover
+          label={
+            <Box>
+              <FormLabel
+                htmlFor="transition-type-select"
+                mb={2}
+                fontWeight={700}
+              >
+                Transition Type:
+              </FormLabel>
+              <Select
+                id="transition-type-select"
+                data-testid="transition-type-select"
+                value={transitionType}
+                onChange={(e) => onTransitionChange(e.target.value)}
+              >
+                <option value="fade">Fade</option>
+                <option value="slide-left">Slide From Left</option>
+                <option value="slide-right">Slide From Right</option>
+                <option value="zoom">Zoom</option>
+                <option value="none">None</option>
+              </Select>
+            </Box>
+          }
         >
-          <img src={settingsIcon} alt="" width="24" height="24" />
-        </Button> */}
+          <Button
+            aria-label="Presentation Settings"
+            className="edit-mode-btn edit-mode-btn-settings"
+          >
+            <img src={settingsIcon} alt="" width="24" height="24" />
+          </Button>
+        </ClickablePopover>
 
         <Box position="absolute" left="50%" transform="translateX(-50%)">
           <PresentationTitle id={id} presentationName={presentationName} />
@@ -238,6 +270,7 @@ const EditModeContainer = ({
   isToolboxOpen,
   setIsToolboxOpen,
   transitionType,
+  onTransitionChange,
   cueIndex,
   setCueIndex,
   isAudioMuted,
@@ -488,6 +521,8 @@ const EditModeContainer = ({
         cueData={cueData}
         updateCue={updateCue}
         isAudioMode={isAudioMode}
+        transitionType={transitionType}
+        onTransitionChange={onTransitionChange}
         screens={screens}
         toggleScreenVisibility={toggleScreenVisibility}
         toggleAllScreens={toggleAllScreens}
