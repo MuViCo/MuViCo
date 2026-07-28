@@ -1,8 +1,8 @@
 /*
-* Main component for rendering the presentation page, which includes both edit mode and show mode functionality.
-* The component manages state for the current cue index, presentation size, show mode toggle, and various UI states such as toolbox and transition menu visibility.
-* It also handles user authentication and presentation deletion through custom hooks and utility functions. 
-* The component fetches presentation information from the Redux store and passes necessary props down to the EditModeContainer component for rendering the appropriate UI based on the current mode. 
+ * Main component for rendering the presentation page, which includes both edit mode and show mode functionality.
+ * The component manages state for the current cue index, presentation size, show mode toggle, and various UI states such as toolbox and transition menu visibility.
+ * It also handles user authentication and presentation deletion through custom hooks and utility functions.
+ * The component fetches presentation information from the Redux store and passes necessary props down to the EditModeContainer component for rendering the appropriate UI based on the current mode.
  */
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -25,17 +25,33 @@ const PresentationPage = ({ user }) => {
     handleCancelDelete,
   } = useDeletePresentation()
 
-
   useEffect(() => {
     dispatch(fetchPresentationInfo(id))
   }, [id, navigate, dispatch])
-
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
   const [isAudioMuted, setIsAudioMuted] = useState(false)
   const [isTransitionMenuOpen, setIsTransitionMenuOpen] = useState(false)
   const [transitionType, setTransitionType] = useState("fade")
+
+  useEffect(() => {
+    const savedTransitionType = localStorage.getItem(
+      `presentation-${id}-transition`
+    )
+    if (savedTransitionType) {
+      setTransitionType(savedTransitionType)
+    }
+  }, [id])
+
+  const handleTransitionChange = (value) => {
+    setTransitionType(value)
+    try {
+      localStorage.setItem(`presentation-${id}-transition`, value)
+    } catch (err) {
+      console.warn("Could not persist transition preference:", err)
+    }
+  }
 
   const presentationInfo = useSelector((state) => state.presentation.cues)
   const presentationName = useSelector((state) => state.presentation.name)
@@ -53,23 +69,25 @@ const PresentationPage = ({ user }) => {
     }
   }
 
-  return <EditModeContainer
-    className="presentation-page"
-    id={id}
-    cues={presentationInfo}
-    isToolboxOpen={isToolboxOpen}
-    setIsToolboxOpen={setIsToolboxOpen}
-    isTransitionMenuOpen={isTransitionMenuOpen}
-    setIsTransitionMenuOpen={setIsTransitionMenuOpen}
-    transitionType={transitionType}
-    setTransitionType={setTransitionType}
-    cueIndex={cueIndex}
-    setCueIndex={setCueIndex}
-    updateCue={updateCue}
-    isAudioMuted={isAudioMuted}
-    toggleAudioMute={toggleAudioMute}
-    indexCount={indexCount}
-  />
+  return (
+    <EditModeContainer
+      className="presentation-page"
+      id={id}
+      cues={presentationInfo}
+      isToolboxOpen={isToolboxOpen}
+      setIsToolboxOpen={setIsToolboxOpen}
+      isTransitionMenuOpen={isTransitionMenuOpen}
+      setIsTransitionMenuOpen={setIsTransitionMenuOpen}
+      transitionType={transitionType}
+      onTransitionChange={handleTransitionChange}
+      cueIndex={cueIndex}
+      setCueIndex={setCueIndex}
+      updateCue={updateCue}
+      isAudioMuted={isAudioMuted}
+      toggleAudioMute={toggleAudioMute}
+      indexCount={indexCount}
+    />
+  )
 }
 
 export default PresentationPage

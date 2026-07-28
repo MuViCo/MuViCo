@@ -133,7 +133,8 @@ const ScreenContent = ({
       {/* Animates out previous cue media, if any */}
       {previousScreenData && (
         <Box
-          key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}-${transitionType}`}
+          key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}`}
+          data-testid="outgoing-cue-layer"
           flex="1"
           display="flex"
           justifyContent="center"
@@ -143,35 +144,18 @@ const ScreenContent = ({
           zIndex={1}
           animation={animStyle(exitAnim)}
         >
-          {(previousScreenData.file?.url || previousScreenData.file?.name) &&
-            (isType.image(previousScreenData.file) ? (
-              <Image
-                src={
-                  previousScreenData.file.url ||
-                  `/${previousScreenData.file.name}`
-                }
-                alt={previousScreenData.name}
-                width="100%"
-                height="100vh"
-                objectFit="contain"
-              />
-            ) : (
-              <video
-                src={previousScreenData.file.url}
-                width="100%"
-                height="100%"
-                autoPlay
-                loop
-                muted
-                style={{ objectFit: "contain" }}
-              />
-            ))}
+          {renderMedia(
+            previousScreenData.file,
+            previousScreenData.name,
+            previousScreenData.color
+          )}
         </Box>
       )}
 
       {/* Animates in current cue media */}
       <Box
-        key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}-${transitionType}`}
+        key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
+        data-testid="incoming-cue-layer"
         flex="1"
         display="flex"
         justifyContent="center"
