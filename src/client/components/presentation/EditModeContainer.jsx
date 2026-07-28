@@ -330,7 +330,10 @@ const EditModeContainer = ({
     screenNumbers.forEach((screenNumber) => {
       visibility[screenNumber] = false
     })
-    setScreens(visibility)
+    // Only add defaults for screen numbers we haven't seen yet - keep
+    // existing screens' open/closed state untouched so that editing a cue
+    // doesn't close every currently open presentation window
+    setScreens((prev) => ({ ...visibility, ...prev }))
     setMirroring({})
   }, [cues, screenCount])
 
