@@ -65,13 +65,17 @@ describe("PresentationPlaybackControls", () => {
   test("renders Open all screens when all screens are closed", () => {
     renderControls({ screens: { 1: false, 2: false } })
 
-    expect(screen.getByRole("button", { name: "Open all screens" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Open all screens" })
+    ).toBeInTheDocument()
   })
 
   test("renders Close all screens when at least one screen is open", () => {
     renderControls({ screens: { 1: true, 2: false } })
 
-    expect(screen.getByRole("button", { name: "Close all screens" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Close all screens" })
+    ).toBeInTheDocument()
   })
 
   test("calls toggleAllScreens when the all screens button is clicked", () => {
@@ -95,7 +99,9 @@ describe("PresentationPlaybackControls", () => {
   test("shows Stop Autoplay when autoplay is active", () => {
     renderControls({ isAutoplaying: true })
 
-    expect(screen.getByRole("button", { name: "Stop Autoplay" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Stop Autoplay" })
+    ).toBeInTheDocument()
   })
 
   test("calls toggleAutoplayInterval on interval input changes", () => {
@@ -103,8 +109,28 @@ describe("PresentationPlaybackControls", () => {
     const toggleAutoplayInterval = jest.fn()
     renderControls({ toggleAutoplayInterval, autoplayInterval: 5 })
 
-    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "0.5" } })
+    fireEvent.change(screen.getByRole("spinbutton"), {
+      target: { value: "0.5" },
+    })
 
     expect(toggleAutoplayInterval).toHaveBeenCalled()
+  })
+
+  test("audio element loops when audioLoop is true", () => {
+    const { container } = renderControls({
+      audioSourceURL: "https://example.com/cue.mp3",
+      audioLoop: true,
+    })
+
+    expect(container.querySelector("audio")).toHaveAttribute("loop")
+  })
+
+  test("audio element does not loop when audioLoop is false", () => {
+    const { container } = renderControls({
+      audioSourceURL: "https://example.com/cue.mp3",
+      audioLoop: false,
+    })
+
+    expect(container.querySelector("audio")).not.toHaveAttribute("loop")
   })
 })
