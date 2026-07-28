@@ -408,6 +408,132 @@ describe("Screen", () => {
     })
   })
 
+  // Regression test that ensures that the outgoing cue is still rendered as a background when it is a color cue,
+  // instead of being dropped and displaying a blank or black background during the transition to the next cue.
+  test("keeps rendering the outgoing cue's color as a background instead of leaving it blank", async () => {
+    const colorCue = {
+      file: null,
+      color: "red",
+      index: 1,
+      name: "color-cue",
+      screen: 1,
+      _id: "id-color",
+      loop: false,
+    }
+
+    const imageCue = {
+      file: {
+        url: "http://example.com/next.jpg",
+        type: "image/jpg",
+        name: "next.jpg",
+      },
+      index: 2,
+      name: "image-cue",
+      screen: 1,
+      _id: "id-image",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={colorCue}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1 • Frame 1")
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={imageCue}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    // Once the color cue becomes the outgoing (previous) layer, it should
+    // still be rendered as a colored background.
+    const popup = window.open.mock.results.at(-1).value
+    const outgoingLayer = popup.document.body.querySelector(
+      '[data-testid="outgoing-cue-layer"]'
+    )
+    expect(outgoingLayer).toBeTruthy()
+    expect(outgoingLayer.children.length).toBeGreaterThan(0)
+  })
+
+  test("renders the outgoing image cue with the same styling as the incoming cue", async () => {
+    const firstImageCue = {
+      file: {
+        url: "http://example.com/outgoing.jpg",
+        type: "image/jpg",
+        name: "outgoing.jpg",
+      },
+      index: 1,
+      name: "outgoing-cue",
+      screen: 1,
+      _id: "id-outgoing",
+      loop: false,
+    }
+
+    const secondImageCue = {
+      file: {
+        url: "http://example.com/incoming.jpg",
+        type: "image/jpg",
+        name: "incoming.jpg",
+      },
+      index: 2,
+      name: "incoming-cue",
+      screen: 1,
+      _id: "id-incoming",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={firstImageCue}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1 • Frame 1")
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={secondImageCue}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    const outgoingImg = popup.document.body.querySelector(
+      '[data-testid="outgoing-cue-layer"] img'
+    )
+    const incomingImg = popup.document.body.querySelector(
+      '[data-testid="incoming-cue-layer"] img'
+    )
+    expect(outgoingImg).toBeTruthy()
+    expect(incomingImg).toBeTruthy()
+    // Chakra classNames are generated based on the style props, so if the classNames match, then the cue image styling matches
+    expect(outgoingImg.className).toBe(incomingImg.className)
+  })
+
   test("shows and hides cue metadata with the Shift key", async () => {
     const screenData = {
       file: {
