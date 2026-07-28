@@ -57,6 +57,7 @@ function EditorLayout(props) {
     toggleAutoplay = () => {},
     isAutoplaying = false,
     audioSourceURL = "",
+    audioLoop = false,
     toggleAutoplayInterval = () => {},
     onOpenTutorial = () => {},
     editModeBackground,
@@ -193,6 +194,7 @@ function EditorLayout(props) {
           isAutoplaying={isAutoplaying}
           toggleAutoplayInterval={toggleAutoplayInterval}
           audioSourceURL={audioSourceURL}
+          audioLoop={audioLoop}
         />
       </div>
 
@@ -384,6 +386,7 @@ const EditModeContainer = ({
   const isCurrentCueAudio = Boolean(
     currentAudioCue && isType.audio(currentAudioFile)
   )
+  const currentAudioLoop = Boolean(currentAudioCue?.loop)
 
   const handleScreenClose = useCallback((screenNumber) => {
     setScreens((prev) => ({
@@ -535,6 +538,7 @@ const EditModeContainer = ({
         toggleAutoplayInterval={toggleAutoplayInterval}
         onOpenTutorial={handleOpenTutorial}
         audioSourceURL={currentAudioSrc}
+        audioLoop={currentAudioLoop}
         editModeBackground={editModeBackground}
         panelBackground={panelBackground}
         outlineColor={outlineColor}

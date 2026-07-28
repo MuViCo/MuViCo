@@ -142,6 +142,7 @@ const PresentationPlaybackControls = ({
   isAutoplaying,
   toggleAutoplayInterval,
   audioSourceURL,
+  audioLoop = false,
 }) => (
   <Box
     bg=""
@@ -187,7 +188,7 @@ const PresentationPlaybackControls = ({
       toggleAutoplayInterval={toggleAutoplayInterval}
     />
     {audioSourceURL ? (
-      <audio autoPlay loop controls src={audioSourceURL}></audio>
+      <audio autoPlay loop={audioLoop} controls src={audioSourceURL}></audio>
     ) : null}
   </Box>
 )
