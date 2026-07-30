@@ -9,6 +9,7 @@
 import { renderHook, act } from "@testing-library/react"
 import { useToast } from "@chakra-ui/react"
 import { useCustomToast } from "../../components/utils/toastUtils"
+import { SESSION_EXPIRED_EVENT } from "../../utils/axiosAuthInterceptor"
 
 jest.mock("@chakra-ui/react", () => {
   const originalModule = jest.requireActual("@chakra-ui/react")
@@ -50,7 +51,7 @@ describe("useCustomToast", () => {
     const { result } = renderHook(() => useCustomToast())
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("session-expired"))
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
     })
     act(() => {
       result.current({
@@ -67,7 +68,7 @@ describe("useCustomToast", () => {
     const { result } = renderHook(() => useCustomToast())
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("session-expired"))
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
     })
     act(() => {
       result.current({
@@ -87,7 +88,7 @@ describe("useCustomToast", () => {
     const { result } = renderHook(() => useCustomToast())
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("session-expired"))
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
     })
     act(() => {
       jest.advanceTimersByTime(5000)

@@ -5,7 +5,7 @@
  */
 
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Container,
   Box,
@@ -33,7 +33,10 @@ import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 import UserManualModal from "./UserManualModal"
 import { useCustomToast } from "../utils/toastUtils"
-import { SESSION_EXPIRED_MESSAGE } from "../../utils/axiosAuthInterceptor"
+import {
+  SESSION_EXPIRED_MESSAGE,
+  SESSION_EXPIRED_EVENT,
+} from "../../utils/axiosAuthInterceptor"
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
@@ -41,6 +44,7 @@ const NavBar = ({ user, setUser }) => {
   const showToast = useCustomToast()
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
+  const sessionExpiredHandledRef = useRef(false)
 
   const isFrontpage = location.pathname === "/"
   const isHomepage = location.pathname === "/home"
@@ -87,6 +91,10 @@ const NavBar = ({ user, setUser }) => {
   }
 
   const handleSessionExpired = () => {
+    // Guards against concurrent session-expired events being handled multiple times in quick succession
+    if (sessionExpiredHandledRef.current) return
+    sessionExpiredHandledRef.current = true
+
     handleLogout(navigate, setUser)
     showToast({
       title: "Session expired",
@@ -95,11 +103,13 @@ const NavBar = ({ user, setUser }) => {
     })
   }
   const onLogin = (user) => {
+    sessionExpiredHandledRef.current = false
     setUser(user)
     navigate("/home")
   }
 
   const onSignup = (user) => {
+    sessionExpiredHandledRef.current = false
     setUser(user)
     navigate("/home")
   }
@@ -123,10 +133,10 @@ const NavBar = ({ user, setUser }) => {
 
   // React to an expired/invalid session detected mid-session by the axios interceptor
   useEffect(() => {
-    window.addEventListener("session-expired", handleSessionExpired)
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
     // Cleanup the event listener on component unmount (navbar should always be mounted, but just in case)
     return () =>
-      window.removeEventListener("session-expired", handleSessionExpired)
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, setUser])
 
