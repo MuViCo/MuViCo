@@ -34,7 +34,9 @@ const userExtractor = async (request, response, next) => {
     if (token) {
       const decodedToken = jwt.verify(token, process.env.SECRET)
       if (!decodedToken.id) {
-        return response.status(401).json({ error: "token invalid" })
+        return response
+          .status(401)
+          .json({ error: "token invalid", code: "SESSION_EXPIRED" })
       }
 
       request.user = await User.findById(decodedToken.id)
@@ -93,10 +95,14 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).json({ error: error.message })
   }
   if (error.name === "JsonWebTokenError") {
-    return response.status(401).json({ error: "invalid token" })
+    return response
+      .status(401)
+      .json({ error: "invalid token", code: "SESSION_EXPIRED" })
   }
   if (error.name === "TokenExpiredError") {
-    return response.status(401).json({ error: "token expired" })
+    return response
+      .status(401)
+      .json({ error: "token expired", code: "SESSION_EXPIRED" })
   }
   if (error.name === "MongoServerError" && error.code === 11000) {
     return response.status(400).json({ error: "duplicate key error" })
