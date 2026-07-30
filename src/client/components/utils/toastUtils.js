@@ -3,12 +3,42 @@
  * Provides a custom hook, useCustomToast, that returns a showToast function for easy toast display.
  */
 
+import { useEffect, useRef } from "react"
 import { useToast } from "@chakra-ui/react"
+
+// How long to hold off on "error" toasts after a session-expiry is detected.
+// NavBar already shows a clear message and redirects when this fires, so the
+// many call sites across the app that independently toast on a failed API
+// call would otherwise show a second, confusing message for the same event.
+const SESSION_EXPIRED_SUPPRESSION_WINDOW_MS = 5000
 
 export const useCustomToast = () => {
   const toast = useToast()
+  const sessionExpiredRef = useRef(false)
+
+  useEffect(() => {
+    let resetTimer
+    const markSessionExpired = () => {
+      sessionExpiredRef.current = true
+      clearTimeout(resetTimer)
+      resetTimer = setTimeout(() => {
+        sessionExpiredRef.current = false
+      }, SESSION_EXPIRED_SUPPRESSION_WINDOW_MS)
+    }
+
+    window.addEventListener("session-expired", markSessionExpired)
+    return () => {
+      // Cleanup the event listener when components using this hook unmount
+      window.removeEventListener("session-expired", markSessionExpired)
+      clearTimeout(resetTimer)
+    }
+  }, [])
 
   const showToast = ({ title, description, status }) => {
+    if (status === "error" && sessionExpiredRef.current) {
+      return
+    }
+
     toast({
       title,
       description,

@@ -1,18 +1,19 @@
-/* 
-* Profile page component for displaying user information and allowing password changes.
-* Includes form validation using Yup and error handling for both validation and API errors.
-* Features:
-* - Displays username (and email if available) in a read-only format.
-* - Provides a form for changing the password with fields for current password, new password, and confirm password.
-* - Validates form inputs with specific rules for password complexity and matching.
-* - Shows error messages for validation errors and API errors using Chakra UI's toast notifications.
+/*
+ * Profile page component for displaying user information and allowing password changes.
+ * Includes form validation using Yup and error handling for both validation and API errors.
+ * Features:
+ * - Displays username (and email if available) in a read-only format.
+ * - Provides a form for changing the password with fields for current password, new password, and confirm password.
+ * - Validates form inputs with specific rules for password complexity and matching.
+ * - Shows error messages for validation errors and API errors using Chakra UI's toast notifications.
  */
 import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import * as yup from "yup"
-import { ViewIcon, ViewOffIcon} from "@chakra-ui/icons"
+import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import authService from "../../services/auth"
-import Error from "../utils/Error" 
+import Error from "../utils/Error"
+import { useCustomToast } from "../utils/toastUtils"
 
 import {
   minPwLength,
@@ -31,10 +32,9 @@ import {
   Button,
   Card,
   CardBody,
-  useToast,
   InputGroup,
   InputRightElement,
-  IconButton
+  IconButton,
 } from "@chakra-ui/react"
 
 const validationSchema = yup.object().shape({
@@ -42,7 +42,10 @@ const validationSchema = yup.object().shape({
   newPassword: yup
     .string()
     .required("New password is required")
-    .min(minPwLength, `Password must be at least ${minPwLength} characters long`)
+    .min(
+      minPwLength,
+      `Password must be at least ${minPwLength} characters long`
+    )
     .max(maxPwLength, `Password must be at most ${maxPwLength} characters`)
     .test(
       "password-not-whitespace-only",
@@ -80,7 +83,7 @@ const Profile = ({ user }) => {
     confirmPassword: false,
   })
   const [formErrors, setFormErrors] = useState({})
-  const toast = useToast()
+  const showToast = useCustomToast()
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target
@@ -113,12 +116,10 @@ const Profile = ({ user }) => {
 
       await authService.changepassword(payload)
 
-      toast({
+      showToast({
         title: "Success",
         description: "Password changed successfully",
         status: "success",
-        duration: 3000,
-        isClosable: true,
       })
 
       setPasswords({
@@ -138,12 +139,10 @@ const Profile = ({ user }) => {
         return
       }
 
-      toast({
+      showToast({
         title: "Error",
         description: err?.response?.data?.error || "Failed to change password",
         status: "error",
-        duration: 5000,
-        isClosable: true,
       })
     }
   }
@@ -163,7 +162,12 @@ const Profile = ({ user }) => {
                 Account Information
               </Heading>
               <VStack align="start" spacing={3}>
-                <FormLabel fontWeight="bold">Username:&nbsp;&nbsp;&nbsp;&nbsp;<span style={{fontWeight: "normal"}}>{user.username || "N/A"}</span></FormLabel>
+                <FormLabel fontWeight="bold">
+                  Username:&nbsp;&nbsp;&nbsp;&nbsp;
+                  <span style={{ fontWeight: "normal" }}>
+                    {user.username || "N/A"}
+                  </span>
+                </FormLabel>
               </VStack>
             </CardBody>
           </Card>
@@ -182,7 +186,9 @@ const Profile = ({ user }) => {
                       <Input
                         id="current-password"
                         data-testid="current-password-input"
-                        type={showPasswords.currentPassword ? "text" : "password"}
+                        type={
+                          showPasswords.currentPassword ? "text" : "password"
+                        }
                         name="currentPassword"
                         value={passwords.currentPassword}
                         onChange={handlePasswordChange}
@@ -190,16 +196,33 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.currentPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.currentPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, currentPassword: !showPasswords.currentPassword})}
+                          aria-label={
+                            showPasswords.currentPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.currentPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              currentPassword: !showPasswords.currentPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
-                    {formErrors.currentPassword && <Error error={formErrors.currentPassword} />}
+                    {formErrors.currentPassword && (
+                      <Error error={formErrors.currentPassword} />
+                    )}
                   </FormControl>
 
                   <FormControl isRequired>
@@ -216,18 +239,34 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.newPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.newPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, newPassword: !showPasswords.newPassword})}
+                          aria-label={
+                            showPasswords.newPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.newPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              newPassword: !showPasswords.newPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
-                    {formErrors.newPassword && <Error error={formErrors.newPassword} />}
+                    {formErrors.newPassword && (
+                      <Error error={formErrors.newPassword} />
+                    )}
                   </FormControl>
-                  
 
                   <FormControl isRequired>
                     <FormLabel>Confirm Password</FormLabel>
@@ -235,7 +274,9 @@ const Profile = ({ user }) => {
                       <Input
                         id="confirm-password"
                         data-testid="confirm-password-input"
-                        type={showPasswords.confirmPassword ? "text" : "password"}
+                        type={
+                          showPasswords.confirmPassword ? "text" : "password"
+                        }
                         name="confirmPassword"
                         value={passwords.confirmPassword}
                         onChange={handlePasswordChange}
@@ -243,26 +284,40 @@ const Profile = ({ user }) => {
                       />
                       <InputRightElement>
                         <IconButton
-                          aria-label={showPasswords.confirmPassword ? "Hide password" : "Show password"}
-                          icon={showPasswords.confirmPassword ? <ViewOffIcon /> : <ViewIcon />}
-                          onClick={() => setShowPasswords({...showPasswords, confirmPassword: !showPasswords.confirmPassword})}
+                          aria-label={
+                            showPasswords.confirmPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          icon={
+                            showPasswords.confirmPassword ? (
+                              <ViewOffIcon />
+                            ) : (
+                              <ViewIcon />
+                            )
+                          }
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              confirmPassword: !showPasswords.confirmPassword,
+                            })
+                          }
                           variant="ghost"
                           size="sm"
                           tabIndex={-1}
                         />
                       </InputRightElement>
                     </InputGroup>
-                    {formErrors.confirmPassword && <Error error={formErrors.confirmPassword} />}
+                    {formErrors.confirmPassword && (
+                      <Error error={formErrors.confirmPassword} />
+                    )}
                   </FormControl>
 
                   <HStack spacing={3} pt={4}>
                     <Button type="submit" colorScheme="purple">
                       Confirm changes
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/")}
-                    >
+                    <Button variant="outline" onClick={() => navigate("/")}>
                       Return to Frontpage
                     </Button>
                   </HStack>

@@ -5,6 +5,9 @@ import store from "./redux/store"
 import "../../styles.css"
 
 import App from "./App"
+import { setupAxiosAuthInterceptor } from "./utils/axiosAuthInterceptor"
+
+setupAxiosAuthInterceptor()
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Provider store={store}>
