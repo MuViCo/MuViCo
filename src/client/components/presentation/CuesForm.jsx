@@ -1,6 +1,6 @@
 /**
  * CuesForm component for adding and editing cues in the presentation
- * 
+ *
  * This component is used in the presentation editor to allow users to add new cues or edit existing cues.
  * It supports both visual cues (images and videos) and audio cues, with validation for file types and required fields.
  * The form includes inputs for cue name, index, screen number, file upload, and color selection.
@@ -15,8 +15,6 @@ import {
   Heading,
   Divider,
   Tooltip,
-  ChakraProvider,
-  extendTheme,
   Box,
   VStack,
   HStack,
@@ -29,9 +27,7 @@ import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
 import { SpeakerIcon } from "../../lib/icons"
 import { useState, useEffect, useRef } from "react"
 import Error from "../utils/Error"
-import {
-  getNextAvailableIndex,
-} from "../utils/numberInputUtils"
+import { getNextAvailableIndex } from "../utils/numberInputUtils"
 import { ColorPickerWithPresets } from "./ColorPicker"
 import {
   isAudioMimeType,
@@ -40,8 +36,6 @@ import {
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
-
-const theme = extendTheme({})
 
 // Create a transparent 1x1 pixel image to suppress the default browser drag ghost image
 const transparentDragImage = (() => {
@@ -64,7 +58,6 @@ const suppressNativeDragGhost = (dataTransfer) => {
   dataTransfer.setDragImage(transparentDragImage, 0, 0)
 }
 
-
 /**
  * CuesForm component - a form for adding and editing presentation cues
  * Props:
@@ -78,20 +71,46 @@ const suppressNativeDragGhost = (dataTransfer) => {
  * - isAudioMode: Boolean indicating if in audio mode
  * - indexCount: Count of indices
  */
-const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenCount, isAudioMode = false, indexCount }) => {
+const CuesForm = ({
+  addCue,
+  onClose,
+  position,
+  cues,
+  cueData,
+  updateCue,
+  screenCount,
+  isAudioMode = false,
+  indexCount,
+}) => {
   const [file, setFile] = useState("")
   const [actualFile, setActualFile] = useState(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
-  const [screen, setScreen] = useState(isAudioMode ? 0 : (position?.screen || 1))
+  const [screen, setScreen] = useState(isAudioMode ? 0 : position?.screen || 1)
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [error, setError] = useState(null)
   const [color, setColor] = useState()
   const [selectedColor, setSelectedColor] = useState("#9244ff")
-  const presetColors = ["#000000","#787878", "#c0c0c0", "#ffffff","#ff0000","#ff8000","#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#7f00ff", "#ff00ff", "#ff007f",
-      ]
+  const presetColors = [
+    "#000000",
+    "#787878",
+    "#c0c0c0",
+    "#ffffff",
+    "#ff0000",
+    "#ff8000",
+    "#ffff00",
+    "#80ff00",
+    "#00ff00",
+    "#00ff80",
+    "#00ffff",
+    "#0080ff",
+    "#0000ff",
+    "#7f00ff",
+    "#ff00ff",
+    "#ff007f",
+  ]
 
   // Media pool management state - for uploading and displaying media/audio files before adding to cue
   const [mediaFiles, setMediaFiles] = useState([])
@@ -169,7 +188,8 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       setCueId(cueData._id)
       setColor(cueData.color)
 
-      const cueFile = cueData.file && typeof cueData.file === "object" ? cueData.file : null
+      const cueFile =
+        cueData.file && typeof cueData.file === "object" ? cueData.file : null
       setFile("")
       setActualFile(cueFile)
       setFileName(cueFile?.name || "")
@@ -184,7 +204,17 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
         setScreen(position?.screen || 1)
       }
     }
-  }, [cueData, setCueName, setIndex, setScreen, setCueId, setFile, setColor, isAudioMode, position?.screen])
+  }, [
+    cueData,
+    setCueName,
+    setIndex,
+    setScreen,
+    setCueId,
+    setFile,
+    setColor,
+    isAudioMode,
+    position?.screen,
+  ])
 
   const checkFileType = (file) => {
     if (!file || !file.type) {
@@ -192,7 +222,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     }
 
     const targetScreen = isAudioMimeType(file.type) ? audioRow : screen
-    const allowedMimeTypes = getAllowedMimeTypesForScreen(targetScreen, screenCount)
+    const allowedMimeTypes = getAllowedMimeTypesForScreen(
+      targetScreen,
+      screenCount
+    )
 
     if (!allowedMimeTypes.includes(file.type)) {
       const errorMsg = isAudioRow(targetScreen, screenCount)
@@ -206,7 +239,6 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     return true
   }
 
-  
   // Handle adding a new cue - validates and calls addCue callback
   const onAddCue = (event) => {
     event.preventDefault()
@@ -292,55 +324,54 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     setError(null)
   }
 
-
   // Handle uploading images/videos to media pool - creates preview URLs for drag-and-drop
   const handleMediaUpload = (event) => {
     const files = Array.from(event.target.files)
-    const validMediaFiles = files.filter(file => {
+    const validMediaFiles = files.filter((file) => {
       const isImage = file.type.startsWith("image/")
       const isVideo = file.type.startsWith("video/")
       return isImage || isVideo
     })
-    
+
     // Create media objects with preview URLs
     const newMediaFiles = validMediaFiles.map((file, idx) => ({
       id: `media-${Date.now()}-${idx}`,
       file,
       name: file.name,
       type: file.type,
-      preview: URL.createObjectURL(file)
+      preview: URL.createObjectURL(file),
     }))
-    
-    setMediaFiles(prev => [...prev, ...newMediaFiles])
+
+    setMediaFiles((prev) => [...prev, ...newMediaFiles])
   }
 
   const handleSoundUpload = (event) => {
     const files = Array.from(event.target.files)
-    const validAudioFiles = files.filter(file => isAudioMimeType(file.type))
-    
+    const validAudioFiles = files.filter((file) => isAudioMimeType(file.type))
+
     // Create sound objects
     const newSoundFiles = validAudioFiles.map((file, idx) => ({
       id: `sound-${Date.now()}-${idx}`,
       file,
       name: file.name,
-      type: file.type
+      type: file.type,
     }))
-    
-    setSoundFiles(prev => [...prev, ...newSoundFiles])
+
+    setSoundFiles((prev) => [...prev, ...newSoundFiles])
   }
 
   const removeMediaFile = (id) => {
-    setMediaFiles(prev => {
-      const file = prev.find(f => f.id === id)
+    setMediaFiles((prev) => {
+      const file = prev.find((f) => f.id === id)
       if (file?.preview) {
         URL.revokeObjectURL(file.preview)
       }
-      return prev.filter(f => f.id !== id)
+      return prev.filter((f) => f.id !== id)
     })
   }
 
   const removeSoundFile = (id) => {
-    setSoundFiles(prev => prev.filter(f => f.id !== id))
+    setSoundFiles((prev) => prev.filter((f) => f.id !== id))
   }
 
   // Calculate contrasting text color (black or white) based on background color brightness
@@ -366,12 +397,11 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
     return brightness >= 186 ? "black" : "white"
   }
 
-
   const tabStyles = {
     button: (isActive) => ({
       padding: "8px 16px",
       border: "none",
-      backgroundColor: isActive ?  "#D6BCFA" : "#9244ff",
+      backgroundColor: isActive ? "#D6BCFA" : "#9244ff",
       color: !isActive ? "white" : "black",
       cursor: "pointer",
       fontWeight: isActive ? "bold" : "normal",
@@ -389,22 +419,23 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
       overflowY: "auto",
     },
   }
-  
+
   // Render the form with three tabs: Colors, Media, and Audio
   // The colors tab allows creating colored elements by dragging them to the grid
   // The media tab allows uploading and dragging images/videos to the grid
   // The audio tab allows uploading and dragging audio files to the grid
   return (
     <div className="cue-editor-form">
-
-    <ChakraProvider theme={theme} >
-
       <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
         <FormControl as="fieldset">
           {cueData ? (
-            <Heading size="md" mb={4}>Edit Element</Heading>
+            <Heading size="md" mb={4}>
+              Edit Element
+            </Heading>
           ) : (
-            <Heading size="md" mb={4} color="white">Add element</Heading>
+            <Heading size="md" mb={4} color="white">
+              Add element
+            </Heading>
           )}
 
           <Box>
@@ -445,19 +476,21 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     onChange={setSelectedColor}
                     presetColors={presetColors}
                   />
-                  <FormHelperText mb={2} color="black">Element name</FormHelperText>
-                    <Input
-                      data-testid="cue-name"
-                      id="cue-name"
-                      value={cueName}
-                      placeholder="Color Element"
-                      mb={2}
-                      color="black"
-                      sx={{ color: "black !important", caretColor: "black" }}
-                      _placeholder={{ color: "#acacac" }}
-                      onChange={(e) => setCueName(e.target.value)}
-                      required
-                    />
+                  <FormHelperText mb={2} color="black">
+                    Element name
+                  </FormHelperText>
+                  <Input
+                    data-testid="cue-name"
+                    id="cue-name"
+                    value={cueName}
+                    placeholder="Color Element"
+                    mb={2}
+                    color="black"
+                    sx={{ color: "black !important", caretColor: "black" }}
+                    _placeholder={{ color: "#acacac" }}
+                    onChange={(e) => setCueName(e.target.value)}
+                    required
+                  />
 
                   <Box
                     className="droppable-color-element"
@@ -474,8 +507,14 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
 
                       mediaStore.setActiveDragData(dragData)
 
-                      e.dataTransfer.setData("application/json", JSON.stringify(dragData))
-                      e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
+                      e.dataTransfer.setData(
+                        "application/json",
+                        JSON.stringify(dragData)
+                      )
+                      e.dataTransfer.setData(
+                        "text/plain",
+                        JSON.stringify(dragData)
+                      )
                     }}
                     onDragEnd={() => mediaStore.clearActiveDragData()}
                     p={6}
@@ -488,7 +527,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                     _active={{ cursor: "grabbing" }}
                     _hover={{ opacity: 0.8 }}
                   >
-                    <Text color={getContrastTextColor(selectedColor)} fontWeight="bold">
+                    <Text
+                      color={getContrastTextColor(selectedColor)}
+                      fontWeight="bold"
+                    >
                       Drag color to grid
                     </Text>
                   </Box>
@@ -497,14 +539,15 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
 
               {/* MEDIA TAB - Upload and manage images/videos */}
               {activeTab === "media" && (
-                <VStack spacing={4} align="stretch" >
+                <VStack spacing={4} align="stretch">
                   <FormHelperText color="black">
                     Upload images or videos and drag them to the grid
                     <Tooltip
                       label={
                         <>
-                          <strong>Valid image types: </strong>.apng, .avif, .bmp, .cur,
-                          .gif, .ico, .jfif, .jpe, .jpeg, .jpg, .png, .svg and .webp
+                          <strong>Valid image types: </strong>.apng, .avif,
+                          .bmp, .cur, .gif, .ico, .jfif, .jpe, .jpeg, .jpg,
+                          .png, .svg and .webp
                           <br />
                           <strong>Valid video types: </strong> .mp4 and .3gp
                         </>
@@ -513,7 +556,12 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                       p={2}
                       fontSize="sm"
                     >
-                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        marginLeft={2}
+                        color="black"
+                      >
                         <InfoOutlineIcon />
                       </Button>
                     </Tooltip>
@@ -542,7 +590,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                   {mediaFiles.length > 0 && (
                     <>
                       <Divider />
-                      <Text fontWeight="bold">Media Pool ({mediaFiles.length})</Text>
+                      <Text fontWeight="bold">
+                        Media Pool ({mediaFiles.length})
+                      </Text>
                       <SimpleGrid columns={2} spacing={3}>
                         {mediaFiles.map((media) => (
                           <Box
@@ -561,9 +611,15 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                                 previewUrl: media.preview,
                               }
                               mediaStore.setActiveDragData(dragData)
-                              
-                              e.dataTransfer.setData("application/json", JSON.stringify(dragData))
-                              e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
+
+                              e.dataTransfer.setData(
+                                "application/json",
+                                JSON.stringify(dragData)
+                              )
+                              e.dataTransfer.setData(
+                                "text/plain",
+                                JSON.stringify(dragData)
+                              )
                             }}
                             onDragEnd={() => mediaStore.clearActiveDragData()}
                             position="relative"
@@ -573,7 +629,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             p={2}
                             cursor="grab"
                             _active={{ cursor: "grabbing" }}
-                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                            _hover={{
+                              borderColor: "purple.500",
+                              bg: "purple.50",
+                            }}
                           >
                             <IconButton
                               icon={<DeleteIcon />}
@@ -616,12 +675,21 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                   <FormHelperText color="black">
                     Upload audio files and drag them to the grid
                     <Tooltip
-                      label={<><strong>Valid audio types: </strong> .mp3 and .wav</>}
+                      label={
+                        <>
+                          <strong>Valid audio types: </strong> .mp3 and .wav
+                        </>
+                      }
                       placement="right-end"
                       p={2}
                       fontSize="sm"
                     >
-                      <Button variant="ghost" size="xs" marginLeft={2} color="black">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        marginLeft={2}
+                        color="black"
+                      >
                         <InfoOutlineIcon />
                       </Button>
                     </Tooltip>
@@ -649,7 +717,9 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                   {soundFiles.length > 0 && (
                     <>
                       <Divider />
-                      <Text fontWeight="bold" color="black">Sound Pool ({soundFiles.length})</Text>
+                      <Text fontWeight="bold" color="black">
+                        Sound Pool ({soundFiles.length})
+                      </Text>
                       <VStack spacing={2} align="stretch">
                         {soundFiles.map((sound) => (
                           <Box
@@ -667,9 +737,15 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                                 mimeType: sound.type,
                               }
                               mediaStore.setActiveDragData(dragData)
-                              
-                              e.dataTransfer.setData("application/json", JSON.stringify(dragData))
-                              e.dataTransfer.setData("text/plain", JSON.stringify(dragData))
+
+                              e.dataTransfer.setData(
+                                "application/json",
+                                JSON.stringify(dragData)
+                              )
+                              e.dataTransfer.setData(
+                                "text/plain",
+                                JSON.stringify(dragData)
+                              )
                             }}
                             onDragEnd={() => mediaStore.clearActiveDragData()}
                             display="flex"
@@ -681,9 +757,17 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
                             p={3}
                             cursor="grab"
                             _active={{ cursor: "grabbing" }}
-                            _hover={{ borderColor: "purple.500", bg: "purple.50" }}
+                            _hover={{
+                              borderColor: "purple.500",
+                              bg: "purple.50",
+                            }}
                           >
-                            <Box display="flex" alignItems="center" flex={1} color="black">
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              flex={1}
+                              color="black"
+                            >
                               <SpeakerIcon boxSize="20px" mr={2} />
                               <Text fontSize="sm" noOfLines={1}>
                                 {sound.name}
@@ -705,13 +789,10 @@ const CuesForm = ({ addCue, onClose, position, cues, cueData, updateCue, screenC
             </Box>
           </Box>
 
-
           {error && <Error error={error} />}
         </FormControl>
       </form>
-    </ChakraProvider>
     </div>
-
   )
 }
 
