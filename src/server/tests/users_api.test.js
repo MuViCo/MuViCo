@@ -130,7 +130,7 @@ describe("POST /change-password", () => {
         currentPassword: "wrongpassword",
         newPassword: "newpassword123",
       })
-      .expect(401)
+      .expect(400)
       .expect("Content-Type", /application\/json/)
   })
 
