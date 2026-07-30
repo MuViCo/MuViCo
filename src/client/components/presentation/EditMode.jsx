@@ -12,14 +12,7 @@
 - indexCount: number of indexes (frames) in the presentation
  */
 import React, { useState, useRef, useEffect, useMemo } from "react"
-import {
-  Box,
-  Text,
-  ChakraProvider,
-  extendTheme,
-  useOutsideClick,
-  useColorModeValue,
-} from "@chakra-ui/react"
+import { Box, Text, useOutsideClick, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
 import {
@@ -64,8 +57,6 @@ import {
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
-
-const theme = extendTheme({})
 
 /**
  * EditMode Component - Main editing interface for presentations
@@ -1582,7 +1573,7 @@ const EditMode = ({
   }
   // Render the grid layout with headers and cues, and handle drag-and-drop interactions
   return (
-    <ChakraProvider theme={theme}>
+    <>
       <CustomAlert showAlert={showAlert} alertData={alertData} />
       <div
         onDrop={handleDrop}
@@ -1996,7 +1987,7 @@ const EditMode = ({
           message={confirmMessage}
         />
       </div>
-    </ChakraProvider>
+    </>
   )
 }
 export default EditMode
