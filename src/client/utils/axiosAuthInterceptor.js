@@ -11,9 +11,12 @@ import axios from "axios"
 export const SESSION_EXPIRED_MESSAGE =
   "Your session has expired. Please log in again."
 
+// Used to broadcast a detected session expiry to the rest of the app
+export const SESSION_EXPIRED_EVENT = "session-expired"
+
 export const handleResponseError = (error) => {
   if (error.response?.data?.code === "SESSION_EXPIRED") {
-    window.dispatchEvent(new CustomEvent("session-expired"))
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
   }
 
   return Promise.reject(error)
