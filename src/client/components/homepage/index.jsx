@@ -1,7 +1,7 @@
 /*
-* Home page component for displaying user's presentations (Presentations) and providing navigation options.
-* It includes features for creating, editing, and deleting all of users'presentations, as well as linking Google Drive for storage.
-* The component also incorporates a tutorial guide for new users and admin controls for users with admin privileges.
+ * Home page component for displaying user's presentations (Presentations) and providing navigation options.
+ * It includes features for creating, editing, and deleting all of users'presentations, as well as linking Google Drive for storage.
+ * The component also incorporates a tutorial guide for new users and admin controls for users with admin privileges.
  */
 import {
   Button,
@@ -48,13 +48,11 @@ const HomePage = ({ user, setUser }) => {
         const updatedPresentations = await presentationService.getAll()
         setPresentations(updatedPresentations)
       } catch (error) {
-        if (error.response && error.response.status === 401) {
-          navigate("/")
-        }
+        console.error("Error fetching presentations: ", error)
       }
     }
     getPresentationData()
-  }, [navigate])
+  }, [])
 
   useEffect(() => {
     const hasSeen = localStorage.getItem("hasSeenHelp_homepage")
@@ -66,12 +64,21 @@ const HomePage = ({ user, setUser }) => {
 
   const createPresentation = async (presentationObject) => {
     try {
-      const createdPresentation = await presentationService.create(presentationObject)
+      const createdPresentation =
+        await presentationService.create(presentationObject)
       const updatedPresentations = await presentationService.getAll()
       setPresentations(updatedPresentations)
-      localStorage.setItem(`presentation-${createdPresentation.id}-startingColor`, presentationObject.startingFrameColor)
-      
-      await addInitialElements(createdPresentation.id, presentationObject.screenCount, showToast, presentationObject.startingFrameColor)
+      localStorage.setItem(
+        `presentation-${createdPresentation.id}-startingColor`,
+        presentationObject.startingFrameColor
+      )
+
+      await addInitialElements(
+        createdPresentation.id,
+        presentationObject.screenCount,
+        showToast,
+        presentationObject.startingFrameColor
+      )
       navigate(`/presentation/${createdPresentation.id}`)
     } catch (error) {
       console.error("Error creating presentation: ", error)
@@ -82,7 +89,10 @@ const HomePage = ({ user, setUser }) => {
     navigate(`/presentation/${presentationId}`)
   }
 
-  const handleEditPresentation = async (presentationId, updatedPresentation) => {
+  const handleEditPresentation = async (
+    presentationId,
+    updatedPresentation
+  ) => {
     try {
       await presentationService.update(presentationId, updatedPresentation)
       const updatedPresentations = await presentationService.getAll()

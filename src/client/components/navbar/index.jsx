@@ -32,10 +32,13 @@ import bHyLogo from "../../public/b_hy_logo.svg"
 import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 import UserManualModal from "./UserManualModal"
+import { useCustomToast } from "../utils/toastUtils"
+import { SESSION_EXPIRED_MESSAGE } from "../../utils/axiosAuthInterceptor"
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
   const location = useLocation()
+  const showToast = useCustomToast()
   const [isManualOpen, setIsManualOpen] = useState(false)
   const [highlight, setHighlight] = useState(false)
 
@@ -54,25 +57,25 @@ const NavBar = ({ user, setUser }) => {
       ? "rgba(255, 255, 255, 0.4)"
       : "rgba(23, 25, 35, 0.3)"
 
-  const navBorderBottom = colorMode === "light"
-    ? "1px solid rgba(0, 0, 0, 0.08)"
-    : "1px solid rgba(255, 255, 255, 0.08)"
+  const navBorderBottom =
+    colorMode === "light"
+      ? "1px solid rgba(0, 0, 0, 0.08)"
+      : "1px solid rgba(255, 255, 255, 0.08)"
 
-  const pulse = colorMode === "dark"
-  ? keyframes`
+  const pulse =
+    colorMode === "dark"
+      ? keyframes`
     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
     70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
   `
-  : keyframes`
+      : keyframes`
     0% { box-shadow: 0 0 0 0 rgba(128, 90, 213, 0.5); }
     70% { box-shadow: 0 0 0 10px rgba(128, 90, 213, 0); }
     100% { box-shadow: 0 0 0 0 rgba(128, 90, 213, 0); }
   `
 
-  const animation = prefersReducedMotion
-    ? undefined
-    : `${pulse} 2s infinite`
+  const animation = prefersReducedMotion ? undefined : `${pulse} 2s infinite`
 
   const navbarLogo = colorMode === "dark" ? hyLogo : bHyLogo
 
@@ -81,6 +84,15 @@ const NavBar = ({ user, setUser }) => {
     window.localStorage.removeItem("driveAccessToken")
     setUser(null)
     navigate("/")
+  }
+
+  const handleSessionExpired = () => {
+    handleLogout(navigate, setUser)
+    showToast({
+      title: "Session expired",
+      description: SESSION_EXPIRED_MESSAGE,
+      status: "warning",
+    })
   }
   const onLogin = (user) => {
     setUser(user)
@@ -93,9 +105,7 @@ const NavBar = ({ user, setUser }) => {
   }
 
   const handleOpenManual = () => {
-    const key = isHomepage
-      ? "hasSeenHelp_homepage"
-      : "hasSeenHelp_presentation"
+    const key = isHomepage ? "hasSeenHelp_homepage" : "hasSeenHelp_presentation"
 
     localStorage.setItem(key, "true")
     setHighlight(false)
@@ -108,15 +118,22 @@ const NavBar = ({ user, setUser }) => {
     if (isTokenExpired(token)) {
       handleLogout(navigate, setUser)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) //run only once
+
+  // React to an expired/invalid session detected mid-session by the axios interceptor
+  useEffect(() => {
+    window.addEventListener("session-expired", handleSessionExpired)
+    // Cleanup the event listener on component unmount (navbar should always be mounted, but just in case)
+    return () =>
+      window.removeEventListener("session-expired", handleSessionExpired)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, setUser])
 
   // Check if user has seen the help tooltip for the current page
   useEffect(() => {
     // Unique key depending on the page
-    const key = isHomepage
-      ? "hasSeenHelp_homepage"
-      : "hasSeenHelp_presentation"
+    const key = isHomepage ? "hasSeenHelp_homepage" : "hasSeenHelp_presentation"
 
     const hasSeen = localStorage.getItem(key)
 
@@ -124,7 +141,7 @@ const NavBar = ({ user, setUser }) => {
       setHighlight(true) // show highlight on first visit
     }
   }, [isHomepage, isPresentationPage])
-  
+
   return (
     <>
       <Box
@@ -146,36 +163,54 @@ const NavBar = ({ user, setUser }) => {
           justify="space-between"
           background={navBackground}
         >
-
-            <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
-              <Tooltip label="to Frontpage" aria-label="A tooltip">
-                <Heading
-                  as="h3"
-                  size="lg"
-                  letterSpacing={"tighter"}
-                  fontWeight={600}
-                  fontFamily={"'Poppins', sans-serif"}
-                  style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
-                >
-                  <Link to={"/"} style={{ position: "relative" }}>
-                    <Text as="span" color="inherit">
-                      MuViCo
-                    </Text>
-                    <Text
-                      as="span"
-                      position="absolute"
-                      bottom="-2px"
-                      left="0"
-                      w="100%"
-                      h="1px"
-                      bg="purple.200"
-                    />
-                  </Link>
-                </Heading>
-              </Tooltip>
-            </Flex>
-            <Flex as={motion.div} whileHover={{ scale: 1.05 }}onHoverStart={(e) => {}} onHoverEnd={(e) => {}}align="center" mr={7} gap={6}>
-              { user && (
+          <Flex
+            as={motion.div}
+            whileHover={{ scale: 1.05 }}
+            onHoverStart={(e) => {}}
+            onHoverEnd={(e) => {}}
+            align="center"
+            mr={7}
+            gap={6}
+          >
+            <Tooltip label="to Frontpage" aria-label="A tooltip">
+              <Heading
+                as="h3"
+                size="lg"
+                letterSpacing={"tighter"}
+                fontWeight={600}
+                fontFamily={"'Poppins', sans-serif"}
+                style={{
+                  WebkitFontSmoothing: "antialiased",
+                  MozOsxFontSmoothing: "grayscale",
+                }}
+              >
+                <Link to={"/"} style={{ position: "relative" }}>
+                  <Text as="span" color="inherit">
+                    MuViCo
+                  </Text>
+                  <Text
+                    as="span"
+                    position="absolute"
+                    bottom="-2px"
+                    left="0"
+                    w="100%"
+                    h="1px"
+                    bg="purple.200"
+                  />
+                </Link>
+              </Heading>
+            </Tooltip>
+          </Flex>
+          <Flex
+            as={motion.div}
+            whileHover={{ scale: 1.05 }}
+            onHoverStart={(e) => {}}
+            onHoverEnd={(e) => {}}
+            align="center"
+            mr={7}
+            gap={6}
+          >
+            {user && (
               <Tooltip label="to Homepage" aria-label="A tooltip">
                 <Heading
                   as="h3"
@@ -183,9 +218,16 @@ const NavBar = ({ user, setUser }) => {
                   letterSpacing={"tighter"}
                   fontWeight={600}
                   fontFamily={"'Poppins', sans-serif"}
-                  style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
+                  style={{
+                    WebkitFontSmoothing: "antialiased",
+                    MozOsxFontSmoothing: "grayscale",
+                  }}
                 >
-                  <Link to={"/home"} id="navbar-presentations-link" style={{ position: "relative" }}>
+                  <Link
+                    to={"/home"}
+                    id="navbar-presentations-link"
+                    style={{ position: "relative" }}
+                  >
                     <Text as="span" color="inherit">
                       Presentations
                     </Text>
@@ -202,7 +244,7 @@ const NavBar = ({ user, setUser }) => {
                 </Heading>
               </Tooltip>
             )}
-            </Flex>
+          </Flex>
           <Box flex={3} align="right">
             <ThemeToggleButton />
             {user && (
@@ -213,7 +255,10 @@ const NavBar = ({ user, setUser }) => {
                     variant="ghost"
                     fontWeight={600}
                     fontFamily={"'Poppins', sans-serif"}
-                    style={{ WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
+                    style={{
+                      WebkitFontSmoothing: "antialiased",
+                      MozOsxFontSmoothing: "grayscale",
+                    }}
                     onClick={() => {
                       setTimeout(() => handleLogout(navigate, setUser), 0) // Trigger logout after current render cycle
                     }}
@@ -279,7 +324,12 @@ const NavBar = ({ user, setUser }) => {
                 </Box>
               </>
             )}
-            <Box ml={4} display="inline-flex" alignItems="center" verticalAlign="middle">
+            <Box
+              ml={4}
+              display="inline-flex"
+              alignItems="center"
+              verticalAlign="middle"
+            >
               <img
                 src={navbarLogo}
                 alt="HY logo"
