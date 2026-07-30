@@ -149,7 +149,7 @@ describe("Middleware functions", () => {
       await userExtractor(mockRequest, mockResponse, mockNext)
       expect(mockResponse.status).not.toHaveBeenCalled()
       expect(mockNext).toHaveBeenCalledTimes(1)
-      
+
       const errorArg = mockNext.mock.calls[0][0]
       expect(errorArg).toBeInstanceOf(Error)
       expect(errorArg.name).toBe("JsonWebTokenError")
@@ -162,7 +162,10 @@ describe("Middleware functions", () => {
       await userExtractor(mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(401)
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: "token invalid" })
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "token invalid",
+        code: "SESSION_EXPIRED",
+      })
     })
 
     test("should call next() when no token provided", async () => {
@@ -184,7 +187,7 @@ describe("Middleware functions", () => {
 
       expect(mockResponse.status).not.toHaveBeenCalled()
       expect(mockNext).toHaveBeenCalledTimes(1)
-      
+
       const errorArg = mockNext.mock.calls[0][0]
       expect(errorArg).toBeInstanceOf(Error)
       expect(errorArg.name).toBe("TokenExpiredError")
@@ -313,7 +316,9 @@ describe("Middleware functions", () => {
       unknownEndpoint(mockRequest, mockResponse)
 
       expect(mockResponse.status).toHaveBeenCalledWith(404)
-      expect(mockResponse.send).toHaveBeenCalledWith({ error: "unknown endpoint" })
+      expect(mockResponse.send).toHaveBeenCalledWith({
+        error: "unknown endpoint",
+      })
     })
 
     test("should not call next()", () => {
@@ -339,7 +344,9 @@ describe("Middleware functions", () => {
       errorHandler(error, mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(400)
-      expect(mockResponse.send).toHaveBeenCalledWith({ error: "malformatted id" })
+      expect(mockResponse.send).toHaveBeenCalledWith({
+        error: "malformatted id",
+      })
     })
 
     test("should handle ValidationError", () => {
@@ -349,7 +356,9 @@ describe("Middleware functions", () => {
       errorHandler(error, mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(400)
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: "Validation failed" })
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "Validation failed",
+      })
     })
 
     test("should handle JsonWebTokenError", () => {
@@ -359,7 +368,10 @@ describe("Middleware functions", () => {
       errorHandler(error, mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(401)
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: "invalid token" })
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "invalid token",
+        code: "SESSION_EXPIRED",
+      })
     })
 
     test("should handle TokenExpiredError", () => {
@@ -369,7 +381,10 @@ describe("Middleware functions", () => {
       errorHandler(error, mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(401)
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: "token expired" })
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "token expired",
+        code: "SESSION_EXPIRED",
+      })
     })
 
     test("should handle MongoServerError duplicate key error", () => {
@@ -380,7 +395,9 @@ describe("Middleware functions", () => {
       errorHandler(error, mockRequest, mockResponse, mockNext)
 
       expect(mockResponse.status).toHaveBeenCalledWith(400)
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: "duplicate key error" })
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: "duplicate key error",
+      })
     })
 
     test("should pass unknown errors to next middleware", () => {
