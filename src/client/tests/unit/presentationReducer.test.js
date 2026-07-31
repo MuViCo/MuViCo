@@ -22,6 +22,8 @@ import reducer, {
   decrementScreenCount,
   shiftPresentationIndexes,
   updatePresentationName,
+  beginSave,
+  endSave,
 } from "../../redux/presentationReducer.js"
 import {
   saveIndexCount,
@@ -153,7 +155,7 @@ describe("presentationReducer reducer", () => {
     name: "",
     screenCount: 3,
     indexCount: 5,
-    saving: false,
+    pendingSaves: 0,
   }
 
   it("should handle setPresentationInfo", () => {
@@ -428,7 +430,7 @@ describe("presentationReducer reducer", () => {
       name: "Test Presentation",
       screenCount: 4,
       indexCount: 5,
-      saving: false,
+      pendingSaves: 0,
     }
     const action = { type: removePresentation.type }
 
@@ -1108,7 +1110,7 @@ describe("presentationReducer asynchronous actions", () => {
     expect(state.cues[2].index).toBe(3) // Should shift right
   })
 
-  it("should toggle saving during saveIndexCount lifecycle", () => {
+  it("should toggle pendingSaves during saveIndexCount lifecycle", () => {
     const store = makeStore()
 
     const initialState = {
@@ -1123,27 +1125,27 @@ describe("presentationReducer asynchronous actions", () => {
     store.dispatch(setPresentationInfo(initialState))
 
     // Simulate pending/fulfilled/rejected action sequence without running the thunk body.
-    // pending should set saving true
+    // pending should increment pendingSaves
     store.dispatch({ type: saveIndexCount.pending.type })
-    expect(store.getState().presentation.saving).toBe(true)
+    expect(store.getState().presentation.pendingSaves).toBe(1)
 
-    // fulfilled should set saving false and update indexCount and filter cues
+    // fulfilled should decrement pendingSaves and update indexCount and filter cues
     const payload = { indexCount: 2 }
     store.dispatch({ type: saveIndexCount.fulfilled.type, payload })
-    expect(store.getState().presentation.saving).toBe(false)
+    expect(store.getState().presentation.pendingSaves).toBe(0)
     expect(store.getState().presentation.indexCount).toBe(2)
     expect(store.getState().presentation.cues.every((c) => c.index < 2)).toBe(
       true
     )
 
-    // rejected should also ensure saving is false
+    // rejected should also decrement pendingSaves
     store.dispatch({ type: saveIndexCount.pending.type })
-    expect(store.getState().presentation.saving).toBe(true)
+    expect(store.getState().presentation.pendingSaves).toBe(1)
     store.dispatch({ type: saveIndexCount.rejected.type })
-    expect(store.getState().presentation.saving).toBe(false)
+    expect(store.getState().presentation.pendingSaves).toBe(0)
   })
 
-  it("should toggle saving during saveScreenCount lifecycle", () => {
+  it("should toggle pendingSaves during saveScreenCount lifecycle", () => {
     const store = makeStore()
 
     const initialState = {
@@ -1158,24 +1160,47 @@ describe("presentationReducer asynchronous actions", () => {
 
     store.dispatch(setPresentationInfo(initialState))
 
-    // pending should set saving true
+    // pending should increment pendingSaves
     store.dispatch({ type: saveScreenCount.pending.type })
-    expect(store.getState().presentation.saving).toBe(true)
+    expect(store.getState().presentation.pendingSaves).toBe(1)
 
-    // fulfilled should set saving false, update screenCount and remove cues exceeding new screenCount
+    // fulfilled should decrement pendingSaves, update screenCount and remove cues exceeding new screenCount
     const payload = { screenCount: 2, removedCuesCount: 1 }
     store.dispatch({ type: saveScreenCount.fulfilled.type, payload })
-    expect(store.getState().presentation.saving).toBe(false)
+    expect(store.getState().presentation.pendingSaves).toBe(0)
     expect(store.getState().presentation.screenCount).toBe(2)
     expect(store.getState().presentation.cues.every((c) => c.screen <= 2)).toBe(
       true
     )
 
-    // rejected should also ensure saving is false
+    // rejected should also decrement pendingSaves
     store.dispatch({ type: saveScreenCount.pending.type })
-    expect(store.getState().presentation.saving).toBe(true)
+    expect(store.getState().presentation.pendingSaves).toBe(1)
     store.dispatch({ type: saveScreenCount.rejected.type })
-    expect(store.getState().presentation.saving).toBe(false)
+    expect(store.getState().presentation.pendingSaves).toBe(0)
+  })
+
+  it("should not report saved until every overlapping save finishes", () => {
+    const store = makeStore()
+
+    // Two saves start before either finishes...
+    store.dispatch(beginSave())
+    store.dispatch(beginSave())
+    expect(store.getState().presentation.pendingSaves).toBe(2)
+
+    // ...the first finishing should not flip the status back to "saved".
+    store.dispatch(endSave())
+    expect(store.getState().presentation.pendingSaves).toBe(1)
+
+    store.dispatch(endSave())
+    expect(store.getState().presentation.pendingSaves).toBe(0)
+  })
+
+  it("should not let pendingSaves go negative on an unmatched endSave", () => {
+    const store = makeStore()
+
+    store.dispatch(endSave())
+    expect(store.getState().presentation.pendingSaves).toBe(0)
   })
 
   it("should handle error in update presentation cues swapped", async () => {

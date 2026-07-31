@@ -104,7 +104,6 @@ const EditMode = ({
   const dispatch = useDispatch()
   const presentation = useSelector((state) => state.presentation)
   const containerRef = useRef(null)
-  const [status, setStatus] = useState("saved")
   const [selectedCue, setSelectedCue] = useState(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
@@ -388,7 +387,6 @@ const EditMode = ({
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
     if (originalIndexCount < 101) {
-      setStatus("loading")
       try {
         dispatch(incrementIndexCount())
         await dispatch(
@@ -399,7 +397,6 @@ const EditMode = ({
           await dispatch(shiftPresentationIndexes(id, index, "right"))
         }
 
-        setStatus("saved")
         if (cuesAfter.length > 0) {
           showToast({
             title: "Frame added in between",
@@ -411,7 +408,6 @@ const EditMode = ({
         console.error("Error shifting cues when adding index:", error)
         dispatch(decrementIndexCount())
         await dispatch(saveIndexCount({ id, indexCount: originalIndexCount }))
-        setStatus("saved")
         showToast({
           title: "Error",
           description: error.message || "Failed to add index",
@@ -455,10 +451,8 @@ const EditMode = ({
 
   const performRemoveIndex = async (newIndexCount) => {
     if (indexCount > 1) {
-      setStatus("loading")
       dispatch(decrementIndexCount())
       await dispatch(saveIndexCount({ id, indexCount: newIndexCount }))
-      setStatus("saved")
     }
   }
 
@@ -469,13 +463,11 @@ const EditMode = ({
   const shiftAndRemoveIndex = async (index) => {
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
-    setStatus("loading")
     try {
       if (cuesAfter.length > 0) {
         await dispatch(shiftPresentationIndexes(id, index, "left"))
       }
       await performRemoveIndex(indexCount - 1)
-      setStatus("saved")
       return cuesAfter.length
     } catch (error) {
       console.error("Error shifting cues when removing index:", error)
@@ -484,7 +476,6 @@ const EditMode = ({
         description: error.message || "Failed to remove index",
         status: "error",
       })
-      setStatus("saved")
       return null
     }
   }
@@ -1055,7 +1046,6 @@ const EditMode = ({
 
   // Add a new cue - checks for conflicts and saves to backend
   const addCue = async (cueData) => {
-    setStatus("loading")
     const { index, cueName, screen, file, loop, color } = cueData
 
     //Check if cue with same index and screen already exists
@@ -1082,7 +1072,6 @@ const EditMode = ({
       await dispatch(createCue(id, formData))
 
       setTimeout(() => {
-        setStatus("saved")
         showToast({
           title: "Element added",
           description: `Element ${cueName} added to screen ${screen}`,
@@ -1149,9 +1138,21 @@ const EditMode = ({
     )
 
     setConfirmAction(() => async () => {
-      const updatedCueData = await createUpdatedCueData(existingCue, updatedCue)
-      await dispatch(removeCue(id, previousCueId))
-      await dispatchUpdateCue(existingCue._id, updatedCueData)
+      try {
+        const updatedCueData = await createUpdatedCueData(
+          existingCue,
+          updatedCue
+        )
+        await dispatch(removeCue(id, previousCueId))
+        await dispatchUpdateCue(existingCue._id, updatedCueData)
+      } catch (error) {
+        console.error(error)
+        showToast({
+          title: "Error",
+          description: error.message || "Failed to update element",
+          status: "error",
+        })
+      }
       setIsConfirmOpen(false)
     })
     setIsConfirmOpen(true)
@@ -1220,11 +1221,9 @@ const EditMode = ({
   }
   // Dispatch cue update to backend - used for moving cues and updating from toolbox
   const dispatchUpdateCue = async (cueId, updatedCue) => {
-    setStatus("loading")
     try {
       await dispatch(updatePresentation(id, updatedCue, cueId))
       setTimeout(() => {
-        setStatus("saved")
         showToast({
           title: "Element updated",
           description: `Element ${updatedCue.cueName} updated on screen ${updatedCue.screen}`,
@@ -1253,13 +1252,10 @@ const EditMode = ({
 
   // Swap two cues positions - handles element reordering on grid
   const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
-    setStatus("loading")
     try {
       await dispatch(swapCues(id, newTargetCue, newSelectedCue))
-      setStatus("saved")
     } catch (error) {
       console.error(error)
-      setStatus("saved")
       showToast({
         title: "Error",
         description: error.message || "An error occurred",
@@ -1913,24 +1909,6 @@ const EditMode = ({
               setIsToolboxOpen(false)
             }}
           />
-        </Box>
-        <Box
-          position="fixed"
-          top="20%"
-          right="5%"
-          display="flex"
-          alignItems="center"
-          zIndex={1}
-        ></Box>
-        <Box
-          position="fixed"
-          top="11%"
-          right="5%"
-          display="flex"
-          alignItems="center"
-          zIndex={1}
-        >
-          {/* <StatusTooltip status={status}/> */}
         </Box>
         <Dialog
           isOpen={isConfirmOpen}
