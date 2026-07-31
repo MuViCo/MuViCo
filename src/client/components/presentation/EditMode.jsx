@@ -370,29 +370,14 @@ const EditMode = ({
         }
       }
 
-      // Get all cues after this index, shift them to the left
-      const cuesAfter = cues.filter((c) => Number(c.index) > Number(index))
-      if (index !== indexCount - 1) {
-        try {
-          await dispatch(shiftPresentationIndexes(id, index, "left"))
-          showToast({
-            title: "Removed frame in between and its elements",
-            description: `Removed old Frame ${index} and all its elements.${cuesAfter.length > 0 ? ` Moved ${cuesAfter.length} element(s) backwards.` : ""}`,
-            status: "success",
-          })
-        } catch (err) {
-          console.error("Failed to shift cues after deleting index:", err)
-          showToast({
-            title: "Error",
-            description: err.message || "Failed to remove index",
-            status: "error",
-          })
-          return
-        }
-      }
+      const movedCount = await shiftAndRemoveIndex(index)
+      if (movedCount === null) return
 
-      // Remove last index
-      await performRemoveIndex(indexCount - 1)
+      showToast({
+        title: "Removed frame in between and its elements",
+        description: `Removed old Frame ${index} and all its elements.${movedCount > 0 ? ` Moved ${movedCount} element(s) backwards.` : ""}`,
+        status: "success",
+      })
     })
     setIsConfirmOpen(true)
   }
@@ -455,35 +440,16 @@ const EditMode = ({
       return
     }
 
-    // Get all cues after this index, shift them to the left
-    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+    const movedCount = await shiftAndRemoveIndex(index)
+    if (movedCount === null) return
 
-    if (cuesAfter.length === 0) {
-      // Just remove last index if no cues to move
-      await performRemoveIndex(indexCount - 1)
-      return
-    }
-
-    setStatus("loading")
-    try {
-      await dispatch(shiftPresentationIndexes(id, index, "left"))
-
-      await performRemoveIndex(indexCount - 1)
-      setStatus("saved")
-      // We never reach here if there were existing elements on the removed index, as handleIndexHasData handles that case (so different toast)
+    // We never reach here if there were existing elements on the removed index, as handleIndexHasData handles that case (so different toast)
+    if (movedCount > 0) {
       showToast({
         title: "Removed frame in between",
-        description: `Removed old Frame ${index}. Moved ${cuesAfter.length} element(s) backwards.`,
+        description: `Removed old Frame ${index}. Moved ${movedCount} element(s) backwards.`,
         status: "success",
       })
-    } catch (error) {
-      console.error("Error shifting cues when removing index:", error)
-      showToast({
-        title: "Error",
-        description: error.message || "Failed to remove index",
-        status: "error",
-      })
-      setStatus("saved")
     }
   }
 
@@ -493,6 +459,33 @@ const EditMode = ({
       dispatch(decrementIndexCount())
       await dispatch(saveIndexCount({ id, indexCount: newIndexCount }))
       setStatus("saved")
+    }
+  }
+
+  // Shared by handleRemoveIndex and handleIndexHasData: shifts cues after
+  // `index` left by one (only if any exist), then shrinks the index count.
+  // Returns null and shows an error toast if the shift fails, so callers can
+  // skip their own success toast; otherwise returns how many cues moved.
+  const shiftAndRemoveIndex = async (index) => {
+    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+
+    setStatus("loading")
+    try {
+      if (cuesAfter.length > 0) {
+        await dispatch(shiftPresentationIndexes(id, index, "left"))
+      }
+      await performRemoveIndex(indexCount - 1)
+      setStatus("saved")
+      return cuesAfter.length
+    } catch (error) {
+      console.error("Error shifting cues when removing index:", error)
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove index",
+        status: "error",
+      })
+      setStatus("saved")
+      return null
     }
   }
 

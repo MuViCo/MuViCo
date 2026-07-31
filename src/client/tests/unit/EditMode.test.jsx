@@ -1198,9 +1198,12 @@ describe("EditMode drag swapping", () => {
       expect(shiftPresentationIndexes).not.toHaveBeenCalled()
     })
 
-    it("removes the cue, shifts remaining cues, and shrinks the index count after confirming removal of a frame with a cue", async () => {
-      const cues = [buildCue({ id: "c1", index: 1 })]
-      renderWithFrames(cues, 3)
+    it("removes the cue, shifts remaining cues after it, and shrinks the index count after confirming removal of a frame with a cue", async () => {
+      const cues = [
+        buildCue({ id: "c1", index: 1 }),
+        buildCue({ id: "c2", index: 2 }),
+      ]
+      renderWithFrames(cues, 4)
 
       await act(async () => {
         fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
@@ -1218,6 +1221,32 @@ describe("EditMode drag swapping", () => {
       expect(mockShowToast).toHaveBeenCalledWith(
         expect.objectContaining({
           title: "Removed frame in between and its elements",
+          description: expect.stringContaining("Moved 1 element(s) backwards"),
+        })
+      )
+      expect(decrementIndexCount).toHaveBeenCalled()
+      expect(saveIndexCount).toHaveBeenCalledWith({
+        id: "presentation-1",
+        indexCount: 3,
+      })
+    })
+
+    it("removes the cue and shrinks the index count without shifting when there is nothing after the removed frame", async () => {
+      const cues = [buildCue({ id: "c1", index: 1 })]
+      renderWithFrames(cues, 3)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+      })
+
+      expect(removeCue).toHaveBeenCalledWith("presentation-1", "c1")
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Removed frame in between and its elements",
         })
       )
       expect(decrementIndexCount).toHaveBeenCalled()
@@ -1228,8 +1257,11 @@ describe("EditMode drag swapping", () => {
     })
 
     it("skips shrinking the index count when the shift fails while removing a frame with a cue on it", async () => {
-      const cues = [buildCue({ id: "c1", index: 1 })]
-      renderWithFrames(cues, 3)
+      const cues = [
+        buildCue({ id: "c1", index: 1 }),
+        buildCue({ id: "c2", index: 2 }),
+      ]
+      renderWithFrames(cues, 4)
       mockDispatch.mockImplementation((action) =>
         action?.type === "MOCK_SHIFT_INDEXES"
           ? Promise.reject(new Error("shift failed"))
