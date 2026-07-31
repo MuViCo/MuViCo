@@ -371,13 +371,13 @@ const EditMode = ({
       }
 
       // Get all cues after this index, shift them to the left
-      const cuesToShift = cues.filter((c) => Number(c.index) > Number(index))
+      const cuesAfter = cues.filter((c) => Number(c.index) > Number(index))
       if (index !== indexCount - 1) {
         try {
           await dispatch(shiftPresentationIndexes(id, index, "left"))
           showToast({
             title: "Removed frame in between and its elements",
-            description: `Removed old Frame ${index} and all its elements.${cuesToShift.length > 0 ? ` Moved ${cuesToShift.length} element(s) backwards.` : ""}`,
+            description: `Removed old Frame ${index} and all its elements.${cuesAfter.length > 0 ? ` Moved ${cuesAfter.length} element(s) backwards.` : ""}`,
             status: "success",
           })
         } catch (err) {
@@ -447,10 +447,10 @@ const EditMode = ({
       return
     }
 
-    const cuesInIndex = cues.filter(
+    const cuesOnIndex = cues.filter(
       (cue) => Number(cue.index) === Number(index)
     )
-    if (cuesInIndex.length > 0) {
+    if (cuesOnIndex.length > 0) {
       handleIndexHasData(index)
       return
     }
@@ -487,11 +487,11 @@ const EditMode = ({
     }
   }
 
-  const performRemoveIndex = async (indexToRemove) => {
+  const performRemoveIndex = async (newIndexCount) => {
     if (indexCount > 1) {
       setStatus("loading")
       dispatch(decrementIndexCount())
-      await dispatch(saveIndexCount({ id, indexCount: indexToRemove }))
+      await dispatch(saveIndexCount({ id, indexCount: newIndexCount }))
       setStatus("saved")
     }
   }
