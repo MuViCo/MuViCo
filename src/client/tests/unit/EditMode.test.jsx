@@ -20,6 +20,7 @@ import {
   updatePresentation,
   incrementIndexCount,
   decrementIndexCount,
+  removeCue,
   shiftPresentationIndexes,
 } from "../../redux/presentationReducer"
 import { saveIndexCount } from "../../redux/presentationThunks"
@@ -1195,6 +1196,60 @@ describe("EditMode drag swapping", () => {
         screen.getByText(/Frame 1 has existing elements/)
       ).toBeInTheDocument()
       expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+    })
+
+    it("removes the cue, shifts remaining cues, and shrinks the index count after confirming removal of a frame with a cue", async () => {
+      const cues = [buildCue({ id: "c1", index: 1 })]
+      renderWithFrames(cues, 3)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+      })
+
+      expect(removeCue).toHaveBeenCalledWith("presentation-1", "c1")
+      expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+        "presentation-1",
+        1,
+        "left"
+      )
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Removed frame in between and its elements",
+        })
+      )
+      expect(decrementIndexCount).toHaveBeenCalled()
+      expect(saveIndexCount).toHaveBeenCalledWith({
+        id: "presentation-1",
+        indexCount: 2,
+      })
+    })
+
+    it("skips shrinking the index count when the shift fails while removing a frame with a cue on it", async () => {
+      const cues = [buildCue({ id: "c1", index: 1 })]
+      renderWithFrames(cues, 3)
+      mockDispatch.mockImplementation((action) =>
+        action?.type === "MOCK_SHIFT_INDEXES"
+          ? Promise.reject(new Error("shift failed"))
+          : Promise.resolve({})
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+      })
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Error" })
+        )
+      })
+      expect(decrementIndexCount).not.toHaveBeenCalled()
+      expect(saveIndexCount).not.toHaveBeenCalled()
     })
   })
 })

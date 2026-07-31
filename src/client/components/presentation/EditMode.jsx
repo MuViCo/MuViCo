@@ -382,6 +382,12 @@ const EditMode = ({
           })
         } catch (err) {
           console.error("Failed to shift cues after deleting index:", err)
+          showToast({
+            title: "Error",
+            description: err.message || "Failed to remove index",
+            status: "error",
+          })
+          return
         }
       }
 
