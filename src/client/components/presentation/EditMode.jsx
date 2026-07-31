@@ -30,7 +30,6 @@ import {
 } from "../../redux/presentationReducer"
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
-import presentationService from "../../services/presentation"
 import ToolBox from "./ToolBox"
 import GridLayoutComponent from "./GridLayoutComponent"
 import useEditModeDragPreviewState from "./useEditModeDragPreviewState"
@@ -405,38 +404,15 @@ const EditMode = ({
           saveIndexCount({ id, indexCount: originalIndexCount + 1 })
         )
 
-        const cuesToShift = cuesAfter
-          .slice()
-          .sort((a, b) => Number(b.index) - Number(a.index))
-
-        // Create new data for the elements in the new positions
-        const updatePromises = cuesToShift.map((cue) => {
-          const formData = createFormData(
-            Number(cue.index) + 1,
-            cue.name,
-            cue.screen,
-            cue.file,
-            cue._id,
-            cue.color,
-            cue.loop
-          )
-
-          return presentationService.updateCue(id, cue._id, formData)
-        })
-
-        // We wait for all the promises to resolve
-        const updatedCues = await Promise.all(updatePromises)
-
-        // Then update cues
-        for (const updated of updatedCues) {
-          dispatch(editCue(updated))
+        if (cuesAfter.length > 0) {
+          await dispatch(shiftPresentationIndexes(id, index, "right"))
         }
 
         setStatus("saved")
-        if (cuesToShift.length > 0) {
+        if (cuesAfter.length > 0) {
           showToast({
             title: "Frame added in between",
-            description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesToShift.length} element(s) forward.`,
+            description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesAfter.length} element(s) forward.`,
             status: "success",
           })
         }
@@ -484,37 +460,14 @@ const EditMode = ({
 
     setStatus("loading")
     try {
-      const cuesToShift = cuesAfter
-        .slice()
-        .sort((a, b) => Number(a.index) - Number(b.index))
-
-      // Create new data for the elements in the new positions
-      const updatePromises = cuesToShift.map((cue) => {
-        const formData = createFormData(
-          Number(cue.index) - 1,
-          cue.name,
-          cue.screen,
-          cue.file,
-          cue._id,
-          cue.color,
-          cue.loop
-        )
-
-        return presentationService.updateCue(id, cue._id, formData)
-      })
-
-      const updatedCues = await Promise.all(updatePromises)
-
-      for (const updated of updatedCues) {
-        dispatch(editCue(updated))
-      }
+      await dispatch(shiftPresentationIndexes(id, index, "left"))
 
       await performRemoveIndex(indexCount - 1)
       setStatus("saved")
       // We never reach here if there were existing elements on the removed index, as handleIndexHasData handles that case (so different toast)
       showToast({
         title: "Removed frame in between",
-        description: `Removed old Frame ${index}. Moved ${cuesToShift.length} element(s) backwards.`,
+        description: `Removed old Frame ${index}. Moved ${cuesAfter.length} element(s) backwards.`,
         status: "success",
       })
     } catch (error) {

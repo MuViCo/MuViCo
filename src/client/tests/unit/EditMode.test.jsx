@@ -18,7 +18,11 @@ import {
   createCue,
   swapCues,
   updatePresentation,
+  incrementIndexCount,
+  decrementIndexCount,
+  shiftPresentationIndexes,
 } from "../../redux/presentationReducer"
+import { saveIndexCount } from "../../redux/presentationThunks"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -945,5 +949,252 @@ describe("EditMode drag swapping", () => {
     )
 
     expect(defaultWasNotPrevented).toBe(false)
+  })
+
+  describe("frame index add/remove shifting", () => {
+    const buildCue = ({ id, index, screen = 1 }) => ({
+      _id: id,
+      index,
+      screen,
+      name: `Cue ${id}`,
+      color: "#ffffff",
+      cueType: "visual",
+      file: {
+        type: "image/png",
+        url: `https://example.com/${id}.png`,
+        name: `${id}.png`,
+      },
+    })
+
+    beforeEach(() => {
+      // jest.clearAllMocks() (outer beforeEach) clears call history but not a
+      // custom mockImplementation set by an error-path test — reset it here
+      // so each test starts from the default resolve-everything behavior.
+      mockDispatch.mockImplementation(() => Promise.resolve({}))
+    })
+
+    const renderWithFrames = (customCues, customIndexCount) => {
+      useSelector.mockImplementation((selector) =>
+        selector({
+          presentation: {
+            cues: customCues,
+            name: "Test presentation",
+            screenCount: 2,
+            indexCount: customIndexCount,
+          },
+        })
+      )
+      return render(
+        <EditMode
+          id="presentation-1"
+          cues={customCues}
+          isToolboxOpen={false}
+          setIsToolboxOpen={jest.fn()}
+          cueIndex={0}
+          isAudioMuted={false}
+          toggleAudioMute={jest.fn()}
+          indexCount={customIndexCount}
+        />
+      )
+    }
+
+    it("does not shift when adding a frame with no cues after it", async () => {
+      renderWithFrames([], 3)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(incrementIndexCount).toHaveBeenCalled()
+      })
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+      expect(mockShowToast).not.toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Frame added in between" })
+      )
+    })
+
+    it("shifts a single cue right in one request when adding a frame before it", async () => {
+      const cues = [buildCue({ id: "c1", index: 2 })]
+      renderWithFrames(cues, 4)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "right"
+        )
+      })
+      expect(shiftPresentationIndexes).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Frame added in between",
+          description: expect.stringContaining("Moved 1 element(s) forward"),
+        })
+      )
+    })
+
+    it("shifts several consecutive same-screen cues in a single request when adding a frame (previously racy)", async () => {
+      const cues = [
+        buildCue({ id: "c1", index: 1 }),
+        buildCue({ id: "c2", index: 2 }),
+        buildCue({ id: "c3", index: 3 }),
+      ]
+      renderWithFrames(cues, 5)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "right"
+        )
+      })
+      expect(shiftPresentationIndexes).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: expect.stringContaining("Moved 3 element(s) forward"),
+        })
+      )
+      expect(mockShowToast).not.toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Error" })
+      )
+    })
+
+    it("reverts the index-count increment when the shift request fails", async () => {
+      const cues = [buildCue({ id: "c1", index: 2 })]
+      renderWithFrames(cues, 4)
+      mockDispatch.mockImplementation((action) =>
+        action?.type === "MOCK_SHIFT_INDEXES"
+          ? Promise.reject(new Error("shift failed"))
+          : Promise.resolve({})
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Error" })
+        )
+      })
+      expect(decrementIndexCount).toHaveBeenCalled()
+      expect(saveIndexCount).toHaveBeenCalledWith({
+        id: "presentation-1",
+        indexCount: 4,
+      })
+    })
+
+    it("does not shift when removing a frame with no cues after it", async () => {
+      renderWithFrames([], 3)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[1])
+      })
+
+      await waitFor(() => {
+        expect(decrementIndexCount).toHaveBeenCalled()
+      })
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+    })
+
+    it("shifts a single cue left in one request when removing an earlier empty frame", async () => {
+      const cues = [buildCue({ id: "c1", index: 2 })]
+      renderWithFrames(cues, 4)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          1,
+          "left"
+        )
+      })
+      expect(shiftPresentationIndexes).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Removed frame in between",
+          description: expect.stringContaining("Moved 1 element(s) backwards"),
+        })
+      )
+    })
+
+    it("shifts several consecutive same-screen cues in a single request when removing a frame (previously racy)", async () => {
+      const cues = [
+        buildCue({ id: "c1", index: 2 }),
+        buildCue({ id: "c2", index: 3 }),
+        buildCue({ id: "c3", index: 4 }),
+      ]
+      renderWithFrames(cues, 6)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          1,
+          "left"
+        )
+      })
+      expect(shiftPresentationIndexes).toHaveBeenCalledTimes(1)
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: expect.stringContaining("Moved 3 element(s) backwards"),
+        })
+      )
+      expect(mockShowToast).not.toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Error" })
+      )
+    })
+
+    it("shows an error and skips the index-count update when the removal shift request fails", async () => {
+      const cues = [buildCue({ id: "c1", index: 2 })]
+      renderWithFrames(cues, 4)
+      mockDispatch.mockImplementation((action) =>
+        action?.type === "MOCK_SHIFT_INDEXES"
+          ? Promise.reject(new Error("shift failed"))
+          : Promise.resolve({})
+      )
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+
+      await waitFor(() => {
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Error" })
+        )
+      })
+      expect(decrementIndexCount).not.toHaveBeenCalled()
+      expect(saveIndexCount).not.toHaveBeenCalled()
+    })
+
+    it("delegates to the confirmation dialog instead of shifting directly when the removed frame has a cue on it", async () => {
+      const cues = [buildCue({ id: "c1", index: 1 })]
+      renderWithFrames(cues, 3)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+      })
+
+      expect(screen.getByTestId("mock-alert-dialog")).toBeInTheDocument()
+      expect(
+        screen.getByText(/Frame 1 has existing elements/)
+      ).toBeInTheDocument()
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+    })
   })
 })
