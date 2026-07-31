@@ -15,7 +15,7 @@ const initialState = {
   name: "",
   screenCount: null,
   indexCount: 5,
-  saving: false,
+  pendingSaves: 0,
 }
 /** * The presentationSlice manages the state of the presentation, including cues, name, screen count,
  * and index count. It defines reducers for setting presentation info, adding/editing/deleting cues,
@@ -49,7 +49,13 @@ const presentationSlice = createSlice({
       state.name = initialState.name
       state.screenCount = initialState.screenCount
       state.indexCount = initialState.indexCount
-      state.saving = initialState.saving
+      state.pendingSaves = initialState.pendingSaves
+    },
+    beginSave(state) {
+      state.pendingSaves += 1
+    },
+    endSave(state) {
+      state.pendingSaves = Math.max(0, state.pendingSaves - 1)
     },
     incrementIndexCount(state) {
       state.indexCount += 1
@@ -74,22 +80,22 @@ const presentationSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(saveIndexCount.pending, (state) => {
-        state.saving = true
+        state.pendingSaves += 1
       })
       .addCase(saveIndexCount.fulfilled, (state, action) => {
-        state.saving = false
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
         const newIndexCount = action.payload.indexCount
         state.indexCount = newIndexCount
         state.cues = state.cues.filter((cue) => cue.index < newIndexCount)
       })
       .addCase(saveIndexCount.rejected, (state) => {
-        state.saving = false
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
       })
       .addCase(saveScreenCount.pending, (state) => {
-        state.saving = true
+        state.pendingSaves += 1
       })
       .addCase(saveScreenCount.fulfilled, (state, action) => {
-        state.saving = false
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
 
         if (action.payload.screenCount !== undefined) {
           const newScreenCount = action.payload.screenCount
@@ -105,7 +111,7 @@ const presentationSlice = createSlice({
         }
       })
       .addCase(saveScreenCount.rejected, (state) => {
-        state.saving = false
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
       })
   },
 })
@@ -121,6 +127,8 @@ export const {
   incrementScreenCount,
   decrementScreenCount,
   updateNameOnly,
+  beginSave,
+  endSave,
 } = presentationSlice.actions
 
 export default presentationSlice.reducer
@@ -137,6 +145,7 @@ export const fetchPresentationInfo = (id) => async (dispatch) => {
 }
 
 export const removeCue = (presentationId, cueId) => async (dispatch) => {
+  dispatch(beginSave())
   try {
     await presentationService.removeCue(presentationId, cueId)
     dispatch(deleteCue(cueId))
@@ -144,10 +153,13 @@ export const removeCue = (presentationId, cueId) => async (dispatch) => {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
     throw new Error(errorMessage)
+  } finally {
+    dispatch(endSave())
   }
 }
 
 export const createCue = (id, formData) => async (dispatch) => {
+  dispatch(beginSave())
   try {
     const updatedPresentation = await presentationService.addCue(id, formData)
     const newCue = updatedPresentation.cues.find(
@@ -160,6 +172,8 @@ export const createCue = (id, formData) => async (dispatch) => {
     const errorMessage = error.response?.data?.error || "An error occurred"
     console.error(errorMessage)
     throw new Error(errorMessage)
+  } finally {
+    dispatch(endSave())
   }
 }
 
@@ -176,6 +190,7 @@ export const deletePresentation = (id) => async (dispatch) => {
 
 export const updatePresentation =
   (presentationId, updatedCueData, cueId) => async (dispatch) => {
+    dispatch(beginSave())
     try {
       const formData = createFormData(
         updatedCueData.index,
@@ -198,11 +213,14 @@ export const updatePresentation =
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
     }
   }
 
 export const swapCues =
   (presentationId, firstUpdatedCue, secondUpdatedCue) => async (dispatch) => {
+    dispatch(beginSave())
     try {
       const swapPayload = {
         firstCueId: firstUpdatedCue._id,
@@ -222,11 +240,14 @@ export const swapCues =
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
     }
   }
 
 export const shiftPresentationIndexes =
   (presentationId, startIndex, direction) => async (dispatch) => {
+    dispatch(beginSave())
     try {
       const result = await presentationService.shiftIndexes(
         presentationId,
@@ -239,11 +260,14 @@ export const shiftPresentationIndexes =
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
     }
   }
 
 export const updatePresentationName =
   (presentationId, newName) => async (dispatch, getState) => {
+    dispatch(beginSave())
     try {
       const updated = await presentationService.updatePresentationName(
         presentationId,
@@ -254,5 +278,7 @@ export const updatePresentationName =
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
       throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
     }
   }

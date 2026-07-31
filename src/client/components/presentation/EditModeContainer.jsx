@@ -21,6 +21,7 @@ import EditMode from "./EditMode"
 import CuesForm from "./CuesForm"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
 import PresentationTitle from "./PresentationTitle"
+import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
@@ -175,7 +176,13 @@ function EditorLayout(props) {
         <div id="screen_resize_handle" className="resize_handle"></div>
       </div>
       <div
-        style={{ backgroundColor: editModeBackground, borderRadius: "8px" }}
+        style={{
+          backgroundColor: editModeBackground,
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
         className="no-resize-handle"
         key="playbackControls"
       >
@@ -196,6 +203,9 @@ function EditorLayout(props) {
           audioSourceURL={audioSourceURL}
           audioLoop={audioLoop}
         />
+        <Box mr={4}>
+          <StatusTooltip />
+        </Box>
       </div>
 
       <div className="edit-workspace" key="editWorkspace">
