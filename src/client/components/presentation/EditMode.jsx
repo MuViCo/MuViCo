@@ -24,7 +24,6 @@ import {
   decrementIndexCount,
   incrementScreenCount,
   decrementScreenCount,
-  editCue,
   shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
@@ -493,33 +492,13 @@ const EditMode = ({
 
     try {
       const newScreenNumber = presentation.screenCount + 1
-      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
 
-      for (const audioCue of audioCues) {
-        const updatedCue = {
-          cueId: audioCue._id,
-          cueName: audioCue.name,
-          index: audioCue.index,
-          screen: newScreenNumber + 1,
-          file: audioCue.file,
-          loop: audioCue.loop,
-          color: audioCue.color,
-        }
-        await dispatch(updatePresentation(id, updatedCue))
-
-        const updatedCueForState = {
-          ...audioCue,
-          screen: updatedCue.screen,
-        }
-        dispatch(editCue(updatedCueForState))
-      }
-
-      if (audioCues.length > 0) {
-        await dispatch(fetchPresentationInfo(id))
-      }
+      // The server repositions the audio row's stored screen in the same
+      // request; refetch so local cues (including that row) match it.
+      await dispatch(fetchPresentationInfo(id))
 
       const formData = createFormData(
         0,
@@ -579,36 +558,15 @@ const EditMode = ({
   const performScreenRemoval = async () => {
     try {
       const currentScreenCount = presentation.screenCount
-      const audioCues = cues.filter((cue) => cue.cueType === "audio")
 
       dispatch(decrementScreenCount())
       const result = await dispatch(
         saveScreenCount({ id, screenCount: currentScreenCount - 1 })
       )
 
-      for (const audioCue of audioCues) {
-        const updatedCue = {
-          cueId: audioCue._id,
-          cueName: audioCue.name,
-          index: audioCue.index,
-          screen: currentScreenCount - 1 + 1,
-          file: audioCue.file,
-          loop: audioCue.loop,
-          color: audioCue.color,
-        }
-
-        await dispatch(updatePresentation(id, updatedCue))
-
-        const updatedCueForState = {
-          ...audioCue,
-          screen: updatedCue.screen,
-        }
-        dispatch(editCue(updatedCueForState))
-      }
-
-      if (audioCues.length > 0) {
-        await dispatch(fetchPresentationInfo(id))
-      }
+      // The server repositions the audio row's stored screen in the same
+      // request; refetch so local cues (including that row) match it.
+      await dispatch(fetchPresentationInfo(id))
 
       // Show appropriate message based on whether cues were removed
       const removedCuesCount = result.payload?.removedCuesCount || 0

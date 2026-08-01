@@ -22,8 +22,9 @@ import {
   decrementIndexCount,
   removeCue,
   shiftPresentationIndexes,
+  fetchPresentationInfo,
 } from "../../redux/presentationReducer"
-import { saveIndexCount } from "../../redux/presentationThunks"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -1282,6 +1283,69 @@ describe("EditMode drag swapping", () => {
       })
       expect(decrementIndexCount).not.toHaveBeenCalled()
       expect(saveIndexCount).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("screen count add/remove", () => {
+    const audioCue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio 1",
+      cueType: "audio",
+      color: "#112233",
+      loop: false,
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio-1.mp3",
+        name: "audio-1.mp3",
+      },
+    }
+
+    beforeEach(() => {
+      mockDispatch.mockImplementation(() => Promise.resolve({}))
+    })
+
+    const renderWithScreenCount = (customCues, customScreenCount) => {
+      useSelector.mockImplementation((selector) =>
+        selector({
+          presentation: {
+            cues: customCues,
+            name: "Test presentation",
+            screenCount: customScreenCount,
+            indexCount: 3,
+          },
+        })
+      )
+      return render(
+        <EditMode
+          id="presentation-1"
+          cues={customCues}
+          isToolboxOpen={false}
+          setIsToolboxOpen={jest.fn()}
+          cueIndex={0}
+          isAudioMuted={false}
+          toggleAudioMute={jest.fn()}
+          indexCount={3}
+        />
+      )
+    }
+
+    it("relies on the server to reposition the audio cue instead of updating it directly, then refetches", async () => {
+      renderWithScreenCount([audioCue], 2)
+
+      await act(async () => {
+        fireEvent.click(screen.getAllByLabelText("Remove screen")[0])
+      })
+
+      await waitFor(() => {
+        expect(saveScreenCount).toHaveBeenCalledWith({
+          id: "presentation-1",
+          screenCount: 1,
+        })
+      })
+      expect(updatePresentation).not.toHaveBeenCalled()
+      expect(fetchPresentationInfo).toHaveBeenCalledWith("presentation-1")
     })
   })
 })
