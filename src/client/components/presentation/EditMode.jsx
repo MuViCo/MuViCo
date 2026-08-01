@@ -506,6 +506,7 @@ const EditMode = ({
           screen: newScreenNumber + 1,
           file: audioCue.file,
           loop: audioCue.loop,
+          color: audioCue.color,
         }
         await dispatch(updatePresentation(id, updatedCue))
 
@@ -593,6 +594,7 @@ const EditMode = ({
           screen: currentScreenCount - 1 + 1,
           file: audioCue.file,
           loop: audioCue.loop,
+          color: audioCue.color,
         }
 
         await dispatch(updatePresentation(id, updatedCue))

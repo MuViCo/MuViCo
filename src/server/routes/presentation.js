@@ -2,7 +2,7 @@
  * This module defines the routes for managing presentations, including:
  * retrieving presentation details, updating presentation properties (like index and screen count), uploading and managing cues (which can be files or colors associated with specific screens and indices), and deleting presentations.
  * It uses multer for handling file uploads, integrates with AWS S3 and Google Drive for file storage, and includes middleware for user authentication and presentation access control.
- * The routes interact with the Presentation model to perform CRUD operations and ensure that users can only access and modify presentations they have permissions for. 
+ * The routes interact with the Presentation model to perform CRUD operations and ensure that users can only access and modify presentations they have permissions for.
  * The module also includes error handling for various edge cases, such as file size limits, invalid input data, and conflicts in cue positioning.
  */
 
@@ -274,10 +274,11 @@ router.put(
         )
         removedCuesCount = cuesToRemove.length
 
-        // Remove cues from screens being deleted
+        // Remove cues from screens being deleted (excludes the audio row,
+        // which always sits at screenCount + 1 and must survive)
         updateQuery.$pull = {
           cues: {
-            screen: { $gt: newScreenCount },
+            screen: { $gt: newScreenCount, $lte: presentation.screenCount },
           },
         }
       }
@@ -318,12 +319,9 @@ router.put(
 
       const trimmedName = name.trim()
       if (trimmedName.length === 0 || trimmedName.length > 100) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Presentation name must be between 1 and 100 characters long",
-          })
+        return res.status(400).json({
+          error: "Presentation name must be between 1 and 100 characters long",
+        })
       }
 
       presentation.name = trimmedName
@@ -426,11 +424,9 @@ router.put(
       }
 
       if (hasPositionConflict(presentation.cues, index, screen)) {
-        return res
-          .status(400)
-          .json({
-            error: "A cue with the same index and screen already exists.",
-          })
+        return res.status(400).json({
+          error: "A cue with the same index and screen already exists.",
+        })
       }
 
       const fileObject = {
@@ -668,11 +664,9 @@ router.put(
           parsedSecondScreen
         )
       ) {
-        return res
-          .status(400)
-          .json({
-            error: "Swap target position is already occupied by another cue.",
-          })
+        return res.status(400).json({
+          error: "Swap target position is already occupied by another cue.",
+        })
       }
 
       // Apply the swap and persist the normalized cue types.
@@ -800,11 +794,9 @@ router.put(
       }
 
       if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
-        return res
-          .status(400)
-          .json({
-            error: "A cue with the same index and screen already exists.",
-          })
+        return res.status(400).json({
+          error: "A cue with the same index and screen already exists.",
+        })
       }
 
       // Update cue fields

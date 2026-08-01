@@ -621,6 +621,29 @@ describe("test presentation", () => {
       expect(remainingCues.filter((cue) => cue.screen === 2).length).toBe(1)
     })
 
+    test("Should not delete audio cues when decreasing screen count", async () => {
+      await Presentation.findByIdAndUpdate(testPresentationId, {
+        $push: {
+          cues: { cueType: "audio", screen: 4, index: 1, name: "Audio 1" },
+        },
+      })
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2 })
+        .expect(200)
+
+      expect(response.body.screenCount).toBe(2)
+
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
+      const audioCues = updatedPresentation.cues.filter(
+        (cue) => cue.cueType === "audio"
+      )
+      expect(audioCues.length).toBe(1)
+    })
+
     test("Should reject invalid screen count (too low)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)
