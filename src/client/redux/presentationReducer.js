@@ -105,7 +105,7 @@ const presentationSlice = createSlice({
 
           if (removedCuesCount > 0) {
             state.cues = state.cues.filter(
-              (cue) => cue.screen <= newScreenCount
+              (cue) => cue.cueType === "audio" || cue.screen <= newScreenCount
             )
           }
         }

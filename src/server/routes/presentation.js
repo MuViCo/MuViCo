@@ -237,7 +237,8 @@ router.put(
 )
 
 /**
- * Update presentation screenCount by ID
+ * Update presentation screenCount by ID. The screen position of audio cues is updated
+ * by the presentation model's pre("validate") hook to always be screenCount + 1.
  */
 router.put(
   "/:id/screenCount",
@@ -260,10 +261,6 @@ router.put(
           .json({ error: "screenCount must be between 1 and 8" })
       }
 
-      const updateQuery = {
-        $set: { screenCount: newScreenCount },
-      }
-
       // If reducing screen count, remove cues from screens that will be removed
       let removedCuesCount = 0
       if (newScreenCount < presentation.screenCount) {
@@ -276,21 +273,22 @@ router.put(
 
         // Remove cues from screens being deleted (excludes the audio row,
         // which always sits at screenCount + 1 and must survive)
-        updateQuery.$pull = {
-          cues: {
-            screen: { $gt: newScreenCount, $lte: presentation.screenCount },
-          },
-        }
+        presentation.cues = presentation.cues.filter(
+          (cue) =>
+            !(
+              cue.screen > newScreenCount &&
+              cue.screen <= presentation.screenCount
+            )
+        )
       }
 
-      const updated = await Presentation.findByIdAndUpdate(
-        presentation._id,
-        updateQuery,
-        { new: true }
-      )
+      // Must be presentation.save(), not a query-style update, since it
+      // triggers the pre("validate") hook the audio-row repositioning depends on.
+      presentation.screenCount = newScreenCount
+      await presentation.save()
 
       res.json({
-        screenCount: updated.screenCount,
+        screenCount: presentation.screenCount,
         removedCuesCount: removedCuesCount,
       })
     } catch (err) {

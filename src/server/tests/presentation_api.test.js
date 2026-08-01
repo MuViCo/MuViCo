@@ -644,6 +644,48 @@ describe("test presentation", () => {
       expect(audioCues.length).toBe(1)
     })
 
+    test("Should reposition the audio cue to the new audio row when decreasing screen count", async () => {
+      await Presentation.findByIdAndUpdate(testPresentationId, {
+        $push: {
+          cues: { cueType: "audio", screen: 4, index: 1, name: "Audio 1" },
+        },
+      })
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2 })
+        .expect(200)
+
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
+      const audioCue = updatedPresentation.cues.find(
+        (cue) => cue.cueType === "audio"
+      )
+      expect(audioCue.screen).toBe(3)
+    })
+
+    test("Should reposition the audio cue to the new audio row when increasing screen count", async () => {
+      await Presentation.findByIdAndUpdate(testPresentationId, {
+        $push: {
+          cues: { cueType: "audio", screen: 4, index: 1, name: "Audio 1" },
+        },
+      })
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 4 })
+        .expect(200)
+
+      const updatedPresentation =
+        await Presentation.findById(testPresentationId)
+      const audioCue = updatedPresentation.cues.find(
+        (cue) => cue.cueType === "audio"
+      )
+      expect(audioCue.screen).toBe(5)
+    })
+
     test("Should reject invalid screen count (too low)", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/screenCount`)

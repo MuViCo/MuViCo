@@ -1180,6 +1180,29 @@ describe("presentationReducer asynchronous actions", () => {
     expect(store.getState().presentation.pendingSaves).toBe(0)
   })
 
+  it("should not strip the audio cue from local state when saveScreenCount removes other cues", () => {
+    const store = makeStore()
+
+    const initialState = {
+      cues: [
+        { _id: 1, name: "Cue 1", index: 0, screen: 1 },
+        { _id: 2, name: "Cue 2", index: 1, screen: 3 },
+        { _id: 3, name: "Audio 1", index: 0, screen: 4, cueType: "audio" },
+      ],
+      screenCount: 3,
+      name: "My Presentation",
+    }
+
+    store.dispatch(setPresentationInfo(initialState))
+
+    const payload = { screenCount: 2, removedCuesCount: 1 }
+    store.dispatch({ type: saveScreenCount.fulfilled.type, payload })
+
+    const { cues } = store.getState().presentation
+    expect(cues.some((c) => c.cueType === "audio")).toBe(true)
+    expect(cues.some((c) => c._id === 2)).toBe(false)
+  })
+
   it("should not report saved until every overlapping save finishes", () => {
     const store = makeStore()
 
