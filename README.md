@@ -36,11 +36,11 @@ With MuViCo you can easily add, assemble and edit video, image and audio element
 
 The app can be used by signing up and logging in. The user can log in with a Google account or create a new account to MuViCo. On the home page the user can create a new presentation or view their previous presentations. A presentation in this case refers to a collection of media, which is intended to be used in a performance setting.
 
-Elements are slots in which singular pieces of media are stored. On the presentation page, the user can add elements either by manually clicking the 'Add element'-button, by double clicking on a free spot in the interface, or by drag-and-dropping files directly to the interface. The user can then edit existing elements for example by dragging a new piece of media on top of the element or by double clicking the element to change the position, element name or media. Changes are saved automatically.
+Elements are slots in which singular pieces of media are stored. On the presentation page, the user can add elements by dragging them to the grid from the media pool panel. In order to use the media pool, media files must be first uploaded to the browsers memory after which they can be dragged and added into presentations. Files can also be directly drag-and-dropped into the grid. Each element in the editor grid has an additional menu through which the user can delete, rename, copy them and toggle the loop state for audio cues. Elements can also be double clicked to quickly rename them. Changes are saved automatically.
 
-Once the user enters 'Show mode' the elements can be activated. Each element is linked to a screen on which the media will be presented. The presentation can also be edited during Show mode and changes will be saved.
+The elements are differentiated by their 'screen' and 'index' (frame) values. Elements with the same 'screen' are shown in the same pop up window, while elements with the same 'index' are activated simultaneously. This allows the user to control media on several screens independently. A user can delete a presentation or element, which also deletes the media of said presentation / element.
 
-The elements are differentiated by their 'screen' and 'index' values. Elements with the same 'screen' are shown in the same pop up window, while elements with the same 'index' are activated simultaneously. This allows the user to control media on several screens independently. A user can delete a presentation or element, which also deletes the media of said presentation / element.
+The user can move between frames using the playback controls in the editor or arrow keys on the keyboard. The presentation also has an auto-play feature which progresses the frames every 5 seconds by default. The top section of the editor has a panel that displays all content visible on the screens in the currently visible frame.
 
 ### Documentation
 

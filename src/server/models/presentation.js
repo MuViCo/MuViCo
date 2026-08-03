@@ -2,8 +2,8 @@
   * This schema defines the structure of presentation documents 
     in the MongoDB database.
   * Each presentation has a name, associated user, storage type, 
-    screen count, index count, and arrays of cues and audio cues.
-  * Cues and audio cues contain information about their index, 
+    screen count, index count, and array of cues that includes both visual and audio cues.
+  * Cue contain information about its index, 
     name, associated media file, loop setting, and color (for cues).
   * The schema also includes a toJSON transformation to format 
     the output when converting documents to JSON.
@@ -13,16 +13,21 @@
 */
 
 const mongoose = require("mongoose")
-const { VALID_CUE_TYPES, getAudioRow, getCueTypeFromScreen } = require("../utils/cueType")
+const {
+  VALID_CUE_TYPES,
+  getAudioRow,
+  getCueTypeFromScreen,
+} = require("../utils/cueType")
 
 // Normalizes and validates cues, ensuring they have the correct cueType and screen assignments
 const normalizePresentationCues = (presentationObject) => {
   const screenCount = Number(presentationObject.screenCount) || 1
-  const cues = Array.isArray(presentationObject.cues) ? presentationObject.cues : []
+  const cues = Array.isArray(presentationObject.cues)
+    ? presentationObject.cues
+    : []
   presentationObject.cues = cues.map((cue) => {
-    const normalizedCue = cue && typeof cue.toObject === "function"
-      ? cue.toObject()
-      : { ...cue }
+    const normalizedCue =
+      cue && typeof cue.toObject === "function" ? cue.toObject() : { ...cue }
 
     // Determine cueType: use stored type if valid, otherwise infer from screen
     const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
@@ -38,121 +43,123 @@ const normalizePresentationCues = (presentationObject) => {
 }
 
 // Define the presentation schema with all required fields and validation
-const presentationSchema = mongoose.Schema({
-  // Presentation title
-  name: {
-    type: String,
-    required: true,
-    minlength: 1,
-    maxlength: 100,
-  },
-
-  // Optional longer description of the presentation
-  description: {
-    type: String,
-    maxlength: 500,
-  },
-
-  // Reference to the User who owns this presentation
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-
-  // Where media files are stored: AWS S3 or Google Drive
-  storage: {
-    type: String,
-    required: true,
-    default: "aws",
-    enum: {
-      values: ["aws", "googleDrive"],
-      message: "storage must be either aws or googleDrive",
-    }
-  },
-
-  // Number of display screens (1-8). Determines valid cue positions and audio cue row
-  screenCount: {
-    type: Number,
-    required: true,
-    default: 1,
-    min: 1,
-    max: 8,
-    set: v => (v === undefined || v === null ? v : Math.round(v)),
-    validate: {
-      validator: Number.isInteger,
-      message: "screenCount must be an integer"
-    }
-  },
-
-  // Number of index positions (1-101) for the cue timeline
-  indexCount: {
-    type: Number,
-    default: 5,
-    min: 1,
-    max: 101,
-    set: v => (v === undefined || v === null ? v : Math.round(v)),
-    validate: {
-      validator: Number.isInteger,
-      message: "indexCount must be an integer"
-    }
-  },
-
-  lastUsed: {
-    type: Date,
-    default: Date.now,
-    index: -1,
-  },
-
-  cues: [
-    {
-      cueType: {
-        type: String,
-        required: true,
-        enum: {
-          values: VALID_CUE_TYPES,
-          message: "cueType must be either visual or audio",
-        },
-      },
-      index: { 
-        type: Number, 
-        required: true,
-        set: v => (v === undefined || v === null ? v : Math.round(v)),
-        validate: {
-          validator: Number.isInteger,
-          message: "index must be an integer"
-        }
-      },
-      name: { type: String, default: "", maxlength: 100 },
-      screen: { 
-        type: Number, 
-        required: true,
-        min: 1,
-        set: v => (v === undefined || v === null ? v : Math.round(v)),
-        validate: {
-          validator: Number.isInteger,
-          message: "screen must be an integer"
-        }
-      },
-      // Hex color code for visual cues 
-      color: {
-        type: String,
-        match: /^#([0-9A-F]{3}){1,2}$/i,
-        default: "#000000",
-      },
-      // Media file metadata (stored locally or on Google Drive)
-      file: {
-        id: String,
-        name: String,
-        url: String,
-        driveId: String,
-        size: { type: String, default: "0" },
-        type: { type: String, default: "image/jpeg" },
-      },
-      loop: { type: Boolean, default: false },
+const presentationSchema = mongoose.Schema(
+  {
+    // Presentation title
+    name: {
+      type: String,
+      required: true,
+      minlength: 1,
+      maxlength: 100,
     },
-  ],
 
-}, { timestamps: true })
+    // Optional longer description of the presentation
+    description: {
+      type: String,
+      maxlength: 500,
+    },
+
+    // Reference to the User who owns this presentation
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    // Where media files are stored: AWS S3 or Google Drive
+    storage: {
+      type: String,
+      required: true,
+      default: "aws",
+      enum: {
+        values: ["aws", "googleDrive"],
+        message: "storage must be either aws or googleDrive",
+      },
+    },
+
+    // Number of display screens (1-8). Determines valid cue positions and audio cue row
+    screenCount: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+      max: 8,
+      set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+      validate: {
+        validator: Number.isInteger,
+        message: "screenCount must be an integer",
+      },
+    },
+
+    // Number of index positions (1-101) for the cue timeline
+    indexCount: {
+      type: Number,
+      default: 5,
+      min: 1,
+      max: 101,
+      set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+      validate: {
+        validator: Number.isInteger,
+        message: "indexCount must be an integer",
+      },
+    },
+
+    lastUsed: {
+      type: Date,
+      default: Date.now,
+      index: -1,
+    },
+
+    cues: [
+      {
+        cueType: {
+          type: String,
+          required: true,
+          enum: {
+            values: VALID_CUE_TYPES,
+            message: "cueType must be either visual or audio",
+          },
+        },
+        index: {
+          type: Number,
+          required: true,
+          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          validate: {
+            validator: Number.isInteger,
+            message: "index must be an integer",
+          },
+        },
+        name: { type: String, default: "", maxlength: 100 },
+        screen: {
+          type: Number,
+          required: true,
+          min: 1,
+          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          validate: {
+            validator: Number.isInteger,
+            message: "screen must be an integer",
+          },
+        },
+        // Hex color code for visual cues
+        color: {
+          type: String,
+          match: /^#([0-9A-F]{3}){1,2}$/i,
+          default: "#000000",
+        },
+        // Media file metadata
+        file: {
+          id: String,
+          name: String,
+          url: String,
+          driveId: String,
+          size: { type: String, default: "0" },
+          type: { type: String, default: "image/jpeg" },
+        },
+        loop: { type: Boolean, default: false },
+      },
+    ],
+  },
+  { timestamps: true }
+)
 
 presentationSchema.index({ user: 1, lastUsed: -1 })
 
@@ -166,52 +173,70 @@ presentationSchema.pre("save", function (next) {
 
   for (const cue of this.cues) {
     if (cue.index < 0 || cue.index >= this.indexCount) {
-      validationError.addError("cues.index", new mongoose.Error.ValidatorError({
-        message: `Cue index ${cue.index} exceeds indexCount`,
-        path: "cues.index",
-        value: cue.index,
-      }))
+      validationError.addError(
+        "cues.index",
+        new mongoose.Error.ValidatorError({
+          message: `Cue index ${cue.index} exceeds indexCount`,
+          path: "cues.index",
+          value: cue.index,
+        })
+      )
     }
 
     if (!VALID_CUE_TYPES.includes(cue.cueType)) {
-      validationError.addError("cues.cueType", new mongoose.Error.ValidatorError({
-        message: `Invalid cueType ${cue.cueType}`,
-        path: "cues.cueType",
-        value: cue.cueType,
-      }))
+      validationError.addError(
+        "cues.cueType",
+        new mongoose.Error.ValidatorError({
+          message: `Invalid cueType ${cue.cueType}`,
+          path: "cues.cueType",
+          value: cue.cueType,
+        })
+      )
     }
 
-    if (cue.cueType === "audio" && cue.screen !== getAudioRow(this.screenCount)) {
-      validationError.addError("cues.screen", new mongoose.Error.ValidatorError({
-        message: `Audio cue screen ${cue.screen} must equal screenCount + 1`,
-        path: "cues.screen",
-        value: cue.screen,
-      }))
+    if (
+      cue.cueType === "audio" &&
+      cue.screen !== getAudioRow(this.screenCount)
+    ) {
+      validationError.addError(
+        "cues.screen",
+        new mongoose.Error.ValidatorError({
+          message: `Audio cue screen ${cue.screen} must equal screenCount + 1`,
+          path: "cues.screen",
+          value: cue.screen,
+        })
+      )
     }
 
-    if (cue.cueType === "visual" && (cue.screen < 1 || cue.screen > this.screenCount)) {
-      validationError.addError("cues.screen", new mongoose.Error.ValidatorError({
-        message: `Visual cue screen ${cue.screen} exceeds screenCount`,
-        path: "cues.screen",
-        value: cue.screen,
-      }))
+    if (
+      cue.cueType === "visual" &&
+      (cue.screen < 1 || cue.screen > this.screenCount)
+    ) {
+      validationError.addError(
+        "cues.screen",
+        new mongoose.Error.ValidatorError({
+          message: `Visual cue screen ${cue.screen} exceeds screenCount`,
+          path: "cues.screen",
+          value: cue.screen,
+        })
+      )
     }
-
   }
 
   if (Object.keys(validationError.errors).length > 0) {
     return next(validationError)
   }
-  
+
   next()
 })
-
 
 // Transform document when converting to JSON: format IDs and extract audio cues
 presentationSchema.set("toJSON", {
   transform: (document, returnedObject) => {
     normalizePresentationCues(returnedObject)
-    returnedObject.audioCues = returnedObject.cues.filter((cue) => cue.cueType === "audio")
+    returnedObject.audioCues = returnedObject.cues.filter(
+      (cue) => cue.cueType === "audio"
+    )
     returnedObject.id = returnedObject._id.toString()
     delete returnedObject._id
     delete returnedObject.__v
