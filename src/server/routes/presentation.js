@@ -78,11 +78,16 @@ const hasSwapTargetConflict = (
   })
 }
 
-const deletObject = async (id, cueId, driveToken) => {
+const deleteObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
     { "cues.$": 1 }
   )
+
+  if (!cue) {
+    return null
+  }
+
   const updatedPresentation = await Presentation.findByIdAndUpdate(
     id,
     {
@@ -166,7 +171,7 @@ router.delete(
       const { user, presentation } = req
 
       for (const cue of presentation.cues) {
-        await deletObject(presentation._id, cue._id, user.driveToken)
+        await deleteObject(presentation._id, cue._id, user.driveToken)
       }
 
       await Presentation.findByIdAndDelete(presentation._id)
@@ -890,11 +895,16 @@ router.delete(
     try {
       const { cueId } = req.params
       const { user, presentation } = req
-      const updatedPresentation = await deletObject(
+      const updatedPresentation = await deleteObject(
         presentation._id,
         cueId,
         user.driveToken
       )
+
+      if (!updatedPresentation) {
+        return res.status(404).json({ error: "Cue not found" })
+      }
+
       res.json(updatedPresentation)
       res.status(204).end()
     } catch (error) {

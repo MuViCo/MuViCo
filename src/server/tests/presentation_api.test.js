@@ -148,6 +148,32 @@ describe("test presentation", () => {
     })
   })
 
+  describe("DELETE /api/presentation/:id/:cueId", () => {
+    test("deletes an existing cue", async () => {
+      const created = await createCue(1, "Test Cue", 2)
+      const cueId = created.body.cues[0]._id
+
+      await api
+        .delete(`/api/presentation/${testPresentationId}/${cueId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      expect(presentation.cues).toHaveLength(0)
+    })
+
+    test("returns 404 if cue id is not found", async () => {
+      const response = await api
+        .delete(
+          `/api/presentation/${testPresentationId}/000000000000000000000000`
+        )
+        .set("Authorization", authHeader)
+
+      expect(response.status).toBe(404)
+      expect(response.body.error).toBe("Cue not found")
+    })
+  })
+
   describe("Test error handling", () => {
     it("GET /api/presentation/:id with no user should return 401", async () => {
       const response = await api.get(
