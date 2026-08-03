@@ -56,8 +56,7 @@ The application is designed for creating and performing multi-screen multimedia 
   Sensitive configuration (API keys, database URIs, etc.) is stored in GitHub Secrets for CI.
 - **Kubernetes Secrets**  
   Prod and staging configuration (API keys, database URIs, etc.) in Kubernetes Secrets for the running cluster (see `/manifests/*-secrets.yaml`).
-  > [!CAUTION]
-  > *These files are not to be saved in version control.*s
+  > [!CAUTION] > *These files are not to be saved in version control.*s
 
 ---
 
@@ -121,8 +120,7 @@ flowchart TD
     end
 ```
 
-> [!NOTE]
-> **What's a 301 redirect response?**
+> [!NOTE] > **What's a 301 redirect response?**
 >
 > A 301 redirect is a permanent redirect that tells the user's browser to retry the request using HTTPS. This is a standard best practice for enforcing secure connections.
 
@@ -132,9 +130,11 @@ MuViCo uses GitHub Actions to automate testing, building container images, and p
 
 ### What the GitHub Actions workflows do
 
-- **`staging.yml`** runs on every push (any branch):
-  - Runs linting and unit tests.
-  - Builds a Docker image and pushes it to Quay tagged with `staging`.
+- **`CI.yml`** runs on every push (any branch):
+
+  - Runs linting, unit tests and end-to-end tests.
+  - Builds a Docker image
+  - On main branch pushes the docker image is also pushed to Quay tagged with `staging`.
   - Uploads frontend and backend coverage reports to Codecov.
 
 - **`prod.yml`** runs when a GitHub Release is published:
