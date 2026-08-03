@@ -3,7 +3,7 @@
     in the MongoDB database.
   * Each presentation has a name, associated user, storage type, 
     screen count, index count, and array of cues that includes both visual and audio cues.
-  * Cue contain information about its index, 
+  * Cues contain information about their index, 
     name, associated media file, loop setting, and color (for cues).
   * The schema also includes a toJSON transformation to format 
     the output when converting documents to JSON.

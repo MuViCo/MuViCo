@@ -5,6 +5,17 @@
  * It supports both visual cues (images and videos) and audio cues, with validation for file types and required fields.
  * The form includes inputs for cue name, index, screen number, file upload, and color selection.
  * It also provides feedback on file selection and displays error messages for invalid inputs.
+ *
+ * TODO: this component now doubles as the always-visible "media pool" sidebar (upload + drag-to-grid
+ * via mediaStore). The original <form onSubmit> path below it (onAddCue / handleUpdateSubmit, and the
+ * addCue/onClose/position/cueData/isAudioMode props) is NOT reachable from
+ * the running app: EditModeContainer.jsx never receives real values for these from index.jsx, so they
+ * arrive as no-ops. It's a leftover from a pre-rewrite design where CuesForm was opened via a
+ * Toolbox/Drawer modal (see git history around "started the editor building from scratch") before being
+ * repurposed into this sidebar. It's still directly unit-tested in isolation (cues.test.js, the
+ * submit-flow tests), and some state (e.g. cueName) is shared with the live drag-and-drop code, so
+ * removing it isn't a clean deletion. The dead code needs to be either removed or utilized in a new way,
+ * for example a new form for editing existing cues in the grid.
  */
 
 import {
