@@ -3,7 +3,7 @@ services:
     image: dev
     build:
       context: ./
-      dockerfile: dev.Dockerfile
+      dockerfile: docker/dev.Dockerfile
     ports:
       - 3000:3000
       - 8000:8000
