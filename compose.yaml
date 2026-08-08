@@ -7,12 +7,37 @@ services:
     ports:
       - 3000:3000
       - 8000:8000
+    environment:
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/muvico}
     volumes:
       - ./:/app
       - /app/node_modules
     container_name: dev_app
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - dev_net
+
+  mongo:
+    image: mongo:8.2
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:27017:27017
+    volumes:
+      - mongo_data:/data/db
+    container_name: dev_mongo
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - dev_net
 
 networks:
   dev_net:
+
+volumes:
+  mongo_data:
