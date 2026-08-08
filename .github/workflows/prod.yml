@@ -27,6 +27,7 @@ jobs:
             --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
             --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+            -f docker/Dockerfile \
             -t 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}' .
           docker push 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}'
           echo "image=quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
