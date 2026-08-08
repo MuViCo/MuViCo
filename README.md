@@ -134,7 +134,7 @@ If you prefer to develop inside a Docker container (to match the production envi
    npm run start
    ```
 
-   This will spin up the necessary containers for the backend, frontend, and database.
+   This will spin up the necessary containers for the backend, frontend, and a local MongoDB instance. In Docker the app uses the `MONGODB_URI` from your `.env` if set; if it is empty, it defaults to the bundled local MongoDB (`mongodb://mongo:27017/muvico`). Its data is persisted in the `mongo_data` volume, and the database is also reachable from the host on `localhost:27017`.
 
 ### Running the Application in Production Mode
 
