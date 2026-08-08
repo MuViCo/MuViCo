@@ -9,6 +9,16 @@ services:
       - 8000:8000
     environment:
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/muvico}
+      # Endpoint handed to the browser through presigned URLs, reachable from
+      # the host. The bundled Garage publishes its S3 API on localhost:3900.
+      PUBLIC_S3_ENDPOINT: ${PUBLIC_S3_ENDPOINT:-http://localhost:3900}
+      # Endpoint used for server-to-server calls, resolved on the compose
+      # network. Falls back to PUBLIC_S3_ENDPOINT when left empty.
+      PRIVATE_S3_ENDPOINT: ${PRIVATE_S3_ENDPOINT:-http://garage:3900}
+      BUCKET_NAME: ${BUCKET_NAME:-muvico}
+      BUCKET_REGION: ${BUCKET_REGION:-garage}
+      ACCESS_KEY: ${ACCESS_KEY:-GK1111111111111111111111111111111f}
+      SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY:-1111111111111111111111111111111111111111111111111111111111111111}
     volumes:
       - ./:/app
       - /app/node_modules
@@ -16,6 +26,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      garage-init:
+        condition: service_completed_successfully
     networks:
       - dev_net
 
@@ -36,8 +48,70 @@ services:
     networks:
       - dev_net
 
+  # Local S3-compatible object storage. `--single-node` sets up the cluster
+  # layout automatically and `--default-bucket` creates the bucket and the
+  # access key from the GARAGE_DEFAULT_* variables, so no manual `garage layout`
+  # or `garage bucket create` step is needed.
+  # https://garagehq.deuxfleurs.fr/documentation/quick-start/
+  garage:
+    image: dxflrs/garage:v2.3.0
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:3900:3900
+      - 127.0.0.1:3903:3903
+    environment:
+      # Development-only secrets: this cluster is single node and bound to
+      # localhost, so these never protect anything reachable from outside.
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-muvico-dev-admin-token}
+      GARAGE_DEFAULT_BUCKET: ${BUCKET_NAME:-muvico}
+      GARAGE_DEFAULT_ACCESS_KEY: ${ACCESS_KEY:-GK1111111111111111111111111111111f}
+      GARAGE_DEFAULT_SECRET_KEY: ${SECRET_ACCESS_KEY:-1111111111111111111111111111111111111111111111111111111111111111}
+    volumes:
+      - ./docker/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    container_name: dev_garage
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - dev_net
+
+  # Garage has no CLI for CORS, so the policy is set through the S3 API once the
+  # server is up. Reuses the app image, which already ships the AWS SDK.
+  garage-init:
+    image: dev
+    build:
+      context: ./
+      dockerfile: docker/dev.Dockerfile
+    command: ["node", "docker/garage-cors.js"]
+    restart: "no"
+    environment:
+      PRIVATE_S3_ENDPOINT: ${PRIVATE_S3_ENDPOINT:-http://garage:3900}
+      BUCKET_NAME: ${BUCKET_NAME:-muvico}
+      BUCKET_REGION: ${BUCKET_REGION:-garage}
+      ACCESS_KEY: ${ACCESS_KEY:-GK1111111111111111111111111111111f}
+      SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY:-1111111111111111111111111111111111111111111111111111111111111111}
+      S3_CORS_ALLOWED_ORIGINS: ${S3_CORS_ALLOWED_ORIGINS:-*}
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    container_name: dev_garage_init
+    depends_on:
+      garage:
+        condition: service_healthy
+    networks:
+      - dev_net
+
 networks:
   dev_net:
 
 volumes:
   mongo_data:
+  garage_meta:
+  garage_data:
