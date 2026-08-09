@@ -17,6 +17,9 @@ if (typeof window !== "undefined" && window.localStorage) {
     // ignore (some envs may throw)
   }
 }
+if (typeof window !== "undefined" && window.HTMLMediaElement) {
+  window.HTMLMediaElement.prototype.load = () => {}
+}
 if (typeof window !== "undefined") {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
@@ -34,11 +37,17 @@ if (typeof window !== "undefined") {
 }
 
 jest.mock("./src/client/public/icons/nextbutton.svg", () => "nextbutton.svg")
-jest.mock("./src/client/public/icons/previousbutton.svg", () => "previousbutton.svg")
+jest.mock(
+  "./src/client/public/icons/previousbutton.svg",
+  () => "previousbutton.svg"
+)
 jest.mock("./src/client/public/icons/pausebutton.svg", () => "pausebutton.svg")
 jest.mock("./src/client/public/icons/playbutton.svg", () => "playbutton.svg")
 jest.mock("./src/client/public/icons/screen.svg", () => "screen.svg")
 jest.mock("./src/client/public/icons/trash.svg", () => "trash.svg")
-jest.mock("./src/client/public/icons/Presentationsettings.svg", () => "Presentationsettings.svg")
+jest.mock(
+  "./src/client/public/icons/Presentationsettings.svg",
+  () => "Presentationsettings.svg"
+)
 jest.mock("./src/client/public/hy_logo.svg", () => "hy_logo.svg")
 jest.mock("./src/client/public/b_hy_logo.svg", () => "b_hy_logo.svg")

@@ -1071,6 +1071,9 @@ describe("EditMode drag swapping", () => {
     })
 
     it("reverts the index-count increment when the shift request fails", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
       const cues = [buildCue({ id: "c1", index: 2 })]
       renderWithFrames(cues, 4)
       mockDispatch.mockImplementation((action) =>
@@ -1093,6 +1096,7 @@ describe("EditMode drag swapping", () => {
         id: "presentation-1",
         indexCount: 4,
       })
+      consoleErrorSpy.mockRestore()
     })
 
     it("does not shift when removing a frame with no cues after it", async () => {
@@ -1163,6 +1167,12 @@ describe("EditMode drag swapping", () => {
     })
 
     it("shows an error and skips the index-count update when the removal shift request fails", async () => {
+      // Silence the console.error the component logs for this deliberately
+      // triggered failure (see the sibling "reverts the index-count
+      // increment" test above for the same rationale).
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
       const cues = [buildCue({ id: "c1", index: 2 })]
       renderWithFrames(cues, 4)
       mockDispatch.mockImplementation((action) =>
@@ -1182,6 +1192,7 @@ describe("EditMode drag swapping", () => {
       })
       expect(decrementIndexCount).not.toHaveBeenCalled()
       expect(saveIndexCount).not.toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
     })
 
     it("delegates to the confirmation dialog instead of shifting directly when the removed frame has a cue on it", async () => {
@@ -1258,6 +1269,12 @@ describe("EditMode drag swapping", () => {
     })
 
     it("skips shrinking the index count when the shift fails while removing a frame with a cue on it", async () => {
+      // Silence the console.error the component logs for this deliberately
+      // triggered failure (see the "reverts the index-count increment" test
+      // above for the same rationale).
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
       const cues = [
         buildCue({ id: "c1", index: 1 }),
         buildCue({ id: "c2", index: 2 }),
@@ -1283,6 +1300,7 @@ describe("EditMode drag swapping", () => {
       })
       expect(decrementIndexCount).not.toHaveBeenCalled()
       expect(saveIndexCount).not.toHaveBeenCalled()
+      consoleErrorSpy.mockRestore()
     })
   })
 
