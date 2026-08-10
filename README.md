@@ -91,10 +91,23 @@ Follow these steps to set up the project on your local machine:
 
 6. **Run the Application in Development Mode**  
     Start the application in development mode with hot-reloading:
+
    ```bash
    npm run dev
    ```
-   This will start the backend server and the frontend development server with live updates.
+
+   This first brings up the `services` compose profile, then starts the backend server and the frontend development server with live updates. No variable needs to be overridden: `MONGODB_URI` and `PUBLIC_S3_ENDPOINT` in `.env` both point at the published ports of those containers.
+
+   The `services` profile holds everything the app needs but is not the app itself, so ports 3000 and 8000 stay free:
+
+   | Service       | Address                 | Role                                       |
+   | ------------- | ----------------------- | ------------------------------------------ |
+   | `mongo`       | `localhost:27017`       | database                                   |
+   | `garage`      | `localhost:3900`        | S3 object storage (admin API on `3903`)    |
+   | `garage-init` | —                       | one-shot, applies the bucket CORS policy   |
+   | `garage-ui`   | `http://localhost:3909` | web UI to browse buckets, keys and objects |
+
+   Start or stop them on their own with `npm run start-services` / `npm run stop-services`.
 
 ### Running Tests
 
@@ -134,7 +147,9 @@ If you prefer to develop inside a Docker container (to match the production envi
    npm run start
    ```
 
-   This will spin up the necessary containers for the backend, frontend, a local MongoDB instance, and a local S3-compatible object storage. In Docker, the app uses the `MONGODB_URI` from your `.env` if set; if it is empty, it defaults to the bundled local MongoDB (`mongodb://mongo:27017/muvico`). Its data is persisted in the `mongo_data` volume, and the database is also reachable from the host on `localhost:27017`.
+   This runs the `all` compose profile, which spins up the necessary containers for the backend, frontend, a local MongoDB instance, and a local S3-compatible object storage. Use `npm run start-services` instead to bring up only the backing services and run the app on the host.
+
+   In Docker, the app uses the `MONGODB_URI` from your `.env` if set; if it is empty, it defaults to the bundled local MongoDB (`mongodb://mongo:27017/muvico`). Its data is persisted in the `mongo_data` volume, and the database is also reachable from the host on `localhost:27017`.
 
    Object storage is provided by [Garage](https://garagehq.deuxfleurs.fr/). It starts with `--single-node --default-bucket`, which configures the cluster layout, the bucket, and the access key on first boot, so no manual setup is needed. Leave the S3 variables empty in your `.env` to use it; the defaults are then:
 
@@ -148,6 +163,8 @@ If you prefer to develop inside a Docker container (to match the production envi
    Two endpoints are needed because presigned URLs are signed for the host the browser talks to (`localhost:3900`), while the backend reaches the same service over the compose network (`garage:3900`). Set only `PUBLIC_S3_ENDPOINT` and leave `PRIVATE_S3_ENDPOINT` empty when pointing the app at a remote bucket. Data is persisted in the `garage_meta` and `garage_data` volumes, and the admin API is exposed on `localhost:3903`.
 
    A short-lived `garage-init` container then applies a CORS policy to the bucket, because the frontend reads media directly from object storage and it is served from a different port than the app. Restrict it with `S3_CORS_ALLOWED_ORIGINS` if needed.
+
+   To browse what actually landed in the bucket, open the `garage-ui` container on [http://localhost:3909](http://localhost:3909). It reads buckets and keys through the Garage admin API and objects through the S3 API.
 
 ### Running the Application in Production Mode
 

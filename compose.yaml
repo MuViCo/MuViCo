@@ -1,5 +1,9 @@
+# Profiles let the backing services run on their own:
+#   --profile all       everything, the app included (npm run start)
+#   --profile services  backing services (mongo, garage, garage-ui) for host dev (npm run dev)
 services:
   app:
+    profiles: ["all"]
     image: dev
     build:
       context: ./
@@ -8,17 +12,19 @@ services:
       - 3000:3000
       - 8000:8000
     environment:
+      PORT: ${PORT:-8000}
+      SECRET: ${SECRET:-development_secret}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/muvico}
-      # Endpoint handed to the browser through presigned URLs, reachable from
-      # the host. The bundled Garage publishes its S3 API on localhost:3900.
       PUBLIC_S3_ENDPOINT: ${PUBLIC_S3_ENDPOINT:-http://localhost:3900}
-      # Endpoint used for server-to-server calls, resolved on the compose
-      # network. Falls back to PUBLIC_S3_ENDPOINT when left empty.
       PRIVATE_S3_ENDPOINT: ${PRIVATE_S3_ENDPOINT:-http://garage:3900}
       BUCKET_NAME: ${BUCKET_NAME:-muvico}
       BUCKET_REGION: ${BUCKET_REGION:-garage}
       ACCESS_KEY: ${ACCESS_KEY:-GK1111111111111111111111111111111f}
       SECRET_ACCESS_KEY: ${SECRET_ACCESS_KEY:-1111111111111111111111111111111111111111111111111111111111111111}
+      FIREBASE_SERVICE_KEY: ${FIREBASE_SERVICE_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
     volumes:
       - ./:/app
       - /app/node_modules
@@ -32,6 +38,7 @@ services:
       - dev_net
 
   mongo:
+    profiles: ["services", "all"]
     image: mongo:8.2
     restart: unless-stopped
     ports:
@@ -54,6 +61,7 @@ services:
   # or `garage bucket create` step is needed.
   # https://garagehq.deuxfleurs.fr/documentation/quick-start/
   garage:
+    profiles: ["services", "all"]
     image: dxflrs/garage:v2.3.0
     command: ["/garage", "server", "--single-node", "--default-bucket"]
     restart: unless-stopped
@@ -85,6 +93,7 @@ services:
   # Garage has no CLI for CORS, so the policy is set through the S3 API once the
   # server is up. Reuses the app image, which already ships the AWS SDK.
   garage-init:
+    profiles: ["services", "all"]
     image: dev
     build:
       context: ./
@@ -102,6 +111,24 @@ services:
       - ./:/app
       - /app/node_modules
     container_name: dev_garage_init
+    depends_on:
+      garage:
+        condition: service_healthy
+    networks:
+      - dev_net
+
+  garage-ui:
+    profiles: ["services", "all"]
+    image: khairul169/garage-webui:1.1.0
+    restart: unless-stopped
+    container_name: dev_garage_ui
+    ports:
+      - "127.0.0.1:3909:3909"
+    environment:
+      API_BASE_URL: http://garage:3903
+      API_ADMIN_KEY: ${GARAGE_ADMIN_TOKEN:-muvico-dev-admin-token}
+      S3_ENDPOINT_URL: ${PRIVATE_S3_ENDPOINT:-http://garage:3900}
+      S3_REGION: ${BUCKET_REGION:-garage}
     depends_on:
       garage:
         condition: service_healthy

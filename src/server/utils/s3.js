@@ -22,7 +22,6 @@ const {
   PRIVATE_S3_ENDPOINT,
 } = require("./config")
 
-// Client for internal server-to-server calls within the Docker network
 const s3Internal = new S3Client({
   endpoint: PRIVATE_S3_ENDPOINT || PUBLIC_S3_ENDPOINT,
   forcePathStyle: true,
@@ -33,7 +32,6 @@ const s3Internal = new S3Client({
   },
 })
 
-// Client for generating presigned URLs sent to the browser
 const s3Public = new S3Client({
   endpoint: PUBLIC_S3_ENDPOINT,
   forcePathStyle: true,
@@ -70,7 +68,6 @@ const getObjectSignedUrl = async (key) => {
     Key: key,
   }
 
-  // Generate URL using public endpoint for browser access
   const command = new GetObjectCommand(params)
   const seconds = 3 * 60 * 60
   const url = await getSignedUrl(s3Public, command, { expiresIn: seconds })
