@@ -11,6 +11,7 @@ import {
   Box,
   Heading,
   Flex,
+  Image,
   Button,
   Menu,
   Tooltip,
@@ -166,7 +167,7 @@ const NavBar = ({ user, setUser }) => {
       >
         <Container
           display="flex"
-          p={4}
+          p={{ base: 3, md: 4 }}
           maxW="100%"
           wrap="wrap"
           align="center"
@@ -179,7 +180,7 @@ const NavBar = ({ user, setUser }) => {
             onHoverStart={(e) => {}}
             onHoverEnd={(e) => {}}
             align="center"
-            mr={7}
+            mr={{ base: 2, md: 7 }}
             gap={6}
           >
             <Tooltip label="to Frontpage" aria-label="A tooltip">
@@ -211,16 +212,16 @@ const NavBar = ({ user, setUser }) => {
               </Heading>
             </Tooltip>
           </Flex>
-          <Flex
-            as={motion.div}
-            whileHover={{ scale: 1.05 }}
-            onHoverStart={(e) => {}}
-            onHoverEnd={(e) => {}}
-            align="center"
-            mr={7}
-            gap={6}
-          >
-            {user && (
+          {user && (
+            <Flex
+              as={motion.div}
+              whileHover={{ scale: 1.05 }}
+              onHoverStart={(e) => {}}
+              onHoverEnd={(e) => {}}
+              align="center"
+              mr={{ base: 2, md: 7 }}
+              gap={6}
+            >
               <Tooltip label="to Homepage" aria-label="A tooltip">
                 <Heading
                   as="h3"
@@ -253,9 +254,9 @@ const NavBar = ({ user, setUser }) => {
                   </Link>
                 </Heading>
               </Tooltip>
-            )}
-          </Flex>
-          <Box flex={3} align="right">
+            </Flex>
+          )}
+          <Flex flex={3} align="center" justify="flex-end" whiteSpace="nowrap">
             <ThemeToggleButton />
             {user && (
               <>
@@ -304,7 +305,11 @@ const NavBar = ({ user, setUser }) => {
             )}
             {!user && (
               <>
-                <Box ml={4} display={{ base: "inline-block" }}>
+                <Box
+                  ml={{ base: 2, md: 4 }}
+                  display="inline-block"
+                  whiteSpace="nowrap"
+                >
                   <Menu>
                     <MenuButton
                       as={Button}
@@ -320,7 +325,11 @@ const NavBar = ({ user, setUser }) => {
                     </MenuList>
                   </Menu>
                 </Box>
-                <Box ml={4} display={{ base: "inline-block" }}>
+                <Box
+                  ml={{ base: 2, md: 4 }}
+                  display="inline-block"
+                  whiteSpace="nowrap"
+                >
                   <Menu>
                     <MenuButton as={Button} colorScheme="purple">
                       Sign Up
@@ -335,20 +344,20 @@ const NavBar = ({ user, setUser }) => {
               </>
             )}
             <Box
-              ml={4}
+              ml={{ base: 2, md: 4 }}
               display="inline-flex"
               alignItems="center"
               verticalAlign="middle"
             >
-              <img
+              <Image
                 src={navbarLogo}
                 alt="HY logo"
-                width="50"
-                height="50"
-                style={{ objectFit: "contain", display: "block" }}
+                boxSize={{ base: "32px", md: "50px" }}
+                objectFit="contain"
+                display="block"
               />
             </Box>
-          </Box>
+          </Flex>
         </Container>
       </Box>
       <UserManualModal

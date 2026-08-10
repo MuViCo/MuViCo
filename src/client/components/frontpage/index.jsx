@@ -43,7 +43,8 @@ const FrontPage = () => {
         as={Box}
         textAlign="center"
         spacing={{ base: 10, md: 14 }}
-        py={{ base: 20, md: 32 }}
+        pt={{ base: 28, md: 32 }}
+        pb={{ base: 20, md: 32 }}
       >
       {/* Title */}
       <Heading
