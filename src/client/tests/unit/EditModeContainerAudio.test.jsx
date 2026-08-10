@@ -79,6 +79,9 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
         data-audio-track-continuous={(props.audioTracks || [])
           .map((track) => String(Boolean(track.continuePlayback)))
           .join("|")}
+        data-audio-track-names={(props.audioTracks || [])
+          .map((track) => track.name ?? "")
+          .join("|")}
       />
     )
   }
@@ -166,6 +169,16 @@ describe("EditModeContainer audio loop wiring", () => {
     expect(controls).toHaveAttribute("data-audio-loop", "false")
   })
 
+  test("passes the audio cue's name through to the playback controls", () => {
+    render(<EditModeContainer {...baseProps} cues={makeCues(false)} />)
+
+    const controls = screen.getByTestId("mock-playback-controls")
+    expect(controls).toHaveAttribute(
+      "data-audio-track-names",
+      "Background music"
+    )
+  })
+
   test("passes every active audio track through to the playback controls", () => {
     const cues = [
       {
@@ -204,5 +217,6 @@ describe("EditModeContainer audio loop wiring", () => {
       "data-audio-track-continuous",
       "true|false"
     )
+    expect(controls).toHaveAttribute("data-audio-track-names", "Music|SFX")
   })
 })

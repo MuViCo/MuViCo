@@ -133,6 +133,7 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
 const CueAudioPlayer = ({
   src,
   loop,
+  name = "",
   isAutoplaying,
   continuePlayback,
   allowContinuousAudio,
@@ -166,7 +167,27 @@ const CueAudioPlayer = ({
   if (!src) return null
 
   return (
-    <audio ref={audioRef} loop={loop} controls src={src} preload="metadata" />
+    <Box display="flex" alignItems="center" gap={2}>
+      {name ? (
+        <Text
+          data-testid="current-audio-name"
+          fontSize="sm"
+          fontWeight="bold"
+          maxW="150px"
+          noOfLines={1}
+          title={name}
+        >
+          {name}
+        </Text>
+      ) : null}
+      <audio
+        ref={audioRef}
+        loop={loop}
+        controls
+        src={src}
+        preload="metadata"
+      />
+    </Box>
   )
 }
 
@@ -249,6 +270,7 @@ const PresentationPlaybackControls = ({
           key={track.id || `${track.src}-${trackIndex}`}
           src={track.src}
           loop={Boolean(track.loop)}
+          name={track.name}
           isAutoplaying={isAutoplaying}
           continuePlayback={Boolean(track.continuePlayback)}
           allowContinuousAudio={allowContinuousAudio}
