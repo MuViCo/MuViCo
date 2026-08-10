@@ -194,4 +194,34 @@ describe("EditModeContainer transition settings", () => {
 
     expect(onTransitionChange).toHaveBeenCalledWith("slide-left")
   })
+
+  test("popover includes a Delete Presentation button", async () => {
+    render(<EditModeContainer {...baseProps} />)
+
+    fireEvent.click(screen.getByLabelText("Presentation Settings"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("delete-presentation-button")).toBeVisible()
+    })
+  })
+
+  test("clicking Delete Presentation calls onDeletePresentation", async () => {
+    const onDeletePresentation = jest.fn()
+    render(
+      <EditModeContainer
+        {...baseProps}
+        onDeletePresentation={onDeletePresentation}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText("Presentation Settings"))
+
+    await waitFor(() => {
+      expect(screen.getByTestId("delete-presentation-button")).toBeVisible()
+    })
+
+    fireEvent.click(screen.getByTestId("delete-presentation-button"))
+
+    expect(onDeletePresentation).toHaveBeenCalledTimes(1)
+  })
 })

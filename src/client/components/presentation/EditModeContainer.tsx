@@ -5,7 +5,14 @@
  * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Box, Button, FormLabel, HStack, Select } from "@chakra-ui/react"
+import {
+  Box,
+  Button,
+  Divider,
+  FormLabel,
+  HStack,
+  Select,
+} from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { laneScreenFromKey } from "../utils/laneFocus"
@@ -60,6 +67,7 @@ interface EditModeContainerProps {
    */
   updateCue: (direction: "Next" | "Previous") => void
   isAudioMode?: boolean
+  onDeletePresentation?: () => void
 }
 
 interface AudioTrack {
@@ -133,6 +141,7 @@ function EditorLayout(props: EditorLayoutProps) {
     allowContinuousAudio = false,
     toggleAutoplayInterval = () => {},
     onOpenTutorial = () => {},
+    onDeletePresentation = () => {},
     editModeBackground,
     panelBackground,
     panelBorderColor,
@@ -216,6 +225,16 @@ function EditorLayout(props: EditorLayoutProps) {
                   <option value="zoom">Zoom</option>
                   <option value="none">None</option>
                 </Select>
+                <Divider my={4} />
+                <Button
+                  data-testid="delete-presentation-button"
+                  colorScheme="red"
+                  size="sm"
+                  width="100%"
+                  onClick={onDeletePresentation}
+                >
+                  Delete Presentation
+                </Button>
               </Box>
             }
           >
@@ -383,6 +402,7 @@ const EditModeContainer = ({
   cueData,
   updateCue,
   isAudioMode,
+  onDeletePresentation = () => {},
 }: EditModeContainerProps) => {
   const editModeBackground = "var(--muvico-canvas)"
   const panelBackground = "var(--muvico-surface)"
@@ -707,6 +727,7 @@ const EditModeContainer = ({
         audioLoop={currentAudioLoop}
         audioTracks={currentAudioTracks}
         allowContinuousAudio={autoplayEnded}
+        onDeletePresentation={onDeletePresentation}
         editModeBackground={editModeBackground}
         panelBackground={panelBackground}
         panelBorderColor={panelBorderColor}

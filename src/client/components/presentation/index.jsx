@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux"
 
 import EditModeContainer from "./EditModeContainer"
 import useDeletePresentation from "../utils/useDeletePresentation"
+import Dialog from "../utils/AlertDialog"
 
 const PresentationPage = ({ user }) => {
   const { id } = useParams()
@@ -70,23 +71,33 @@ const PresentationPage = ({ user }) => {
   }
 
   return (
-    <EditModeContainer
-      className="presentation-page"
-      id={id}
-      cues={presentationInfo}
-      isToolboxOpen={isToolboxOpen}
-      setIsToolboxOpen={setIsToolboxOpen}
-      isTransitionMenuOpen={isTransitionMenuOpen}
-      setIsTransitionMenuOpen={setIsTransitionMenuOpen}
-      transitionType={transitionType}
-      onTransitionChange={handleTransitionChange}
-      cueIndex={cueIndex}
-      setCueIndex={setCueIndex}
-      updateCue={updateCue}
-      isAudioMuted={isAudioMuted}
-      toggleAudioMute={toggleAudioMute}
-      indexCount={indexCount}
-    />
+    <>
+      <EditModeContainer
+        className="presentation-page"
+        id={id}
+        cues={presentationInfo}
+        isToolboxOpen={isToolboxOpen}
+        setIsToolboxOpen={setIsToolboxOpen}
+        isTransitionMenuOpen={isTransitionMenuOpen}
+        setIsTransitionMenuOpen={setIsTransitionMenuOpen}
+        transitionType={transitionType}
+        onTransitionChange={handleTransitionChange}
+        cueIndex={cueIndex}
+        setCueIndex={setCueIndex}
+        updateCue={updateCue}
+        isAudioMuted={isAudioMuted}
+        toggleAudioMute={toggleAudioMute}
+        indexCount={indexCount}
+        onDeletePresentation={() => handleDeletePresentation(id)}
+      />
+      <Dialog
+        isOpen={isDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        message="Are you sure you want to delete this presentation? This cannot be undone."
+        isCentered
+      />
+    </>
   )
 }
 
