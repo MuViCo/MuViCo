@@ -1,9 +1,5 @@
-# Profiles let the backing services run on their own:
-#   --profile all       everything, the app included (npm run start)
-#   --profile services  backing services (mongo, garage, garage-ui) for host dev (npm run dev)
 services:
   app:
-    profiles: ["all"]
     image: dev
     build:
       context: ./
@@ -38,7 +34,6 @@ services:
       - dev_net
 
   mongo:
-    profiles: ["services", "all"]
     image: mongo:8.2
     restart: unless-stopped
     ports:
@@ -55,13 +50,7 @@ services:
     networks:
       - dev_net
 
-  # Local S3-compatible object storage. `--single-node` sets up the cluster
-  # layout automatically and `--default-bucket` creates the bucket and the
-  # access key from the GARAGE_DEFAULT_* variables, so no manual `garage layout`
-  # or `garage bucket create` step is needed.
-  # https://garagehq.deuxfleurs.fr/documentation/quick-start/
   garage:
-    profiles: ["services", "all"]
     image: dxflrs/garage:v2.3.0
     command: ["/garage", "server", "--single-node", "--default-bucket"]
     restart: unless-stopped
@@ -69,8 +58,6 @@ services:
       - 127.0.0.1:3900:3900
       - 127.0.0.1:3903:3903
     environment:
-      # Development-only secrets: this cluster is single node and bound to
-      # localhost, so these never protect anything reachable from outside.
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-0000000000000000000000000000000000000000000000000000000000000000}
       GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-muvico-dev-admin-token}
       GARAGE_DEFAULT_BUCKET: ${BUCKET_NAME:-muvico}
@@ -90,10 +77,7 @@ services:
     networks:
       - dev_net
 
-  # Garage has no CLI for CORS, so the policy is set through the S3 API once the
-  # server is up. Reuses the app image, which already ships the AWS SDK.
   garage-init:
-    profiles: ["services", "all"]
     image: dev
     build:
       context: ./
@@ -118,7 +102,6 @@ services:
       - dev_net
 
   garage-ui:
-    profiles: ["services", "all"]
     image: khairul169/garage-webui:1.1.0
     restart: unless-stopped
     container_name: dev_garage_ui

@@ -93,21 +93,22 @@ Follow these steps to set up the project on your local machine:
     Start the application in development mode with hot-reloading:
 
    ```bash
-   npm run dev
+   npm run start
    ```
 
-   This first brings up the `services` compose profile, then starts the backend server and the frontend development server with live updates. No variable needs to be overridden: `MONGODB_URI` and `PUBLIC_S3_ENDPOINT` in `.env` both point at the published ports of those containers.
-
-   The `services` profile holds everything the app needs but is not the app itself, so ports 3000 and 8000 stay free:
+   This brings up the whole stack in Docker: the app, the database and the object storage. The app container runs `npm run dev`, so backend and frontend both reload on save.
 
    | Service       | Address                 | Role                                       |
    | ------------- | ----------------------- | ------------------------------------------ |
+   | `app`         | `http://localhost:3000` | frontend, backend API on `8000`            |
    | `mongo`       | `localhost:27017`       | database                                   |
    | `garage`      | `localhost:3900`        | S3 object storage (admin API on `3903`)    |
    | `garage-init` | —                       | one-shot, applies the bucket CORS policy   |
    | `garage-ui`   | `http://localhost:3909` | web UI to browse buckets, keys and objects |
 
-   Start or stop them on their own with `npm run start-services` / `npm run stop-services`.
+   Stop it with `npm run stop`, or `npm run reset` to also drop the volumes.
+
+   Running the app outside Docker with `npm run dev` is still possible, but it needs the database and storage up (`npm run start` in another terminal, then stop the `dev_app` container) and `MONGODB_URI` pointing at `localhost`.
 
 ### Running Tests
 
@@ -147,7 +148,7 @@ If you prefer to develop inside a Docker container (to match the production envi
    npm run start
    ```
 
-   This runs the `all` compose profile, which spins up the necessary containers for the backend, frontend, a local MongoDB instance, and a local S3-compatible object storage. Use `npm run start-services` instead to bring up only the backing services and run the app on the host.
+   This spins up the necessary containers for the backend, frontend, a local MongoDB instance, and a local S3-compatible object storage.
 
    In Docker, the app uses the `MONGODB_URI` from your `.env` if set; if it is empty, it defaults to the bundled local MongoDB (`mongodb://mongo:27017/muvico`). Its data is persisted in the `mongo_data` volume, and the database is also reachable from the host on `localhost:27017`.
 

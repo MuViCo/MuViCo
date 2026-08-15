@@ -17,10 +17,8 @@ rpc_bind_addr = "[::]:3901"
 rpc_public_addr = "127.0.0.1:3901"
 
 [s3_api]
-# Matches BUCKET_REGION in .env-template.
 s3_region = "garage"
-api_bind_addr = "[::]:3900"
-root_domain = ".s3.garage.localhost"
+api_bind_addr = "0.0.0.0:3900"
 
 [admin]
-api_bind_addr = "[::]:3903"
+api_bind_addr = "0.0.0.0:3903"
