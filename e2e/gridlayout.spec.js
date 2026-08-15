@@ -8,12 +8,7 @@ import {
   dragPoolItemToGrid,
 } from "./helper"
 
-const {
-  test,
-  describe,
-  expect,
-  beforeEach,
-} = require("@playwright/test")
+const { test, describe, expect, beforeEach } = require("@playwright/test")
 
 const testuser = "gridlayoutuser"
 const testPw = "test12345"
@@ -68,7 +63,7 @@ describe("GridLayout", () => {
     await expect(
       page
         .getByText(
-          `Frame ${newIndex} element already exists on screen ${newScreen}. Do you want to replace it?`
+          `Frame ${newIndex} element already exists on screen ${newScreen}, layer 1. Do you want to replace it?`
         )
         .first()
     ).toBeVisible()
