@@ -11,7 +11,7 @@
 - toggleAudioMute: function to toggle audio mute in show mode
 - indexCount: number of indexes (frames) in the presentation
  */
-import React, { useState, useRef, useEffect, useMemo } from "react"
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Box, Text, useOutsideClick, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useDispatch, useSelector } from "react-redux"
@@ -49,11 +49,18 @@ import { useCustomToast } from "../utils/toastUtils"
 import screenIcon from "../../public/icons/screen.svg"
 import {
   getAudioRow,
-  isCueTypeCompatibleWithRow,
-  isInsidePresentationGridCell,
   isAudioMimeType,
   isImageOrVideoMimeType,
 } from "../utils/fileTypeUtils"
+import {
+  buildRowModel,
+  DEFAULT_MAX_AUDIO_TRACKS,
+  DEFAULT_MAX_VISUAL_LAYERS,
+  laneAcceptsCueType,
+  laneAt,
+  planVisualLayerRemoval,
+} from "../utils/screenRowModel"
+import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import mediaStore from "./mediaFileStore"
 
 /**
@@ -109,6 +116,12 @@ const EditMode = ({
   const [confirmAction, setConfirmAction] = useState(() => () => {})
   const [showAlert, setShowAlert] = useState(false)
   const [alertData, setAlertData] = useState({})
+  const [collapsedGroups, setCollapsedGroups] = useState({})
+  const [minimumGroupLanes, setMinimumGroupLanes] = useState({})
+  const toggleGroupCollapsed = (group) =>
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
+  const ensureGroupExpanded = (group) =>
+    setCollapsedGroups((prev) => ({ ...prev, [group]: false }))
 
   // Generate frame labels for grid columns (Frame 0, Frame 1, etc.)
   const xLabels = useMemo(
@@ -124,18 +137,6 @@ const EditMode = ({
     () => cues.filter((cue) => cue.cueType === "visual"),
     [cues]
   )
-
-  // Generate screen labels for grid rows (Screen 1, Screen 2, ... Audio files)
-  const yLabels = useMemo(() => {
-    const labels = Array.from(
-      { length: presentation.screenCount },
-      (_, index) => `Screen ${index + 1}`
-    )
-
-    // Add audio row separately (always at the end)
-    labels.push("Audio files")
-    return labels
-  }, [presentation.screenCount])
 
   const [isDragging, setIsDragging] = useState(false)
   const [dragCursorMode, setDragCursorMode] = useState("default")
@@ -171,6 +172,8 @@ const EditMode = ({
   const wasCopiedRef = useRef(false)
   const dragStartPointerRef = useRef(null)
   const dragHasMovedRef = useRef(false)
+  const latestGridDragDataRef = useRef(null)
+  const latestGridDragCellRef = useRef(null)
   const headerActionsRef = useRef({
     addIndex: () => {},
     removeIndex: () => {},
@@ -183,7 +186,6 @@ const EditMode = ({
   const rowHeight = 100
   const gap = 10
   const frameHeaderHeight = Math.max(rowHeight - 45, 0)
-  const dragPreviewYOffset = Math.max(rowHeight - frameHeaderHeight, 0)
   const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(
@@ -191,24 +193,198 @@ const EditMode = ({
     [cues, indexCount]
   )
 
+  const rowModel = useMemo(
+    () =>
+      buildRowModel(
+        presentation.screenCount,
+        cues,
+        collapsedGroups,
+        minimumGroupLanes
+      ),
+    [presentation.screenCount, cues, collapsedGroups, minimumGroupLanes]
+  )
+
+  const gridCues = useMemo(
+    () =>
+      cues.filter((cue) => {
+        const row = rowModel.rows[rowModel.cueY[cue._id]]
+        return row && !row.collapsed
+      }),
+    [cues, rowModel]
+  )
+
+  const getActiveVisualCueStack = useCallback(
+    (screen, frameIndex) =>
+      cues
+        .filter(
+          (cue) =>
+            cue.cueType === "visual" && Number(cue.screen) === Number(screen)
+        )
+        .filter((cue) => {
+          const cueStartIndex = Number(cue.index)
+          const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+          const cueEndIndex = cueStartIndex + cueSpan - 1
+          return frameIndex >= cueStartIndex && frameIndex <= cueEndIndex
+        })
+        .sort(
+          (firstCue, secondCue) =>
+            Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
+        ),
+    [cues, cueVisualSpanMap]
+  )
+
+  const collapsedVisualRowPreviews = useMemo(
+    () =>
+      rowModel.rows
+        .filter((row) => row.collapsed && row.kind === "screen")
+        .map((row) => ({
+          row,
+          frames: Array.from({ length: indexCount }, (_, frameIndex) => ({
+            frameIndex,
+            cues: getActiveVisualCueStack(row.screen, frameIndex),
+          })),
+        })),
+    [rowModel.rows, getActiveVisualCueStack, indexCount]
+  )
+
+  const getVisibleLaneCount = (group) =>
+    rowModel.rows.filter((row) => row.group === group).length
+
+  const addVisualLayer = (screen) => {
+    const group = `screen-${screen}`
+    const nextCount = Math.min(
+      DEFAULT_MAX_VISUAL_LAYERS,
+      getVisibleLaneCount(group) + 1
+    )
+    ensureGroupExpanded(group)
+    setMinimumGroupLanes((prev) => ({ ...prev, [group]: nextCount }))
+  }
+
+  const removeVisualLayer = async (screen, layer) => {
+    const group = `screen-${screen}`
+    const visibleCount = getVisibleLaneCount(group)
+    const layerToRemove = Number(layer)
+
+    if (!Number.isInteger(layerToRemove) || layerToRemove <= 0) return
+
+    const { removedCueIds, shiftedCues } = planVisualLayerRemoval(
+      cues,
+      screen,
+      layerToRemove
+    )
+    const nextCount = Math.max(1, visibleCount - 1)
+
+    try {
+      for (const cueId of removedCueIds) {
+        await dispatch(removeCue(id, cueId))
+      }
+
+      const cuesToShift = [...shiftedCues].sort(
+        (firstCue, secondCue) =>
+          Number(firstCue.layer ?? 0) - Number(secondCue.layer ?? 0)
+      )
+
+      for (const cue of cuesToShift) {
+        await dispatch(
+          updatePresentation(
+            id,
+            {
+              ...cue,
+              cueName: cue.name,
+              layer: cue.layer ?? 0,
+            },
+            cue._id
+          )
+        )
+      }
+
+      ensureGroupExpanded(group)
+      setMinimumGroupLanes((prev) => ({ ...prev, [group]: nextCount }))
+      showToast({
+        title: "Layer removed",
+        description: `Layer ${layerToRemove + 1} removed from screen ${screen}`,
+        status: "success",
+      })
+    } catch (error) {
+      console.error(error)
+      await dispatch(fetchPresentationInfo(id))
+      showToast({
+        title: "Error",
+        description: error.message || "Failed to remove layer",
+        status: "error",
+      })
+    }
+  }
+
+  const addAudioTrack = () => {
+    const nextCount = Math.min(
+      DEFAULT_MAX_AUDIO_TRACKS,
+      getVisibleLaneCount("audio") + 1
+    )
+    ensureGroupExpanded("audio")
+    setMinimumGroupLanes((prev) => ({ ...prev, audio: nextCount }))
+  }
+
+  const cueRowOf = (cue) => rowModel.cueY[cue._id] ?? 0
+
+  const laneScreenLayer = (yIndex) => {
+    const lane = laneAt(rowModel.rows, yIndex)
+    if (!lane) return { screen: 1, layer: 0 }
+    const isAudio = lane.kind === "audio-track" || lane.kind === "audio"
+    return {
+      screen: isAudio ? getAudioRow(presentation.screenCount) : lane.screen,
+      layer: lane.layer ?? 0,
+    }
+  }
+
+  const rowLabelForCue = (cue) =>
+    cue.cueType === "audio"
+      ? `audio track ${Number(cue.layer ?? 0) + 1}`
+      : `screen ${cue.screen}, layer ${Number(cue.layer ?? 0) + 1}`
+
+  const cueTypeForTarget = (screen, cueType) =>
+    cueType ||
+    (Number(screen) === getAudioRow(presentation.screenCount)
+      ? "audio"
+      : "visual")
+
+  const getRowCueConflict = (index, screen, layer, excludedCueId = null) =>
+    cues.find((cue) => {
+      const samePosition =
+        Number(cue.index) === Number(index) &&
+        Number(cue.screen) === Number(screen) &&
+        Number(cue.layer ?? 0) === Number(layer ?? 0)
+
+      if (!samePosition) {
+        return false
+      }
+
+      return !excludedCueId || cue._id !== excludedCueId
+    })
+
+  const isRowInsideGrid = (xIndex, yIndex) =>
+    Number(xIndex) >= 0 &&
+    Number(xIndex) < Number(indexCount) &&
+    Number(yIndex) >= 0 &&
+    Number(yIndex) < Number(rowModel.rowCount)
+
   const getCueEndIndex = (cue) =>
     Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
 
   const cueOccupiesSlot = (cue, xIndex, yIndex) =>
-    Number(cue.screen) === Number(yIndex) &&
+    cueRowOf(cue) === Number(yIndex) &&
     Number(xIndex) >= Number(cue.index) &&
     Number(xIndex) <= getCueEndIndex(cue)
 
   // Get cue at grid position (including ones spanning multiple cells)
   const getCueAtPosition = (xIndex, yIndex) =>
-    cues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
+    gridCues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
 
   // Get cue at grid position (only anchor cell - first cell of the cue)
   const getAnchorCueAtPosition = (xIndex, yIndex) =>
-    cues.find(
+    gridCues.find(
       (cue) =>
-        Number(cue.index) === Number(xIndex) &&
-        Number(cue.screen) === Number(yIndex)
+        Number(cue.index) === Number(xIndex) && cueRowOf(cue) === Number(yIndex)
     )
 
   const getContinuationPreviewSpanOverrides = (
@@ -222,7 +398,10 @@ const EditMode = ({
       yIndex,
       cueType,
       draggedCueId,
-      screenCount: presentation.screenCount,
+      isValidDropCell: laneAcceptsCueType(
+        laneAt(rowModel.rows, yIndex),
+        cueType
+      ),
       getCueAtPosition,
     })
   }
@@ -254,7 +433,9 @@ const EditMode = ({
     headerRowHeight: frameHeaderHeight,
     gap,
     indexCount,
-    screenCount: presentation.screenCount,
+    rows: rowModel.rows,
+    rowCount: rowModel.rowCount,
+    cueRowIndex: rowModel.cueY,
     selectedCue,
     setDragCursorMode,
     clearExternalDragPreview,
@@ -295,7 +476,7 @@ const EditMode = ({
 
   useEffect(() => {
     hideHoverPreview()
-  }, [cues, indexCount, presentation.screenCount, hideHoverPreview])
+  }, [cues, indexCount, rowModel.rowCount, hideHoverPreview])
 
   useEffect(() => {
     const clearTransientPreviews = () => {
@@ -496,15 +677,18 @@ const EditMode = ({
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
 
-      // The server repositions the audio row's stored screen in the same
-      // request; refetch so local cues (including that row) match it.
       await dispatch(fetchPresentationInfo(id))
 
       const formData = createFormData(
         0,
         `initial element for screen ${newScreenNumber}`,
         newScreenNumber,
-        null
+        null,
+        undefined,
+        undefined,
+        false,
+        0,
+        1
       )
 
       await dispatch(createCue(id, formData))
@@ -564,8 +748,6 @@ const EditMode = ({
         saveScreenCount({ id, screenCount: currentScreenCount - 1 })
       )
 
-      // The server repositions the audio row's stored screen in the same
-      // request; refetch so local cues (including that row) match it.
       await dispatch(fetchPresentationInfo(id))
 
       // Show appropriate message based on whether cues were removed
@@ -618,13 +800,12 @@ const EditMode = ({
       rowHeight,
       gap
     )
-
     if (cueExists(xIndex, yIndex)) {
       const movingCue = getCueAtPosition(xIndex, yIndex)
       setSelectedCue(movingCue)
       updateDragPreviewCell({
         xIndex: Number(movingCue.index),
-        yIndex: Number(movingCue.screen),
+        yIndex: cueRowOf(movingCue),
       })
 
       if (event.target.closest(".react-grid-item")) {
@@ -691,18 +872,10 @@ const EditMode = ({
     const isBlockedCell = Boolean(
       hoveredCue && hoveredCue._id === copiedCue._id
     )
-    const isInsideGrid = isInsidePresentationGridCell({
-      xIndex,
-      yIndex,
-      indexCount,
-      screenCount: presentation.screenCount,
-    })
+    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
     const isValidDropCell =
-      isCueTypeCompatibleWithRow(
-        copiedCue.cueType,
-        yIndex,
-        presentation.screenCount
-      ) && !isBlockedCell
+      laneAcceptsCueType(laneAt(rowModel.rows, yIndex), copiedCue.cueType) &&
+      !isBlockedCell
 
     if (!isInsideGrid) {
       clearExternalPlacementPreview()
@@ -762,11 +935,13 @@ const EditMode = ({
     return {
       index: xIndex,
       cueName: `${copiedCue.name} copy`,
-      screen: yIndex,
+      ...laneScreenLayer(yIndex),
       file: fileObj,
       fileName: copiedCue.file?.name || null,
       color: copiedCue.color,
       loop: copiedCue.loop,
+      continuePlayback: Boolean(copiedCue.continuePlayback),
+      opacity: normalizeCueOpacity(copiedCue.opacity),
     }
   }
   // Fetch file object from URL - used for copying cues with files
@@ -783,6 +958,41 @@ const EditMode = ({
     hideDragPlacementPreview()
     cancelDragPreviewFrame()
     resetDragPointerTracking()
+  }
+
+  const renderCollapsedPreviewMedia = (cue) => {
+    const mediaUrl =
+      cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
+    const mediaType = cue.file?.type || cue.file?.mimeType || ""
+
+    if (mediaUrl && mediaType.startsWith("video/")) {
+      return (
+        <Box
+          as="video"
+          src={mediaUrl}
+          width="100%"
+          height="100%"
+          objectFit="cover"
+          muted
+          playsInline
+        />
+      )
+    }
+
+    if (mediaUrl && mediaType.startsWith("image/")) {
+      return (
+        <Box
+          as="img"
+          src={mediaUrl}
+          alt={cue.name || ""}
+          width="100%"
+          height="100%"
+          objectFit="cover"
+        />
+      )
+    }
+
+    return <Box width="100%" height="100%" bg={cue.color || "#111111"} />
   }
 
   // Handle mouse move - show hover previews and update drag preview position
@@ -827,8 +1037,8 @@ const EditMode = ({
       !cueExists &&
       xIndex >= 0 &&
       xIndex < indexCount &&
-      yIndex <= getAudioRow(presentation.screenCount) &&
-      yIndex >= 1
+      yIndex >= 0 &&
+      yIndex < rowModel.rowCount
     ) {
       showHoverPreview(xIndex, yIndex)
     } else {
@@ -880,23 +1090,17 @@ const EditMode = ({
 
       const moveToSamePosition =
         Number(selectedCue.index) === Number(xIndex) &&
-        Number(selectedCue.screen) === Number(yIndex)
+        cueRowOf(selectedCue) === Number(yIndex)
 
       if (moveToSamePosition) {
         clearInternalDragSpanPreview()
         return
       }
 
-      const isInsideGrid = isInsidePresentationGridCell({
-        xIndex,
-        yIndex,
-        indexCount,
-        screenCount: presentation.screenCount,
-      })
-      const isValidDropCell = isCueTypeCompatibleWithRow(
-        selectedCue.cueType,
-        yIndex,
-        presentation.screenCount
+      const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
+      const isValidDropCell = laneAcceptsCueType(
+        laneAt(rowModel.rows, yIndex),
+        selectedCue.cueType
       )
 
       if (!isInsideGrid) {
@@ -915,11 +1119,13 @@ const EditMode = ({
         return
       }
 
+      const target = laneScreenLayer(yIndex)
       const movedCue = {
         ...selectedCue,
         index: xIndex,
         cueName: selectedCue.name,
-        screen: yIndex,
+        screen: target.screen,
+        layer: target.layer,
       }
 
       setSelectedCue(null)
@@ -965,6 +1171,14 @@ const EditMode = ({
     }
 
     const dragData = getDragDataFromDataTransfer(event.dataTransfer)
+    latestGridDragDataRef.current = dragData
+    latestGridDragCellRef.current = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
     const dragCueType = getCueTypeFromDragData(dragData)
     if (!dragCueType) {
       clearExternalPlacementPreview()
@@ -990,15 +1204,17 @@ const EditMode = ({
       event.clientY <= gridRect.bottom
 
     if (!pointerInsideGrid) {
+      latestGridDragDataRef.current = null
+      latestGridDragCellRef.current = null
       clearExternalPlacementPreview()
     }
   }
 
   // Compute grid layout from cues - determines cue position and size on grid
-  const layout = cues.map((cue) => ({
+  const layout = gridCues.map((cue) => ({
     i: cue._id.toString(),
     x: cue.index,
-    y: cue.screen,
+    y: cueRowOf(cue),
     w: getCueVisualSpanFromMap(cue, cueVisualSpanMap),
     h: 1,
     static: false,
@@ -1006,12 +1222,20 @@ const EditMode = ({
 
   // Add a new cue - checks for conflicts and saves to backend
   const addCue = async (cueData) => {
-    const { index, cueName, screen, file, loop, color } = cueData
+    const {
+      index,
+      cueName,
+      screen,
+      layer = 0,
+      file,
+      loop,
+      continuePlayback = false,
+      color,
+      opacity = 1,
+    } = cueData
 
     //Check if cue with same index and screen already exists
-    const existingCue = cues.find(
-      (cue) => cue.index === Number(index) && cue.screen === Number(screen)
-    )
+    const existingCue = getRowCueConflict(index, screen, layer)
 
     if (existingCue) {
       await handleCueExists(existingCue, cueData)
@@ -1025,7 +1249,10 @@ const EditMode = ({
       file || "",
       undefined,
       color,
-      loop || false
+      loop || false,
+      layer,
+      normalizeCueOpacity(opacity),
+      continuePlayback
     )
 
     try {
@@ -1034,7 +1261,11 @@ const EditMode = ({
       setTimeout(() => {
         showToast({
           title: "Element added",
-          description: `Element ${cueName} added to screen ${screen}`,
+          description: `Element ${cueName} added to ${rowLabelForCue({
+            cueType: cueTypeForTarget(screen, cueData.cueType),
+            screen,
+            layer,
+          })}`,
           status: "success",
         })
       }, 300)
@@ -1046,7 +1277,7 @@ const EditMode = ({
 
   const handleCueExists = async (existingCue, newCueData) => {
     setConfirmMessage(
-      `Frame ${newCueData.index} element already exists on screen ${newCueData.screen}. Do you want to replace it?`
+      `Frame ${newCueData.index} element already exists on ${rowLabelForCue(newCueData)}. Do you want to replace it?`
     )
     setConfirmAction(() => async () => {
       const updatedCueData = {
@@ -1075,10 +1306,11 @@ const EditMode = ({
       return
     }
 
-    const existingCue = cues.find(
-      (cue) =>
-        cue.index === Number(updatedCue.index) &&
-        cue.screen === Number(updatedCue.screen)
+    const existingCue = getRowCueConflict(
+      updatedCue.index,
+      updatedCue.screen,
+      updatedCue.layer ?? 0,
+      previousCueId
     )
 
     if (existingCue && existingCue._id !== previousCueId) {
@@ -1094,7 +1326,7 @@ const EditMode = ({
     previousCueId
   ) => {
     setConfirmMessage(
-      `${updatedCue.index} element already exists on screen ${updatedCue.screen}. Do you want to replace it?`
+      `${updatedCue.index} element already exists on ${rowLabelForCue(updatedCue)}. Do you want to replace it?`
     )
 
     setConfirmAction(() => async () => {
@@ -1136,6 +1368,8 @@ const EditMode = ({
       index: updatedCue.index,
       cueName: updatedCue.cueName,
       screen: updatedCue.screen,
+      layer: updatedCue.layer ?? existingCue.layer ?? 0,
+      opacity: normalizeCueOpacity(updatedCue.opacity ?? existingCue.opacity),
       file: fileObj,
       fileName: updatedCue.fileName,
     }
@@ -1164,11 +1398,7 @@ const EditMode = ({
       gap
     )
 
-    if (yIndex < 1 || yIndex > getAudioRow(presentation.screenCount)) {
-      return
-    }
-
-    if (xIndex < 0 || xIndex >= indexCount) {
+    if (!isRowInsideGrid(xIndex, yIndex)) {
       return
     }
 
@@ -1233,12 +1463,14 @@ const EditMode = ({
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
     const dropY = event.clientY - containerRect.top
-    const yAdjustedForHeader = dropY + dragPreviewYOffset
+    const timelineRowsTopOffset = frameHeaderHeight + gap
 
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + gap
 
-    const yIndex = Math.floor(yAdjustedForHeader / cellHeightWithGap)
+    const yIndex = Math.floor(
+      (dropY - timelineRowsTopOffset) / cellHeightWithGap
+    )
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
     return { xIndex, yIndex }
@@ -1250,12 +1482,14 @@ const EditMode = ({
       ...targetCue,
       index: selectedCue.index,
       screen: selectedCue.screen,
+      layer: selectedCue.layer ?? 0,
     }
     // We need to create new objects to avoid mutating state directly when swapping
     const newSelectedCue = {
       ...selectedCue,
       index: targetCue.index,
       screen: targetCue.screen,
+      layer: targetCue.layer ?? 0,
     }
     // If either cue is audio, both must be audio - prevent swapping audio with visual elements
     const hasAudioCue =
@@ -1287,13 +1521,16 @@ const EditMode = ({
   const handleCueReplace = async (xIndex, yIndex, file) => {
     const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
+    const target = laneScreenLayer(yIndex)
 
     const updatedCue = {
       ...existingCue,
       index: xIndex,
       cueName: file.name,
-      screen: yIndex,
+      screen: target.screen,
+      layer: target.layer,
       file: file,
+      opacity: normalizeCueOpacity(existingCue.opacity),
     }
 
     await dispatchUpdateCue(existingCue._id, updatedCue)
@@ -1312,6 +1549,8 @@ const EditMode = ({
     } catch (e) {
       // ignore parsing error
     }
+    dragData = dragData || latestGridDragDataRef.current
+    latestGridDragDataRef.current = null
 
     const files = Array.from(event.dataTransfer.files)
     const mediaFiles = files.filter(
@@ -1323,27 +1562,50 @@ const EditMode = ({
       return
     }
 
-    const { xIndex, yIndex } = getPosition(
+    const dropCell = getPosition(
       event,
       containerRef,
       columnWidth,
       rowHeight,
       gap
     )
+    const fallbackDropCell = latestGridDragCellRef.current
+    const xIndex = Number.isFinite(dropCell.xIndex)
+      ? dropCell.xIndex
+      : fallbackDropCell?.xIndex
+    const yIndex = Number.isFinite(dropCell.yIndex)
+      ? dropCell.yIndex
+      : fallbackDropCell?.yIndex
+    latestGridDragCellRef.current = null
 
     if (dragData && dragData.type === "newCueFromForm") {
-      const audioRowIndex = getAudioRow(presentation.screenCount)
       const colorCueName = (dragData.cueName || "").trim()
+      const targetLane = laneAt(rowModel.rows, yIndex)
+      const target = laneScreenLayer(yIndex)
 
       // Handle different element types from the three boxes
       if (dragData.elementType === "color") {
+        if (
+          !isRowInsideGrid(xIndex, yIndex) ||
+          !laneAcceptsCueType(targetLane, "visual")
+        ) {
+          showToast({
+            title: "Only images/videos on screen rows",
+            description: "Drag visual elements to screen rows.",
+            status: "error",
+          })
+          return
+        }
+
         // Color element - no file
         const dataToSave = {
           index: xIndex,
           cueName: colorCueName,
-          screen: yIndex,
+          screen: target.screen,
+          layer: target.layer,
           file: null,
           color: dragData.color,
+          opacity: normalizeCueOpacity(dragData.opacity),
         }
 
         await addCue(dataToSave)
@@ -1355,6 +1617,7 @@ const EditMode = ({
         // Media or sound element - has a file
         const isSound = dragData.elementType === "sound"
         const fileId = isSound ? dragData.soundId : dragData.mediaId
+        const cueType = isSound ? "audio" : "visual"
 
         // Retrieve the file from mediaStore
         const file = mediaStore.getFile(fileId)
@@ -1370,18 +1633,17 @@ const EditMode = ({
         }
 
         // Validate screen placement
-        if (isSound && yIndex !== audioRowIndex && xIndex < indexCount) {
+        if (
+          !isRowInsideGrid(xIndex, yIndex) ||
+          !laneAcceptsCueType(targetLane, cueType)
+        ) {
           showToast({
-            title: "Only audio on audio row",
-            description: "Drag audio files to the audio row.",
-            status: "error",
-          })
-          return
-        }
-        if (!isSound && yIndex === audioRowIndex && xIndex < indexCount) {
-          showToast({
-            title: "Only images/videos on screen rows",
-            description: "Drag media to screen rows, not the audio row.",
+            title: isSound
+              ? "Only audio on audio rows"
+              : "Only images/videos on screen rows",
+            description: isSound
+              ? "Drag audio files to an audio track."
+              : "Drag media to screen rows, not audio tracks.",
             status: "error",
           })
           return
@@ -1391,8 +1653,10 @@ const EditMode = ({
         const dataToSave = {
           index: xIndex,
           cueName: dragData.cueName,
-          screen: yIndex,
+          screen: target.screen,
+          layer: target.layer,
           file: file,
+          opacity: 1,
         }
 
         await addCue(dataToSave)
@@ -1406,9 +1670,11 @@ const EditMode = ({
       const dataToSave = {
         index: xIndex,
         cueName: colorCueName,
-        screen: yIndex,
+        screen: target.screen,
+        layer: target.layer,
         file: null,
         color: dragData.color,
+        opacity: normalizeCueOpacity(dragData.opacity),
       }
 
       await addCue(dataToSave)
@@ -1416,24 +1682,15 @@ const EditMode = ({
     }
 
     const file = mediaFiles[0]
-    const audioRowIndex = getAudioRow(presentation.screenCount)
+    const fileCueType = isAudioMimeType(file?.type) ? "audio" : "visual"
+    const targetLane = laneAt(rowModel.rows, yIndex)
+    const target = laneScreenLayer(yIndex)
 
     if (
       isImageOrVideoMimeType(file?.type) &&
       xIndex < indexCount &&
-      yIndex === audioRowIndex
-    ) {
-      showToast({
-        title: "Only audio files on the audio row.",
-        description: "Click on an appropriate row to paste the element.",
-        status: "error",
-      })
-      return
-    }
-    if (
-      isAudioMimeType(file?.type) &&
-      yIndex !== audioRowIndex &&
-      xIndex < indexCount
+      (!isRowInsideGrid(xIndex, yIndex) ||
+        !laneAcceptsCueType(targetLane, "visual"))
     ) {
       showToast({
         title: "Only images/videos on screen rows.",
@@ -1442,10 +1699,23 @@ const EditMode = ({
       })
       return
     }
+    if (
+      isAudioMimeType(file?.type) &&
+      xIndex < indexCount &&
+      (!isRowInsideGrid(xIndex, yIndex) ||
+        !laneAcceptsCueType(targetLane, "audio"))
+    ) {
+      showToast({
+        title: "Only audio files on audio tracks.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
 
     if (anchorCueExists(xIndex, yIndex)) {
       setConfirmMessage(
-        `Index ${xIndex} element already exists on screen ${yIndex}. Do you want to replace it?`
+        `Index ${xIndex} element already exists on ${rowLabelForCue({ cueType: fileCueType, ...target })}. Do you want to replace it?`
       )
       setConfirmAction(() => async () => {
         handleCueReplace(xIndex, yIndex, file)
@@ -1453,13 +1723,23 @@ const EditMode = ({
       setIsConfirmOpen(true)
       return
     }
-    const formData = createFormData(xIndex, file.name, yIndex, file)
+    const formData = createFormData(
+      xIndex,
+      file.name,
+      target.screen,
+      file,
+      undefined,
+      undefined,
+      false,
+      target.layer,
+      1
+    )
 
     try {
       await dispatch(createCue(id, formData))
       showToast({
         title: "Element added",
-        description: `Element ${file.name} added to screen ${yIndex}`,
+        description: `Element ${file.name} added to ${rowLabelForCue({ cueType: fileCueType, ...target })}`,
         status: "success",
       })
     } catch (error) {
@@ -1505,7 +1785,7 @@ const EditMode = ({
           <Box
             className="screen-boxes"
             display="grid"
-            gridTemplateRows={`${frameHeaderHeight}px repeat(${yLabels.length}, ${rowHeight}px)`}
+            gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}
             left={0}
             zIndex={2}
@@ -1515,10 +1795,16 @@ const EditMode = ({
             <Box h={`${frameHeaderHeight}px`} bg="transparent" />
 
             <RowHeaders
-              yLabels={yLabels}
+              rows={rowModel.rows}
+              collapsedGroups={collapsedGroups}
+              onToggleGroupCollapsed={toggleGroupCollapsed}
+              onAddVisualLayer={addVisualLayer}
+              onRemoveVisualLayer={removeVisualLayer}
+              onAddAudioTrack={addAudioTrack}
+              maxVisualLayers={DEFAULT_MAX_VISUAL_LAYERS}
+              maxAudioTracks={DEFAULT_MAX_AUDIO_TRACKS}
               gap={gap}
               rowHeight={rowHeight}
-              columnWidth={columnWidth}
               screenCount={presentation.screenCount}
               isAudioMuted={isAudioMuted}
               screenIcon={screenIcon}
@@ -1546,7 +1832,7 @@ const EditMode = ({
             }}
           >
             <Box
-              height={`${(yLabels.length + 1) * (rowHeight + gap)}px`}
+              height={`${frameHeaderHeight + gap + rowModel.rowCount * rowHeight + Math.max(rowModel.rowCount - 1, 0) * gap}px`}
               minHeight="100%"
               width="100%"
               position="relative"
@@ -1617,7 +1903,9 @@ const EditMode = ({
               >
                 <GridLayoutComponent
                   layout={layout}
-                  cues={cues}
+                  cues={gridCues}
+                  cueRowIndex={rowModel.cueY}
+                  rowCount={rowModel.rowCount}
                   containerRef={containerRef}
                   columnWidth={columnWidth}
                   rowHeight={rowHeight}
@@ -1644,6 +1932,57 @@ const EditMode = ({
                   }
                 />
               </Box>
+
+              {collapsedVisualRowPreviews.map(({ row, frames }) =>
+                frames.map(({ frameIndex, cues: frameCues }) => (
+                  <Box
+                    key={`${row.group}-collapsed-preview-${frameIndex}`}
+                    data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
+                    position="absolute"
+                    left={`${frameIndex * (columnWidth + gap)}px`}
+                    top={`${frameHeaderHeight + gap + row.y * (rowHeight + gap)}px`}
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="10px"
+                    overflow="hidden"
+                    bg="rgba(255, 255, 255, 0.06)"
+                    border="1px solid rgba(255, 255, 255, 0.1)"
+                    pointerEvents="none"
+                    zIndex={0}
+                  >
+                    {frameCues.map((cue, stackIndex) => (
+                      <Box
+                        key={`${cue._id}-${stackIndex}`}
+                        position="absolute"
+                        inset="0"
+                        opacity={normalizeCueOpacity(cue.opacity)}
+                        zIndex={100 - Number(cue.layer ?? 0)}
+                      >
+                        {renderCollapsedPreviewMedia(cue)}
+                      </Box>
+                    ))}
+                    {frameCues.length > 0 && (
+                      <Text
+                        position="absolute"
+                        left="8px"
+                        bottom="6px"
+                        maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
+                        color="white"
+                        fontSize="12px"
+                        fontWeight="700"
+                        lineHeight="1.1"
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        textShadow="1px 1px 3px rgba(0,0,0,0.85)"
+                        zIndex={130}
+                      >
+                        {frameCues[frameCues.length - 1].name}
+                      </Text>
+                    )}
+                  </Box>
+                ))
+              )}
 
               {!isDragging && (
                 // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked

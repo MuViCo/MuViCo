@@ -251,6 +251,44 @@ describe("test presentation", () => {
       expect(createdCue.color).toBe("#ff69b4")
     })
 
+    test("creates cue with explicit opacity", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Opacity Cue")
+        .field("screen", 2)
+        .field("opacity", "0.45")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Opacity Cue"
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.opacity).toBe(0.45)
+    })
+
+    test("creates audio cue with continuous playback", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .attach("image", mockAudioBuffer, {
+          filename: "mock_audio.mp3",
+          contentType: "audio/mpeg",
+        })
+        .field("index", 2)
+        .field("cueName", "Continuous Audio")
+        .field("screen", 5)
+        .field("continuePlayback", "true")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Continuous Audio"
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.continuePlayback).toBe(true)
+    })
+
     test("creates color-only cue with empty name", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
@@ -352,6 +390,37 @@ describe("test presentation", () => {
         .expect(200)
 
       expect(response.body.color).toBe("#4b0082")
+    })
+
+    test("updates cue opacity when opacity is provided", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("opacity", "0.35")
+        .expect(200)
+
+      expect(response.body.opacity).toBe(0.35)
+    })
+
+    test("updates continuous playback when provided", async () => {
+      const createResponse = await createAudioCue(2, "Audio Cue", 5)
+      const audioCue = createResponse.body.cues.find(
+        (cue) => cue.name === "Audio Cue"
+      )
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${audioCue._id}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Updated Audio Cue")
+        .field("screen", 5)
+        .field("continuePlayback", "true")
+        .expect(200)
+
+      expect(response.body.continuePlayback).toBe(true)
     })
 
     test("updates color-only cue with empty name", async () => {
@@ -482,7 +551,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Swap coordinates must be integers")
+      expect(response.body.error).toBe(
+        "Swap coordinates and layers must be integers"
+      )
     })
 
     test("rejects swap when target position has third cue conflict", async () => {

@@ -18,48 +18,28 @@ import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
+import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 
-//conditional rendering helper function based on file type
+const mediaFillProps = {
+  width: "100%",
+  height: "100%",
+  objectFit: "contain",
+}
+
 const renderMedia = (file, name, color) => {
-  console.log("Rendering media with file:", file) // Debug log to check file object
+  console.log("Rendering media with file:", file)
 
   if (!file) {
-    return (
-      <Box
-        bg={color}
-        // alt={name}
-        width="100%"
-        height="100vh"
-        objectFit="cover"
-      />
-    )
+    return <Box bg={color} width="100%" height="100%" />
   }
 
   if (isType.image(file)) {
     const imageSrc = file.url || `/${file.name}`
-    return (
-      <Image
-        src={imageSrc}
-        alt={name}
-        width="100%"
-        height="100vh"
-        objectFit="cover"
-      />
-    )
+    return <Image src={imageSrc} alt={name} {...mediaFillProps} />
   }
   // check if media is video
   if (isType.video(file)) {
-    return (
-      <video
-        src={file.url}
-        width="100%"
-        height="100%"
-        autoPlay
-        loop
-        muted
-        style={{ objectFit: "contain" }}
-      />
-    )
+    return <video src={file.url} style={mediaFillProps} autoPlay loop muted />
   }
   // check if media is audio
   if (isType.audio(file)) {
@@ -71,16 +51,48 @@ const renderMedia = (file, name, color) => {
     )
   }
   // if no media file, render a solid color background
-  return (
-    <Box
-      bg={color}
-      // alt={name}
-      width="100%"
-      height="100vh"
-      objectFit="cover"
-    />
-  )
+  return <Box bg={color} width="100%" height="100%" />
   // return <Text>Unsupported media type.</Text>
+}
+
+const normalizeCueStack = (screenData) => {
+  if (Array.isArray(screenData)) {
+    return screenData
+  }
+
+  return screenData ? [screenData] : []
+}
+
+const cueStackKey = (cueStack) =>
+  normalizeCueStack(cueStack)
+    .map(
+      (cue) =>
+        `${cue?._id || ""}:${cue?.index ?? ""}:${cue?.screen ?? ""}:${cue?.layer ?? 0}:${cue?.file?.url || ""}:${cue?.name || ""}:${cue?.color || ""}:${normalizeCueOpacity(cue?.opacity)}`
+    )
+    .join("|")
+
+const renderCueStack = (cueStack) => {
+  const normalizedStack = normalizeCueStack(cueStack)
+
+  if (normalizedStack.length === 0) {
+    return <Text>No media available for this cue.</Text>
+  }
+
+  return normalizedStack.map((cue, index) => (
+    <Box
+      key={`${cue._id || cue.name || "cue"}-${cue.index ?? "idx"}-${cue.screen ?? "screen"}-${cue.layer ?? index}-${index}`}
+      position="absolute"
+      inset="0"
+      zIndex={100 - Number(cue.layer ?? 0)}
+      opacity={normalizeCueOpacity(cue.opacity)}
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      overflow="hidden"
+    >
+      {renderMedia(cue.file, cue.name, cue.color)}
+    </Box>
+  ))
 }
 
 const ScreenContent = ({
@@ -92,6 +104,8 @@ const ScreenContent = ({
 }) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
   const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
+  const currentCueStack = normalizeCueStack(currentScreenData)
+  const currentCueNames = currentCueStack.map((cue) => cue.name).filter(Boolean)
 
   return (
     <Box
@@ -101,6 +115,8 @@ const ScreenContent = ({
       height="100vh"
       display="flex"
       flexDirection="column"
+      position="relative"
+      overflow="hidden"
     >
       {/* Header with Screen Number on the left and Cue Name on the right */}
       <Box
@@ -119,13 +135,13 @@ const ScreenContent = ({
         >
           Screen {screenNumber}
         </Text>
-        {currentScreenData && (
+        {currentCueNames.length > 0 && (
           <Text
             fontSize="xl"
             textShadow="1px 0 2px #000000"
             style={{ visibility: showText ? "visible" : "hidden" }}
           >
-            Element Name: {currentScreenData.name}
+            Element Name: {currentCueNames.join(" / ")}
           </Text>
         )}
       </Box>
@@ -133,48 +149,40 @@ const ScreenContent = ({
       {/* Animates out previous cue media, if any */}
       {previousScreenData && (
         <Box
-          key={`${previousScreenData._id}-${previousScreenData.index}-${previousScreenData.screen}`}
+          key={`previous-${cueStackKey(previousScreenData)}`}
           data-testid="outgoing-cue-layer"
           flex="1"
           display="flex"
           justifyContent="center"
           alignItems="center"
           position="absolute"
-          width="100vw"
+          inset="0"
+          width="100%"
+          height="100%"
           zIndex={1}
           animation={animStyle(exitAnim)}
         >
-          {renderMedia(
-            previousScreenData.file,
-            previousScreenData.name,
-            previousScreenData.color
-          )}
+          {renderCueStack(previousScreenData)}
         </Box>
       )}
 
       {/* Animates in current cue media */}
       <Box
-        key={`${currentScreenData?._id}-${currentScreenData?.index}-${currentScreenData?.screen}`}
+        key={`current-${cueStackKey(currentScreenData)}`}
         data-testid="incoming-cue-layer"
         flex="1"
         display="flex"
         justifyContent="center"
         alignItems="center"
         position="absolute"
-        width="100vw"
+        inset="0"
+        width="100%"
+        height="100%"
         zIndex={1}
         color="white"
         animation={animStyle(enterAnim)}
       >
-        {currentScreenData.name != undefined ? (
-          renderMedia(
-            currentScreenData.file,
-            currentScreenData.name,
-            currentScreenData.color
-          )
-        ) : (
-          <Text>No media available for this cue.</Text>
-        )}
+        {renderCueStack(currentScreenData)}
       </Box>
     </Box>
   )
@@ -220,10 +228,14 @@ const Screen = ({
           const { document: doc } = newWindow
           doc.documentElement.style.margin = "0"
           doc.documentElement.style.padding = "0"
+          doc.documentElement.style.width = "100%"
+          doc.documentElement.style.height = "100%"
           doc.documentElement.style.overflow = "hidden"
           if (doc.body?.style) {
             doc.body.style.margin = "0"
             doc.body.style.padding = "0"
+            doc.body.style.width = "100%"
+            doc.body.style.height = "100%"
             doc.body.style.overflow = "hidden"
           }
         }
@@ -272,7 +284,7 @@ const Screen = ({
       })
       setEmotionCache(cache)
     }
-  }, [windowRef.current, emotionCache])
+  }, [isWindowReady, emotionCache])
 
   useEffect(() => {
     // After the window is ready, copy the Chakra styles
@@ -283,30 +295,30 @@ const Screen = ({
 
   useEffect(() => {
     // Update media states when screenData changes
-    if (screenData) {
-      // Skip update if screen is closed
-      if (!isWindowReady && !windowRef.current) {
-        return
-      }
+    const nextScreenData = normalizeCueStack(screenData)
 
+    if (!isWindowReady && !windowRef.current) {
+      return
+    }
+
+    if (nextScreenData.length > 0) {
       if (!currentScreenData) {
         setPreviousScreenData(null)
-        setCurrentScreenData(screenData)
+        setCurrentScreenData(nextScreenData)
       } else {
-        // Skip update if media URL, name or color hasn't changed
-        if (
-          currentScreenData?.file?.url === screenData?.file?.url &&
-          currentScreenData?.name === screenData?.name &&
-          currentScreenData?.color === screenData?.color
-        ) {
+        if (cueStackKey(currentScreenData) === cueStackKey(nextScreenData)) {
           return
         }
 
         setPreviousScreenData(currentScreenData)
-        setCurrentScreenData(screenData)
+        setCurrentScreenData(nextScreenData)
       }
+    } else if (currentScreenData && cueStackKey(currentScreenData) !== "") {
+      setPreviousScreenData(currentScreenData)
+      setCurrentScreenData([])
     }
-    windowRef.current.document.title = `Screen ${screenNumber} • ${screenData.index === 0 ? "Starting Frame" : `Frame ${screenData.index}`}`
+    const firstCue = nextScreenData[0]
+    windowRef.current.document.title = `Screen ${screenNumber} • ${firstCue?.index === 0 ? "Starting Frame" : `Frame ${firstCue?.index ?? ""}`}`
   }, [screenData, currentScreenData, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens

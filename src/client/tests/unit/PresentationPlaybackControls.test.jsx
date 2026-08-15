@@ -4,7 +4,7 @@
  * autoplay start/stop behavior, and autoplay interval input handling.
  */
 import React from "react"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import PresentationPlaybackControls from "../../components/presentation/PresentationPlaybackControls"
 
@@ -27,6 +27,23 @@ const renderControls = (overrideProps = {}) => {
 }
 
 describe("PresentationPlaybackControls", () => {
+  let playSpy
+  let pauseSpy
+
+  beforeEach(() => {
+    playSpy = jest
+      .spyOn(window.HTMLMediaElement.prototype, "play")
+      .mockImplementation(() => Promise.resolve())
+    pauseSpy = jest
+      .spyOn(window.HTMLMediaElement.prototype, "pause")
+      .mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    playSpy.mockRestore()
+    pauseSpy.mockRestore()
+  })
+
   test("shows Frame 0 at cueIndex 0", () => {
     renderControls({ cueIndex: 0 })
 
@@ -132,5 +149,196 @@ describe("PresentationPlaybackControls", () => {
     })
 
     expect(container.querySelector("audio")).not.toHaveAttribute("loop")
+  })
+
+  test("does not start audio when an audio cue appears while autoplay is stopped", async () => {
+    renderControls({
+      audioSourceURL: "https://example.com/cue.mp3",
+      isAutoplaying: false,
+    })
+
+    await waitFor(() => {
+      expect(pauseSpy).toHaveBeenCalled()
+    })
+    expect(playSpy).not.toHaveBeenCalled()
+  })
+
+  test("starts and stops audio with autoplay state", async () => {
+    const { rerender, props } = renderControls({
+      audioSourceURL: "https://example.com/cue.mp3",
+      isAutoplaying: false,
+    })
+
+    expect(playSpy).not.toHaveBeenCalled()
+
+    rerender(
+      <PresentationPlaybackControls
+        {...props}
+        audioSourceURL="https://example.com/cue.mp3"
+        isAutoplaying={true}
+      />
+    )
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalled()
+    })
+
+    rerender(
+      <PresentationPlaybackControls
+        {...props}
+        audioSourceURL="https://example.com/cue.mp3"
+        isAutoplaying={false}
+      />
+    )
+
+    await waitFor(() => {
+      expect(pauseSpy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  test("plays every active audio track when autoplay starts", async () => {
+    const { container } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [
+        {
+          id: "track-a1",
+          src: "https://example.com/music.mp3",
+          loop: true,
+        },
+        {
+          id: "track-a2",
+          src: "https://example.com/sfx.mp3",
+          loop: false,
+        },
+      ],
+    })
+
+    const audioElements = container.querySelectorAll("audio")
+    expect(audioElements).toHaveLength(2)
+    expect(audioElements[0]).toHaveAttribute(
+      "src",
+      "https://example.com/music.mp3"
+    )
+    expect(audioElements[0]).toHaveAttribute("loop")
+    expect(audioElements[1]).toHaveAttribute(
+      "src",
+      "https://example.com/sfx.mp3"
+    )
+    expect(audioElements[1]).not.toHaveAttribute("loop")
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  test("keeps a continuous audio track playing after autoplay reaches the end", async () => {
+    const { rerender, props } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [
+        {
+          id: "track-a1",
+          src: "https://example.com/music.mp3",
+          loop: true,
+          continuePlayback: true,
+        },
+      ],
+    })
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalledTimes(1)
+    })
+    expect(pauseSpy).not.toHaveBeenCalled()
+
+    rerender(
+      <PresentationPlaybackControls
+        {...props}
+        isAutoplaying={false}
+        allowContinuousAudio={true}
+        audioTracks={[
+          {
+            id: "track-a1",
+            src: "https://example.com/music.mp3",
+            loop: true,
+            continuePlayback: true,
+          },
+        ]}
+      />
+    )
+
+    expect(pauseSpy).not.toHaveBeenCalled()
+  })
+
+  test("keeps a looped audio track playing after autoplay reaches the end", async () => {
+    const { rerender, props } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [
+        {
+          id: "track-a1",
+          src: "https://example.com/music.mp3",
+          loop: true,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalledTimes(1)
+    })
+
+    rerender(
+      <PresentationPlaybackControls
+        {...props}
+        isAutoplaying={false}
+        allowContinuousAudio={true}
+        audioTracks={[
+          {
+            id: "track-a1",
+            src: "https://example.com/music.mp3",
+            loop: true,
+            continuePlayback: false,
+          },
+        ]}
+      />
+    )
+
+    expect(pauseSpy).not.toHaveBeenCalled()
+  })
+
+  test("stops a continuous audio track on manual autoplay stop", async () => {
+    const { rerender, props } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [
+        {
+          id: "track-a1",
+          src: "https://example.com/music.mp3",
+          loop: true,
+          continuePlayback: true,
+        },
+      ],
+    })
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalledTimes(1)
+    })
+
+    rerender(
+      <PresentationPlaybackControls
+        {...props}
+        isAutoplaying={false}
+        allowContinuousAudio={false}
+        audioTracks={[
+          {
+            id: "track-a1",
+            src: "https://example.com/music.mp3",
+            loop: true,
+            continuePlayback: true,
+          },
+        ]}
+      />
+    )
+
+    await waitFor(() => {
+      expect(pauseSpy).toHaveBeenCalledTimes(1)
+    })
   })
 })

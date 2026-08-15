@@ -3,7 +3,6 @@
 extracting cue type from drag data, and retrieving drag data from the data transfer object during a drag event. 
 * These functions help ensure that cues are placed correctly on the grid and that the appropriate previews are shown during dragging.
  */
-import { isCueTypeCompatibleWithRow } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
 
 export const areSpanOverrideMapsEqual = (firstMap, secondMap) => {
@@ -22,11 +21,9 @@ export const getContinuationShrinkSpanOverrides = ({
   yIndex,
   cueType,
   draggedCueId,
-  screenCount,
+  isValidDropCell = true,
   getCueAtPosition,
 }) => {
-  const isValidDropCell = isCueTypeCompatibleWithRow(cueType, yIndex, screenCount)
-
   if (!isValidDropCell) {
     return {}
   }

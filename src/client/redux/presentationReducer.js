@@ -165,7 +165,8 @@ export const createCue = (id, formData) => async (dispatch) => {
     const newCue = updatedPresentation.cues.find(
       (cue) =>
         cue.index === Number(formData.get("index")) &&
-        cue.screen === Number(formData.get("screen"))
+        cue.screen === Number(formData.get("screen")) &&
+        Number(cue.layer ?? 0) === Number(formData.get("layer") ?? 0)
     )
     dispatch(addCue(newCue))
   } catch (error) {
@@ -199,7 +200,10 @@ export const updatePresentation =
         updatedCueData.file,
         updatedCueData.cueId || cueId,
         updatedCueData.color,
-        updatedCueData.loop
+        updatedCueData.loop,
+        updatedCueData.layer ?? 0,
+        updatedCueData.opacity ?? 1,
+        updatedCueData.continuePlayback ?? false
       )
       const updatedCue = await presentationService.updateCue(
         presentationId,
@@ -227,8 +231,10 @@ export const swapCues =
         secondCueId: secondUpdatedCue._id,
         firstIndex: firstUpdatedCue.index,
         firstScreen: firstUpdatedCue.screen,
+        firstLayer: firstUpdatedCue.layer ?? 0,
         secondIndex: secondUpdatedCue.index,
         secondScreen: secondUpdatedCue.screen,
+        secondLayer: secondUpdatedCue.layer ?? 0,
       }
 
       const { firstCue: updatedFirstCue, secondCue: updatedSecondCue } =

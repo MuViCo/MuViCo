@@ -604,7 +604,12 @@ describe("presentationReducer asynchronous actions", () => {
 
     store.dispatch(setPresentationInfo(initialState))
 
-    const updatedCueData = { cueName: "Updated Cue", index: 1, screen: 1 }
+    const updatedCueData = {
+      cueName: "Updated Cue",
+      index: 1,
+      screen: 1,
+      opacity: 0.42,
+    }
 
     presentationService.updateCue.mockResolvedValue({
       ...initialState.cues[0],
@@ -618,6 +623,8 @@ describe("presentationReducer asynchronous actions", () => {
       1,
       expect.any(FormData)
     )
+    const sentFormData = presentationService.updateCue.mock.calls[0][2]
+    expect(sentFormData.get("opacity")).toBe("0.42")
 
     expect(store.getState().presentation.cues).toContainEqual({
       ...initialState.cues[0],
@@ -978,8 +985,10 @@ describe("presentationReducer asynchronous actions", () => {
       secondCueId: secondUpdatedCue._id,
       firstIndex: firstUpdatedCue.index,
       firstScreen: firstUpdatedCue.screen,
+      firstLayer: 0,
       secondIndex: secondUpdatedCue.index,
       secondScreen: secondUpdatedCue.screen,
+      secondLayer: 0,
     })
 
     expect(store.getState().presentation.cues).toContainEqual(firstUpdatedCue)

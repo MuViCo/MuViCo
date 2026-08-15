@@ -9,7 +9,7 @@
  * - Autoplay instructions popover
  * - Audio player (if audio source URL is provided)
  */
-import React from "react"
+import React, { useEffect, useRef } from "react"
 import ClickablePopover from "../utils/ClickablePopover"
 
 import {
@@ -130,6 +130,46 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   />
 )
 
+const CueAudioPlayer = ({
+  src,
+  loop,
+  isAutoplaying,
+  continuePlayback,
+  allowContinuousAudio,
+}) => {
+  const audioRef = useRef(null)
+  const hasStartedRef = useRef(false)
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (!isAutoplaying || !src) {
+      if (
+        (loop || continuePlayback) &&
+        allowContinuousAudio &&
+        hasStartedRef.current
+      ) {
+        return
+      }
+      audio.pause()
+      return
+    }
+
+    const playPromise = audio.play()
+    hasStartedRef.current = true
+    if (playPromise?.catch) {
+      playPromise.catch(() => {})
+    }
+  }, [src, loop, isAutoplaying, continuePlayback, allowContinuousAudio])
+
+  if (!src) return null
+
+  return (
+    <audio ref={audioRef} loop={loop} controls src={src} preload="metadata" />
+  )
+}
+
 // Shared playback controls for presentation navigation and autoplay.
 const PresentationPlaybackControls = ({
   screens,
@@ -143,54 +183,79 @@ const PresentationPlaybackControls = ({
   toggleAutoplayInterval,
   audioSourceURL,
   audioLoop = false,
-}) => (
-  <Box
-    bg=""
-    display="flex"
-    flexDirection="row"
-    alignItems="center"
-    justifyContent="left"
-    gap={4}
-    ml={2.5}
-    mt={1.5}
-  >
+  audioTracks = [],
+  allowContinuousAudio = false,
+}) => {
+  const resolvedAudioTracks =
+    audioTracks.length > 0
+      ? audioTracks
+      : audioSourceURL
+        ? [
+            {
+              id: audioSourceURL,
+              src: audioSourceURL,
+              loop: audioLoop,
+              continuePlayback: false,
+            },
+          ]
+        : []
+
+  return (
     <Box
-      id="presentation-frame-navigation"
+      bg=""
       display="flex"
       flexDirection="row"
       alignItems="center"
+      justifyContent="left"
       gap={4}
+      ml={2.5}
+      mt={1.5}
     >
-      <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
-      <Box w="150px" display="flex" justifyContent="center">
-        <Heading size="md" textAlign="center" whiteSpace="nowrap">
-          {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
-        </Heading>
+      <Box
+        id="presentation-frame-navigation"
+        display="flex"
+        flexDirection="row"
+        alignItems="center"
+        gap={4}
+      >
+        <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
+        <Box w="150px" display="flex" justifyContent="center">
+          <Heading size="md" textAlign="center" whiteSpace="nowrap">
+            {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
+          </Heading>
+        </Box>
+
+        <AutoplayControls
+          toggleAutoplay={toggleAutoplay}
+          isAutoplaying={isAutoplaying}
+        />
+        <CueNavigationNext
+          cueIndex={cueIndex}
+          updateCue={updateCue}
+          indexCount={indexCount}
+        />
       </Box>
+      <ScreenToggleButtons
+        screens={screens}
+        toggleAllScreens={toggleAllScreens}
+      />
 
-      <AutoplayControls
-        toggleAutoplay={toggleAutoplay}
-        isAutoplaying={isAutoplaying}
+      <AutoplayInterval
+        autoplayInterval={autoplayInterval}
+        toggleAutoplayInterval={toggleAutoplayInterval}
       />
-      <CueNavigationNext
-        cueIndex={cueIndex}
-        updateCue={updateCue}
-        indexCount={indexCount}
-      />
+      {resolvedAudioTracks.map((track, trackIndex) => (
+        <CueAudioPlayer
+          key={track.id || `${track.src}-${trackIndex}`}
+          src={track.src}
+          loop={Boolean(track.loop)}
+          isAutoplaying={isAutoplaying}
+          continuePlayback={Boolean(track.continuePlayback)}
+          allowContinuousAudio={allowContinuousAudio}
+        />
+      ))}
     </Box>
-    <ScreenToggleButtons
-      screens={screens}
-      toggleAllScreens={toggleAllScreens}
-    />
-
-    <AutoplayInterval
-      autoplayInterval={autoplayInterval}
-      toggleAutoplayInterval={toggleAutoplayInterval}
-    />
-    {audioSourceURL ? (
-      <audio autoPlay loop={audioLoop} controls src={audioSourceURL}></audio>
-    ) : null}
-  </Box>
-)
+  )
+}
 
 export default PresentationPlaybackControls

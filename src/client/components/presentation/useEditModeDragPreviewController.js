@@ -9,10 +9,13 @@
  */
 
 import { useCallback, useEffect, useRef } from "react"
-import {
-  isCueTypeCompatibleWithRow,
-  isInsidePresentationGridCell,
-} from "../utils/fileTypeUtils"
+import { laneAcceptsCueType } from "../utils/screenRowModel"
+
+const isRowIndexInsideGrid = ({ xIndex, yIndex, indexCount, rowCount }) =>
+  Number(xIndex) >= 0 &&
+  Number(xIndex) < Number(indexCount) &&
+  Number(yIndex) >= 0 &&
+  Number(yIndex) < Number(rowCount)
 
 const applyPlacementPreviewStyles = ({
   previewElement,
@@ -21,7 +24,7 @@ const applyPlacementPreviewStyles = ({
   columnWidth,
   rowHeight,
   gap,
-  yOffset = 0,
+  yTopOffset = 0,
   isValidDropCell,
   validBorder,
   invalidBorder,
@@ -34,7 +37,7 @@ const applyPlacementPreviewStyles = ({
   }
 
   previewElement.style.display = "block"
-  previewElement.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${(yIndex * (rowHeight + gap)) - yOffset}px, 0)`
+  previewElement.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yTopOffset + (yIndex * (rowHeight + gap))}px, 0)`
   previewElement.style.borderColor = isValidDropCell
     ? validBorder
     : invalidBorder
@@ -57,7 +60,9 @@ const useEditModeDragPreviewController = ({
   headerRowHeight,
   gap,
   indexCount,
-  screenCount,
+  rows,
+  rowCount,
+  cueRowIndex,
   selectedCue,
   setDragCursorMode,
   clearExternalDragPreview,
@@ -81,8 +86,7 @@ const useEditModeDragPreviewController = ({
   const dragPreviewCellRef = useRef(null)
   const dragPlacementLockedToAnchorRef = useRef(false)
 
-  // Offset to account for header row height in preview positioning
-  const dragPreviewYOffset = Math.max(rowHeight - (headerRowHeight ?? rowHeight), 0)
+  const timelineRowsTopOffset = (headerRowHeight ?? 0) + gap
 
   // Refs for external drag preview (dragging from media pool)
   const externalPlacementPreviewRef = useRef(null)
@@ -120,7 +124,7 @@ const useEditModeDragPreviewController = ({
     hoverCellRef.current = nextCell
     hoverPreviewRef.current.style.display = "block"
     hoverPreviewRef.current.style.left = `${xIndex * (columnWidth + gap)}px`
-    hoverPreviewRef.current.style.top = `${(yIndex * (rowHeight + gap)) - dragPreviewYOffset}px`
+    hoverPreviewRef.current.style.top = `${timelineRowsTopOffset + (yIndex * (rowHeight + gap))}px`
   }
 
   const updateDragPreviewCell = (nextCell) => {
@@ -202,7 +206,7 @@ const useEditModeDragPreviewController = ({
     }
 
     const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const pointerYIndex = Math.floor((pointerPosition.y + dragPreviewYOffset) / (rowHeight + gap))
+    const pointerYIndex = Math.floor((pointerPosition.y - timelineRowsTopOffset) / (rowHeight + gap))
     // When dragging a cue and locking occurs, constrain placement to the cue's original position columns
     const lockPlacementToAnchor = Boolean(
       dragPlacementLockedToAnchorRef.current && selectedCue
@@ -211,7 +215,7 @@ const useEditModeDragPreviewController = ({
       ? Number(selectedCue.index)
       : pointerXIndex
     const yIndex = lockPlacementToAnchor
-      ? Number(selectedCue.screen)
+      ? Number(cueRowIndex?.[selectedCue._id] ?? 0)
       : pointerYIndex
 
     if (!selectedCue) {
@@ -222,11 +226,11 @@ const useEditModeDragPreviewController = ({
       return
     }
 
-    const isInsideGrid = isInsidePresentationGridCell({
+    const isInsideGrid = isRowIndexInsideGrid({
       xIndex,
       yIndex,
       indexCount,
-      screenCount,
+      rowCount,
     })
 
     if (!isInsideGrid) {
@@ -237,10 +241,9 @@ const useEditModeDragPreviewController = ({
       return
     }
 
-    const isValidDropCell = isCueTypeCompatibleWithRow(
-      selectedCue.cueType,
-      yIndex,
-      screenCount
+    const isValidDropCell = laneAcceptsCueType(
+      rows?.[yIndex],
+      selectedCue.cueType
     )
 
     setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
@@ -262,7 +265,7 @@ const useEditModeDragPreviewController = ({
       columnWidth,
       rowHeight,
       gap,
-      yOffset: dragPreviewYOffset,
+      yTopOffset: timelineRowsTopOffset,
       isValidDropCell,
       validBorder: dragPreviewValidBorder,
       invalidBorder: dragPreviewInvalidBorder,
@@ -276,12 +279,14 @@ const useEditModeDragPreviewController = ({
     dragPreviewInvalidBorder,
     dragPreviewValidBg,
     dragPreviewValidBorder,
-    dragPreviewYOffset,
     gap,
     getContinuationPreviewSpanOverrides,
     indexCount,
     rowHeight,
-    screenCount,
+    rows,
+    rowCount,
+    timelineRowsTopOffset,
+    cueRowIndex,
     selectedCue,
     setDragCursorMode,
     setInternalDragSpanOverridesIfChanged,
@@ -374,12 +379,12 @@ const useEditModeDragPreviewController = ({
     }
 
     const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const yIndex = Math.floor((pointerPosition.y + dragPreviewYOffset) / (rowHeight + gap))
-    const isInsideGrid = isInsidePresentationGridCell({
+    const yIndex = Math.floor((pointerPosition.y - timelineRowsTopOffset) / (rowHeight + gap))
+    const isInsideGrid = isRowIndexInsideGrid({
       xIndex,
       yIndex,
       indexCount,
-      screenCount,
+      rowCount,
     })
 
     if (!isInsideGrid) {
@@ -433,7 +438,7 @@ const useEditModeDragPreviewController = ({
     }
 
     const isValidDropCell =
-      isCueTypeCompatibleWithRow(input.cueType, yIndex, screenCount) &&
+      laneAcceptsCueType(rows?.[yIndex], input.cueType) &&
       !input.isBlockedCell?.(xIndex, yIndex)
     setDragCursorMode(isValidDropCell ? idleCursor : "not-allowed")
 
@@ -461,7 +466,7 @@ const useEditModeDragPreviewController = ({
       columnWidth,
       rowHeight,
       gap,
-      yOffset: dragPreviewYOffset,
+      yTopOffset: timelineRowsTopOffset,
       isValidDropCell,
       validBorder: dragPreviewValidBorder,
       invalidBorder: dragPreviewInvalidBorder,
@@ -477,12 +482,13 @@ const useEditModeDragPreviewController = ({
     dragPreviewInvalidBorder,
     dragPreviewValidBg,
     dragPreviewValidBorder,
-    dragPreviewYOffset,
     gap,
     getContinuationPreviewSpanOverrides,
     indexCount,
     rowHeight,
-    screenCount,
+    rows,
+    rowCount,
+    timelineRowsTopOffset,
     setDragCursorMode,
     setExternalDragSpanOverridesIfChanged,
   ])

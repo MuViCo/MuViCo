@@ -1,4 +1,3 @@
-
 /*
  * Grid layout component unit tests.
  * Covers cue rendering states, drag indicators, media/audio behavior, and cue menu actions
@@ -67,6 +66,19 @@ describe("GridLayoutComponent", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
+  })
+
+  it("renders background cells for empty rows", () => {
+    renderGrid([], [], { indexCount: 3, rowCount: 2 })
+
+    expect(screen.getByTestId("grid-empty-cells")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-0-0")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-1-2")).toBeInTheDocument()
+
+    const firstCallProps = mockGridLayout.mock.calls[0][0]
+    expect(firstCallProps.width).toBe(470)
+    expect(firstCallProps.maxRows).toBe(2)
+    expect(firstCallProps.style.minHeight).toBe("210px")
   })
 
   it("does not wire deprecated onDragStop behavior", () => {
@@ -414,6 +426,50 @@ describe("GridLayoutComponent", () => {
         expect.objectContaining({
           cueId: "audio-1",
           loop: true,
+        })
+      )
+    })
+  })
+
+  it("handles continuous playback toggle action for audio cue", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueId: "audio-1",
+          loop: true,
+          continuePlayback: true,
         })
       )
     })

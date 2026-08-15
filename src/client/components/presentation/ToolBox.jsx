@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react"
 import {
   Button,
+  Box,
   FormControl,
   FormLabel,
   Input,
@@ -19,7 +20,16 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
+  Text,
 } from "@chakra-ui/react"
+import {
+  opacityFromPercent,
+  opacityPercentFromCue,
+} from "../utils/cueOpacityUtils"
 
 const Toolbox = ({
   isOpen,
@@ -28,10 +38,12 @@ const Toolbox = ({
   onSave,
 }) => {
   const [cueName, setCueName] = useState("")
+  const [opacityPercent, setOpacityPercent] = useState(100)
 
   useEffect(() => {
     if (isOpen) {
       setCueName(cue?.cueName || cue?.name || "")
+      setOpacityPercent(opacityPercentFromCue(cue))
     }
   }, [cue, isOpen])
 
@@ -47,6 +59,7 @@ const Toolbox = ({
       ...cue,
       cueName: trimmedName,
       name: trimmedName,
+      opacity: opacityFromPercent(opacityPercent),
     })
     onClose()
   }
@@ -73,6 +86,34 @@ const Toolbox = ({
                 autoFocus
               />
             </FormControl>
+            {cue.cueType !== "audio" && (
+              <FormControl mt={5}>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  mb={2}
+                >
+                  <FormLabel mb={0}>Layer opacity</FormLabel>
+                  <Text fontSize="sm" fontWeight="bold">
+                    {opacityPercent}%
+                  </Text>
+                </Box>
+                <Slider
+                  aria-label="Layer opacity"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={opacityPercent}
+                  onChange={setOpacityPercent}
+                >
+                  <SliderTrack>
+                    <SliderFilledTrack />
+                  </SliderTrack>
+                  <SliderThumb />
+                </Slider>
+              </FormControl>
+            )}
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>

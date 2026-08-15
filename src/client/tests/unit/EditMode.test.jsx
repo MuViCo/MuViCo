@@ -300,6 +300,56 @@ describe("EditMode drag swapping", () => {
     expect(updatePresentation).not.toHaveBeenCalled()
   })
 
+  it("hides cues from a collapsed screen group without remapping other screens", () => {
+    const layeredCues = [
+      {
+        _id: "screen-1-layer-1",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "Screen 1 L1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "screen-1-layer-2",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "Screen 1 L2",
+        color: "#111111",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "screen-2-layer-1",
+        index: 0,
+        screen: 2,
+        layer: 0,
+        name: "Screen 2 L1",
+        color: "#222222",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderEditMode(layeredCues)
+
+    expect(screen.getByTestId("cue-Screen 1 L1")).toBeInTheDocument()
+    expect(screen.getByTestId("cue-Screen 1 L2")).toBeInTheDocument()
+    expect(screen.getByTestId("cue-Screen 2 L1")).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByLabelText("Collapse row group")[0])
+
+    expect(screen.queryByTestId("cue-Screen 1 L1")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("cue-Screen 1 L2")).not.toBeInTheDocument()
+    expect(
+      screen.getByTestId("collapsed-preview-screen-1-0")
+    ).toBeInTheDocument()
+    expect(screen.getByTestId("cue-Screen 2 L1")).toBeInTheDocument()
+  })
+
   it("does not swap when dropped on a continuation cell", () => {
     mockDragScenario = "visualSwapVisual"
 
@@ -567,12 +617,22 @@ describe("EditMode drag swapping", () => {
       clientY: 120,
     })
 
+    const dropEvent = createEvent.drop(dropArea)
+    Object.defineProperty(dropEvent, "dataTransfer", {
+      value: dataTransfer,
+      configurable: true,
+    })
+    Object.defineProperty(dropEvent, "clientX", {
+      value: 330,
+      configurable: true,
+    })
+    Object.defineProperty(dropEvent, "clientY", {
+      value: 120,
+      configurable: true,
+    })
+
     await act(async () => {
-      fireEvent.drop(dropArea, {
-        dataTransfer,
-        clientX: 330,
-        clientY: 120,
-      })
+      fireEvent(dropArea, dropEvent)
     })
 
     await waitFor(() => {

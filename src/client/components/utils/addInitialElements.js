@@ -16,7 +16,12 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
         0,
         `initial element for screen ${screen}`,
         screen,
-        null
+        null,
+        undefined,
+        undefined,
+        false,
+        0,
+        1
       )
 
       formData.append("color", startingFrameColor)

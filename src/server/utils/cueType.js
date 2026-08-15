@@ -4,6 +4,11 @@
  */
 const VALID_CUE_TYPES = ["visual", "audio"]
 
+const MAX_VISUAL_LAYERS = 3
+const MAX_AUDIO_TRACKS = 2
+const getMaxLayers = (cueType) =>
+  cueType === "audio" ? MAX_AUDIO_TRACKS : MAX_VISUAL_LAYERS
+
 const VALID_VIDEO_MIME_TYPES = ["video/mp4", "video/3gpp"]
 const VALID_IMAGE_MIME_TYPES = [
   "image/jpeg",
@@ -64,6 +69,9 @@ const isAllowedMimeType = (mimeType = "") => {
 
 module.exports = {
   VALID_CUE_TYPES,
+  MAX_VISUAL_LAYERS,
+  MAX_AUDIO_TRACKS,
+  getMaxLayers,
   getAudioRow,
   isAudioScreen,
   getCueTypeFromScreen,

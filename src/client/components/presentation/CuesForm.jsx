@@ -101,6 +101,7 @@ const CuesForm = ({
   const [screen, setScreen] = useState(isAudioMode ? 0 : position?.screen || 1)
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
+  const [continuePlayback, setContinuePlayback] = useState(false)
   const [error, setError] = useState(null)
   const [color, setColor] = useState()
   const [selectedColor, setSelectedColor] = useState("#9244ff")
@@ -204,8 +205,11 @@ const CuesForm = ({
       setFile("")
       setActualFile(cueFile)
       setFileName(cueFile?.name || "")
-      setLoop(cueData.loop)
+      setLoop(Boolean(cueData.loop))
+      setContinuePlayback(Boolean(cueData.continuePlayback))
     } else {
+      setLoop(false)
+      setContinuePlayback(false)
       if (isAudioMode) {
         setFile("")
         setCueName("")
@@ -223,6 +227,8 @@ const CuesForm = ({
     setCueId,
     setFile,
     setColor,
+    setLoop,
+    setContinuePlayback,
     isAudioMode,
     position?.screen,
   ])
@@ -269,7 +275,16 @@ const CuesForm = ({
       }
     }
 
-    addCue({ file, index, cueName, screen, fileName, color, loop })
+    addCue({
+      file,
+      index,
+      cueName,
+      screen,
+      fileName,
+      color,
+      loop,
+      continuePlayback,
+    })
 
     setError(null)
     setFile("")
@@ -293,6 +308,8 @@ const CuesForm = ({
       color,
       file: fileToUse,
       fileName,
+      loop,
+      continuePlayback,
     }
 
     if (!actualFile && file !== "") {
@@ -513,6 +530,7 @@ const CuesForm = ({
                         type: "newCueFromForm",
                         cueName: normalizedCueName,
                         color: selectedColor || "#e014ee",
+                        opacity: 1,
                         elementType: "color",
                       }
 

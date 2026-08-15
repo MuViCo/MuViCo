@@ -72,6 +72,13 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
         data-testid="mock-playback-controls"
         data-audio-src={props.audioSourceURL}
         data-audio-loop={String(props.audioLoop)}
+        data-audio-track-count={String(props.audioTracks?.length ?? 0)}
+        data-audio-track-srcs={(props.audioTracks || [])
+          .map((track) => track.src)
+          .join("|")}
+        data-audio-track-continuous={(props.audioTracks || [])
+          .map((track) => String(Boolean(track.continuePlayback)))
+          .join("|")}
       />
     )
   }
@@ -81,6 +88,7 @@ jest.mock("../../components/utils/ResizeElement", () => jest.fn())
 
 describe("EditModeContainer audio loop wiring", () => {
   const dispatchMock = jest.fn()
+  let loadSpy
 
   // Audio row is screenCount + 1, so with screenCount 2 the audio row is 3.
   const makeCues = (loop) => [
@@ -115,6 +123,9 @@ describe("EditModeContainer audio loop wiring", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    loadSpy = jest
+      .spyOn(window.HTMLMediaElement.prototype, "load")
+      .mockImplementation(() => {})
     useDispatch.mockReturnValue(dispatchMock)
     useSelector.mockImplementation((selector) =>
       selector({
@@ -124,6 +135,10 @@ describe("EditModeContainer audio loop wiring", () => {
         },
       })
     )
+  })
+
+  afterEach(() => {
+    loadSpy.mockRestore()
   })
 
   test("passes audioLoop=true through to the playback controls when the cue loops", () => {
@@ -146,5 +161,45 @@ describe("EditModeContainer audio loop wiring", () => {
       "https://example.com/track.mp3"
     )
     expect(controls).toHaveAttribute("data-audio-loop", "false")
+  })
+
+  test("passes every active audio track through to the playback controls", () => {
+    const cues = [
+      {
+        _id: "cue-audio-a1",
+        index: 0,
+        screen: 3,
+        layer: 0,
+        name: "Music",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/music.mp3" },
+        loop: true,
+        continuePlayback: true,
+      },
+      {
+        _id: "cue-audio-a2",
+        index: 0,
+        screen: 3,
+        layer: 1,
+        name: "SFX",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/sfx.mp3" },
+        loop: false,
+        continuePlayback: false,
+      },
+    ]
+
+    render(<EditModeContainer {...baseProps} cues={cues} />)
+
+    const controls = screen.getByTestId("mock-playback-controls")
+    expect(controls).toHaveAttribute("data-audio-track-count", "2")
+    expect(controls).toHaveAttribute(
+      "data-audio-track-srcs",
+      "https://example.com/music.mp3|https://example.com/sfx.mp3"
+    )
+    expect(controls).toHaveAttribute(
+      "data-audio-track-continuous",
+      "true|false"
+    )
   })
 })
