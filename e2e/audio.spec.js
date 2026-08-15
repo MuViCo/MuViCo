@@ -15,8 +15,9 @@ const testuser = "audiotestuser"
 const testPw = "test12345"
 
 // addPresentation(page, "testi") defaults to screenCount = 2.
-// Timeline rows are zero-based: screen 1, screen 2, then audio track 1.
-const AUDIO_TRACK_ROW = 2
+// The helper coordinate includes the frame header offset; row coordinate 3 lands
+// on timeline row index 2, which is audio track 1.
+const AUDIO_TRACK_ROW = 3
 
 describe("Audio cues", () => {
   beforeEach(async ({ page, request }) => {
