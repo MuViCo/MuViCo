@@ -1,6 +1,7 @@
 import {
   buildRowModel,
   dropTargetAt,
+  getCueRow,
   planVisualLayerRemoval,
 } from "../../components/utils/screenRowModel"
 
@@ -84,6 +85,52 @@ describe("screenRowModel", () => {
     expect(dropTargetAt(rowModel.rows, 3, "audio", 2)).toEqual({
       screen: 3,
       layer: 1,
+    })
+  })
+
+  test("collapses the audio group into a single merged row", () => {
+    const cues = [
+      { _id: "a1", cueType: "audio", layer: 0, index: 0 },
+      { _id: "a2", cueType: "audio", layer: 1, index: 0 },
+    ]
+    const rowModel = buildRowModel(1, cues, { audio: true })
+
+    const audioRow = rowModel.rows.find((row) => row.kind === "audio")
+    expect(audioRow).toMatchObject({
+      group: "audio",
+      collapsed: true,
+      count: 2,
+      label: "Audio",
+      groupStart: true,
+    })
+    expect(rowModel.cueY["a1"]).toBe(audioRow.y)
+    expect(rowModel.cueY["a2"]).toBe(audioRow.y)
+  })
+
+  test("resolves a cue's row from the cueY map or falls back to its screen", () => {
+    const cueY = { "cue-1": 4 }
+
+    expect(getCueRow({ _id: "cue-1", screen: 2 }, cueY)).toBe(4)
+    expect(getCueRow({ _id: "missing", screen: 3 }, cueY)).toBe(2)
+    expect(getCueRow({ _id: "missing" }, cueY)).toBe(0)
+  })
+
+  test("returns an empty plan when the target layer is not a positive integer", () => {
+    const cues = [
+      { _id: "cue-l1", cueType: "visual", screen: 1, layer: 0, index: 0 },
+    ]
+
+    expect(planVisualLayerRemoval(cues, 1, 0)).toEqual({
+      removedCueIds: [],
+      shiftedCues: [],
+    })
+    expect(planVisualLayerRemoval(cues, 1, -1)).toEqual({
+      removedCueIds: [],
+      shiftedCues: [],
+    })
+    expect(planVisualLayerRemoval(cues, 1, 1.5)).toEqual({
+      removedCueIds: [],
+      shiftedCues: [],
     })
   })
 })

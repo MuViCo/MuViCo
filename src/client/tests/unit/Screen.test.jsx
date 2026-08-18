@@ -729,6 +729,61 @@ describe("Screen", () => {
     expect(popup.close).toHaveBeenCalled()
   })
 
+  test("shows the no-media fallback and keeps the previous cue while clearing to an empty cue", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/clearing.jpg",
+        type: "image/jpg",
+        name: "clearing.jpg",
+      },
+      index: 1,
+      name: "clearing-cue",
+      screen: 1,
+      _id: "id-clearing",
+      loop: false,
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/clearing.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={null}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    expect(
+      popup.document.body.querySelector('[data-testid="incoming-cue-layer"]')
+        .textContent
+    ).toContain("No media available for this cue.")
+    expect(
+      popup.document.body.querySelector(
+        'img[src="http://example.com/clearing.jpg"]'
+      )
+    ).toBeTruthy()
+  })
+
   test("renders the unsupported-media fallback when the file type is unknown", async () => {
     const screenData = {
       file: {

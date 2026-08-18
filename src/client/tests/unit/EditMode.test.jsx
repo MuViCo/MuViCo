@@ -1409,3 +1409,259 @@ describe("EditMode drag swapping", () => {
     })
   })
 })
+
+describe("EditMode layer and audio track management", () => {
+  const renderWithCues = (customCues, screenCount = 2) => {
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: customCues,
+          name: "Test presentation",
+          screenCount,
+          indexCount: 3,
+        },
+      })
+    )
+    return render(
+      <EditMode
+        id="presentation-1"
+        cues={customCues}
+        isToolboxOpen={false}
+        setIsToolboxOpen={jest.fn()}
+        cueIndex={0}
+        isAudioMuted={false}
+        toggleAudioMute={jest.fn()}
+        indexCount={3}
+      />
+    )
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    useDispatch.mockReturnValue(mockDispatch)
+    mockDragScenario = null
+  })
+
+  it("adds a new empty layer to a screen", () => {
+    const cues = [
+      {
+        _id: "l1-cue",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "L1 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderWithCues(cues)
+
+    expect(
+      screen.queryByLabelText("Remove layer from screen 1")
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText("Add layer to screen 1"))
+
+    expect(
+      screen.getByLabelText("Remove layer from screen 1")
+    ).toBeInTheDocument()
+  })
+
+  it("removes a visual layer, shifting cues above it down and showing a success toast", async () => {
+    const cues = [
+      {
+        _id: "l1-cue",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "L1 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l2-cue",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "L2 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l3-cue",
+        index: 0,
+        screen: 1,
+        layer: 2,
+        name: "L3 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l4-cue",
+        index: 1,
+        screen: 1,
+        layer: 3,
+        name: "L4 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderWithCues(cues)
+
+    fireEvent.click(screen.getAllByLabelText("Remove layer from screen 1")[0])
+
+    await waitFor(() => {
+      expect(removeCue).toHaveBeenCalledWith("presentation-1", "l2-cue")
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ cueName: "L3 cue", layer: 1 }),
+        "l3-cue"
+      )
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ cueName: "L4 cue", layer: 2 }),
+        "l4-cue"
+      )
+    })
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith({
+        title: "Layer removed",
+        description: "Layer 2 removed from screen 1",
+        status: "success",
+      })
+    })
+  })
+
+  it("shows an error and refetches the presentation when removing a layer fails", async () => {
+    const cues = [
+      {
+        _id: "l1-cue",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "L1 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l2-cue",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "L2 cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    mockDispatch.mockImplementationOnce(() =>
+      Promise.reject(new Error("remove failed"))
+    )
+
+    renderWithCues(cues)
+
+    fireEvent.click(screen.getByLabelText("Remove layer from screen 1"))
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith({
+        title: "Error",
+        description: "remove failed",
+        status: "error",
+      })
+    })
+
+    expect(fetchPresentationInfo).toHaveBeenCalledWith("presentation-1")
+  })
+
+  it("adds a new empty audio track", () => {
+    renderWithCues([])
+
+    expect(screen.queryByText("A2")).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText("Add audio track"))
+
+    expect(screen.getByText("A2")).toBeInTheDocument()
+  })
+
+  it("stacks collapsed-preview cues by layer and falls back to layer 0 when a cue has no layer", () => {
+    const cues = [
+      {
+        _id: "l1-cue",
+        index: 0,
+        screen: 1,
+        name: "L1 cue",
+        color: "#111111",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l2-cue",
+        index: 0,
+        screen: 1,
+        layer: 2,
+        name: "L2 cue",
+        color: "#222222",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l3-cue",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "L3 cue",
+        color: "#333333",
+        cueType: "visual",
+        file: null,
+      },
+      {
+        _id: "l4-cue",
+        index: 0,
+        screen: 1,
+        layer: 3,
+        name: "L4 image cue",
+        cueType: "visual",
+        file: { url: "https://example.com/preview.jpg", type: "image/jpeg" },
+      },
+      {
+        _id: "l5-cue",
+        index: 0,
+        screen: 1,
+        layer: 4,
+        name: "L5 video cue",
+        cueType: "visual",
+        file: { url: "https://example.com/preview.mp4", type: "video/mp4" },
+      },
+    ]
+
+    renderWithCues(cues)
+
+    fireEvent.click(screen.getAllByLabelText("Collapse row group")[0])
+
+    const preview = screen.getByTestId("collapsed-preview-screen-1-0")
+    expect(preview).toBeInTheDocument()
+    expect(preview.textContent).toContain("L1 cue")
+    expect(
+      preview.querySelector('img[src="https://example.com/preview.jpg"]')
+    ).toBeTruthy()
+    expect(
+      preview.querySelector('video[src="https://example.com/preview.mp4"]')
+    ).toBeTruthy()
+  })
+})

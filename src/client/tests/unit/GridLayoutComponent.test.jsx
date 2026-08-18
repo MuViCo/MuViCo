@@ -474,4 +474,124 @@ describe("GridLayoutComponent", () => {
       )
     })
   })
+
+  it("shows the continuous playback control as enabled when the cue already has it on", () => {
+    const cue = {
+      _id: "audio-2",
+      index: 0,
+      screen: 3,
+      name: "Audio cue 2",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: false,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-2", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-2"))
+
+    expect(screen.getByLabelText("Continue audio Audio cue 2")).toHaveAttribute(
+      "title",
+      "Disable continuous playback"
+    )
+  })
+
+  it("handles continuous playback toggle action that disables it", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: false,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Continuous audio disabled",
+          description: "Audio cue will stop with the sequence",
+        })
+      )
+    })
+  })
+
+  it("logs an error if showing the continuous playback toast fails", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+    mockShowToast.mockImplementationOnce(() => {
+      throw new Error("toast failed")
+    })
+    const consoleLogSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => {})
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Error printing toast about continuous audio toggle: ",
+        expect.any(Error)
+      )
+    })
+
+    consoleLogSpy.mockRestore()
+  })
 })
