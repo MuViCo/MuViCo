@@ -42,7 +42,7 @@ export const buildRowModel = (
           screen: s,
           collapsed: true,
           count,
-          label: `Écran ${s}`,
+          label: `Screen ${s}`,
           groupStart: true,
         },
         screenCues
@@ -63,7 +63,7 @@ export const buildRowModel = (
             laneTotal: count,
             canRemoveLayer: L > 0,
             groupStart: L === 0,
-            screenLabel: `Écran ${s}`,
+            screenLabel: `Screen ${s}`,
           },
           screenCues.filter((c) => Number(c.layer ?? 0) === L)
         )

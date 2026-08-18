@@ -234,7 +234,7 @@ const RowHeadersBase = ({
                 _active={{ bg: "white" }}
                 boxShadow="0 2px 4px rgba(0,0,0,0.18)"
               >
-                écran
+                Screen
               </Button>
             </Box>
           )}
@@ -279,7 +279,7 @@ const RowHeadersBase = ({
                   _active={{ bg: "white" }}
                   boxShadow="0 2px 4px rgba(0,0,0,0.2)"
                 >
-                  calque
+                  Layer
                 </Button>
               )}
 
@@ -312,7 +312,7 @@ const RowHeadersBase = ({
                   _active={{ bg: "white" }}
                   boxShadow="0 2px 4px rgba(0,0,0,0.18)"
                 >
-                  écran
+                  Screen
                 </Button>
               )}
             </Box>
