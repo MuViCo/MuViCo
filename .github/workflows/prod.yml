@@ -3,6 +3,12 @@ name: Build Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build and push, e.g. v1.5.0"
+        required: true
+        type: string
 
 jobs:
   build-to-ghcr:
@@ -15,10 +21,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Build, tag, and push image to GHCR
         id: build-image
         env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -31,6 +40,6 @@ jobs:
             --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
             -f docker/Dockerfile \
-            -t 'ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}' .
-          docker push 'ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}'
-          echo "image=ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            -t "ghcr.io/muvico/muvico:${RELEASE_TAG}" .
+          docker push "ghcr.io/muvico/muvico:${RELEASE_TAG}"
+          echo "image=ghcr.io/muvico/muvico:${RELEASE_TAG}" >> $GITHUB_OUTPUT
