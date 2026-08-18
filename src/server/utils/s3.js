@@ -22,7 +22,17 @@ const {
   PRIVATE_S3_ENDPOINT,
 } = require("./config")
 
-const s3 = new S3Client({
+const s3Internal = new S3Client({
+  endpoint: PRIVATE_S3_ENDPOINT || PUBLIC_S3_ENDPOINT,
+  forcePathStyle: true,
+  region: BUCKET_REGION,
+  credentials: {
+    accessKeyId: ACCESS_KEY,
+    secretAccessKey: SECRET_ACCESS_KEY,
+  },
+})
+
+const s3Public = new S3Client({
   endpoint: PUBLIC_S3_ENDPOINT,
   forcePathStyle: true,
   region: BUCKET_REGION,
@@ -40,7 +50,7 @@ const uploadFileS3 = (fileBuffer, fileName, mimetype) => {
     ContentType: mimetype,
   }
 
-  return s3.send(new PutObjectCommand(uploadParams))
+  return s3Internal.send(new PutObjectCommand(uploadParams))
 }
 
 const deleteFileS3 = (fileName) => {
@@ -49,7 +59,7 @@ const deleteFileS3 = (fileName) => {
     Key: fileName,
   }
 
-  return s3.send(new DeleteObjectCommand(deleteParams))
+  return s3Internal.send(new DeleteObjectCommand(deleteParams))
 }
 
 const getObjectSignedUrl = async (key) => {
@@ -58,10 +68,9 @@ const getObjectSignedUrl = async (key) => {
     Key: key,
   }
 
-  // https://aws.amazon.com/blogs/developer/generate-presigned-url-modular-aws-sdk-javascript/
   const command = new GetObjectCommand(params)
   const seconds = 3 * 60 * 60
-  const url = await getSignedUrl(s3, command, { expiresIn: seconds })
+  const url = await getSignedUrl(s3Public, command, { expiresIn: seconds })
   return url
 }
 
@@ -71,17 +80,13 @@ const getFileSize = async (cue, presentationId) => {
     Bucket: BUCKET_NAME,
     Key: key,
   }
-  const command = new HeadObjectCommand(params)
-  const seconds = 3 * 60 * 60
-  const url = await getSignedUrl(s3, command, { expiresIn: seconds })
   try {
-    const response = await fetch(url, { method: "HEAD" })
-    const contentLength = response.headers.get("Content-Length")
-    if (contentLength) {
-      cue.file.size = parseInt(contentLength, 10)
+    const response = await s3Internal.send(new HeadObjectCommand(params))
+    if (response.ContentLength !== undefined) {
+      cue.file.size = response.ContentLength
       return cue
     } else {
-      throw new Error("Content-Length header is missing.")
+      throw new Error("ContentLength is missing from S3 response.")
     }
   } catch (error) {
     logger.error("Error getting file size:", error)
@@ -95,17 +100,14 @@ const getFileType = async (cue, presentationId) => {
     Bucket: BUCKET_NAME,
     Key: key,
   }
-  const command = new HeadObjectCommand(params)
-  const url = await getSignedUrl(s3, command, { expiresIn: 3600 })
 
   try {
-    const response = await fetch(url, { method: "HEAD" })
-    const contentType = response.headers.get("Content-Type")
-    if (contentType) {
-      cue.file.type = contentType
+    const response = await s3Internal.send(new HeadObjectCommand(params))
+    if (response.ContentType) {
+      cue.file.type = response.ContentType
       return cue
     } else {
-      throw new Error("Content-Type header is missing.")
+      throw new Error("ContentType is missing from S3 response.")
     }
   } catch (error) {
     logger.error("Error getting file type:", error)
