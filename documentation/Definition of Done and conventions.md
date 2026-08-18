@@ -18,7 +18,7 @@
 ### Continuous integration
 
 - _CI/CD_ pipe green
-  - This checks for testing (coverage included), building, pushing into quay-io and linting
+  - This checks for testing (coverage included), building, pushing into GHCR and linting
   - When issues are encountered, fixing them should be prioritized
 - Only working code should be expected in the _main_ branch
 - New code ought to be integrated via _pull requests_
@@ -45,12 +45,8 @@
   > The version in `package.json` should have the same version number.
 3. Set a title for the release in the format `MuViCo vX.Y.Z`, where `X.Y.Z` is the version of the release being made.
 4. Create release notes for the release and set it as the latest, then publish it.
-5. After the new image has been built, change the prod image tag to the newly published version in `manifests/prod-dep.yaml`.
-6. Apply the changes to Kubernetes with
-```bash
-kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml apply -f manifests/prod-dep.yaml && \
-kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml rollout restart deployment muvico-dep
-```
+5. After the new image has been built, change the prod image tag to the newly published version in the `gitops` repo, in `environments/prod/deployment.yaml` (`ghcr.io/muvico/muvico:vX.Y.Z`), and push that change.
+6. Argo CD (`muvico-prod` Application) picks up the change and syncs it to the cluster automatically. `manifests/` in this repo is a legacy reference kept in sync for documentation purposes only — `gitops` is the deployed source of truth.
 
 ### User story size estimates
 
