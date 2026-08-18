@@ -5,15 +5,18 @@ on:
     types: [published]
 
 jobs:
-  build-to-quay:
+  build-to-ghcr:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build, tag, and push image to Quay.io
+      - name: Build, tag, and push image to GHCR
         id: build-image
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -21,13 +24,13 @@ jobs:
           VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
-          docker login quay.io -u muvico_hy+robo -p ${{ secrets.QUAY_IO_TOKEN }}
+          docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
           docker build \
             --build-arg VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
             --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
             --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
             --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
             -f docker/Dockerfile \
-            -t 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}' .
-          docker push 'quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}'
-          echo "image=quay.io/muvico_hy/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            -t 'ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}' .
+          docker push 'ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}'
+          echo "image=ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT

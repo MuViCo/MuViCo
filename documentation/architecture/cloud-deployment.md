@@ -25,8 +25,8 @@ The application is designed for creating and performing multi-screen multimedia 
 - **[Upcloud Kubernetes](https://upcloud.com/docs/products/managed-kubernetes)**  
   Runs the MuViCo backend in a managed Kubernetes cluster. The deployment manifests live under `/manifests/` and are applied to the cluster using `kubectl`.
 
-- **[Quay.io](https://quay.io/)**  
-  Container registry used to store built images. The CI pipeline builds images from the repository and pushes them to Quay (tags include `staging` and release tags).
+- **[GitHub Container Registry (ghcr.io)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)**  
+  Container registry used to store built images, at `ghcr.io/muvico/muvico`. The CI pipeline builds images from the repository and pushes them using the workflow's own `GITHUB_TOKEN` (tags include `staging` and release tags). The package is public, so no pull credentials are needed on the cluster.
 
 - **Docker**  
   The application is packaged as a Docker image using the project `Dockerfile`, which contains both the frontend build and the backend server.
@@ -134,11 +134,11 @@ MuViCo uses GitHub Actions to automate testing, building container images, and p
 
   - Runs linting, unit tests and end-to-end tests.
   - Builds a Docker image
-  - On main branch pushes the docker image is also pushed to Quay tagged with `staging`.
+  - On main branch pushes the docker image is also pushed to GHCR tagged with `staging`.
   - Uploads frontend and backend coverage reports to Codecov.
 
 - **`prod.yml`** runs when a GitHub Release is published:
-  - Builds a Docker image and pushes it to Quay tagged with the release name (e.g. `v1.2.3`).
+  - Builds a Docker image and pushes it to GHCR tagged with the release name (e.g. `v1.2.3`).
 
 ### Deploying to Upcloud Kubernetes
 
