@@ -815,4 +815,65 @@ describe("Screen", () => {
       ).toHaveLength(0)
     })
   })
+
+  test("renders a cue that has no id, name, index or screen", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/minimal.jpg",
+        type: "image/jpg",
+        name: "minimal.jpg",
+      },
+    }
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/minimal.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+  })
+
+  test("falls back to the cue name for its key when id is missing", async () => {
+    const screenData = {
+      file: {
+        url: "http://example.com/named-only.jpg",
+        type: "image/jpg",
+        name: "named-only.jpg",
+      },
+      name: "named-only-cue",
+    }
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/named-only.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+  })
 })

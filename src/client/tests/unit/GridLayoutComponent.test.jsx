@@ -594,4 +594,176 @@ describe("GridLayoutComponent", () => {
 
     consoleLogSpy.mockRestore()
   })
+
+  it("shrinks the continuation divider when there is no gap between cells", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [
+        { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+        { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+      ],
+      { gap: 0 }
+    )
+
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
+  })
+
+  it("renders a color background in the continuation preview for a color-only cue", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    const continuationOverlay = screen.getByTestId(
+      "cue-continuation-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector("img,video")).toBeNull()
+    expect(continuationOverlay.querySelector("img,video")).toBeNull()
+  })
+
+  it("falls back to a name-based media url for the continuation preview when the file has no url", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: { name: "no-url.png" },
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector('img[src="/no-url.png"]')).toBeTruthy()
+  })
+
+  it("uses the provided interaction cursor while copying", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true, interactionCursor: "not-allowed" }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "not-allowed" })
+  })
+
+  it("defaults to a copy cursor while copying with no interaction cursor override", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "copy" })
+  })
 })

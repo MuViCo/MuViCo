@@ -341,4 +341,40 @@ describe("PresentationPlaybackControls", () => {
       expect(pauseSpy).toHaveBeenCalledTimes(1)
     })
   })
+
+  test("falls back to a src-based key when an audio track has no id", () => {
+    const { container } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [{ src: "https://example.com/no-id.mp3", loop: false }],
+    })
+
+    expect(
+      container.querySelector('audio[src="https://example.com/no-id.mp3"]')
+    ).toBeInTheDocument()
+  })
+
+  test("does not attempt to control an audio track that has no source", () => {
+    const { container } = renderControls({
+      isAutoplaying: true,
+      audioTracks: [{ id: "track-empty", src: "", loop: false }],
+    })
+
+    expect(container.querySelector("audio")).not.toBeInTheDocument()
+    expect(playSpy).not.toHaveBeenCalled()
+  })
+
+  test("does not throw when play() does not return a promise", async () => {
+    playSpy.mockImplementation(() => undefined)
+
+    renderControls({
+      isAutoplaying: true,
+      audioTracks: [
+        { id: "track-a1", src: "https://example.com/music.mp3", loop: true },
+      ],
+    })
+
+    await waitFor(() => {
+      expect(playSpy).toHaveBeenCalled()
+    })
+  })
 })

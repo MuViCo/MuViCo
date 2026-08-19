@@ -179,6 +179,33 @@ describe("ScreensDisplay", () => {
     expect(colorDivs.length).toBeGreaterThan(0)
   })
 
+  test("falls back to the default background color when a color-only cue has no color", () => {
+    const cues = [
+      {
+        _id: "cue-no-color",
+        name: "No color cue",
+        index: 0,
+        screen: 1,
+        file: null,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    const colorDivs = Array.from(document.querySelectorAll("div")).filter(
+      (div) => div.style.backgroundColor === "rgb(51, 51, 51)"
+    )
+    expect(colorDivs.length).toBeGreaterThan(0)
+  })
+
   test("stacks multiple cues on the same screen and frame ordered by layer", () => {
     const cues = [
       {
@@ -186,8 +213,16 @@ describe("ScreensDisplay", () => {
         name: "Base layer",
         index: 0,
         screen: 1,
-        layer: 0,
         color: "#000000",
+        file: null,
+      },
+      {
+        _id: "cue-layer-1",
+        name: "Middle layer",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        color: "#444444",
         file: null,
       },
       {

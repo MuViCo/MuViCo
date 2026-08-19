@@ -90,4 +90,138 @@ describe("EditModeHeaders RowHeaders", () => {
 
     expect(props.onAddAudioTrack).toHaveBeenCalledTimes(1)
   })
+
+  test("mutes/unmutes label reflects an already-muted state", () => {
+    renderRowHeaders({ isAudioMuted: true })
+
+    expect(screen.getByLabelText("Mute/unmute audio")).toHaveAttribute(
+      "title",
+      "Unmute audio"
+    )
+  })
+
+  test("shows the collapsed audio track count", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "audio",
+          group: "audio-collapsed",
+          screen: 9,
+          collapsed: true,
+          groupStart: true,
+          y: 0,
+          count: 2,
+          label: "Audio",
+        },
+      ],
+    })
+
+    expect(screen.getByText("2 tracks")).toBeInTheDocument()
+  })
+
+  test("treats a layer row with no layer value as the base layer", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "layer",
+          group: "screen-9",
+          screen: 9,
+          groupStart: true,
+          y: 0,
+          label: "L1",
+        },
+      ],
+      screenCount: 9,
+    })
+
+    expect(
+      screen.queryByLabelText("Remove layer from screen 9")
+    ).not.toBeInTheDocument()
+  })
+
+  test("disables removal for a layer row flagged as non-removable", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "layer",
+          group: "screen-9",
+          screen: 9,
+          layer: 1,
+          groupStart: true,
+          y: 0,
+          label: "L2",
+          canRemoveLayer: false,
+        },
+      ],
+      screenCount: 9,
+    })
+
+    const removeButton = screen.getByLabelText("Remove layer from screen 9")
+    expect(removeButton).toHaveAttribute(
+      "title",
+      "Base layer cannot be removed"
+    )
+    expect(removeButton).toBeDisabled()
+  })
+
+  test("falls back to a default lane count for a layer row with no count metadata", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "layer",
+          group: "screen-9",
+          screen: 9,
+          layer: 0,
+          groupStart: true,
+          y: 0,
+          label: "L1",
+        },
+      ],
+      screenCount: 9,
+    })
+
+    expect(screen.getByLabelText("Add layer to screen 9")).toBeInTheDocument()
+  })
+
+  test("falls back to a default lane count for an audio row with no count metadata", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "audio-track",
+          group: "audio",
+          screen: 10,
+          layer: 0,
+          groupStart: true,
+          y: 0,
+          label: "A1",
+        },
+      ],
+    })
+
+    expect(screen.getByLabelText("Add audio track")).not.toBeDisabled()
+  })
+
+  test("evaluates the max screen count when a full last screen still needs an add-screen control", () => {
+    renderRowHeaders({
+      rows: [
+        {
+          kind: "layer",
+          group: "screen-12",
+          screen: 12,
+          layer: 0,
+          groupStart: true,
+          y: 0,
+          label: "L1",
+          count: 3,
+          laneTotal: 3,
+        },
+      ],
+      screenCount: 12,
+    })
+
+    expect(
+      screen.queryByLabelText("Add layer to screen 12")
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("Add screen")).not.toBeInTheDocument()
+  })
 })
