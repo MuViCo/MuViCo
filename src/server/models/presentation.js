@@ -17,6 +17,7 @@ const {
   VALID_CUE_TYPES,
   getAudioRow,
   getCueTypeFromScreen,
+  getMaxLayers,
 } = require("../utils/cueType")
 
 // Normalizes and validates cues, ensuring they have the correct cueType and screen assignments
@@ -155,6 +156,23 @@ const presentationSchema = mongoose.Schema(
           type: { type: String, default: "image/jpeg" },
         },
         loop: { type: Boolean, default: false },
+        continuePlayback: { type: Boolean, default: false },
+        opacity: {
+          type: Number,
+          default: 1,
+          min: 0,
+          max: 1,
+        },
+        layer: {
+          type: Number,
+          default: 0,
+          min: 0,
+          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          validate: {
+            validator: Number.isInteger,
+            message: "layer must be an integer",
+          },
+        },
       },
     ],
   },
@@ -218,6 +236,19 @@ presentationSchema.pre("save", function (next) {
           message: `Visual cue screen ${cue.screen} exceeds screenCount`,
           path: "cues.screen",
           value: cue.screen,
+        })
+      )
+    }
+
+    const layer = Number(cue.layer ?? 0)
+    const maxLayers = getMaxLayers(cue.cueType)
+    if (layer < 0 || layer >= maxLayers) {
+      validationError.addError(
+        "cues.layer",
+        new mongoose.Error.ValidatorError({
+          message: `Cue layer ${layer} out of range (0..${maxLayers - 1})`,
+          path: "cues.layer",
+          value: layer,
         })
       )
     }

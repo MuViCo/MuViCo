@@ -97,4 +97,158 @@ describe("ScreensDisplay", () => {
 
     expect(screen.getByRole("img", { name: "Image cue" })).toBeInTheDocument()
   })
+
+  test("renders video cue for active screen", () => {
+    const cues = [
+      {
+        _id: "cue-video",
+        name: "Video cue",
+        index: 0,
+        screen: 1,
+        file: { url: "https://example.com/video.mp4", type: "video/mp4" },
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    expect(
+      document.querySelector('video[src="https://example.com/video.mp4"]')
+    ).toBeInTheDocument()
+  })
+
+  test("shows unsupported content type message for unrecognized files", () => {
+    const cues = [
+      {
+        _id: "cue-doc",
+        name: "Doc cue",
+        index: 0,
+        screen: 1,
+        file: {
+          url: "https://example.com/document.pdf",
+          type: "application/pdf",
+        },
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    expect(screen.getByText("Unsupported content type")).toBeInTheDocument()
+  })
+
+  test("renders a plain color background for a color-only cue", () => {
+    const cues = [
+      {
+        _id: "cue-color",
+        name: "Color cue",
+        index: 0,
+        screen: 1,
+        color: "#ff00ff",
+        file: null,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    const colorDivs = Array.from(document.querySelectorAll("div")).filter(
+      (div) => div.style.backgroundColor === "rgb(255, 0, 255)"
+    )
+    expect(colorDivs.length).toBeGreaterThan(0)
+  })
+
+  test("falls back to the default background color when a color-only cue has no color", () => {
+    const cues = [
+      {
+        _id: "cue-no-color",
+        name: "No color cue",
+        index: 0,
+        screen: 1,
+        file: null,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    const colorDivs = Array.from(document.querySelectorAll("div")).filter(
+      (div) => div.style.backgroundColor === "rgb(51, 51, 51)"
+    )
+    expect(colorDivs.length).toBeGreaterThan(0)
+  })
+
+  test("stacks multiple cues on the same screen and frame ordered by layer", () => {
+    const cues = [
+      {
+        _id: "cue-layer-0",
+        name: "Base layer",
+        index: 0,
+        screen: 1,
+        color: "#000000",
+        file: null,
+      },
+      {
+        _id: "cue-layer-1",
+        name: "Middle layer",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        color: "#444444",
+        file: null,
+      },
+      {
+        _id: "cue-layer-2",
+        name: "Top layer",
+        index: 0,
+        screen: 1,
+        layer: 2,
+        file: { url: "https://example.com/top.png", type: "image/png" },
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    expect(screen.getByRole("img", { name: "Top layer" })).toBeInTheDocument()
+    const colorDivs = Array.from(document.querySelectorAll("div")).filter(
+      (div) => div.style.backgroundColor === "rgb(0, 0, 0)"
+    )
+    expect(colorDivs.length).toBeGreaterThan(0)
+  })
 })

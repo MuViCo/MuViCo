@@ -13,15 +13,27 @@
  * @returns {FormData} - The populated FormData object.
  * */
 
-
-export const createFormData = (index, name, screen, file, cueId, color, loop) => {
+export const createFormData = (
+  index,
+  name,
+  screen,
+  file,
+  cueId,
+  color,
+  loop,
+  layer = 0,
+  opacity = 1,
+  continuePlayback = false
+) => {
   const formData = new FormData()
   formData.append("index", index)
   formData.append("cueName", name)
   formData.append("screen", screen)
-  
-  if (file || file===null) {
-  formData.append("image", file)
+  formData.append("layer", layer)
+  formData.append("opacity", opacity)
+
+  if (file || file === null) {
+    formData.append("image", file)
   }
   if (file && file.driveId) {
     formData.append("driveId", file.driveId)
@@ -29,7 +41,7 @@ export const createFormData = (index, name, screen, file, cueId, color, loop) =>
   if (cueId) {
     formData.append("cueId", cueId)
   }
-  if (color){
+  if (color) {
     formData.append("color", color)
   }
   if (loop === undefined) {
@@ -37,6 +49,7 @@ export const createFormData = (index, name, screen, file, cueId, color, loop) =>
   } else {
     formData.append("loop", loop)
   }
+  formData.append("continuePlayback", Boolean(continuePlayback))
 
   return formData
 }

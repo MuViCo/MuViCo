@@ -251,6 +251,44 @@ describe("test presentation", () => {
       expect(createdCue.color).toBe("#ff69b4")
     })
 
+    test("creates cue with explicit opacity", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Opacity Cue")
+        .field("screen", 2)
+        .field("opacity", "0.45")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Opacity Cue"
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.opacity).toBe(0.45)
+    })
+
+    test("creates audio cue with continuous playback", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .attach("image", mockAudioBuffer, {
+          filename: "mock_audio.mp3",
+          contentType: "audio/mpeg",
+        })
+        .field("index", 2)
+        .field("cueName", "Continuous Audio")
+        .field("screen", 5)
+        .field("continuePlayback", "true")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Continuous Audio"
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.continuePlayback).toBe(true)
+    })
+
     test("creates color-only cue with empty name", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}`)
@@ -311,6 +349,74 @@ describe("test presentation", () => {
 
       expect(response.body.error).toBe("Missing required fields")
     })
+
+    test("throws error with invalid opacity", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Bad Opacity Cue")
+        .field("screen", 2)
+        .field("opacity", "1.5")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "Invalid opacity. Opacity must be a number between 0 and 1."
+      )
+    })
+
+    test("throws error with invalid layer", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Bad Layer Cue")
+        .field("screen", 2)
+        .field("layer", "3")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "Invalid layer: 3. Layer must be between 0 and 2."
+      )
+    })
+
+    test("throws error when a cue already exists at the same index, screen and layer", async () => {
+      await createCue(1, "First Cue", 2)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Second Cue")
+        .field("screen", 2)
+        .field("layer", "0")
+        .field("color", "#ff69b4")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "A cue with the same index, screen and layer already exists."
+      )
+    })
+
+    test("allows a cue on a different layer at the same index and screen", async () => {
+      await createCue(1, "First Cue", 2)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Layered Cue")
+        .field("screen", 2)
+        .field("layer", "1")
+        .field("color", "#ff69b4")
+        .expect(200)
+
+      const createdCue = response.body.cues.find(
+        (cue) => cue.name === "Layered Cue"
+      )
+      expect(createdCue).toBeDefined()
+      expect(createdCue.layer).toBe(1)
+    })
   })
 
   describe("PUT /api/presentation/:id/:cueId", () => {
@@ -352,6 +458,37 @@ describe("test presentation", () => {
         .expect(200)
 
       expect(response.body.color).toBe("#4b0082")
+    })
+
+    test("updates cue opacity when opacity is provided", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("opacity", "0.35")
+        .expect(200)
+
+      expect(response.body.opacity).toBe(0.35)
+    })
+
+    test("updates continuous playback when provided", async () => {
+      const createResponse = await createAudioCue(2, "Audio Cue", 5)
+      const audioCue = createResponse.body.cues.find(
+        (cue) => cue.name === "Audio Cue"
+      )
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${audioCue._id}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Updated Audio Cue")
+        .field("screen", 5)
+        .field("continuePlayback", "true")
+        .expect(200)
+
+      expect(response.body.continuePlayback).toBe(true)
     })
 
     test("updates color-only cue with empty name", async () => {
@@ -414,6 +551,68 @@ describe("test presentation", () => {
 
       expect(response.body.error).toBe("Missing required fields")
     })
+
+    test("throws error with invalid opacity", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("opacity", "-0.2")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "Invalid opacity. Opacity must be a number between 0 and 1."
+      )
+    })
+
+    test("throws error with invalid layer", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("layer", "3")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "Invalid layer: 3. Layer must be between 0 and 2."
+      )
+    })
+
+    test("throws error when moving a cue onto an already occupied index, screen and layer", async () => {
+      await createCue(2, "Other Cue", 2)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("layer", "0")
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "A cue with the same index, screen and layer already exists."
+      )
+    })
+
+    test("allows moving a cue onto a different layer at an occupied index and screen", async () => {
+      await createCue(2, "Other Cue", 2)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/${testCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 2)
+        .field("cueName", "Updated Test Cue")
+        .field("screen", 2)
+        .field("layer", "1")
+        .expect(200)
+
+      expect(response.body.layer).toBe(1)
+    })
   })
 
   describe("PUT /api/presentation/:id/swapCues", () => {
@@ -468,6 +667,25 @@ describe("test presentation", () => {
       expect(updatedSecondCue.screen).toBe(1)
     })
 
+    test("rejects swap with an out-of-range target layer", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/swapCues`)
+        .set("Authorization", authHeader)
+        .send({
+          firstCueId,
+          secondCueId,
+          firstIndex: 1,
+          firstScreen: 1,
+          firstLayer: 3,
+          secondIndex: 0,
+          secondScreen: 1,
+          secondLayer: 0,
+        })
+        .expect(400)
+
+      expect(response.body.error).toBe("Invalid swap target layer")
+    })
+
     test("rejects decimal swap coordinates", async () => {
       const response = await api
         .put(`/api/presentation/${testPresentationId}/swapCues`)
@@ -482,7 +700,9 @@ describe("test presentation", () => {
         })
         .expect(400)
 
-      expect(response.body.error).toBe("Swap coordinates must be integers")
+      expect(response.body.error).toBe(
+        "Swap coordinates and layers must be integers"
+      )
     })
 
     test("rejects swap when target position has third cue conflict", async () => {
@@ -1280,6 +1500,88 @@ describe("MRU (Most Recently Used) sorting", () => {
     expect(user1Response.body.every((p) => p.user === user.id.toString())).toBe(
       true
     )
+  })
+})
+
+describe("Presentation model cue layer validation", () => {
+  let user
+
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    user = new User({
+      username: "layer-validation-user",
+      passwordHash: "test-password-hash",
+    })
+    await user.save()
+  })
+
+  test("rejects a visual cue with a layer out of range", async () => {
+    const presentation = new Presentation({
+      name: "Invalid Visual Layer Presentation",
+      user: user._id,
+      screenCount: 2,
+      cues: [
+        { cueType: "visual", index: 0, screen: 1, layer: 3, name: "Bad Layer" },
+      ],
+    })
+
+    let caughtError
+    try {
+      await presentation.save()
+    } catch (err) {
+      caughtError = err
+    }
+
+    expect(caughtError).toBeDefined()
+    expect(caughtError.errors["cues.layer"]).toBeDefined()
+  })
+
+  test("rejects an audio cue with a layer out of range", async () => {
+    const presentation = new Presentation({
+      name: "Invalid Audio Layer Presentation",
+      user: user._id,
+      screenCount: 2,
+      cues: [
+        {
+          cueType: "audio",
+          index: 0,
+          screen: 3,
+          layer: 2,
+          name: "Bad Audio Layer",
+        },
+      ],
+    })
+
+    let caughtError
+    try {
+      await presentation.save()
+    } catch (err) {
+      caughtError = err
+    }
+
+    expect(caughtError).toBeDefined()
+    expect(caughtError.errors["cues.layer"]).toBeDefined()
+  })
+
+  test("accepts a cue with a layer within range", async () => {
+    const presentation = new Presentation({
+      name: "Valid Layer Presentation",
+      user: user._id,
+      screenCount: 2,
+      cues: [
+        {
+          cueType: "visual",
+          index: 0,
+          screen: 1,
+          layer: 2,
+          name: "Good Layer",
+        },
+      ],
+    })
+
+    await expect(presentation.save()).resolves.toBeDefined()
   })
 })
 

@@ -14,9 +14,10 @@ const { test, describe, expect, beforeEach } = require("@playwright/test")
 const testuser = "audiotestuser"
 const testPw = "test12345"
 
-// addPresentation(page, "testi") defaults to screenCount = 2
-// => the audio row for this suite is always screen 3
-const AUDIO_ROW = 3
+// addPresentation(page, "testi") defaults to screenCount = 2.
+// The helper coordinate includes the frame header offset; row coordinate 3 lands
+// on timeline row index 2, which is audio track 1.
+const AUDIO_TRACK_ROW = 3
 
 describe("Audio cues", () => {
   beforeEach(async ({ page, request }) => {
@@ -34,7 +35,7 @@ describe("Audio cues", () => {
     await page.goto("http://localhost:3000/home")
   })
 
-  test("user can upload an audio file and drag it onto the audio row", async ({
+  test("user can upload an audio file and drag it onto an audio track", async ({
     page,
   }) => {
     await page.getByText("testi").click()
@@ -46,10 +47,10 @@ describe("Audio cues", () => {
     })
     await expect(page.getByText("test-audio.mp3")).toBeVisible()
 
-    await dragPoolItemToGrid(page, "test-audio.mp3", 1, AUDIO_ROW)
+    await dragPoolItemToGrid(page, "test-audio.mp3", 1, AUDIO_TRACK_ROW)
 
     await expect(
-      page.getByText("Element test-audio.mp3 added to screen 3").first()
+      page.getByText("Element test-audio.mp3 added to audio track 1").first()
     ).toBeVisible()
     await expect(page.getByTestId("cue-test-audio.mp3")).toBeVisible()
   })
@@ -67,15 +68,15 @@ describe("Audio cues", () => {
     await dragPoolItemToGrid(page, "wrong-row.mp3", 1, 1)
 
     await expect(
-      page.getByText("Only audio on audio row").first()
+      page.getByText("Only audio on audio rows").first()
     ).toBeVisible()
     await expect(
-      page.getByText("Drag audio files to the audio row.").first()
+      page.getByText("Drag audio files to an audio track.").first()
     ).toBeVisible()
     await expect(page.getByTestId("cue-wrong-row.mp3")).not.toBeVisible()
   })
 
-  test("dragging a media file onto the audio row shows a validation toast", async ({
+  test("dragging a media file onto an audio track shows a validation toast", async ({
     page,
   }) => {
     await page.getByText("testi").click()
@@ -85,13 +86,13 @@ describe("Audio cues", () => {
       mimeType: "image/png",
       buffer: Buffer.from("fake image content"),
     })
-    await dragPoolItemToGrid(page, "test-image.png", 1, AUDIO_ROW)
+    await dragPoolItemToGrid(page, "test-image.png", 1, AUDIO_TRACK_ROW)
 
     await expect(
       page.getByText("Only images/videos on screen rows").first()
     ).toBeVisible()
     await expect(
-      page.getByText("Drag media to screen rows, not the audio row.").first()
+      page.getByText("Drag media to screen rows, not audio tracks.").first()
     ).toBeVisible()
     await expect(page.getByTestId("cue-test-image.png")).not.toBeVisible()
   })
@@ -119,7 +120,7 @@ describe("Audio cues", () => {
       mimeType: "audio/mpeg",
       buffer: Buffer.from("fake audio content"),
     })
-    await dragPoolItemToGrid(page, "loop-audio.mp3", 1, AUDIO_ROW)
+    await dragPoolItemToGrid(page, "loop-audio.mp3", 1, AUDIO_TRACK_ROW)
     await expect(page.getByTestId("cue-loop-audio.mp3")).toBeVisible()
 
     const cue = page.getByTestId("cue-loop-audio.mp3")

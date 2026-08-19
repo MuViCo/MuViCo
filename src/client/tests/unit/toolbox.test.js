@@ -81,9 +81,32 @@ describe("ToolBox Component", () => {
         ...cue,
         cueName: "Updated Name",
         name: "Updated Name",
+        opacity: 1,
       })
     })
     expect(mockOnClose).toHaveBeenCalledTimes(1)
+  })
+
+  it("saves cue opacity", async () => {
+    mockOnSave.mockResolvedValue(undefined)
+
+    render(
+      <Toolbox
+        isOpen
+        onClose={mockOnClose}
+        cue={{ ...cue, cueType: "visual", opacity: 0.6 }}
+        onSave={mockOnSave}
+      />
+    )
+
+    expect(screen.getByText("60%")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({ opacity: 0.6 })
+      )
+    })
   })
 
   it("does not save when cue name is empty after trimming", () => {

@@ -3,7 +3,7 @@
  */
 
 export const buildCueVisualSpanMap = (cues, indexCount) => {
-  const cuesByScreen = new Map()
+  const cuesByLane = new Map()
 
   cues.forEach((cue) => {
     const cueId = cue?._id
@@ -14,17 +14,15 @@ export const buildCueVisualSpanMap = (cues, indexCount) => {
       return
     }
 
-    if (!cuesByScreen.has(cueScreen)) {
-      cuesByScreen.set(cueScreen, [])
+    const laneKey = `${cueScreen}|${Number(cue?.layer ?? 0)}`
+    if (!cuesByLane.has(laneKey)) {
+      cuesByLane.set(laneKey, [])
     }
 
-    cuesByScreen.get(cueScreen).push(cue)
+    cuesByLane.get(laneKey).push(cue)
   })
-  // Sort cues within each screen by index and calculate visual spans
-  // Visual span is determined by the distance to the next cue on the same screen, 
-  // or to the end of the index range if it's the last cue.
   const spanMap = new Map()
-  cuesByScreen.forEach((screenCues) => {
+  cuesByLane.forEach((screenCues) => {
     const sortedCues = screenCues
       .slice()
       .sort((a, b) => Number(a.index) - Number(b.index))

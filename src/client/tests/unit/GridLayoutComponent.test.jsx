@@ -1,4 +1,3 @@
-
 /*
  * Grid layout component unit tests.
  * Covers cue rendering states, drag indicators, media/audio behavior, and cue menu actions
@@ -67,6 +66,19 @@ describe("GridLayoutComponent", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(mockDispatch)
+  })
+
+  it("renders background cells for empty rows", () => {
+    renderGrid([], [], { indexCount: 3, rowCount: 2 })
+
+    expect(screen.getByTestId("grid-empty-cells")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-0-0")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-1-2")).toBeInTheDocument()
+
+    const firstCallProps = mockGridLayout.mock.calls[0][0]
+    expect(firstCallProps.width).toBe(470)
+    expect(firstCallProps.maxRows).toBe(2)
+    expect(firstCallProps.style.minHeight).toBe("210px")
   })
 
   it("does not wire deprecated onDragStop behavior", () => {
@@ -417,5 +429,341 @@ describe("GridLayoutComponent", () => {
         })
       )
     })
+  })
+
+  it("handles continuous playback toggle action for audio cue", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueId: "audio-1",
+          loop: true,
+          continuePlayback: true,
+        })
+      )
+    })
+  })
+
+  it("shows the continuous playback control as enabled when the cue already has it on", () => {
+    const cue = {
+      _id: "audio-2",
+      index: 0,
+      screen: 3,
+      name: "Audio cue 2",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: false,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-2", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-2"))
+
+    expect(screen.getByLabelText("Continue audio Audio cue 2")).toHaveAttribute(
+      "title",
+      "Disable continuous playback"
+    )
+  })
+
+  it("handles continuous playback toggle action that disables it", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: false,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Continuous audio disabled",
+          description: "Audio cue will stop with the sequence",
+        })
+      )
+    })
+  })
+
+  it("logs an error if showing the continuous playback toast fails", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+    mockShowToast.mockImplementationOnce(() => {
+      throw new Error("toast failed")
+    })
+    const consoleLogSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => {})
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Error printing toast about continuous audio toggle: ",
+        expect.any(Error)
+      )
+    })
+
+    consoleLogSpy.mockRestore()
+  })
+
+  it("shrinks the continuation divider when there is no gap between cells", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [
+        { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+        { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+      ],
+      { gap: 0 }
+    )
+
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
+  })
+
+  it("renders a color background in the continuation preview for a color-only cue", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    const continuationOverlay = screen.getByTestId(
+      "cue-continuation-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector("img,video")).toBeNull()
+    expect(continuationOverlay.querySelector("img,video")).toBeNull()
+  })
+
+  it("falls back to a name-based media url for the continuation preview when the file has no url", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: { name: "no-url.png" },
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector('img[src="/no-url.png"]')).toBeTruthy()
+  })
+
+  it("uses the provided interaction cursor while copying", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true, interactionCursor: "not-allowed" }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "not-allowed" })
+  })
+
+  it("defaults to a copy cursor while copying with no interaction cursor override", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "copy" })
   })
 })

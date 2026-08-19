@@ -29,6 +29,10 @@ import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
+import {
+  buildCueVisualSpanMap,
+  getCueVisualSpanFromMap,
+} from "../utils/cueVisualSpanUtils"
 
 // Base component for different subcomponents of the editor
 function EditorLayout(props) {
@@ -59,6 +63,8 @@ function EditorLayout(props) {
     isAutoplaying = false,
     audioSourceURL = "",
     audioLoop = false,
+    audioTracks = [],
+    allowContinuousAudio = false,
     toggleAutoplayInterval = () => {},
     onOpenTutorial = () => {},
     editModeBackground,
@@ -202,6 +208,8 @@ function EditorLayout(props) {
           toggleAutoplayInterval={toggleAutoplayInterval}
           audioSourceURL={audioSourceURL}
           audioLoop={audioLoop}
+          audioTracks={audioTracks}
+          allowContinuousAudio={allowContinuousAudio}
         />
         <Box mr={4}>
           <StatusTooltip />
@@ -310,22 +318,17 @@ const EditModeContainer = ({
   const [screens, setScreens] = useState({})
   const [mirroring, setMirroring] = useState({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
+  const [autoplayEnded, setAutoplayEnded] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
   const autoplayTimerRef = useRef(null)
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
 
-  // organize cues by screen number and index for quick lookup
-  const cuesByScreen = useMemo(() => {
-    return (cues || []).reduce((acc, cue) => {
-      if (!acc[cue.screen]) {
-        acc[cue.screen] = {}
-      }
-      acc[cue.screen][cue.index] = cue
-      return acc
-    }, {})
-  }, [cues])
+  const cueVisualSpanMap = useMemo(
+    () => buildCueVisualSpanMap(cues, indexCount),
+    [cues, indexCount]
+  )
 
   // Initialize screen visibility state based on cues and screen count
   // - creates a visibility object with keys for each screen number and
@@ -374,29 +377,48 @@ const EditModeContainer = ({
     })
   }
 
-  const getLastValidCue = (screenNumber, index) => {
-    let currentIndex = index
+  const getActiveCuesForScreen = (screenNumber, index) => {
+    const currentIndex = Number(index)
 
-    while (currentIndex >= 0) {
-      if (cuesByScreen[screenNumber]?.[currentIndex]) {
-        return cuesByScreen[screenNumber][currentIndex]
-      }
-      currentIndex -= 1
-    }
-
-    return {}
+    return (cues || [])
+      .filter((cue) => Number(cue.screen) === Number(screenNumber))
+      .filter((cue) => {
+        const cueStartIndex = Number(cue.index)
+        const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const cueEndIndex = cueStartIndex + cueSpan - 1
+        return currentIndex >= cueStartIndex && currentIndex <= cueEndIndex
+      })
+      .sort(
+        (firstCue, secondCue) =>
+          Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
+      )
   }
 
   const audioRow = getAudioRow(screenCount)
-  const currentAudioCue = getLastValidCue(audioRow, cueIndex)
-  const currentAudioFile = currentAudioCue?.file
-  const currentAudioSrc =
-    currentAudioFile?.url ||
-    (currentAudioFile?.name ? `/${currentAudioFile.name}` : "")
-  const isCurrentCueAudio = Boolean(
-    currentAudioCue && isType.audio(currentAudioFile)
-  )
-  const currentAudioLoop = Boolean(currentAudioCue?.loop)
+  const currentAudioTracks = getActiveCuesForScreen(audioRow, cueIndex)
+    .sort(
+      (firstCue, secondCue) =>
+        Number(firstCue.layer ?? 0) - Number(secondCue.layer ?? 0)
+    )
+    .filter((cue) => isType.audio(cue?.file))
+    .map((cue) => {
+      const file = cue.file
+      const src = file?.url || (file?.name ? `/${file.name}` : "")
+
+      return {
+        id: cue._id || `${cue.screen}-${cue.layer ?? 0}-${cue.index}`,
+        src,
+        loop: Boolean(cue.loop),
+        continuePlayback: Boolean(cue.continuePlayback),
+        layer: Number(cue.layer ?? 0),
+        name: cue.name,
+      }
+    })
+    .filter((track) => track.src)
+  const currentAudioCue = currentAudioTracks[0] || {}
+  const currentAudioSrc = currentAudioCue.src || ""
+  const isCurrentCueAudio = currentAudioTracks.length > 0
+  const currentAudioLoop = Boolean(currentAudioCue.loop)
 
   const handleScreenClose = useCallback((screenNumber) => {
     setScreens((prev) => ({
@@ -410,6 +432,7 @@ const EditModeContainer = ({
   }, [cueIndex])
 
   const toggleAutoplay = () => {
+    setAutoplayEnded(false)
     setIsAutoplaying((prev) => {
       const next = !prev
       if (next && typeof setCueIndex === "function") {
@@ -443,6 +466,7 @@ const EditModeContainer = ({
     autoplayTimerRef.current = setInterval(() => {
       const currentIndex = cueIndexRef.current
       if (currentIndex >= indexCount - 1) {
+        setAutoplayEnded(true)
         setIsAutoplaying(false)
         return
       }
@@ -464,6 +488,7 @@ const EditModeContainer = ({
 
   useEffect(() => {
     if (isAutoplaying && cueIndex >= indexCount - 1) {
+      setAutoplayEnded(true)
       setIsAutoplaying(false)
     }
   }, [cueIndex, indexCount, isAutoplaying])
@@ -549,6 +574,8 @@ const EditModeContainer = ({
         onOpenTutorial={handleOpenTutorial}
         audioSourceURL={currentAudioSrc}
         audioLoop={currentAudioLoop}
+        audioTracks={currentAudioTracks}
+        allowContinuousAudio={autoplayEnded}
         editModeBackground={editModeBackground}
         panelBackground={panelBackground}
         outlineColor={outlineColor}
@@ -564,7 +591,7 @@ const EditModeContainer = ({
       {Object.keys(screens).map((screenNumber) => {
         const mirroredScreen = mirroring[screenNumber]
         const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
-        const screenData = getLastValidCue(sourceScreen, cueIndex)
+        const screenData = getActiveCuesForScreen(sourceScreen, cueIndex)
 
         return (
           <Screen

@@ -25,6 +25,7 @@ const {
 const {
   getAudioRow,
   getCueTypeFromScreen,
+  getMaxLayers,
   isAudioMimeType,
   isAllowedMimeType,
 } = require("../utils/cueType")
@@ -35,11 +36,32 @@ const storage = multer.memoryStorage()
 const upload = multer({ storage })
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
-const hasPositionConflict = (cues, index, screen, excludedCueId = null) => {
+
+const parseCueOpacity = (rawOpacity, fallback = 1) => {
+  if (rawOpacity === undefined || rawOpacity === null || rawOpacity === "") {
+    return fallback
+  }
+
+  const opacity = Number(rawOpacity)
+  if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) {
+    return null
+  }
+
+  return opacity
+}
+
+const hasPositionConflict = (
+  cues,
+  index,
+  screen,
+  layer,
+  excludedCueId = null
+) => {
   return cues.some((cue) => {
     const samePosition =
       Number(cue.index) === Number(index) &&
-      Number(cue.screen) === Number(screen)
+      Number(cue.screen) === Number(screen) &&
+      Number(cue.layer ?? 0) === Number(layer ?? 0)
     if (!samePosition) {
       return false
     }
@@ -59,8 +81,10 @@ const hasSwapTargetConflict = (
   secondCueId,
   firstTargetIndex,
   firstTargetScreen,
+  firstTargetLayer,
   secondTargetIndex,
-  secondTargetScreen
+  secondTargetScreen,
+  secondTargetLayer
 ) => {
   return cues.some((cue) => {
     const cueId = cue._id.toString()
@@ -71,9 +95,11 @@ const hasSwapTargetConflict = (
 
     return (
       (Number(cue.index) === firstTargetIndex &&
-        Number(cue.screen) === firstTargetScreen) ||
+        Number(cue.screen) === firstTargetScreen &&
+        Number(cue.layer ?? 0) === firstTargetLayer) ||
       (Number(cue.index) === secondTargetIndex &&
-        Number(cue.screen) === secondTargetScreen)
+        Number(cue.screen) === secondTargetScreen &&
+        Number(cue.layer ?? 0) === secondTargetLayer)
     )
   })
 }
@@ -357,10 +383,19 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      const continuePlayback = req.body.continuePlayback
       const color = req.body.color || "#000000"
+      const layer = Number(req.body.layer) || 0
+      const opacity = parseCueOpacity(req.body.opacity, 1)
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (opacity === null) {
+        return res.status(400).json({
+          error: "Invalid opacity. Opacity must be a number between 0 and 1.",
+        })
       }
 
       if (
@@ -426,9 +461,16 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
-      if (hasPositionConflict(presentation.cues, index, screen)) {
+      const maxLayers = getMaxLayers(cueType)
+      if (layer < 0 || layer >= maxLayers) {
         return res.status(400).json({
-          error: "A cue with the same index and screen already exists.",
+          error: `Invalid layer: ${layer}. Layer must be between 0 and ${maxLayers - 1}.`,
+        })
+      }
+
+      if (hasPositionConflict(presentation.cues, index, screen, layer)) {
+        return res.status(400).json({
+          error: "A cue with the same index, screen and layer already exists.",
         })
       }
 
@@ -451,6 +493,9 @@ router.put(
               file: file ? fileObject : null,
               color: color,
               loop: loop,
+              continuePlayback: cueType === "audio" ? continuePlayback : false,
+              layer: layer,
+              opacity: opacity,
             },
           },
         },
@@ -572,14 +617,18 @@ router.put(
         secondCueId,
         firstIndex,
         firstScreen,
+        firstLayer,
         secondIndex,
         secondScreen,
+        secondLayer,
       } = req.body
 
       const parsedFirstIndex = Number(firstIndex)
       const parsedFirstScreen = Number(firstScreen)
+      const parsedFirstLayer = Number(firstLayer ?? 0)
       const parsedSecondIndex = Number(secondIndex)
       const parsedSecondScreen = Number(secondScreen)
+      const parsedSecondLayer = Number(secondLayer ?? 0)
       const maxScreen = presentation.screenCount + 1
 
       // Validate request payload.
@@ -588,8 +637,10 @@ router.put(
         !secondCueId ||
         isNaN(parsedFirstIndex) ||
         isNaN(parsedFirstScreen) ||
+        isNaN(parsedFirstLayer) ||
         isNaN(parsedSecondIndex) ||
-        isNaN(parsedSecondScreen)
+        isNaN(parsedSecondScreen) ||
+        isNaN(parsedSecondLayer)
       ) {
         return res.status(400).json({ error: "Missing required swap fields" })
       }
@@ -597,12 +648,14 @@ router.put(
       if (
         !Number.isInteger(parsedFirstIndex) ||
         !Number.isInteger(parsedFirstScreen) ||
+        !Number.isInteger(parsedFirstLayer) ||
         !Number.isInteger(parsedSecondIndex) ||
-        !Number.isInteger(parsedSecondScreen)
+        !Number.isInteger(parsedSecondScreen) ||
+        !Number.isInteger(parsedSecondLayer)
       ) {
         return res
           .status(400)
-          .json({ error: "Swap coordinates must be integers" })
+          .json({ error: "Swap coordinates and layers must be integers" })
       }
 
       if (firstCueId === secondCueId) {
@@ -655,6 +708,17 @@ router.put(
           .json({ error: "Cue type does not match swap target screen" })
       }
 
+      const firstMaxLayers = getMaxLayers(firstTargetCueType)
+      const secondMaxLayers = getMaxLayers(secondTargetCueType)
+      if (
+        parsedFirstLayer < 0 ||
+        parsedFirstLayer >= firstMaxLayers ||
+        parsedSecondLayer < 0 ||
+        parsedSecondLayer >= secondMaxLayers
+      ) {
+        return res.status(400).json({ error: "Invalid swap target layer" })
+      }
+
       // Reject swaps that would collide with a third cue.
       if (
         hasSwapTargetConflict(
@@ -663,8 +727,10 @@ router.put(
           secondCueId,
           parsedFirstIndex,
           parsedFirstScreen,
+          parsedFirstLayer,
           parsedSecondIndex,
-          parsedSecondScreen
+          parsedSecondScreen,
+          parsedSecondLayer
         )
       ) {
         return res.status(400).json({
@@ -676,9 +742,11 @@ router.put(
       firstCue.index = parsedFirstIndex
       firstCue.screen = parsedFirstScreen
       firstCue.cueType = firstTargetCueType
+      firstCue.layer = parsedFirstLayer
       secondCue.index = parsedSecondIndex
       secondCue.screen = parsedSecondScreen
       secondCue.cueType = secondTargetCueType
+      secondCue.layer = parsedSecondLayer
 
       await presentation.save({ validateModifiedOnly: true })
 
@@ -726,14 +794,23 @@ router.put(
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
+      const continuePlayback = req.body.continuePlayback
+      const hasContinuePlayback = req.body.continuePlayback !== undefined
       // default fallback color is yellow, but it should never be used since color is a required field in the frontend
       const color = req.body.color || "#fded11"
+      const opacity = parseCueOpacity(req.body.opacity, undefined)
 
       const image = req.body.image
       const shouldClearFile = image === "null"
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (opacity === null) {
+        return res.status(400).json({
+          error: "Invalid opacity. Opacity must be a number between 0 and 1.",
+        })
       }
 
       if (
@@ -796,9 +873,20 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
-      if (hasPositionConflict(presentation.cues, index, screen, cueId)) {
+      const layer =
+        req.body.layer !== undefined
+          ? Number(req.body.layer) || 0
+          : (cue.layer ?? 0)
+      const maxLayers = getMaxLayers(cueType)
+      if (layer < 0 || layer >= maxLayers) {
         return res.status(400).json({
-          error: "A cue with the same index and screen already exists.",
+          error: `Invalid layer: ${layer}. Layer must be between 0 and ${maxLayers - 1}.`,
+        })
+      }
+
+      if (hasPositionConflict(presentation.cues, index, screen, layer, cueId)) {
+        return res.status(400).json({
+          error: "A cue with the same index, screen and layer already exists.",
         })
       }
 
@@ -808,7 +896,15 @@ router.put(
       cue.cueType = cueType
       cue.name = trimmedCueName
       cue.loop = loop
+      cue.continuePlayback =
+        cueType === "audio"
+          ? hasContinuePlayback
+            ? continuePlayback
+            : (cue.continuePlayback ?? false)
+          : false
       cue.color = color
+      cue.layer = layer
+      cue.opacity = opacity === undefined ? (cue.opacity ?? 1) : opacity
 
       if (shouldClearFile) {
         cue.file = null
