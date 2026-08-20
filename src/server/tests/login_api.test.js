@@ -4,10 +4,20 @@
  */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
+const jwt = require("jsonwebtoken")
 const { generateHash } = require("../utils/auth.js")
+const { hashToken } = require("../utils/refreshToken")
 const User = require("../models/user")
 const app = require("../app")
 const verifyToken = require("../utils/verifyToken")
+
+// Pulls the raw refreshToken cookie value out of a supertest response's
+// Set-Cookie header, e.g. "refreshToken=abc123; Path=/api/login; ..." -> "abc123".
+const getRefreshCookieValue = (response) => {
+  const setCookie = response.headers["set-cookie"] || []
+  const cookie = setCookie.find((c) => c.startsWith("refreshToken="))
+  return cookie?.split(";")[0].split("=")[1]
+}
 
 const api = supertest(app)
 
@@ -318,6 +328,120 @@ describe("Login API", () => {
 
     // Restore the original implementation
     User.prototype.save.mockRestore()
+  })
+})
+
+describe("Refresh token flow", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await generateHash("testpassword")
+    const user = new User({ username: "testuser", passwordHash })
+
+    await user.save()
+  })
+
+  test("login sets an httpOnly refresh cookie scoped to /api/login", async () => {
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+      .expect(200)
+
+    const setCookie = response.headers["set-cookie"] || []
+    const cookie = setCookie.find((c) => c.startsWith("refreshToken="))
+
+    expect(cookie).toBeDefined()
+    expect(cookie).toMatch(/HttpOnly/)
+    expect(cookie).toMatch(/Path=\/api\/login/)
+  })
+
+  test("exchanges a valid refresh cookie for a new access token", async () => {
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+      .expect(200)
+
+    const refreshToken = getRefreshCookieValue(loginResponse)
+
+    const refreshResponse = await api
+      .post("/api/login/refresh")
+      .set("Cookie", [`refreshToken=${refreshToken}`])
+      .expect(200)
+
+    expect(refreshResponse.body.token).toBeDefined()
+    const payload = jwt.decode(refreshResponse.body.token)
+    expect(payload.username).toBe("testuser")
+  })
+
+  test("rotates the refresh token so the old value can't be reused", async () => {
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+      .expect(200)
+
+    const originalRefreshToken = getRefreshCookieValue(loginResponse)
+
+    await api
+      .post("/api/login/refresh")
+      .set("Cookie", [`refreshToken=${originalRefreshToken}`])
+      .expect(200)
+
+    await api
+      .post("/api/login/refresh")
+      .set("Cookie", [`refreshToken=${originalRefreshToken}`])
+      .expect(401)
+  })
+
+  test("fails with 401 when no refresh cookie is sent", async () => {
+    const response = await api.post("/api/login/refresh").expect(401)
+    expect(response.body.error).toBe("No refresh token")
+  })
+
+  test("fails with 401 for an unknown refresh token", async () => {
+    const response = await api
+      .post("/api/login/refresh")
+      .set("Cookie", ["refreshToken=not-a-real-token"])
+      .expect(401)
+
+    expect(response.body.error).toBe("Invalid or expired refresh token")
+  })
+
+  test("fails with 401 for an expired refresh token", async () => {
+    const rawToken = "a".repeat(64)
+    await new User({
+      username: "expireduser",
+      passwordHash: await generateHash("testpassword"),
+      refreshTokenHash: hashToken(rawToken),
+      refreshTokenExpires: new Date(Date.now() - 1000),
+    }).save()
+
+    await api
+      .post("/api/login/refresh")
+      .set("Cookie", [`refreshToken=${rawToken}`])
+      .expect(401)
+  })
+
+  test("logout invalidates the refresh token so it can no longer be used", async () => {
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+      .expect(200)
+
+    const refreshToken = getRefreshCookieValue(loginResponse)
+
+    await api
+      .post("/api/login/logout")
+      .set("Cookie", [`refreshToken=${refreshToken}`])
+      .expect(204)
+
+    await api
+      .post("/api/login/refresh")
+      .set("Cookie", [`refreshToken=${refreshToken}`])
+      .expect(401)
+  })
+
+  test("logout succeeds even without a refresh cookie", async () => {
+    await api.post("/api/login/logout").expect(204)
   })
 })
 
