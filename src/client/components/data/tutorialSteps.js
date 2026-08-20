@@ -67,9 +67,9 @@ const presentationTutorialSteps = [
   {
     id: "screen-boxes",
     selector: ".screen-boxes",
-    title: "Screens",
+    title: "Screens & Layers",
     description:
-      "These are the screens of your presentation. To add/remove screens, click the +/- buttons.",
+      "Each numbered icon is a screen: one of the physical displays your presentation opens a window on. Click the +/- buttons to add or remove screens.\n\nBelow each screen you can add layers, which stack elements on top of each other on that same screen - higher layers are shown on top of lower ones. Use the Layer +/- buttons to add or remove them.",
   },
   {
     id: "cue-editor-form",
