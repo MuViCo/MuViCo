@@ -1,6 +1,6 @@
 /**
- * this module defines the routes for user login and authentication, including both traditional username/password login and Firebase-based authentication. 
- * It uses JWT for token generation and includes error handling for invalid credentials. The routes interact with the User model to retrieve user data and manage authentication state. 
+ * this module defines the routes for user login and authentication, including both traditional username/password login and Firebase-based authentication.
+ * It uses JWT for token generation and includes error handling for invalid credentials. The routes interact with the User model to retrieve user data and manage authentication state.
  * The Firebase route also handles linking legacy accounts based on email prefixes to ensure a smooth transition for users authenticating with Google.
  */
 
@@ -11,8 +11,23 @@ const User = require("../models/user")
 const config = require("../utils/config")
 const verifyToken = require("../utils/verifyToken")
 const { generateUniqueUsername } = require("../utils/username")
+const {
+  REFRESH_TOKEN_COOKIE_NAME,
+  hashToken,
+  issueRefreshToken,
+  clearRefreshTokenCookie,
+} = require("../utils/refreshToken")
 
 const router = express.Router()
+
+// Kept short since this token authorizes every API call; /refresh below is
+// what keeps users logged in longer.
+const ACCESS_TOKEN_EXPIRES_IN_SECONDS = 60 * 60 // 1 hour
+
+const signAccessToken = (user) =>
+  jwt.sign({ username: user.username, id: user._id }, config.SECRET, {
+    expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS,
+  })
 
 router.post("/", async (req, res) => {
   const { username, password } = req.body
@@ -31,14 +46,8 @@ Checks if the entered password is correct for the given user.*
     })
   }
 
-  const userForToken = {
-    username: user.username,
-    id: user._id,
-  }
-
-  const token = jwt.sign(userForToken, config.SECRET, {
-    expiresIn: 60 * 60,
-  })
+  const token = signAccessToken(user)
+  await issueRefreshToken(user, res)
 
   return res.status(200).send({
     token,
@@ -89,14 +98,8 @@ router.post("/firebase", verifyToken, async (req, res) => {
 
     await user.save()
 
-    const userForToken = {
-      username: user.username,
-      id: user._id,
-    }
-
-    const token = jwt.sign(userForToken, config.SECRET, {
-      expiresIn: 60 * 60,
-    })
+    const token = signAccessToken(user)
+    await issueRefreshToken(user, res)
 
     return res.status(200).send({
       token,
@@ -109,6 +112,44 @@ router.post("/firebase", verifyToken, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+})
+
+// Rotates the refresh token on every use so an old one can't be replayed.
+router.post("/refresh", async (req, res) => {
+  const rawToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME]
+
+  if (!rawToken) {
+    return res.status(401).json({ error: "No refresh token" })
+  }
+
+  const user = await User.findOne({
+    refreshTokenHash: hashToken(rawToken),
+    refreshTokenExpires: { $gt: new Date() },
+  })
+
+  if (!user) {
+    clearRefreshTokenCookie(res)
+    return res.status(401).json({ error: "Invalid or expired refresh token" })
+  }
+
+  const token = signAccessToken(user)
+  await issueRefreshToken(user, res)
+
+  return res.status(200).json({ token })
+})
+
+router.post("/logout", async (req, res) => {
+  const rawToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME]
+
+  if (rawToken) {
+    await User.findOneAndUpdate(
+      { refreshTokenHash: hashToken(rawToken) },
+      { refreshTokenHash: null, refreshTokenExpires: null }
+    )
+  }
+
+  clearRefreshTokenCookie(res)
+  return res.status(204).end()
 })
 
 module.exports = router

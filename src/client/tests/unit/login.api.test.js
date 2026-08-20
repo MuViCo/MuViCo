@@ -17,5 +17,7 @@ test("login api call behaves as expected", async () => {
 
   const result = await login(credentials)
   expect(result).toEqual(response)
-  expect(axios.post).toHaveBeenCalledWith("/api/login", credentials)
+  expect(axios.post).toHaveBeenCalledWith("/api/login", credentials, {
+    withCredentials: true,
+  })
 })
