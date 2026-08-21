@@ -33,6 +33,8 @@ const userSchema = mongoose.Schema({
   ],
   isAdmin: { type: Boolean, default: false },
   driveToken: { type: String, default: null },
+  refreshTokenHash: { type: String, default: null },
+  refreshTokenExpires: { type: Date, default: null },
 })
 
 userSchema.set("toJSON", {
@@ -41,6 +43,8 @@ userSchema.set("toJSON", {
     delete returnedObject._id
     delete returnedObject.__v
     delete returnedObject.passwordHash
+    delete returnedObject.refreshTokenHash
+    delete returnedObject.refreshTokenExpires
   },
 })
 

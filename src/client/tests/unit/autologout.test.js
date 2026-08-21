@@ -12,9 +12,17 @@ import "@testing-library/jest-dom"
 import { useToast } from "@chakra-ui/react"
 import NavBar from "../../components/navbar/index"
 import { isTokenExpired } from "../../auth"
+import authService from "../../services/auth"
 import { SESSION_EXPIRED_EVENT } from "../../utils/axiosAuthInterceptor"
 
 jest.mock("../../auth")
+jest.mock("../../services/auth", () => ({
+  __esModule: true,
+  default: {
+    refreshAccessToken: jest.fn(),
+    logout: jest.fn().mockResolvedValue(undefined),
+  },
+}))
 jest.mock("react-router-dom", () => ({
   ...jest.requireActual("react-router-dom"),
   useNavigate: jest.fn(),
@@ -45,11 +53,18 @@ jest.mock("../../components/navbar/Login", () => {
 })
 
 describe("autologout", () => {
-  test("user is logged out when token expires", async () => {
+  beforeEach(() => {
+    authService.refreshAccessToken.mockReset()
+  })
+
+  test("user is logged out when token expires and the silent refresh also fails", async () => {
     const setUser = jest.fn()
     const navigate = jest.fn()
 
     isTokenExpired.mockReturnValue(true)
+    authService.refreshAccessToken.mockRejectedValue(
+      new Error("no valid refresh token")
+    )
     require("react-router-dom").useNavigate.mockReturnValue(navigate)
 
     render(
@@ -66,6 +81,35 @@ describe("autologout", () => {
       expect(setUser).toHaveBeenCalledWith(null)
       expect(navigate).toHaveBeenCalledWith("/")
     })
+  })
+
+  test("user stays logged in when the access token looks expired but the silent refresh succeeds", async () => {
+    // Covers the common real-world case: the access token (1h) expired while
+    // the browser was closed, but the httpOnly refresh cookie (7 days) is
+    // still valid, so the user shouldn't be bounced back to logged-out.
+    const setUser = jest.fn()
+    const navigate = jest.fn()
+    const refreshedUser = { username: "testuser", token: "new-access-token" }
+
+    isTokenExpired.mockReturnValue(true)
+    authService.refreshAccessToken.mockResolvedValue(refreshedUser)
+    require("react-router-dom").useNavigate.mockReturnValue(navigate)
+
+    render(
+      <MemoryRouter>
+        <NavBar
+          user={{ username: "testuser" }}
+          setUser={setUser}
+          navigate={navigate}
+        />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(setUser).toHaveBeenCalledWith(refreshedUser)
+    })
+    expect(setUser).not.toHaveBeenCalledWith(null)
+    expect(navigate).not.toHaveBeenCalledWith("/")
   })
 })
 

@@ -34,10 +34,13 @@ import getToken from "../../auth"
 import { isTokenExpired } from "../../auth"
 import UserManualModal from "./UserManualModal"
 import { useCustomToast } from "../utils/toastUtils"
+import authService from "../../services/auth"
 import {
   SESSION_EXPIRED_MESSAGE,
   SESSION_EXPIRED_EVENT,
 } from "../../utils/axiosAuthInterceptor"
+
+const SILENT_REFRESH_INTERVAL_MS = 1000 * 60 * 20 // 20 minutes
 
 const NavBar = ({ user, setUser }) => {
   const navigate = useNavigate()
@@ -85,6 +88,7 @@ const NavBar = ({ user, setUser }) => {
   const navbarLogo = colorMode === "dark" ? hyLogo : bHyLogo
 
   const handleLogout = (navigate, setUser) => {
+    authService.logout() // best-effort
     window.localStorage.removeItem("user")
     window.localStorage.removeItem("driveAccessToken")
     setUser(null)
@@ -123,14 +127,45 @@ const NavBar = ({ user, setUser }) => {
     setIsManualOpen(true)
   }
 
-  // Check token expiration
+  // Token looks expired, but the refresh cookie may still be valid - try it before logging out.
   useEffect(() => {
     const token = getToken()
-    if (isTokenExpired(token)) {
-      handleLogout(navigate, setUser)
+    if (!isTokenExpired(token)) {
+      return
+    }
+
+    let cancelled = false
+    authService
+      .refreshAccessToken()
+      .then((refreshedUser) => {
+        if (!cancelled) setUser(refreshedUser)
+      })
+      .catch(() => {
+        if (!cancelled) handleLogout(navigate, setUser)
+      })
+
+    return () => {
+      cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) //run only once
+
+  // Keep the access token fresh while logged in and the tab stays open.
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const intervalId = setInterval(() => {
+      authService
+        .refreshAccessToken()
+        .then((refreshedUser) => setUser(refreshedUser))
+        .catch(() => {})
+    }, SILENT_REFRESH_INTERVAL_MS)
+
+    return () => clearInterval(intervalId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   // React to an expired/invalid session detected mid-session by the axios interceptor
   useEffect(() => {
