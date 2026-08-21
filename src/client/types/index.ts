@@ -1,0 +1,302 @@
+/**
+ * Domain types for the MuViCo client.
+ *
+ * These are derived from the Mongoose schemas in src/server/models/ and from the
+ * actual response bodies in src/server/routes/ — NOT from the prose comments,
+ * which are out of date in several places. Where the client and server disagree,
+ * the disagreement is documented inline rather than papered over.
+ */
+
+/* ------------------------------------------------------------------ cues -- */
+
+/** presentationSchema.cues[].cueType enum. See src/server/utils/cueType.js. */
+export type CueType = "visual" | "audio"
+
+/**
+ * Media file metadata, i.e. the `cues[].file` subdocument.
+ *
+ * Every field is optional because the subdocument itself is optional and the
+ * S3 updateCue path rebuilds it from scratch (see the note on `type` below).
+ */
+export interface CueFileMeta {
+  id?: string
+  name?: string
+  url?: string
+  driveId?: string
+  /** String, not number — the schema declares `size: { type: String, default: "0" }`. */
+  size?: string
+  /**
+   * MIME type. Schema default is "image/jpeg".
+   *
+   * TODO(ts): the S3 updateCue route reassigns `cue.file = { id, name, url }`,
+   * dropping type/size/driveId, after which Mongoose re-applies the "image/jpeg"
+   * default. So a replaced mp4 comes back claiming to be an image. Read sites
+   * must not assume this is accurate or even present.
+   */
+  type?: string
+  /**
+   * TODO(ts): CLIENT/SERVER DISAGREEMENT. Read by Screen.jsx
+   * (`file.mimeType || "audio/mpeg"`) and EditMode.jsx
+   * (`cue.file?.type || cue.file?.mimeType`), but presentationSchema has no
+   * `mimeType` field and no route ever writes one — it is always undefined and
+   * those fallbacks are dead. Kept optional to preserve behaviour; verify before
+   * deleting the read sites.
+   */
+  mimeType?: string
+}
+
+/**
+ * A cue as returned by the API.
+ *
+ * Note `_id` survives here: the presentation toJSON transform only rewrites the
+ * top-level document, so cue subdocuments keep their `_id`. Client-side filters
+ * such as `cue._id !== action.payload` depend on this.
+ */
+export interface Cue {
+  _id: string
+  cueType: CueType
+  index: number
+  name: string
+  screen: number
+  color?: string
+  file: CueFileMeta | null
+  loop: boolean
+  continuePlayback: boolean
+  opacity: number
+  layer: number
+}
+
+/* --------------------------------------------------------- presentations -- */
+
+/** presentationSchema.storage enum. */
+export type StorageBackend = "aws" | "googleDrive"
+
+/**
+ * A presentation as returned by GET /api/presentation/:id.
+ *
+ * `id`, not `_id`: the toJSON transform does
+ * `returnedObject.id = _id.toString(); delete returnedObject._id`.
+ */
+export interface Presentation {
+  id: string
+  name: string
+  description?: string
+  /** Owner user id. */
+  user: string
+  storage: StorageBackend
+  screenCount: number
+  indexCount: number
+  /** ISO date string. */
+  lastUsed: string
+  cues: Cue[]
+  /**
+   * TODO(ts): injected by the toJSON transform
+   * (`returnedObject.audioCues = cues.filter(c => c.cueType === "audio")`),
+   * but no client read site was found. Optional so it neither has to be
+   * constructed nor is assumed present.
+   */
+  audioCues?: Cue[]
+  createdAt: string
+  updatedAt: string
+}
+
+/** Shape used by the homepage list (GET /api/home/). */
+export type PresentationSummary = Pick<
+  Presentation,
+  "id" | "name" | "screenCount" | "lastUsed"
+> &
+  Partial<Presentation>
+
+/* ------------------------------------------------------------------ auth -- */
+
+/**
+ * The object stored in localStorage["user"] and returned by POST /api/login.
+ * See src/server/routes/login.js.
+ */
+export interface AuthUser {
+  token: string
+  username: string
+  isAdmin: boolean
+  id: string
+  driveToken: string | null
+  /**
+   * TODO(ts): CLIENT/SERVER DISAGREEMENT. login.js sends `name: user.name`, but
+   * userSchema has no `name` field — this is always undefined on the wire.
+   * Removing it is a server-side change, out of scope for the TS migration.
+   */
+  name?: string
+}
+
+/* --------------------------------------------------------------- uploads -- */
+
+/**
+ * A file being uploaded with a cue.
+ *
+ * An intersection, deliberately NOT a `File | DriveFileDescriptor` union: the
+ * code never branches on which one it holds, it only ever reads `file.driveId &&`
+ * and `file.name`. EditMode's createNewCueData decorates a real File returned by
+ * fetchFileFromUrl with a driveId, which is exactly what this describes.
+ */
+export type CueUploadFile = File & { driveId?: string }
+
+/** The named arguments assembled before being flattened into createFormData. */
+export interface CueUpdateInput {
+  index: number
+  cueName: string
+  screen: number
+  file: CueUploadFile | null
+  cueId?: string
+  fileName?: string | null
+  color?: string
+  loop?: boolean
+  layer?: number
+  opacity?: number
+  continuePlayback?: boolean
+}
+
+/** CuesForm media/sound pool entries. */
+export interface MediaPoolItem {
+  id: string
+  file: File
+  name: string
+  type: string
+  /** Object URL. Media only — absent for sounds. */
+  preview?: string
+}
+
+/* ------------------------------------------------------------ drag & drop -- */
+
+export type DragElementType = "color" | "media" | "sound"
+
+/**
+ * Payload placed on the DataTransfer (and mirrored into mediaFileStore) when
+ * dragging from the media pool.
+ *
+ * Deliberately a FLAT interface with optional fields, not a discriminated union:
+ *   - it originates from JSON.parse of DataTransfer content, so no variant is
+ *     guaranteed to be well-formed;
+ *   - EditMode reads `dragData.color` / `dragData.opacity` in a branch shared by
+ *     the media and sound variants, which a discriminated union would correctly
+ *     but unhelpfully reject. Narrowing it would mean restructuring EditMode.
+ */
+export interface NewCueDragData {
+  type: "newCueFromForm"
+  elementType: DragElementType
+  cueName: string
+  color?: string
+  opacity?: number
+  mediaId?: string
+  soundId?: string
+  mimeType?: string
+  previewUrl?: string
+}
+
+/* -------------------------------------------------------- API payloads -- */
+
+export interface SwapCuesPayload {
+  firstCueId: string
+  secondCueId: string
+  firstIndex: number
+  firstScreen: number
+  firstLayer: number
+  secondIndex: number
+  secondScreen: number
+  secondLayer: number
+}
+
+/** PUT /api/presentation/:id/swapCues */
+export interface SwapCuesResponse {
+  firstCue: Cue
+  secondCue: Cue
+}
+
+/** PUT /api/presentation/:id/indexCount */
+export interface SaveIndexCountResponse {
+  indexCount: number
+  removedCuesCount: number
+}
+
+/** PUT /api/presentation/:id/screenCount */
+export interface SaveScreenCountResponse {
+  screenCount: number
+  removedCuesCount: number
+}
+
+/** PUT /api/presentation/:id/name */
+export interface UpdateNameResponse {
+  name: string
+}
+
+/** PUT /api/presentation/:id/shiftIndexes */
+export interface ShiftIndexesResponse {
+  shifted: boolean
+}
+
+/* ------------------------------------------------------------ row model -- */
+
+export type LaneKind = "screen" | "layer" | "audio" | "audio-track"
+
+/** One row of the edit-mode grid. Built by screenRowModel.js. */
+export interface Lane {
+  kind: LaneKind
+  /** "screen-1" ... "screen-8", or "audio". */
+  group: string
+  screen: number
+  y: number
+  label: string
+  layer?: number
+  collapsed?: boolean
+  count?: number
+  laneTotal?: number
+  canRemoveLayer?: boolean
+  groupStart?: boolean
+  screenLabel?: string
+}
+
+export interface RowModel {
+  rows: Lane[]
+  /** Cue id -> row index. */
+  cueY: Record<string, number>
+  rowCount: number
+}
+
+/** Group key -> collapsed. */
+export type CollapsedGroups = Record<string, boolean>
+/** Group key -> minimum lane count. */
+export type MinimumLanes = Record<string, number>
+/** Cue id -> visual span in grid columns. */
+export type SpanOverrideMap = Record<string, number>
+
+export interface LayerRemovalPlan {
+  removedCueIds: string[]
+  shiftedCues: Cue[]
+}
+
+export interface DropTarget {
+  screen: number
+  layer: number
+}
+
+/* ----------------------------------------------------------------- misc -- */
+
+/** useCustomToast argument. */
+export interface ToastOptions {
+  title: string
+  description?: string
+  status: "success" | "error" | "info" | "warning" | "loading"
+}
+
+/**
+ * The transition variants getAnims() branches on.
+ *
+ * NOTE: getAnims must keep accepting a plain `string` — the value is read from
+ * localStorage and getAnims deliberately falls through to fade for anything
+ * unrecognised. Narrowing its parameter to this type would change behaviour for
+ * stale stored values. This type is for the transition menu's props only.
+ */
+export type TransitionType =
+  | "fade"
+  | "zoom"
+  | "slide-left"
+  | "slide-right"
+  | "none"
