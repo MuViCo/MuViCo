@@ -34,7 +34,8 @@ export const VALID_AUDIO_MIME_TYPES = [
 
 export const getAudioRow = (screenCount) => Number(screenCount) + 1
 
-export const isAudioRow = (screen, screenCount) => Number(screen) === getAudioRow(screenCount)
+export const isAudioRow = (screen, screenCount) =>
+  Number(screen) === getAudioRow(screenCount)
 
 export const isAudioCue = (cue, screenCount) => {
   if (cue?.cueType) {
@@ -45,9 +46,16 @@ export const isAudioCue = (cue, screenCount) => {
 }
 
 export const isCueTypeCompatibleWithRow = (cueType, row, screenCount) =>
-  cueType === "audio" ? isAudioRow(row, screenCount) : !isAudioRow(row, screenCount)
+  cueType === "audio"
+    ? isAudioRow(row, screenCount)
+    : !isAudioRow(row, screenCount)
 
-export const isInsidePresentationGridCell = ({ xIndex, yIndex, indexCount, screenCount }) => {
+export const isInsidePresentationGridCell = ({
+  xIndex,
+  yIndex,
+  indexCount,
+  screenCount,
+}) => {
   const audioRow = getAudioRow(screenCount)
   return (
     Number(xIndex) >= 0 &&
@@ -63,4 +71,6 @@ export const isImageOrVideoMimeType = (mimeType = "") =>
   mimeType.startsWith("image/") || mimeType.startsWith("video/")
 
 export const getAllowedMimeTypesForScreen = (screen, screenCount) =>
-  isAudioRow(screen, screenCount) ? VALID_AUDIO_MIME_TYPES : VALID_VISUAL_MIME_TYPES
+  isAudioRow(screen, screenCount)
+    ? VALID_AUDIO_MIME_TYPES
+    : VALID_VISUAL_MIME_TYPES

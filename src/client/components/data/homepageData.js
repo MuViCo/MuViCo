@@ -18,5 +18,7 @@ export const homefeaturesData = [
   },
   { title: "Delete button: click this to remove the presentation.", items: [] },
   {
-    title: "MuViCo button: click this to go to the frontpage.", items: [] },
+    title: "MuViCo button: click this to go to the frontpage.",
+    items: [],
+  },
 ]

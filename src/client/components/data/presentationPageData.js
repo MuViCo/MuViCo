@@ -7,7 +7,7 @@ export const editModeFeaturesData = [
     title: "Rename the presentation title",
     items: [
       "Click the pencil icon next to the presentation name to edit it.",
-      "Save or cancel the changes."
+      "Save or cancel the changes.",
     ],
   },
   {
@@ -30,7 +30,7 @@ export const editModeFeaturesData = [
       "Next index: → ArrowRight, ↑ ArrowUp, PageDown",
       "Previous index: ← ArrowLeft, ↓ ArrowDown, PageUp",
     ],
-  }
+  },
 ]
 
 export const stepsToAddElementData = [
@@ -44,9 +44,7 @@ export const stepsToAddElementData = [
   },
   {
     title: "Add details to color element (optional)",
-    items: [
-      "Name: Give the element a clear name.",
-    ],
+    items: ["Name: Give the element a clear name."],
   },
   {
     title: "Place the element in the editor",
@@ -65,9 +63,7 @@ export const editingElementData = [
   },
   {
     title: "Delete",
-    items: [
-      "Remove the element from the presentation.",
-    ],
+    items: ["Remove the element from the presentation."],
   },
   {
     title: "Edit",
@@ -94,11 +90,9 @@ export const screenAndPlaybackData = [
       "The current frames can be seen in the screen preview area.",
     ],
   },
-    {
+  {
     title: "Open one screen",
-    items: [
-      "Click 'Open' on a screen to view it in the current frame.",
-    ],
+    items: ["Click 'Open' on a screen to view it in the current frame."],
   },
   {
     title: "Open all screens",
