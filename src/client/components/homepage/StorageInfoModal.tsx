@@ -13,7 +13,17 @@ import {
   ListItem,
 } from "@chakra-ui/react"
 
-const StorageInfoModal = ({ isOpen, onClose, user }) => (
+import type { AuthUser } from "../../types"
+
+const StorageInfoModal = ({
+  isOpen,
+  onClose,
+  user,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  user: AuthUser
+}) => (
   <Modal isCentered isOpen={isOpen} onClose={onClose} size="2xl">
     <ModalOverlay
       bg="none"

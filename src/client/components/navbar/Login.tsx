@@ -18,24 +18,38 @@ import authService from "../../services/auth"
 import Error from "../utils/Error"
 import GoogleSignInButton from "../presentation/GoogleSignInButton"
 
-const initialValues = {
+import type {
+  ChangeEvent,
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react"
+import type { AuthUser, Credentials } from "../../types"
+
+interface LoginFormProps {
+  onSubmit: (credentials: Credentials) => Promise<void>
+  error?: string | null
+  /** Passed straight through to GoogleSignInButton as well. */
+  onLogin: (user: AuthUser) => void
+}
+
+const initialValues: Credentials = {
   username: "",
   password: "",
 }
 
-export const LoginForm = ({ onSubmit, error, onLogin }) => {
+export const LoginForm = ({ onSubmit, error, onLogin }: LoginFormProps) => {
   const [formData, setFormData] = useState(initialValues)
-  const [submissionError, setSubmissionError] = useState(null)
-  const usernameRef = useRef(null)
-  const passwordRef = useRef(null)
-  const submitButtonRef = useRef(null)
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const submitButtonRef = useRef<HTMLButtonElement>(null)
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     if (!formData.username && !formData.password) {
@@ -61,20 +75,22 @@ export const LoginForm = ({ onSubmit, error, onLogin }) => {
   }
 
   // Handle Enter and Tab key navigation between form fields and submission
-  const handleKeyDown = (e) => {
+  // Refs are asserted rather than optionally chained: every branch below is
+  // reached from a keydown on one of these very inputs, so they are mounted.
+  const handleKeyDown = (e: ReactKeyboardEvent) => {
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault()
       if (e.target === usernameRef.current) {
-        passwordRef.current.focus()
+        passwordRef.current!.focus()
       } else if (e.target === passwordRef.current) {
         if (e.key === "Tab") {
-          submitButtonRef.current.focus()
+          submitButtonRef.current!.focus()
         } else if (e.key === "Enter") {
           handleSubmit(e)
         }
       } else if (e.target === submitButtonRef.current) {
         if (e.key === "Tab") {
-          usernameRef.current.focus()
+          usernameRef.current!.focus()
         } else {
           handleSubmit(e)
         }
@@ -141,10 +157,10 @@ export const LoginForm = ({ onSubmit, error, onLogin }) => {
   )
 }
 
-const Login = ({ onLogin }) => {
-  const [error, setError] = useState(null)
+const Login = ({ onLogin }: { onLogin: (user: AuthUser) => void }) => {
+  const [error, setError] = useState<string | null>(null)
 
-  const onSubmit = async ({ username, password }) => {
+  const onSubmit = async ({ username, password }: Credentials) => {
     try {
       const user = await authService.login({ username, password })
       window.localStorage.setItem("user", JSON.stringify(user))

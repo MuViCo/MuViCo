@@ -35,7 +35,29 @@ import {
   usernameConsecutiveSpecialsRegex,
 } from "../../../constants.js"
 
-const initialValues = {
+import type {
+  ChangeEvent,
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+} from "react"
+import type { AuthUser } from "../../types"
+
+interface SignUpValues {
+  username: string
+  password: string
+  password_confirmation: string
+}
+
+/** Field name -> validation message. Populated from yup's inner errors. */
+type SignUpErrors = Partial<Record<keyof SignUpValues, string>>
+
+interface SignUpFormProps {
+  onSubmit: (values: SignUpValues) => Promise<void>
+  error?: string | null
+  handleTermsClick: () => void
+}
+
+const initialValues: SignUpValues = {
   username: "",
   password: "",
   password_confirmation: "",
@@ -84,25 +106,37 @@ const validationSchema = yup.object().shape({
     ),
   password_confirmation: yup
     .string()
-    .oneOf([yup.ref("password"), null], "Passwords must match")
+    // `null` is accepted at runtime by yup.oneOf but is absent from its
+    // parameter type, so the array is widened rather than the value changed.
+    .oneOf([yup.ref("password"), null] as any[], "Passwords must match")
     .required("Password confirmation is required"),
 })
 
-export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
+export const SignUpForm = ({
+  onSubmit,
+  error,
+  handleTermsClick,
+}: SignUpFormProps) => {
   const [formData, setFormData] = useState(initialValues)
-  const [formErrors, setFormErrors] = useState({})
+  const [formErrors, setFormErrors] = useState<SignUpErrors>({})
   const [showPasswords, setShowPasswords] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const usernameRef = useRef(null)
-  const passwordRef = useRef(null)
-  const passwordagainRef = useRef(null)
-  const submitButtonRef = useRef(null)
-  const termsRef = useRef(null)
-  const usernameCheckTimeoutRef = useRef(null)
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const passwordagainRef = useRef<HTMLInputElement>(null)
+  const submitButtonRef = useRef<HTMLButtonElement>(null)
+  // Attached to a Chakra Link, which renders an anchor.
+  const termsRef = useRef<HTMLAnchorElement>(null)
+  const usernameCheckTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
   const usernameCheckRequestIdRef = useRef(0)
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target as {
+      name: keyof SignUpValues
+      value: string
+    }
     setFormData({ ...formData, [name]: value })
     setFormErrors((prevErrors) => {
       if (!prevErrors[name]) {
@@ -162,7 +196,7 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
     }, 350)
   }
   // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
       await validationSchema.validate(formData, { abortEarly: false })
@@ -182,10 +216,15 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
       await onSubmit(formData)
     } catch (validationErrors) {
       if (validationErrors?.name === "ValidationError") {
-        const errors = {}
-        validationErrors.inner.forEach((validationError) => {
-          errors[validationError.path] = validationError.message
-        })
+        const errors: SignUpErrors = {}
+        validationErrors.inner.forEach(
+          (validationError: yup.ValidationError) => {
+            // `path` is optional on yup's ValidationError, but the inner errors
+            // of an object schema always carry the field name.
+            errors[validationError.path as keyof SignUpValues] =
+              validationError.message
+          }
+        )
         setFormErrors(errors)
       }
     } finally {
@@ -193,28 +232,30 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
     }
   }
   // Handle Enter and Tab key navigation between form fields and submission
-  const handleKeyDown = (e) => {
+  // Refs are asserted rather than optionally chained: each branch is reached
+  // from a keydown on the very input it then focuses, so they are mounted.
+  const handleKeyDown = (e: ReactKeyboardEvent) => {
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault()
       if (e.target === usernameRef.current) {
-        passwordRef.current.focus()
+        passwordRef.current!.focus()
       } else if (e.target === passwordRef.current) {
-        passwordagainRef.current.focus()
+        passwordagainRef.current!.focus()
       } else if (e.target === passwordagainRef.current) {
         if (e.key === "Tab") {
-          termsRef.current.focus()
+          termsRef.current!.focus()
         } else {
           handleSubmit(e)
         }
       } else if (e.target === termsRef.current) {
         if (e.key === "Tab") {
-          submitButtonRef.current.focus()
+          submitButtonRef.current!.focus()
         } else {
           handleTermsClick()
         }
       } else if (e.target === submitButtonRef.current) {
         if (e.key === "Tab") {
-          usernameRef.current.focus()
+          usernameRef.current!.focus()
         } else {
           handleSubmit(e)
         }
@@ -341,14 +382,14 @@ export const SignUpForm = ({ onSubmit, error, handleTermsClick }) => {
   )
 }
 
-const SignUp = ({ onSignup }) => {
+const SignUp = ({ onSignup }: { onSignup: (user: AuthUser) => void }) => {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   const handleTermsClick = () => {
     navigate("/terms")
   }
-  const onSubmit = async ({ username, password }) => {
+  const onSubmit = async ({ username, password }: SignUpValues) => {
     try {
       await authService.signup({ username, password })
       const loggedInUser = await authService.login({ username, password })

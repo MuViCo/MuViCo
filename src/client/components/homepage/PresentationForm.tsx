@@ -14,18 +14,33 @@ import {
   Select,
 } from "@chakra-ui/react"
 
-const PresentationForm = ({ createPresentation, onCancel }) => {
+import type { FormEvent } from "react"
+import type { CreatePresentationInput } from "../../types"
+
+interface PresentationFormProps {
+  createPresentation: (input: CreatePresentationInput) => void
+  onCancel: () => void
+}
+
+const PresentationForm = ({
+  createPresentation,
+  onCancel,
+}: PresentationFormProps) => {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [screenCount, setScreenCount] = useState(1)
+  // Genuinely both: the state starts as the number 1 and the number input's
+  // onChange replaces it with the raw string value.
+  const [screenCount, setScreenCount] = useState<number | string>(1)
   const [startingFrameColor, setStartingFrameColor] = useState("#000000")
 
-  const addPresentation = (event) => {
+  const addPresentation = (event: FormEvent) => {
     event.preventDefault()
     createPresentation({
       name,
       description,
-      screenCount: parseInt(screenCount, 10),
+      // String() is a no-op on behaviour: parseInt already coerces its
+      // argument, which is why this worked while the state held a number.
+      screenCount: parseInt(String(screenCount), 10),
       startingFrameColor,
     })
 

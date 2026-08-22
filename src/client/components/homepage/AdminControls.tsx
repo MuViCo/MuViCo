@@ -3,7 +3,15 @@
  */
 import { SimpleGrid, Button, Text } from "@chakra-ui/react"
 
-const AdminControls = ({ isAdmin, navigate }) => (
+import type { NavigateFunction } from "react-router-dom"
+
+const AdminControls = ({
+  isAdmin,
+  navigate,
+}: {
+  isAdmin: boolean
+  navigate: NavigateFunction
+}) => (
   <>
     {" "}
     {isAdmin && (

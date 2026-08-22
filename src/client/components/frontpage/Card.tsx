@@ -23,7 +23,23 @@ import {
 } from "@chakra-ui/react"
 import { motion } from "framer-motion"
 
-const InfoCard = ({ title, description, modalTitle, modalDesc, modalSvg }) => {
+import type { ReactNode } from "react"
+
+interface InfoCardProps {
+  title: string
+  description: string
+  modalTitle: string
+  modalDesc: ReactNode
+  modalSvg: ReactNode
+}
+
+const InfoCard = ({
+  title,
+  description,
+  modalTitle,
+  modalDesc,
+  modalSvg,
+}: InfoCardProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const underlineColor = useColorModeValue("#9D4EDD", "#E9B8FF")
 

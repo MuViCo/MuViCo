@@ -7,7 +7,7 @@ const TermsPage = () => (
     marginTop={100}
     mb={6}
     p={3}
-    textAlign="jusfity"
+    textAlign="justify"
     bg={useColorModeValue("whiteAlpha.500", "whiteAlpha.200")}
     css={{ backdropFilter: "blur(10px)" }}
   >

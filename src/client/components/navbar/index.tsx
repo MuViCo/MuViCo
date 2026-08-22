@@ -42,7 +42,31 @@ import {
 
 const SILENT_REFRESH_INTERVAL_MS = 1000 * 60 * 20 // 20 minutes
 
-const NavBar = ({ user, setUser }) => {
+import type { NavigateFunction } from "react-router-dom"
+import type { AuthUser } from "../../types"
+
+/**
+ * TODO(ts): BUG -- `wrap`, `align` and `justify` are Flex props, not Container
+ * props. Chakra's styled-system does not define them (only the Flex component
+ * maps them, in its own code), so they fall through to the DOM as raw
+ * attributes and the intended flex alignment is NOT applied to the navbar
+ * today. Switching to flexWrap/alignItems/justifyContent would start applying
+ * it and visibly change the layout, so the props are passed through unchanged
+ * and the fix is tracked separately.
+ */
+const WRAPPER_FLEX_PROPS = {
+  wrap: "wrap",
+  align: "center",
+  justify: "space-between",
+} as Record<string, string>
+
+const NavBar = ({
+  user,
+  setUser,
+}: {
+  user: AuthUser | null
+  setUser: (user: AuthUser | null) => void
+}) => {
   const navigate = useNavigate()
   const location = useLocation()
   const showToast = useCustomToast()
@@ -87,7 +111,10 @@ const NavBar = ({ user, setUser }) => {
 
   const navbarLogo = colorMode === "dark" ? hyLogo : bHyLogo
 
-  const handleLogout = (navigate, setUser) => {
+  const handleLogout = (
+    navigate: NavigateFunction,
+    setUser: (user: AuthUser | null) => void
+  ) => {
     authService.logout() // best-effort
     window.localStorage.removeItem("user")
     window.localStorage.removeItem("driveAccessToken")
@@ -107,13 +134,13 @@ const NavBar = ({ user, setUser }) => {
       status: "warning",
     })
   }
-  const onLogin = (user) => {
+  const onLogin = (user: AuthUser) => {
     sessionExpiredHandledRef.current = false
     setUser(user)
     navigate("/home")
   }
 
-  const onSignup = (user) => {
+  const onSignup = (user: AuthUser) => {
     sessionExpiredHandledRef.current = false
     setUser(user)
     navigate("/home")
@@ -204,9 +231,7 @@ const NavBar = ({ user, setUser }) => {
           display="flex"
           p={{ base: 3, md: 4 }}
           maxW="100%"
-          wrap="wrap"
-          align="center"
-          justify="space-between"
+          {...WRAPPER_FLEX_PROPS}
           background={navBackground}
         >
           <Flex
@@ -324,6 +349,7 @@ const NavBar = ({ user, setUser }) => {
                   <Box ml={4} display="inline-block" position="relative">
                     <IconButton
                       className="help-button"
+                      aria-label="Help"
                       variant="ghost"
                       size="lg"
                       colorScheme="purple"

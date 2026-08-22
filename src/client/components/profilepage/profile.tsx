@@ -66,11 +66,28 @@ const validationSchema = yup.object().shape({
     ),
   confirmPassword: yup
     .string()
-    .oneOf([yup.ref("newPassword"), null], "New passwords do not match")
+    // `null` is accepted at runtime by yup.oneOf but is absent from its
+    // parameter type, so the array is widened rather than the value changed.
+    .oneOf(
+      [yup.ref("newPassword"), null] as any[],
+      "New passwords do not match"
+    )
     .required("Confirm password is required"),
 })
 
-const Profile = ({ user }) => {
+import type { ChangeEvent, FormEvent } from "react"
+import type { AuthUser } from "../../types"
+
+interface PasswordFields {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+/** Field name -> validation message, filled from yup's inner errors. */
+type ProfileErrors = Partial<Record<keyof PasswordFields, string>>
+
+const Profile = ({ user }: { user: AuthUser }) => {
   const navigate = useNavigate()
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -82,11 +99,14 @@ const Profile = ({ user }) => {
     newPassword: false,
     confirmPassword: false,
   })
-  const [formErrors, setFormErrors] = useState({})
+  const [formErrors, setFormErrors] = useState<ProfileErrors>({})
   const showToast = useCustomToast()
 
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target as {
+      name: keyof PasswordFields
+      value: string
+    }
     setPasswords({
       ...passwords,
       [name]: value,
@@ -103,7 +123,7 @@ const Profile = ({ user }) => {
     })
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     try {
       await validationSchema.validate(passwords, { abortEarly: false })
@@ -129,10 +149,11 @@ const Profile = ({ user }) => {
       })
     } catch (err) {
       if (err?.name === "ValidationError") {
-        const errors = {}
-        err.inner.forEach((validationError) => {
-          if (validationError.path && !errors[validationError.path]) {
-            errors[validationError.path] = validationError.message
+        const errors: ProfileErrors = {}
+        err.inner.forEach((validationError: yup.ValidationError) => {
+          const path = validationError.path as keyof PasswordFields | undefined
+          if (path && !errors[path]) {
+            errors[path] = validationError.message
           }
         })
         setFormErrors(errors)

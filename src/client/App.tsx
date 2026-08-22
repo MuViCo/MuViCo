@@ -18,8 +18,10 @@ import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
 import authService from "./services/auth"
 
+import type { AuthUser } from "./types"
+
 const App = () => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   // const [bannerHeight, setBannerHeight] = useState(40)
 
   const [isInitialized, setIsInitialized] = useState(false)
@@ -69,11 +71,10 @@ const App = () => {
               path="/presentation/:id"
               element={
                 user ? (
-                  <PresentationPage
-                    user={user}
-                    userId={user.id}
-                    setUser={setUser}
-                  />
+                  // userId and setUser used to be passed here too, but
+                  // PresentationPage destructures only `user` and has no rest
+                  // parameter, so they were never read.
+                  <PresentationPage user={user} />
                 ) : (
                   <Navigate to="/" />
                 )

@@ -11,16 +11,22 @@ import { useEffect, useState } from "react"
 import randomLinearGradient from "../utils/randomGradient"
 import adminService from "../../services/admin"
 
+import type { Presentation } from "../../types"
+
 const UserPresentations = () => {
   const { id } = useParams()
-  const [presentations, setPresentations] = useState([])
+  const [presentations, setPresentations] = useState<Presentation[]>([])
   const navigate = useNavigate()
-  const handlePresentationClick = (userId) => {
+  const handlePresentationClick = (userId: string) => {
     navigate(`/presentation/${userId}`)
   }
   useEffect(() => {
     const getPresentationData = async () => {
-      const updatedPresentations = await adminService.usersPresentations(id)
+      // useParams types every param as optional; this route only renders
+      // under /userspresentations/:id, so id is always present.
+      const updatedPresentations = await adminService.usersPresentations(
+        id as string
+      )
       setPresentations(updatedPresentations)
     }
     getPresentationData()

@@ -14,21 +14,23 @@ import {
 import adminServices from "../../services/admin"
 import randomLinearGradient from "../utils/randomGradient"
 
+import type { AdminUser } from "../../types"
+
 const UsersList = () => {
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState<AdminUser[]>([])
   const navigate = useNavigate()
 
   useEffect(() => {
     adminServices.allUsers().then((allUsers) => setUsers(allUsers))
   }, [])
 
-  const onRemove = async (id) => {
+  const onRemove = async (id: string) => {
     if (!window.confirm("Are you sure?")) return
     await adminServices.deleteUser(id)
     setUsers(users.filter((user) => user.id !== id))
   }
 
-  const makeAdmin = async (id) => {
+  const makeAdmin = async (id: string) => {
     if (!window.confirm("Are you sure?")) return
     await adminServices.makeAdmin(id)
     setUsers(

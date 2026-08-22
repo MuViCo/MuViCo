@@ -27,11 +27,24 @@ import Dialog from "../utils/AlertDialog"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { homePageTutorialSteps } from "../data/tutorialSteps"
 
-const HomePage = ({ user, setUser }) => {
-  const [presentations, setPresentations] = useState([])
+import type { TogglableHandle } from "../utils/Togglable"
+import type {
+  AuthUser,
+  CreatePresentationInput,
+  Presentation,
+  UpdatePresentationInput,
+} from "../../types"
+
+interface HomePageProps {
+  user: AuthUser
+  setUser: (user: AuthUser) => void
+}
+
+const HomePage = ({ user, setUser }: HomePageProps) => {
+  const [presentations, setPresentations] = useState<Presentation[]>([])
   const [showHint, setShowHint] = useState(false)
   const navigate = useNavigate()
-  const togglableRef = useRef(null)
+  const togglableRef = useRef<TogglableHandle>(null)
   const showToast = useCustomToast()
   const {
     isDialogOpen,
@@ -62,7 +75,9 @@ const HomePage = ({ user, setUser }) => {
     }
   }, [])
 
-  const createPresentation = async (presentationObject) => {
+  const createPresentation = async (
+    presentationObject: CreatePresentationInput
+  ) => {
     try {
       const createdPresentation =
         await presentationService.create(presentationObject)
@@ -85,13 +100,13 @@ const HomePage = ({ user, setUser }) => {
     }
   }
 
-  const handlePresentationClick = (presentationId) => {
+  const handlePresentationClick = (presentationId: string) => {
     navigate(`/presentation/${presentationId}`)
   }
 
   const handleEditPresentation = async (
-    presentationId,
-    updatedPresentation
+    presentationId: string,
+    updatedPresentation: UpdatePresentationInput
   ) => {
     try {
       await presentationService.update(presentationId, updatedPresentation)
@@ -103,7 +118,10 @@ const HomePage = ({ user, setUser }) => {
   }
 
   const handleCancel = () => {
-    togglableRef.current.toggleVisibility()
+    // Non-null assertion, not optional chaining: handleCancel is only
+    // reachable from the form the Togglable renders, and asserting keeps the
+    // current behaviour if that ever stops being true.
+    togglableRef.current!.toggleVisibility()
   }
 
   const handleDialogConfirm = async () => {
@@ -117,7 +135,7 @@ const HomePage = ({ user, setUser }) => {
     }
   }
 
-  const handleDriveLinked = async (updatedUser) => {
+  const handleDriveLinked = async (updatedUser: AuthUser) => {
     setUser(updatedUser)
 
     const updatedPresentations = await presentationService.getAll()
@@ -128,7 +146,9 @@ const HomePage = ({ user, setUser }) => {
     try {
       window.localStorage.removeItem("driveAccessToken")
 
-      const currentUser = JSON.parse(window.localStorage.getItem("user"))
+      const currentUser = JSON.parse(
+        window.localStorage.getItem("user") as string
+      )
       const updatedUser = { ...currentUser, driveToken: null }
       window.localStorage.setItem("user", JSON.stringify(updatedUser))
 
@@ -178,6 +198,7 @@ const HomePage = ({ user, setUser }) => {
           )}
           <IconButton
             className="help-button"
+            aria-label="Storage options help"
             icon={<QuestionIcon />}
             variant="ghost"
             size="lg"

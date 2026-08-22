@@ -3,16 +3,38 @@ import { createPortal } from "react-dom"
 import { Box, Button, Text, VStack, HStack } from "@chakra-ui/react"
 import { keyframes } from "@emotion/react"
 
+import type { TutorialStep } from "../../types"
+
+interface TutorialGuideProps {
+  steps?: TutorialStep[]
+  isOpen?: boolean
+  onClose?: () => void
+  storageKey: string
+}
+
+/**
+ * Tooltip placement. A flat shape with optional fields rather than a union of
+ * the centred and anchored variants: the render path checks `centered` and
+ * then reads top/left/targetRect in the same expression, which a discriminated
+ * union would reject without restructuring the component.
+ */
+interface TutorialPos {
+  centered?: boolean
+  top?: number
+  left?: number
+  targetRect?: DOMRect
+}
+
 const TutorialGuide = ({
   steps = [],
   isOpen = false,
   onClose = () => {},
   storageKey,
-}) => {
+}: TutorialGuideProps) => {
   const [open, setOpen] = useState(isOpen)
   const [index, setIndex] = useState(0)
-  const [pos, setPos] = useState(null)
-  const containerRef = useRef(null)
+  const [pos, setPos] = useState<TutorialPos | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const fadeIn = keyframes`
     from { opacity: 0; transform: translateY(6px); }
@@ -24,7 +46,8 @@ const TutorialGuide = ({
   `
 
   const isTyping = () => {
-    const ae = document.activeElement
+    // activeElement is typed Element; isContentEditable lives on HTMLElement.
+    const ae = document.activeElement as HTMLElement | null
     if (!ae) return false
     const tag = ae.tagName
     if (tag === "INPUT" || tag === "TEXTAREA" || ae.isContentEditable)
@@ -60,7 +83,7 @@ const TutorialGuide = ({
     document.body.style.overflow = "hidden"
     document.body.style.touchAction = "none"
 
-    const prevent = (e) => {
+    const prevent = (e: Event) => {
       if (e && e.preventDefault) e.preventDefault()
       return false
     }
@@ -79,7 +102,7 @@ const TutorialGuide = ({
   // keyboard shortcuts: Enter/ArrowRight -> next, ArrowLeft -> prev, Escape -> finish
   useEffect(() => {
     if (!open) return
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (isTyping()) return
       if (e.key === "Escape") {
         e.stopPropagation()
@@ -270,14 +293,15 @@ const TutorialGuide = ({
         </Box>
       )}
 
-      {/* Box highlight around target */}
+      {/* Box highlight around target. targetRect is always set on the
+          non-centred variant, which is what the guard below selects. */}
       {pos && !pos.centered && (
         <Box
           position="absolute"
-          top={`${pos.targetRect.top - 6}px`}
-          left={`${pos.targetRect.left - 6}px`}
-          width={`${pos.targetRect.width + 12}px`}
-          height={`${pos.targetRect.height + 12}px`}
+          top={`${pos.targetRect!.top - 6}px`}
+          left={`${pos.targetRect!.left - 6}px`}
+          width={`${pos.targetRect!.width + 12}px`}
+          height={`${pos.targetRect!.height + 12}px`}
           borderRadius="6px"
           border="2px solid"
           borderColor="purple.300"

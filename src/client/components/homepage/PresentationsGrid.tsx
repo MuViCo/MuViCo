@@ -36,19 +36,41 @@ import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
 
+import type { ChangeEvent, MouseEvent } from "react"
+import type { Presentation, UpdatePresentationInput } from "../../types"
+
+type EditPresentation = (
+  presentationId: string,
+  updated: UpdatePresentationInput
+) => Promise<void>
+
+interface EditModalProps {
+  isOpen: boolean
+  onClose: () => void
+  presentation: Presentation | null
+  handleEditPresentation: EditPresentation
+}
+
+interface PresentationsGridProps {
+  presentations: Presentation[]
+  handlePresentationClick: (presentationId: string) => void
+  handleDeletePresentation: (presentationId: string) => void
+  handleEditPresentation: EditPresentation
+}
+
 const EditModal = ({
   isOpen,
   onClose,
   presentation,
   handleEditPresentation,
-}) => {
+}: EditModalProps) => {
   const [editName, setEditName] = useState("")
   const [editDescription, setEditDescription] = useState("")
   const [saveError, setSaveError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const toast = useToast()
 
-  const handleDescriptionChange = (event) => {
+  const handleDescriptionChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const nextValue = event.target.value
 
     if (nextValue.length > 500) {
@@ -162,20 +184,21 @@ const PresentationsGrid = ({
   handlePresentationClick,
   handleDeletePresentation,
   handleEditPresentation,
-}) => {
+}: PresentationsGridProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [viewMode, setViewMode] = useState(() => {
     // Initialize from localStorage, default to "grid"
     return localStorage.getItem("presentationsLayoutMode") || "grid"
   })
-  const [editingPresentation, setEditingPresentation] = useState(null)
+  const [editingPresentation, setEditingPresentation] =
+    useState<Presentation | null>(null)
 
   // Save to localStorage whenever viewMode changes
   useEffect(() => {
     localStorage.setItem("presentationsLayoutMode", viewMode)
   }, [viewMode])
 
-  const openEditModal = (presentation, event) => {
+  const openEditModal = (presentation: Presentation, event: MouseEvent) => {
     event.stopPropagation()
     setEditingPresentation(presentation)
     onOpen()

@@ -5,7 +5,13 @@ import { auth } from "../utils/firebase"
 import { useCustomToast } from "../utils/toastUtils"
 import userService from "../../services/users"
 
-const LinkGoogleDriveButton = ({ onDriveLinked }) => {
+import type { AuthUser } from "../../types"
+
+const LinkGoogleDriveButton = ({
+  onDriveLinked,
+}: {
+  onDriveLinked?: (user: AuthUser) => void
+}) => {
   const showToast = useCustomToast()
 
   const handleLinkGoogleDrive = async () => {
@@ -17,7 +23,11 @@ const LinkGoogleDriveButton = ({ onDriveLinked }) => {
 
       const result = await signInWithPopup(auth, provider)
       const credential = GoogleAuthProvider.credentialFromResult(result)
-      const driveAccessToken = credential.accessToken
+      // TODO(ts): credentialFromResult returns null when the popup result
+      // carries no OAuth credential, and accessToken is optional even when
+      // it does. Both already throw or store the string "undefined" today;
+      // the assertions keep that behaviour rather than adding a new branch.
+      const driveAccessToken = credential!.accessToken as string
 
       window.localStorage.setItem("driveAccessToken", driveAccessToken)
 
@@ -25,7 +35,9 @@ const LinkGoogleDriveButton = ({ onDriveLinked }) => {
 
       const updatedUser = response
 
-      const currentUser = JSON.parse(window.localStorage.getItem("user"))
+      const currentUser = JSON.parse(
+        window.localStorage.getItem("user") as string
+      )
       const mergedUser = { ...currentUser, driveToken: driveAccessToken }
       window.localStorage.setItem("user", JSON.stringify(mergedUser))
 
