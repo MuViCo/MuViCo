@@ -24,11 +24,11 @@ import reducer, {
   updatePresentationName,
   beginSave,
   endSave,
-} from "../../redux/presentationReducer.js"
+} from "../../redux/presentationReducer"
 import {
   saveIndexCount,
   saveScreenCount,
-} from "../../redux/presentationThunks.js"
+} from "../../redux/presentationThunks"
 import presentationService from "../../services/presentation"
 import { configureStore } from "@reduxjs/toolkit"
 import { createFormData } from "../../components/utils/formDataUtils"
