@@ -1,8 +1,11 @@
 import { extendTheme } from "@chakra-ui/react"
 import { mode } from "@chakra-ui/theme-tools"
 
+import type { ThemeConfig } from "@chakra-ui/react"
+import type { StyleFunctionProps } from "@chakra-ui/theme-tools"
+
 const styles = {
-  global: (props) => ({
+  global: (props: StyleFunctionProps) => ({
     body: {
       bg: mode("#ffffff", "#000000")(props),
       backgroundImage: mode(
@@ -39,7 +42,7 @@ const fonts = {
   body: "'Poppins', sans-serif",
 }
 
-const config = {
+const config: ThemeConfig = {
   initialColorMode: "dark",
   useSystemColorMode: true,
 }

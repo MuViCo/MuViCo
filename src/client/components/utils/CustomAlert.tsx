@@ -1,4 +1,4 @@
-/** CustomAlert.jsx
+/** CustomAlert.tsx
  * A reusable alert component using Chakra UI's Alert.
  */
 
@@ -11,7 +11,15 @@ import {
   Box,
 } from "@chakra-ui/react"
 
-const CustomAlert = ({ showAlert = false, alertData = {} }) => {
+import type { AlertData } from "../../types"
+
+const CustomAlert = ({
+  showAlert = false,
+  alertData = {},
+}: {
+  showAlert?: boolean
+  alertData?: AlertData
+}) => {
   const { title = "", description = "", status = "info" } = alertData
 
   if (!showAlert || !title) return null

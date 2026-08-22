@@ -4,9 +4,14 @@
 
 import { useEffect } from "react"
 
-const KeyboardHandler = ({ onNext, onPrevious }) => {
+interface KeyboardHandlerProps {
+  onNext: () => void
+  onPrevious: () => void
+}
+
+const KeyboardHandler = ({ onNext, onPrevious }: KeyboardHandlerProps) => {
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case "ArrowRight":
         case "PageDown":

@@ -1,4 +1,4 @@
-/** AlertDialog.jsx
+/** AlertDialog.tsx
  * A reusable confirmation dialog component using Chakra UI's AlertDialog.
  */
 
@@ -12,14 +12,26 @@ import {
   Button,
 } from "@chakra-ui/react"
 
+import type { ReactNode } from "react"
+
+interface ConfirmationDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  message: ReactNode
+  isCentered?: boolean
+}
+
 const ConfirmationDialog = ({
   isOpen,
   onClose,
   onConfirm,
   message,
   isCentered = false,
-}) => {
-  const cancelRef = useRef()
+}: ConfirmationDialogProps) => {
+  // Typed to the element it is attached to: Chakra's leastDestructiveRef
+  // requires a ref to something focusable.
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   return (
     <AlertDialog

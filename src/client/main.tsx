@@ -9,7 +9,9 @@ import { setupAxiosAuthInterceptor } from "./utils/axiosAuthInterceptor"
 
 setupAxiosAuthInterceptor()
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+// Non-null assertion: index.html always ships the #root div, and the app
+// already fails at this exact line today if it is ever missing.
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <Provider store={store}>
     <Router>
       <App />

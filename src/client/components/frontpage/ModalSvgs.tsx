@@ -1,4 +1,4 @@
-/** ModalSvgs.jsx
+/** ModalSvgs.tsx
  * Contains SVG components for the front page "Learn more" feature cards.
  */
 

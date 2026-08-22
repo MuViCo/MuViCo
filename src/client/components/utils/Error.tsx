@@ -1,8 +1,10 @@
-/** Error.jsx
+/** Error.tsx
  * A reusable error component.
  */
 
-const Error = ({ error }) => {
+import type { ReactNode } from "react"
+
+const Error = ({ error }: { error?: ReactNode }) => {
   if (error) {
     return (
       <div

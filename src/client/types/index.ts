@@ -1,3 +1,5 @@
+import type { AlertStatus } from "@chakra-ui/react"
+
 /**
  * Domain types for the MuViCo client.
  *
@@ -334,6 +336,20 @@ export interface DropTarget {
 }
 
 /* ----------------------------------------------------------------- misc -- */
+
+/**
+ * Inline alert payload rendered by components/utils/CustomAlert, and held in
+ * EditMode's alert state.
+ *
+ * Every field is optional because the state is initialised to an empty object
+ * and filled in only when something needs announcing; CustomAlert renders
+ * nothing until `title` is set.
+ */
+export interface AlertData {
+  title?: string
+  description?: string
+  status?: AlertStatus
+}
 
 /** useCustomToast argument. */
 export interface ToastOptions {
