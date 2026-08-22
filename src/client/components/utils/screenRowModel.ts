@@ -1,22 +1,32 @@
+import type {
+  CollapsedGroups,
+  Cue,
+  DropTarget,
+  Lane,
+  LayerRemovalPlan,
+  MinimumLanes,
+  RowModel,
+} from "../../types"
+
 export const DEFAULT_MAX_VISUAL_LAYERS = 3
 export const DEFAULT_MAX_AUDIO_TRACKS = 2
 
-const laneCount = (values) =>
+const laneCount = (values: number[]): number =>
   Math.max(1, (values.length ? Math.max(...values) : 0) + 1)
 
 export const buildRowModel = (
-  screenCount,
-  cues = [],
-  collapsed = {},
-  minimumLanes = {}
-) => {
-  const rows = []
-  const cueY = {}
+  screenCount: number,
+  cues: Cue[] = [],
+  collapsed: CollapsedGroups = {},
+  minimumLanes: MinimumLanes = {}
+): RowModel => {
+  const rows: Lane[] = []
+  const cueY: Record<string, number> = {}
   let y = 0
 
-  const pushLaneRow = (meta, laneCues) => {
+  const pushLaneRow = (meta: Omit<Lane, "y">, laneCues: Cue[]): void => {
     rows.push({ ...meta, y })
-    laneCues.forEach((c) => {
+    laneCues.forEach((c: Cue) => {
       if (c?._id != null) cueY[c._id] = y
     })
     y += 1
@@ -114,18 +124,42 @@ export const buildRowModel = (
   return { rows, cueY, rowCount: y }
 }
 
-export const getCueRow = (cue, cueY) =>
-  cueY[cue?._id] ?? Number(cue?.screen ?? 1) - 1
+export const getCueRow = (
+  cue: Pick<Cue, "_id" | "screen"> | null | undefined,
+  cueY: Record<string, number>
+): number => {
+  // Behaviour-identical to the previous `cueY[cue?._id]`: indexing an object
+  // with undefined looks up the key "undefined", which a cue id never is, so
+  // both spellings fall through to the screen-derived row.
+  const cueId = cue?._id
+  const row = cueId === undefined ? undefined : cueY[cueId]
+  return row ?? Number(cue?.screen ?? 1) - 1
+}
 
-export const laneAt = (rows, rowIndex) => rows[rowIndex] ?? null
+export const laneAt = (rows: Lane[], rowIndex: number): Lane | null =>
+  rows[rowIndex] ?? null
 
-export const laneAcceptsCueType = (lane, cueType) => {
+/**
+ * Type predicate rather than a plain boolean so callers narrow `lane` after the
+ * check instead of needing a non-null assertion. It is sound in the direction
+ * that matters: whenever it returns true, `lane` is a Lane. Returning false for
+ * a real Lane whose kind does not match the cue type is fine.
+ */
+export const laneAcceptsCueType = (
+  lane: Lane | null | undefined,
+  cueType: string
+): lane is Lane => {
   if (!lane) return false
   const isAudioLane = lane.kind === "audio-track" || lane.kind === "audio"
   return cueType === "audio" ? isAudioLane : !isAudioLane
 }
 
-export const dropTargetAt = (rows, rowIndex, cueType, screenCount) => {
+export const dropTargetAt = (
+  rows: Lane[],
+  rowIndex: number,
+  cueType: string,
+  screenCount: number
+): DropTarget | null => {
   const lane = laneAt(rows, rowIndex)
   if (!laneAcceptsCueType(lane, cueType)) return null
   if (cueType === "audio") {
@@ -134,7 +168,11 @@ export const dropTargetAt = (rows, rowIndex, cueType, screenCount) => {
   return { screen: lane.screen, layer: lane.layer ?? 0 }
 }
 
-export const planVisualLayerRemoval = (cues = [], screen, layer) => {
+export const planVisualLayerRemoval = (
+  cues: Cue[] = [],
+  screen: number,
+  layer: number
+): LayerRemovalPlan => {
   const targetScreen = Number(screen)
   const targetLayer = Number(layer)
 
@@ -142,7 +180,7 @@ export const planVisualLayerRemoval = (cues = [], screen, layer) => {
     return { removedCueIds: [], shiftedCues: [] }
   }
 
-  return cues.reduce(
+  return cues.reduce<LayerRemovalPlan>(
     (plan, cue) => {
       const cueLayer = Number(cue.layer ?? 0)
       const isTargetScreenVisual =

@@ -12,42 +12,56 @@
 import axios from "axios"
 
 import getToken from "../auth"
+import type {
+  CreatePresentationInput,
+  Presentation,
+  UpdatePresentationInput,
+} from "../types"
 
 const baseUrl = "/api/home/"
 
-const getAll = () => {
+const getAll = (): Promise<Presentation[]> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const request = axios.get(baseUrl, config)
+  const request = axios.get<Presentation[]>(baseUrl, config)
   return request.then((response) => response.data)
 }
 
-const getById = async (id) => {
+const getById = async (id: string): Promise<Presentation> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.get(baseUrl + id, config)
+  const response = await axios.get<Presentation>(baseUrl + id, config)
   return response.data
 }
 
-const create = async (newObject) => {
+const create = async (
+  newObject: CreatePresentationInput
+): Promise<Presentation> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.post(baseUrl, newObject, config)
+  const response = await axios.post<Presentation>(baseUrl, newObject, config)
   return response.data
 }
 
-const update = async (id, updatedObject) => {
+const update = async (
+  id: string,
+  updatedObject: UpdatePresentationInput
+): Promise<Presentation> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.put(baseUrl + id, updatedObject, config)
+  const response = await axios.put<Presentation>(
+    baseUrl + id,
+    updatedObject,
+    config
+  )
   return response.data
 }
 

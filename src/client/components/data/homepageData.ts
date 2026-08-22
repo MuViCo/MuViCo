@@ -2,7 +2,9 @@
  * This file contains the data for the features of the homepage of the application.
  */
 
-export const homefeaturesData = [
+import type { FeatureSection } from "../../types"
+
+export const homefeaturesData: FeatureSection[] = [
   {
     title: "New presentation button: click this to create a new presentation.",
     items: [],

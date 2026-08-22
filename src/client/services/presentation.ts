@@ -12,27 +12,37 @@
 
 import axios from "axios"
 import getToken from "../auth"
+import type {
+  Cue,
+  Presentation,
+  SaveIndexCountResponse,
+  SaveScreenCountResponse,
+  ShiftIndexesResponse,
+  SwapCuesPayload,
+  SwapCuesResponse,
+  UpdateNameResponse,
+} from "../types"
 
 const baseUrl = "/api/presentation/"
 
-const get = async (id) => {
+const get = async (id: string): Promise<Presentation> => {
   const config = {
     headers: {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.get(`${baseUrl}${id}`, config)
+  const response = await axios.get<Presentation>(`${baseUrl}${id}`, config)
   return response.data
 }
 
-const remove = async (id) => {
+const remove = async (id: string): Promise<void> => {
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.delete(`${baseUrl}${id}`, config)
+  const response = await axios.delete<void>(`${baseUrl}${id}`, config)
   return response.data
 }
 
@@ -46,40 +56,61 @@ const remove = async (id) => {
  *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
-const addCue = async (id, formData) => {
+const addCue = async (
+  id: string,
+  formData: FormData
+): Promise<Presentation> => {
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}${id}`, formData, config)
+  const response = await axios.put<Presentation>(
+    `${baseUrl}${id}`,
+    formData,
+    config
+  )
   return response.data
 }
 
-const removeCue = async (id, cueId) => {
+const removeCue = async (id: string, cueId: string): Promise<Presentation> => {
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.delete(`${baseUrl}${id}/${cueId}`, config)
+  const response = await axios.delete<Presentation>(
+    `${baseUrl}${id}/${cueId}`,
+    config
+  )
   return response.data
 }
 
-const updateCue = async (id, cueId, formData) => {
+const updateCue = async (
+  id: string,
+  cueId: string,
+  formData: FormData
+): Promise<Cue> => {
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}${id}/${cueId}`, formData, config)
+  const response = await axios.put<Cue>(
+    `${baseUrl}${id}/${cueId}`,
+    formData,
+    config
+  )
   return response.data
 }
 
-const saveIndexCountApi = async (id, indexCount) => {
+const saveIndexCountApi = async (
+  id: string,
+  indexCount: number
+): Promise<SaveIndexCountResponse> => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -87,11 +118,18 @@ const saveIndexCountApi = async (id, indexCount) => {
     },
   }
   const body = { indexCount }
-  const response = await axios.put(`${baseUrl}${id}/indexCount`, body, config)
+  const response = await axios.put<SaveIndexCountResponse>(
+    `${baseUrl}${id}/indexCount`,
+    body,
+    config
+  )
   return response.data
 }
 
-const saveScreenCountApi = async (id, screenCount) => {
+const saveScreenCountApi = async (
+  id: string,
+  screenCount: number
+): Promise<SaveScreenCountResponse> => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -99,11 +137,19 @@ const saveScreenCountApi = async (id, screenCount) => {
     },
   }
   const body = { screenCount }
-  const response = await axios.put(`${baseUrl}${id}/screenCount`, body, config)
+  const response = await axios.put<SaveScreenCountResponse>(
+    `${baseUrl}${id}/screenCount`,
+    body,
+    config
+  )
   return response.data
 }
 
-const shiftIndexes = async (id, startIndex, direction) => {
+const shiftIndexes = async (
+  id: string,
+  startIndex: number,
+  direction: "left" | "right"
+): Promise<ShiftIndexesResponse> => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -111,11 +157,18 @@ const shiftIndexes = async (id, startIndex, direction) => {
     },
   }
   const body = { startIndex, direction }
-  const response = await axios.put(`${baseUrl}${id}/shiftIndexes`, body, config)
+  const response = await axios.put<ShiftIndexesResponse>(
+    `${baseUrl}${id}/shiftIndexes`,
+    body,
+    config
+  )
   return response.data
 }
 
-const updatePresentationName = async (id, newName) => {
+const updatePresentationName = async (
+  id: string,
+  newName: string
+): Promise<UpdateNameResponse> => {
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -123,18 +176,29 @@ const updatePresentationName = async (id, newName) => {
     },
   }
   const body = { name: newName }
-  const response = await axios.put(`${baseUrl}${id}/name`, body, config)
+  const response = await axios.put<UpdateNameResponse>(
+    `${baseUrl}${id}/name`,
+    body,
+    config
+  )
   return response.data
 }
 
-const swapCues = async (id, payload) => {
+const swapCues = async (
+  id: string,
+  payload: SwapCuesPayload
+): Promise<SwapCuesResponse> => {
   const config = {
     headers: {
       "Content-Type": "application/json",
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.put(`${baseUrl}${id}/swapCues`, payload, config)
+  const response = await axios.put<SwapCuesResponse>(
+    `${baseUrl}${id}/swapCues`,
+    payload,
+    config
+  )
   return response.data
 }
 

@@ -1,15 +1,20 @@
 import axios from "axios"
 
 import getToken from "../auth"
+import type { AuthUser } from "../types"
 
 const baseUrl = "/api/users/"
 
-const linkDrive = async ({ driveAccessToken }) => {
+const linkDrive = async ({
+  driveAccessToken,
+}: {
+  driveAccessToken: string
+}): Promise<AuthUser> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.post(
+  const response = await axios.post<AuthUser>(
     `${baseUrl}link-drive`,
     { driveAccessToken },
     config
@@ -18,12 +23,16 @@ const linkDrive = async ({ driveAccessToken }) => {
   return response.data
 }
 
-const unlinkDrive = async () => {
+const unlinkDrive = async (): Promise<AuthUser> => {
   const config = {
     headers: { Authorization: `Bearer ${getToken()}` },
   }
 
-  const response = await axios.post(`${baseUrl}unlink-drive`, {}, config)
+  const response = await axios.post<AuthUser>(
+    `${baseUrl}unlink-drive`,
+    {},
+    config
+  )
 
   return response.data
 }

@@ -2,7 +2,9 @@
  * This file contains the data for the features of the presentation page of the application.
  */
 
-export const editModeFeaturesData = [
+import type { FeatureSection } from "../../types"
+
+export const editModeFeaturesData: FeatureSection[] = [
   {
     title: "Rename the presentation title",
     items: [
@@ -33,7 +35,7 @@ export const editModeFeaturesData = [
   },
 ]
 
-export const stepsToAddElementData = [
+export const stepsToAddElementData: FeatureSection[] = [
   {
     title: "Different types of elements:",
     items: [
@@ -54,7 +56,7 @@ export const stepsToAddElementData = [
   },
 ]
 
-export const editingElementData = [
+export const editingElementData: FeatureSection[] = [
   {
     title: "Choose the element to edit",
     items: [
@@ -82,7 +84,7 @@ export const editingElementData = [
   },
 ]
 
-export const screenAndPlaybackData = [
+export const screenAndPlaybackData: FeatureSection[] = [
   {
     title: "Frame navigation arrows",
     items: [

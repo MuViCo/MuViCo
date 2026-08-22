@@ -1,39 +1,46 @@
 /**
- * formDataUtils.js
+ * formDataUtils.ts
  * Utility functions for creating and handling FormData objects for cues.
- *
- * Creates and populates a FormData object with the given parameters.
- * @param {number} index - The index of the element.
- * @param {number} screen - The screen number.
- * @param {File} file - The file to be uploaded.
- * @param {string} cueId - The ID of the cue. (optional)
- * @param {string} color - The color associated with the cue. (optional)
- * @param {boolean} loop - Whether the cue should loop. (optional)
- * @param {string} name - The name of the cue.
- * @returns {FormData} - The populated FormData object.
- * */
+ */
 
+import type { CueUploadFile } from "../../types"
+
+/**
+ * Creates and populates a FormData object for a cue.
+ *
+ * The ten positional parameters are kept as they are; collapsing them into an
+ * options object would mean touching every call site.
+ *
+ * FormData.append only accepts `string | Blob`, so the numeric and boolean
+ * fields below are wrapped in String(). That is behaviour-identical: append
+ * already stringifies whatever it is given.
+ */
 export const createFormData = (
-  index,
-  name,
-  screen,
-  file,
-  cueId,
-  color,
-  loop,
-  layer = 0,
-  opacity = 1,
-  continuePlayback = false
-) => {
+  index: number,
+  name: string,
+  screen: number,
+  file: CueUploadFile | null | undefined,
+  cueId?: string,
+  color?: string,
+  loop?: boolean,
+  layer: number = 0,
+  opacity: number = 1,
+  continuePlayback: boolean = false
+): FormData => {
   const formData = new FormData()
-  formData.append("index", index)
+  formData.append("index", String(index))
   formData.append("cueName", name)
-  formData.append("screen", screen)
-  formData.append("layer", layer)
-  formData.append("opacity", opacity)
+  formData.append("screen", String(screen))
+  formData.append("layer", String(layer))
+  formData.append("opacity", String(opacity))
 
   if (file || file === null) {
-    formData.append("image", file)
+    // TODO(ts): `file` is deliberately allowed to be null here. Appending null
+    // yields the literal string "null", which multer treats as a text field so
+    // req.file stays undefined -- that is how the server is told to clear the
+    // media. Wrapping it in String() or skipping the append would change the
+    // request body, so this is a cast rather than a conversion.
+    formData.append("image", file as unknown as Blob)
   }
   if (file && file.driveId) {
     formData.append("driveId", file.driveId)
@@ -45,11 +52,11 @@ export const createFormData = (
     formData.append("color", color)
   }
   if (loop === undefined) {
-    formData.append("loop", false)
+    formData.append("loop", String(false))
   } else {
-    formData.append("loop", loop)
+    formData.append("loop", String(loop))
   }
-  formData.append("continuePlayback", Boolean(continuePlayback))
+  formData.append("continuePlayback", String(Boolean(continuePlayback)))
 
   return formData
 }

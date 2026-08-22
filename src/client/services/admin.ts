@@ -1,32 +1,33 @@
 import axios from "axios"
 import getToken from "../auth"
+import type { AdminUser, Presentation } from "../types"
 
 const baseUrl = "/api/admin"
 
-const allUsers = async () => {
+const allUsers = async (): Promise<AdminUser[]> => {
   const config = {
     headers: {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.get(baseUrl, config)
+  const response = await axios.get<AdminUser[]>(baseUrl, config)
   return response.data
 }
 
-const usersPresentations = async (id) => {
+const usersPresentations = async (id: string): Promise<Presentation[]> => {
   const config = {
     headers: {
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const response = await axios.get(
+  const response = await axios.get<Presentation[]>(
     `${baseUrl}/userspresentations/${id}`,
     config
   )
   return response.data
 }
 
-const deleteUser = async (id) => {
+const deleteUser = async (id: string): Promise<void> => {
   const config = {
     headers: {
       Authorization: `bearer ${getToken()}`,
@@ -35,7 +36,7 @@ const deleteUser = async (id) => {
   await axios.delete(`${baseUrl}/user/${id}`, config)
 }
 
-const makeAdmin = async (id) => {
+const makeAdmin = async (id: string): Promise<void> => {
   const config = {
     headers: {
       Authorization: `bearer ${getToken()}`,

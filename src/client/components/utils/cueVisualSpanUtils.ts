@@ -1,9 +1,14 @@
-/** buildCueVisualSpanMap.js
+/** cueVisualSpanUtils.ts
  * Builds a map of visual spans for each cue in a presentation.
  */
 
-export const buildCueVisualSpanMap = (cues, indexCount) => {
-  const cuesByLane = new Map()
+import type { Cue } from "../../types"
+
+export const buildCueVisualSpanMap = (
+  cues: Cue[],
+  indexCount: number
+): Map<string, number> => {
+  const cuesByLane = new Map<string, Cue[]>()
 
   cues.forEach((cue) => {
     const cueId = cue?._id
@@ -19,9 +24,10 @@ export const buildCueVisualSpanMap = (cues, indexCount) => {
       cuesByLane.set(laneKey, [])
     }
 
-    cuesByLane.get(laneKey).push(cue)
+    // Non-null assertion: the has/set pair immediately above guarantees the key.
+    cuesByLane.get(laneKey)!.push(cue)
   })
-  const spanMap = new Map()
+  const spanMap = new Map<string, number>()
   cuesByLane.forEach((screenCues) => {
     const sortedCues = screenCues
       .slice()
@@ -38,6 +44,10 @@ export const buildCueVisualSpanMap = (cues, indexCount) => {
   return spanMap
 }
 
-export const getCueVisualSpanFromMap = (cue, cueVisualSpanMap) => {
-  return cueVisualSpanMap.get(cue?._id) ?? 1
+export const getCueVisualSpanFromMap = (
+  cue: Pick<Cue, "_id"> | null | undefined,
+  cueVisualSpanMap: ReadonlyMap<string, number>
+): number => {
+  const cueId = cue?._id
+  return (cueId ? cueVisualSpanMap.get(cueId) : undefined) ?? 1
 }

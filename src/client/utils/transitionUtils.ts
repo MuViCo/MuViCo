@@ -1,4 +1,5 @@
 import { keyframes } from "@emotion/react"
+import type { Keyframes } from "@emotion/react"
 
 export const fadeIn = keyframes`
   from { opacity: 0; }
@@ -40,7 +41,17 @@ export const zoomOut = keyframes`
   to { transform: scale(1.05); opacity: 0 }
 `
 
-export const getAnims = (type) => {
+export interface TransitionAnims {
+  enter: Keyframes | null
+  exit: Keyframes | null
+}
+
+/**
+ * The parameter stays `string`, not TransitionType: the value is read out of
+ * localStorage and this deliberately falls through to fade for anything it does
+ * not recognise. Narrowing it would change behaviour for stale stored values.
+ */
+export const getAnims = (type: string): TransitionAnims => {
   if (type === "fade") return { enter: fadeIn, exit: fadeOut }
   if (type === "zoom") return { enter: zoomIn, exit: zoomOut }
   if (type === "slide-left") return { enter: slideInLeft, exit: slideOutRight }

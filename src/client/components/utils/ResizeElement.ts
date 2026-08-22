@@ -1,5 +1,5 @@
 /**
- * makeResizable.js
+ * makeResizable.ts
  *
  * This module provides a function to make an HTML element resizable by dragging a handle.
  * It listens for mouse events to adjust the size of the target element in real-time.
@@ -15,7 +15,10 @@
  * Note: The handleElement can be the same as the baseElement if you want the entire element to be draggable for resizing.
  */
 
-function makeResizable(base_element, handle_element) {
+function makeResizable(
+  base_element: HTMLElement,
+  handle_element: HTMLElement
+): void {
   const resizableBox = base_element
   const resizeHandle = handle_element
 

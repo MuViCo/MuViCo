@@ -2,7 +2,9 @@
  * This file contains the data for the tutorial steps of the presentation page and the home page of the application.
  */
 
-const presentationTutorialSteps = [
+import type { TutorialStep } from "../../types"
+
+const presentationTutorialSteps: TutorialStep[] = [
   {
     id: "start",
     center: true,
@@ -100,7 +102,7 @@ const presentationTutorialSteps = [
   },
 ]
 
-const homePageTutorialSteps = [
+const homePageTutorialSteps: TutorialStep[] = [
   {
     id: "start",
     center: true,
