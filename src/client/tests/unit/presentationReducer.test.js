@@ -29,9 +29,9 @@ import {
   saveIndexCount,
   saveScreenCount,
 } from "../../redux/presentationThunks.js"
-import presentationService from "../../services/presentation.js"
+import presentationService from "../../services/presentation"
 import { configureStore } from "@reduxjs/toolkit"
-import { createFormData } from "../../components/utils/formDataUtils.js"
+import { createFormData } from "../../components/utils/formDataUtils"
 
 const originalConsoleLog = console.logICount
 const originalConsoleError = console.error
@@ -41,7 +41,7 @@ beforeAll(() => {
   console.error = jest.fn()
 })
 
-jest.mock("../../services/presentation.js", () => ({
+jest.mock("../../services/presentation", () => ({
   get: jest.fn(),
   removeCue: jest.fn(),
   addCue: jest.fn(),

@@ -6,7 +6,7 @@ import {
   handleNumericInputChange,
   validateAndSetNumber,
   getNextAvailableIndex,
-} from "../../components/utils/numberInputUtils.js"
+} from "../../components/utils/numberInputUtils"
 
 describe("handleNumericInputChange", () => {
   test("should only accept numeric values", () => {
