@@ -1,7 +1,7 @@
 /*
-* This component renders a grid of presentations on the homepage, allowing users to view, edit, and delete their presentations.
-* It supports both grid and list views, with a toggle button to switch between them. Each presentation card displays the presentation name and description, and includes edit and delete buttons.
-* The component also includes an edit modal for updating presentation details, with validation for the description length.
+ * This component renders a grid of presentations on the homepage, allowing users to view, edit, and delete their presentations.
+ * It supports both grid and list views, with a toggle button to switch between them. Each presentation card displays the presentation name and description, and includes edit and delete buttons.
+ * The component also includes an edit modal for updating presentation details, with validation for the description length.
  */
 import React, { useState, useEffect } from "react"
 import {
@@ -36,7 +36,12 @@ import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import randomLinearGradient from "../utils/randomGradient"
 
-const EditModal = ({ isOpen, onClose, presentation, handleEditPresentation }) => {
+const EditModal = ({
+  isOpen,
+  onClose,
+  presentation,
+  handleEditPresentation,
+}) => {
   const [editName, setEditName] = useState("")
   const [editDescription, setEditDescription] = useState("")
   const [saveError, setSaveError] = useState("")
@@ -130,7 +135,12 @@ const EditModal = ({ isOpen, onClose, presentation, handleEditPresentation }) =>
           )}
         </ModalBody>
         <ModalFooter>
-          <Button mr={3} variant="ghost" onClick={handleClose} isDisabled={isSaving}>
+          <Button
+            mr={3}
+            variant="ghost"
+            onClick={handleClose}
+            isDisabled={isSaving}
+          >
             Cancel
           </Button>
           <Button
@@ -175,9 +185,15 @@ const PresentationsGrid = ({
     onClose()
     setEditingPresentation(null)
   }
-// Render functions for grid and list views
-  const renderGrid = () => ( // this is the default view, it shows presentations in a grid format with cards
-    <SimpleGrid columns={[1, 2, 3]} gap={5} id="presentations-grid" minH="400px">
+  // Render functions for grid and list views
+  const renderGrid = () => (
+    // this is the default view, it shows presentations in a grid format with cards
+    <SimpleGrid
+      columns={[1, 2, 3]}
+      gap={5}
+      id="presentations-grid"
+      minH="400px"
+    >
       {presentations.map((presentation) => (
         <motion.div
           key={presentation.id}
@@ -201,19 +217,26 @@ const PresentationsGrid = ({
               >
                 {presentation.name}
               </Heading>
-              <Tooltip label={presentation.description || ""} placement="auto" openDelay={800} closeDelay={100}>
-                <h2 style={{
-                  marginTop: "0.5em",
-                  fontSize: "0.9em",
-                  color: "rgba(255, 255, 255, 0.8)",
-                  textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                  whiteSpace: "pre-wrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                }}>
+              <Tooltip
+                label={presentation.description || ""}
+                placement="auto"
+                openDelay={800}
+                closeDelay={100}
+              >
+                <h2
+                  style={{
+                    marginTop: "0.5em",
+                    fontSize: "0.9em",
+                    color: "rgba(255, 255, 255, 0.8)",
+                    textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                    whiteSpace: "pre-wrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
                   {presentation.description || ""}
                 </h2>
               </Tooltip>
@@ -255,7 +278,8 @@ const PresentationsGrid = ({
     </SimpleGrid>
   )
 
-  const renderList = () => ( // this view shows presentations in a list format, with the name and description on the left and edit/delete buttons on the right
+  const renderList = () => (
+    // this view shows presentations in a list format, with the name and description on the left and edit/delete buttons on the right
     <List id="presentations-grid" spacing={3} minH="400px">
       {presentations.map((presentation) => (
         <motion.div
@@ -283,18 +307,25 @@ const PresentationsGrid = ({
                   >
                     {presentation.name}
                   </Heading>
-                  <Tooltip label={presentation.description || ""} placement="auto" openDelay={800} closeDelay={100}>
-                    <p style={{
-                      fontSize: "1.2em",
-                      color: "rgba(255, 255, 255, 0.8)",
-                      textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      flex: "1",
-                      minWidth: "0",
-                      textAlign: "left",
-                    }}>
+                  <Tooltip
+                    label={presentation.description || ""}
+                    placement="auto"
+                    openDelay={800}
+                    closeDelay={100}
+                  >
+                    <p
+                      style={{
+                        fontSize: "1.2em",
+                        color: "rgba(255, 255, 255, 0.8)",
+                        textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        flex: "1",
+                        minWidth: "0",
+                        textAlign: "left",
+                      }}
+                    >
                       {presentation.description || ""}
                     </p>
                   </Tooltip>
@@ -369,12 +400,38 @@ const PresentationsGrid = ({
             }}
             data-testid="grid-button"
           >
-          {/* SVG icons for grid and list views */}
-            <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" clipRule="evenodd" d="M3 2C2.44772 2 2 2.44772 2 3V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V3C11 2.44772 10.5523 2 10 2H3ZM4 9V4H9V9H4Z" fill="#ffffff"/>
-              <path fillRule="evenodd" clipRule="evenodd" d="M14 2C13.4477 2 13 2.44772 13 3V10C13 10.5523 13.4477 11 14 11H21C21.5523 11 22 10.5523 22 10V3C22 2.44772 21.5523 2 21 2H14ZM15 9V4H20V9H15Z" fill="#ffffff"/>
-              <path fillRule="evenodd" clipRule="evenodd" d="M13 14C13 13.4477 13.4477 13 14 13H21C21.5523 13 22 13.4477 22 14V21C22 21.5523 21.5523 22 21 22H14C13.4477 22 13 21.5523 13 21V14ZM15 15V20H20V15H15Z" fill="#ffffff"/>
-              <path fillRule="evenodd" clipRule="evenodd" d="M3 13C2.44772 13 2 13.4477 2 14V21C2 21.5523 2.44772 22 3 22H10C10.5523 22 11 21.5523 11 21V14C11 13.4477 10.5523 13 10 13H3ZM4 20V15H9V20H4Z" fill="#ffffff"/>
+            {/* SVG icons for grid and list views */}
+            <svg
+              width="24px"
+              height="24px"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M3 2C2.44772 2 2 2.44772 2 3V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V3C11 2.44772 10.5523 2 10 2H3ZM4 9V4H9V9H4Z"
+                fill="#ffffff"
+              />
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M14 2C13.4477 2 13 2.44772 13 3V10C13 10.5523 13.4477 11 14 11H21C21.5523 11 22 10.5523 22 10V3C22 2.44772 21.5523 2 21 2H14ZM15 9V4H20V9H15Z"
+                fill="#ffffff"
+              />
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M13 14C13 13.4477 13.4477 13 14 13H21C21.5523 13 22 13.4477 22 14V21C22 21.5523 21.5523 22 21 22H14C13.4477 22 13 21.5523 13 21V14ZM15 15V20H20V15H15Z"
+                fill="#ffffff"
+              />
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M3 13C2.44772 13 2 13.4477 2 14V21C2 21.5523 2.44772 22 3 22H10C10.5523 22 11 21.5523 11 21V14C11 13.4477 10.5523 13 10 13H3ZM4 20V15H9V20H4Z"
+                fill="#ffffff"
+              />
             </svg>
           </Button>
           <Button
@@ -394,10 +451,16 @@ const PresentationsGrid = ({
             }}
             data-testid="list-button"
           >
-            <svg fill="#ffffff" width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="17" width="18" height="2" rx="1" ry="1"/>
-              <rect x="3" y="11" width="18" height="2" rx="1" ry="1"/>
-              <rect x="3" y="5" width="18" height="2" rx="1" ry="1"/>
+            <svg
+              fill="#ffffff"
+              width="24px"
+              height="24px"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect x="3" y="17" width="18" height="2" rx="1" ry="1" />
+              <rect x="3" y="11" width="18" height="2" rx="1" ry="1" />
+              <rect x="3" y="5" width="18" height="2" rx="1" ry="1" />
             </svg>
           </Button>
         </HStack>

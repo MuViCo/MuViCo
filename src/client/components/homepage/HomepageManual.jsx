@@ -1,6 +1,6 @@
 /*
-* This component provides a user manual for the homepage, guiding users on how to navigate and utilize the features of the homepage effectively. 
-*It includes instructions on managing presentations and highlights key features available on the homepage.
+ * This component provides a user manual for the homepage, guiding users on how to navigate and utilize the features of the homepage effectively.
+ *It includes instructions on managing presentations and highlights key features available on the homepage.
  */
 import { Text, Button } from "@chakra-ui/react"
 import { homefeaturesData } from "../data/homepageData"
@@ -12,8 +12,8 @@ const HomepageManual = () => {
       <Text mb={4}>
         Welcome to the user manual. This modal provides guidance on how to use
         the application.
-        <br/>
-        <br/>
+        <br />
+        <br />
         <Button
           onClick={(e) => {
             e.preventDefault()
@@ -39,8 +39,8 @@ const HomepageManual = () => {
         All created presentations will show here
       </Text>
       <Text mb={3}>
-        When you click on the presentation you want to edit, you will be directed
-        to the editing page of the presentation.
+        When you click on the presentation you want to edit, you will be
+        directed to the editing page of the presentation.
       </Text>
     </>
   )

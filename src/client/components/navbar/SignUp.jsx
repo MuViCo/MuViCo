@@ -24,7 +24,6 @@ import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
 import Error from "../utils/Error"
 import authService from "../../services/auth"
 
-
 import {
   minPwLength,
   maxPwLength,
@@ -47,8 +46,14 @@ const validationSchema = yup.object().shape({
     .string()
     .trim()
     .required("Username is required")
-    .min(minUsernameLength, `Username must be at least ${minUsernameLength} characters`)
-    .max(maxUsernameLength, `Username can be at most ${maxUsernameLength} characters`)
+    .min(
+      minUsernameLength,
+      `Username must be at least ${minUsernameLength} characters`
+    )
+    .max(
+      maxUsernameLength,
+      `Username can be at most ${maxUsernameLength} characters`
+    )
     .matches(
       usernameAllowedCharsRegex,
       "Username can only contain letters, numbers, dots, underscores, and hyphens"

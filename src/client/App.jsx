@@ -29,7 +29,6 @@ const App = () => {
   const isHome = location.pathname.startsWith("/home")
   const isProfile = location.pathname.startsWith("/profile")
 
-
   useEffect(() => {
     const loggedUser = authService.getLoggedUser()
     if (loggedUser) {
@@ -41,8 +40,6 @@ const App = () => {
   if (!isInitialized) {
     return <div>Loading...</div>
   }
-
-
 
   return (
     <ChakraProvider theme={theme}>
@@ -56,7 +53,7 @@ const App = () => {
           pl={isPresentation ? 0 : 4}
           pr={isPresentation ? 0 : 4}
         >
-          <Routes >
+          <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route
               path="/home"

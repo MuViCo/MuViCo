@@ -2,7 +2,14 @@
  * Renders the privacy and cookie notice page.
  */
 
-import { Box, Heading, Text, UnorderedList, ListItem, useColorModeValue } from "@chakra-ui/react"
+import {
+  Box,
+  Heading,
+  Text,
+  UnorderedList,
+  ListItem,
+  useColorModeValue,
+} from "@chakra-ui/react"
 
 const PrivacyPage = () => (
   <Box
@@ -28,7 +35,8 @@ const PrivacyPage = () => (
     <UnorderedList mb={3} pl={5}>
       <ListItem>Authentication session data to keep you signed in.</ListItem>
       <ListItem>
-        Basic preference values (for example tutorial state) to improve usability.
+        Basic preference values (for example tutorial state) to improve
+        usability.
       </ListItem>
     </UnorderedList>
 

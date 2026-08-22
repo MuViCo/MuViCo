@@ -35,7 +35,10 @@ const FrontPage = () => {
   const videoBg = useColorModeValue("white", "gray.700")
   const underlineColor = useColorModeValue("#9D4EDD", "#E9B8FF")
   const hyLogoSrc = useColorModeValue(bHyLogo, hyLogo)
-  const IntroVideoPoster = useColorModeValue(introVideoPreviewLight, introVideoPreviewDark)
+  const IntroVideoPoster = useColorModeValue(
+    introVideoPreviewLight,
+    introVideoPreviewDark
+  )
 
   return (
     <Container maxW="3xl">
@@ -46,32 +49,30 @@ const FrontPage = () => {
         pt={{ base: 28, md: 32 }}
         pb={{ base: 20, md: 32 }}
       >
-      {/* Title */}
-      <Heading
-        fontSize={{ base: "60px", md: "160px" }}
-        fontWeight="extrabold"
-        lineHeight="1"
-        bgGradient={bgGradient}
-        bgClip="text"
-      >
-        MuViCo
-      </Heading> 
+        {/* Title */}
+        <Heading
+          fontSize={{ base: "60px", md: "160px" }}
+          fontWeight="extrabold"
+          lineHeight="1"
+          bgGradient={bgGradient}
+          bgClip="text"
+        >
+          MuViCo
+        </Heading>
 
         {/* Subtitle */}
-        <Text 
-        mt={-10}
-        fontFamily="'Zalando Sans Expanded', sans-serif"
-        color={textColor}
-        letterSpacing="0.01em"
-        fontSize={{ base: "20x", md: "20px"}}>
+        <Text
+          mt={-10}
+          fontFamily="'Zalando Sans Expanded', sans-serif"
+          color={textColor}
+          letterSpacing="0.01em"
+          fontSize={{ base: "20x", md: "20px" }}
+        >
           Music Visualization in Concerts
         </Text>
 
         {/* Animated radial logo element */}
-        <SimpleGrid justifyContent="center"
-          mt={20}
-          mb={20}
-        >
+        <SimpleGrid justifyContent="center" mt={20} mb={20}>
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
@@ -91,13 +92,25 @@ const FrontPage = () => {
           {/* Topmost row */}
           <br />
           Designed to provide{" "}
-          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
+          <Text
+            as="span"
+            fontFamily="'Boldonse', system-ui"
+            fontStyle="italic"
+            fontWeight="bold"
+            color={textColor}
+          >
             visual elements
           </Text>{" "}
           and
           <br />
           {/* Middle row */}
-          <Text as="span" fontFamily="'Boldonse', system-ui" fontStyle="italic" fontWeight="bold" color={textColor}>
+          <Text
+            as="span"
+            fontFamily="'Boldonse', system-ui"
+            fontStyle="italic"
+            fontWeight="bold"
+            color={textColor}
+          >
             support functions
           </Text>{" "}
           for live music performances.
@@ -105,12 +118,7 @@ const FrontPage = () => {
         </Text>
 
         {/* Feature cards section */}
-        <SimpleGrid
-          spacing={6}
-          columns={{ base: 1, md: 3 }}
-          pt={0}
-          mb={-5}
-        >
+        <SimpleGrid spacing={6} columns={{ base: 1, md: 3 }} pt={0} mb={-5}>
           <InfoCard
             title="Upload Media"
             description="Supporting everything from motion and stills to soundscapes."
@@ -135,20 +143,17 @@ const FrontPage = () => {
         </SimpleGrid>
 
         {/* Middle section box */}
-        <Box
-          bg={videoBg}
-          borderRadius="lg"
-          p={10}
-          boxShadow="md"
-          mt={1}
-          mb={1}
-        >
+        <Box bg={videoBg} borderRadius="lg" p={10} boxShadow="md" mt={1} mb={1}>
           <Flex align="center" justify="space-between">
             <Box flex="1">
-              <Heading fontSize="17px" fontFamily="'Zalando Sans Expanded', sans-serif" mb={3}>
-                MuViCo is a project developed by students from the University of Helsinki.
+              <Heading
+                fontSize="17px"
+                fontFamily="'Zalando Sans Expanded', sans-serif"
+                mb={3}
+              >
+                MuViCo is a project developed by students from the University of
+                Helsinki.
               </Heading>
-
             </Box>
             <Box ml={6}>
               <img
@@ -161,7 +166,7 @@ const FrontPage = () => {
             </Box>
           </Flex>
         </Box>
-        
+
         {/* Video section */}
         <Box
           bg={videoBg}
@@ -170,12 +175,21 @@ const FrontPage = () => {
           boxShadow="md"
           mt={-5}
         >
-          <Heading size="lg" mb={2} fontFamily="'Zalando Sans Expanded', sans-serif">
+          <Heading
+            size="lg"
+            mb={2}
+            fontFamily="'Zalando Sans Expanded', sans-serif"
+          >
             What Does MuViCo Do?
           </Heading>
 
-          <Text mb={6} color={lightTextColor} fontFamily="'Zalando Sans Expanded', sans-serif">
-            Watch MuViCo's live performance and editing workflow in the video below.
+          <Text
+            mb={6}
+            color={lightTextColor}
+            fontFamily="'Zalando Sans Expanded', sans-serif"
+          >
+            Watch MuViCo's live performance and editing workflow in the video
+            below.
           </Text>
 
           <Box mb={6}>

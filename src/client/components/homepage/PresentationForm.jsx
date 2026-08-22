@@ -1,7 +1,7 @@
 /*
-* presentation form component for creating a new presentation, includes fields for name, description and  screen count.
-* The form is used in the homepage component when the user clicks on the "New Presentation" button.
-* The form also includes a cancel button that closes the form without creating a new presentation.
+ * presentation form component for creating a new presentation, includes fields for name, description and  screen count.
+ * The form is used in the homepage component when the user clicks on the "New Presentation" button.
+ * The form also includes a cancel button that closes the form without creating a new presentation.
  */
 import { useState } from "react"
 import {
@@ -26,7 +26,7 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
       name,
       description,
       screenCount: parseInt(screenCount, 10),
-      startingFrameColor 
+      startingFrameColor,
     })
 
     setName("")
@@ -52,7 +52,12 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
         </FormControl>
 
         <FormControl>
-          <FormLabel htmlFor="description" mb={3} fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
+          <FormLabel
+            htmlFor="description"
+            mb={3}
+            fontWeight="bold"
+            style={{ marginTop: ".5em", whiteSpace: "nowrap" }}
+          >
             Description
           </FormLabel>
           <Input
@@ -62,9 +67,13 @@ const PresentationForm = ({ createPresentation, onCancel }) => {
             onChange={({ target }) => setDescription(target.value)}
           />
         </FormControl>
-        
+
         <FormControl isRequired>
-          <FormLabel htmlFor="screen-count" fontWeight="bold" style={{ marginTop: ".5em", whiteSpace: "nowrap" }}>
+          <FormLabel
+            htmlFor="screen-count"
+            fontWeight="bold"
+            style={{ marginTop: ".5em", whiteSpace: "nowrap" }}
+          >
             Screen Count (max 8)
           </FormLabel>
           <Input

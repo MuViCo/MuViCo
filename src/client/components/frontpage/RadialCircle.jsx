@@ -18,7 +18,7 @@ const RadialCircle = () => {
 
   const color1 = colorMode === "dark" ? darkColor1 : lightColor1
   const color2 = colorMode === "dark" ? darkColor2 : lightColor2
-  
+
   return (
     <svg
       width="130"
@@ -48,7 +48,8 @@ const RadialCircle = () => {
           gradientUnits="userSpaceOnUse"
         >
           {" "}
-          <stop stopColor={color1} /> <stop offset="1" stopColor={color2} />{" "}
+          <stop stopColor={color1} />{" "}
+          <stop offset="1" stopColor={color2} />{" "}
         </linearGradient>{" "}
         <clipPath id="clip0_104_35">
           {" "}

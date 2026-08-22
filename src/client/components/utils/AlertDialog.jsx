@@ -12,7 +12,13 @@ import {
   Button,
 } from "@chakra-ui/react"
 
-const ConfirmationDialog = ({ isOpen, onClose, onConfirm, message, isCentered = false }) => {
+const ConfirmationDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  message,
+  isCentered = false,
+}) => {
   const cancelRef = useRef()
 
   return (
@@ -24,9 +30,7 @@ const ConfirmationDialog = ({ isOpen, onClose, onConfirm, message, isCentered = 
     >
       <AlertDialogOverlay>
         <AlertDialogContent>
-          <AlertDialogBody>
-            {message}
-          </AlertDialogBody>
+          <AlertDialogBody>{message}</AlertDialogBody>
 
           <AlertDialogFooter>
             <Button ref={cancelRef} onClick={onClose}>

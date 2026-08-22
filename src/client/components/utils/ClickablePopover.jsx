@@ -3,7 +3,13 @@
  */
 
 import React from "react"
-import { Popover, PopoverTrigger, PopoverContent, PopoverBody, useDisclosure } from "@chakra-ui/react"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  useDisclosure,
+} from "@chakra-ui/react"
 
 const ClickablePopover = ({ children, label, ...popoverProps }) => {
   const { isOpen, onToggle, onClose } = useDisclosure()
@@ -12,7 +18,7 @@ const ClickablePopover = ({ children, label, ...popoverProps }) => {
     <Popover isOpen={isOpen} onClose={onClose} {...popoverProps}>
       <PopoverTrigger>
         {React.cloneElement(children, {
-          onClick: onToggle
+          onClick: onToggle,
         })}
       </PopoverTrigger>
       <PopoverContent>
