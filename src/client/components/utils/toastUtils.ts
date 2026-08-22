@@ -7,6 +7,8 @@ import { useEffect, useRef } from "react"
 import { useToast } from "@chakra-ui/react"
 import { SESSION_EXPIRED_EVENT } from "../../utils/axiosAuthInterceptor"
 
+import type { ToastOptions } from "../../types"
+
 // How long to hold off on "error" toasts after a session-expiry is detected.
 // NavBar already shows a clear message and redirects when this fires, so the
 // many call sites across the app that independently toast on a failed API
@@ -18,7 +20,9 @@ export const useCustomToast = () => {
   const sessionExpiredRef = useRef(false)
 
   useEffect(() => {
-    let resetTimer
+    // ReturnType<typeof setTimeout> rather than NodeJS.Timeout: this runs in
+    // both jsdom and the browser, where setTimeout returns a number.
+    let resetTimer: ReturnType<typeof setTimeout>
     const markSessionExpired = () => {
       sessionExpiredRef.current = true
       clearTimeout(resetTimer)
@@ -35,7 +39,7 @@ export const useCustomToast = () => {
     }
   }, [])
 
-  const showToast = ({ title, description, status }) => {
+  const showToast = ({ title, description, status }: ToastOptions): void => {
     if (status === "error" && sessionExpiredRef.current) {
       return
     }

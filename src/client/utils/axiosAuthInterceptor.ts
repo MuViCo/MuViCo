@@ -5,6 +5,26 @@
 import axios from "axios"
 import authService from "../services/auth"
 
+import type {
+  AxiosError,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios"
+import type { AuthUser } from "../types"
+
+/** The error body the server sends alongside a 401. */
+interface SessionExpiredBody {
+  code?: string
+}
+
+/**
+ * axios has no field for "we already retried this one", so the interceptor
+ * stores its own flag on the outgoing config object.
+ */
+type RetryableConfig = InternalAxiosRequestConfig & {
+  retriedAfterRefresh?: boolean
+}
+
 export const SESSION_EXPIRED_MESSAGE =
   "Your session has expired. Please log in again."
 
@@ -12,9 +32,9 @@ export const SESSION_EXPIRED_MESSAGE =
 export const SESSION_EXPIRED_EVENT = "session-expired"
 
 // Shares one in-flight refresh across requests that 401 at the same time.
-let refreshPromise = null
+let refreshPromise: Promise<AuthUser> | null = null
 
-const refreshOnce = () => {
+const refreshOnce = (): Promise<AuthUser> => {
   if (!refreshPromise) {
     refreshPromise = authService.refreshAccessToken().finally(() => {
       refreshPromise = null
@@ -23,12 +43,14 @@ const refreshOnce = () => {
   return refreshPromise
 }
 
-export const handleResponseError = async (error) => {
+export const handleResponseError = async (
+  error: AxiosError<SessionExpiredBody>
+): Promise<AxiosResponse> => {
   if (error.response?.data?.code !== "SESSION_EXPIRED") {
     return Promise.reject(error)
   }
 
-  const originalRequest = error.config
+  const originalRequest = error.config as RetryableConfig | undefined
 
   // retriedAfterRefresh caps retries at one, avoiding an infinite loop.
   if (originalRequest && !originalRequest.retriedAfterRefresh) {
@@ -52,6 +74,6 @@ export const handleResponseError = async (error) => {
   return Promise.reject(error)
 }
 
-export const setupAxiosAuthInterceptor = () => {
+export const setupAxiosAuthInterceptor = (): void => {
   axios.interceptors.response.use((response) => response, handleResponseError)
 }

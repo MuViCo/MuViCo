@@ -5,12 +5,14 @@
 import { createFormData } from "./formDataUtils"
 import presentation from "../../services/presentation"
 
+import type { ToastOptions } from "../../types"
+
 const addInitialElements = async (
-  presentationId,
-  screenCount,
-  showToast,
-  startingFrameColor = "#000000"
-) => {
+  presentationId: string,
+  screenCount: number,
+  showToast: (options: ToastOptions) => void,
+  startingFrameColor: string = "#000000"
+): Promise<void> => {
   if (
     !presentationId ||
     typeof screenCount !== "number" ||

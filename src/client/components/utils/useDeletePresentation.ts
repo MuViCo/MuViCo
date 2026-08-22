@@ -4,18 +4,21 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useDispatch } from "react-redux"
 import { deletePresentation } from "../../redux/presentationReducer"
+import { useAppDispatch } from "../../redux/hooks"
 import { useCustomToast } from "./toastUtils"
 
 const useDeletePresentation = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [presentationToDelete, setPresentationToDelete] = useState(null)
-  const dispatch = useDispatch()
+  const [presentationToDelete, setPresentationToDelete] = useState<
+    string | null
+  >(null)
+  // useAppDispatch, not useDispatch: the plain Dispatch type rejects a thunk.
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const showToast = useCustomToast()
 
-  const handleDeletePresentation = (presentationId) => {
+  const handleDeletePresentation = (presentationId: string): void => {
     setPresentationToDelete(presentationId)
     setIsDialogOpen(true)
   }
