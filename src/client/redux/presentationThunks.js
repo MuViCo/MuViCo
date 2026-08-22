@@ -1,6 +1,6 @@
 /** Presentation Thunks
  * These thunks handle asynchronous actions related to saving presentation settings,
- * such as index count and screen count. 
+ * such as index count and screen count.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit"

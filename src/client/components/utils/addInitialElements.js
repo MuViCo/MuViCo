@@ -3,13 +3,22 @@
  */
 
 import { createFormData } from "./formDataUtils"
-import presentation from "../../services/presentation"      
+import presentation from "../../services/presentation"
 
-const addInitialElements = async (presentationId, screenCount, showToast, startingFrameColor = "#000000") => {
-  if (!presentationId || typeof screenCount !== "number" || typeof showToast !== "function") {
+const addInitialElements = async (
+  presentationId,
+  screenCount,
+  showToast,
+  startingFrameColor = "#000000"
+) => {
+  if (
+    !presentationId ||
+    typeof screenCount !== "number" ||
+    typeof showToast !== "function"
+  ) {
     return
   }
-  
+
   try {
     for (let screen = 1; screen <= screenCount; screen++) {
       const formData = createFormData(
@@ -33,10 +42,9 @@ const addInitialElements = async (presentationId, screenCount, showToast, starti
       description: "Initial elements added to screens",
       status: "success",
     })
-  
   } catch (error) {
     const errorMessage = error.message || "An error occurred"
-    
+
     showToast({
       title: "Error",
       description: errorMessage,
