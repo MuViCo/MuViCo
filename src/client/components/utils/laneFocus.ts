@@ -18,18 +18,6 @@
 import type { Lane } from "../../types"
 
 /**
- * How much taller a focused lane becomes.
- *
- * Expressed as a factor of the row height and applied as a real height change,
- * not a transform: scaling stretches the label text and the thumbnails with it.
- *
- * Bounded by the inter-lane gutter: at rowHeight 60 this adds 21px, 10.5px on
- * each side, which stays inside the 14px gap and so never reaches the
- * neighbouring lane.
- */
-export const LANE_FOCUS_SCALE = 1.35
-
-/**
  * Stable identity for a lane.
  *
  * A string rather than an object because it is compared by value as a
@@ -68,34 +56,4 @@ export const laneScreenFromKey = (
 
   const screen = Number(match[1])
   return screen >= 1 && screen <= Number(screenCount) ? screen : null
-}
-
-/**
- * Extra height a focused lane takes, in px.
- *
- * Applied as a real height change rather than a transform, so the label text
- * and the thumbnails keep their proportions.
- */
-export const laneFocusBleed = (rowHeight: number): number =>
-  rowHeight * (LANE_FOCUS_SCALE - 1)
-
-/**
- * Vertical offset for a lane at `rowIndex` while `focusedRowIndex` is focused.
- *
- * Lanes above move up, lanes below move down, so the focused lane's extra
- * height is split between the gutters either side of it instead of pushing
- * everything below it downward.
- *
- * This is presentation only: the hit-test arithmetic still runs on the
- * untransformed grid, so a click within the few pixels a lane has shifted can
- * land on its neighbour. Bounded by half the bleed.
- */
-export const laneFocusShift = (
-  rowIndex: number,
-  focusedRowIndex: number,
-  rowHeight: number
-): number => {
-  if (focusedRowIndex < 0 || rowIndex === focusedRowIndex) return 0
-  const half = laneFocusBleed(rowHeight) / 2
-  return rowIndex < focusedRowIndex ? -half : half
 }

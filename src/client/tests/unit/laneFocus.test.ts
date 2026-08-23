@@ -3,13 +3,7 @@
  * Covers lane identity, the lane -> screen mapping used by the preview strip,
  * and the span compensation applied to the focus transform.
  */
-import {
-  LANE_FOCUS_SCALE,
-  laneFocusBleed,
-  laneFocusShift,
-  laneKey,
-  laneScreenFromKey,
-} from "../../components/utils/laneFocus"
+import { laneKey, laneScreenFromKey } from "../../components/utils/laneFocus"
 
 import type { Lane } from "../../types"
 
@@ -73,43 +67,5 @@ describe("laneScreenFromKey", () => {
     expect(laneScreenFromKey(undefined, 4)).toBeNull()
     expect(laneScreenFromKey("", 4)).toBeNull()
     expect(laneScreenFromKey("nonsense", 4)).toBeNull()
-  })
-})
-
-describe("laneFocusShift", () => {
-  const rowHeight = 100
-
-  test("does not move anything when nothing is focused", () => {
-    expect(laneFocusShift(0, -1, rowHeight)).toBe(0)
-    expect(laneFocusShift(5, -1, rowHeight)).toBe(0)
-  })
-
-  test("leaves the focused lane where it is", () => {
-    expect(laneFocusShift(3, 3, rowHeight)).toBe(0)
-  })
-
-  test("pushes lanes above up and lanes below down", () => {
-    const half = laneFocusBleed(rowHeight) / 2
-
-    expect(laneFocusShift(2, 3, rowHeight)).toBe(-half)
-    expect(laneFocusShift(4, 3, rowHeight)).toBe(half)
-  })
-
-  test("shifts every neighbour by the same amount, near or far", () => {
-    // A uniform split keeps the lanes evenly spaced; only the gap either side
-    // of the focused lane opens up.
-    expect(laneFocusShift(0, 3, rowHeight)).toBe(
-      laneFocusShift(2, 3, rowHeight)
-    )
-    expect(laneFocusShift(9, 3, rowHeight)).toBe(
-      laneFocusShift(4, 3, rowHeight)
-    )
-  })
-
-  test("bleed matches the height the scale adds", () => {
-    expect(laneFocusBleed(rowHeight)).toBeCloseTo(
-      rowHeight * (LANE_FOCUS_SCALE - 1),
-      5
-    )
   })
 })
