@@ -182,7 +182,10 @@ const EditMode = ({
   // Dark-mode values come from the editor design draft: deep near-black violets
   // for surfaces, and one light chip with dark text to mark the active frame,
   // rather than colouring whole rows.
-  const timelineSurface = useColorModeValue("#eedef7", "#241333")
+  // The pinned gutter and the sticky frame band mask scrolling content, so they
+  // must be indistinguishable from the panel they sit on -- this is the same
+  // pair EditModeContainer gives #timeline as its background.
+  const panelSurface = useColorModeValue("#eedef7", "#312238")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#ab89d6")
   const bgCurrentFrame = useColorModeValue("purple.300", "#e0c9ff")
   const activeFrameBorderColor = useColorModeValue("#4a0f77", "#c084fc")
@@ -2024,16 +2027,16 @@ const EditMode = ({
             // Opaque: the gutter is pinned, so cues and frame cells scroll
             // underneath it and must be hidden rather than showing through the
             // gaps between the lane cells.
-            bg={timelineSurface}
+            bg={panelSurface}
             // Sticky offsets are measured from the scrollport's padding edge, so
             // left:0 leaves #edit-mode-scroll's own 1rem of padding uncovered and
             // content slides through that strip. Extending the fill leftwards
             // covers it without adding padding to this grid, which would displace
             // the lane cells and break their alignment with the rows.
-            boxShadow={`-1rem 0 0 0 ${timelineSurface}`}
+            boxShadow={`-1rem 0 0 0 ${panelSurface}`}
             flexShrink={0}
           >
-            <Box h={`${frameHeaderHeight}px`} bg={timelineSurface} />
+            <Box h={`${frameHeaderHeight}px`} bg={panelSurface} />
 
             <RowHeaders
               rows={rowModel.rows}
@@ -2124,7 +2127,7 @@ const EditMode = ({
                 position="sticky"
                 top={0}
                 zIndex={6}
-                bg={timelineSurface}
+                bg={panelSurface}
                 mb={`${gap}px`}
               >
                 <ColumnHeaders
