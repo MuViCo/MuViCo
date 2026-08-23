@@ -2013,18 +2013,27 @@ const EditMode = ({
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}
             // Sticky, so the per-screen group containers stay readable when the
-            // timeline is scrolled sideways. zIndex was already 2 but inert:
-            // the element was statically positioned.
+            // timeline is scrolled sideways.
             position="sticky"
             left={0}
-            zIndex={5}
-            // Transparent by request. The gutter is pinned, so grid content now
-            // scrolls visibly underneath it; the lane cells are opaque, so what
-            // shows through is the gaps between them.
-            bg="transparent"
+            // Above the frame-header band, which is sticky on the other axis and
+            // would otherwise paint over the pinned gutter where the two cross.
+            // zIndex was already 2 but inert: the element was statically
+            // positioned.
+            zIndex={7}
+            // Opaque: the gutter is pinned, so cues and frame cells scroll
+            // underneath it and must be hidden rather than showing through the
+            // gaps between the lane cells.
+            bg={timelineSurface}
+            // Sticky offsets are measured from the scrollport's padding edge, so
+            // left:0 leaves #edit-mode-scroll's own 1rem of padding uncovered and
+            // content slides through that strip. Extending the fill leftwards
+            // covers it without adding padding to this grid, which would displace
+            // the lane cells and break their alignment with the rows.
+            boxShadow={`-1rem 0 0 0 ${timelineSurface}`}
             flexShrink={0}
           >
-            <Box h={`${frameHeaderHeight}px`} bg="transparent" />
+            <Box h={`${frameHeaderHeight}px`} bg={timelineSurface} />
 
             <RowHeaders
               rows={rowModel.rows}
