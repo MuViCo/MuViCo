@@ -702,6 +702,37 @@ describe("EditMode drag swapping", () => {
     expect(onFocusLane).toHaveBeenCalled()
   })
 
+  it("focuses the target lane when a cue is dragged to another layer", async () => {
+    const onFocusLane = jest.fn()
+    renderEditMode(cues, 3, { onFocusLane })
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 170,
+      clientY: rowCenterY(0),
+      button: 0,
+    })
+    // Past the 4px threshold, onto the lane below.
+    fireEvent.mouseMove(gridContainer, {
+      clientX: 330,
+      clientY: rowCenterY(1),
+    })
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 330,
+        clientY: rowCenterY(1),
+      })
+    })
+
+    // The lane the cue was released on is the one now being worked with, not
+    // the one it came from.
+    await waitFor(() => {
+      expect(onFocusLane).toHaveBeenCalled()
+    })
+    const focusedKey = onFocusLane.mock.calls.at(-1)[0]
+    expect(focusedKey).not.toBe("screen-1:0")
+  })
+
   it("does not block pool cue drops on occupied anchor slots", async () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()

@@ -1243,6 +1243,7 @@ const EditMode = ({
 
       const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
       if (targetCue && selectedCue !== targetCue) {
+        commitLaneFocusFromEvent(event)
         await handleElementPositionChange(selectedCue, targetCue)
         clearInternalDragSpanPreview()
         return
@@ -1278,6 +1279,8 @@ const EditMode = ({
         clearInternalDragSpanPreview()
         return
       }
+
+      commitLaneFocusFromEvent(event)
 
       const target = laneScreenLayer(yIndex)
       const movedCue = {
