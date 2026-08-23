@@ -78,16 +78,20 @@ export const ScreensDisplay = ({
     const tile = tileRefs.current[focusedScreen]
     if (!strip || !tile || typeof strip.scrollTo !== "function") return
 
+    // Visibility is tested against the tile's real edges; the padding is
+    // breathing room applied to the scroll target only. Folding it into the
+    // comparison would make a tile flush with the left edge read as off-screen
+    // and trigger a pointless scroll.
     const padding = 12
-    const start = tile.offsetLeft - padding
-    const end = tile.offsetLeft + tile.offsetWidth + padding
+    const start = tile.offsetLeft
+    const end = start + tile.offsetWidth
     const viewStart = strip.scrollLeft
     const viewEnd = viewStart + strip.clientWidth
 
     // Already fully visible: leave the user's scroll position alone.
     let next: number | null = null
-    if (start < viewStart) next = start
-    else if (end > viewEnd) next = end - strip.clientWidth
+    if (start < viewStart) next = start - padding
+    else if (end > viewEnd) next = end - strip.clientWidth + padding
     if (next === null) return
 
     strip.scrollTo({
