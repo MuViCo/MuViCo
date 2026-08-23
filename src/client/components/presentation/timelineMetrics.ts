@@ -35,8 +35,12 @@ export const TIMELINE_METRICS: TimelineMetrics = {
   // Compact tracks with a tight gutter, the way a video editor stacks them.
   // 100/10 gave a spreadsheet of large cells; at 72/6 more of the timeline is
   // on screen and the clips, rather than the grid, carry the eye.
-  rowHeight: 72,
-  gap: 6,
+  rowHeight: 60,
+  // Wide enough for the add-layer control to sit in the gutter between two
+  // groups. The gutter and the grid both derive from this, so widening it keeps
+  // the two aligned; narrowing it below the control height puts the buttons on
+  // top of the next group instead.
+  gap: 14,
   // Every hit-test derives its origin from this, so the band can be resized
   // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
   frameHeaderHeight: 34,

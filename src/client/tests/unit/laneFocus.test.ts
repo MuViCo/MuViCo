@@ -98,10 +98,14 @@ describe("focusTransform", () => {
       return width * (scaleX - 1)
     }
 
+    // Sub-pixel tolerance: scaleX is deliberately rounded to four decimals, and
+    // on a ten-frame cue that rounding is worth about 0.07px. Proportional
+    // scaling, which is what this guards against, would put the overhang past
+    // 300px.
     const single = overhang(1)
-    expect(overhang(2)).toBeCloseTo(single, 1)
-    expect(overhang(10)).toBeCloseTo(single, 1)
-    expect(single).toBeCloseTo(18, 1)
+    expect(overhang(2)).toBeCloseTo(single, 0)
+    expect(overhang(10)).toBeCloseTo(single, 0)
+    expect(single).toBeCloseTo((LANE_FOCUS_SCALE - 1) * columnWidth, 0)
   })
 
   test("always scales vertically by the full factor", () => {

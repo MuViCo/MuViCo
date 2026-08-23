@@ -20,11 +20,11 @@ import type { Lane } from "../../types"
 /**
  * How much a focused lane grows.
  *
- * Bounded by the 10px inter-lane gap: at rowHeight 100 a 1.12 scale adds 12px,
- * i.e. 6px on each side, which stays inside the gap and never overlaps the
- * neighbouring lane.
+ * Bounded by the inter-lane gutter: at rowHeight 60 a 1.22 scale adds about
+ * 13px, i.e. 6.6px on each side, which stays inside the 14px gap and so never
+ * reaches the neighbouring lane.
  */
-export const LANE_FOCUS_SCALE = 1.12
+export const LANE_FOCUS_SCALE = 1.22
 
 /**
  * Stable identity for a lane.
