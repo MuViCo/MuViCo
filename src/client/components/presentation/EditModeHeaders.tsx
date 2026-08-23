@@ -547,11 +547,8 @@ const ColumnHeadersBase = ({
         justifyContent="center"
         // The active chip is light with dark text; the rest are deep with muted
         // text, so exactly one frame reads as current.
-        color={
-          index === cueIndex
-            ? TIMELINE_PALETTE.chipText
-            : TIMELINE_PALETTE.textSecondary
-        }
+        color={TIMELINE_PALETTE.chipText}
+        fontSize="12px"
         fontWeight={index === cueIndex ? 700 : 600}
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
         border={`${index === cueIndex ? 4 : 2}px solid`}

@@ -165,10 +165,10 @@ const EditMode = ({
   // for surfaces, and one light chip with dark text to mark the active frame,
   // rather than colouring whole rows.
   const timelineSurface = useColorModeValue("#eedef7", "#241333")
-  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#1b1122")
-  const bgCurrentFrame = useColorModeValue("purple.300", "#c79dff")
+  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#ab89d6")
+  const bgCurrentFrame = useColorModeValue("purple.300", "#e0c9ff")
   const activeFrameBorderColor = useColorModeValue("#4a0f77", "#c084fc")
-  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#3a2447")
+  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#4a2d63")
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
   const presentation = useAppSelector((state) => state.presentation)

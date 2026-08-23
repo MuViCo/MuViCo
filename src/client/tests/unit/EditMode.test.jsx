@@ -13,6 +13,11 @@ import {
 } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
+import {
+  TIMELINE_METRICS,
+  laneTop,
+  timelineRowsTopOffset,
+} from "../../components/presentation/timelineMetrics"
 import { useDispatch, useSelector } from "react-redux"
 import {
   createCue,
@@ -460,8 +465,8 @@ describe("EditMode drag swapping", () => {
 
     expect(hoverPreview).toHaveStyle({
       display: "block",
-      left: "320px",
-      top: "175px",
+      left: `${2 * (TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap)}px`,
+      top: `${laneTop(1)}px`,
     })
   })
 
@@ -777,7 +782,7 @@ describe("EditMode drag swapping", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("copy-drag-placement-preview")).toHaveStyle({
-        transform: "translate3d(320px, 65px, 0)",
+        transform: `translate3d(${2 * (TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap)}px, ${timelineRowsTopOffset()}px, 0)`,
       })
       expect(
         screen.getByTestId("cue-continuation-overlay-visual-2")
@@ -920,7 +925,7 @@ describe("EditMode drag swapping", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
-        transform: "translate3d(160px, 65px, 0)",
+        transform: `translate3d(${TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap}px, ${timelineRowsTopOffset()}px, 0)`,
       })
     })
 
@@ -933,7 +938,7 @@ describe("EditMode drag swapping", () => {
       expect(screen.getByTestId("drag-cursor-preview")).toBeInTheDocument()
       expect(screen.getByTestId("drag-placement-preview")).toHaveStyle({
         display: "block",
-        transform: "translate3d(320px, 65px, 0)",
+        transform: `translate3d(${2 * (TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap)}px, ${timelineRowsTopOffset()}px, 0)`,
       })
     })
   })

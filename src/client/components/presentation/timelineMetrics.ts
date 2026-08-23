@@ -34,7 +34,9 @@ export const TIMELINE_METRICS: TimelineMetrics = {
   columnWidth: 150,
   rowHeight: 100,
   gap: 10,
-  frameHeaderHeight: 55,
+  // Every hit-test derives its origin from this, so the band can be resized
+  // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
+  frameHeaderHeight: 34,
   rowHeaderWidth: 120,
 }
 
