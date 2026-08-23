@@ -311,6 +311,26 @@ export interface Lane {
   screenLabel?: string
 }
 
+/**
+ * One screen's (or the audio section's) contiguous run of lanes, as drawn by the
+ * per-screen container in the editor.
+ *
+ * buildRowModel emits every group's lanes consecutively, so a group is fully
+ * described by where it starts and how many lanes it spans -- no lane needs to
+ * know its group's extent.
+ */
+export interface LaneGroup {
+  /** "screen-1" ... "screen-8", or "audio". */
+  group: string
+  kind: LaneKind
+  /** "Screen 3" / "Audio". */
+  label: string
+  screen: number
+  startY: number
+  laneCount: number
+  collapsed: boolean
+}
+
 export interface RowModel {
   rows: Lane[]
   /** Cue id -> row index. */
