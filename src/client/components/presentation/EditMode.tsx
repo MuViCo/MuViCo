@@ -2002,12 +2002,17 @@ const EditMode = ({
           flexDirection: "column",
         }}
       >
+        {/* minHeight rather than height: a flex item stretches to its
+            container's height, not to the content's. With a fixed 100% the row
+            stopped at the scrollport while the grid kept going, so the pinned
+            gutter ran out of background partway down and content scrolled past
+            it uncovered. Growing with the content makes the gutter as tall as
+            the timeline it labels. */}
         <Box
           display="flex"
           width="100%"
           marginTop="0px"
-          height="100%"
-          minHeight={0}
+          minHeight="100%"
           overflow="visible"
         >
           <Box
