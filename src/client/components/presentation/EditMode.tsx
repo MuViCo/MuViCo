@@ -1960,6 +1960,10 @@ const EditMode = ({
         >
           <Box
             className="screen-boxes"
+            // Chakra group: the per-track controls stay hidden until the
+            // pointer is over the gutter, so the column reads as tracks rather
+            // than as a bank of buttons.
+            role="group"
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}

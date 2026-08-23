@@ -77,6 +77,11 @@ const TIMELINE_PALETTE = {
   audioLaneRow: "#5fb9a2",
   audioBorder: "#2f6b5f",
   audioAccent: "#d8f4ec",
+  /** Track controls: one family, revealed on hover over the gutter. */
+  controlBg: "#3a2447",
+  controlBgDanger: "#5a1f3a",
+  controlBorder: "#6d5a7d",
+  controlText: "#f0e4ff",
   /** Panel behind a group. */
   groupPanel: "#241333",
   border: "#4a2d63",
@@ -165,7 +170,7 @@ const RowHeadersBase = ({
         px="8px"
         transform={
           row.y === focusedRowIndex
-            ? `scale(${LANE_FOCUS_SCALE})`
+            ? `scaleY(${LANE_FOCUS_SCALE})`
             : `translateY(${laneFocusShift(row.y, focusedRowIndex, rowHeight)}px)`
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
@@ -300,13 +305,18 @@ const RowHeadersBase = ({
                 size="xs"
                 variant="solid"
                 color="black"
-                bg="orange.100"
-                border="1px solid rgba(221, 107, 32, 0.48)"
+                bg={TIMELINE_PALETTE.controlBgDanger}
+                borderWidth="1px"
+                borderColor={TIMELINE_PALETTE.controlBorder}
                 borderRadius="6px"
                 position="absolute"
                 top="50%"
                 right="4px"
                 transform="translateY(-50%)"
+                opacity={0}
+                visibility="hidden"
+                transition="opacity 120ms ease"
+                _groupHover={{ opacity: 1, visibility: "visible" }}
                 aria-label={`Remove layer from screen ${row.screen}`}
                 title={
                   canRemoveVisualLayer
@@ -346,15 +356,20 @@ const RowHeadersBase = ({
                   leftIcon={<MinusIcon boxSize="8px" />}
                   size="xs"
                   variant="solid"
-                  color="black"
-                  bg="red.100"
-                  border="1px solid rgba(197, 48, 48, 0.45)"
+                  color={TIMELINE_PALETTE.controlText}
+                  bg={TIMELINE_PALETTE.controlBgDanger}
+                  borderWidth="1px"
+                  borderColor={TIMELINE_PALETTE.controlBorder}
                   borderRadius="6px"
                   height="20px"
                   minW="60px"
                   px="4px"
                   fontSize="10px"
                   lineHeight="1"
+                  opacity={0}
+                  visibility="hidden"
+                  transition="opacity 120ms ease"
+                  _groupHover={{ opacity: 1, visibility: "visible" }}
                   aria-label="Remove screen"
                   title="Remove screen"
                   onClick={(event) => {
@@ -380,18 +395,22 @@ const RowHeadersBase = ({
                   position="absolute"
                   left="6px"
                   right="6px"
-                  bottom="-16px"
+                  bottom="-26px"
                   display="flex"
                   gap="4px"
                   zIndex="30"
+                  opacity={0}
+                  visibility="hidden"
+                  transition="opacity 120ms ease"
+                  _groupHover={{ opacity: 1, visibility: "visible" }}
                 >
                   {canAddVisualLayer && (
                     <Button
                       leftIcon={<AddIcon boxSize="8px" />}
                       size="xs"
                       variant="solid"
-                      color="black"
-                      bg="green.100"
+                      color={TIMELINE_PALETTE.controlText}
+                      bg={TIMELINE_PALETTE.controlBg}
                       border="1px solid rgba(34, 139, 34, 0.45)"
                       borderRadius="6px"
                       height="22px"
@@ -424,8 +443,9 @@ const RowHeadersBase = ({
                       size="xs"
                       variant="solid"
                       color="black"
-                      bg="blue.100"
-                      border="1px solid rgba(49, 130, 206, 0.48)"
+                      bg={TIMELINE_PALETTE.controlBg}
+                      borderWidth="1px"
+                      borderColor={TIMELINE_PALETTE.controlBorder}
                       borderRadius="6px"
                       height="22px"
                       flex="1"
@@ -464,6 +484,10 @@ const RowHeadersBase = ({
             position="absolute"
             bottom="1px"
             right="1px"
+            opacity={0}
+            visibility="hidden"
+            transition="opacity 120ms ease"
+            _groupHover={{ opacity: 1, visibility: "visible" }}
             aria-label="Add audio track"
             title="Add audio track"
             isDisabled={!canAddAudioTrack}
