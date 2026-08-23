@@ -41,6 +41,8 @@ interface ColumnHeadersProps {
   indexCount: number
   frameHeaderHeight: number
   headerActionsRef: RefObject<HeaderActions>
+  /** Omitted while copying, when a header click means "cancel" instead. */
+  onSelectFrame?: (index: number) => void
 }
 import { Box, Text, IconButton, Button, Tooltip } from "@chakra-ui/react"
 import {
@@ -614,6 +616,7 @@ const ColumnHeadersBase = ({
   indexCount,
   frameHeaderHeight,
   headerActionsRef,
+  onSelectFrame,
 }: ColumnHeadersProps): ReactNode => {
   return xLabels.map((label, index) => (
     <Box
@@ -627,6 +630,16 @@ const ColumnHeadersBase = ({
     >
       <Box
         className="x-index-label"
+        cursor={onSelectFrame ? "pointer" : undefined}
+        onClick={(event) => {
+          // The add/remove frame buttons overhang into this box.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onSelectFrame?.(index)
+        }}
         display="flex"
         alignItems="center"
         justifyContent="center"

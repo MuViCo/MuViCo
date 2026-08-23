@@ -68,6 +68,7 @@ interface EditModeProps {
   isAutoplaying?: boolean
   /** Seconds a frame is held during autoplay. */
   autoplayInterval?: number
+  onSelectFrame?: (index: number) => void
 }
 
 /**
@@ -161,6 +162,7 @@ const EditMode = ({
   onFocusLane = () => {},
   isAutoplaying = false,
   autoplayInterval = 1,
+  onSelectFrame = () => {},
 }: EditModeProps) => {
   const bgColorHover = useColorModeValue(
     "rgba(154, 109, 151, 0.8)",
@@ -2128,6 +2130,9 @@ const EditMode = ({
                   frameHeaderHeight={frameHeaderHeight}
                   indexCount={indexCount}
                   headerActionsRef={headerActionsRef}
+                  // Copy mode already treats a header click as "cancel", so
+                  // selecting a frame must not fight it.
+                  onSelectFrame={isCopied ? undefined : onSelectFrame}
                 />
               </Box>
               {/* Playhead. Sits at the start of the current frame's column,

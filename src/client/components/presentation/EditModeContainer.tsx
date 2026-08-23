@@ -103,6 +103,7 @@ interface EditorLayoutProps extends Omit<
   focusedLaneKey: string | null
   focusedScreen: number | null
   onFocusLane: (laneKey: string | null) => void
+  onSelectFrame: (index: number) => void
 }
 
 // Base component for different subcomponents of the editor
@@ -144,6 +145,7 @@ function EditorLayout(props: EditorLayoutProps) {
     focusedLaneKey,
     focusedScreen,
     onFocusLane,
+    onSelectFrame,
   } = props
 
   useEffect(() => {
@@ -327,6 +329,7 @@ function EditorLayout(props: EditorLayoutProps) {
                   onFocusLane={onFocusLane}
                   isAutoplaying={isAutoplaying}
                   autoplayInterval={autoplayInterval}
+                  onSelectFrame={onSelectFrame}
                 />
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>
@@ -653,6 +656,7 @@ const EditModeContainer = ({
         focusedLaneKey={focusedLaneKey}
         focusedScreen={focusedScreen}
         onFocusLane={setFocusedLaneKey}
+        onSelectFrame={setCueIndex}
         cues={cues}
         isToolboxOpen={isToolboxOpen}
         setIsToolboxOpen={setIsToolboxOpen}
