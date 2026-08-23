@@ -2000,7 +2000,10 @@ const EditMode = ({
             position="sticky"
             left={0}
             zIndex={5}
-            bg={timelineSurface}
+            // Transparent by request. The gutter is pinned, so grid content now
+            // scrolls visibly underneath it; the lane cells are opaque, so what
+            // shows through is the gaps between them.
+            bg="transparent"
             flexShrink={0}
           >
             <Box h={`${frameHeaderHeight}px`} bg="transparent" />

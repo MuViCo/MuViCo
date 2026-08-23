@@ -148,22 +148,29 @@ const RowHeadersBase = ({
         alignItems="center"
         justifyContent={row.groupStart ? "space-between" : "center"}
         bg={
-          isAudio
-            ? row.groupStart
-              ? TIMELINE_PALETTE.audioRow
-              : TIMELINE_PALETTE.audioLaneRow
-            : row.groupStart
-              ? TIMELINE_PALETTE.screenRow
-              : TIMELINE_PALETTE.laneRow
+          row.y === focusedRowIndex
+            ? isAudio
+              ? TIMELINE_PALETTE.audioAccent
+              : TIMELINE_PALETTE.chip
+            : isAudio
+              ? row.groupStart
+                ? TIMELINE_PALETTE.audioRow
+                : TIMELINE_PALETTE.audioLaneRow
+              : row.groupStart
+                ? TIMELINE_PALETTE.screenRow
+                : TIMELINE_PALETTE.laneRow
         }
         color={TIMELINE_PALETTE.chipText}
         border="1px solid"
+        borderWidth={row.y === focusedRowIndex ? "2px" : "1px"}
         borderColor={
-          isAudio
-            ? TIMELINE_PALETTE.audioBorder
-            : row.groupStart
-              ? TIMELINE_PALETTE.accent
-              : TIMELINE_PALETTE.border
+          row.y === focusedRowIndex
+            ? TIMELINE_PALETTE.accent
+            : isAudio
+              ? TIMELINE_PALETTE.audioBorder
+              : row.groupStart
+                ? TIMELINE_PALETTE.accent
+                : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
         h={`${rowHeight}px`}
@@ -182,8 +189,8 @@ const RowHeadersBase = ({
         }}
         boxShadow={
           row.y === focusedRowIndex
-            ? `inset 0 0 0 2px ${TIMELINE_PALETTE.accent}, 0 0 12px rgba(192, 132, 252, 0.55)`
-            : undefined
+            ? "0 0 0 3px rgba(192, 132, 252, 0.35), 0 6px 18px rgba(60, 16, 96, 0.45)"
+            : "none"
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
         transition="background-color 120ms ease, border-color 120ms ease, box-shadow 140ms ease"
