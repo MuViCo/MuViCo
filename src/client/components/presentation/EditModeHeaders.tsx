@@ -439,13 +439,19 @@ const RowHeadersBase = ({
         gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
         gap={`${gap}px`}
         marginRight={`${gap}px`}
-        // Dashed when collapsed: until now the only cue that a group was
-        // collapsed was the label text.
-        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? "#cc2efc" : "#b55fe0"
+        // A dark fill shows through the 10px gaps between lanes, which is what
+        // actually makes the run read as one container -- the lane cells are
+        // light purple, so without it the frame alone just adds another line in
+        // the same colour as every lane border. Background and outline are both
+        // outside the box model, so alignment with the grid rows is untouched.
+        bg={isAudioGroup ? "rgba(90, 12, 110, 0.55)" : "rgba(46, 20, 66, 0.55)"}
+        // Dashed when collapsed: until now the only signal that a group was
+        // collapsed was its label text.
+        outline={`3px ${group.collapsed ? "dashed" : "solid"} ${
+          isAudioGroup ? "#e879ff" : "#BD5BFF"
         }`}
-        outlineOffset="2px"
-        borderRadius="10px"
+        outlineOffset="3px"
+        borderRadius="12px"
         position="relative"
         // The add-layer and add-screen buttons deliberately overhang.
         overflow="visible"
