@@ -1,0 +1,57 @@
+{
+  "compilerOptions": {
+    /* tsc is a checker only. Vite/esbuild owns emission. */
+    "noEmit": true,
+    /* Non-negotiable: Chakra v2 .d.ts are built against @types/react 18,
+       which used the global JSX namespace that @types/react 19 removed. */
+    "skipLibCheck": true,
+
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "useDefineForClassFields": true,
+
+    "module": "ESNext",
+    /* Bundler: every import in this repo is extensionless. NodeNext would
+       require rewriting all of them, which is a refactor. */
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    /* Critical: Jest transpiles via Babel file-by-file with no cross-file type
+       info. This flag makes tsc reject exactly what Babel silently miscompiles
+       (type-only exports without `export type`, const enum). */
+    "isolatedModules": true,
+    "moduleDetection": "force",
+
+    "jsx": "react-jsx",
+
+    /* Flipped to false in the final migration PR. */
+    "allowJs": true,
+    "checkJs": false,
+
+    "strict": true,
+    /* Deliberate carve-out: strict would break the ~40 existing
+       `catch (error) { error.response?.data?.error }` sites. Fixing them means
+       a getErrorMessage(e: unknown) helper + 40 call sites = refactor. */
+    "useUnknownInCatchVariables": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Explicit list: prevents auto-loading every @types/* in the repo
+       (express, sinon, jsdom, ...) into the client's global scope.
+       vite/client is pulled in via triple-slash in src/client/vite-env.d.ts. */
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "src/client/**/*.ts",
+    "src/client/**/*.tsx",
+    "src/client/**/*.js",
+    "src/client/**/*.jsx",
+    "src/constants.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "coverage", "playwright-report"]
+}
