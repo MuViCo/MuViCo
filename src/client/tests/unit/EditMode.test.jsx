@@ -18,6 +18,18 @@ import {
   laneTop,
   timelineRowsTopOffset,
 } from "../../components/presentation/timelineMetrics"
+
+/**
+ * Vertical centre of a lane, in container coordinates.
+ *
+ * Derived rather than hardcoded so the suite survives a change to the timeline
+ * geometry: these are pointer inputs chosen to land on a given row, not
+ * assertions about pixel values.
+ */
+const rowCenterY = (rowIndex) =>
+  timelineRowsTopOffset() +
+  rowIndex * (TIMELINE_METRICS.rowHeight + TIMELINE_METRICS.gap) +
+  TIMELINE_METRICS.rowHeight / 2
 import { useDispatch, useSelector } from "react-redux"
 import {
   createCue,
@@ -276,14 +288,14 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     fireEvent.click(screen.getByTestId("trigger-drag-stop"))
 
     fireEvent.mouseUp(gridContainer, {
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -364,7 +376,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     fireEvent.click(screen.getByTestId("trigger-drag-stop"))
@@ -372,7 +384,7 @@ describe("EditMode drag swapping", () => {
     // xIndex=2, yIndex=1 is a continuation slot of cue-2 in visual-span mode
     fireEvent.mouseUp(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     expect(swapCues).not.toHaveBeenCalled()
@@ -424,14 +436,14 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     // xIndex=2, yIndex=2 is continuation area for cue-2 in visual-span mode
     await act(async () => {
       fireEvent.mouseUp(gridContainer, {
         clientX: 330,
-        clientY: 230,
+        clientY: rowCenterY(1),
       })
     })
 
@@ -460,7 +472,7 @@ describe("EditMode drag swapping", () => {
     // Empty slot at xIndex=2, yIndex=2 with current test cues and derived visual spans
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 230,
+      clientY: rowCenterY(1),
     })
 
     expect(hoverPreview).toHaveStyle({
@@ -477,14 +489,14 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 230,
+      clientY: rowCenterY(1),
     })
     expect(hoverPreview).toHaveStyle({ display: "block" })
 
     // Occupied slot at xIndex=0, yIndex=1 by visual-1
     fireEvent.mouseMove(gridContainer, {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     expect(hoverPreview).toHaveStyle({ display: "none" })
@@ -497,7 +509,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 230,
+      clientY: rowCenterY(1),
     })
     expect(hoverPreview).toHaveStyle({ display: "block" })
 
@@ -515,7 +527,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
@@ -524,7 +536,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -533,7 +545,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseUp(gridContainer, {
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() =>
@@ -549,13 +561,13 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -574,7 +586,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 250,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     expect(
@@ -592,13 +604,13 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -619,7 +631,7 @@ describe("EditMode drag swapping", () => {
     fireEvent.dragOver(gridContainer, {
       dataTransfer,
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     const dropEvent = createEvent.drop(dropArea)
@@ -632,7 +644,7 @@ describe("EditMode drag swapping", () => {
       configurable: true,
     })
     Object.defineProperty(dropEvent, "clientY", {
-      value: 120,
+      value: rowCenterY(0),
       configurable: true,
     })
 
@@ -660,14 +672,14 @@ describe("EditMode drag swapping", () => {
     fireEvent.dragOver(gridContainer, {
       dataTransfer,
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await act(async () => {
       fireEvent.drop(dropArea, {
         dataTransfer,
         clientX: 170,
-        clientY: 120,
+        clientY: rowCenterY(0),
       })
     })
 
@@ -685,7 +697,7 @@ describe("EditMode drag swapping", () => {
     fireEvent.dragOver(gridContainer, {
       dataTransfer,
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     const dropEvent = createEvent.drop(dropArea)
@@ -698,7 +710,7 @@ describe("EditMode drag swapping", () => {
       configurable: true,
     })
     Object.defineProperty(dropEvent, "clientY", {
-      value: 120,
+      value: rowCenterY(0),
       configurable: true,
     })
 
@@ -777,7 +789,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -806,7 +818,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -837,12 +849,12 @@ describe("EditMode drag swapping", () => {
 
       fireEvent.mouseMove(gridContainer, {
         clientX: 330,
-        clientY: 120,
+        clientY: rowCenterY(0),
       })
 
       fireEvent.click(screen.getByTestId("cue-Visual cue 2"), {
         clientX: 330,
-        clientY: 120,
+        clientY: rowCenterY(0),
       })
 
       await waitFor(() => {
@@ -862,13 +874,13 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
       clientX: 170,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
     await waitFor(() => {
       expect(screen.getByTestId("drag-cursor-preview")).toHaveStyle({
-        transform: "translate3d(180px, 130px, 0)",
+        transform: `translate3d(180px, ${rowCenterY(0) + 10}px, 0)`,
       })
     })
   })
@@ -895,7 +907,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Video cue 1"), {
       clientX: 10,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
@@ -919,7 +931,7 @@ describe("EditMode drag swapping", () => {
     // xIndex=2, yIndex=1 points to continuation area of visual-2 with current test setup.
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
@@ -931,7 +943,7 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 340,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await waitFor(() => {
@@ -949,14 +961,14 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
     await act(async () => {
       fireEvent.mouseUp(gridContainer, {
         clientX: 330,
-        clientY: 120,
+        clientY: rowCenterY(0),
       })
     })
 
@@ -970,19 +982,19 @@ describe("EditMode drag swapping", () => {
 
     fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 2"), {
       clientX: 330,
-      clientY: 120,
+      clientY: rowCenterY(0),
       button: 0,
     })
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 340,
-      clientY: 120,
+      clientY: rowCenterY(0),
     })
 
     await act(async () => {
       fireEvent.mouseUp(gridContainer, {
         clientX: 340,
-        clientY: 120,
+        clientY: rowCenterY(0),
       })
     })
 
@@ -1010,7 +1022,7 @@ describe("EditMode drag swapping", () => {
         bubbles: true,
         cancelable: true,
         clientX: 10,
-        clientY: 120,
+        clientY: rowCenterY(0),
         button: 0,
       })
     )

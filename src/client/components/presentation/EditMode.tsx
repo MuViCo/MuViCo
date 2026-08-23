@@ -2079,6 +2079,22 @@ const EditMode = ({
                   headerActionsRef={headerActionsRef}
                 />
               </Box>
+              {/* Playhead: the vertical marker a video editor puts on the
+                  current frame, spanning every track. An absolutely positioned
+                  overlay, so it adds no box and cannot shift the rows. */}
+              <Box
+                data-testid="timeline-playhead"
+                position="absolute"
+                top={`${frameHeaderHeight}px`}
+                bottom={0}
+                left={`${columnLeft(cueIndex) + columnWidth / 2 - 1}px`}
+                width="2px"
+                bg="#c084fc"
+                boxShadow="0 0 8px rgba(192, 132, 252, 0.7)"
+                pointerEvents="none"
+                zIndex={3}
+                transition="left 140ms ease"
+              />
               {audioStartRow > 0 && (
                 <Box
                   data-testid="audio-section-divider"

@@ -32,12 +32,17 @@ export interface TimelineMetrics {
  */
 export const TIMELINE_METRICS: TimelineMetrics = {
   columnWidth: 150,
-  rowHeight: 100,
-  gap: 10,
+  // Compact tracks with a tight gutter, the way a video editor stacks them.
+  // 100/10 gave a spreadsheet of large cells; at 72/6 more of the timeline is
+  // on screen and the clips, rather than the grid, carry the eye.
+  rowHeight: 72,
+  gap: 6,
   // Every hit-test derives its origin from this, so the band can be resized
   // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
   frameHeaderHeight: 34,
-  rowHeaderWidth: 120,
+  // Wide enough for the track icon, its label and its controls on one line,
+  // like a video editor's track header.
+  rowHeaderWidth: 168,
 }
 
 /**
