@@ -67,7 +67,16 @@ const TIMELINE_PALETTE = {
   screenRow: "#cbb0ee",
   /** Layer rows, a step darker so they read as subordinate to their screen. */
   laneRow: "#ab89d6",
-  audioLaneRow: "#c77ae0",
+  /**
+   * Audio lives in a different colour family entirely, as the design draft
+   * does. Sharing one scroller with the screens is deliberate -- their row
+   * indices are the same coordinate space the grid and every hit test use --
+   * so the separation has to be carried by colour rather than by layout.
+   */
+  audioRow: "#7fd4bd",
+  audioLaneRow: "#5fb9a2",
+  audioBorder: "#2f6b5f",
+  audioAccent: "#d8f4ec",
   /** Panel behind a group. */
   groupPanel: "#241333",
   border: "#4a2d63",
@@ -132,16 +141,22 @@ const RowHeadersBase = ({
         alignItems="center"
         justifyContent={row.groupStart ? "space-between" : "center"}
         bg={
-          row.groupStart
-            ? TIMELINE_PALETTE.screenRow
-            : isAudio
-              ? TIMELINE_PALETTE.audioLaneRow
+          isAudio
+            ? row.groupStart
+              ? TIMELINE_PALETTE.audioRow
+              : TIMELINE_PALETTE.audioLaneRow
+            : row.groupStart
+              ? TIMELINE_PALETTE.screenRow
               : TIMELINE_PALETTE.laneRow
         }
         color={TIMELINE_PALETTE.chipText}
         border="1px solid"
         borderColor={
-          row.groupStart ? TIMELINE_PALETTE.accent : TIMELINE_PALETTE.border
+          isAudio
+            ? TIMELINE_PALETTE.audioBorder
+            : row.groupStart
+              ? TIMELINE_PALETTE.accent
+              : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
         h={`${rowHeight}px`}
@@ -155,7 +170,11 @@ const RowHeadersBase = ({
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
         transition="background-color 120ms ease, border-color 120ms ease, transform 140ms ease"
-        _hover={{ borderColor: TIMELINE_PALETTE.accent }}
+        _hover={{
+          borderColor: isAudio
+            ? TIMELINE_PALETTE.audioAccent
+            : TIMELINE_PALETTE.accent,
+        }}
       >
         {row.groupStart && (
           <IconButton
@@ -502,7 +521,7 @@ const RowHeadersBase = ({
         // Dashed when collapsed: until now the only signal that a group was
         // collapsed was its label text.
         outline={`1px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? TIMELINE_PALETTE.accent : TIMELINE_PALETTE.border
+          isAudioGroup ? TIMELINE_PALETTE.audioBorder : TIMELINE_PALETTE.border
         }`}
         outlineOffset="3px"
         borderRadius="12px"

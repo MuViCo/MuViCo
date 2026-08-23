@@ -291,6 +291,18 @@ const EditMode = ({
     return rowModel.rows.findIndex((row) => row.group === group)
   }, [rowModel.rows, focusedLaneKey])
 
+  /**
+   * Row index where the audio section starts, or -1.
+   *
+   * Audio shares the grid and the scroller with the screens -- its row indices
+   * are the same coordinate space every hit test uses -- so the boundary is
+   * drawn rather than made structural.
+   */
+  const audioStartRow = useMemo(() => {
+    const index = rowModel.rows.findIndex((row) => row.group === "audio")
+    return index
+  }, [rowModel.rows])
+
   /** Focus the lane under the pointer. Never dispatches, never opens anything. */
   const commitLaneFocusFromEvent = (event: ReactMouseEvent) => {
     const { xIndex, yIndex } = getPosition(
@@ -2067,6 +2079,20 @@ const EditMode = ({
                   headerActionsRef={headerActionsRef}
                 />
               </Box>
+              {audioStartRow > 0 && (
+                <Box
+                  data-testid="audio-section-divider"
+                  position="absolute"
+                  left={0}
+                  right={0}
+                  top={`${laneTop(audioStartRow) - gap / 2}px`}
+                  height="1px"
+                  bg="#2f6b5f"
+                  opacity={0.7}
+                  pointerEvents="none"
+                  zIndex={3}
+                />
+              )}
               <Box
                 pointerEvents={isDragging ? "none" : "auto"}
                 id="presentations-grid"
