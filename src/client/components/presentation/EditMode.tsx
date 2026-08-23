@@ -162,10 +162,19 @@ const EditMode = ({
   const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
   const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
   const timelineSurface = useColorModeValue("#eedef7", "#312238")
-  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
-  const bgCurrentFrame = useColorModeValue("purple.300", "purple.200")
-  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#7a15b8")
-  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#b31bff")
+  const bgColorIndex = useColorModeValue(
+    "rgb(240, 197, 255)",
+    "rgba(40, 26, 58, 0.92)"
+  )
+  const bgCurrentFrame = useColorModeValue(
+    "purple.300",
+    "rgba(126, 58, 190, 0.95)"
+  )
+  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#BD5BFF")
+  const inactiveFrameBorderColor = useColorModeValue(
+    "#b31bff",
+    "rgba(189, 91, 255, 0.22)"
+  )
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
   const presentation = useAppSelector((state) => state.presentation)
@@ -1178,11 +1187,11 @@ const EditMode = ({
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-        (dragStartPointer &&
-          Math.hypot(
-            event.clientX - dragStartPointer.clientX,
-            event.clientY - dragStartPointer.clientY
-          ) >= dragCommitDistancePx)
+      (dragStartPointer &&
+        Math.hypot(
+          event.clientX - dragStartPointer.clientX,
+          event.clientY - dragStartPointer.clientY
+        ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const { xIndex, yIndex } = getPosition(
@@ -1653,11 +1662,9 @@ const EditMode = ({
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (
-        !(
-          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
-        )
-      ) {
+      if (!(
+        newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+      )) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -1963,6 +1970,7 @@ const EditMode = ({
 
             <RowHeaders
               rows={rowModel.rows}
+              focusedRowIndex={focusedRowIndex}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapsed={toggleGroupCollapsed}
               onAddVisualLayer={addVisualLayer}

@@ -90,3 +90,33 @@ export const focusTransform = (
 
   return `scale(${Number(scaleX.toFixed(4))}, ${LANE_FOCUS_SCALE})`
 }
+
+/**
+ * Extra height a focused lane takes, in px.
+ *
+ * The lanes cannot actually change height -- react-grid-layout uses a single
+ * rowHeight for every row and the gutter mirrors it with fixed CSS tracks, so a
+ * real height change would desynchronise both from every hit test. The
+ * neighbours are instead translated apart by half this each, which reads as the
+ * focused lane pushing them aside while the underlying grid is untouched.
+ */
+export const laneFocusBleed = (rowHeight: number): number =>
+  rowHeight * (LANE_FOCUS_SCALE - 1)
+
+/**
+ * Vertical offset for a lane at `rowIndex` while `focusedRowIndex` is focused.
+ *
+ * Lanes above move up, lanes below move down, the focused lane stays put. This
+ * is presentation only: the hit-test arithmetic still runs on the untransformed
+ * grid, so a click within the few pixels a lane has shifted can land on its
+ * neighbour. Bounded by half the bleed, which is 6px at the default metrics.
+ */
+export const laneFocusShift = (
+  rowIndex: number,
+  focusedRowIndex: number,
+  rowHeight: number
+): number => {
+  if (focusedRowIndex < 0 || rowIndex === focusedRowIndex) return 0
+  const half = laneFocusBleed(rowHeight) / 2
+  return rowIndex < focusedRowIndex ? -half : half
+}

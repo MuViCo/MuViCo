@@ -4,6 +4,7 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
+import { LANE_FOCUS_SCALE, laneFocusShift } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -23,6 +24,8 @@ interface RowHeadersProps {
   isAudioMuted: boolean
   screenIcon: string
   headerActionsRef: RefObject<HeaderActions>
+  /** Row index of the focused lane, or -1. */
+  focusedRowIndex?: number
 }
 
 interface ColumnHeadersProps {
@@ -64,6 +67,7 @@ const RowHeadersBase = ({
   isAudioMuted,
   screenIcon,
   headerActionsRef,
+  focusedRowIndex = -1,
 }: RowHeadersProps): ReactNode => {
   const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
@@ -97,12 +101,29 @@ const RowHeadersBase = ({
         display="flex"
         alignItems="center"
         justifyContent={row.groupStart ? "space-between" : "center"}
-        bg={isAudio ? "rgb(204, 46, 252)" : "purple.200"}
-        border="2px solid #b55fe0"
+        bg={isAudio ? "rgba(58, 22, 74, 0.92)" : "rgba(40, 26, 58, 0.92)"}
+        color="whiteAlpha.900"
+        border="1px solid"
+        borderColor={
+          isAudio ? "rgba(232, 121, 255, 0.28)" : "rgba(189, 91, 255, 0.22)"
+        }
+        borderRadius="8px"
         h={`${rowHeight}px`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
-        px="6px"
+        px="8px"
+        transform={
+          row.y === focusedRowIndex
+            ? `scale(${LANE_FOCUS_SCALE})`
+            : `translateY(${laneFocusShift(row.y, focusedRowIndex, rowHeight)}px)`
+        }
+        zIndex={row.y === focusedRowIndex ? 2 : 1}
+        transition="background-color 120ms ease, border-color 120ms ease, transform 140ms ease"
+        _hover={{
+          borderColor: isAudio
+            ? "rgba(232, 121, 255, 0.5)"
+            : "rgba(189, 91, 255, 0.45)",
+        }}
       >
         {row.groupStart && (
           <IconButton
@@ -444,11 +465,11 @@ const RowHeadersBase = ({
         // light purple, so without it the frame alone just adds another line in
         // the same colour as every lane border. Background and outline are both
         // outside the box model, so alignment with the grid rows is untouched.
-        bg={isAudioGroup ? "rgba(90, 12, 110, 0.55)" : "rgba(46, 20, 66, 0.55)"}
+        bg={isAudioGroup ? "rgba(44, 14, 58, 0.5)" : "rgba(28, 18, 42, 0.5)"}
         // Dashed when collapsed: until now the only signal that a group was
         // collapsed was its label text.
-        outline={`3px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? "#e879ff" : "#BD5BFF"
+        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
+          isAudioGroup ? "rgba(232, 121, 255, 0.4)" : "rgba(189, 91, 255, 0.32)"
         }`}
         outlineOffset="3px"
         borderRadius="12px"
@@ -488,6 +509,7 @@ const ColumnHeadersBase = ({
     >
       <Box
         className="x-index-label"
+        color="whiteAlpha.900"
         display="flex"
         alignItems="center"
         justifyContent="center"
