@@ -562,10 +562,10 @@ const RowHeadersBase = ({
         bg={TIMELINE_PALETTE.groupPanel}
         // Dashed when collapsed: until now the only signal that a group was
         // collapsed was its label text.
-        outline={`1px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? TIMELINE_PALETTE.audioBorder : TIMELINE_PALETTE.border
+        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
+          isAudioGroup ? TIMELINE_PALETTE.audioBorder : TIMELINE_PALETTE.accent
         }`}
-        outlineOffset="3px"
+        outlineOffset="0px"
         borderRadius="12px"
         position="relative"
         // The add-layer and add-screen buttons deliberately overhang.

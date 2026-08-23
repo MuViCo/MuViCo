@@ -23,11 +23,11 @@ import type { Lane } from "../../types"
  * Expressed as a factor of the row height and applied as a real height change,
  * not a transform: scaling stretches the label text and the thumbnails with it.
  *
- * Bounded by the inter-lane gutter: at rowHeight 60 this adds about 13px, 6.6px
- * on each side, which stays inside the 14px gap and so never reaches the
+ * Bounded by the inter-lane gutter: at rowHeight 60 this adds 21px, 10.5px on
+ * each side, which stays inside the 14px gap and so never reaches the
  * neighbouring lane.
  */
-export const LANE_FOCUS_SCALE = 1.22
+export const LANE_FOCUS_SCALE = 1.35
 
 /**
  * Stable identity for a lane.
