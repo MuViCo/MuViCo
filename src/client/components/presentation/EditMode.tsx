@@ -161,20 +161,14 @@ const EditMode = ({
   const dragPreviewValidBorder = useColorModeValue("#7fd4ee", "#9be2f7")
   const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
   const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
-  const timelineSurface = useColorModeValue("#eedef7", "#312238")
-  const bgColorIndex = useColorModeValue(
-    "rgb(240, 197, 255)",
-    "rgba(40, 26, 58, 0.92)"
-  )
-  const bgCurrentFrame = useColorModeValue(
-    "purple.300",
-    "rgba(126, 58, 190, 0.95)"
-  )
-  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#BD5BFF")
-  const inactiveFrameBorderColor = useColorModeValue(
-    "#b31bff",
-    "rgba(189, 91, 255, 0.22)"
-  )
+  // Dark-mode values come from the editor design draft: deep near-black violets
+  // for surfaces, and one light chip with dark text to mark the active frame,
+  // rather than colouring whole rows.
+  const timelineSurface = useColorModeValue("#eedef7", "#241333")
+  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#1b1122")
+  const bgCurrentFrame = useColorModeValue("purple.300", "#c79dff")
+  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#c084fc")
+  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#3a2447")
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
   const presentation = useAppSelector((state) => state.presentation)

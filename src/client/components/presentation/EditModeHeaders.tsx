@@ -51,6 +51,33 @@ import {
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import trashIcon from "../../public/icons/trash.svg"
 
+/**
+ * Timeline palette, taken from the editor design draft.
+ *
+ * The draft builds depth out of four near-black violets rather than one flat
+ * surface, and puts every accent on small light chips with dark text instead of
+ * colouring whole rows. That is what stops the timeline reading as a wall of
+ * saturated blocks.
+ */
+const TIMELINE_PALETTE = {
+  /** Group-start row: the screen's own identity. */
+  screenRow: "#2f1c40",
+  /** Layer and audio-track rows, one step deeper than their screen. */
+  laneRow: "#2a1839",
+  audioLaneRow: "#33163f",
+  /** Panel behind a group. */
+  groupPanel: "#241333",
+  border: "#4a2d63",
+  borderSubtle: "#3a2447",
+  accent: "#c084fc",
+  /** Light chip carrying dark text -- screen badges, the active frame. */
+  chip: "#c79dff",
+  chipText: "#160b1f",
+  textPrimary: "#f0e4ff",
+  textSecondary: "#cbb6dd",
+  textMuted: "#8b7499",
+}
+
 // Base component for rendering row headers, memoized for performance optimization. Displays screen labels and an audio row with a mute/unmute button, as well as controls for adding/removing screens.
 const RowHeadersBase = ({
   rows,
@@ -103,25 +130,19 @@ const RowHeadersBase = ({
         justifyContent={row.groupStart ? "space-between" : "center"}
         bg={
           row.groupStart
-            ? isAudio
-              ? "rgba(120, 44, 150, 0.95)"
-              : "rgba(86, 58, 122, 0.95)"
+            ? TIMELINE_PALETTE.screenRow
             : isAudio
-              ? "rgba(58, 22, 74, 0.92)"
-              : "rgba(40, 26, 58, 0.92)"
+              ? TIMELINE_PALETTE.audioLaneRow
+              : TIMELINE_PALETTE.laneRow
         }
-        color="whiteAlpha.900"
+        color={TIMELINE_PALETTE.textPrimary}
         border="1px solid"
         borderColor={
           row.groupStart
-            ? isAudio
-              ? "rgba(232, 121, 255, 0.55)"
-              : "rgba(189, 91, 255, 0.45)"
-            : isAudio
-              ? "rgba(232, 121, 255, 0.28)"
-              : "rgba(189, 91, 255, 0.22)"
+            ? TIMELINE_PALETTE.border
+            : TIMELINE_PALETTE.borderSubtle
         }
-        borderRadius="8px"
+        borderRadius="7px"
         h={`${rowHeight}px`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
@@ -133,11 +154,7 @@ const RowHeadersBase = ({
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
         transition="background-color 120ms ease, border-color 120ms ease, transform 140ms ease"
-        _hover={{
-          borderColor: isAudio
-            ? "rgba(232, 121, 255, 0.5)"
-            : "rgba(189, 91, 255, 0.45)",
-        }}
+        _hover={{ borderColor: TIMELINE_PALETTE.accent }}
       >
         {row.groupStart && (
           <IconButton
@@ -174,7 +191,7 @@ const RowHeadersBase = ({
                     <SpeakerIcon boxSize="36px" />
                   )
                 }
-                color="whiteAlpha.900"
+                color={TIMELINE_PALETTE.textSecondary}
                 sx={{
                   width: "44px",
                   height: "44px",
@@ -210,29 +227,21 @@ const RowHeadersBase = ({
                   flexShrink={0}
                 >
                   <Box
-                    as="img"
-                    src={screenIcon}
-                    alt=""
-                    width="50px"
-                    height="50px"
-                    aria-hidden="true"
-                    filter="invert(1)"
-                    opacity={0.92}
-                  />
-                  <Text
-                    as="span"
-                    position="absolute"
-                    top="43%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    fontSize="19px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    width="24px"
+                    height="24px"
+                    borderRadius="6px"
+                    bg={TIMELINE_PALETTE.chip}
+                    color={TIMELINE_PALETTE.chipText}
+                    fontSize="12px"
                     fontWeight="700"
                     lineHeight="1"
-                    color="white"
                     pointerEvents="none"
                   >
                     {row.screen}
-                  </Text>
+                  </Box>
                 </Box>
               </Tooltip>
               <Text as="span" fontSize="13px" lineHeight="1" noOfLines={1}>
@@ -482,11 +491,11 @@ const RowHeadersBase = ({
         // light purple, so without it the frame alone just adds another line in
         // the same colour as every lane border. Background and outline are both
         // outside the box model, so alignment with the grid rows is untouched.
-        bg={isAudioGroup ? "rgba(44, 14, 58, 0.5)" : "rgba(28, 18, 42, 0.5)"}
+        bg={TIMELINE_PALETTE.groupPanel}
         // Dashed when collapsed: until now the only signal that a group was
         // collapsed was its label text.
-        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? "rgba(232, 121, 255, 0.4)" : "rgba(189, 91, 255, 0.32)"
+        outline={`1px ${group.collapsed ? "dashed" : "solid"} ${
+          isAudioGroup ? TIMELINE_PALETTE.accent : TIMELINE_PALETTE.border
         }`}
         outlineOffset="3px"
         borderRadius="12px"
@@ -526,10 +535,17 @@ const ColumnHeadersBase = ({
     >
       <Box
         className="x-index-label"
-        color="whiteAlpha.900"
         display="flex"
         alignItems="center"
         justifyContent="center"
+        // The active chip is light with dark text; the rest are deep with muted
+        // text, so exactly one frame reads as current.
+        color={
+          index === cueIndex
+            ? TIMELINE_PALETTE.chipText
+            : TIMELINE_PALETTE.textSecondary
+        }
+        fontWeight={index === cueIndex ? 700 : 600}
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
         border={`${index === cueIndex ? 4 : 2}px solid`}
         borderColor={
