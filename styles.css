@@ -163,12 +163,14 @@
 .editor-shell > .edit-workspace {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   display: flex;
 }
 
 .editor-shell > .edit-workspace > div {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   display: flex;
   width: 100%;
 }
@@ -220,6 +222,7 @@
   gap: 1rem;
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
 }
 
 .edit-mode-workspace > div {
