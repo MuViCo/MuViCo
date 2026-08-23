@@ -31,6 +31,7 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
+import { focusTransform } from "../utils/laneFocus"
 
 import type { RefObject } from "react"
 import type { Layout } from "react-grid-layout"
@@ -62,6 +63,8 @@ interface GridLayoutComponentProps {
   previewCueSpanOverrides?: SpanOverrideMap
   isCopied?: boolean
   interactionCursor?: string | null
+  /** Row index of the focused lane, or -1. */
+  focusedRowIndex?: number
 }
 import { useAppDispatch } from "../../redux/hooks"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
@@ -196,6 +199,7 @@ const GridLayoutComponent = ({
   previewCueSpanOverrides = {},
   isCopied = false,
   interactionCursor = null,
+  focusedRowIndex = -1,
 }: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
@@ -551,6 +555,15 @@ const GridLayoutComponent = ({
             const isDraggingOriginCue = isDragging && draggingCueId === cue._id
             const suppressCueHoverEffects = isDragging || isCopied
             const cueGridRow = cueRowIndex[cue._id] ?? 0
+            const isLaneFocused =
+              focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
+            // Applied to the content box inside the grid item, never the item
+            // itself: react-grid-layout overwrites the item's transform on
+            // every layout pass, and its stylesheet transitions that property,
+            // so scaling there would animate every unrelated layout change.
+            const focusScale = isLaneFocused
+              ? ` ${focusTransform(cueVisualSpan, columnWidth, gap)}`
+              : ""
 
             return (
               <div
@@ -566,6 +579,7 @@ const GridLayoutComponent = ({
                   static: false,
                 }}
                 id={`cue-screen-${cue.screen}-index-${cue.index}`}
+                style={isLaneFocused ? { zIndex: 4 } : undefined}
               >
                 <Box
                   position="relative"
@@ -581,13 +595,19 @@ const GridLayoutComponent = ({
                   }
                   data-cue-content-id={cue._id}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
-                  transform="translateY(0)"
+                  data-focused-lane={isLaneFocused ? "true" : undefined}
+                  transform={`translateY(0)${focusScale}`}
+                  boxShadow={
+                    isLaneFocused
+                      ? "0 10px 24px rgba(60, 16, 96, 0.34)"
+                      : undefined
+                  }
                   transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
                   _hover={
                     suppressCueHoverEffects
                       ? {}
                       : {
-                          transform: "translateY(-1px)",
+                          transform: `translateY(-1px)${focusScale}`,
                           boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
                         }
                   }

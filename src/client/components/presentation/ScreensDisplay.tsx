@@ -9,7 +9,8 @@
  */
 
 import { Button } from "@chakra-ui/react"
-import React, { useMemo } from "react"
+import React, { useEffect, useMemo, useRef } from "react"
+import { usePrefersReducedMotion } from "@chakra-ui/react"
 import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
@@ -28,6 +29,8 @@ export interface ScreensDisplayProps {
   /** Keyed by screen number as a string, since it is built from Object.keys. */
   screens?: Record<string, boolean>
   toggleScreenVisibility?: (screenNumber: number) => void
+  /** Screen whose lane currently has focus in the timeline, or null. */
+  focusedScreen?: number | null
 }
 
 const sortByLayerPriority = (cues: Cue[]): Cue[] =>
@@ -45,7 +48,53 @@ export const ScreensDisplay = ({
   editModeBackground,
   screens = {},
   toggleScreenVisibility = () => {},
+  focusedScreen = null,
 }: ScreensDisplayProps) => {
+  const stripRef = useRef<HTMLDivElement | null>(null)
+  const tileRefs = useRef<Record<number, HTMLDivElement | null>>({})
+  const lastScrolledRef = useRef<number | null>(null)
+  const prefersReducedMotion = usePrefersReducedMotion()
+
+  /**
+   * Bring the focused screen's tile into view.
+   *
+   * scrollTo on the strip, deliberately not tile.scrollIntoView: that walks
+   * every scrollable ancestor, and the editor shell and its container are
+   * overflow:hidden -- still programmatically scrollable, so scrollIntoView
+   * would offset the whole shell with no scrollbar to put it back.
+   *
+   * Keyed on focusedScreen alone, with a guard against re-entry, so the strip
+   * moves on a focus change and never on an unrelated re-render.
+   */
+  useEffect(() => {
+    if (focusedScreen == null) {
+      lastScrolledRef.current = null
+      return
+    }
+    if (lastScrolledRef.current === focusedScreen) return
+    lastScrolledRef.current = focusedScreen
+
+    const strip = stripRef.current
+    const tile = tileRefs.current[focusedScreen]
+    if (!strip || !tile || typeof strip.scrollTo !== "function") return
+
+    const padding = 12
+    const start = tile.offsetLeft - padding
+    const end = tile.offsetLeft + tile.offsetWidth + padding
+    const viewStart = strip.scrollLeft
+    const viewEnd = viewStart + strip.clientWidth
+
+    // Already fully visible: leave the user's scroll position alone.
+    let next: number | null = null
+    if (start < viewStart) next = start
+    else if (end > viewEnd) next = end - strip.clientWidth
+    if (next === null) return
+
+    strip.scrollTo({
+      left: Math.max(0, next),
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    })
+  }, [focusedScreen, prefersReducedMotion])
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
@@ -147,29 +196,44 @@ export const ScreensDisplay = ({
 
   return (
     <div
+      ref={stripRef}
+      data-testid="screens-strip"
       style={{
         display: "flex",
-        justifyContent: "space-evenly",
-        alignItems: "stretch",
-        flexWrap: "wrap",
+        // Tiles are sized by height and keep their aspect ratio, so the strip
+        // scrolls sideways instead of squeezing every screen thinner.
+        justifyContent: "center",
+        alignItems: "center",
         backgroundColor: editModeBackground,
         gap: "10px",
         padding: "10px",
         paddingBottom: "15px",
         width: "100%",
         height: "100%",
-        overflow: "hidden",
+        overflowX: "auto",
+        overflowY: "hidden",
+        scrollbarGutter: "stable",
       }}
     >
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenStack = getCurrentCueStackForScreen(screenNumber)
 
+        const isFocused = focusedScreen === screenNumber
+
         return (
           <div
             key={screenNumber}
+            ref={(node) => {
+              tileRefs.current[screenNumber] = node
+            }}
+            data-testid={`screen-tile-${screenNumber}`}
+            aria-current={isFocused ? "true" : undefined}
             style={{
-              flex: 1,
+              flex: "0 0 auto",
+              height: "100%",
+              width: "auto",
+              minWidth: "240px",
               display: "flex",
               flexDirection: "column",
               backgroundColor: "black",
@@ -177,6 +241,18 @@ export const ScreensDisplay = ({
               overflow: "hidden",
               position: "relative",
               aspectRatio: "16/9",
+              borderRadius: "6px",
+              // outline, not border: it is outside layout, so highlighting a
+              // tile cannot reflow the strip mid-scroll or shift the absolutely
+              // positioned label and Open button.
+              outline: isFocused
+                ? "3px solid #BD5BFF"
+                : "1px solid rgba(255, 255, 255, 0.12)",
+              outlineOffset: isFocused ? "-3px" : "0px",
+              boxShadow: isFocused
+                ? "0 0 0 6px rgba(189, 91, 255, 0.22)"
+                : "none",
+              transition: "outline-color 120ms ease, box-shadow 140ms ease",
             }}
           >
             <div

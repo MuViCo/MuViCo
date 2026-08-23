@@ -21,6 +21,7 @@ import {
   laneTop,
   timelineRowsTopOffset,
 } from "./timelineMetrics"
+import { laneKey } from "../utils/laneFocus"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 
 import type {
@@ -50,6 +51,9 @@ interface EditModeProps {
   isAudioMuted: boolean
   toggleAudioMute: () => void
   indexCount: number
+  /** Stable "group:layer" key of the focused lane, or null. */
+  focusedLaneKey?: string | null
+  onFocusLane?: (laneKey: string | null) => void
 }
 
 /**
@@ -136,6 +140,11 @@ const EditMode = ({
   isAudioMuted,
   toggleAudioMute,
   indexCount,
+  // Defaults so the suites that render EditMode with plain props keep working.
+  // A no-op rather than a local useState: several of those tests fire mouseUp
+  // outside act(), and a state update there would warn.
+  focusedLaneKey = null,
+  onFocusLane = () => {},
 }: EditModeProps) => {
   const bgColorHover = useColorModeValue(
     "rgba(154, 109, 151, 0.8)",
@@ -260,6 +269,39 @@ const EditMode = ({
       ),
     [presentation.screenCount, cues, collapsedGroups, minimumGroupLanes]
   )
+
+  /**
+   * Row index of the focused lane, or -1.
+   *
+   * Falls back to the group's first lane when the exact layer is not present,
+   * which is what makes focus survive a collapse: "screen-1:1" resolves to the
+   * merged lane while collapsed and back to layer 2 when expanded. A key whose
+   * group has disappeared resolves to -1 and is simply inert.
+   */
+  const focusedRowIndex = useMemo(() => {
+    if (!focusedLaneKey) return -1
+    const exact = rowModel.rows.findIndex(
+      (row) => laneKey(row) === focusedLaneKey
+    )
+    if (exact !== -1) return exact
+    const group = focusedLaneKey.split(":")[0]
+    return rowModel.rows.findIndex((row) => row.group === group)
+  }, [rowModel.rows, focusedLaneKey])
+
+  /** Focus the lane under the pointer. Never dispatches, never opens anything. */
+  const commitLaneFocusFromEvent = (event: ReactMouseEvent) => {
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    if (!isRowInsideGrid(xIndex, yIndex)) return
+    const lane = laneAt(rowModel.rows, yIndex)
+    if (!lane) return
+    onFocusLane(laneKey(lane))
+  }
 
   const gridCues = useMemo(
     () =>
@@ -1153,6 +1195,9 @@ const EditMode = ({
 
     if (wasDragging && selectedCue) {
       if (!didDragMove) {
+        // Pointer went down on a cue and came up without crossing the 4px drag
+        // threshold: that is a click, so it focuses the lane.
+        commitLaneFocusFromEvent(event)
         clearInternalDragSpanPreview()
         return
       }
@@ -1222,6 +1267,13 @@ const EditMode = ({
         )
       ) {
         return
+      }
+
+      // Skipped while copying: the same gesture is a paste, and handlePaste
+      // runs on the click that follows this mouseup. Frame headers are excluded
+      // because their overhanging buttons reach into row space.
+      if (!isCopied && !targetElement(event).closest(".x-index-label")) {
+        commitLaneFocusFromEvent(event)
       }
 
       if (clickTimeout.current) {
@@ -1497,6 +1549,8 @@ const EditMode = ({
     const cue = getCueAtPosition(xIndex, yIndex)
 
     if (cue) {
+      const lane = laneAt(rowModel.rows, yIndex)
+      if (lane) onFocusLane(laneKey(lane))
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     }
@@ -2019,6 +2073,7 @@ const EditMode = ({
                   layout={layout}
                   cues={gridCues}
                   cueRowIndex={rowModel.cueY}
+                  focusedRowIndex={focusedRowIndex}
                   rowCount={rowModel.rowCount}
                   containerRef={containerRef}
                   columnWidth={columnWidth}

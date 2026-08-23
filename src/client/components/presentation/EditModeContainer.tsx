@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { laneScreenFromKey } from "../utils/laneFocus"
 
 import type { Dispatch, SetStateAction } from "react"
 import type { Cue, CueUpdateInput } from "../../types"
@@ -97,6 +98,9 @@ interface EditorLayoutProps
   editModeBackground: string
   panelBackground: string
   outlineColor: string
+  focusedLaneKey: string | null
+  focusedScreen: number | null
+  onFocusLane: (laneKey: string | null) => void
 }
 
 // Base component for different subcomponents of the editor
@@ -135,6 +139,9 @@ function EditorLayout(props: EditorLayoutProps) {
     editModeBackground,
     panelBackground,
     outlineColor,
+    focusedLaneKey,
+    focusedScreen,
+    onFocusLane,
   } = props
 
   useEffect(() => {
@@ -146,7 +153,26 @@ function EditorLayout(props: EditorLayoutProps) {
     const disposers = panes.flatMap(([paneSelector, handleSelector]) => {
       const pane = document.querySelector<HTMLElement>(paneSelector)
       const handle = document.querySelector<HTMLElement>(handleSelector)
-      return pane && handle ? [makeResizable(pane, handle)] : []
+      if (!pane || !handle) return []
+
+      // The shell is viewport-locked, so an unbounded drag would push the other
+      // panes off screen with no way to get them back. Rather than recomputing
+      // the layout, express the ceiling as "how much slack the sibling can give
+      // up": the pair's combined height is invariant during a drag, so this is
+      // exactly "the sum still fits", and it re-resolves on every mousemove and
+      // therefore survives a window resize mid-drag.
+      const sibling = pane.parentElement
+        ?.nextElementSibling as HTMLElement | null
+
+      return [
+        makeResizable(pane, handle, {
+          minHeight: 128,
+          maxHeight: () =>
+            sibling
+              ? pane.offsetHeight + sibling.offsetHeight - 96
+              : Number.POSITIVE_INFINITY,
+        }),
+      ]
     })
 
     return () => disposers.forEach((dispose) => dispose())
@@ -234,6 +260,7 @@ function EditorLayout(props: EditorLayoutProps) {
           editModeBackground={panelBackground}
           screens={screens}
           toggleScreenVisibility={toggleScreenVisibility}
+          focusedScreen={focusedScreen}
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
@@ -301,6 +328,8 @@ function EditorLayout(props: EditorLayoutProps) {
                   isAudioMuted={isAudioMuted}
                   toggleAudioMute={toggleAudioMute}
                   indexCount={indexCount}
+                  focusedLaneKey={focusedLaneKey}
+                  onFocusLane={onFocusLane}
                 />
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>
@@ -372,6 +401,15 @@ const EditModeContainer = ({
   const presentationName = presentation?.name
   const screenCount = presentation?.screenCount
 
+  /**
+   * Which timeline lane is focused, as a stable "group:layer" key.
+   *
+   * Lives here rather than in EditMode because ScreensDisplay is a sibling and
+   * needs the derived screen number. Kept separate from EditMode's selectedCue,
+   * which is reset on toolbox close, on save, on a committed move and when the
+   * cue leaves the store -- a lane outlives all of those.
+   */
+  const [focusedLaneKey, setFocusedLaneKey] = useState<string | null>(null)
   const [screens, setScreens] = useState<Record<string, boolean>>({})
   const [mirroring, setMirroring] = useState<Record<string, number>>({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
@@ -453,6 +491,10 @@ const EditModeContainer = ({
           Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
       )
   }
+
+  // null for audio lanes and for a screen that no longer exists, so a stale
+  // focus highlights nothing rather than pointing at a missing tile.
+  const focusedScreen = laneScreenFromKey(focusedLaneKey, screenCount ?? 0)
 
   const audioRow = getAudioRow(screenCount)
   const currentAudioTracks = getActiveCuesForScreen(audioRow, cueIndex)
@@ -611,6 +653,9 @@ const EditModeContainer = ({
         id={id}
         presentationName={presentationName}
         screenCount={screenCount ?? 1}
+        focusedLaneKey={focusedLaneKey}
+        focusedScreen={focusedScreen}
+        onFocusLane={setFocusedLaneKey}
         cues={cues}
         isToolboxOpen={isToolboxOpen}
         setIsToolboxOpen={setIsToolboxOpen}
