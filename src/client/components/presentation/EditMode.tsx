@@ -22,6 +22,17 @@ import {
   timelineRowsTopOffset,
 } from "./timelineMetrics"
 import { laneKey } from "../utils/laneFocus"
+import { keyframes } from "@emotion/react"
+
+/**
+ * Travels the width of one frame column. Paired with an animation duration of
+ * the configured seconds-per-frame, so the playhead crosses a frame in exactly
+ * the time that frame is held.
+ */
+const playheadSweep = keyframes`
+  from { transform: translateX(0); }
+  to { transform: translateX(${TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap}px); }
+`
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 
 import type {
@@ -54,6 +65,9 @@ interface EditModeProps {
   /** Stable "group:layer" key of the focused lane, or null. */
   focusedLaneKey?: string | null
   onFocusLane?: (laneKey: string | null) => void
+  isAutoplaying?: boolean
+  /** Seconds a frame is held during autoplay. */
+  autoplayInterval?: number
 }
 
 /**
@@ -145,6 +159,8 @@ const EditMode = ({
   // outside act(), and a state update there would warn.
   focusedLaneKey = null,
   onFocusLane = () => {},
+  isAutoplaying = false,
+  autoplayInterval = 1,
 }: EditModeProps) => {
   const bgColorHover = useColorModeValue(
     "rgba(154, 109, 151, 0.8)",
@@ -2114,21 +2130,30 @@ const EditMode = ({
                   headerActionsRef={headerActionsRef}
                 />
               </Box>
-              {/* Playhead: the vertical marker a video editor puts on the
-                  current frame, spanning every track. An absolutely positioned
-                  overlay, so it adds no box and cannot shift the rows. */}
+              {/* Playhead. Sits at the start of the current frame's column,
+                  and sweeps across it while that frame is playing. The key
+                  restarts the sweep on every frame change; `forwards` holds it
+                  at the column's end until the next frame begins. */}
               <Box
+                key={`playhead-${cueIndex}-${isAutoplaying}`}
                 data-testid="timeline-playhead"
                 position="absolute"
                 top={`${frameHeaderHeight}px`}
                 bottom={0}
-                left={`${columnLeft(cueIndex) + columnWidth / 2 - 1}px`}
+                left={`${columnLeft(cueIndex)}px`}
                 width="2px"
                 bg="#c084fc"
                 boxShadow="0 0 8px rgba(192, 132, 252, 0.7)"
                 pointerEvents="none"
                 zIndex={3}
-                transition="left 140ms ease"
+                transition={isAutoplaying ? undefined : "left 140ms ease"}
+                sx={
+                  isAutoplaying
+                    ? {
+                        animation: `${playheadSweep} ${autoplayInterval}s linear forwards`,
+                      }
+                    : undefined
+                }
               />
               {audioStartRow > 0 && (
                 <Box

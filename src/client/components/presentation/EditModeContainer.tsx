@@ -79,8 +79,10 @@ interface AudioTrack {
 
 // setCueIndex stays in the container: EditorLayout navigates frames through
 // updateCue rather than setting the index itself.
-interface EditorLayoutProps
-  extends Omit<EditModeContainerProps, "setCueIndex"> {
+interface EditorLayoutProps extends Omit<
+  EditModeContainerProps,
+  "setCueIndex"
+> {
   presentationName: string
   screenCount: number
   screens: Record<string, boolean>
@@ -323,6 +325,8 @@ function EditorLayout(props: EditorLayoutProps) {
                   indexCount={indexCount}
                   focusedLaneKey={focusedLaneKey}
                   onFocusLane={onFocusLane}
+                  isAutoplaying={isAutoplaying}
+                  autoplayInterval={autoplayInterval}
                 />
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>
