@@ -242,6 +242,7 @@
   position: relative;
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 .cue-editor-form {
@@ -266,6 +267,22 @@
         width: 20rem;
       }
     }
+  }
+
+  /* A flex item will not shrink below its content width without min-width: 0,
+     and the timeline's content is as wide as the frame count makes it. Without
+     this the timeline pushes the element panel off the side of the viewport as
+     soon as there are enough frames. Mirror of the min-height rule that stops
+     it growing the page vertically. */
+  #timeline.edit-mode-timeline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .edit-mode-cue-form {
+    flex: 0 0 auto;
+    width: 20rem;
+    min-width: 20rem;
   }
 
   .cue-form-tabs {

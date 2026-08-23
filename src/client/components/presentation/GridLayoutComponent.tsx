@@ -31,6 +31,7 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
+import { laneFocusBleed, laneFocusShift } from "../utils/laneFocus"
 
 import type { RefObject } from "react"
 import type { Layout } from "react-grid-layout"
@@ -556,6 +557,10 @@ const GridLayoutComponent = ({
             const cueGridRow = cueRowIndex[cue._id] ?? 0
             const isLaneFocused =
               focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
+            const focusBleed = laneFocusBleed(rowHeight)
+            const laneShift = isLaneFocused
+              ? -focusBleed / 2
+              : laneFocusShift(cueGridRow, focusedRowIndex, rowHeight)
             // Applied to the content box inside the grid item, never the item
             // itself: react-grid-layout overwrites the item's transform on
             // every layout pass, and its stylesheet transitions that property,
@@ -579,7 +584,7 @@ const GridLayoutComponent = ({
               >
                 <Box
                   position="relative"
-                  h="100%"
+                  h={isLaneFocused ? `calc(100% + ${focusBleed}px)` : "100%"}
                   overflow="hidden"
                   borderRadius="10px"
                   cursor={
@@ -592,7 +597,7 @@ const GridLayoutComponent = ({
                   data-cue-content-id={cue._id}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
                   data-focused-lane={isLaneFocused ? "true" : undefined}
-                  transform="translateY(0)"
+                  transform={`translateY(${laneShift}px)`}
                   boxShadow={
                     isLaneFocused
                       ? "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
@@ -603,7 +608,7 @@ const GridLayoutComponent = ({
                     suppressCueHoverEffects
                       ? {}
                       : {
-                          transform: "translateY(-1px)",
+                          transform: `translateY(${laneShift - 1}px)`,
                           boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
                         }
                   }

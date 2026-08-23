@@ -4,7 +4,7 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import { laneKey } from "../utils/laneFocus"
+import { laneFocusBleed, laneFocusShift, laneKey } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -173,7 +173,16 @@ const RowHeadersBase = ({
                 : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
-        h={`${rowHeight}px`}
+        h={
+          row.y === focusedRowIndex
+            ? `${rowHeight + laneFocusBleed(rowHeight)}px`
+            : `${rowHeight}px`
+        }
+        transform={`translateY(${
+          row.y === focusedRowIndex
+            ? -laneFocusBleed(rowHeight) / 2
+            : laneFocusShift(row.y, focusedRowIndex, rowHeight)
+        }px)`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="8px"
@@ -193,7 +202,7 @@ const RowHeadersBase = ({
             : "none"
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
-        transition="background-color 120ms ease, border-color 120ms ease, box-shadow 140ms ease"
+        transition="background-color 120ms ease, border-color 120ms ease, box-shadow 140ms ease, height 140ms ease, transform 140ms ease"
         _hover={{
           borderColor: isAudio
             ? TIMELINE_PALETTE.audioAccent
@@ -542,6 +551,11 @@ const RowHeadersBase = ({
   return groupLanes(rows).map((group) => {
     const groupRows = rows.slice(group.startY, group.startY + group.laneCount)
     const isAudioGroup = group.kind === "audio" || group.kind === "audio-track"
+    const groupHoldsFocus =
+      focusedRowIndex >= group.startY &&
+      focusedRowIndex < group.startY + group.laneCount
+    const groupSpanHeight =
+      group.laneCount * rowHeight + Math.max(group.laneCount - 1, 0) * gap
 
     return (
       <Box
@@ -551,6 +565,15 @@ const RowHeadersBase = ({
         role="group"
         aria-label={group.label}
         gridRow={`span ${group.laneCount}`}
+        // Grows with the focused lane it contains, so the frame keeps enclosing
+        // its lanes; the extra height is absorbed by the gutter between groups.
+        h={
+          groupHoldsFocus
+            ? `${groupSpanHeight + laneFocusBleed(rowHeight)}px`
+            : undefined
+        }
+        mt={groupHoldsFocus ? `-${laneFocusBleed(rowHeight) / 2}px` : undefined}
+        transition="height 140ms ease, margin-top 140ms ease"
         display="grid"
         gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
         gap={`${gap}px`}

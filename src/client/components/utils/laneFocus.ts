@@ -57,3 +57,33 @@ export const laneScreenFromKey = (
   const screen = Number(match[1])
   return screen >= 1 && screen <= Number(screenCount) ? screen : null
 }
+
+/**
+ * Extra height a focused lane takes, in px.
+ *
+ * The group frame grows by the same amount, so the frame still encloses its
+ * lanes; the growth is absorbed by the gutter between groups, which is why it
+ * must stay under that gap.
+ */
+export const LANE_FOCUS_GROWTH = 0.2
+
+export const laneFocusBleed = (rowHeight: number): number =>
+  Math.round(rowHeight * LANE_FOCUS_GROWTH)
+
+/**
+ * Vertical offset for a lane while another is focused: lanes above move up and
+ * lanes below move down by half the bleed each, so the focused lane grows about
+ * its own centre instead of pushing everything below it down.
+ *
+ * Presentation only -- hit-testing still runs on the untransformed grid, so a
+ * click within half a bleed of a boundary can land on the neighbouring lane.
+ */
+export const laneFocusShift = (
+  rowIndex: number,
+  focusedRowIndex: number,
+  rowHeight: number
+): number => {
+  if (focusedRowIndex < 0 || rowIndex === focusedRowIndex) return 0
+  const half = laneFocusBleed(rowHeight) / 2
+  return rowIndex < focusedRowIndex ? -half : half
+}
