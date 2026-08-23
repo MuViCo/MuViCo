@@ -215,6 +215,8 @@ export interface CueUpdateInput {
    */
   file: CueUploadFile | CueFileMeta | null
   cueId?: string
+  /** Present on the create path, which builds the payload from a lane. */
+  cueType?: CueType
   fileName?: string | null
   color?: string
   loop?: boolean

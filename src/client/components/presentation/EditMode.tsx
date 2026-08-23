@@ -11,7 +11,7 @@
 - toggleAudioMute: function to toggle audio mute in show mode
 - indexCount: number of indexes (frames) in the presentation
  */
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Box, Text, useOutsideClick, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import {
@@ -21,7 +21,50 @@ import {
   laneTop,
   timelineRowsTopOffset,
 } from "./timelineMetrics"
-import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+
+import type {
+  DragEvent as ReactDragEvent,
+  MouseEvent as ReactMouseEvent,
+  RefObject,
+} from "react"
+import type {
+  AlertData,
+  CueFileMeta,
+  CollapsedGroups,
+  Cue,
+  CueUpdateInput,
+  CueUploadFile,
+  HeaderActions,
+  Lane,
+  MinimumLanes,
+  NewCueDragData,
+} from "../../types"
+
+interface EditModeProps {
+  id: string
+  cues: Cue[]
+  isToolboxOpen: boolean
+  setIsToolboxOpen: (open: boolean) => void
+  cueIndex: number
+  isAudioMuted: boolean
+  toggleAudioMute: () => void
+  indexCount: number
+}
+
+/**
+ * event.target is typed EventTarget, which has no closest(). These handlers are
+ * only ever reached from a pointer event on an element, so the narrowing is
+ * safe -- and `closest` on a non-element would already throw today.
+ */
+const targetElement = (event: { target: EventTarget | null }): HTMLElement =>
+  event.target as HTMLElement
+
+/** A grid cell, in column (frame) and row (lane) indices. */
+interface GridCell {
+  xIndex: number
+  yIndex: number
+}
 import {
   updatePresentation,
   createCue,
@@ -93,7 +136,7 @@ const EditMode = ({
   isAudioMuted,
   toggleAudioMute,
   indexCount,
-}) => {
+}: EditModeProps) => {
   const bgColorHover = useColorModeValue(
     "rgba(154, 109, 151, 0.8)",
     "rgba(72, 26, 68, 0.8)"
@@ -114,20 +157,22 @@ const EditMode = ({
   const activeFrameBorderColor = useColorModeValue("#4a0f77", "#7a15b8")
   const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#b31bff")
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
-  const presentation = useSelector((state) => state.presentation)
-  const containerRef = useRef(null)
-  const [selectedCue, setSelectedCue] = useState(null)
+  const dispatch = useAppDispatch()
+  const presentation = useAppSelector((state) => state.presentation)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
-  const [confirmAction, setConfirmAction] = useState(() => () => {})
+  const [confirmAction, setConfirmAction] = useState<
+    () => void | Promise<void>
+  >(() => () => {})
   const [showAlert, setShowAlert] = useState(false)
-  const [alertData, setAlertData] = useState({})
-  const [collapsedGroups, setCollapsedGroups] = useState({})
-  const [minimumGroupLanes, setMinimumGroupLanes] = useState({})
-  const toggleGroupCollapsed = (group) =>
+  const [alertData, setAlertData] = useState<AlertData>({})
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedGroups>({})
+  const [minimumGroupLanes, setMinimumGroupLanes] = useState<MinimumLanes>({})
+  const toggleGroupCollapsed = (group: string) =>
     setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
-  const ensureGroupExpanded = (group) =>
+  const ensureGroupExpanded = (group: string) =>
     setCollapsedGroups((prev) => ({ ...prev, [group]: false }))
 
   // Generate frame labels for grid columns (Frame 0, Frame 1, etc.)
@@ -148,7 +193,7 @@ const EditMode = ({
   const [isDragging, setIsDragging] = useState(false)
   const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
-  const [copiedCue, setCopiedCue] = useState(null)
+  const [copiedCue, setCopiedCue] = useState<Cue | null>(null)
   const {
     previewCueSpanOverrides,
     clearExternalDragPreview,
@@ -175,13 +220,18 @@ const EditMode = ({
     },
   })
 
-  const clickTimeout = useRef(null)
+  // ReturnType<typeof setTimeout> rather than NodeJS.Timeout: this runs in both
+  // jsdom and the browser, where setTimeout returns a number.
+  const clickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasCopiedRef = useRef(false)
-  const dragStartPointerRef = useRef(null)
+  const dragStartPointerRef = useRef<{
+    clientX: number
+    clientY: number
+  } | null>(null)
   const dragHasMovedRef = useRef(false)
-  const latestGridDragDataRef = useRef(null)
-  const latestGridDragCellRef = useRef(null)
-  const headerActionsRef = useRef({
+  const latestGridDragDataRef = useRef<NewCueDragData | null>(null)
+  const latestGridDragCellRef = useRef<GridCell | null>(null)
+  const headerActionsRef = useRef<HeaderActions>({
     addIndex: () => {},
     removeIndex: () => {},
     increaseScreenCount: () => {},
@@ -200,7 +250,9 @@ const EditMode = ({
   const rowModel = useMemo(
     () =>
       buildRowModel(
-        presentation.screenCount,
+        // A null screenCount currently yields a row model with no screen
+        // lanes; coercing to 1 would invent a screen that is not there.
+        presentation.screenCount as number,
         cues,
         collapsedGroups,
         minimumGroupLanes
@@ -218,7 +270,7 @@ const EditMode = ({
   )
 
   const getActiveVisualCueStack = useCallback(
-    (screen, frameIndex) =>
+    (screen: number, frameIndex: number) =>
       cues
         .filter(
           (cue) =>
@@ -251,10 +303,10 @@ const EditMode = ({
     [rowModel.rows, getActiveVisualCueStack, indexCount]
   )
 
-  const getVisibleLaneCount = (group) =>
+  const getVisibleLaneCount = (group: string) =>
     rowModel.rows.filter((row) => row.group === group).length
 
-  const addVisualLayer = (screen) => {
+  const addVisualLayer = (screen: number) => {
     const group = `screen-${screen}`
     const nextCount = Math.min(
       DEFAULT_MAX_VISUAL_LAYERS,
@@ -264,7 +316,7 @@ const EditMode = ({
     setMinimumGroupLanes((prev) => ({ ...prev, [group]: nextCount }))
   }
 
-  const removeVisualLayer = async (screen, layer) => {
+  const removeVisualLayer = async (screen: number, layer: number) => {
     const group = `screen-${screen}`
     const visibleCount = getVisibleLaneCount(group)
     const layerToRemove = Number(layer)
@@ -329,9 +381,9 @@ const EditMode = ({
     setMinimumGroupLanes((prev) => ({ ...prev, audio: nextCount }))
   }
 
-  const cueRowOf = (cue) => rowModel.cueY[cue._id] ?? 0
+  const cueRowOf = (cue: Cue) => rowModel.cueY[cue._id] ?? 0
 
-  const laneScreenLayer = (yIndex) => {
+  const laneScreenLayer = (yIndex: number) => {
     const lane = laneAt(rowModel.rows, yIndex)
     if (!lane) return { screen: 1, layer: 0 }
     const isAudio = lane.kind === "audio-track" || lane.kind === "audio"
@@ -341,18 +393,27 @@ const EditMode = ({
     }
   }
 
-  const rowLabelForCue = (cue) =>
+  const rowLabelForCue = (cue: {
+    cueType?: string
+    screen?: number
+    layer?: number
+  }) =>
     cue.cueType === "audio"
       ? `audio track ${Number(cue.layer ?? 0) + 1}`
       : `screen ${cue.screen}, layer ${Number(cue.layer ?? 0) + 1}`
 
-  const cueTypeForTarget = (screen, cueType) =>
+  const cueTypeForTarget = (screen: number, cueType?: string) =>
     cueType ||
     (Number(screen) === getAudioRow(presentation.screenCount)
       ? "audio"
       : "visual")
 
-  const getRowCueConflict = (index, screen, layer, excludedCueId = null) =>
+  const getRowCueConflict = (
+    index: number,
+    screen: number,
+    layer: number,
+    excludedCueId: string | null = null
+  ) =>
     cues.find((cue) => {
       const samePosition =
         Number(cue.index) === Number(index) &&
@@ -366,36 +427,36 @@ const EditMode = ({
       return !excludedCueId || cue._id !== excludedCueId
     })
 
-  const isRowInsideGrid = (xIndex, yIndex) =>
+  const isRowInsideGrid = (xIndex: number, yIndex: number) =>
     Number(xIndex) >= 0 &&
     Number(xIndex) < Number(indexCount) &&
     Number(yIndex) >= 0 &&
     Number(yIndex) < Number(rowModel.rowCount)
 
-  const getCueEndIndex = (cue) =>
+  const getCueEndIndex = (cue: Cue) =>
     Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
 
-  const cueOccupiesSlot = (cue, xIndex, yIndex) =>
+  const cueOccupiesSlot = (cue: Cue, xIndex: number, yIndex: number) =>
     cueRowOf(cue) === Number(yIndex) &&
     Number(xIndex) >= Number(cue.index) &&
     Number(xIndex) <= getCueEndIndex(cue)
 
   // Get cue at grid position (including ones spanning multiple cells)
-  const getCueAtPosition = (xIndex, yIndex) =>
+  const getCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
 
   // Get cue at grid position (only anchor cell - first cell of the cue)
-  const getAnchorCueAtPosition = (xIndex, yIndex) =>
+  const getAnchorCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find(
       (cue) =>
         Number(cue.index) === Number(xIndex) && cueRowOf(cue) === Number(yIndex)
     )
 
   const getContinuationPreviewSpanOverrides = (
-    xIndex,
-    yIndex,
-    cueType,
-    draggedCueId
+    xIndex: number,
+    yIndex: number,
+    cueType?: string,
+    draggedCueId?: string | null
   ) => {
     return getContinuationShrinkSpanOverrides({
       xIndex,
@@ -404,7 +465,7 @@ const EditMode = ({
       draggedCueId,
       isValidDropCell: laneAcceptsCueType(
         laneAt(rowModel.rows, yIndex),
-        cueType
+        cueType as string
       ),
       getCueAtPosition,
     })
@@ -498,7 +559,7 @@ const EditMode = ({
     }
   }, [clearExternalPlacementPreview, hideHoverPreview])
 
-  const buildPoolCursorPreview = (dragData) => {
+  const buildPoolCursorPreview = (dragData: NewCueDragData | null) => {
     if (!dragData || dragData.type !== "newCueFromForm") {
       return null
     }
@@ -536,7 +597,7 @@ const EditMode = ({
     return null
   }
   // Handle case where trying to delete a frame that has existing cues - show confirmation and delete cues if confirmed
-  const handleIndexHasData = async (index) => {
+  const handleIndexHasData = async (index: number) => {
     setConfirmMessage(
       `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
     )
@@ -566,7 +627,7 @@ const EditMode = ({
   }
 
   // Add a new frame at specified index - shifts existing cues to the right
-  const handleAddIndex = async (index) => {
+  const handleAddIndex = async (index: number) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
@@ -602,7 +663,7 @@ const EditMode = ({
   }
 
   // Remove frame at specified index - shifts existing cues to the left
-  const handleRemoveIndex = async (index) => {
+  const handleRemoveIndex = async (index: number) => {
     if (indexCount <= 1) {
       showToast({
         title: "Minimum indexes required",
@@ -633,7 +694,7 @@ const EditMode = ({
     }
   }
 
-  const performRemoveIndex = async (newIndexCount) => {
+  const performRemoveIndex = async (newIndexCount: number) => {
     if (indexCount > 1) {
       dispatch(decrementIndexCount())
       await dispatch(saveIndexCount({ id, indexCount: newIndexCount }))
@@ -644,7 +705,7 @@ const EditMode = ({
   // `index` left by one (only if any exist), then shrinks the index count.
   // Returns null and shows an error toast if the shift fails, so callers can
   // skip their own success toast; otherwise returns how many cues moved.
-  const shiftAndRemoveIndex = async (index) => {
+  const shiftAndRemoveIndex = async (index: number) => {
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
     try {
@@ -666,7 +727,7 @@ const EditMode = ({
 
   // Add a new screen - updates audio cue row numbers and creates initial element
   const handleIncreaseScreenCount = async () => {
-    if (presentation.screenCount >= 8) {
+    if ((presentation.screenCount ?? 0) >= 8) {
       showToast({
         title: "Maximum screens reached",
         description: "Cannot add more than 8 screens",
@@ -676,7 +737,7 @@ const EditMode = ({
     }
 
     try {
-      const newScreenNumber = presentation.screenCount + 1
+      const newScreenNumber = (presentation.screenCount ?? 0) + 1
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
@@ -714,7 +775,7 @@ const EditMode = ({
 
   // Remove a screen - deletes all cues on that screen
   const handleDecreaseScreenCount = async () => {
-    if (presentation.screenCount <= 1) {
+    if ((presentation.screenCount ?? 0) <= 1) {
       showToast({
         title: "Minimum screens required",
         description: "Cannot have less than 1 screen",
@@ -749,13 +810,15 @@ const EditMode = ({
 
       dispatch(decrementScreenCount())
       const result = await dispatch(
-        saveScreenCount({ id, screenCount: currentScreenCount - 1 })
+        saveScreenCount({ id, screenCount: (currentScreenCount ?? 0) - 1 })
       )
 
       await dispatch(fetchPresentationInfo(id))
 
       // Show appropriate message based on whether cues were removed
-      const removedCuesCount = result.payload?.removedCuesCount || 0
+      const removedCuesCount =
+        (result.payload as { removedCuesCount?: number } | undefined)
+          ?.removedCuesCount || 0
       if (removedCuesCount > 0) {
         showToast({
           title: "Screen removed",
@@ -780,7 +843,7 @@ const EditMode = ({
   }
 
   // Handle mouse down - select cue and start drag if clicking on grid item
-  const handleMouseDown = (event) => {
+  const handleMouseDown = (event: ReactMouseEvent) => {
     if (event.button !== 0) {
       return
     }
@@ -790,7 +853,7 @@ const EditMode = ({
     }
 
     if (
-      event.target.closest(
+      targetElement(event).closest(
         "button, [role='menuitem'], input, textarea, select, a"
       )
     ) {
@@ -805,14 +868,15 @@ const EditMode = ({
       gap
     )
     if (cueExists(xIndex, yIndex)) {
-      const movingCue = getCueAtPosition(xIndex, yIndex)
+      // cueExists() on the line above is the same lookup.
+      const movingCue = getCueAtPosition(xIndex, yIndex) as Cue
       setSelectedCue(movingCue)
       updateDragPreviewCell({
         xIndex: Number(movingCue.index),
         yIndex: cueRowOf(movingCue),
       })
 
-      if (event.target.closest(".react-grid-item")) {
+      if (targetElement(event).closest(".react-grid-item")) {
         event.preventDefault()
         setIsDragging(true)
         setDragCursorMode("grabbing")
@@ -840,11 +904,11 @@ const EditMode = ({
   }
 
   // Handle pasting copied cue - validates drop location and creates new cue
-  const handlePaste = async (event) => {
-    if (event.target.closest("button")) return
+  const handlePaste = async (event: ReactMouseEvent) => {
+    if (targetElement(event).closest("button")) return
     if (!isCopied || !copiedCue) return
 
-    if (event.target.closest(".x-index-label")) {
+    if (targetElement(event).closest(".x-index-label")) {
       clearExternalPlacementPreview()
       setDragCursorMode("default")
       setIsCopied(false)
@@ -913,13 +977,13 @@ const EditMode = ({
     await addCue(newCueData)
   }
 
-  const updateCopiedCuePreview = (event) => {
+  const updateCopiedCuePreview = (event: ReactMouseEvent) => {
     scheduleExternalPreviewFromEvent(event, {
       cueType: copiedCue?.cueType,
       draggedCueId: copiedCue?._id,
       idleCursor: "copy",
-      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
-      isBlockedCell: (xIndex, yIndex) => {
+      isHeaderCell: Boolean(targetElement(event).closest(".x-index-label")),
+      isBlockedCell: (xIndex: number, yIndex: number) => {
         const hoveredCue = getCueAtPosition(xIndex, yIndex)
         return Boolean(hoveredCue && hoveredCue._id === copiedCue?._id)
       },
@@ -927,10 +991,17 @@ const EditMode = ({
   }
 
   // Create new cue data from copied cue - fetches file if needed and appends " copy" to name
-  const createNewCueData = async (xIndex, yIndex, copiedCue) => {
+  const createNewCueData = async (
+    xIndex: number,
+    yIndex: number,
+    copiedCue: Cue
+  ) => {
     let fileObj = null
     if (copiedCue.file) {
-      fileObj = await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name)
+      fileObj = await fetchFileFromUrl(
+        copiedCue.file.url as string,
+        copiedCue.file.name as string
+      )
       if (copiedCue.file.driveId) {
         fileObj.driveId = copiedCue.file.driveId
       }
@@ -964,7 +1035,7 @@ const EditMode = ({
     resetDragPointerTracking()
   }
 
-  const renderCollapsedPreviewMedia = (cue) => {
+  const renderCollapsedPreviewMedia = (cue: Cue) => {
     const mediaUrl =
       cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
     const mediaType = cue.file?.type || cue.file?.mimeType || ""
@@ -1000,7 +1071,7 @@ const EditMode = ({
   }
 
   // Handle mouse move - show hover previews and update drag preview position
-  const handleMouseMove = (event) => {
+  const handleMouseMove = (event: ReactMouseEvent) => {
     if (isDragging) {
       if (!dragHasMovedRef.current && dragStartPointerRef.current) {
         const deltaX = event.clientX - dragStartPointerRef.current.clientX
@@ -1023,7 +1094,7 @@ const EditMode = ({
       return
     }
 
-    if (event.target.closest(".x-index-label")) {
+    if (targetElement(event).closest(".x-index-label")) {
       hideHoverPreview()
       return
     }
@@ -1059,7 +1130,7 @@ const EditMode = ({
   }, [clearExternalPlacementPreview, isCopied])
 
   // Handle mouse up - drop cue if dragged, handle double-click otherwise
-  const handleMouseUp = async (event) => {
+  const handleMouseUp = async (event: ReactMouseEvent) => {
     const wasDragging = isDragging
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
@@ -1145,7 +1216,7 @@ const EditMode = ({
 
     if (!wasDragging) {
       if (
-        event.target.closest(
+        targetElement(event).closest(
           "button, [role='menuitem'], input, textarea, select, a"
         )
       ) {
@@ -1165,7 +1236,7 @@ const EditMode = ({
   }
 
   // Handle drag over grid - show preview of where element will be placed
-  const handleGridDragOver = (event) => {
+  const handleGridDragOver = (event: ReactDragEvent) => {
     event.preventDefault()
     hideHoverPreview()
 
@@ -1192,14 +1263,14 @@ const EditMode = ({
     scheduleExternalPreviewFromEvent(event, {
       cueType: dragCueType,
       idleCursor: "copy",
-      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
+      isHeaderCell: Boolean(targetElement(event).closest(".x-index-label")),
       cursorPreview: buildPoolCursorPreview(dragData),
       enableContinuationPreview: false,
     })
   }
 
   // Handle drag leave grid - clear preview when leaving grid boundary
-  const handleGridDragLeave = (event) => {
+  const handleGridDragLeave = (event: ReactDragEvent) => {
     const gridRect = event.currentTarget.getBoundingClientRect()
     const pointerInsideGrid =
       event.clientX >= gridRect.left &&
@@ -1225,7 +1296,7 @@ const EditMode = ({
   }))
 
   // Add a new cue - checks for conflicts and saves to backend
-  const addCue = async (cueData) => {
+  const addCue = async (cueData: CueUpdateInput) => {
     const {
       index,
       cueName,
@@ -1250,7 +1321,7 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "",
+      file || undefined,
       undefined,
       color,
       loop || false,
@@ -1279,7 +1350,10 @@ const EditMode = ({
     }
   }
 
-  const handleCueExists = async (existingCue, newCueData) => {
+  const handleCueExists = async (
+    existingCue: Cue,
+    newCueData: CueUpdateInput
+  ) => {
     setConfirmMessage(
       `Frame ${newCueData.index} element already exists on ${rowLabelForCue(newCueData)}. Do you want to replace it?`
     )
@@ -1296,14 +1370,20 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
-  const fetchFileFromUrl = async (url, fileName) => {
+  const fetchFileFromUrl = async (
+    url: string,
+    fileName: string
+  ): Promise<CueUploadFile> => {
     const response = await fetch(url)
     const blob = await response.blob()
     return new File([blob], fileName, { type: blob.type })
   }
 
   // Update existing cue - checks for conflicts with other cues at same position
-  const updateCue = async (previousCueId, updatedCue) => {
+  const updateCue = async (
+    previousCueId: string,
+    updatedCue: CueUpdateInput
+  ) => {
     const previousStillExists = cues.some((cue) => cue._id === previousCueId)
     if (!previousStillExists) {
       await addCue(updatedCue)
@@ -1325,9 +1405,9 @@ const EditMode = ({
   }
 
   const handleExistingCueUpdate = async (
-    existingCue,
-    updatedCue,
-    previousCueId
+    existingCue: Cue,
+    updatedCue: CueUpdateInput,
+    previousCueId: string
   ) => {
     setConfirmMessage(
       `${updatedCue.index} element already exists on ${rowLabelForCue(updatedCue)}. Do you want to replace it?`
@@ -1354,17 +1434,24 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
-  const createUpdatedCueData = async (existingCue, updatedCue) => {
+  const createUpdatedCueData = async (
+    existingCue: Cue,
+    updatedCue: CueUpdateInput
+  ) => {
     let fileObj = null
     if (updatedCue.file) {
       fileObj = await fetchFileFromUrl(
-        updatedCue.file.url,
-        updatedCue.file.name
+        (updatedCue.file as CueFileMeta).url as string,
+        updatedCue.file.name as string
       )
     }
 
-    if (updatedCue.file.driveId) {
-      fileObj.driveId = updatedCue.file.driveId
+    // TODO(ts): BUG -- this reads updatedCue.file outside the guard above, so a
+    // cue whose file is null throws here, as does the assignment when fileObj
+    // was never created. Asserting preserves that exactly; moving the block
+    // inside the guard would be a behaviour change no test covers.
+    if ((updatedCue.file as CueFileMeta)!.driveId) {
+      fileObj!.driveId = (updatedCue.file as CueFileMeta)!.driveId
     }
 
     return {
@@ -1380,17 +1467,17 @@ const EditMode = ({
   }
 
   // Check if cue exists at grid position
-  const cueExists = (xIndex, yIndex) => {
+  const cueExists = (xIndex: number, yIndex: number) => {
     return Boolean(getCueAtPosition(xIndex, yIndex))
   }
 
   // Check if anchor cue (first cell) exists at grid position
-  const anchorCueExists = (xIndex, yIndex) => {
+  const anchorCueExists = (xIndex: number, yIndex: number) => {
     return Boolean(getAnchorCueAtPosition(xIndex, yIndex))
   }
 
-  const handleDoubleClick = (event) => {
-    if (event.target.closest(".x-index-label")) {
+  const handleDoubleClick = (event: ReactMouseEvent) => {
+    if (targetElement(event).closest(".x-index-label")) {
       return
     }
 
@@ -1414,7 +1501,10 @@ const EditMode = ({
     }
   }
   // Dispatch cue update to backend - used for moving cues and updating from toolbox
-  const dispatchUpdateCue = async (cueId, updatedCue) => {
+  const dispatchUpdateCue = async (
+    cueId: string,
+    updatedCue: CueUpdateInput
+  ) => {
     try {
       await dispatch(updatePresentation(id, updatedCue, cueId))
       setTimeout(() => {
@@ -1434,7 +1524,7 @@ const EditMode = ({
     }
   }
 
-  const handleToolboxSave = async (updatedCue) => {
+  const handleToolboxSave = async (updatedCue: CueUpdateInput) => {
     if (!selectedCue) {
       return
     }
@@ -1445,7 +1535,7 @@ const EditMode = ({
   }
 
   // Swap two cues positions - handles element reordering on grid
-  const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
+  const dispatchSwapCues = async (newTargetCue: Cue, newSelectedCue: Cue) => {
     try {
       await dispatch(swapCues(id, newTargetCue, newSelectedCue))
     } catch (error) {
@@ -1459,10 +1549,17 @@ const EditMode = ({
   }
 
   // Calculate grid cell position from mouse coordinates
-  const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
+  const getPosition = (
+    event: { clientX: number; clientY: number },
+    containerRef: RefObject<HTMLDivElement | null>,
+    columnWidth: number,
+    rowHeight: number,
+    gap: number
+  ) => {
     const dropX = event.clientX
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const containerScrollLeft = containerRef.current.scrollLeft
+    // Every caller is a handler bound to this very container.
+    const containerRect = containerRef.current!.getBoundingClientRect()
+    const containerScrollLeft = containerRef.current!.scrollLeft
 
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
@@ -1479,7 +1576,10 @@ const EditMode = ({
   }
 
   // Handle swapping elements when dragging one to another's position
-  const handleElementPositionChange = async (selectedCue, targetCue) => {
+  const handleElementPositionChange = async (
+    selectedCue: Cue,
+    targetCue: Cue
+  ) => {
     const newTargetCue = {
       ...targetCue,
       index: selectedCue.index,
@@ -1520,7 +1620,11 @@ const EditMode = ({
     }
   }
   // Handle replacing existing cue when dropping new element on occupied cell
-  const handleCueReplace = async (xIndex, yIndex, file) => {
+  const handleCueReplace = async (
+    xIndex: number,
+    yIndex: number,
+    file: CueUploadFile
+  ) => {
     const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
     const target = laneScreenLayer(yIndex)
@@ -1540,7 +1644,7 @@ const EditMode = ({
   }
 
   // Handle dropping elements on grid - creates new cues or replaces existing ones
-  const handleDrop = async (event) => {
+  const handleDrop = async (event: ReactDragEvent) => {
     event.preventDefault()
     clearExternalPlacementPreview()
 
@@ -1572,12 +1676,14 @@ const EditMode = ({
       gap
     )
     const fallbackDropCell = latestGridDragCellRef.current
+    // The fallback yields undefined when no cell was cached. NaN behaves
+    // identically in every comparison below and satisfies the number signature.
     const xIndex = Number.isFinite(dropCell.xIndex)
       ? dropCell.xIndex
-      : fallbackDropCell?.xIndex
+      : (fallbackDropCell?.xIndex ?? NaN)
     const yIndex = Number.isFinite(dropCell.yIndex)
       ? dropCell.yIndex
-      : fallbackDropCell?.yIndex
+      : (fallbackDropCell?.yIndex ?? NaN)
     latestGridDragCellRef.current = null
 
     if (dragData && dragData.type === "newCueFromForm") {
@@ -1807,7 +1913,7 @@ const EditMode = ({
               maxAudioTracks={DEFAULT_MAX_AUDIO_TRACKS}
               gap={gap}
               rowHeight={rowHeight}
-              screenCount={presentation.screenCount}
+              screenCount={presentation.screenCount as number}
               isAudioMuted={isAudioMuted}
               screenIcon={screenIcon}
               headerActionsRef={headerActionsRef}
@@ -1848,7 +1954,7 @@ const EditMode = ({
               onDragOver={handleGridDragOver}
               onDragLeave={handleGridDragLeave}
               onDragStart={(event) => {
-                if (event.target.closest(".react-grid-item")) {
+                if (targetElement(event).closest(".react-grid-item")) {
                   event.preventDefault()
                 }
               }}
@@ -1923,7 +2029,7 @@ const EditMode = ({
                   indexCount={indexCount}
                   setShowAlert={setShowAlert}
                   setAlertData={setAlertData}
-                  screenCount={presentation.screenCount}
+                  screenCount={presentation.screenCount as number}
                   isDragging={isDragging}
                   draggingCueId={
                     isDragging && selectedCue ? selectedCue._id : null
