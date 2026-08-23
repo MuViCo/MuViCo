@@ -1,3 +1,5 @@
+import type { AlertStatus } from "@chakra-ui/react"
+
 /**
  * Domain types for the MuViCo client.
  *
@@ -107,6 +109,26 @@ export type PresentationSummary = Pick<
 > &
   Partial<Presentation>
 
+/**
+ * Body sent to POST /api/home/ by homepage/PresentationForm.
+ *
+ * A plain JSON object, not FormData: the presentation itself carries no media
+ * at creation time. `startingFrameColor` is client-only input used to seed the
+ * first cue and has no counterpart on the Presentation document.
+ */
+export interface CreatePresentationInput {
+  name: string
+  description: string
+  screenCount: number
+  startingFrameColor: string
+}
+
+/** Body sent to PUT /api/home/:id by homepage/PresentationsGrid. */
+export interface UpdatePresentationInput {
+  name: string
+  description: string
+}
+
 /* ------------------------------------------------------------------ auth -- */
 
 /**
@@ -125,6 +147,42 @@ export interface AuthUser {
    * Removing it is a server-side change, out of scope for the TS migration.
    */
   name?: string
+}
+
+/**
+ * A user as returned by the admin endpoints (GET /api/admin, PUT
+ * /api/admin/makeadmin/:id), i.e. userSchema's toJSON output. The transform
+ * deletes _id, __v, passwordHash, refreshTokenHash and refreshTokenExpires, so
+ * what is left is this.
+ *
+ * Distinct from AuthUser, which is the login response and carries a token.
+ */
+export interface AdminUser {
+  id: string
+  username: string
+  isAdmin: boolean
+  driveToken: string | null
+  /** Present only for Firebase-authenticated accounts (the field is sparse). */
+  firebaseUid?: string
+  /** Presentation ids; not populated by the admin routes. */
+  presentations: string[]
+}
+
+/** Body sent to POST /api/login and POST /api/signup. */
+export interface Credentials {
+  username: string
+  password: string
+}
+
+/** Body sent to POST /api/users/change-password. */
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+}
+
+/** GET /api/signup/check-username */
+export interface UsernameAvailability {
+  available: boolean
 }
 
 /* --------------------------------------------------------------- uploads -- */
@@ -279,6 +337,20 @@ export interface DropTarget {
 
 /* ----------------------------------------------------------------- misc -- */
 
+/**
+ * Inline alert payload rendered by components/utils/CustomAlert, and held in
+ * EditMode's alert state.
+ *
+ * Every field is optional because the state is initialised to an empty object
+ * and filled in only when something needs announcing; CustomAlert renders
+ * nothing until `title` is set.
+ */
+export interface AlertData {
+  title?: string
+  description?: string
+  status?: AlertStatus
+}
+
 /** useCustomToast argument. */
 export interface ToastOptions {
   title: string
@@ -300,3 +372,40 @@ export type TransitionType =
   | "slide-left"
   | "slide-right"
   | "none"
+
+/* ------------------------------------------------------------ static data -- */
+
+/**
+ * One entry of the manual/feature lists in components/data/.
+ *
+ * Annotated explicitly rather than inferred: several entries are written with
+ * `items: []`, which TypeScript would infer as `never[]` and which would then
+ * reject any string the consumer tries to read out of it.
+ */
+export interface FeatureSection {
+  title: string
+  items: string[]
+}
+
+/**
+ * One step of the guided tutorial (components/data/tutorialSteps.ts).
+ *
+ * id, title and description are present on all 18 steps; the rest vary. Declared
+ * as one interface with optional fields rather than left to inference, which
+ * would produce a union that rejects `step.selector` at the read sites.
+ */
+export interface TutorialStep {
+  id: string
+  title: string
+  description: string
+  /** CSS selector of the element the step points at. Absent on centred steps. */
+  selector?: string
+  center?: boolean
+  posLeftNeeded?: boolean
+  /**
+   * Absolute left position in px, overriding the computed placement. Used by
+   * TutorialGuide in the same arithmetic as the on-screen clamping, so it is a
+   * number -- the single step that sets it uses 0.
+   */
+  manualLeftPos?: number
+}
