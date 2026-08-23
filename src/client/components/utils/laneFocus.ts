@@ -18,11 +18,14 @@
 import type { Lane } from "../../types"
 
 /**
- * How much a focused lane grows.
+ * How much taller a focused lane becomes.
  *
- * Bounded by the inter-lane gutter: at rowHeight 60 a 1.22 scale adds about
- * 13px, i.e. 6.6px on each side, which stays inside the 14px gap and so never
- * reaches the neighbouring lane.
+ * Expressed as a factor of the row height and applied as a real height change,
+ * not a transform: scaling stretches the label text and the thumbnails with it.
+ *
+ * Bounded by the inter-lane gutter: at rowHeight 60 this adds about 13px, 6.6px
+ * on each side, which stays inside the 14px gap and so never reaches the
+ * neighbouring lane.
  */
 export const LANE_FOCUS_SCALE = 1.22
 
@@ -68,37 +71,10 @@ export const laneScreenFromKey = (
 }
 
 /**
- * The transform for a focused cue.
- *
- * Vertical growth is the full scale. Horizontal growth is pinned to the same
- * absolute number of pixels a single-column cue would gain, because a cue's
- * width follows its frame span: a ten-frame cue is 1590px wide, and scaling
- * that uniformly would add 95px per side and plough into its lane neighbours.
- * Holding the horizontal overhang at a constant ~9px per side keeps the effect
- * readable at every span, at the cost of slight anisotropy on long cues.
- */
-export const focusTransform = (
-  spanColumns: number,
-  columnWidth: number,
-  gap: number
-): string => {
-  const width = spanColumns * columnWidth + Math.max(spanColumns - 1, 0) * gap
-  const scaleX =
-    width > 0
-      ? 1 + ((LANE_FOCUS_SCALE - 1) * columnWidth) / width
-      : LANE_FOCUS_SCALE
-
-  return `scale(${Number(scaleX.toFixed(4))}, ${LANE_FOCUS_SCALE})`
-}
-
-/**
  * Extra height a focused lane takes, in px.
  *
- * The lanes cannot actually change height -- react-grid-layout uses a single
- * rowHeight for every row and the gutter mirrors it with fixed CSS tracks, so a
- * real height change would desynchronise both from every hit test. The
- * neighbours are instead translated apart by half this each, which reads as the
- * focused lane pushing them aside while the underlying grid is untouched.
+ * Applied as a real height change rather than a transform, so the label text
+ * and the thumbnails keep their proportions.
  */
 export const laneFocusBleed = (rowHeight: number): number =>
   rowHeight * (LANE_FOCUS_SCALE - 1)
@@ -106,10 +82,13 @@ export const laneFocusBleed = (rowHeight: number): number =>
 /**
  * Vertical offset for a lane at `rowIndex` while `focusedRowIndex` is focused.
  *
- * Lanes above move up, lanes below move down, the focused lane stays put. This
- * is presentation only: the hit-test arithmetic still runs on the untransformed
- * grid, so a click within the few pixels a lane has shifted can land on its
- * neighbour. Bounded by half the bleed, which is 6px at the default metrics.
+ * Lanes above move up, lanes below move down, so the focused lane's extra
+ * height is split between the gutters either side of it instead of pushing
+ * everything below it downward.
+ *
+ * This is presentation only: the hit-test arithmetic still runs on the
+ * untransformed grid, so a click within the few pixels a lane has shifted can
+ * land on its neighbour. Bounded by half the bleed.
  */
 export const laneFocusShift = (
   rowIndex: number,

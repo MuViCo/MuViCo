@@ -4,7 +4,7 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import { LANE_FOCUS_SCALE, laneFocusShift, laneKey } from "../utils/laneFocus"
+import { laneFocusBleed, laneFocusShift, laneKey } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -166,7 +166,11 @@ const RowHeadersBase = ({
               : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
-        h={`${rowHeight}px`}
+        h={
+          row.y === focusedRowIndex
+            ? `${rowHeight + laneFocusBleed(rowHeight)}px`
+            : `${rowHeight}px`
+        }
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="8px"
@@ -180,13 +184,15 @@ const RowHeadersBase = ({
           }
           onFocusLane(laneKey(row))
         }}
+        // The focused lane grows about its own centre, so the extra height is
+        // split between the gutters either side rather than pushing downward.
         transform={
           row.y === focusedRowIndex
-            ? `scaleY(${LANE_FOCUS_SCALE})`
+            ? `translateY(-${laneFocusBleed(rowHeight) / 2}px)`
             : `translateY(${laneFocusShift(row.y, focusedRowIndex, rowHeight)}px)`
         }
         zIndex={row.y === focusedRowIndex ? 2 : 1}
-        transition="background-color 120ms ease, border-color 120ms ease, transform 140ms ease"
+        transition="background-color 120ms ease, border-color 120ms ease, transform 140ms ease, height 140ms ease"
         _hover={{
           borderColor: isAudio
             ? TIMELINE_PALETTE.audioAccent

@@ -5,7 +5,6 @@
  */
 import {
   LANE_FOCUS_SCALE,
-  focusTransform,
   laneFocusBleed,
   laneFocusShift,
   laneKey,
@@ -74,52 +73,6 @@ describe("laneScreenFromKey", () => {
     expect(laneScreenFromKey(undefined, 4)).toBeNull()
     expect(laneScreenFromKey("", 4)).toBeNull()
     expect(laneScreenFromKey("nonsense", 4)).toBeNull()
-  })
-})
-
-describe("focusTransform", () => {
-  const columnWidth = 150
-  const gap = 10
-
-  test("scales a single-frame cue uniformly", () => {
-    expect(focusTransform(1, columnWidth, gap)).toBe(
-      `scale(${LANE_FOCUS_SCALE}, ${LANE_FOCUS_SCALE})`
-    )
-  })
-
-  test("holds the horizontal overhang constant as the span grows", () => {
-    // The point of the compensation: a wide cue must not grow proportionally,
-    // or it would overlap its lane neighbours.
-    const overhang = (span: number) => {
-      const width = span * columnWidth + Math.max(span - 1, 0) * gap
-      const scaleX = Number(
-        /scale\(([\d.]+),/.exec(focusTransform(span, columnWidth, gap))![1]
-      )
-      return width * (scaleX - 1)
-    }
-
-    // Sub-pixel tolerance: scaleX is deliberately rounded to four decimals, and
-    // on a ten-frame cue that rounding is worth about 0.07px. Proportional
-    // scaling, which is what this guards against, would put the overhang past
-    // 300px.
-    const single = overhang(1)
-    expect(overhang(2)).toBeCloseTo(single, 0)
-    expect(overhang(10)).toBeCloseTo(single, 0)
-    expect(single).toBeCloseTo((LANE_FOCUS_SCALE - 1) * columnWidth, 0)
-  })
-
-  test("always scales vertically by the full factor", () => {
-    for (const span of [1, 2, 3, 10]) {
-      expect(focusTransform(span, columnWidth, gap)).toContain(
-        `, ${LANE_FOCUS_SCALE})`
-      )
-    }
-  })
-
-  test("falls back to a uniform scale for a zero-width span", () => {
-    expect(focusTransform(0, columnWidth, gap)).toBe(
-      `scale(${LANE_FOCUS_SCALE}, ${LANE_FOCUS_SCALE})`
-    )
   })
 })
 

@@ -31,7 +31,7 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
-import { focusTransform, laneFocusShift } from "../utils/laneFocus"
+import { laneFocusBleed, laneFocusShift } from "../utils/laneFocus"
 
 import type { RefObject } from "react"
 import type { Layout } from "react-grid-layout"
@@ -561,17 +561,14 @@ const GridLayoutComponent = ({
             // itself: react-grid-layout overwrites the item's transform on
             // every layout pass, and its stylesheet transitions that property,
             // so scaling there would animate every unrelated layout change.
-            const focusScale = isLaneFocused
-              ? ` ${focusTransform(cueVisualSpan, columnWidth, gap)}`
-              : ""
-            // Neighbouring lanes are pushed aside so the focused one reads as
-            // taking room rather than overlapping.
-            const laneShift = laneFocusShift(
-              cueGridRow,
-              focusedRowIndex,
-              rowHeight
-            )
-            const laneTransform = `translateY(${laneShift}px)${focusScale}`
+            // A real height change, not a transform: scaling stretched the cue
+            // label and the thumbnail with it. Growth is centred on the lane,
+            // so the extra height splits between the gutters either side.
+            const focusBleed = laneFocusBleed(rowHeight)
+            const laneShift = isLaneFocused
+              ? -focusBleed / 2
+              : laneFocusShift(cueGridRow, focusedRowIndex, rowHeight)
+            const laneTransform = `translateY(${laneShift}px)`
 
             return (
               <div
@@ -591,7 +588,7 @@ const GridLayoutComponent = ({
               >
                 <Box
                   position="relative"
-                  h="100%"
+                  h={isLaneFocused ? `calc(100% + ${focusBleed}px)` : "100%"}
                   overflow="hidden"
                   borderRadius="10px"
                   cursor={
@@ -605,20 +602,17 @@ const GridLayoutComponent = ({
                   opacity={isDraggingOriginCue ? 0.58 : 1}
                   data-focused-lane={isLaneFocused ? "true" : undefined}
                   transform={laneTransform}
-                  // Left, not centre: a cue is anchored to the frame it starts
-                  // on, so growing it must not slide its start edge sideways.
-                  transformOrigin="left center"
                   boxShadow={
                     isLaneFocused
                       ? "0 10px 24px rgba(60, 16, 96, 0.34)"
                       : undefined
                   }
-                  transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
+                  transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease, height 140ms ease"
                   _hover={
                     suppressCueHoverEffects
                       ? {}
                       : {
-                          transform: `translateY(${laneShift - 1}px)${focusScale}`,
+                          transform: `translateY(${laneShift - 1}px)`,
                           boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
                         }
                   }
