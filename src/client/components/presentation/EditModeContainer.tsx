@@ -178,10 +178,6 @@ function EditorLayout(props: EditorLayoutProps) {
     return () => disposers.forEach((dispose) => dispose())
   }, [])
 
-  // Formatting the grid layout for the editor, using react-grid-layout.
-  // The layout is responsive and changes based on the screen size.
-  // Each grid item (a, b, c) represents a different component of the editor,
-  // such as the cue list, preview area, and toolbox.
   return (
     <div
       className="editor-shell"
@@ -197,7 +193,6 @@ function EditorLayout(props: EditorLayoutProps) {
         outline={outlineColor}
         borderRadius="8px"
         position="relative"
-        key="header"
       >
         <ClickablePopover
           label={
@@ -250,7 +245,6 @@ function EditorLayout(props: EditorLayoutProps) {
           borderRadius: "8px",
         }}
         className="screenspreview"
-        key="screensPreview"
       >
         <ScreensDisplay
           screenCount={screenCount}
@@ -274,7 +268,6 @@ function EditorLayout(props: EditorLayoutProps) {
           justifyContent: "space-between",
         }}
         className="no-resize-handle"
-        key="playbackControls"
       >
         <KeyboardHandler
           onNext={() => updateCue("Next")}
@@ -302,7 +295,7 @@ function EditorLayout(props: EditorLayoutProps) {
         </Box>
       </div>
 
-      <div className="edit-workspace" key="editWorkspace">
+      <div className="edit-workspace">
         <div>
           <div className="edit-mode-workspace">
             <div

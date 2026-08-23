@@ -254,23 +254,6 @@
 }
 
 @media (min-width: 1200px) {
-  /* Separate block: this one also updates cue form tabs for wide screens. */
-  .force-no-resize {
-    width: 20rem !important;
-  }
-
-  .edit-mode-workspace {
-    flex-direction: row;
-
-    .cue-editor-form {
-      form {
-        width: 20rem;
-      }
-    }
-  }
-}
-
-@media (min-width: 1200px) {
   .force-no-resize {
     width: 20rem !important;
   }
