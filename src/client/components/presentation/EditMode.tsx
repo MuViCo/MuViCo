@@ -152,6 +152,7 @@ const EditMode = ({
   const dragPreviewValidBorder = useColorModeValue("#7fd4ee", "#9be2f7")
   const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
   const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
+  const timelineSurface = useColorModeValue("#eedef7", "#312238")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
   const bgCurrentFrame = useColorModeValue("purple.300", "purple.200")
   const activeFrameBorderColor = useColorModeValue("#4a0f77", "#7a15b8")
@@ -1895,9 +1896,13 @@ const EditMode = ({
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}
+            // Sticky, so the per-screen group containers stay readable when the
+            // timeline is scrolled sideways. zIndex was already 2 but inert:
+            // the element was statically positioned.
+            position="sticky"
             left={0}
-            zIndex={2}
-            bg={"transparent"}
+            zIndex={5}
+            bg={timelineSurface}
             flexShrink={0}
           >
             <Box h={`${frameHeaderHeight}px`} bg="transparent" />
@@ -1988,8 +1993,8 @@ const EditMode = ({
                 gap={`${gap}px`}
                 position="sticky"
                 top={0}
-                zIndex={1}
-                bg={"transparent"}
+                zIndex={6}
+                bg={timelineSurface}
                 mb={`${gap}px`}
               >
                 <ColumnHeaders

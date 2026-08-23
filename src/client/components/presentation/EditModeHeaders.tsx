@@ -3,6 +3,7 @@
  */
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
+import { groupLanes } from "../utils/screenRowModel"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -64,7 +65,7 @@ const RowHeadersBase = ({
   screenIcon,
   headerActionsRef,
 }: RowHeadersProps): ReactNode => {
-  return rows.map((row) => {
+  const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
     const lastGroupRow = groupRows[groupRows.length - 1]
@@ -98,7 +99,6 @@ const RowHeadersBase = ({
         justifyContent={row.groupStart ? "space-between" : "center"}
         bg={isAudio ? "rgb(204, 46, 252)" : "purple.200"}
         border="2px solid #b55fe0"
-        marginRight={`${gap}px`}
         h={`${rowHeight}px`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
@@ -409,6 +409,48 @@ const RowHeadersBase = ({
             zIndex="10"
           />
         )}
+      </Box>
+    )
+  }
+
+  /**
+   * Each screen's lanes live inside one bordered container so the gutter reads
+   * as "these are the tracks of screen N" rather than a flat list of rows.
+   *
+   * The wrapper spans `laneCount` parent tracks and re-declares the same track
+   * sizes inside, so it contributes no box of its own and the 1:1 alignment
+   * with the react-grid-layout rows survives. The border is an `outline`, not a
+   * `border`: a 2px border would grow the box and push every lane below it out
+   * of alignment with the grid.
+   */
+  return groupLanes(rows).map((group) => {
+    const groupRows = rows.slice(group.startY, group.startY + group.laneCount)
+    const isAudioGroup = group.kind === "audio" || group.kind === "audio-track"
+
+    return (
+      <Box
+        key={group.group}
+        className="lane-group"
+        data-testid={`lane-group-${group.group}`}
+        role="group"
+        aria-label={group.label}
+        gridRow={`span ${group.laneCount}`}
+        display="grid"
+        gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
+        gap={`${gap}px`}
+        marginRight={`${gap}px`}
+        // Dashed when collapsed: until now the only cue that a group was
+        // collapsed was the label text.
+        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
+          isAudioGroup ? "#cc2efc" : "#b55fe0"
+        }`}
+        outlineOffset="2px"
+        borderRadius="10px"
+        position="relative"
+        // The add-layer and add-screen buttons deliberately overhang.
+        overflow="visible"
+      >
+        {groupRows.map(renderLaneHeader)}
       </Box>
     )
   })
