@@ -14,6 +14,13 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Box, Text, useOutsideClick, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
+import {
+  TIMELINE_METRICS,
+  columnLeft,
+  laneSpanHeight,
+  laneTop,
+  timelineRowsTopOffset,
+} from "./timelineMetrics"
 import { useDispatch, useSelector } from "react-redux"
 import {
   updatePresentation,
@@ -182,10 +189,7 @@ const EditMode = ({
     toggleAudioMute: () => {},
   })
 
-  const columnWidth = 150
-  const rowHeight = 100
-  const gap = 10
-  const frameHeaderHeight = Math.max(rowHeight - 45, 0)
+  const { columnWidth, rowHeight, gap, frameHeaderHeight } = TIMELINE_METRICS
   const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(
@@ -1463,14 +1467,12 @@ const EditMode = ({
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
     const dropY = event.clientY - containerRect.top
-    const timelineRowsTopOffset = frameHeaderHeight + gap
+    const rowsTopOffset = timelineRowsTopOffset()
 
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + gap
 
-    const yIndex = Math.floor(
-      (dropY - timelineRowsTopOffset) / cellHeightWithGap
-    )
+    const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
     return { xIndex, yIndex }
@@ -1832,7 +1834,7 @@ const EditMode = ({
             }}
           >
             <Box
-              height={`${frameHeaderHeight + gap + rowModel.rowCount * rowHeight + Math.max(rowModel.rowCount - 1, 0) * gap}px`}
+              height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
               minHeight="100%"
               width="100%"
               position="relative"
@@ -1893,6 +1895,7 @@ const EditMode = ({
                   inactiveFrameBorderColor={inactiveFrameBorderColor}
                   rowHeight={rowHeight}
                   columnWidth={columnWidth}
+                  frameHeaderHeight={frameHeaderHeight}
                   indexCount={indexCount}
                   headerActionsRef={headerActionsRef}
                 />
@@ -1939,8 +1942,8 @@ const EditMode = ({
                     key={`${row.group}-collapsed-preview-${frameIndex}`}
                     data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
                     position="absolute"
-                    left={`${frameIndex * (columnWidth + gap)}px`}
-                    top={`${frameHeaderHeight + gap + row.y * (rowHeight + gap)}px`}
+                    left={`${columnLeft(frameIndex)}px`}
+                    top={`${laneTop(row.y)}px`}
                     width={`${columnWidth}px`}
                     height={`${rowHeight}px`}
                     borderRadius="10px"

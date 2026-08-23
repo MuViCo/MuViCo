@@ -2,6 +2,7 @@
  * components for rendering the row and column headers in the presentation editor, including controls for adding/removing screens and frames, and toggling audio mute.
  */
 import React from "react"
+import { TIMELINE_METRICS } from "./timelineMetrics"
 import { Box, Text, IconButton, Button, Tooltip } from "@chakra-ui/react"
 import {
   AddIcon,
@@ -65,7 +66,7 @@ const RowHeadersBase = ({
         border="2px solid #b55fe0"
         marginRight={`${gap}px`}
         h={`${rowHeight}px`}
-        width="120px"
+        width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="6px"
       >
@@ -388,10 +389,9 @@ const ColumnHeadersBase = ({
   rowHeight,
   columnWidth,
   indexCount,
+  frameHeaderHeight,
   headerActionsRef,
 }) => {
-  const frameHeaderHeight = `calc(${rowHeight}px - 45px)`
-
   return xLabels.map((label, index) => (
     <Box
       key={label}
@@ -400,7 +400,7 @@ const ColumnHeadersBase = ({
       alignItems="center"
       justifyContent="center"
       role="group"
-      h={frameHeaderHeight}
+      h={`${frameHeaderHeight}px`}
     >
       <Box
         className="x-index-label"
@@ -418,7 +418,7 @@ const ColumnHeadersBase = ({
             : "none"
         }
         transition="border-color 120ms ease, box-shadow 140ms ease"
-        h={frameHeaderHeight}
+        h={`${frameHeaderHeight}px`}
         width={`${columnWidth}px`}
       >
         <Text fontWeight="bold" color="black">
@@ -428,7 +428,7 @@ const ColumnHeadersBase = ({
           position="absolute"
           top="0"
           right="-14px"
-          h={frameHeaderHeight}
+          h={`${frameHeaderHeight}px`}
           w="28px"
           aria-hidden="true"
           zIndex="1"
@@ -441,7 +441,7 @@ const ColumnHeadersBase = ({
           top="0"
           right="0"
           transform="translateX(65%)"
-          h={frameHeaderHeight}
+          h={`${frameHeaderHeight}px`}
           w="30px"
           minW="20px"
           borderRadius="0"
@@ -483,7 +483,7 @@ const ColumnHeadersBase = ({
             top="0"
             left="0"
             transform="translateX(-65%)"
-            h={frameHeaderHeight}
+            h={`${frameHeaderHeight}px`}
             w="30px"
             minW="20px"
             borderRadius="0"

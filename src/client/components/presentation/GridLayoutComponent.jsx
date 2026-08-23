@@ -24,6 +24,13 @@ import {
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
+import {
+  TIMELINE_METRICS,
+  columnLeft,
+  gridContentWidth,
+  laneOffset,
+  laneSpanHeight,
+} from "./timelineMetrics"
 import { useDispatch } from "react-redux"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
@@ -154,8 +161,16 @@ const GridLayoutComponent = ({
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
-  const gridWidth = indexCount * columnWidth + Math.max(indexCount - 1, 0) * gap
-  const gridHeight = rowCount * rowHeight + Math.max(rowCount - 1, 0) * gap
+  const gridWidth = gridContentWidth(indexCount, {
+    ...TIMELINE_METRICS,
+    columnWidth,
+    gap,
+  })
+  const gridHeight = laneSpanHeight(rowCount, {
+    ...TIMELINE_METRICS,
+    rowHeight,
+    gap,
+  })
 
   const handleLoopToggle = async (cue) => {
     const updatedCue = {
@@ -411,8 +426,8 @@ const GridLayoutComponent = ({
                 key={`empty-cell-${rowIndex}-${columnIndex}`}
                 data-testid={`grid-empty-cell-${rowIndex}-${columnIndex}`}
                 position="absolute"
-                left={`${columnIndex * (columnWidth + gap)}px`}
-                top={`${rowIndex * (rowHeight + gap)}px`}
+                left={`${columnLeft(columnIndex, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
+                top={`${laneOffset(rowIndex, { ...TIMELINE_METRICS, rowHeight, gap })}px`}
                 width={`${columnWidth}px`}
                 height={`${rowHeight}px`}
                 borderRadius="10px"
