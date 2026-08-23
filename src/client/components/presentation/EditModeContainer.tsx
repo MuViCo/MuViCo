@@ -158,15 +158,8 @@ function EditorLayout(props: EditorLayoutProps) {
   // such as the cue list, preview area, and toolbox.
   return (
     <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: editModeBackground,
-        display: "flex",
-        flexDirection: "column",
-        gap: "2rem",
-        padding: "2rem",
-      }}
+      className="editor-shell"
+      style={{ backgroundColor: editModeBackground }}
     >
       <Box
         display="flex"
