@@ -10,16 +10,28 @@
 
 import { Button } from "@chakra-ui/react"
 import React, { useMemo } from "react"
-import { buildCueVisualSpanMap, getCueVisualSpanFromMap } from "../utils/cueVisualSpanUtils"
+import {
+  buildCueVisualSpanMap,
+  getCueVisualSpanFromMap,
+} from "../utils/cueVisualSpanUtils"
 import { isType } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 
 const sortByLayerPriority = (cues) =>
-  [...cues].sort((firstCue, secondCue) => Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0))
+  [...cues].sort(
+    (firstCue, secondCue) =>
+      Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
+  )
 
 // Screens display component
 export const ScreensDisplay = ({
-  screenCount = 3, cues = [], cueIndex = 0, indexCount = 0, editModeBackground, screens = {}, toggleScreenVisibility = () => { },
+  screenCount = 3,
+  cues = [],
+  cueIndex = 0,
+  indexCount = 0,
+  editModeBackground,
+  screens = {},
+  toggleScreenVisibility = () => {},
 }) => {
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
@@ -57,13 +69,12 @@ export const ScreensDisplay = ({
 
     const currentIndex = Number(cueIndex)
 
-    const cueStack = cuesOnScreen
-      .filter((cue) => {
-        const cueStartIndex = Number(cue.index)
-        const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
-        const cueEndIndex = cueStartIndex + cueSpan - 1
-        return currentIndex >= cueStartIndex && currentIndex <= cueEndIndex
-      })
+    const cueStack = cuesOnScreen.filter((cue) => {
+      const cueStartIndex = Number(cue.index)
+      const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+      const cueEndIndex = cueStartIndex + cueSpan - 1
+      return currentIndex >= cueStartIndex && currentIndex <= cueEndIndex
+    })
 
     return sortByLayerPriority(cueStack)
   }
@@ -94,7 +105,14 @@ export const ScreensDisplay = ({
       }
 
       return (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 1,
+          }}
+        >
           Unsupported content type
         </div>
       )
@@ -115,19 +133,59 @@ export const ScreensDisplay = ({
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-evenly", alignItems: "stretch", flexWrap: "wrap", backgroundColor: editModeBackground, gap: "10px", padding: "10px", paddingBottom: "15px", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-evenly",
+        alignItems: "stretch",
+        flexWrap: "wrap",
+        backgroundColor: editModeBackground,
+        gap: "10px",
+        padding: "10px",
+        paddingBottom: "15px",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
       {Array.from({ length: screenCount }).map((_, index) => {
         const screenNumber = index + 1
         const screenStack = getCurrentCueStackForScreen(screenNumber)
 
         return (
-          <div key={screenNumber} style={{ flex: 1, display: "flex", flexDirection: "column", backgroundColor: "black", color: "white", overflow: "hidden", position: "relative", aspectRatio: "16/9" }}>
-            <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 200 }}>Screen {screenNumber}</div>
+          <div
+            key={screenNumber}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              backgroundColor: "black",
+              color: "white",
+              overflow: "hidden",
+              position: "relative",
+              aspectRatio: "16/9",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                left: "10px",
+                zIndex: 200,
+              }}
+            >
+              Screen {screenNumber}
+            </div>
             <Button
               size="xs"
               colorScheme={screens[screenNumber] ? "red" : "purple"}
               onClick={() => toggleScreenVisibility(screenNumber)}
-              style={{ position: "absolute", top: "10px", right: "10px", zIndex: 200 }}
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                zIndex: 200,
+              }}
             >
               {screens[screenNumber] ? "Close" : "Open"}
             </Button>
@@ -146,7 +204,14 @@ export const ScreensDisplay = ({
                 </div>
               ))
             ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                }}
+              >
                 No content
               </div>
             )}
