@@ -3,6 +3,40 @@
  */
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
+
+import type { RefObject, ReactNode } from "react"
+import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
+
+interface RowHeadersProps {
+  rows: Lane[]
+  collapsedGroups: CollapsedGroups
+  onToggleGroupCollapsed: (group: string) => void
+  onAddVisualLayer: (screen: number) => void
+  onRemoveVisualLayer: (screen: number, layer: number) => void
+  onAddAudioTrack: () => void
+  maxVisualLayers: number
+  maxAudioTracks: number
+  gap: number
+  rowHeight: number
+  screenCount: number
+  isAudioMuted: boolean
+  screenIcon: string
+  headerActionsRef: RefObject<HeaderActions>
+}
+
+interface ColumnHeadersProps {
+  xLabels: string[]
+  cueIndex: number
+  bgCurrentFrame: string
+  bgColorIndex: string
+  activeFrameBorderColor?: string
+  inactiveFrameBorderColor?: string
+  rowHeight: number
+  columnWidth: number
+  indexCount: number
+  frameHeaderHeight: number
+  headerActionsRef: RefObject<HeaderActions>
+}
 import { Box, Text, IconButton, Button, Tooltip } from "@chakra-ui/react"
 import {
   AddIcon,
@@ -29,7 +63,7 @@ const RowHeadersBase = ({
   isAudioMuted,
   screenIcon,
   headerActionsRef,
-}) => {
+}: RowHeadersProps): ReactNode => {
   return rows.map((row) => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
@@ -209,7 +243,9 @@ const RowHeadersBase = ({
                 isDisabled={!canRemoveVisualLayer}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onRemoveVisualLayer(row.screen, row.layer)
+                  // canRemoveVisualLayer above requires Number(row.layer ?? 0) > 0,
+                  // so the layer is defined wherever this button is enabled.
+                  onRemoveVisualLayer(row.screen, row.layer as number)
                 }}
                 _hover={{
                   bg: "orange.50",
@@ -391,7 +427,7 @@ const ColumnHeadersBase = ({
   indexCount,
   frameHeaderHeight,
   headerActionsRef,
-}) => {
+}: ColumnHeadersProps): ReactNode => {
   return xLabels.map((label, index) => (
     <Box
       key={label}

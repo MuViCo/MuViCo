@@ -31,7 +31,39 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
-import { useDispatch } from "react-redux"
+
+import type { RefObject } from "react"
+import type { Layout } from "react-grid-layout"
+import type { AlertData, Cue, SpanOverrideMap } from "../../types"
+
+interface GridLayoutComponentProps {
+  id: string
+  layout: Layout[]
+  cues: Cue[]
+  /** Cue id -> lane row index, from buildRowModel. */
+  cueRowIndex?: Record<string, number>
+  rowCount?: number
+  setCopiedCue: (cue: Cue | null) => void
+  setIsCopied: (copied: boolean) => void
+  columnWidth: number
+  rowHeight: number
+  gap: number
+  cueIndex: number
+  isAudioMuted: boolean
+  setSelectedCue: (cue: Cue | null) => void
+  setIsToolboxOpen: (open: boolean) => void
+  indexCount: number
+  setShowAlert: (show: boolean) => void
+  setAlertData: (data: AlertData) => void
+  screenCount: number
+  containerRef?: RefObject<HTMLDivElement | null>
+  isDragging?: boolean
+  draggingCueId?: string | null
+  previewCueSpanOverrides?: SpanOverrideMap
+  isCopied?: boolean
+  interactionCursor?: string | null
+}
+import { useAppDispatch } from "../../redux/hooks"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
@@ -41,7 +73,11 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 
-const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
+const renderElementBasedOnIndex = (
+  currentIndex: number,
+  cues: Cue[],
+  cue: Cue
+): boolean | undefined => {
   if (cue.index > currentIndex) {
     return false
   } else if (cue.index === currentIndex) {
@@ -64,7 +100,13 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
+const renderMedia = (
+  cue: Cue,
+  cueIndex: number,
+  cues: Cue[],
+  isAudioMuted: boolean,
+  screenCount: number
+) => {
   const visualOpacity =
     cue.cueType === "visual" ? normalizeCueOpacity(cue.opacity) : 1
 
@@ -82,7 +124,11 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
     )
   }
 
-  if (cue.file.type.startsWith("video/")) {
+  // Optional chain, not a bare read: the S3 updateCue route rebuilds cue.file
+  // as {id, name, url} and Mongoose then re-applies the schema default, so type
+  // can be absent or wrong after a file replacement. Undefined falls through to
+  // the same branch a non-video type already took.
+  if (cue.file.type?.startsWith("video/")) {
     return (
       <video
         src={cue.file.url}
@@ -100,7 +146,7 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
         controls={false}
       />
     )
-  } else if (cue.file.type.startsWith("image/")) {
+  } else if (cue.file.type?.startsWith("image/")) {
     return (
       <img // Thumbail for image
         src={cue.file.url || `/${cue.file.name}`}
@@ -150,12 +196,12 @@ const GridLayoutComponent = ({
   previewCueSpanOverrides = {},
   isCopied = false,
   interactionCursor = null,
-}) => {
+}: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [cueToRemove, setCueToRemove] = useState(null)
+  const [cueToRemove, setCueToRemove] = useState<string | null>(null)
 
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
@@ -172,7 +218,7 @@ const GridLayoutComponent = ({
     gap,
   })
 
-  const handleLoopToggle = async (cue) => {
+  const handleLoopToggle = async (cue: Cue) => {
     const updatedCue = {
       cueId: cue._id,
       cueName: cue.name,
@@ -195,14 +241,13 @@ const GridLayoutComponent = ({
         title: updatedCueFromRedux.loop ? "Loop enabled" : "Loop disabled",
         description: `${updatedCueFromRedux.name} will ${updatedCueFromRedux.loop ? "loop" : "play once"}`,
         status: "info",
-        duration: 2000,
       })
     } catch (e) {
       console.log("Error printing toast about loop toggle: ", e)
     }
   }
 
-  const handleContinuePlaybackToggle = async (cue) => {
+  const handleContinuePlaybackToggle = async (cue: Cue) => {
     const updatedCue = {
       cueId: cue._id,
       cueName: cue.name,
@@ -230,14 +275,13 @@ const GridLayoutComponent = ({
             : "stop with the sequence"
         }`,
         status: "info",
-        duration: 2000,
       })
     } catch (e) {
       console.log("Error printing toast about continuous audio toggle: ", e)
     }
   }
 
-  const handleRemoveItem = (cueId) => {
+  const handleRemoveItem = (cueId: string) => {
     setCueToRemove(cueId)
     setIsDialogOpen(true)
   }
@@ -249,7 +293,10 @@ const GridLayoutComponent = ({
         const cue = cues.find((cue) => cue._id === cueToRemove)
         showToast({
           title: "Element removed",
-          description: `Element ${cue.name} has been removed.`,
+          // The cue is looked up after the removal dispatch resolves, so it is
+          // gone from the store by now on the happy path; the optional chain
+          // matches what the template already rendered for a missing cue.
+          description: `Element ${cue?.name} has been removed.`,
           status: "success",
         })
       } catch (error) {
@@ -265,14 +312,14 @@ const GridLayoutComponent = ({
     setIsDialogOpen(false)
   }
 
-  const handleEditItem = (cueId) => {
-    const cue = cues.find((cue) => cue._id === cueId)
-    setSelectedCue(cue)
+  const handleEditItem = (cueId: string) => {
+    const cue = cues.find((candidate) => candidate._id === cueId)
+    setSelectedCue(cue ?? null)
     setIsToolboxOpen(true)
   }
 
   // helper component for rendering edit mode buttons for each cue, including options to edit, copy, delete, and toggle loop for audio cues
-  const EditModeCueButtons = (cue) => (
+  const EditModeCueButtons = (cue: Cue) => (
     <Menu isLazy>
       <MenuButton
         as={IconButton}

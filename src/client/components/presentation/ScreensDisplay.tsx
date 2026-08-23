@@ -17,7 +17,20 @@ import {
 import { isType } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 
-const sortByLayerPriority = (cues) =>
+import type { Cue, CueFileMeta } from "../../types"
+
+export interface ScreensDisplayProps {
+  screenCount?: number
+  cues?: Cue[]
+  cueIndex?: number
+  indexCount?: number
+  editModeBackground?: string
+  /** Keyed by screen number as a string, since it is built from Object.keys. */
+  screens?: Record<string, boolean>
+  toggleScreenVisibility?: (screenNumber: number) => void
+}
+
+const sortByLayerPriority = (cues: Cue[]): Cue[] =>
   [...cues].sort(
     (firstCue, secondCue) =>
       Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
@@ -32,13 +45,13 @@ export const ScreensDisplay = ({
   editModeBackground,
   screens = {},
   toggleScreenVisibility = () => {},
-}) => {
+}: ScreensDisplayProps) => {
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
   const screenSortedCuesByScreen = useMemo(() => {
-    return (cues || []).reduce((acc, cue) => {
+    return (cues || []).reduce<Record<number, Cue[]>>((acc, cue) => {
       const screenNumber = Number(cue.screen)
       if (!acc[screenNumber]) {
         acc[screenNumber] = []
@@ -48,28 +61,28 @@ export const ScreensDisplay = ({
     }, {})
   }, [cues])
 
-  const getCleanUrl = (file = {}) => {
+  const getCleanUrl = (file?: CueFileMeta | null): string => {
     const url = file?.url || ""
     return String(url).split("?")[0].split("#")[0]
   }
 
-  const isImageFile = (file = {}) => {
+  const isImageFile = (file?: CueFileMeta | null): boolean => {
     if (isType.image(file)) return true
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file)) // check common image file extensions
   }
 
-  const isVideoFile = (file = {}) => {
+  const isVideoFile = (file?: CueFileMeta | null): boolean => {
     if (isType.video(file)) return true
     return /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file)) // check common video file extensions
   }
 
-  const getCurrentCueStackForScreen = (screenNumber) => {
+  const getCurrentCueStackForScreen = (screenNumber: number): Cue[] => {
     const cuesOnScreen = screenSortedCuesByScreen[Number(screenNumber)] || []
     if (cuesOnScreen.length === 0) return []
 
     const currentIndex = Number(cueIndex)
 
-    const cueStack = cuesOnScreen.filter((cue) => {
+    const cueStack = cuesOnScreen.filter((cue: Cue) => {
       const cueStartIndex = Number(cue.index)
       const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
       const cueEndIndex = cueStartIndex + cueSpan - 1
@@ -79,7 +92,7 @@ export const ScreensDisplay = ({
     return sortByLayerPriority(cueStack)
   }
 
-  const renderCuePreview = (cue) => {
+  const renderCuePreview = (cue: Cue) => {
     if (cue?.file?.url) {
       if (isImageFile(cue.file)) {
         return (
