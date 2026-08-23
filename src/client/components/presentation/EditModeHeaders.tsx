@@ -60,11 +60,14 @@ import trashIcon from "../../public/icons/trash.svg"
  * saturated blocks.
  */
 const TIMELINE_PALETTE = {
-  /** Group-start row: the screen's own identity. */
-  screenRow: "#2f1c40",
-  /** Layer and audio-track rows, one step deeper than their screen. */
-  laneRow: "#2a1839",
-  audioLaneRow: "#33163f",
+  /**
+   * Group-start row: the screen's own identity. Light violet, a shade below the
+   * original purple.200 so it sits better against the dark timeline.
+   */
+  screenRow: "#cbb0ee",
+  /** Layer rows, a step darker so they read as subordinate to their screen. */
+  laneRow: "#ab89d6",
+  audioLaneRow: "#c77ae0",
   /** Panel behind a group. */
   groupPanel: "#241333",
   border: "#4a2d63",
@@ -135,12 +138,10 @@ const RowHeadersBase = ({
               ? TIMELINE_PALETTE.audioLaneRow
               : TIMELINE_PALETTE.laneRow
         }
-        color={TIMELINE_PALETTE.textPrimary}
+        color={TIMELINE_PALETTE.chipText}
         border="1px solid"
         borderColor={
-          row.groupStart
-            ? TIMELINE_PALETTE.border
-            : TIMELINE_PALETTE.borderSubtle
+          row.groupStart ? TIMELINE_PALETTE.accent : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
         h={`${rowHeight}px`}
@@ -191,7 +192,7 @@ const RowHeadersBase = ({
                     <SpeakerIcon boxSize="36px" />
                   )
                 }
-                color={TIMELINE_PALETTE.textSecondary}
+                color={TIMELINE_PALETTE.chipText}
                 sx={{
                   width: "44px",
                   height: "44px",
@@ -227,21 +228,27 @@ const RowHeadersBase = ({
                   flexShrink={0}
                 >
                   <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    width="24px"
-                    height="24px"
-                    borderRadius="6px"
-                    bg={TIMELINE_PALETTE.chip}
-                    color={TIMELINE_PALETTE.chipText}
-                    fontSize="12px"
+                    as="img"
+                    src={screenIcon}
+                    alt=""
+                    width="50px"
+                    height="50px"
+                    aria-hidden="true"
+                  />
+                  <Text
+                    as="span"
+                    position="absolute"
+                    top="43%"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    fontSize="19px"
                     fontWeight="700"
                     lineHeight="1"
+                    color="black"
                     pointerEvents="none"
                   >
                     {row.screen}
-                  </Box>
+                  </Text>
                 </Box>
               </Tooltip>
               <Text as="span" fontSize="13px" lineHeight="1" noOfLines={1}>
