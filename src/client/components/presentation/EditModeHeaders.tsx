@@ -101,11 +101,25 @@ const RowHeadersBase = ({
         display="flex"
         alignItems="center"
         justifyContent={row.groupStart ? "space-between" : "center"}
-        bg={isAudio ? "rgba(58, 22, 74, 0.92)" : "rgba(40, 26, 58, 0.92)"}
+        bg={
+          row.groupStart
+            ? isAudio
+              ? "rgba(120, 44, 150, 0.95)"
+              : "rgba(86, 58, 122, 0.95)"
+            : isAudio
+              ? "rgba(58, 22, 74, 0.92)"
+              : "rgba(40, 26, 58, 0.92)"
+        }
         color="whiteAlpha.900"
         border="1px solid"
         borderColor={
-          isAudio ? "rgba(232, 121, 255, 0.28)" : "rgba(189, 91, 255, 0.22)"
+          row.groupStart
+            ? isAudio
+              ? "rgba(232, 121, 255, 0.55)"
+              : "rgba(189, 91, 255, 0.45)"
+            : isAudio
+              ? "rgba(232, 121, 255, 0.28)"
+              : "rgba(189, 91, 255, 0.22)"
         }
         borderRadius="8px"
         h={`${rowHeight}px`}
@@ -160,6 +174,7 @@ const RowHeadersBase = ({
                     <SpeakerIcon boxSize="36px" />
                   )
                 }
+                color="whiteAlpha.900"
                 sx={{
                   width: "44px",
                   height: "44px",
@@ -201,6 +216,8 @@ const RowHeadersBase = ({
                     width="50px"
                     height="50px"
                     aria-hidden="true"
+                    filter="invert(1)"
+                    opacity={0.92}
                   />
                   <Text
                     as="span"
@@ -211,7 +228,7 @@ const RowHeadersBase = ({
                     fontSize="19px"
                     fontWeight="700"
                     lineHeight="1"
-                    color="black"
+                    color="white"
                     pointerEvents="none"
                   >
                     {row.screen}
