@@ -303,6 +303,30 @@ const EditMode = ({
     return index
   }, [rowModel.rows])
 
+  /**
+   * Focus the lane a cue was just placed on.
+   *
+   * Resolved from the row model rather than assembled from a group string, so a
+   * collapsed group focuses its merged lane instead of a layer that is not
+   * currently rendered.
+   */
+  const focusLaneForCue = (screen: number, layer: number, cueType?: string) => {
+    // Group naming mirrors buildRowModel; matching on row.screen alone misses
+    // audio, whose lanes carry the pseudo-screen the cue records use.
+    const group =
+      cueTypeForTarget(screen, cueType) === "audio"
+        ? "audio"
+        : `screen-${screen}`
+    const lane = rowModel.rows.find(
+      (row) =>
+        row.group === group &&
+        (row.collapsed || Number(row.layer ?? 0) === Number(layer))
+    )
+    // A key with no matching lane resolves to -1 and is inert, so falling back
+    // is safe when the row model has not caught up with the new cue yet.
+    onFocusLane(lane ? laneKey(lane) : `${group}:${layer}`)
+  }
+
   /** Focus the lane under the pointer. Never dispatches, never opens anything. */
   const commitLaneFocusFromEvent = (event: ReactMouseEvent) => {
     const { xIndex, yIndex } = getPosition(
@@ -1398,6 +1422,10 @@ const EditMode = ({
       continuePlayback
     )
 
+    // Focus follows the placement intent, not the request: the lane the user
+    // aimed at is the one they want to work on whether or not the save lands.
+    focusLaneForCue(screen, layer, cueData.cueType)
+
     try {
       await dispatch(createCue(id, formData))
 
@@ -1960,10 +1988,6 @@ const EditMode = ({
         >
           <Box
             className="screen-boxes"
-            // Chakra group: the per-track controls stay hidden until the
-            // pointer is over the gutter, so the column reads as tracks rather
-            // than as a bank of buttons.
-            role="group"
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}
@@ -1981,6 +2005,7 @@ const EditMode = ({
             <RowHeaders
               rows={rowModel.rows}
               focusedRowIndex={focusedRowIndex}
+              onFocusLane={onFocusLane}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapsed={toggleGroupCollapsed}
               onAddVisualLayer={addVisualLayer}

@@ -198,7 +198,11 @@ describe("EditMode drag swapping", () => {
     },
   ]
 
-  const renderEditMode = (customCues = cues, customIndexCount = 3) => {
+  const renderEditMode = (
+    customCues = cues,
+    customIndexCount = 3,
+    extraProps = {}
+  ) => {
     return render(
       <EditMode
         id="presentation-1"
@@ -209,6 +213,7 @@ describe("EditMode drag swapping", () => {
         isAudioMuted={false}
         toggleAudioMute={jest.fn()}
         indexCount={customIndexCount}
+        {...extraProps}
       />
     )
   }
@@ -661,6 +666,40 @@ describe("EditMode drag swapping", () => {
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: "Cannot drop here" })
     )
+  })
+
+  it("focuses the lane an element was dropped onto", async () => {
+    const onFocusLane = jest.fn()
+    renderEditMode(cues, 3, { onFocusLane })
+    const gridContainer = setupGridGeometry()
+    const dropArea = screen.getByTestId("drop-area")
+    const dataTransfer = buildPoolColorDragDataTransfer()
+
+    fireEvent.dragOver(gridContainer, {
+      dataTransfer,
+      clientX: 330,
+      clientY: rowCenterY(0),
+    })
+
+    const dropEvent = createEvent.drop(dropArea)
+    for (const [key, value] of [
+      ["dataTransfer", dataTransfer],
+      ["clientX", 330],
+      ["clientY", rowCenterY(0)],
+    ]) {
+      Object.defineProperty(dropEvent, key, { value, configurable: true })
+    }
+
+    await act(async () => {
+      fireEvent(dropArea, dropEvent)
+    })
+
+    await waitFor(() => {
+      expect(createCue).toHaveBeenCalled()
+    })
+    // Dropping an element is a placement, so the lane it landed on takes focus
+    // the same way clicking it would.
+    expect(onFocusLane).toHaveBeenCalled()
   })
 
   it("does not block pool cue drops on occupied anchor slots", async () => {

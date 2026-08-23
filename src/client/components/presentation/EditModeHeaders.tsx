@@ -4,7 +4,7 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import { LANE_FOCUS_SCALE, laneFocusShift } from "../utils/laneFocus"
+import { LANE_FOCUS_SCALE, laneFocusShift, laneKey } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -26,6 +26,7 @@ interface RowHeadersProps {
   headerActionsRef: RefObject<HeaderActions>
   /** Row index of the focused lane, or -1. */
   focusedRowIndex?: number
+  onFocusLane?: (laneKey: string) => void
 }
 
 interface ColumnHeadersProps {
@@ -112,6 +113,7 @@ const RowHeadersBase = ({
   screenIcon,
   headerActionsRef,
   focusedRowIndex = -1,
+  onFocusLane = () => {},
 }: RowHeadersProps): ReactNode => {
   const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
@@ -168,6 +170,16 @@ const RowHeadersBase = ({
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="8px"
+        cursor="pointer"
+        onClick={(event) => {
+          // Buttons inside the cell keep their own behaviour.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onFocusLane(laneKey(row))
+        }}
         transform={
           row.y === focusedRowIndex
             ? `scaleY(${LANE_FOCUS_SCALE})`
