@@ -19,7 +19,9 @@ jest.mock("react-redux", () => ({
 }))
 
 jest.mock("../../redux/presentationReducer", () => ({
-  fetchPresentationInfo: jest.fn(() => ({ type: "MOCK_FETCH_PRESENTATION_INFO" })),
+  fetchPresentationInfo: jest.fn(() => ({
+    type: "MOCK_FETCH_PRESENTATION_INFO",
+  })),
 }))
 
 jest.mock("../../components/presentation/EditMode", () => {
@@ -82,7 +84,10 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
   }
 })
 
-jest.mock("../../components/utils/ResizeElement", () => jest.fn())
+// makeResizable returns a disposer the caller must invoke on unmount.
+jest.mock("../../components/utils/ResizeElement", () =>
+  jest.fn(() => jest.fn())
+)
 
 describe("EditModeContainer playback behavior", () => {
   const dispatchMock = jest.fn()
@@ -121,15 +126,20 @@ describe("EditModeContainer playback behavior", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     useDispatch.mockReturnValue(dispatchMock)
-    useSelector.mockImplementation((selector) => selector({
-      presentation: {
-        name: "Test presentation",
-        screenCount: 2,
-      },
-    }))
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+        },
+      })
+    )
   })
 
-  const renderWithCueState = ({ initialCueIndex = 0, indexCount = 10 } = {}) => {
+  const renderWithCueState = ({
+    initialCueIndex = 0,
+    indexCount = 10,
+  } = {}) => {
     const setCueIndexSpy = jest.fn()
     const cueIndexRef = { current: initialCueIndex }
 
@@ -142,11 +152,11 @@ describe("EditModeContainer playback behavior", () => {
 
       const setCueIndex = (nextValue) => {
         setCueIndexSpy(nextValue)
-        setCueIndexState((previousCueIndex) => (
+        setCueIndexState((previousCueIndex) =>
           typeof nextValue === "function"
             ? nextValue(previousCueIndex)
             : nextValue
-        ))
+        )
       }
 
       return (
@@ -166,7 +176,10 @@ describe("EditModeContainer playback behavior", () => {
   test("starts autoplay from frame 0 and advances with interval", async () => {
     jest.useFakeTimers()
 
-    const { setCueIndexSpy } = renderWithCueState({ initialCueIndex: 1, indexCount: 10 })
+    const { setCueIndexSpy } = renderWithCueState({
+      initialCueIndex: 1,
+      indexCount: 10,
+    })
 
     fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
 
@@ -176,7 +189,9 @@ describe("EditModeContainer playback behavior", () => {
       jest.advanceTimersByTime(5000)
     })
 
-    expect(setCueIndexSpy.mock.calls.some((call) => typeof call[0] === "function")).toBe(true)
+    expect(
+      setCueIndexSpy.mock.calls.some((call) => typeof call[0] === "function")
+    ).toBe(true)
 
     jest.useRealTimers()
   })
@@ -184,7 +199,10 @@ describe("EditModeContainer playback behavior", () => {
   test("autoplay interval change increases tick frequency", async () => {
     jest.useFakeTimers()
 
-    const { setCueIndexSpy } = renderWithCueState({ initialCueIndex: 0, indexCount: 100 })
+    const { setCueIndexSpy } = renderWithCueState({
+      initialCueIndex: 0,
+      indexCount: 100,
+    })
 
     fireEvent.change(screen.getByLabelText("Autoplay seconds"), {
       target: { value: "0.1" },
@@ -196,7 +214,9 @@ describe("EditModeContainer playback behavior", () => {
       jest.advanceTimersByTime(500)
     })
 
-    const updaterCallCount = setCueIndexSpy.mock.calls.filter((call) => typeof call[0] === "function").length
+    const updaterCallCount = setCueIndexSpy.mock.calls.filter(
+      (call) => typeof call[0] === "function"
+    ).length
     expect(updaterCallCount).toBeGreaterThanOrEqual(4)
 
     jest.useRealTimers()
@@ -205,7 +225,10 @@ describe("EditModeContainer playback behavior", () => {
   test("autoplay stops at the last frame", async () => {
     jest.useFakeTimers()
 
-    const { cueIndexRef } = renderWithCueState({ initialCueIndex: 0, indexCount: 3 })
+    const { cueIndexRef } = renderWithCueState({
+      initialCueIndex: 0,
+      indexCount: 3,
+    })
 
     fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
 
@@ -215,7 +238,9 @@ describe("EditModeContainer playback behavior", () => {
 
     await waitFor(() => {
       expect(cueIndexRef.current).toBe(2)
-      expect(screen.getByRole("button", { name: "Start Autoplay" })).toBeInTheDocument()
+      expect(
+        screen.getByRole("button", { name: "Start Autoplay" })
+      ).toBeInTheDocument()
     })
 
     jest.useRealTimers()

@@ -73,19 +73,18 @@ function EditorLayout(props) {
   } = props
 
   useEffect(() => {
-    const screen_preview_element = document.querySelector("#screen_preview")
-    const resize_handle_element = document.querySelector(
-      "#screen_resize_handle"
-    )
+    const panes = [
+      ["#screen_preview", "#screen_resize_handle"],
+      ["#timeline", "#timeline_resize_handle"],
+    ]
 
-    makeResizable(screen_preview_element, resize_handle_element) // Using the entire container as the handle for resizing
+    const disposers = panes.flatMap(([paneSelector, handleSelector]) => {
+      const pane = document.querySelector(paneSelector)
+      const handle = document.querySelector(handleSelector)
+      return pane && handle ? [makeResizable(pane, handle)] : []
+    })
 
-    const timeline_element = document.querySelector("#timeline")
-    const timeline_resize_handle_element = document.querySelector(
-      "#timeline_resize_handle"
-    )
-
-    makeResizable(timeline_element, timeline_resize_handle_element) // Using the entire container as the handle for resizing
+    return () => disposers.forEach((dispose) => dispose())
   }, [])
 
   // Formatting the grid layout for the editor, using react-grid-layout.
