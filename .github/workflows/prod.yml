@@ -35,7 +35,7 @@ jobs:
           echo "image=ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
 
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "ghcr.io/muvico/muvico:${{ github.event.release.tag_name }}"
           format: sarif

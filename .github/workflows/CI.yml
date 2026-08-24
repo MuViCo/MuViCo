@@ -117,7 +117,7 @@ jobs:
             -t ghcr.io/muvico/muvico:staging .
 
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "ghcr.io/muvico/muvico:${{ steps.meta.outputs.image_tag }}"
           format: sarif
