@@ -482,8 +482,11 @@ const GridLayoutComponent = ({
                 width={`${columnWidth}px`}
                 height={`${rowHeight}px`}
                 borderRadius="10px"
+                // Fill only. The 1px outline used to draw these slots read as a
+                // grid of boxes, and its light edge was the one thing still
+                // catching the eye where cells scroll behind the pinned gutter.
+                // A flat fill is also how a video editor draws an empty slot.
                 bg="rgba(12, 10, 18, 0.46)"
-                border="1px solid rgba(255, 255, 255, 0.12)"
               />
             ))
           )}
