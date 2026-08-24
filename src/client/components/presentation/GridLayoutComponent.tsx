@@ -487,9 +487,18 @@ const GridLayoutComponent = ({
                 data-testid={`grid-empty-cell-${rowIndex}-${columnIndex}`}
                 position="absolute"
                 left={`${columnLeft(columnIndex, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
-                top={`${laneOffset(rowIndex, { ...TIMELINE_METRICS, rowHeight, rowGap })}px`}
+                top={`${
+                  laneOffset(rowIndex, {
+                    ...TIMELINE_METRICS,
+                    rowHeight,
+                    rowGap,
+                  }) + (focusLayout.offset[rowIndex] ?? 0)
+                }px`}
                 width={`${columnWidth}px`}
-                height={`${rowHeight}px`}
+                // Knitted and resized like the clips and the lane headers: an
+                // empty slot marks where a clip would go, so it has to be the
+                // shape a clip would take.
+                height={`${rowHeight + (focusLayout.delta[rowIndex] ?? 0)}px`}
                 borderRadius="10px"
                 // Fill only. The 1px outline used to draw these slots read as a
                 // grid of boxes, and its light edge was the one thing still

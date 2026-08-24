@@ -2021,13 +2021,10 @@ const EditMode = ({
           display="flex"
           width="100%"
           marginTop="0px"
-          // Definite, and computed rather than left to the content. Both
-          // children stretch to this line, and a line sized by stretched items
-          // came out at the scrollport height: the gutter then overflowed it in
-          // visible and looked whole, while the frame scroller clipped and lost
-          // its last screens. The timeline knows its own height, so it states it.
-          height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
+          // The children size themselves (see alignSelf below), so this is only
+          // a floor for a timeline too short to fill the panel.
           minHeight="100%"
+          alignItems="start"
           overflow="visible"
         >
           <Box
@@ -2040,6 +2037,7 @@ const EditMode = ({
             // scroller alongside the timeline body and scrolls up and down with
             // it, which is what keeps each lane header level with its row.
             flexShrink={0}
+            alignSelf="start"
           >
             <Box h={`${frameHeaderHeight}px`} />
 
@@ -2077,6 +2075,12 @@ const EditMode = ({
             // scroll vertically under the pointer. clip still trims the
             // overflow but creates no scroll container, so the wheel reaches
             // the one box that owns vertical scrolling.
+            // Height from its own content, never stretched to the flex line: a
+            // line sized from stretched items settles at the scrollport height,
+            // and this box clips, so everything past that was cut off -- the
+            // gutter beside it is a grid of fixed tracks and merely overflowed
+            // in visible, so it looked whole and the two disagreed.
+            alignSelf="start"
             overflowX="auto"
             overflowY="clip"
             // X only. A trackpad gesture carries both deltas at once, and
