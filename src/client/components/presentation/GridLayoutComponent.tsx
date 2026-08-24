@@ -31,7 +31,7 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
-import { laneFocusDelta, laneFocusOffset } from "../utils/laneFocus"
+import type { LaneFocusLayout } from "../utils/laneFocus"
 
 import type { RefObject } from "react"
 import type { Layout } from "react-grid-layout"
@@ -67,6 +67,11 @@ interface GridLayoutComponentProps {
   interactionCursor?: string | null
   /** Row index of the focused lane, or -1. */
   focusedRowIndex?: number
+  /**
+   * Per-lane height change and offset, computed once by EditMode from the row
+   * model so a clip and its track label move as one.
+   */
+  focusLayout?: LaneFocusLayout
 }
 import { useAppDispatch } from "../../redux/hooks"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
@@ -203,6 +208,7 @@ const GridLayoutComponent = ({
   isCopied = false,
   interactionCursor = null,
   focusedRowIndex = -1,
+  focusLayout = { delta: [], offset: [] },
 }: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
@@ -563,18 +569,10 @@ const GridLayoutComponent = ({
             const cueGridRow = cueRowIndex[cue._id] ?? 0
             const isLaneFocused =
               focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
-            // Same delta the lane header uses, so a clip and its track label
-            // grow and shrink together.
-            const laneDelta = laneFocusDelta(
-              cueGridRow,
-              focusedRowIndex,
-              rowHeight
-            )
-            const laneShift = laneFocusOffset(
-              cueGridRow,
-              focusedRowIndex,
-              rowHeight
-            )
+            // Same delta and offset the lane header uses, so a clip and its
+            // track label move as one.
+            const laneDelta = focusLayout.delta[cueGridRow] ?? 0
+            const laneShift = focusLayout.offset[cueGridRow] ?? 0
             // Applied to the content box inside the grid item, never the item
             // itself: react-grid-layout overwrites the item's transform on
             // every layout pass, and its stylesheet transitions that property,

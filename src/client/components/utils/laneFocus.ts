@@ -59,11 +59,12 @@ export const laneScreenFromKey = (
 }
 
 /**
- * Extra height a focused lane takes, in px.
+ * Extra height a focused lane is drawn with, in px.
  *
- * The group frame grows by the same amount, so the frame still encloses its
- * lanes; the growth is absorbed by the gutter between groups, which is why it
- * must stay under that gap.
+ * Every pixel of it is given up by the other lanes of the same screen, so the
+ * group is exactly as tall focused as not. It therefore has to stay small
+ * enough that those lanes can still afford it -- with one lane the group cannot
+ * afford anything, and the focus is carried by colour alone.
  */
 export const LANE_FOCUS_GROWTH = 0.15
 
@@ -71,55 +72,61 @@ export const laneFocusBleed = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_FOCUS_GROWTH)
 
 /**
- * How much a lane gives up while a lane in another group holds focus.
+ * Per-lane height change and top offset while one lane holds focus.
  *
- * Taken inside the lane's own grid track rather than from it: the track height
- * is the coordinate the frame columns, the cue positions and every hit test are
- * built on, so shrinking it would slide the gutter out of step with the rows it
- * labels. Only the cell drawn in the track gets shorter, centred, which reads as
- * the lane receding without moving anything.
+ * The naive version -- grow the focused lane about its own centre and leave the
+ * rest alone -- eats into the gaps on either side of it and widens the ones two
+ * lanes away, so the spacing that separates layers from each other and screens
+ * from each other stops meaning anything precisely when the eye is drawn to it.
  *
- * This is also why the growth above stays at or below the inter-group gap: the
- * focused lane's extra height has to fit in the gutter, and dimming the others
- * frees no room there.
+ * Here the growth is borrowed rather than taken: the focused lane gains
+ * `laneFocusBleed`, its siblings in the same screen each give up an equal share
+ * of it, and each lane is shifted by the running total of what came before it.
+ * Consecutive lanes then stay exactly one row gap apart -- box i+1 starts where
+ * box i ends plus the gap, by construction -- and because the shares sum to
+ * zero, the group ends where it began and the screens keep their spacing too.
+ *
+ * A lane in a group that does not hold focus is untouched. Shrinking it would
+ * change that group's height, which is the one thing this is built to avoid.
+ *
+ * Presentation only: hit-testing still runs on the untouched grid tracks, so a
+ * click near a boundary can land on the neighbouring lane.
  */
-export const LANE_DIM_SHRINK = 0.1
-
-export const laneDimShrink = (rowHeight: number): number =>
-  Math.round(rowHeight * LANE_DIM_SHRINK)
-
-/**
- * How much taller (or shorter) a lane is drawn than its grid track.
- *
- * The focused lane gains `laneFocusBleed`, every other lane gives up
- * `laneDimShrink`, and with nothing focused every lane matches its track. The
- * two are sized so the growth fits in the space the neighbours give up plus the
- * row gap, which is what lets the effect stay inside the group: the group's
- * frame never changes size, so the spacing between screens is the same whether
- * a lane is focused or not.
- */
-export const laneFocusDelta = (
-  rowIndex: number,
-  focusedRowIndex: number,
-  rowHeight: number
-): number => {
-  if (focusedRowIndex < 0) return 0
-  return rowIndex === focusedRowIndex
-    ? laneFocusBleed(rowHeight)
-    : -laneDimShrink(rowHeight)
+export interface LaneFocusLayout {
+  /** Height change per lane, indexed by row. */
+  delta: number[]
+  /** Top offset per lane, indexed by row. */
+  offset: number[]
 }
 
-/**
- * Offset that keeps a resized lane centred on its track, so it grows and
- * shrinks about its own middle instead of hanging off the top.
- *
- * Presentation only -- hit-testing still runs on the untouched track, so a click
- * within half a delta of a boundary can land on the neighbouring lane.
- */
-export const laneFocusOffset = (
-  rowIndex: number,
+export const laneFocusLayout = (
+  groups: readonly { startY: number; laneCount: number }[],
   focusedRowIndex: number,
   rowHeight: number
-): number => -laneFocusDelta(rowIndex, focusedRowIndex, rowHeight) / 2
+): LaneFocusLayout => {
+  const rowCount = groups.reduce((total, g) => total + g.laneCount, 0)
+  const delta = new Array<number>(rowCount).fill(0)
+  const offset = new Array<number>(rowCount).fill(0)
+
+  const group = groups.find(
+    (g) =>
+      focusedRowIndex >= g.startY &&
+      focusedRowIndex < g.startY + g.laneCount &&
+      g.laneCount > 1
+  )
+  if (!group) return { delta, offset }
+
+  const bleed = laneFocusBleed(rowHeight)
+  const share = bleed / (group.laneCount - 1)
+
+  let running = 0
+  for (let y = group.startY; y < group.startY + group.laneCount; y += 1) {
+    delta[y] = y === focusedRowIndex ? bleed : -share
+    offset[y] = running
+    running += delta[y] as number
+  }
+
+  return { delta, offset }
+}
 
 export const GROUP_INSET = 18

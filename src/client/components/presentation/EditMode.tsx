@@ -21,7 +21,7 @@ import {
   laneTop,
   timelineRowsTopOffset,
 } from "./timelineMetrics"
-import { laneKey } from "../utils/laneFocus"
+import { laneFocusLayout, laneKey } from "../utils/laneFocus"
 import { keyframes } from "@emotion/react"
 
 /**
@@ -125,6 +125,7 @@ import {
   buildRowModel,
   DEFAULT_MAX_AUDIO_TRACKS,
   DEFAULT_MAX_VISUAL_LAYERS,
+  groupLanes,
   laneAcceptsCueType,
   laneAt,
   planVisualLayerRemoval,
@@ -308,6 +309,16 @@ const EditMode = ({
     const group = focusedLaneKey.split(":")[0]
     return rowModel.rows.findIndex((row) => row.group === group)
   }, [rowModel.rows, focusedLaneKey])
+
+  /**
+   * Height change and offset per lane while one lane holds focus. Computed here
+   * so the gutter and the clips are laid out from one result.
+   */
+  const focusLayout = useMemo(
+    () =>
+      laneFocusLayout(groupLanes(rowModel.rows), focusedRowIndex, rowHeight),
+    [rowModel.rows, focusedRowIndex, rowHeight]
+  )
 
   /**
    * Row index where the audio section starts, or -1.
@@ -2212,6 +2223,7 @@ const EditMode = ({
                     cues={gridCues}
                     cueRowIndex={rowModel.cueY}
                     focusedRowIndex={focusedRowIndex}
+                    focusLayout={focusLayout}
                     rowCount={rowModel.rowCount}
                     containerRef={containerRef}
                     columnWidth={columnWidth}

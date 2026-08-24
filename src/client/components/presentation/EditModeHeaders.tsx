@@ -4,12 +4,8 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import {
-  GROUP_INSET,
-  laneFocusDelta,
-  laneFocusOffset,
-  laneKey,
-} from "../utils/laneFocus"
+import { GROUP_INSET, laneFocusLayout, laneKey } from "../utils/laneFocus"
+import type { LaneFocusLayout } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -180,15 +176,13 @@ const RowHeadersBase = ({
                 : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
-        // Drawn taller or shorter than its track, never moving it: the track is
-        // the coordinate the frame columns and the hit tests share.
-        h={`${rowHeight + laneFocusDelta(row.y, focusedRowIndex, rowHeight)}px`}
-        alignSelf="center"
-        transform={`translateY(${laneFocusOffset(
-          row.y,
-          focusedRowIndex,
-          rowHeight
-        )}px)`}
+        // Drawn taller or shorter than its track without moving it: the track
+        // is the coordinate the frame columns and the hit tests share. What the
+        // focused lane gains, its siblings give back, so consecutive lanes stay
+        // exactly one row gap apart.
+        h={`${rowHeight + (focusLayout.delta[row.y] ?? 0)}px`}
+        alignSelf="start"
+        transform={`translateY(${focusLayout.offset[row.y] ?? 0}px)`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="8px"
@@ -564,7 +558,10 @@ const RowHeadersBase = ({
    * `border`: a 2px border would grow the box and push every lane below it out
    * of alignment with the grid.
    */
-  return groupLanes(rows).map((group) => {
+  const groups = groupLanes(rows)
+  const focusLayout = laneFocusLayout(groups, focusedRowIndex, rowHeight)
+
+  return groups.map((group) => {
     const groupRows = rows.slice(group.startY, group.startY + group.laneCount)
     const isAudioGroup = group.kind === "audio" || group.kind === "audio-track"
 

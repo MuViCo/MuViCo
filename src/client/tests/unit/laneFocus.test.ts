@@ -3,7 +3,12 @@
  * Covers lane identity, the lane -> screen mapping used by the preview strip,
  * and the span compensation applied to the focus transform.
  */
-import { laneKey, laneScreenFromKey } from "../../components/utils/laneFocus"
+import {
+  laneFocusBleed,
+  laneFocusLayout,
+  laneKey,
+  laneScreenFromKey,
+} from "../../components/utils/laneFocus"
 
 import type { Lane } from "../../types"
 
@@ -67,5 +72,63 @@ describe("laneScreenFromKey", () => {
     expect(laneScreenFromKey(undefined, 4)).toBeNull()
     expect(laneScreenFromKey("", 4)).toBeNull()
     expect(laneScreenFromKey("nonsense", 4)).toBeNull()
+  })
+})
+
+describe("laneFocusLayout", () => {
+  // Two screens of three lanes each, then a two-track audio group.
+  const groups = [
+    { startY: 0, laneCount: 3 },
+    { startY: 3, laneCount: 3 },
+    { startY: 6, laneCount: 2 },
+  ]
+  const rowHeight = 60
+  const rowGap = 8
+
+  /** Distance between the bottom of lane y and the top of lane y + 1. */
+  const gapBelow = (layout: ReturnType<typeof laneFocusLayout>, y: number) => {
+    const top = (row: number) =>
+      row * (rowHeight + rowGap) + (layout.offset[row] as number)
+    const bottom = top(y) + rowHeight + (layout.delta[y] as number)
+    return top(y + 1) - bottom
+  }
+
+  test("leaves every lane alone when nothing is focused", () => {
+    const layout = laneFocusLayout(groups, -1, rowHeight)
+    expect(layout.delta.every((d) => d === 0)).toBe(true)
+    expect(layout.offset.every((o) => o === 0)).toBe(true)
+  })
+
+  test("grows the focused lane by exactly what its siblings give up", () => {
+    const layout = laneFocusLayout(groups, 1, rowHeight)
+    expect(layout.delta[1]).toBe(laneFocusBleed(rowHeight))
+    // The group is as tall focused as not, so the screens below do not move.
+    const groupDelta = layout.delta.slice(0, 3).reduce((a, b) => a + b, 0)
+    expect(groupDelta).toBeCloseTo(0)
+  })
+
+  test("keeps consecutive lanes exactly one row gap apart", () => {
+    const layout = laneFocusLayout(groups, 1, rowHeight)
+    // This is the property the effect exists to preserve: the spacing that
+    // separates layers stays the spacing that separates layers.
+    for (let y = 0; y < 2; y += 1) {
+      expect(gapBelow(layout, y)).toBeCloseTo(rowGap)
+    }
+  })
+
+  test("does not touch the groups that do not hold focus", () => {
+    const layout = laneFocusLayout(groups, 1, rowHeight)
+    for (let y = 3; y < 8; y += 1) {
+      expect(layout.delta[y]).toBe(0)
+      expect(layout.offset[y]).toBe(0)
+    }
+  })
+
+  test("does nothing for a single-lane group", () => {
+    // A collapsed screen has no sibling to borrow the height from, so the
+    // focus is carried by colour alone rather than by resizing the group.
+    const layout = laneFocusLayout([{ startY: 0, laneCount: 1 }], 0, rowHeight)
+    expect(layout.delta).toEqual([0])
+    expect(layout.offset).toEqual([0])
   })
 })
