@@ -173,17 +173,18 @@ describe("EditModeContainer playback behavior", () => {
     return { setCueIndexSpy, cueIndexRef }
   }
 
-  test("starts autoplay from frame 0 and advances with interval", async () => {
+  test("starts autoplay from the selected frame and advances with interval", async () => {
     jest.useFakeTimers()
 
-    const { setCueIndexSpy } = renderWithCueState({
+    const { setCueIndexSpy, cueIndexRef } = renderWithCueState({
       initialCueIndex: 1,
       indexCount: 10,
     })
 
     fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
 
-    expect(setCueIndexSpy).toHaveBeenCalledWith(0)
+    // Playback resumes where the playhead was left, not at the beginning.
+    expect(cueIndexRef.current).toBe(1)
 
     await act(async () => {
       jest.advanceTimersByTime(5000)
@@ -218,6 +219,22 @@ describe("EditModeContainer playback behavior", () => {
       (call) => typeof call[0] === "function"
     ).length
     expect(updaterCallCount).toBeGreaterThanOrEqual(4)
+
+    jest.useRealTimers()
+  })
+
+  test("rewinds to the first frame when started on the last one", async () => {
+    jest.useFakeTimers()
+
+    const { cueIndexRef } = renderWithCueState({
+      initialCueIndex: 9,
+      indexCount: 10,
+    })
+
+    // Nothing left to play forward, so this is the one press that rewinds.
+    fireEvent.click(screen.getByRole("button", { name: "Start Autoplay" }))
+
+    expect(cueIndexRef.current).toBe(0)
 
     jest.useRealTimers()
   })

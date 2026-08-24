@@ -538,7 +538,14 @@ const EditModeContainer = ({
     setIsAutoplaying((prev) => {
       const next = !prev
       if (next && typeof setCueIndex === "function") {
-        setCueIndex(0)
+        // Play from where the playhead is. Rewinding unconditionally made sense
+        // while the only way to reach a frame was to step through it, but now
+        // that a frame can be selected by clicking its header, it threw that
+        // choice away on every press. The one case that still rewinds is the
+        // last frame, where playing forward has nothing to show.
+        setCueIndex((current: number) =>
+          current >= indexCount - 1 ? 0 : current
+        )
       }
       return next
     })
