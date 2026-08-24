@@ -2062,8 +2062,15 @@ const EditMode = ({
               headerActionsRef={headerActionsRef}
             />
           </Box>
+          {/* A stacking context of its own. Everything inside -- the frame band
+              at 6, the playhead at 3, the cues at up to 100, the drag overlays
+              at 130 -- is z-ordered against this single value rather than
+              against the pinned gutter beside it, which is the only reason a
+              cue at 100 could paint over a gutter at 7. Raising the gutter
+              instead would only move the ceiling. */}
           <Box
             position="relative"
+            zIndex={1}
             pointerEvents="auto"
             minHeight={0}
             sx={{
