@@ -2060,7 +2060,13 @@ const EditMode = ({
             // the one box that owns vertical scrolling.
             overflowX="auto"
             overflowY="clip"
-            overscrollBehavior="contain"
+            // X only. A trackpad gesture carries both deltas at once, and
+            // "contain" on every axis stops the vertical part chaining out to
+            // #edit-mode-scroll, so a diagonal two-finger swipe over the tracks
+            // would pan sideways and refuse to move up or down. Containing just
+            // the horizontal axis still keeps a sideways overscroll from
+            // reaching the page.
+            overscrollBehaviorX="contain"
           >
             <Box
               position="relative"
