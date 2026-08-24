@@ -175,14 +175,23 @@
   width: 100%;
 }
 
+/* Vertical only. Sideways scrolling belongs to .edit-mode-frames-scroll inside,
+   so the lane gutter -- which sits in this box, outside that one -- never has
+   frames passing behind it and needs no fill of its own to hide them. The cost
+   of the split, accepted deliberately: the frame band no longer sticks to the
+   top, because it scrolls with the body rather than over it. */
 #edit-mode-scroll {
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   height: 100%;
   min-height: 0;
   /* A rubber-band scroll must not chain to a page that cannot scroll. */
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 1rem;
+  /* The row inside is a flex row and must be free to shrink below the grid's
+     width, or the horizontal scroller never gets anything to scroll. */
+  min-width: 0;
   /* Sets the frame band off the panel's top edge instead of letting it sit on
      it. Applied here rather than to the band, because the band and the pinned
      gutter are separate subtrees kept aligned only by shared offsets -- moving

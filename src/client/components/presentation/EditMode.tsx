@@ -182,10 +182,6 @@ const EditMode = ({
   // Dark-mode values come from the editor design draft: deep near-black violets
   // for surfaces, and one light chip with dark text to mark the active frame,
   // rather than colouring whole rows.
-  // The pinned gutter and the sticky frame band mask scrolling content, so they
-  // must be indistinguishable from the panel they sit on -- this is the same
-  // pair EditModeContainer gives #timeline as its background.
-  const panelSurface = useColorModeValue("#eedef7", "#312238")
   const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#ab89d6")
   const bgCurrentFrame = useColorModeValue("purple.300", "#e0c9ff")
   const activeFrameBorderColor = useColorModeValue("#4a0f77", "#c084fc")
@@ -2020,28 +2016,13 @@ const EditMode = ({
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
             gap={`${gap}px`}
-            // Sticky, so the per-screen group containers stay readable when the
-            // timeline is scrolled sideways.
-            position="sticky"
-            left={0}
-            // Above the frame-header band, which is sticky on the other axis and
-            // would otherwise paint over the pinned gutter where the two cross.
-            // zIndex was already 2 but inert: the element was statically
-            // positioned.
-            zIndex={7}
-            // Opaque: the gutter is pinned, so cues and frame cells scroll
-            // underneath it and must be hidden rather than showing through the
-            // gaps between the lane cells.
-            bg={panelSurface}
-            // Sticky offsets are measured from the scrollport's padding edge, so
-            // left:0 leaves #edit-mode-scroll's own 1rem of padding uncovered and
-            // content slides through that strip. Extending the fill leftwards
-            // covers it without adding padding to this grid, which would displace
-            // the lane cells and break their alignment with the rows.
-            boxShadow={`-1rem 0 0 0 ${panelSurface}`}
+            // Outside the horizontal scroller, so it needs neither a sticky
+            // pin nor a fill: nothing passes behind it. It sits in the vertical
+            // scroller alongside the timeline body and scrolls up and down with
+            // it, which is what keeps each lane header level with its row.
             flexShrink={0}
           >
-            <Box h={`${frameHeaderHeight}px`} bg={panelSurface} />
+            <Box h={`${frameHeaderHeight}px`} />
 
             <RowHeaders
               rows={rowModel.rows}
@@ -2062,405 +2043,302 @@ const EditMode = ({
               headerActionsRef={headerActionsRef}
             />
           </Box>
-          {/* A stacking context of its own. Everything inside -- the frame band
-              at 6, the playhead at 3, the cues at up to 100, the drag overlays
-              at 130 -- is z-ordered against this single value rather than
-              against the pinned gutter beside it, which is the only reason a
-              cue at 100 could paint over a gutter at 7. Raising the gutter
-              instead would only move the ceiling. */}
+          {/* The horizontal scroller. Splitting it from the vertical one is what
+              lets the gutter stay put without covering anything: frames scroll
+              sideways in here, the gutter is outside and never sees them.
+              minWidth: 0 lets it shrink below the grid's width, which is what
+              gives it something to scroll. */}
           <Box
-            position="relative"
-            zIndex={1}
-            pointerEvents="auto"
-            minHeight={0}
-            sx={{
-              ".layout > .react-grid-placeholder": {
-                background: bgColorHover,
-                borderRadius: "10px",
-                opacity: 1,
-                transitionDuration: "0s",
-              },
-              ".layout .react-grid-item, .layout .react-grid-item *": {
-                userSelect: "none",
-                WebkitUserSelect: "none",
-              },
-              ".layout .react-grid-item img, .layout .react-grid-item video": {
-                WebkitUserDrag: "none",
-              },
-            }}
+            className="edit-mode-frames-scroll"
+            flex="1 1 auto"
+            minWidth={0}
+            overflowX="auto"
+            overflowY="hidden"
+            overscrollBehavior="contain"
           >
             <Box
-              height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
-              minHeight="100%"
-              width="100%"
               position="relative"
-              cursor={isDragging || isCopied ? dragCursorMode : "default"}
-              // id="presentations-grid"
-              data-testid="edit-mode-grid-container"
-              ref={containerRef}
-              onDoubleClick={handleDoubleClick}
-              onMouseDownCapture={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onDragOver={handleGridDragOver}
-              onDragLeave={handleGridDragLeave}
-              onDragStart={(event) => {
-                if (targetElement(event).closest(".react-grid-item")) {
-                  event.preventDefault()
-                }
+              pointerEvents="auto"
+              minHeight={0}
+              width="fit-content"
+              sx={{
+                ".layout > .react-grid-placeholder": {
+                  background: bgColorHover,
+                  borderRadius: "10px",
+                  opacity: 1,
+                  transitionDuration: "0s",
+                },
+                ".layout .react-grid-item, .layout .react-grid-item *": {
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                },
+                ".layout .react-grid-item img, .layout .react-grid-item video":
+                  {
+                    WebkitUserDrag: "none",
+                  },
               }}
-              onMouseLeave={() => {
-                hideHoverPreview()
-
-                if (isDragging) {
-                  resetDragInteraction()
-                  return
-                }
-
-                if (isCopied) {
-                  clearExternalPlacementPreview()
-                  setDragCursorMode("copy")
-                }
-
-                updateDragPreviewCell(null)
-                clearInternalDragSpanPreview()
-                hideDragPlacementPreview()
-                if (!isCopied) {
-                  setDragCursorMode("default")
-                }
-              }}
-              onMouseUp={handleMouseUp}
-              onClick={handlePaste}
             >
               <Box
-                className="index-boxes"
-                display="grid"
-                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
-                gap={`${gap}px`}
-                position="sticky"
-                top={0}
-                zIndex={6}
-                bg={panelSurface}
-                mb={`${gap}px`}
+                height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
+                minHeight="100%"
+                width="100%"
+                position="relative"
+                cursor={isDragging || isCopied ? dragCursorMode : "default"}
+                // id="presentations-grid"
+                data-testid="edit-mode-grid-container"
+                ref={containerRef}
+                onDoubleClick={handleDoubleClick}
+                onMouseDownCapture={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onDragOver={handleGridDragOver}
+                onDragLeave={handleGridDragLeave}
+                onDragStart={(event) => {
+                  if (targetElement(event).closest(".react-grid-item")) {
+                    event.preventDefault()
+                  }
+                }}
+                onMouseLeave={() => {
+                  hideHoverPreview()
+
+                  if (isDragging) {
+                    resetDragInteraction()
+                    return
+                  }
+
+                  if (isCopied) {
+                    clearExternalPlacementPreview()
+                    setDragCursorMode("copy")
+                  }
+
+                  updateDragPreviewCell(null)
+                  clearInternalDragSpanPreview()
+                  hideDragPlacementPreview()
+                  if (!isCopied) {
+                    setDragCursorMode("default")
+                  }
+                }}
+                onMouseUp={handleMouseUp}
+                onClick={handlePaste}
               >
-                <ColumnHeaders
-                  xLabels={xLabels}
-                  cueIndex={cueIndex}
-                  bgCurrentFrame={bgCurrentFrame}
-                  bgColorIndex={bgColorIndex}
-                  activeFrameBorderColor={activeFrameBorderColor}
-                  inactiveFrameBorderColor={inactiveFrameBorderColor}
-                  rowHeight={rowHeight}
-                  columnWidth={columnWidth}
-                  frameHeaderHeight={frameHeaderHeight}
-                  indexCount={indexCount}
-                  headerActionsRef={headerActionsRef}
-                  // Copy mode already treats a header click as "cancel", so
-                  // selecting a frame must not fight it.
-                  onSelectFrame={isCopied ? undefined : onSelectFrame}
-                />
-              </Box>
-              {/* Playhead. Sits at the start of the current frame's column,
+                <Box
+                  className="index-boxes"
+                  display="grid"
+                  gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
+                  gap={`${gap}px`}
+                  mb={`${gap}px`}
+                >
+                  <ColumnHeaders
+                    xLabels={xLabels}
+                    cueIndex={cueIndex}
+                    bgCurrentFrame={bgCurrentFrame}
+                    bgColorIndex={bgColorIndex}
+                    activeFrameBorderColor={activeFrameBorderColor}
+                    inactiveFrameBorderColor={inactiveFrameBorderColor}
+                    rowHeight={rowHeight}
+                    columnWidth={columnWidth}
+                    frameHeaderHeight={frameHeaderHeight}
+                    indexCount={indexCount}
+                    headerActionsRef={headerActionsRef}
+                    // Copy mode already treats a header click as "cancel", so
+                    // selecting a frame must not fight it.
+                    onSelectFrame={isCopied ? undefined : onSelectFrame}
+                  />
+                </Box>
+                {/* Playhead. Sits at the start of the current frame's column,
                   and sweeps across it while that frame is playing. The key
                   restarts the sweep on every frame change; `forwards` holds it
                   at the column's end until the next frame begins. */}
-              <Box
-                key={`playhead-${cueIndex}-${isAutoplaying}`}
-                data-testid="timeline-playhead"
-                position="absolute"
-                top={`${frameHeaderHeight}px`}
-                bottom={0}
-                left={`${columnLeft(cueIndex)}px`}
-                width="2px"
-                bg="#c084fc"
-                boxShadow="0 0 8px rgba(192, 132, 252, 0.7)"
-                pointerEvents="none"
-                zIndex={3}
-                transition={isAutoplaying ? undefined : "left 140ms ease"}
-                sx={
-                  isAutoplaying
-                    ? {
-                        animation: `${playheadSweep} ${autoplayInterval}s linear forwards`,
-                      }
-                    : undefined
-                }
-              />
-              {audioStartRow > 0 && (
                 <Box
-                  data-testid="audio-section-divider"
+                  key={`playhead-${cueIndex}-${isAutoplaying}`}
+                  data-testid="timeline-playhead"
                   position="absolute"
-                  left={0}
-                  right={0}
-                  top={`${laneTop(audioStartRow) - gap / 2}px`}
-                  height="1px"
-                  bg="#2f6b5f"
-                  opacity={0.7}
+                  top={`${frameHeaderHeight}px`}
+                  bottom={0}
+                  left={`${columnLeft(cueIndex)}px`}
+                  width="2px"
+                  bg="#c084fc"
+                  boxShadow="0 0 8px rgba(192, 132, 252, 0.7)"
                   pointerEvents="none"
                   zIndex={3}
-                />
-              )}
-              <Box
-                pointerEvents={isDragging ? "none" : "auto"}
-                id="presentations-grid"
-              >
-                <GridLayoutComponent
-                  layout={layout}
-                  cues={gridCues}
-                  cueRowIndex={rowModel.cueY}
-                  focusedRowIndex={focusedRowIndex}
-                  rowCount={rowModel.rowCount}
-                  containerRef={containerRef}
-                  columnWidth={columnWidth}
-                  rowHeight={rowHeight}
-                  gap={gap}
-                  setIsCopied={setIsCopied}
-                  setCopiedCue={setCopiedCue}
-                  id={id}
-                  cueIndex={cueIndex}
-                  isAudioMuted={isAudioMuted}
-                  setSelectedCue={setSelectedCue}
-                  setIsToolboxOpen={setIsToolboxOpen}
-                  indexCount={indexCount}
-                  setShowAlert={setShowAlert}
-                  setAlertData={setAlertData}
-                  screenCount={presentation.screenCount as number}
-                  isDragging={isDragging}
-                  draggingCueId={
-                    isDragging && selectedCue ? selectedCue._id : null
-                  }
-                  previewCueSpanOverrides={previewCueSpanOverrides}
-                  isCopied={isCopied}
-                  interactionCursor={
-                    !isDragging && isCopied ? dragCursorMode : null
+                  transition={isAutoplaying ? undefined : "left 140ms ease"}
+                  sx={
+                    isAutoplaying
+                      ? {
+                          animation: `${playheadSweep} ${autoplayInterval}s linear forwards`,
+                        }
+                      : undefined
                   }
                 />
-              </Box>
-
-              {collapsedVisualRowPreviews.map(({ row, frames }) =>
-                frames.map(({ frameIndex, cues: frameCues }) => (
+                {audioStartRow > 0 && (
                   <Box
-                    key={`${row.group}-collapsed-preview-${frameIndex}`}
-                    data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
+                    data-testid="audio-section-divider"
                     position="absolute"
-                    left={`${columnLeft(frameIndex)}px`}
-                    top={`${laneTop(row.y)}px`}
-                    width={`${columnWidth}px`}
-                    height={`${rowHeight}px`}
-                    borderRadius="10px"
-                    overflow="hidden"
-                    bg="rgba(255, 255, 255, 0.06)"
-                    border="1px solid rgba(255, 255, 255, 0.1)"
+                    left={0}
+                    right={0}
+                    top={`${laneTop(audioStartRow) - gap / 2}px`}
+                    height="1px"
+                    bg="#2f6b5f"
+                    opacity={0.7}
                     pointerEvents="none"
-                    zIndex={0}
-                  >
-                    {frameCues.map((cue, stackIndex) => (
-                      <Box
-                        key={`${cue._id}-${stackIndex}`}
-                        position="absolute"
-                        inset="0"
-                        opacity={normalizeCueOpacity(cue.opacity)}
-                        zIndex={100 - Number(cue.layer ?? 0)}
-                      >
-                        {renderCollapsedPreviewMedia(cue)}
-                      </Box>
-                    ))}
-                    {frameCues.length > 0 && (
-                      <Text
-                        position="absolute"
-                        left="8px"
-                        bottom="6px"
-                        maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
-                        color="white"
-                        fontSize="12px"
-                        fontWeight="700"
-                        lineHeight="1.1"
-                        whiteSpace="nowrap"
-                        overflow="hidden"
-                        textOverflow="ellipsis"
-                        textShadow="1px 1px 3px rgba(0,0,0,0.85)"
-                        zIndex={130}
-                      >
-                        {frameCues[frameCues.length - 1].name}
-                      </Text>
-                    )}
-                  </Box>
-                ))
-              )}
-
-              {!isDragging && (
-                // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked
+                    zIndex={3}
+                  />
+                )}
                 <Box
-                  data-testid={
-                    isCopied
-                      ? "copy-drag-placement-preview"
-                      : "pool-drag-placement-preview"
-                  }
-                  ref={externalPlacementPreviewRef}
-                  data-valid-drop-cell="false"
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(0, 0, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px dashed"
-                  borderColor={dragPreviewInvalidBorder}
-                  bg={dragPreviewInvalidBg}
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
-                  pointerEvents="none"
-                  zIndex={20}
-                  display="none"
-                  style={{ willChange: "transform" }}
-                />
-              )}
-
-              {!isDragging && !isCopied && (
-                // Show cursor preview for pool element being dragged - shows a preview of the actual element being dragged from the pool following the cursor
-                <Box
-                  data-testid="pool-drag-cursor-preview"
-                  ref={externalCursorPreviewRef}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(10px, 10px, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px solid"
-                  borderColor={dragPreviewOriginBorder}
-                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
-                  overflow="hidden"
-                  pointerEvents="none"
-                  zIndex={30}
-                  opacity={0.92}
-                  display="none"
-                  style={{ willChange: "transform" }}
+                  pointerEvents={isDragging ? "none" : "auto"}
+                  id="presentations-grid"
                 >
-                  <Box
-                    ref={externalCursorSurfaceRef}
-                    width="100%"
-                    height="100%"
-                    bg="rgba(32,32,32,0.9)"
-                  />
-                  <Box
-                    as="img"
-                    ref={externalCursorImageRef}
-                    alt=""
-                    width="100%"
-                    height="100%"
-                    objectFit="cover"
-                    display="none"
-                  />
-
-                  <Text
-                    ref={externalCursorLabelRef}
-                    position="absolute"
-                    bottom="6px"
-                    left="8px"
-                    right="8px"
-                    color="white"
-                    fontWeight="bold"
-                    bg="rgba(0, 0, 0, 0.55)"
-                    borderRadius="6px"
-                    px={2}
-                    py={1}
-                    whiteSpace="nowrap"
-                    overflow="hidden"
-                    textOverflow="ellipsis"
-                    textAlign="center"
-                    style={{
-                      textShadow: "1px 1px 2px rgb(0, 0, 0)",
-                      display: "none",
-                    }}
+                  <GridLayoutComponent
+                    layout={layout}
+                    cues={gridCues}
+                    cueRowIndex={rowModel.cueY}
+                    focusedRowIndex={focusedRowIndex}
+                    rowCount={rowModel.rowCount}
+                    containerRef={containerRef}
+                    columnWidth={columnWidth}
+                    rowHeight={rowHeight}
+                    gap={gap}
+                    setIsCopied={setIsCopied}
+                    setCopiedCue={setCopiedCue}
+                    id={id}
+                    cueIndex={cueIndex}
+                    isAudioMuted={isAudioMuted}
+                    setSelectedCue={setSelectedCue}
+                    setIsToolboxOpen={setIsToolboxOpen}
+                    indexCount={indexCount}
+                    setShowAlert={setShowAlert}
+                    setAlertData={setAlertData}
+                    screenCount={presentation.screenCount as number}
+                    isDragging={isDragging}
+                    draggingCueId={
+                      isDragging && selectedCue ? selectedCue._id : null
+                    }
+                    previewCueSpanOverrides={previewCueSpanOverrides}
+                    isCopied={isCopied}
+                    interactionCursor={
+                      !isDragging && isCopied ? dragCursorMode : null
+                    }
                   />
                 </Box>
-              )}
 
-              {isDragging && selectedCue && (
-                // Show placement preview for dragged cue - shows where the cue being dragged from the grid would be placed following the cursor
-                <Box
-                  data-testid="drag-placement-preview"
-                  ref={dragPlacementPreviewRef}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(0, 0, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px dashed"
-                  borderColor={dragPreviewInvalidBorder}
-                  bg={dragPreviewInvalidBg}
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
-                  pointerEvents="none"
-                  zIndex={20}
-                  display="none"
-                  style={{ willChange: "transform" }}
-                />
-              )}
-
-              {isDragging && selectedCue && (
-                // Show cursor preview for dragged cue - shows a preview of the actual element being dragged from the grid following the cursor
-                <Box
-                  data-testid="drag-cursor-preview"
-                  ref={dragCursorPreviewRef}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(10px, 10px, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px solid"
-                  borderColor={dragPreviewOriginBorder}
-                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
-                  overflow="hidden"
-                  pointerEvents="none"
-                  zIndex={30}
-                  opacity={0.92}
-                  style={{ willChange: "transform" }}
-                >
-                  {(selectedCue.file?.type?.startsWith("image/") ||
-                    selectedCue.file?.type?.startsWith("video/")) &&
-                  selectedCue.file?.url ? (
-                    selectedCue.file?.type?.startsWith("video/") ? (
-                      <Box
-                        as="video"
-                        src={selectedCue.file?.url}
-                        width="100%"
-                        height="100%"
-                        objectFit="cover"
-                        muted
-                        playsInline
-                        controls={false}
-                        preload="auto"
-                        style={{
-                          transform: "translateZ(0)",
-                          backfaceVisibility: "hidden",
-                          WebkitBackfaceVisibility: "hidden",
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        as="img"
-                        src={selectedCue.file?.url}
-                        alt={selectedCue.name}
-                        width="100%"
-                        height="100%"
-                        objectFit="cover"
-                      />
-                    )
-                  ) : (
+                {collapsedVisualRowPreviews.map(({ row, frames }) =>
+                  frames.map(({ frameIndex, cues: frameCues }) => (
                     <Box
+                      key={`${row.group}-collapsed-preview-${frameIndex}`}
+                      data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
+                      position="absolute"
+                      left={`${columnLeft(frameIndex)}px`}
+                      top={`${laneTop(row.y)}px`}
+                      width={`${columnWidth}px`}
+                      height={`${rowHeight}px`}
+                      borderRadius="10px"
+                      overflow="hidden"
+                      bg="rgba(255, 255, 255, 0.06)"
+                      border="1px solid rgba(255, 255, 255, 0.1)"
+                      pointerEvents="none"
+                      zIndex={0}
+                    >
+                      {frameCues.map((cue, stackIndex) => (
+                        <Box
+                          key={`${cue._id}-${stackIndex}`}
+                          position="absolute"
+                          inset="0"
+                          opacity={normalizeCueOpacity(cue.opacity)}
+                          zIndex={100 - Number(cue.layer ?? 0)}
+                        >
+                          {renderCollapsedPreviewMedia(cue)}
+                        </Box>
+                      ))}
+                      {frameCues.length > 0 && (
+                        <Text
+                          position="absolute"
+                          left="8px"
+                          bottom="6px"
+                          maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
+                          color="white"
+                          fontSize="12px"
+                          fontWeight="700"
+                          lineHeight="1.1"
+                          whiteSpace="nowrap"
+                          overflow="hidden"
+                          textOverflow="ellipsis"
+                          textShadow="1px 1px 3px rgba(0,0,0,0.85)"
+                          zIndex={130}
+                        >
+                          {frameCues[frameCues.length - 1].name}
+                        </Text>
+                      )}
+                    </Box>
+                  ))
+                )}
+
+                {!isDragging && (
+                  // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked
+                  <Box
+                    data-testid={
+                      isCopied
+                        ? "copy-drag-placement-preview"
+                        : "pool-drag-placement-preview"
+                    }
+                    ref={externalPlacementPreviewRef}
+                    data-valid-drop-cell="false"
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(0, 0, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px dashed"
+                    borderColor={dragPreviewInvalidBorder}
+                    bg={dragPreviewInvalidBg}
+                    boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                    pointerEvents="none"
+                    zIndex={20}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  />
+                )}
+
+                {!isDragging && !isCopied && (
+                  // Show cursor preview for pool element being dragged - shows a preview of the actual element being dragged from the pool following the cursor
+                  <Box
+                    data-testid="pool-drag-cursor-preview"
+                    ref={externalCursorPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(10px, 10px, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px solid"
+                    borderColor={dragPreviewOriginBorder}
+                    boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                    overflow="hidden"
+                    pointerEvents="none"
+                    zIndex={30}
+                    opacity={0.92}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  >
+                    <Box
+                      ref={externalCursorSurfaceRef}
                       width="100%"
                       height="100%"
-                      bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                      bg="rgba(32,32,32,0.9)"
                     />
-                  )}
+                    <Box
+                      as="img"
+                      ref={externalCursorImageRef}
+                      alt=""
+                      width="100%"
+                      height="100%"
+                      objectFit="cover"
+                      display="none"
+                    />
 
-                  {selectedCue.name?.trim() && (
-                    // Show cue name on cursor preview if it exists - helps identify the element being dragged, especially for color-based cues without a file preview
                     <Text
+                      ref={externalCursorLabelRef}
                       position="absolute"
                       bottom="6px"
                       left="8px"
@@ -2475,32 +2353,140 @@ const EditMode = ({
                       overflow="hidden"
                       textOverflow="ellipsis"
                       textAlign="center"
-                      style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
-                    >
-                      {selectedCue.name}
-                    </Text>
-                  )}
-                </Box>
-              )}
+                      style={{
+                        textShadow: "1px 1px 2px rgb(0, 0, 0)",
+                        display: "none",
+                      }}
+                    />
+                  </Box>
+                )}
 
-              <Box
-                data-testid="hover-preview"
-                ref={hoverPreviewRef}
-                position="absolute"
-                left="0px"
-                top="0px"
-                width={`${columnWidth}px`}
-                height={`${rowHeight}px`}
-                bg={bgColorHover}
-                // Matches the empty slot it lands on, which is 10px. Was "16",
-                // unitless and therefore ignored, so the preview was square
-                // against rounded cells.
-                borderRadius="10px"
-                transition="0"
-                zIndex={-1}
-                pointerEvents="none"
-                display="none"
-              />
+                {isDragging && selectedCue && (
+                  // Show placement preview for dragged cue - shows where the cue being dragged from the grid would be placed following the cursor
+                  <Box
+                    data-testid="drag-placement-preview"
+                    ref={dragPlacementPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(0, 0, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px dashed"
+                    borderColor={dragPreviewInvalidBorder}
+                    bg={dragPreviewInvalidBg}
+                    boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                    pointerEvents="none"
+                    zIndex={20}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  />
+                )}
+
+                {isDragging && selectedCue && (
+                  // Show cursor preview for dragged cue - shows a preview of the actual element being dragged from the grid following the cursor
+                  <Box
+                    data-testid="drag-cursor-preview"
+                    ref={dragCursorPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(10px, 10px, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px solid"
+                    borderColor={dragPreviewOriginBorder}
+                    boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                    overflow="hidden"
+                    pointerEvents="none"
+                    zIndex={30}
+                    opacity={0.92}
+                    style={{ willChange: "transform" }}
+                  >
+                    {(selectedCue.file?.type?.startsWith("image/") ||
+                      selectedCue.file?.type?.startsWith("video/")) &&
+                    selectedCue.file?.url ? (
+                      selectedCue.file?.type?.startsWith("video/") ? (
+                        <Box
+                          as="video"
+                          src={selectedCue.file?.url}
+                          width="100%"
+                          height="100%"
+                          objectFit="cover"
+                          muted
+                          playsInline
+                          controls={false}
+                          preload="auto"
+                          style={{
+                            transform: "translateZ(0)",
+                            backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden",
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          as="img"
+                          src={selectedCue.file?.url}
+                          alt={selectedCue.name}
+                          width="100%"
+                          height="100%"
+                          objectFit="cover"
+                        />
+                      )
+                    ) : (
+                      <Box
+                        width="100%"
+                        height="100%"
+                        bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                      />
+                    )}
+
+                    {selectedCue.name?.trim() && (
+                      // Show cue name on cursor preview if it exists - helps identify the element being dragged, especially for color-based cues without a file preview
+                      <Text
+                        position="absolute"
+                        bottom="6px"
+                        left="8px"
+                        right="8px"
+                        color="white"
+                        fontWeight="bold"
+                        bg="rgba(0, 0, 0, 0.55)"
+                        borderRadius="6px"
+                        px={2}
+                        py={1}
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        textAlign="center"
+                        style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
+                      >
+                        {selectedCue.name}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Box
+                  data-testid="hover-preview"
+                  ref={hoverPreviewRef}
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  bg={bgColorHover}
+                  // Matches the empty slot it lands on, which is 10px. Was "16",
+                  // unitless and therefore ignored, so the preview was square
+                  // against rounded cells.
+                  borderRadius="10px"
+                  transition="0"
+                  zIndex={-1}
+                  pointerEvents="none"
+                  display="none"
+                />
+              </Box>
             </Box>
           </Box>
 
