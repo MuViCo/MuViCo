@@ -276,6 +276,7 @@ function EditorLayout(props: EditorLayoutProps) {
         <KeyboardHandler
           onNext={() => updateCue("Next")}
           onPrevious={() => updateCue("Previous")}
+          onTogglePlay={toggleAutoplay}
         />
         <PresentationPlaybackControls
           screens={screens}
