@@ -202,6 +202,16 @@ const RowHeadersBase = ({
           }
           onFocusLane(laneKey(row))
         }}
+        onDoubleClick={(event) => {
+          // Same targets the single click ignores: the chevron already toggles,
+          // and the track controls have their own actions.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onToggleGroupCollapsed(row.group)
+        }}
         boxShadow={
           row.y === focusedRowIndex
             ? "0 0 0 3px rgba(192, 132, 252, 0.35), 0 6px 18px rgba(60, 16, 96, 0.45)"
