@@ -2069,7 +2069,7 @@ const EditMode = ({
             sx={{
               ".layout > .react-grid-placeholder": {
                 background: bgColorHover,
-                borderRadius: "16px",
+                borderRadius: "10px",
                 opacity: 1,
                 transitionDuration: "0s",
               },
@@ -2485,7 +2485,10 @@ const EditMode = ({
                 width={`${columnWidth}px`}
                 height={`${rowHeight}px`}
                 bg={bgColorHover}
-                borderRadius="16"
+                // Matches the empty slot it lands on, which is 10px. Was "16",
+                // unitless and therefore ignored, so the preview was square
+                // against rounded cells.
+                borderRadius="10px"
                 transition="0"
                 zIndex={-1}
                 pointerEvents="none"

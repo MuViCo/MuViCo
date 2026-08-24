@@ -649,7 +649,10 @@ const ColumnHeadersBase = ({
         fontSize="12px"
         fontWeight={index === cueIndex ? 700 : 600}
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-        border={`${index === cueIndex ? 4 : 2}px solid`}
+        // Thin: a heavy outline made the header band read as a row of framed
+        // boxes. The current frame is already marked by its light fill, bold
+        // text and ring, so its border only has to be a shade stronger.
+        border={`${index === cueIndex ? 2 : 1}px solid`}
         borderColor={
           index === cueIndex ? activeFrameBorderColor : inactiveFrameBorderColor
         }
