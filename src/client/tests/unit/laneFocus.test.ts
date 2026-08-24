@@ -4,6 +4,7 @@
  * and the span compensation applied to the focus transform.
  */
 import {
+  LANE_KNIT,
   laneFocusBleed,
   laneFocusLayout,
   laneKey,
@@ -83,50 +84,70 @@ describe("laneFocusLayout", () => {
     { startY: 6, laneCount: 2 },
   ]
   const rowHeight = 60
-  const rowGap = 8
+  const rowGap = 40
 
+  const top = (layout: ReturnType<typeof laneFocusLayout>, y: number) =>
+    y * (rowHeight + rowGap) + (layout.offset[y] as number)
+  const bottom = (layout: ReturnType<typeof laneFocusLayout>, y: number) =>
+    top(layout, y) + rowHeight + (layout.delta[y] as number)
   /** Distance between the bottom of lane y and the top of lane y + 1. */
-  const gapBelow = (layout: ReturnType<typeof laneFocusLayout>, y: number) => {
-    const top = (row: number) =>
-      row * (rowHeight + rowGap) + (layout.offset[row] as number)
-    const bottom = top(y) + rowHeight + (layout.delta[y] as number)
-    return top(y + 1) - bottom
-  }
+  const gapBelow = (layout: ReturnType<typeof laneFocusLayout>, y: number) =>
+    top(layout, y + 1) - bottom(layout, y)
 
-  test("leaves every lane alone when nothing is focused", () => {
+  test("closes the gap between lanes of the same screen", () => {
     const layout = laneFocusLayout(groups, -1, rowHeight)
-    expect(layout.delta.every((d) => d === 0)).toBe(true)
-    expect(layout.offset.every((o) => o === 0)).toBe(true)
+    // Both lanes reach towards each other, so they end up 2 x LANE_KNIT closer
+    // than the row gap the two grids actually use.
+    expect(gapBelow(layout, 0)).toBe(rowGap - 2 * LANE_KNIT)
+    expect(gapBelow(layout, 1)).toBe(rowGap - 2 * LANE_KNIT)
+  })
+
+  test("leaves the gap at a screen's edge alone", () => {
+    const layout = laneFocusLayout(groups, -1, rowHeight)
+    // Neither lane reaches across the boundary, so this is the full row gap --
+    // the space that reads as the separation between two screens.
+    expect(gapBelow(layout, 2)).toBe(rowGap)
+    expect(gapBelow(layout, 5)).toBe(rowGap)
+  })
+
+  test("keeps a screen's first and last lane on their tracks", () => {
+    const layout = laneFocusLayout(groups, -1, rowHeight)
+    // The frame is drawn from these, so they must not drift.
+    expect(top(layout, 0)).toBe(0)
+    expect(bottom(layout, 2)).toBe(2 * (rowHeight + rowGap) + rowHeight)
   })
 
   test("grows the focused lane by exactly what its siblings give up", () => {
     const layout = laneFocusLayout(groups, 1, rowHeight)
-    expect(layout.delta[1]).toBe(laneFocusBleed(rowHeight))
-    // The group is as tall focused as not, so the screens below do not move.
-    const groupDelta = layout.delta.slice(0, 3).reduce((a, b) => a + b, 0)
-    expect(groupDelta).toBeCloseTo(0)
+    const unfocused = laneFocusLayout(groups, -1, rowHeight)
+    expect((layout.delta[1] as number) - (unfocused.delta[1] as number)).toBe(
+      laneFocusBleed(rowHeight)
+    )
+    // The screen is as tall focused as not, so the ones below do not move.
+    expect(bottom(layout, 2)).toBeCloseTo(bottom(unfocused, 2))
   })
 
-  test("keeps consecutive lanes exactly one row gap apart", () => {
+  test("holds every gap while a lane is focused", () => {
     const layout = laneFocusLayout(groups, 1, rowHeight)
-    // This is the property the effect exists to preserve: the spacing that
-    // separates layers stays the spacing that separates layers.
-    for (let y = 0; y < 2; y += 1) {
-      expect(gapBelow(layout, y)).toBeCloseTo(rowGap)
-    }
+    // The property the effect exists to preserve: the spacing that separates
+    // layers, and the spacing that separates screens, both stay put.
+    expect(gapBelow(layout, 0)).toBeCloseTo(rowGap - 2 * LANE_KNIT)
+    expect(gapBelow(layout, 1)).toBeCloseTo(rowGap - 2 * LANE_KNIT)
+    expect(gapBelow(layout, 2)).toBeCloseTo(rowGap)
   })
 
-  test("does not touch the groups that do not hold focus", () => {
+  test("does not touch the screens that do not hold focus", () => {
     const layout = laneFocusLayout(groups, 1, rowHeight)
+    const unfocused = laneFocusLayout(groups, -1, rowHeight)
     for (let y = 3; y < 8; y += 1) {
-      expect(layout.delta[y]).toBe(0)
-      expect(layout.offset[y]).toBe(0)
+      expect(layout.delta[y]).toBe(unfocused.delta[y])
+      expect(layout.offset[y]).toBe(unfocused.offset[y])
     }
   })
 
   test("does nothing for a single-lane group", () => {
-    // A collapsed screen has no sibling to borrow the height from, so the
-    // focus is carried by colour alone rather than by resizing the group.
+    // A collapsed screen has no sibling to reach towards or to borrow height
+    // from, so its cell matches its track exactly.
     const layout = laneFocusLayout([{ startY: 0, laneCount: 1 }], 0, rowHeight)
     expect(layout.delta).toEqual([0])
     expect(layout.offset).toEqual([0])

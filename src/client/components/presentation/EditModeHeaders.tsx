@@ -4,7 +4,7 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import { GROUP_INSET, laneFocusLayout, laneKey } from "../utils/laneFocus"
+import { GROUP_PAD, laneFocusLayout, laneKey } from "../utils/laneFocus"
 import type { LaneFocusLayout } from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
@@ -183,7 +183,10 @@ const RowHeadersBase = ({
         h={`${rowHeight + (focusLayout.delta[row.y] ?? 0)}px`}
         alignSelf="start"
         transform={`translateY(${focusLayout.offset[row.y] ?? 0}px)`}
-        width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
+        // Narrower than the gutter by the frame's padding on each side, so the
+        // cell sits inside the frame rather than against it.
+        width={`${TIMELINE_METRICS.rowHeaderWidth - 2 * GROUP_PAD}px`}
+        justifySelf="center"
         position="relative"
         px="8px"
         cursor="pointer"
@@ -575,6 +578,9 @@ const RowHeadersBase = ({
         gridRow={`span ${group.laneCount}`}
         display="grid"
         gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
+        // Explicit: the lane cells are narrower than the gutter now, so the box
+        // would otherwise shrink to them and take the frame with it.
+        w={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         gap={`${rowGap}px`}
         // Horizontal, so it takes the column gap rather than the row gap: this
         // is the space between the gutter and the first frame column.
@@ -583,19 +589,22 @@ const RowHeadersBase = ({
         // The add-layer and add-screen buttons deliberately overhang.
         overflow="visible"
       >
-        {/* The frame, on a layer of its own. Insetting this instead of the box
-            itself is what puts space between one screen and the next while
-            leaving the grid tracks exactly where the timeline expects them. The
-            dark fill shows through the gaps between lanes, which is what makes
-            the run read as one container: the lane cells are light, so an
-            outline alone would just add another line in their own colour. */}
+        {/* The frame, on a layer of its own rather than on the box: the box
+            carries the grid tracks the timeline aligns to, so it cannot be
+            resized. The layer reaches GROUP_PAD outside the lanes on every
+            side, taking that room out of the wide gap at the screen's edge --
+            the gap its lanes have closed between themselves by reaching towards
+            each other. The dark fill shows through the gaps between lanes, which
+            is what makes the run read as one container: the lane cells are
+            light, so an outline alone would just add another line in their own
+            colour. */}
         <Box
           aria-hidden="true"
           position="absolute"
           left={0}
           right={0}
-          top={`${GROUP_INSET / 2}px`}
-          bottom={`${GROUP_INSET / 2}px`}
+          top={`-${GROUP_PAD}px`}
+          bottom={`-${GROUP_PAD}px`}
           bg={TIMELINE_PALETTE.groupPanel}
           // Dashed when collapsed: until now the only signal that a group was
           // collapsed was its label text.

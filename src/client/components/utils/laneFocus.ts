@@ -72,22 +72,49 @@ export const laneFocusBleed = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_FOCUS_GROWTH)
 
 /**
- * Per-lane height change and top offset while one lane holds focus.
+ * How far a lane cell reaches past its grid track, in px, on each side that
+ * faces another lane of the same screen.
  *
- * The naive version -- grow the focused lane about its own centre and leave the
- * rest alone -- eats into the gaps on either side of it and widens the ones two
- * lanes away, so the spacing that separates layers from each other and screens
- * from each other stops meaning anything precisely when the eye is drawn to it.
+ * This is what lets one number serve two spacings. The row gap is a real, wide
+ * spacing shared by the lane gutter and the react-grid-layout body, so both stay
+ * aligned; lanes of the same screen then reach towards each other and close most
+ * of it, leaving them a narrow gap apart, while the gap at a screen's edge is
+ * left untouched and reads as the space between screens. Widening the gap alone
+ * could not do this: it is one value, and it would push a screen's own layers
+ * apart by exactly as much as it separated the screens.
+ */
+export const LANE_KNIT = 16
+
+/**
+ * How far a screen's frame is drawn outside the lanes it contains, in px.
  *
- * Here the growth is borrowed rather than taken: the focused lane gains
- * `laneFocusBleed`, its siblings in the same screen each give up an equal share
- * of it, and each lane is shifted by the running total of what came before it.
- * Consecutive lanes then stay exactly one row gap apart -- box i+1 starts where
- * box i ends plus the gap, by construction -- and because the shares sum to
- * zero, the group ends where it began and the screens keep their spacing too.
+ * Taken out of the space at the screen's edge, which is why that space has to be
+ * more than twice this.
+ */
+export const GROUP_PAD = 8
+
+/**
+ * Per-lane height change and top offset.
  *
- * A lane in a group that does not hold focus is untouched. Shrinking it would
- * change that group's height, which is the one thing this is built to avoid.
+ * Two effects, composed here because both change a lane's box without moving
+ * the grid track underneath it -- the track is the coordinate the frame columns
+ * and every hit test are built on.
+ *
+ * The first is the knitting described above: each lane reaches LANE_KNIT
+ * towards each sibling it has, and not at all towards the screen next door.
+ *
+ * The second is focus. The naive version -- grow the focused lane about its own
+ * centre and leave the rest alone -- eats into the gaps on either side of it and
+ * widens the ones two lanes away, so the spacing that tells layers apart, and
+ * screens apart, stops holding precisely when the eye is drawn to it. So the
+ * growth is borrowed instead: the focused lane gains `laneFocusBleed`, its
+ * siblings each give up an equal share, and each lane is shifted by the running
+ * total of what came before it. Consecutive lanes stay exactly one gap apart by
+ * construction, and because the shares sum to zero the group ends where it
+ * began, so the screens keep their spacing too.
+ *
+ * A lane in a group that does not hold focus is left at its knitted size.
+ * Shrinking it would change that group's height, which is what this avoids.
  *
  * Presentation only: hit-testing still runs on the untouched grid tracks, so a
  * click near a boundary can land on the neighbouring lane.
@@ -108,25 +135,31 @@ export const laneFocusLayout = (
   const delta = new Array<number>(rowCount).fill(0)
   const offset = new Array<number>(rowCount).fill(0)
 
-  const group = groups.find(
-    (g) =>
-      focusedRowIndex >= g.startY &&
-      focusedRowIndex < g.startY + g.laneCount &&
-      g.laneCount > 1
-  )
-  if (!group) return { delta, offset }
-
   const bleed = laneFocusBleed(rowHeight)
-  const share = bleed / (group.laneCount - 1)
 
-  let running = 0
-  for (let y = group.startY; y < group.startY + group.laneCount; y += 1) {
-    delta[y] = y === focusedRowIndex ? bleed : -share
-    offset[y] = running
-    running += delta[y] as number
-  }
+  groups.forEach((group) => {
+    const holdsFocus =
+      focusedRowIndex >= group.startY &&
+      focusedRowIndex < group.startY + group.laneCount &&
+      group.laneCount > 1
+    const share = holdsFocus ? bleed / (group.laneCount - 1) : 0
+
+    let borrowed = 0
+    for (let p = 0; p < group.laneCount; p += 1) {
+      const y = group.startY + p
+      const reachUp = p > 0 ? LANE_KNIT : 0
+      const reachDown = p < group.laneCount - 1 ? LANE_KNIT : 0
+      const focusDelta = holdsFocus
+        ? y === focusedRowIndex
+          ? bleed
+          : -share
+        : 0
+
+      delta[y] = reachUp + reachDown + focusDelta
+      offset[y] = borrowed - reachUp
+      borrowed += focusDelta
+    }
+  })
 
   return { delta, offset }
 }
-
-export const GROUP_INSET = 36

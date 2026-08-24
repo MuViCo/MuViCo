@@ -48,10 +48,11 @@ export const TIMELINE_METRICS: TimelineMetrics = {
   // the two aligned; narrowing it below the control height puts the buttons on
   // top of the next group instead.
   gap: 14,
-  // Tight, so a screen's layers read as one stack. The space that separates one
-  // screen from the next comes from GROUP_INSET instead, which is drawn inside
-  // the tracks and so can differ from this without moving any row.
-  rowGap: 8,
+  // Wide, and shared by the lane gutter and the react-grid-layout body so the
+  // two stay aligned. Lanes of the same screen then reach towards each other by
+  // LANE_KNIT and close most of it, which is what lets one number give a screen's
+  // layers a narrow gap and the screens themselves a wide one.
+  rowGap: 40,
   // Every hit-test derives its origin from this, so the band can be resized
   // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
   frameHeaderHeight: 34,
