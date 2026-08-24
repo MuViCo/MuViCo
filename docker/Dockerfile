@@ -1,4 +1,4 @@
-FROM node:16-alpine3.11
+FROM node:20-alpine
 
 # Define build arguments
 ARG VITE_FIREBASE_API_KEY
