@@ -291,29 +291,34 @@ const RowHeadersBase = ({
                   width="50px"
                   height="50px"
                   flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
                 >
-                  <Box
-                    as="img"
-                    src={screenIcon}
-                    alt=""
-                    width="34px"
-                    height="34px"
-                    aria-hidden="true"
-                  />
-                  <Text
-                    as="span"
-                    position="absolute"
-                    top="43%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    fontSize="13px"
-                    fontWeight="700"
-                    lineHeight="1"
-                    color="black"
-                    pointerEvents="none"
-                  >
-                    {row.screen}
-                  </Text>
+                  <Box position="relative" width="34px" height="34px">
+                    <Box
+                      as="img"
+                      src={screenIcon}
+                      alt=""
+                      width="34px"
+                      height="34px"
+                      aria-hidden="true"
+                    />
+                    <Text
+                      as="span"
+                      position="absolute"
+                      top="43%"
+                      left="50%"
+                      transform="translate(-50%, -50%)"
+                      fontSize="13px"
+                      fontWeight="700"
+                      lineHeight="1"
+                      color="black"
+                      pointerEvents="none"
+                    >
+                      {row.screen}
+                    </Text>
+                  </Box>
                 </Box>
               </Tooltip>
               <Text as="span" fontSize="13px" lineHeight="1" noOfLines={1}>
