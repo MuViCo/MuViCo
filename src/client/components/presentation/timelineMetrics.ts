@@ -18,7 +18,14 @@
 export interface TimelineMetrics {
   columnWidth: number
   rowHeight: number
+  /** Gap between frame columns. */
   gap: number
+  /**
+   * Gap between lane rows. Separate from the column gap because the two are
+   * read differently: columns are frames in time and want air between them,
+   * while lanes are tracks of one screen and want to read as a stack.
+   */
+  rowGap: number
   /** Frame-header band height. Previously `Math.max(rowHeight - 45, 0)`. */
   frameHeaderHeight: number
   /** Width of a lane header cell in the left gutter. */
@@ -41,6 +48,10 @@ export const TIMELINE_METRICS: TimelineMetrics = {
   // the two aligned; narrowing it below the control height puts the buttons on
   // top of the next group instead.
   gap: 14,
+  // Tight, so a screen's layers read as one stack. The space that separates one
+  // screen from the next comes from GROUP_INSET instead, which is drawn inside
+  // the tracks and so can differ from this without moving any row.
+  rowGap: 6,
   // Every hit-test derives its origin from this, so the band can be resized
   // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
   frameHeaderHeight: 34,
@@ -55,7 +66,7 @@ export const TIMELINE_METRICS: TimelineMetrics = {
  */
 export const timelineRowsTopOffset = (
   metrics: TimelineMetrics = TIMELINE_METRICS
-): number => metrics.frameHeaderHeight + metrics.gap
+): number => metrics.frameHeaderHeight + metrics.rowGap
 
 /**
  * Lane offset measured from the first lane -- the coordinate space of the
@@ -64,7 +75,7 @@ export const timelineRowsTopOffset = (
 export const laneOffset = (
   y: number,
   metrics: TimelineMetrics = TIMELINE_METRICS
-): number => y * (metrics.rowHeight + metrics.gap)
+): number => y * (metrics.rowHeight + metrics.rowGap)
 
 /**
  * Lane offset measured from the top of the grid container -- the coordinate
@@ -81,7 +92,7 @@ export const laneSpanHeight = (
   laneCount: number,
   metrics: TimelineMetrics = TIMELINE_METRICS
 ): number =>
-  laneCount * metrics.rowHeight + Math.max(laneCount - 1, 0) * metrics.gap
+  laneCount * metrics.rowHeight + Math.max(laneCount - 1, 0) * metrics.rowGap
 
 export const columnLeft = (
   x: number,

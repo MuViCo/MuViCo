@@ -269,7 +269,8 @@ const EditMode = ({
     toggleAudioMute: () => {},
   })
 
-  const { columnWidth, rowHeight, gap, frameHeaderHeight } = TIMELINE_METRICS
+  const { columnWidth, rowHeight, gap, rowGap, frameHeaderHeight } =
+    TIMELINE_METRICS
   const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(
@@ -596,6 +597,7 @@ const EditMode = ({
     rowHeight,
     headerRowHeight: frameHeaderHeight,
     gap,
+    rowGap,
     indexCount,
     rows: rowModel.rows,
     rowCount: rowModel.rowCount,
@@ -1685,7 +1687,7 @@ const EditMode = ({
     const rowsTopOffset = timelineRowsTopOffset()
 
     const cellWidthWithGap = columnWidth + gap
-    const cellHeightWithGap = rowHeight + gap
+    const cellHeightWithGap = rowHeight + rowGap
 
     const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
@@ -2015,7 +2017,7 @@ const EditMode = ({
             className="screen-boxes"
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
-            gap={`${gap}px`}
+            gap={`${rowGap}px`}
             // Outside the horizontal scroller, so it needs neither a sticky
             // pin nor a fill: nothing passes behind it. It sits in the vertical
             // scroller alongside the timeline body and scrolls up and down with
@@ -2035,7 +2037,7 @@ const EditMode = ({
               onAddAudioTrack={addAudioTrack}
               maxVisualLayers={DEFAULT_MAX_VISUAL_LAYERS}
               maxAudioTracks={DEFAULT_MAX_AUDIO_TRACKS}
-              gap={gap}
+              rowGap={rowGap}
               rowHeight={rowHeight}
               screenCount={presentation.screenCount as number}
               isAudioMuted={isAudioMuted}
@@ -2187,7 +2189,7 @@ const EditMode = ({
                     position="absolute"
                     left={0}
                     right={0}
-                    top={`${laneTop(audioStartRow) - gap / 2}px`}
+                    top={`${laneTop(audioStartRow) - rowGap / 2}px`}
                     height="1px"
                     bg="#2f6b5f"
                     opacity={0.7}
@@ -2209,6 +2211,7 @@ const EditMode = ({
                     columnWidth={columnWidth}
                     rowHeight={rowHeight}
                     gap={gap}
+                    rowGap={rowGap}
                     setIsCopied={setIsCopied}
                     setCopiedCue={setCopiedCue}
                     id={id}

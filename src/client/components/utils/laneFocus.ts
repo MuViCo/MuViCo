@@ -65,7 +65,7 @@ export const laneScreenFromKey = (
  * lanes; the growth is absorbed by the gutter between groups, which is why it
  * must stay under that gap.
  */
-export const LANE_FOCUS_GROWTH = 0.23
+export const LANE_FOCUS_GROWTH = 0.2
 
 export const laneFocusBleed = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_FOCUS_GROWTH)
@@ -83,37 +83,43 @@ export const laneFocusBleed = (rowHeight: number): number =>
  * focused lane's extra height has to fit in the gutter, and dimming the others
  * frees no room there.
  */
-export const LANE_DIM_SHRINK = 0.08
+export const LANE_DIM_SHRINK = 0.1
 
 export const laneDimShrink = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_DIM_SHRINK)
 
 /**
- * Vertical offset for a lane while another is focused: lanes above move up and
- * lanes below move down by half the bleed each, so the focused lane grows about
- * its own centre instead of pushing everything below it down.
+ * How much taller (or shorter) a lane is drawn than its grid track.
  *
- * Presentation only -- hit-testing still runs on the untransformed grid, so a
- * click within half a bleed of a boundary can land on the neighbouring lane.
+ * The focused lane gains `laneFocusBleed`, every other lane gives up
+ * `laneDimShrink`, and with nothing focused every lane matches its track. The
+ * two are sized so the growth fits in the space the neighbours give up plus the
+ * row gap, which is what lets the effect stay inside the group: the group's
+ * frame never changes size, so the spacing between screens is the same whether
+ * a lane is focused or not.
  */
-export const laneFocusShift = (
+export const laneFocusDelta = (
   rowIndex: number,
   focusedRowIndex: number,
   rowHeight: number
 ): number => {
-  if (focusedRowIndex < 0 || rowIndex === focusedRowIndex) return 0
-  const half = laneFocusBleed(rowHeight) / 2
-  return rowIndex < focusedRowIndex ? -half : half
+  if (focusedRowIndex < 0) return 0
+  return rowIndex === focusedRowIndex
+    ? laneFocusBleed(rowHeight)
+    : -laneDimShrink(rowHeight)
 }
 
 /**
- * Vertical inset applied to a collapsed group's frame, in px.
+ * Offset that keeps a resized lane centred on its track, so it grows and
+ * shrinks about its own middle instead of hanging off the top.
  *
- * Collapsed screens sit next to each other with only the lane gap between them,
- * which reads as one striped block rather than as several closed screens. The
- * inset is taken inside the group's own grid track for the same reason
- * LANE_DIM_SHRINK is: the track is the shared coordinate, and moving it would
- * put the gutter out of step with the frame columns. The space therefore appears
- * between the frames without any row shifting.
+ * Presentation only -- hit-testing still runs on the untouched track, so a click
+ * within half a delta of a boundary can land on the neighbouring lane.
  */
-export const COLLAPSED_GROUP_INSET = 10
+export const laneFocusOffset = (
+  rowIndex: number,
+  focusedRowIndex: number,
+  rowHeight: number
+): number => -laneFocusDelta(rowIndex, focusedRowIndex, rowHeight) / 2
+
+export const GROUP_INSET = 12

@@ -31,7 +31,7 @@ import {
   laneOffset,
   laneSpanHeight,
 } from "./timelineMetrics"
-import { laneFocusBleed, laneFocusShift } from "../utils/laneFocus"
+import { laneFocusDelta, laneFocusOffset } from "../utils/laneFocus"
 
 import type { RefObject } from "react"
 import type { Layout } from "react-grid-layout"
@@ -49,6 +49,8 @@ interface GridLayoutComponentProps {
   columnWidth: number
   rowHeight: number
   gap: number
+  /** Vertical gap between lanes; separate from the column gap. */
+  rowGap: number
   cueIndex: number
   isAudioMuted: boolean
   setSelectedCue: (cue: Cue | null) => void
@@ -186,6 +188,7 @@ const GridLayoutComponent = ({
   columnWidth,
   rowHeight,
   gap,
+  rowGap,
   cueIndex,
   isAudioMuted,
   setSelectedCue,
@@ -219,7 +222,7 @@ const GridLayoutComponent = ({
   const gridHeight = laneSpanHeight(rowCount, {
     ...TIMELINE_METRICS,
     rowHeight,
-    gap,
+    rowGap,
   })
 
   const handleLoopToggle = async (cue: Cue) => {
@@ -478,7 +481,7 @@ const GridLayoutComponent = ({
                 data-testid={`grid-empty-cell-${rowIndex}-${columnIndex}`}
                 position="absolute"
                 left={`${columnLeft(columnIndex, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
-                top={`${laneOffset(rowIndex, { ...TIMELINE_METRICS, rowHeight, gap })}px`}
+                top={`${laneOffset(rowIndex, { ...TIMELINE_METRICS, rowHeight, rowGap })}px`}
                 width={`${columnWidth}px`}
                 height={`${rowHeight}px`}
                 borderRadius="10px"
@@ -502,7 +505,7 @@ const GridLayoutComponent = ({
           compactType={null}
           isBounded={false}
           preventCollision={true}
-          margin={[gap, gap]}
+          margin={[gap, rowGap]}
           containerPadding={[0, 0]}
           useCSSTransforms={true}
           maxRows={rowCount}
@@ -560,10 +563,18 @@ const GridLayoutComponent = ({
             const cueGridRow = cueRowIndex[cue._id] ?? 0
             const isLaneFocused =
               focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
-            const focusBleed = laneFocusBleed(rowHeight)
-            const laneShift = isLaneFocused
-              ? -focusBleed / 2
-              : laneFocusShift(cueGridRow, focusedRowIndex, rowHeight)
+            // Same delta the lane header uses, so a clip and its track label
+            // grow and shrink together.
+            const laneDelta = laneFocusDelta(
+              cueGridRow,
+              focusedRowIndex,
+              rowHeight
+            )
+            const laneShift = laneFocusOffset(
+              cueGridRow,
+              focusedRowIndex,
+              rowHeight
+            )
             // Applied to the content box inside the grid item, never the item
             // itself: react-grid-layout overwrites the item's transform on
             // every layout pass, and its stylesheet transitions that property,
@@ -587,7 +598,7 @@ const GridLayoutComponent = ({
               >
                 <Box
                   position="relative"
-                  h={isLaneFocused ? `calc(100% + ${focusBleed}px)` : "100%"}
+                  h={`calc(100% + ${laneDelta}px)`}
                   overflow="hidden"
                   borderRadius="10px"
                   cursor={

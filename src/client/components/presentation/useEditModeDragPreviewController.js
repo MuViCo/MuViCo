@@ -24,6 +24,7 @@ const applyPlacementPreviewStyles = ({
   columnWidth,
   rowHeight,
   gap,
+  rowGap,
   yTopOffset = 0,
   isValidDropCell,
   validBorder,
@@ -37,13 +38,11 @@ const applyPlacementPreviewStyles = ({
   }
 
   previewElement.style.display = "block"
-  previewElement.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yTopOffset + (yIndex * (rowHeight + gap))}px, 0)`
+  previewElement.style.transform = `translate3d(${xIndex * (columnWidth + gap)}px, ${yTopOffset + yIndex * (rowHeight + rowGap)}px, 0)`
   previewElement.style.borderColor = isValidDropCell
     ? validBorder
     : invalidBorder
-  previewElement.style.background = isValidDropCell
-    ? validBg
-    : invalidBg
+  previewElement.style.background = isValidDropCell ? validBg : invalidBg
 
   if (setValidityAttribute) {
     previewElement.setAttribute(
@@ -59,6 +58,9 @@ const useEditModeDragPreviewController = ({
   rowHeight,
   headerRowHeight,
   gap,
+  // Rows and columns are spaced differently: a screen's layers sit close
+  // together while frames keep the wider column gap.
+  rowGap,
   indexCount,
   rows,
   rowCount,
@@ -86,7 +88,7 @@ const useEditModeDragPreviewController = ({
   const dragPreviewCellRef = useRef(null)
   const dragPlacementLockedToAnchorRef = useRef(false)
 
-  const timelineRowsTopOffset = (headerRowHeight ?? 0) + gap
+  const timelineRowsTopOffset = (headerRowHeight ?? 0) + rowGap
 
   // Refs for external drag preview (dragging from media pool)
   const externalPlacementPreviewRef = useRef(null)
@@ -124,7 +126,7 @@ const useEditModeDragPreviewController = ({
     hoverCellRef.current = nextCell
     hoverPreviewRef.current.style.display = "block"
     hoverPreviewRef.current.style.left = `${xIndex * (columnWidth + gap)}px`
-    hoverPreviewRef.current.style.top = `${timelineRowsTopOffset + (yIndex * (rowHeight + gap))}px`
+    hoverPreviewRef.current.style.top = `${timelineRowsTopOffset + yIndex * (rowHeight + rowGap)}px`
   }
 
   const updateDragPreviewCell = (nextCell) => {
@@ -194,103 +196,111 @@ const useEditModeDragPreviewController = ({
     }
   }
 
-  const applyDragPreviewFromPointer = useCallback((pointerPosition) => {
-    if (!pointerPosition) {
-      return
-    }
+  const applyDragPreviewFromPointer = useCallback(
+    (pointerPosition) => {
+      if (!pointerPosition) {
+        return
+      }
 
-    dragCursorPositionRef.current = pointerPosition
+      dragCursorPositionRef.current = pointerPosition
 
-    if (dragCursorPreviewRef.current) {
-      dragCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
-    }
+      if (dragCursorPreviewRef.current) {
+        dragCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
+      }
 
-    const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const pointerYIndex = Math.floor((pointerPosition.y - timelineRowsTopOffset) / (rowHeight + gap))
-    // When dragging a cue and locking occurs, constrain placement to the cue's original position columns
-    const lockPlacementToAnchor = Boolean(
-      dragPlacementLockedToAnchorRef.current && selectedCue
-    )
-    const xIndex = lockPlacementToAnchor
-      ? Number(selectedCue.index)
-      : pointerXIndex
-    const yIndex = lockPlacementToAnchor
-      ? Number(cueRowIndex?.[selectedCue._id] ?? 0)
-      : pointerYIndex
+      const pointerXIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
+      const pointerYIndex = Math.floor(
+        (pointerPosition.y - timelineRowsTopOffset) / (rowHeight + rowGap)
+      )
+      // When dragging a cue and locking occurs, constrain placement to the cue's original position columns
+      const lockPlacementToAnchor = Boolean(
+        dragPlacementLockedToAnchorRef.current && selectedCue
+      )
+      const xIndex = lockPlacementToAnchor
+        ? Number(selectedCue.index)
+        : pointerXIndex
+      const yIndex = lockPlacementToAnchor
+        ? Number(cueRowIndex?.[selectedCue._id] ?? 0)
+        : pointerYIndex
 
-    if (!selectedCue) {
-      setDragCursorMode("grabbing")
-      updateDragPreviewCell(null)
-      hideDragPlacementPreview()
-      clearInternalDragSpanPreview()
-      return
-    }
+      if (!selectedCue) {
+        setDragCursorMode("grabbing")
+        updateDragPreviewCell(null)
+        hideDragPlacementPreview()
+        clearInternalDragSpanPreview()
+        return
+      }
 
-    const isInsideGrid = isRowIndexInsideGrid({
-      xIndex,
-      yIndex,
-      indexCount,
-      rowCount,
-    })
+      const isInsideGrid = isRowIndexInsideGrid({
+        xIndex,
+        yIndex,
+        indexCount,
+        rowCount,
+      })
 
-    if (!isInsideGrid) {
-      setDragCursorMode("grabbing")
-      updateDragPreviewCell(null)
-      hideDragPlacementPreview()
-      clearInternalDragSpanPreview()
-      return
-    }
+      if (!isInsideGrid) {
+        setDragCursorMode("grabbing")
+        updateDragPreviewCell(null)
+        hideDragPlacementPreview()
+        clearInternalDragSpanPreview()
+        return
+      }
 
-    const isValidDropCell = laneAcceptsCueType(
-      rows?.[yIndex],
-      selectedCue.cueType
-    )
+      const isValidDropCell = laneAcceptsCueType(
+        rows?.[yIndex],
+        selectedCue.cueType
+      )
 
-    setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
+      setDragCursorMode(isValidDropCell ? "grabbing" : "not-allowed")
 
-    updateDragPreviewCell({ xIndex, yIndex })
+      updateDragPreviewCell({ xIndex, yIndex })
 
-    const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
-      xIndex,
-      yIndex,
-      selectedCue.cueType,
-      selectedCue._id
-    )
-    setInternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
+      const continuationShrinkSpanOverrides =
+        getContinuationPreviewSpanOverrides(
+          xIndex,
+          yIndex,
+          selectedCue.cueType,
+          selectedCue._id
+        )
+      setInternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
 
-    applyPlacementPreviewStyles({
-      previewElement: dragPlacementPreviewRef.current,
-      xIndex,
-      yIndex,
+      applyPlacementPreviewStyles({
+        previewElement: dragPlacementPreviewRef.current,
+        xIndex,
+        yIndex,
+        columnWidth,
+        rowHeight,
+        gap,
+        rowGap,
+        yTopOffset: timelineRowsTopOffset,
+        isValidDropCell,
+        validBorder: dragPreviewValidBorder,
+        invalidBorder: dragPreviewInvalidBorder,
+        validBg: dragPreviewValidBg,
+        invalidBg: dragPreviewInvalidBg,
+      })
+    },
+    [
+      clearInternalDragSpanPreview,
       columnWidth,
-      rowHeight,
+      dragPreviewInvalidBg,
+      dragPreviewInvalidBorder,
+      dragPreviewValidBg,
+      dragPreviewValidBorder,
       gap,
-      yTopOffset: timelineRowsTopOffset,
-      isValidDropCell,
-      validBorder: dragPreviewValidBorder,
-      invalidBorder: dragPreviewInvalidBorder,
-      validBg: dragPreviewValidBg,
-      invalidBg: dragPreviewInvalidBg,
-    })
-  }, [
-    clearInternalDragSpanPreview,
-    columnWidth,
-    dragPreviewInvalidBg,
-    dragPreviewInvalidBorder,
-    dragPreviewValidBg,
-    dragPreviewValidBorder,
-    gap,
-    getContinuationPreviewSpanOverrides,
-    indexCount,
-    rowHeight,
-    rows,
-    rowCount,
-    timelineRowsTopOffset,
-    cueRowIndex,
-    selectedCue,
-    setDragCursorMode,
-    setInternalDragSpanOverridesIfChanged,
-  ])
+      rowGap,
+      getContinuationPreviewSpanOverrides,
+      indexCount,
+      rowHeight,
+      rows,
+      rowCount,
+      timelineRowsTopOffset,
+      cueRowIndex,
+      selectedCue,
+      setDragCursorMode,
+      setInternalDragSpanOverridesIfChanged,
+    ]
+  )
 
   const cancelDragPreviewFrame = () => {
     if (dragPreviewFrameRef.current) {
@@ -338,7 +348,8 @@ const useEditModeDragPreviewController = ({
         nextCell &&
         Number(previousCell.xIndex) === Number(nextCell.xIndex) &&
         Number(previousCell.yIndex) === Number(nextCell.yIndex) &&
-        Boolean(previousCell.isValidDropCell) === Boolean(nextCell.isValidDropCell))
+        Boolean(previousCell.isValidDropCell) ===
+          Boolean(nextCell.isValidDropCell))
 
     if (sameCell) {
       return false
@@ -357,141 +368,158 @@ const useEditModeDragPreviewController = ({
     clearExternalDragPreview()
   }, [clearExternalDragPreview])
 
-  const applyExternalPreviewFromInput = useCallback((input) => {
-    const idleCursor = input?.idleCursor || "copy"
+  const applyExternalPreviewFromInput = useCallback(
+    (input) => {
+      const idleCursor = input?.idleCursor || "copy"
 
-    if (!input || !input.cueType || !containerRef.current) {
-      clearExternalPlacementPreview()
-      return
-    }
-
-    if (input.isHeaderCell) {
-      clearExternalPlacementPreview()
-      setDragCursorMode(idleCursor)
-      return
-    }
-
-    const pointerPosition = input.pointerPosition
-    if (!pointerPosition) {
-      clearExternalPlacementPreview()
-      setDragCursorMode(idleCursor)
-      return
-    }
-
-    const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
-    const yIndex = Math.floor((pointerPosition.y - timelineRowsTopOffset) / (rowHeight + gap))
-    const isInsideGrid = isRowIndexInsideGrid({
-      xIndex,
-      yIndex,
-      indexCount,
-      rowCount,
-    })
-
-    if (!isInsideGrid) {
-      clearExternalPlacementPreview()
-      setDragCursorMode(idleCursor)
-      return
-    }
-
-    if (externalCursorPreviewRef.current) {
-      if (input.cursorPreview) {
-        externalCursorPreviewRef.current.style.display = "block"
-        externalCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
-
-        const previewName = (input.cursorPreview.name || "").trim()
-        const previewImageUrl = input.cursorPreview.imageUrl || ""
-        const previewColor = input.cursorPreview.color || "rgba(32,32,32,0.9)"
-        const previousCursorContent = externalCursorContentRef.current
-
-        if (
-          previousCursorContent.name !== previewName ||
-          previousCursorContent.imageUrl !== previewImageUrl ||
-          previousCursorContent.color !== previewColor
-        ) {
-          if (externalCursorLabelRef.current) {
-            externalCursorLabelRef.current.textContent = previewName
-            externalCursorLabelRef.current.style.display = previewName ? "block" : "none"
-          }
-
-          if (externalCursorImageRef.current && externalCursorSurfaceRef.current) {
-            if (previewImageUrl) {
-              externalCursorImageRef.current.src = previewImageUrl
-              externalCursorImageRef.current.style.display = "block"
-              externalCursorSurfaceRef.current.style.display = "none"
-            } else {
-              externalCursorImageRef.current.style.display = "none"
-              externalCursorImageRef.current.removeAttribute("src")
-              externalCursorSurfaceRef.current.style.display = "block"
-              externalCursorSurfaceRef.current.style.background = previewColor
-            }
-          }
-
-          externalCursorContentRef.current = {
-            name: previewName,
-            imageUrl: previewImageUrl,
-            color: previewColor,
-          }
-        }
-      } else {
-        hideExternalCursorPreview()
+      if (!input || !input.cueType || !containerRef.current) {
+        clearExternalPlacementPreview()
+        return
       }
-    }
 
-    const isValidDropCell =
-      laneAcceptsCueType(rows?.[yIndex], input.cueType) &&
-      !input.isBlockedCell?.(xIndex, yIndex)
-    setDragCursorMode(isValidDropCell ? idleCursor : "not-allowed")
+      if (input.isHeaderCell) {
+        clearExternalPlacementPreview()
+        setDragCursorMode(idleCursor)
+        return
+      }
 
-    const didCellChange = updateExternalPreviewCell({ xIndex, yIndex, isValidDropCell })
-    if (!didCellChange) {
-      return
-    }
+      const pointerPosition = input.pointerPosition
+      if (!pointerPosition) {
+        clearExternalPlacementPreview()
+        setDragCursorMode(idleCursor)
+        return
+      }
 
-    if (input.enableContinuationPreview === false) {
-      setExternalDragSpanOverridesIfChanged({})
-    } else {
-      const continuationShrinkSpanOverrides = getContinuationPreviewSpanOverrides(
+      const xIndex = Math.floor(pointerPosition.x / (columnWidth + gap))
+      const yIndex = Math.floor(
+        (pointerPosition.y - timelineRowsTopOffset) / (rowHeight + rowGap)
+      )
+      const isInsideGrid = isRowIndexInsideGrid({
         xIndex,
         yIndex,
-        input.cueType,
-        input.draggedCueId || null
-      )
-      setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
-    }
+        indexCount,
+        rowCount,
+      })
 
-    applyPlacementPreviewStyles({
-      previewElement: externalPlacementPreviewRef.current,
-      xIndex,
-      yIndex,
+      if (!isInsideGrid) {
+        clearExternalPlacementPreview()
+        setDragCursorMode(idleCursor)
+        return
+      }
+
+      if (externalCursorPreviewRef.current) {
+        if (input.cursorPreview) {
+          externalCursorPreviewRef.current.style.display = "block"
+          externalCursorPreviewRef.current.style.transform = `translate3d(${pointerPosition.x + 10}px, ${pointerPosition.y + 10}px, 0)`
+
+          const previewName = (input.cursorPreview.name || "").trim()
+          const previewImageUrl = input.cursorPreview.imageUrl || ""
+          const previewColor = input.cursorPreview.color || "rgba(32,32,32,0.9)"
+          const previousCursorContent = externalCursorContentRef.current
+
+          if (
+            previousCursorContent.name !== previewName ||
+            previousCursorContent.imageUrl !== previewImageUrl ||
+            previousCursorContent.color !== previewColor
+          ) {
+            if (externalCursorLabelRef.current) {
+              externalCursorLabelRef.current.textContent = previewName
+              externalCursorLabelRef.current.style.display = previewName
+                ? "block"
+                : "none"
+            }
+
+            if (
+              externalCursorImageRef.current &&
+              externalCursorSurfaceRef.current
+            ) {
+              if (previewImageUrl) {
+                externalCursorImageRef.current.src = previewImageUrl
+                externalCursorImageRef.current.style.display = "block"
+                externalCursorSurfaceRef.current.style.display = "none"
+              } else {
+                externalCursorImageRef.current.style.display = "none"
+                externalCursorImageRef.current.removeAttribute("src")
+                externalCursorSurfaceRef.current.style.display = "block"
+                externalCursorSurfaceRef.current.style.background = previewColor
+              }
+            }
+
+            externalCursorContentRef.current = {
+              name: previewName,
+              imageUrl: previewImageUrl,
+              color: previewColor,
+            }
+          }
+        } else {
+          hideExternalCursorPreview()
+        }
+      }
+
+      const isValidDropCell =
+        laneAcceptsCueType(rows?.[yIndex], input.cueType) &&
+        !input.isBlockedCell?.(xIndex, yIndex)
+      setDragCursorMode(isValidDropCell ? idleCursor : "not-allowed")
+
+      const didCellChange = updateExternalPreviewCell({
+        xIndex,
+        yIndex,
+        isValidDropCell,
+      })
+      if (!didCellChange) {
+        return
+      }
+
+      if (input.enableContinuationPreview === false) {
+        setExternalDragSpanOverridesIfChanged({})
+      } else {
+        const continuationShrinkSpanOverrides =
+          getContinuationPreviewSpanOverrides(
+            xIndex,
+            yIndex,
+            input.cueType,
+            input.draggedCueId || null
+          )
+        setExternalDragSpanOverridesIfChanged(continuationShrinkSpanOverrides)
+      }
+
+      applyPlacementPreviewStyles({
+        previewElement: externalPlacementPreviewRef.current,
+        xIndex,
+        yIndex,
+        columnWidth,
+        rowHeight,
+        gap,
+        rowGap,
+        yTopOffset: timelineRowsTopOffset,
+        isValidDropCell,
+        validBorder: dragPreviewValidBorder,
+        invalidBorder: dragPreviewInvalidBorder,
+        validBg: dragPreviewValidBg,
+        invalidBg: dragPreviewInvalidBg,
+        setValidityAttribute: true,
+      })
+    },
+    [
+      clearExternalPlacementPreview,
       columnWidth,
-      rowHeight,
+      containerRef,
+      dragPreviewInvalidBg,
+      dragPreviewInvalidBorder,
+      dragPreviewValidBg,
+      dragPreviewValidBorder,
       gap,
-      yTopOffset: timelineRowsTopOffset,
-      isValidDropCell,
-      validBorder: dragPreviewValidBorder,
-      invalidBorder: dragPreviewInvalidBorder,
-      validBg: dragPreviewValidBg,
-      invalidBg: dragPreviewInvalidBg,
-      setValidityAttribute: true,
-    })
-  }, [
-    clearExternalPlacementPreview,
-    columnWidth,
-    containerRef,
-    dragPreviewInvalidBg,
-    dragPreviewInvalidBorder,
-    dragPreviewValidBg,
-    dragPreviewValidBorder,
-    gap,
-    getContinuationPreviewSpanOverrides,
-    indexCount,
-    rowHeight,
-    rows,
-    rowCount,
-    timelineRowsTopOffset,
-    setDragCursorMode,
-    setExternalDragSpanOverridesIfChanged,
-  ])
+      rowGap,
+      getContinuationPreviewSpanOverrides,
+      indexCount,
+      rowHeight,
+      rows,
+      rowCount,
+      timelineRowsTopOffset,
+      setDragCursorMode,
+      setExternalDragSpanOverridesIfChanged,
+    ]
+  )
 
   const scheduleExternalPreviewFromEvent = (event, options = {}) => {
     externalLatestPreviewInputRef.current = {

@@ -28,7 +28,7 @@ import {
  */
 const rowCenterY = (rowIndex) =>
   timelineRowsTopOffset() +
-  rowIndex * (TIMELINE_METRICS.rowHeight + TIMELINE_METRICS.gap) +
+  rowIndex * (TIMELINE_METRICS.rowHeight + TIMELINE_METRICS.rowGap) +
   TIMELINE_METRICS.rowHeight / 2
 import { useDispatch, useSelector } from "react-redux"
 import {

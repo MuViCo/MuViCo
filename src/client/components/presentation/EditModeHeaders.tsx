@@ -5,10 +5,9 @@ import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
 import {
-  COLLAPSED_GROUP_INSET,
-  laneDimShrink,
-  laneFocusBleed,
-  laneFocusShift,
+  GROUP_INSET,
+  laneFocusDelta,
+  laneFocusOffset,
   laneKey,
 } from "../utils/laneFocus"
 
@@ -24,7 +23,7 @@ interface RowHeadersProps {
   onAddAudioTrack: () => void
   maxVisualLayers: number
   maxAudioTracks: number
-  gap: number
+  rowGap: number
   rowHeight: number
   screenCount: number
   isAudioMuted: boolean
@@ -114,7 +113,7 @@ const RowHeadersBase = ({
   onAddAudioTrack,
   maxVisualLayers,
   maxAudioTracks,
-  gap,
+  rowGap,
   rowHeight,
   screenCount,
   isAudioMuted,
@@ -123,11 +122,7 @@ const RowHeadersBase = ({
   focusedRowIndex = -1,
   onFocusLane = () => {},
 }: RowHeadersProps): ReactNode => {
-  const renderLaneHeader = (
-    row: Lane,
-    groupHoldsFocus: boolean,
-    laneHeight: number
-  ): ReactNode => {
+  const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
     const lastGroupRow = groupRows[groupRows.length - 1]
@@ -185,19 +180,15 @@ const RowHeadersBase = ({
                 : TIMELINE_PALETTE.border
         }
         borderRadius="7px"
-        h={
-          row.y === focusedRowIndex
-            ? `${rowHeight + laneFocusBleed(rowHeight)}px`
-            : // Lanes of other screens recede while one lane holds focus.
-              focusedRowIndex >= 0 && !groupHoldsFocus
-              ? `${laneHeight - laneDimShrink(rowHeight)}px`
-              : `${laneHeight}px`
-        }
-        transform={`translateY(${
-          row.y === focusedRowIndex
-            ? -laneFocusBleed(rowHeight) / 2
-            : laneFocusShift(row.y, focusedRowIndex, rowHeight)
-        }px)`}
+        // Drawn taller or shorter than its track, never moving it: the track is
+        // the coordinate the frame columns and the hit tests share.
+        h={`${rowHeight + laneFocusDelta(row.y, focusedRowIndex, rowHeight)}px`}
+        alignSelf="center"
+        transform={`translateY(${laneFocusOffset(
+          row.y,
+          focusedRowIndex,
+          rowHeight
+        )}px)`}
         width={`${TIMELINE_METRICS.rowHeaderWidth}px`}
         position="relative"
         px="8px"
@@ -566,19 +557,6 @@ const RowHeadersBase = ({
   return groupLanes(rows).map((group) => {
     const groupRows = rows.slice(group.startY, group.startY + group.laneCount)
     const isAudioGroup = group.kind === "audio" || group.kind === "audio-track"
-    const groupHoldsFocus =
-      focusedRowIndex >= group.startY &&
-      focusedRowIndex < group.startY + group.laneCount
-    const groupSpanHeight =
-      group.laneCount * rowHeight + Math.max(group.laneCount - 1, 0) * gap
-    // A closed group is drawn shorter than its track so that the space between
-    // two collapsed screens reads as a gap between them, without the track
-    // itself moving and taking the frame columns out of alignment. A group that
-    // holds focus keeps its full height: the two effects would cancel.
-    const groupLaneHeight =
-      group.collapsed && !groupHoldsFocus
-        ? rowHeight - COLLAPSED_GROUP_INSET
-        : rowHeight
 
     return (
       <Box
@@ -588,47 +566,41 @@ const RowHeadersBase = ({
         role="group"
         aria-label={group.label}
         gridRow={`span ${group.laneCount}`}
-        // Grows with the focused lane it contains, so the frame keeps enclosing
-        // its lanes; the extra height is absorbed by the gutter between groups.
-        h={
-          groupHoldsFocus
-            ? `${groupSpanHeight + laneFocusBleed(rowHeight)}px`
-            : group.collapsed
-              ? `${groupSpanHeight - COLLAPSED_GROUP_INSET}px`
-              : undefined
-        }
-        mt={
-          groupHoldsFocus
-            ? `-${laneFocusBleed(rowHeight) / 2}px`
-            : group.collapsed
-              ? `${COLLAPSED_GROUP_INSET / 2}px`
-              : undefined
-        }
-        transition="height 140ms ease, margin-top 140ms ease"
         display="grid"
-        gridTemplateRows={`repeat(${group.laneCount}, ${groupLaneHeight}px)`}
-        gap={`${gap}px`}
-        marginRight={`${gap}px`}
-        // A dark fill shows through the 10px gaps between lanes, which is what
-        // actually makes the run read as one container -- the lane cells are
-        // light purple, so without it the frame alone just adds another line in
-        // the same colour as every lane border. Background and outline are both
-        // outside the box model, so alignment with the grid rows is untouched.
-        bg={TIMELINE_PALETTE.groupPanel}
-        // Dashed when collapsed: until now the only signal that a group was
-        // collapsed was its label text.
-        outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
-          isAudioGroup ? TIMELINE_PALETTE.audioBorder : TIMELINE_PALETTE.accent
-        }`}
-        outlineOffset="0px"
-        borderRadius="12px"
+        gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
+        gap={`${rowGap}px`}
+        // Horizontal, so it takes the column gap rather than the row gap: this
+        // is the space between the gutter and the first frame column.
+        marginRight={`${TIMELINE_METRICS.gap}px`}
         position="relative"
         // The add-layer and add-screen buttons deliberately overhang.
         overflow="visible"
       >
-        {groupRows.map((row) =>
-          renderLaneHeader(row, groupHoldsFocus, groupLaneHeight)
-        )}
+        {/* The frame, on a layer of its own. Insetting this instead of the box
+            itself is what puts space between one screen and the next while
+            leaving the grid tracks exactly where the timeline expects them. The
+            dark fill shows through the gaps between lanes, which is what makes
+            the run read as one container: the lane cells are light, so an
+            outline alone would just add another line in their own colour. */}
+        <Box
+          aria-hidden="true"
+          position="absolute"
+          left={0}
+          right={0}
+          top={`${GROUP_INSET / 2}px`}
+          bottom={`${GROUP_INSET / 2}px`}
+          bg={TIMELINE_PALETTE.groupPanel}
+          // Dashed when collapsed: until now the only signal that a group was
+          // collapsed was its label text.
+          outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
+            isAudioGroup
+              ? TIMELINE_PALETTE.audioBorder
+              : TIMELINE_PALETTE.accent
+          }`}
+          borderRadius="12px"
+          pointerEvents="none"
+        />
+        {groupRows.map(renderLaneHeader)}
       </Box>
     )
   })
