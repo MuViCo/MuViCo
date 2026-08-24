@@ -2021,6 +2021,12 @@ const EditMode = ({
           display="flex"
           width="100%"
           marginTop="0px"
+          // Definite, and computed rather than left to the content. Both
+          // children stretch to this line, and a line sized by stretched items
+          // came out at the scrollport height: the gutter then overflowed it in
+          // visible and looked whole, while the frame scroller clipped and lost
+          // its last screens. The timeline knows its own height, so it states it.
+          height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
           minHeight="100%"
           overflow="visible"
         >

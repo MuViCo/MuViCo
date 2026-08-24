@@ -91,7 +91,7 @@ export const LANE_KNIT = 16
  * Taken out of the space at the screen's edge, which is why that space has to be
  * more than twice this.
  */
-export const GROUP_PAD = 8
+export const GROUP_PAD = 10
 
 /**
  * Per-lane height change and top offset.
