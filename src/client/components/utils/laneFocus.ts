@@ -65,7 +65,7 @@ export const laneScreenFromKey = (
  * lanes; the growth is absorbed by the gutter between groups, which is why it
  * must stay under that gap.
  */
-export const LANE_FOCUS_GROWTH = 0.2
+export const LANE_FOCUS_GROWTH = 0.15
 
 export const laneFocusBleed = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_FOCUS_GROWTH)
