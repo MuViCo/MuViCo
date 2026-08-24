@@ -65,10 +65,28 @@ export const laneScreenFromKey = (
  * lanes; the growth is absorbed by the gutter between groups, which is why it
  * must stay under that gap.
  */
-export const LANE_FOCUS_GROWTH = 0.2
+export const LANE_FOCUS_GROWTH = 0.23
 
 export const laneFocusBleed = (rowHeight: number): number =>
   Math.round(rowHeight * LANE_FOCUS_GROWTH)
+
+/**
+ * How much a lane gives up while a lane in another group holds focus.
+ *
+ * Taken inside the lane's own grid track rather than from it: the track height
+ * is the coordinate the frame columns, the cue positions and every hit test are
+ * built on, so shrinking it would slide the gutter out of step with the rows it
+ * labels. Only the cell drawn in the track gets shorter, centred, which reads as
+ * the lane receding without moving anything.
+ *
+ * This is also why the growth above stays at or below the inter-group gap: the
+ * focused lane's extra height has to fit in the gutter, and dimming the others
+ * frees no room there.
+ */
+export const LANE_DIM_SHRINK = 0.08
+
+export const laneDimShrink = (rowHeight: number): number =>
+  Math.round(rowHeight * LANE_DIM_SHRINK)
 
 /**
  * Vertical offset for a lane while another is focused: lanes above move up and
@@ -87,3 +105,15 @@ export const laneFocusShift = (
   const half = laneFocusBleed(rowHeight) / 2
   return rowIndex < focusedRowIndex ? -half : half
 }
+
+/**
+ * Vertical inset applied to a collapsed group's frame, in px.
+ *
+ * Collapsed screens sit next to each other with only the lane gap between them,
+ * which reads as one striped block rather than as several closed screens. The
+ * inset is taken inside the group's own grid track for the same reason
+ * LANE_DIM_SHRINK is: the track is the shared coordinate, and moving it would
+ * put the gutter out of step with the frame columns. The space therefore appears
+ * between the frames without any row shifting.
+ */
+export const COLLAPSED_GROUP_INSET = 10

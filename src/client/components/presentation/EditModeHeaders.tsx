@@ -4,7 +4,13 @@
 import React from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
-import { laneFocusBleed, laneFocusShift, laneKey } from "../utils/laneFocus"
+import {
+  COLLAPSED_GROUP_INSET,
+  laneDimShrink,
+  laneFocusBleed,
+  laneFocusShift,
+  laneKey,
+} from "../utils/laneFocus"
 
 import type { RefObject, ReactNode } from "react"
 import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
@@ -117,7 +123,11 @@ const RowHeadersBase = ({
   focusedRowIndex = -1,
   onFocusLane = () => {},
 }: RowHeadersProps): ReactNode => {
-  const renderLaneHeader = (row: Lane): ReactNode => {
+  const renderLaneHeader = (
+    row: Lane,
+    groupHoldsFocus: boolean,
+    laneHeight: number
+  ): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
     const lastGroupRow = groupRows[groupRows.length - 1]
@@ -178,7 +188,10 @@ const RowHeadersBase = ({
         h={
           row.y === focusedRowIndex
             ? `${rowHeight + laneFocusBleed(rowHeight)}px`
-            : `${rowHeight}px`
+            : // Lanes of other screens recede while one lane holds focus.
+              focusedRowIndex >= 0 && !groupHoldsFocus
+              ? `${laneHeight - laneDimShrink(rowHeight)}px`
+              : `${laneHeight}px`
         }
         transform={`translateY(${
           row.y === focusedRowIndex
@@ -558,6 +571,14 @@ const RowHeadersBase = ({
       focusedRowIndex < group.startY + group.laneCount
     const groupSpanHeight =
       group.laneCount * rowHeight + Math.max(group.laneCount - 1, 0) * gap
+    // A closed group is drawn shorter than its track so that the space between
+    // two collapsed screens reads as a gap between them, without the track
+    // itself moving and taking the frame columns out of alignment. A group that
+    // holds focus keeps its full height: the two effects would cancel.
+    const groupLaneHeight =
+      group.collapsed && !groupHoldsFocus
+        ? rowHeight - COLLAPSED_GROUP_INSET
+        : rowHeight
 
     return (
       <Box
@@ -572,12 +593,20 @@ const RowHeadersBase = ({
         h={
           groupHoldsFocus
             ? `${groupSpanHeight + laneFocusBleed(rowHeight)}px`
-            : undefined
+            : group.collapsed
+              ? `${groupSpanHeight - COLLAPSED_GROUP_INSET}px`
+              : undefined
         }
-        mt={groupHoldsFocus ? `-${laneFocusBleed(rowHeight) / 2}px` : undefined}
+        mt={
+          groupHoldsFocus
+            ? `-${laneFocusBleed(rowHeight) / 2}px`
+            : group.collapsed
+              ? `${COLLAPSED_GROUP_INSET / 2}px`
+              : undefined
+        }
         transition="height 140ms ease, margin-top 140ms ease"
         display="grid"
-        gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
+        gridTemplateRows={`repeat(${group.laneCount}, ${groupLaneHeight}px)`}
         gap={`${gap}px`}
         marginRight={`${gap}px`}
         // A dark fill shows through the 10px gaps between lanes, which is what
@@ -597,7 +626,9 @@ const RowHeadersBase = ({
         // The add-layer and add-screen buttons deliberately overhang.
         overflow="visible"
       >
-        {groupRows.map(renderLaneHeader)}
+        {groupRows.map((row) =>
+          renderLaneHeader(row, groupHoldsFocus, groupLaneHeight)
+        )}
       </Box>
     )
   })
