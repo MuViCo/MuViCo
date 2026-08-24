@@ -129,4 +129,4 @@ export const laneFocusLayout = (
   return { delta, offset }
 }
 
-export const GROUP_INSET = 18
+export const GROUP_INSET = 28
