@@ -2071,6 +2071,12 @@ const EditMode = ({
           <Box
             position="relative"
             zIndex={1}
+            // Breathing room between the gutter's edge and the first frame
+            // column, so the two read as separate panes. A margin rather than
+            // padding: every overlay in here is absolutely positioned and would
+            // resolve against the padding box, i.e. ignore it, while the two
+            // hit tests measure this box live and follow a margin exactly.
+            ml="6px"
             pointerEvents="auto"
             minHeight={0}
             sx={{

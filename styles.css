@@ -183,6 +183,13 @@
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   padding: 1rem;
+  /* Sets the frame band off the panel's top edge instead of letting it sit on
+     it. Applied here rather than to the band, because the band and the pinned
+     gutter are separate subtrees kept aligned only by shared offsets -- moving
+     one alone would shift the frame columns off their lane rows. Padding on the
+     shared scrollport moves both, and a sticky top:0 resolves against the
+     padding edge, so the gap survives scrolling. */
+  padding-top: 1.5rem;
   padding-bottom: 0.5rem;
 }
 
