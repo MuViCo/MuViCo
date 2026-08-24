@@ -51,7 +51,7 @@ export const TIMELINE_METRICS: TimelineMetrics = {
   // Tight, so a screen's layers read as one stack. The space that separates one
   // screen from the next comes from GROUP_INSET instead, which is drawn inside
   // the tracks and so can differ from this without moving any row.
-  rowGap: 6,
+  rowGap: 8,
   // Every hit-test derives its origin from this, so the band can be resized
   // here alone. Was 55 (rowHeight - 45) when it was computed in two places.
   frameHeaderHeight: 34,

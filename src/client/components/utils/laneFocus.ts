@@ -122,4 +122,4 @@ export const laneFocusOffset = (
   rowHeight: number
 ): number => -laneFocusDelta(rowIndex, focusedRowIndex, rowHeight) / 2
 
-export const GROUP_INSET = 12
+export const GROUP_INSET = 18

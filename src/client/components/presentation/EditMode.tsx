@@ -2139,7 +2139,13 @@ const EditMode = ({
                   display="grid"
                   gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
                   gap={`${gap}px`}
-                  mb={`${gap}px`}
+                  // Derived, not restated. This margin is the second half of
+                  // timelineRowsTopOffset: the band is frameHeaderHeight tall,
+                  // and the first lane starts one row gap below it, which is the
+                  // origin the lane gutter computes independently. Writing the
+                  // gap literally here is what put every track 8px below the
+                  // header naming it, once rows and columns stopped sharing one.
+                  mb={`${timelineRowsTopOffset() - frameHeaderHeight}px`}
                 >
                   <ColumnHeaders
                     xLabels={xLabels}
