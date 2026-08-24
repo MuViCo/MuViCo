@@ -2052,8 +2052,14 @@ const EditMode = ({
             className="edit-mode-frames-scroll"
             flex="1 1 auto"
             minWidth={0}
+            // clip, not hidden: hidden makes this a scroll container on the
+            // vertical axis too, and a wheel over it is then swallowed rather
+            // than passed up to #edit-mode-scroll, so the timeline would not
+            // scroll vertically under the pointer. clip still trims the
+            // overflow but creates no scroll container, so the wheel reaches
+            // the one box that owns vertical scrolling.
             overflowX="auto"
-            overflowY="hidden"
+            overflowY="clip"
             overscrollBehavior="contain"
           >
             <Box

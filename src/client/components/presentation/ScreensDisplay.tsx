@@ -175,7 +175,12 @@ export const ScreensDisplay = ({
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            // "safe" matters: a plain centre overflows equally on both sides of a
+            // scroll container, which puts the first tile before scrollLeft 0 where
+            // no scrolling can reach it. safe centre falls back to start-alignment
+            // as soon as the tiles no longer fit, which is exactly when the panel
+            // is enlarged and they grow with it.
+            justifyContent: "safe center",
             flex: 1,
           }}
         >
@@ -189,7 +194,12 @@ export const ScreensDisplay = ({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          // "safe" matters: a plain centre overflows equally on both sides of a
+          // scroll container, which puts the first tile before scrollLeft 0 where
+          // no scrolling can reach it. safe centre falls back to start-alignment
+          // as soon as the tiles no longer fit, which is exactly when the panel
+          // is enlarged and they grow with it.
+          justifyContent: "safe center",
           width: "100%",
           height: "100%",
           backgroundColor: cue.color || "#333",
@@ -206,7 +216,12 @@ export const ScreensDisplay = ({
         display: "flex",
         // Tiles are sized by height and keep their aspect ratio, so the strip
         // scrolls sideways instead of squeezing every screen thinner.
-        justifyContent: "center",
+        // "safe" matters: a plain centre overflows equally on both sides of a
+        // scroll container, which puts the first tile before scrollLeft 0 where
+        // no scrolling can reach it. safe centre falls back to start-alignment
+        // as soon as the tiles no longer fit, which is exactly when the panel
+        // is enlarged and they grow with it.
+        justifyContent: "safe center",
         alignItems: "center",
         backgroundColor: editModeBackground,
         gap: "10px",
@@ -301,7 +316,12 @@ export const ScreensDisplay = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  // "safe" matters: a plain centre overflows equally on both sides of a
+                  // scroll container, which puts the first tile before scrollLeft 0 where
+                  // no scrolling can reach it. safe centre falls back to start-alignment
+                  // as soon as the tiles no longer fit, which is exactly when the panel
+                  // is enlarged and they grow with it.
+                  justifyContent: "safe center",
                   flex: 1,
                 }}
               >
