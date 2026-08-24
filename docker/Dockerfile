@@ -1,5 +1,10 @@
 FROM node:20-alpine
 
+# Apply any OS security patches Alpine has published since this image tag was
+# last rebuilt (e.g. OpenSSL fixes), without waiting on the upstream Docker
+# Hub image to catch up.
+RUN apk update && apk upgrade --no-cache
+
 # Define build arguments
 ARG VITE_FIREBASE_API_KEY
 ARG VITE_FIREBASE_AUTH_DOMAIN
