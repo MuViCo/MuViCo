@@ -34,11 +34,25 @@ if (typeof window !== "undefined") {
 }
 
 jest.mock("./src/client/public/icons/nextbutton.svg", () => "nextbutton.svg")
-jest.mock("./src/client/public/icons/previousbutton.svg", () => "previousbutton.svg")
+jest.mock(
+  "./src/client/public/icons/previousbutton.svg",
+  () => "previousbutton.svg"
+)
 jest.mock("./src/client/public/icons/pausebutton.svg", () => "pausebutton.svg")
 jest.mock("./src/client/public/icons/playbutton.svg", () => "playbutton.svg")
 jest.mock("./src/client/public/icons/screen.svg", () => "screen.svg")
 jest.mock("./src/client/public/icons/trash.svg", () => "trash.svg")
-jest.mock("./src/client/public/icons/Presentationsettings.svg", () => "Presentationsettings.svg")
+jest.mock(
+  "./src/client/public/icons/Presentationsettings.svg",
+  () => "Presentationsettings.svg"
+)
 jest.mock("./src/client/public/hy_logo.svg", () => "hy_logo.svg")
 jest.mock("./src/client/public/b_hy_logo.svg", () => "b_hy_logo.svg")
+
+// jsdom implements neither of these; the strip's scroll-to calls Element.scrollTo.
+if (typeof window !== "undefined") {
+  window.Element.prototype.scrollTo =
+    window.Element.prototype.scrollTo || jest.fn()
+  window.Element.prototype.scrollIntoView =
+    window.Element.prototype.scrollIntoView || jest.fn()
+}

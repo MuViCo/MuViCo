@@ -24,7 +24,56 @@ import {
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
-import { useDispatch } from "react-redux"
+import {
+  TIMELINE_METRICS,
+  columnLeft,
+  gridContentWidth,
+  laneOffset,
+  laneSpanHeight,
+} from "./timelineMetrics"
+import type { LaneFocusLayout } from "../utils/laneFocus"
+
+import type { RefObject } from "react"
+import type { Layout } from "react-grid-layout"
+import type { AlertData, Cue, SpanOverrideMap } from "../../types"
+
+interface GridLayoutComponentProps {
+  id: string
+  layout: Layout[]
+  cues: Cue[]
+  /** Cue id -> lane row index, from buildRowModel. */
+  cueRowIndex?: Record<string, number>
+  rowCount?: number
+  setCopiedCue: (cue: Cue | null) => void
+  setIsCopied: (copied: boolean) => void
+  columnWidth: number
+  rowHeight: number
+  gap: number
+  /** Vertical gap between lanes; separate from the column gap. */
+  rowGap: number
+  cueIndex: number
+  isAudioMuted: boolean
+  setSelectedCue: (cue: Cue | null) => void
+  setIsToolboxOpen: (open: boolean) => void
+  indexCount: number
+  setShowAlert: (show: boolean) => void
+  setAlertData: (data: AlertData) => void
+  screenCount: number
+  containerRef?: RefObject<HTMLDivElement | null>
+  isDragging?: boolean
+  draggingCueId?: string | null
+  previewCueSpanOverrides?: SpanOverrideMap
+  isCopied?: boolean
+  interactionCursor?: string | null
+  /** Row index of the focused lane, or -1. */
+  focusedRowIndex?: number
+  /**
+   * Per-lane height change and offset, computed once by EditMode from the row
+   * model so a clip and its track label move as one.
+   */
+  focusLayout?: LaneFocusLayout
+}
+import { useAppDispatch } from "../../redux/hooks"
 import { updatePresentation, removeCue } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import Dialog from "../utils/AlertDialog"
@@ -34,7 +83,11 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 
-const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
+const renderElementBasedOnIndex = (
+  currentIndex: number,
+  cues: Cue[],
+  cue: Cue
+): boolean | undefined => {
   if (cue.index > currentIndex) {
     return false
   } else if (cue.index === currentIndex) {
@@ -57,7 +110,13 @@ const renderElementBasedOnIndex = (currentIndex, cues, cue) => {
   }
 }
 
-const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
+const renderMedia = (
+  cue: Cue,
+  cueIndex: number,
+  cues: Cue[],
+  isAudioMuted: boolean,
+  screenCount: number
+) => {
   const visualOpacity =
     cue.cueType === "visual" ? normalizeCueOpacity(cue.opacity) : 1
 
@@ -75,7 +134,11 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
     )
   }
 
-  if (cue.file.type.startsWith("video/")) {
+  // Optional chain, not a bare read: the S3 updateCue route rebuilds cue.file
+  // as {id, name, url} and Mongoose then re-applies the schema default, so type
+  // can be absent or wrong after a file replacement. Undefined falls through to
+  // the same branch a non-video type already took.
+  if (cue.file.type?.startsWith("video/")) {
     return (
       <video
         src={cue.file.url}
@@ -93,7 +156,7 @@ const renderMedia = (cue, cueIndex, cues, isAudioMuted, screenCount) => {
         controls={false}
       />
     )
-  } else if (cue.file.type.startsWith("image/")) {
+  } else if (cue.file.type?.startsWith("image/")) {
     return (
       <img // Thumbail for image
         src={cue.file.url || `/${cue.file.name}`}
@@ -130,6 +193,7 @@ const GridLayoutComponent = ({
   columnWidth,
   rowHeight,
   gap,
+  rowGap,
   cueIndex,
   isAudioMuted,
   setSelectedCue,
@@ -143,21 +207,31 @@ const GridLayoutComponent = ({
   previewCueSpanOverrides = {},
   isCopied = false,
   interactionCursor = null,
-}) => {
+  focusedRowIndex = -1,
+  focusLayout = { delta: [], offset: [] },
+}: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [cueToRemove, setCueToRemove] = useState(null)
+  const [cueToRemove, setCueToRemove] = useState<string | null>(null)
 
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
-  const gridWidth = indexCount * columnWidth + Math.max(indexCount - 1, 0) * gap
-  const gridHeight = rowCount * rowHeight + Math.max(rowCount - 1, 0) * gap
+  const gridWidth = gridContentWidth(indexCount, {
+    ...TIMELINE_METRICS,
+    columnWidth,
+    gap,
+  })
+  const gridHeight = laneSpanHeight(rowCount, {
+    ...TIMELINE_METRICS,
+    rowHeight,
+    rowGap,
+  })
 
-  const handleLoopToggle = async (cue) => {
+  const handleLoopToggle = async (cue: Cue) => {
     const updatedCue = {
       cueId: cue._id,
       cueName: cue.name,
@@ -180,14 +254,13 @@ const GridLayoutComponent = ({
         title: updatedCueFromRedux.loop ? "Loop enabled" : "Loop disabled",
         description: `${updatedCueFromRedux.name} will ${updatedCueFromRedux.loop ? "loop" : "play once"}`,
         status: "info",
-        duration: 2000,
       })
     } catch (e) {
       console.log("Error printing toast about loop toggle: ", e)
     }
   }
 
-  const handleContinuePlaybackToggle = async (cue) => {
+  const handleContinuePlaybackToggle = async (cue: Cue) => {
     const updatedCue = {
       cueId: cue._id,
       cueName: cue.name,
@@ -215,14 +288,13 @@ const GridLayoutComponent = ({
             : "stop with the sequence"
         }`,
         status: "info",
-        duration: 2000,
       })
     } catch (e) {
       console.log("Error printing toast about continuous audio toggle: ", e)
     }
   }
 
-  const handleRemoveItem = (cueId) => {
+  const handleRemoveItem = (cueId: string) => {
     setCueToRemove(cueId)
     setIsDialogOpen(true)
   }
@@ -234,7 +306,10 @@ const GridLayoutComponent = ({
         const cue = cues.find((cue) => cue._id === cueToRemove)
         showToast({
           title: "Element removed",
-          description: `Element ${cue.name} has been removed.`,
+          // The cue is looked up after the removal dispatch resolves, so it is
+          // gone from the store by now on the happy path; the optional chain
+          // matches what the template already rendered for a missing cue.
+          description: `Element ${cue?.name} has been removed.`,
           status: "success",
         })
       } catch (error) {
@@ -250,14 +325,14 @@ const GridLayoutComponent = ({
     setIsDialogOpen(false)
   }
 
-  const handleEditItem = (cueId) => {
-    const cue = cues.find((cue) => cue._id === cueId)
-    setSelectedCue(cue)
+  const handleEditItem = (cueId: string) => {
+    const cue = cues.find((candidate) => candidate._id === cueId)
+    setSelectedCue(cue ?? null)
     setIsToolboxOpen(true)
   }
 
   // helper component for rendering edit mode buttons for each cue, including options to edit, copy, delete, and toggle loop for audio cues
-  const EditModeCueButtons = (cue) => (
+  const EditModeCueButtons = (cue: Cue) => (
     <Menu isLazy>
       <MenuButton
         as={IconButton}
@@ -411,13 +486,25 @@ const GridLayoutComponent = ({
                 key={`empty-cell-${rowIndex}-${columnIndex}`}
                 data-testid={`grid-empty-cell-${rowIndex}-${columnIndex}`}
                 position="absolute"
-                left={`${columnIndex * (columnWidth + gap)}px`}
-                top={`${rowIndex * (rowHeight + gap)}px`}
+                left={`${columnLeft(columnIndex, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
+                top={`${
+                  laneOffset(rowIndex, {
+                    ...TIMELINE_METRICS,
+                    rowHeight,
+                    rowGap,
+                  }) + (focusLayout.offset[rowIndex] ?? 0)
+                }px`}
                 width={`${columnWidth}px`}
-                height={`${rowHeight}px`}
+                // Knitted and resized like the clips and the lane headers: an
+                // empty slot marks where a clip would go, so it has to be the
+                // shape a clip would take.
+                height={`${rowHeight + (focusLayout.delta[rowIndex] ?? 0)}px`}
                 borderRadius="10px"
+                // Fill only. The 1px outline used to draw these slots read as a
+                // grid of boxes, and its light edge was the one thing still
+                // catching the eye where cells scroll behind the pinned gutter.
+                // A flat fill is also how a video editor draws an empty slot.
                 bg="rgba(12, 10, 18, 0.46)"
-                border="1px solid rgba(255, 255, 255, 0.12)"
               />
             ))
           )}
@@ -433,7 +520,7 @@ const GridLayoutComponent = ({
           compactType={null}
           isBounded={false}
           preventCollision={true}
-          margin={[gap, gap]}
+          margin={[gap, rowGap]}
           containerPadding={[0, 0]}
           useCSSTransforms={true}
           maxRows={rowCount}
@@ -489,6 +576,16 @@ const GridLayoutComponent = ({
             const isDraggingOriginCue = isDragging && draggingCueId === cue._id
             const suppressCueHoverEffects = isDragging || isCopied
             const cueGridRow = cueRowIndex[cue._id] ?? 0
+            const isLaneFocused =
+              focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
+            // Same delta and offset the lane header uses, so a clip and its
+            // track label move as one.
+            const laneDelta = focusLayout.delta[cueGridRow] ?? 0
+            const laneShift = focusLayout.offset[cueGridRow] ?? 0
+            // Applied to the content box inside the grid item, never the item
+            // itself: react-grid-layout overwrites the item's transform on
+            // every layout pass, and its stylesheet transitions that property,
+            // so scaling there would animate every unrelated layout change.
 
             return (
               <div
@@ -504,10 +601,11 @@ const GridLayoutComponent = ({
                   static: false,
                 }}
                 id={`cue-screen-${cue.screen}-index-${cue.index}`}
+                style={isLaneFocused ? { zIndex: 4 } : undefined}
               >
                 <Box
                   position="relative"
-                  h="100%"
+                  h={`calc(100% + ${laneDelta}px)`}
                   overflow="hidden"
                   borderRadius="10px"
                   cursor={
@@ -519,13 +617,19 @@ const GridLayoutComponent = ({
                   }
                   data-cue-content-id={cue._id}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
-                  transform="translateY(0)"
-                  transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease"
+                  data-focused-lane={isLaneFocused ? "true" : undefined}
+                  transform={`translateY(${laneShift}px)`}
+                  boxShadow={
+                    isLaneFocused
+                      ? "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
+                      : undefined
+                  }
+                  transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease, height 140ms ease"
                   _hover={
                     suppressCueHoverEffects
                       ? {}
                       : {
-                          transform: "translateY(-1px)",
+                          transform: `translateY(${laneShift - 1}px)`,
                           boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
                         }
                   }

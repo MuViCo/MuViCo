@@ -1,63 +1,71 @@
+:root {
+  /* Overwritten at runtime by the NavBar once it has measured itself. */
+  --muvico-navbar-h: 4.5rem;
+}
+
 /* Use !important so Chakra Button defaults do not override these Edit Mode button styles. */
 
 .edit-mode-btn {
-	background-color: #BD5BFF !important;
-	color: #ffffff !important;
-	border: 0 !important;
-	border-radius: 0.375rem !important;
-	font-size: 0.875rem !important;
-	min-height: 2rem !important;
-	padding: 0.5rem 0.75rem !important;
+  background-color: #bd5bff !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.875rem !important;
+  min-height: 2rem !important;
+  padding: 0.5rem 0.75rem !important;
 }
 
 .edit-mode-btn:hover,
 .edit-mode-btn[data-hover] {
-	background-color: #8941b9 !important;
+  background-color: #8941b9 !important;
 }
 
 .edit-mode-btn:active,
 .edit-mode-btn[data-active] {
-	background-color: #553c9a !important;
+  background-color: #553c9a !important;
 }
 
 .edit-mode-btn:focus-visible {
-	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
 
 .edit-mode-btn-settings {
-	padding: 6px !important;
+  padding: 6px !important;
 }
 
 .edit-mode-btn-tutorial {
-	margin-left: auto !important;
+  margin-left: auto !important;
 }
 
 .show-mode-nav-btn {
-	background-color: #BD5BFF !important;
-	color: #ffffff !important;
-	border: 0 !important;
-	border-radius: 0.375rem !important;
-	width: 2.75rem !important;
-	height: 2.75rem !important;
-	min-width: 2.75rem !important;
-	padding: 0 !important;
-	transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  background-color: #bd5bff !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  padding: 0 !important;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 
 .show-mode-nav-btn:hover,
 .show-mode-nav-btn[data-hover] {
-	background-color: #8941b9 !important;
-	transform: translateY(-1px) !important;
+  background-color: #8941b9 !important;
+  transform: translateY(-1px) !important;
 }
 
 .show-mode-nav-btn:active,
 .show-mode-nav-btn[data-active] {
-	background-color: #553c9a !important;
-	transform: translateY(0) !important;
+  background-color: #553c9a !important;
+  transform: translateY(0) !important;
 }
 
 .show-mode-nav-btn:focus-visible {
-	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
 
 /*
@@ -66,204 +74,248 @@
  */
 .show-mode-autoplay-btn,
 .show-mode-open-all-btn {
-	border: 0 !important;
-	border-radius: 0.375rem !important;
-	font-weight: 600 !important;
-	height: 2.75rem !important;
-	color: #ffffff !important;
-	transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  font-weight: 600 !important;
+  height: 2.75rem !important;
+  color: #ffffff !important;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease !important;
 }
 
 .show-mode-autoplay-btn {
-	min-width: 2.75rem !important;
-	min-height: 2.75rem !important;
-	padding: 0 !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
 }
 
 /* Primary action state (start autoplay / open all). */
 .show-mode-autoplay-btn-start,
 .show-mode-open-all-btn-open {
-	background-color: #BD5BFF !important;
-	color: #ffffff !important;
+  background-color: #bd5bff !important;
+  color: #ffffff !important;
 }
 
 /* Opposite action state (stop autoplay / close all). */
 .show-mode-autoplay-btn-stop,
 .show-mode-open-all-btn-close {
-	background-color: #e53e3e !important;
-	color: #ffffff !important;
+  background-color: #e53e3e !important;
+  color: #ffffff !important;
 }
 
 .show-mode-autoplay-btn-start:hover,
 .show-mode-autoplay-btn-start[data-hover],
 .show-mode-open-all-btn-open:hover,
 .show-mode-open-all-btn-open[data-hover] {
-	background-color: #8941b9 !important;
-	transform: translateY(-1px) !important;
+  background-color: #8941b9 !important;
+  transform: translateY(-1px) !important;
 }
 
 .show-mode-autoplay-btn-stop:hover,
 .show-mode-autoplay-btn-stop[data-hover],
 .show-mode-open-all-btn-close:hover,
 .show-mode-open-all-btn-close[data-hover] {
-	background-color: #c53030 !important;
-	transform: translateY(-1px) !important;
+  background-color: #c53030 !important;
+  transform: translateY(-1px) !important;
 }
 
 .show-mode-autoplay-btn-start:active,
 .show-mode-autoplay-btn-start[data-active],
 .show-mode-open-all-btn-open:active,
 .show-mode-open-all-btn-open[data-active] {
-	background-color: #553c9a !important;
-	transform: translateY(0) !important;
+  background-color: #553c9a !important;
+  transform: translateY(0) !important;
 }
 
 .show-mode-autoplay-btn-stop:active,
 .show-mode-autoplay-btn-stop[data-active],
 .show-mode-open-all-btn-close:active,
 .show-mode-open-all-btn-close[data-active] {
-	background-color: #9b2c2c !important;
-	transform: translateY(0) !important;
+  background-color: #9b2c2c !important;
+  transform: translateY(0) !important;
 }
 
 .show-mode-autoplay-btn:focus-visible,
 .show-mode-open-all-btn:focus-visible {
-	box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
-
-
-
-
-
 
 /* Editor layout */
 
-#edit-mode-scroll{
-	overflow: scroll;
-	height: 100%;
-	padding: 1rem;
-	padding-bottom: 0rem;
+/* The editor is a viewport-locked shell. Its height is definite, which is what
+   makes the height:100% chain below resolve -- before this, every ancestor was
+   auto-height, so #edit-mode-scroll only behaved like a scroller once the user
+   dragged the timeline handle and gave it an inline pixel height. */
+.editor-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-
-#screen_preview{
-	overflow: hidden;
-	position: relative;
-	height: 15rem;
+.editor-shell > .edit-workspace {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
 }
 
-#screen_preview > div > div {
-	aspect-ratio: 16 / 9;
-	width: 100%;
-	max-height: 100%;
-
+.editor-shell > .edit-workspace > div {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  width: 100%;
 }
 
-.resize_handle{
-	width: 100%;
-	height:0.5rem;
-	cursor: ns-resize; 
-	bottom: 0;
-	position: absolute;
+/* Vertical only. Sideways scrolling belongs to .edit-mode-frames-scroll inside,
+   so the lane gutter -- which sits in this box, outside that one -- never has
+   frames passing behind it and needs no fill of its own to hide them. The cost
+   of the split, accepted deliberately: the frame band no longer sticks to the
+   top, because it scrolls with the body rather than over it. */
+#edit-mode-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
+  min-height: 0;
+  /* A rubber-band scroll must not chain to a page that cannot scroll. */
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 1rem;
+  /* The row inside is a flex row and must be free to shrink below the grid's
+     width, or the horizontal scroller never gets anything to scroll. */
+  min-width: 0;
+  /* Sets the frame band off the panel's top edge instead of letting it sit on
+     it. Applied here rather than to the band, because the band and the pinned
+     gutter are separate subtrees kept aligned only by shared offsets -- moving
+     one alone would shift the frame columns off their lane rows. Padding on the
+     shared scrollport moves both, and a sticky top:0 resolves against the
+     padding edge, so the gap survives scrolling. */
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
 }
 
-.resize_handle:hover{
-	background-color: #BD5BFF;
+#screen_preview {
+  overflow: hidden;
+  position: relative;
+  /* Never shrinks: the preview strip is the one thing that must stay visible,
+	   and shrinking would fight the resize handle. */
+  flex: 0 0 auto;
+  height: 15rem;
+  min-height: 8rem;
 }
 
-
-#timeline_resize_handle{
-	/* High z-index keeps the drag handle clickable above timeline content. */
-	z-index: 9999;
-	position: absolute;
-	bottom: 0;
-	left: 0;
+.resize_handle {
+  width: 100%;
+  height: 0.5rem;
+  cursor: ns-resize;
+  bottom: 0;
+  position: absolute;
 }
 
+.resize_handle:hover {
+  background-color: #bd5bff;
+}
+
+#timeline_resize_handle {
+  /* High z-index keeps the drag handle clickable above timeline content. */
+  z-index: 9999;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
 
 .edit-mode-workspace {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 
-.edit-mode-workspace>div {
-	align-items: center;
-	gap: 12px;
-	background-color: #312238;
-	outline: 2px solid #572b6e;
-	border-radius: 8px;
-
+.edit-mode-workspace > div {
+  align-items: center;
+  gap: 12px;
+  background-color: #312238;
+  outline: 2px solid #572b6e;
+  border-radius: 8px;
 }
 
 .cue-editor-form {
-	display: flex !important;
-	flex-grow: 0;
-	overflow: hidden !important;
-	padding: 1rem;
+  display: flex !important;
+  flex-grow: 0;
+  overflow: hidden !important;
+  padding: 1rem;
 }
 
 .edit-mode-timeline {
-	padding-bottom: 1rem;
-	position: relative;
-	overflow: hidden;
+  padding-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 .cue-editor-form {
-	width: 100%;
+  width: 100%;
 
-	/* Keep form width tied to its parent editor container. */
-	form {
-		width: 100%;
-
-	}
+  /* Keep form width tied to its parent editor container. */
+  form {
+    width: 100%;
+  }
 }
 
 @media (min-width: 1200px) {
-	/* Separate block: this one also updates cue form tabs for wide screens. */
-	.force-no-resize {
-		width: 20rem !important;
-	}
+  .force-no-resize {
+    width: 20rem !important;
+  }
 
-	.edit-mode-workspace {
-		flex-direction: row;
+  .edit-mode-workspace {
+    flex-direction: row;
 
-		.cue-editor-form {
-			form {
-				width: 20rem;
-			}
-		}
-	}
-}
+    .cue-editor-form {
+      form {
+        width: 20rem;
+      }
+    }
+  }
 
-@media (min-width: 1200px) {
-	.force-no-resize {
-		width: 20rem !important;
-	}
+  /* A flex item will not shrink below its content width without min-width: 0,
+     and the timeline's content is as wide as the frame count makes it. Without
+     this the timeline pushes the element panel off the side of the viewport as
+     soon as there are enough frames. Mirror of the min-height rule that stops
+     it growing the page vertically. */
+  #timeline.edit-mode-timeline {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 
-	.edit-mode-workspace {
-		flex-direction: row;
+  .edit-mode-cue-form {
+    flex: 0 0 auto;
+    width: 20rem;
+    min-width: 20rem;
+  }
 
-		.cue-editor-form {
-			form {
-				width: 20rem;
-			}
-		}
-	}
-
-	.cue-form-tabs {
-		justify-content: space-between !important;
-		gap: unset !important;
-	}
+  .cue-form-tabs {
+    justify-content: space-between !important;
+    gap: unset !important;
+  }
 }
 
 /* Cue form */
 
 .cue-form-tabs {
-	width: 100%;
-	display: flex;
-	flex-direction: row;
-	justify-content: start;
-	gap: 0.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  gap: 0.5rem;
 }

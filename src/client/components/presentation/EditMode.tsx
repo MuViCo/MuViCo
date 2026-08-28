@@ -11,10 +11,79 @@
 - toggleAudioMute: function to toggle audio mute in show mode
 - indexCount: number of indexes (frames) in the presentation
  */
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { Box, Text, useOutsideClick, useColorModeValue } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
-import { useDispatch, useSelector } from "react-redux"
+import {
+  TIMELINE_METRICS,
+  columnLeft,
+  laneSpanHeight,
+  laneTop,
+  timelineRowsTopOffset,
+} from "./timelineMetrics"
+import { laneFocusLayout, laneKey } from "../utils/laneFocus"
+import { keyframes } from "@emotion/react"
+
+/**
+ * Travels the width of one frame column. Paired with an animation duration of
+ * the configured seconds-per-frame, so the playhead crosses a frame in exactly
+ * the time that frame is held.
+ */
+const playheadSweep = keyframes`
+  from { transform: translateX(0); }
+  to { transform: translateX(${TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap}px); }
+`
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+
+import type {
+  DragEvent as ReactDragEvent,
+  MouseEvent as ReactMouseEvent,
+  RefObject,
+} from "react"
+import type {
+  AlertData,
+  CueFileMeta,
+  CollapsedGroups,
+  Cue,
+  CueUpdateInput,
+  CueUploadFile,
+  HeaderActions,
+  Lane,
+  MinimumLanes,
+  NewCueDragData,
+} from "../../types"
+
+interface EditModeProps {
+  id: string
+  cues: Cue[]
+  isToolboxOpen: boolean
+  setIsToolboxOpen: (open: boolean) => void
+  cueIndex: number
+  isAudioMuted: boolean
+  toggleAudioMute: () => void
+  indexCount: number
+  /** Stable "group:layer" key of the focused lane, or null. */
+  focusedLaneKey?: string | null
+  onFocusLane?: (laneKey: string | null) => void
+  isAutoplaying?: boolean
+  /** Seconds a frame is held during autoplay. */
+  autoplayInterval?: number
+  onSelectFrame?: (index: number) => void
+}
+
+/**
+ * event.target is typed EventTarget, which has no closest(). These handlers are
+ * only ever reached from a pointer event on an element, so the narrowing is
+ * safe -- and `closest` on a non-element would already throw today.
+ */
+const targetElement = (event: { target: EventTarget | null }): HTMLElement =>
+  event.target as HTMLElement
+
+/** A grid cell, in column (frame) and row (lane) indices. */
+interface GridCell {
+  xIndex: number
+  yIndex: number
+}
 import {
   updatePresentation,
   createCue,
@@ -56,6 +125,7 @@ import {
   buildRowModel,
   DEFAULT_MAX_AUDIO_TRACKS,
   DEFAULT_MAX_VISUAL_LAYERS,
+  groupLanes,
   laneAcceptsCueType,
   laneAt,
   planVisualLayerRemoval,
@@ -86,7 +156,15 @@ const EditMode = ({
   isAudioMuted,
   toggleAudioMute,
   indexCount,
-}) => {
+  // Defaults so the suites that render EditMode with plain props keep working.
+  // A no-op rather than a local useState: several of those tests fire mouseUp
+  // outside act(), and a state update there would warn.
+  focusedLaneKey = null,
+  onFocusLane = () => {},
+  isAutoplaying = false,
+  autoplayInterval = 1,
+  onSelectFrame = () => {},
+}: EditModeProps) => {
   const bgColorHover = useColorModeValue(
     "rgba(154, 109, 151, 0.8)",
     "rgba(72, 26, 68, 0.8)"
@@ -102,25 +180,30 @@ const EditMode = ({
   const dragPreviewValidBorder = useColorModeValue("#7fd4ee", "#9be2f7")
   const dragPreviewInvalidBorder = useColorModeValue("#e58a9c", "#f0a2b1")
   const dragPreviewOriginBorder = useColorModeValue("#c9b7f8", "#d8c8ff")
-  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "gray.200")
-  const bgCurrentFrame = useColorModeValue("purple.300", "purple.200")
-  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#7a15b8")
-  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#b31bff")
+  // Dark-mode values come from the editor design draft: deep near-black violets
+  // for surfaces, and one light chip with dark text to mark the active frame,
+  // rather than colouring whole rows.
+  const bgColorIndex = useColorModeValue("rgb(240, 197, 255)", "#ab89d6")
+  const bgCurrentFrame = useColorModeValue("purple.300", "#e0c9ff")
+  const activeFrameBorderColor = useColorModeValue("#4a0f77", "#c084fc")
+  const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#4a2d63")
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
-  const presentation = useSelector((state) => state.presentation)
-  const containerRef = useRef(null)
-  const [selectedCue, setSelectedCue] = useState(null)
+  const dispatch = useAppDispatch()
+  const presentation = useAppSelector((state) => state.presentation)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
-  const [confirmAction, setConfirmAction] = useState(() => () => {})
+  const [confirmAction, setConfirmAction] = useState<
+    () => void | Promise<void>
+  >(() => () => {})
   const [showAlert, setShowAlert] = useState(false)
-  const [alertData, setAlertData] = useState({})
-  const [collapsedGroups, setCollapsedGroups] = useState({})
-  const [minimumGroupLanes, setMinimumGroupLanes] = useState({})
-  const toggleGroupCollapsed = (group) =>
+  const [alertData, setAlertData] = useState<AlertData>({})
+  const [collapsedGroups, setCollapsedGroups] = useState<CollapsedGroups>({})
+  const [minimumGroupLanes, setMinimumGroupLanes] = useState<MinimumLanes>({})
+  const toggleGroupCollapsed = (group: string) =>
     setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }))
-  const ensureGroupExpanded = (group) =>
+  const ensureGroupExpanded = (group: string) =>
     setCollapsedGroups((prev) => ({ ...prev, [group]: false }))
 
   // Generate frame labels for grid columns (Frame 0, Frame 1, etc.)
@@ -141,7 +224,7 @@ const EditMode = ({
   const [isDragging, setIsDragging] = useState(false)
   const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
-  const [copiedCue, setCopiedCue] = useState(null)
+  const [copiedCue, setCopiedCue] = useState<Cue | null>(null)
   const {
     previewCueSpanOverrides,
     clearExternalDragPreview,
@@ -168,13 +251,18 @@ const EditMode = ({
     },
   })
 
-  const clickTimeout = useRef(null)
+  // ReturnType<typeof setTimeout> rather than NodeJS.Timeout: this runs in both
+  // jsdom and the browser, where setTimeout returns a number.
+  const clickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wasCopiedRef = useRef(false)
-  const dragStartPointerRef = useRef(null)
+  const dragStartPointerRef = useRef<{
+    clientX: number
+    clientY: number
+  } | null>(null)
   const dragHasMovedRef = useRef(false)
-  const latestGridDragDataRef = useRef(null)
-  const latestGridDragCellRef = useRef(null)
-  const headerActionsRef = useRef({
+  const latestGridDragDataRef = useRef<NewCueDragData | null>(null)
+  const latestGridDragCellRef = useRef<GridCell | null>(null)
+  const headerActionsRef = useRef<HeaderActions>({
     addIndex: () => {},
     removeIndex: () => {},
     increaseScreenCount: () => {},
@@ -182,10 +270,8 @@ const EditMode = ({
     toggleAudioMute: () => {},
   })
 
-  const columnWidth = 150
-  const rowHeight = 100
-  const gap = 10
-  const frameHeaderHeight = Math.max(rowHeight - 45, 0)
+  const { columnWidth, rowHeight, gap, rowGap, frameHeaderHeight } =
+    TIMELINE_METRICS
   const dragCommitDistancePx = 4
 
   const cueVisualSpanMap = useMemo(
@@ -196,13 +282,94 @@ const EditMode = ({
   const rowModel = useMemo(
     () =>
       buildRowModel(
-        presentation.screenCount,
+        // A null screenCount currently yields a row model with no screen
+        // lanes; coercing to 1 would invent a screen that is not there.
+        presentation.screenCount as number,
         cues,
         collapsedGroups,
         minimumGroupLanes
       ),
     [presentation.screenCount, cues, collapsedGroups, minimumGroupLanes]
   )
+
+  /**
+   * Row index of the focused lane, or -1.
+   *
+   * Falls back to the group's first lane when the exact layer is not present,
+   * which is what makes focus survive a collapse: "screen-1:1" resolves to the
+   * merged lane while collapsed and back to layer 2 when expanded. A key whose
+   * group has disappeared resolves to -1 and is simply inert.
+   */
+  const focusedRowIndex = useMemo(() => {
+    if (!focusedLaneKey) return -1
+    const exact = rowModel.rows.findIndex(
+      (row) => laneKey(row) === focusedLaneKey
+    )
+    if (exact !== -1) return exact
+    const group = focusedLaneKey.split(":")[0]
+    return rowModel.rows.findIndex((row) => row.group === group)
+  }, [rowModel.rows, focusedLaneKey])
+
+  /**
+   * Height change and offset per lane while one lane holds focus. Computed here
+   * so the gutter and the clips are laid out from one result.
+   */
+  const focusLayout = useMemo(
+    () =>
+      laneFocusLayout(groupLanes(rowModel.rows), focusedRowIndex, rowHeight),
+    [rowModel.rows, focusedRowIndex, rowHeight]
+  )
+
+  /**
+   * Row index where the audio section starts, or -1.
+   *
+   * Audio shares the grid and the scroller with the screens -- its row indices
+   * are the same coordinate space every hit test uses -- so the boundary is
+   * drawn rather than made structural.
+   */
+  const audioStartRow = useMemo(() => {
+    const index = rowModel.rows.findIndex((row) => row.group === "audio")
+    return index
+  }, [rowModel.rows])
+
+  /**
+   * Focus the lane a cue was just placed on.
+   *
+   * Resolved from the row model rather than assembled from a group string, so a
+   * collapsed group focuses its merged lane instead of a layer that is not
+   * currently rendered.
+   */
+  const focusLaneForCue = (screen: number, layer: number, cueType?: string) => {
+    // Group naming mirrors buildRowModel; matching on row.screen alone misses
+    // audio, whose lanes carry the pseudo-screen the cue records use.
+    const group =
+      cueTypeForTarget(screen, cueType) === "audio"
+        ? "audio"
+        : `screen-${screen}`
+    const lane = rowModel.rows.find(
+      (row) =>
+        row.group === group &&
+        (row.collapsed || Number(row.layer ?? 0) === Number(layer))
+    )
+    // A key with no matching lane resolves to -1 and is inert, so falling back
+    // is safe when the row model has not caught up with the new cue yet.
+    onFocusLane(lane ? laneKey(lane) : `${group}:${layer}`)
+  }
+
+  /** Focus the lane under the pointer. Never dispatches, never opens anything. */
+  const commitLaneFocusFromEvent = (event: ReactMouseEvent) => {
+    const { xIndex, yIndex } = getPosition(
+      event,
+      containerRef,
+      columnWidth,
+      rowHeight,
+      gap
+    )
+    if (!isRowInsideGrid(xIndex, yIndex)) return
+    const lane = laneAt(rowModel.rows, yIndex)
+    if (!lane) return
+    onFocusLane(laneKey(lane))
+  }
 
   const gridCues = useMemo(
     () =>
@@ -214,7 +381,7 @@ const EditMode = ({
   )
 
   const getActiveVisualCueStack = useCallback(
-    (screen, frameIndex) =>
+    (screen: number, frameIndex: number) =>
       cues
         .filter(
           (cue) =>
@@ -247,10 +414,10 @@ const EditMode = ({
     [rowModel.rows, getActiveVisualCueStack, indexCount]
   )
 
-  const getVisibleLaneCount = (group) =>
+  const getVisibleLaneCount = (group: string) =>
     rowModel.rows.filter((row) => row.group === group).length
 
-  const addVisualLayer = (screen) => {
+  const addVisualLayer = (screen: number) => {
     const group = `screen-${screen}`
     const nextCount = Math.min(
       DEFAULT_MAX_VISUAL_LAYERS,
@@ -260,7 +427,7 @@ const EditMode = ({
     setMinimumGroupLanes((prev) => ({ ...prev, [group]: nextCount }))
   }
 
-  const removeVisualLayer = async (screen, layer) => {
+  const removeVisualLayer = async (screen: number, layer: number) => {
     const group = `screen-${screen}`
     const visibleCount = getVisibleLaneCount(group)
     const layerToRemove = Number(layer)
@@ -325,9 +492,9 @@ const EditMode = ({
     setMinimumGroupLanes((prev) => ({ ...prev, audio: nextCount }))
   }
 
-  const cueRowOf = (cue) => rowModel.cueY[cue._id] ?? 0
+  const cueRowOf = (cue: Cue) => rowModel.cueY[cue._id] ?? 0
 
-  const laneScreenLayer = (yIndex) => {
+  const laneScreenLayer = (yIndex: number) => {
     const lane = laneAt(rowModel.rows, yIndex)
     if (!lane) return { screen: 1, layer: 0 }
     const isAudio = lane.kind === "audio-track" || lane.kind === "audio"
@@ -337,18 +504,27 @@ const EditMode = ({
     }
   }
 
-  const rowLabelForCue = (cue) =>
+  const rowLabelForCue = (cue: {
+    cueType?: string
+    screen?: number
+    layer?: number
+  }) =>
     cue.cueType === "audio"
       ? `audio track ${Number(cue.layer ?? 0) + 1}`
       : `screen ${cue.screen}, layer ${Number(cue.layer ?? 0) + 1}`
 
-  const cueTypeForTarget = (screen, cueType) =>
+  const cueTypeForTarget = (screen: number, cueType?: string) =>
     cueType ||
     (Number(screen) === getAudioRow(presentation.screenCount)
       ? "audio"
       : "visual")
 
-  const getRowCueConflict = (index, screen, layer, excludedCueId = null) =>
+  const getRowCueConflict = (
+    index: number,
+    screen: number,
+    layer: number,
+    excludedCueId: string | null = null
+  ) =>
     cues.find((cue) => {
       const samePosition =
         Number(cue.index) === Number(index) &&
@@ -362,36 +538,36 @@ const EditMode = ({
       return !excludedCueId || cue._id !== excludedCueId
     })
 
-  const isRowInsideGrid = (xIndex, yIndex) =>
+  const isRowInsideGrid = (xIndex: number, yIndex: number) =>
     Number(xIndex) >= 0 &&
     Number(xIndex) < Number(indexCount) &&
     Number(yIndex) >= 0 &&
     Number(yIndex) < Number(rowModel.rowCount)
 
-  const getCueEndIndex = (cue) =>
+  const getCueEndIndex = (cue: Cue) =>
     Number(cue.index) + getCueVisualSpanFromMap(cue, cueVisualSpanMap) - 1
 
-  const cueOccupiesSlot = (cue, xIndex, yIndex) =>
+  const cueOccupiesSlot = (cue: Cue, xIndex: number, yIndex: number) =>
     cueRowOf(cue) === Number(yIndex) &&
     Number(xIndex) >= Number(cue.index) &&
     Number(xIndex) <= getCueEndIndex(cue)
 
   // Get cue at grid position (including ones spanning multiple cells)
-  const getCueAtPosition = (xIndex, yIndex) =>
+  const getCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
 
   // Get cue at grid position (only anchor cell - first cell of the cue)
-  const getAnchorCueAtPosition = (xIndex, yIndex) =>
+  const getAnchorCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find(
       (cue) =>
         Number(cue.index) === Number(xIndex) && cueRowOf(cue) === Number(yIndex)
     )
 
   const getContinuationPreviewSpanOverrides = (
-    xIndex,
-    yIndex,
-    cueType,
-    draggedCueId
+    xIndex: number,
+    yIndex: number,
+    cueType?: string,
+    draggedCueId?: string | null
   ) => {
     return getContinuationShrinkSpanOverrides({
       xIndex,
@@ -400,7 +576,7 @@ const EditMode = ({
       draggedCueId,
       isValidDropCell: laneAcceptsCueType(
         laneAt(rowModel.rows, yIndex),
-        cueType
+        cueType as string
       ),
       getCueAtPosition,
     })
@@ -432,6 +608,7 @@ const EditMode = ({
     rowHeight,
     headerRowHeight: frameHeaderHeight,
     gap,
+    rowGap,
     indexCount,
     rows: rowModel.rows,
     rowCount: rowModel.rowCount,
@@ -494,7 +671,7 @@ const EditMode = ({
     }
   }, [clearExternalPlacementPreview, hideHoverPreview])
 
-  const buildPoolCursorPreview = (dragData) => {
+  const buildPoolCursorPreview = (dragData: NewCueDragData | null) => {
     if (!dragData || dragData.type !== "newCueFromForm") {
       return null
     }
@@ -532,7 +709,7 @@ const EditMode = ({
     return null
   }
   // Handle case where trying to delete a frame that has existing cues - show confirmation and delete cues if confirmed
-  const handleIndexHasData = async (index) => {
+  const handleIndexHasData = async (index: number) => {
     setConfirmMessage(
       `Frame ${index} has existing elements. Deleting this frame will also delete all elements on this frame. Delete anyway?`
     )
@@ -562,7 +739,7 @@ const EditMode = ({
   }
 
   // Add a new frame at specified index - shifts existing cues to the right
-  const handleAddIndex = async (index) => {
+  const handleAddIndex = async (index: number) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
@@ -598,7 +775,7 @@ const EditMode = ({
   }
 
   // Remove frame at specified index - shifts existing cues to the left
-  const handleRemoveIndex = async (index) => {
+  const handleRemoveIndex = async (index: number) => {
     if (indexCount <= 1) {
       showToast({
         title: "Minimum indexes required",
@@ -629,7 +806,7 @@ const EditMode = ({
     }
   }
 
-  const performRemoveIndex = async (newIndexCount) => {
+  const performRemoveIndex = async (newIndexCount: number) => {
     if (indexCount > 1) {
       dispatch(decrementIndexCount())
       await dispatch(saveIndexCount({ id, indexCount: newIndexCount }))
@@ -640,7 +817,7 @@ const EditMode = ({
   // `index` left by one (only if any exist), then shrinks the index count.
   // Returns null and shows an error toast if the shift fails, so callers can
   // skip their own success toast; otherwise returns how many cues moved.
-  const shiftAndRemoveIndex = async (index) => {
+  const shiftAndRemoveIndex = async (index: number) => {
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
     try {
@@ -662,7 +839,7 @@ const EditMode = ({
 
   // Add a new screen - updates audio cue row numbers and creates initial element
   const handleIncreaseScreenCount = async () => {
-    if (presentation.screenCount >= 8) {
+    if ((presentation.screenCount ?? 0) >= 8) {
       showToast({
         title: "Maximum screens reached",
         description: "Cannot add more than 8 screens",
@@ -672,7 +849,7 @@ const EditMode = ({
     }
 
     try {
-      const newScreenNumber = presentation.screenCount + 1
+      const newScreenNumber = (presentation.screenCount ?? 0) + 1
 
       dispatch(incrementScreenCount())
       await dispatch(saveScreenCount({ id, screenCount: newScreenNumber }))
@@ -710,7 +887,7 @@ const EditMode = ({
 
   // Remove a screen - deletes all cues on that screen
   const handleDecreaseScreenCount = async () => {
-    if (presentation.screenCount <= 1) {
+    if ((presentation.screenCount ?? 0) <= 1) {
       showToast({
         title: "Minimum screens required",
         description: "Cannot have less than 1 screen",
@@ -745,13 +922,15 @@ const EditMode = ({
 
       dispatch(decrementScreenCount())
       const result = await dispatch(
-        saveScreenCount({ id, screenCount: currentScreenCount - 1 })
+        saveScreenCount({ id, screenCount: (currentScreenCount ?? 0) - 1 })
       )
 
       await dispatch(fetchPresentationInfo(id))
 
       // Show appropriate message based on whether cues were removed
-      const removedCuesCount = result.payload?.removedCuesCount || 0
+      const removedCuesCount =
+        (result.payload as { removedCuesCount?: number } | undefined)
+          ?.removedCuesCount || 0
       if (removedCuesCount > 0) {
         showToast({
           title: "Screen removed",
@@ -776,7 +955,7 @@ const EditMode = ({
   }
 
   // Handle mouse down - select cue and start drag if clicking on grid item
-  const handleMouseDown = (event) => {
+  const handleMouseDown = (event: ReactMouseEvent) => {
     if (event.button !== 0) {
       return
     }
@@ -786,7 +965,7 @@ const EditMode = ({
     }
 
     if (
-      event.target.closest(
+      targetElement(event).closest(
         "button, [role='menuitem'], input, textarea, select, a"
       )
     ) {
@@ -801,14 +980,15 @@ const EditMode = ({
       gap
     )
     if (cueExists(xIndex, yIndex)) {
-      const movingCue = getCueAtPosition(xIndex, yIndex)
+      // cueExists() on the line above is the same lookup.
+      const movingCue = getCueAtPosition(xIndex, yIndex) as Cue
       setSelectedCue(movingCue)
       updateDragPreviewCell({
         xIndex: Number(movingCue.index),
         yIndex: cueRowOf(movingCue),
       })
 
-      if (event.target.closest(".react-grid-item")) {
+      if (targetElement(event).closest(".react-grid-item")) {
         event.preventDefault()
         setIsDragging(true)
         setDragCursorMode("grabbing")
@@ -836,11 +1016,11 @@ const EditMode = ({
   }
 
   // Handle pasting copied cue - validates drop location and creates new cue
-  const handlePaste = async (event) => {
-    if (event.target.closest("button")) return
+  const handlePaste = async (event: ReactMouseEvent) => {
+    if (targetElement(event).closest("button")) return
     if (!isCopied || !copiedCue) return
 
-    if (event.target.closest(".x-index-label")) {
+    if (targetElement(event).closest(".x-index-label")) {
       clearExternalPlacementPreview()
       setDragCursorMode("default")
       setIsCopied(false)
@@ -909,13 +1089,13 @@ const EditMode = ({
     await addCue(newCueData)
   }
 
-  const updateCopiedCuePreview = (event) => {
+  const updateCopiedCuePreview = (event: ReactMouseEvent) => {
     scheduleExternalPreviewFromEvent(event, {
       cueType: copiedCue?.cueType,
       draggedCueId: copiedCue?._id,
       idleCursor: "copy",
-      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
-      isBlockedCell: (xIndex, yIndex) => {
+      isHeaderCell: Boolean(targetElement(event).closest(".x-index-label")),
+      isBlockedCell: (xIndex: number, yIndex: number) => {
         const hoveredCue = getCueAtPosition(xIndex, yIndex)
         return Boolean(hoveredCue && hoveredCue._id === copiedCue?._id)
       },
@@ -923,10 +1103,17 @@ const EditMode = ({
   }
 
   // Create new cue data from copied cue - fetches file if needed and appends " copy" to name
-  const createNewCueData = async (xIndex, yIndex, copiedCue) => {
+  const createNewCueData = async (
+    xIndex: number,
+    yIndex: number,
+    copiedCue: Cue
+  ) => {
     let fileObj = null
     if (copiedCue.file) {
-      fileObj = await fetchFileFromUrl(copiedCue.file.url, copiedCue.file.name)
+      fileObj = await fetchFileFromUrl(
+        copiedCue.file.url as string,
+        copiedCue.file.name as string
+      )
       if (copiedCue.file.driveId) {
         fileObj.driveId = copiedCue.file.driveId
       }
@@ -960,7 +1147,7 @@ const EditMode = ({
     resetDragPointerTracking()
   }
 
-  const renderCollapsedPreviewMedia = (cue) => {
+  const renderCollapsedPreviewMedia = (cue: Cue) => {
     const mediaUrl =
       cue.file?.url || (cue.file?.name ? `/${cue.file.name}` : "")
     const mediaType = cue.file?.type || cue.file?.mimeType || ""
@@ -996,7 +1183,7 @@ const EditMode = ({
   }
 
   // Handle mouse move - show hover previews and update drag preview position
-  const handleMouseMove = (event) => {
+  const handleMouseMove = (event: ReactMouseEvent) => {
     if (isDragging) {
       if (!dragHasMovedRef.current && dragStartPointerRef.current) {
         const deltaX = event.clientX - dragStartPointerRef.current.clientX
@@ -1019,7 +1206,7 @@ const EditMode = ({
       return
     }
 
-    if (event.target.closest(".x-index-label")) {
+    if (targetElement(event).closest(".x-index-label")) {
       hideHoverPreview()
       return
     }
@@ -1055,16 +1242,16 @@ const EditMode = ({
   }, [clearExternalPlacementPreview, isCopied])
 
   // Handle mouse up - drop cue if dragged, handle double-click otherwise
-  const handleMouseUp = async (event) => {
+  const handleMouseUp = async (event: ReactMouseEvent) => {
     const wasDragging = isDragging
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-        (dragStartPointer &&
-          Math.hypot(
-            event.clientX - dragStartPointer.clientX,
-            event.clientY - dragStartPointer.clientY
-          ) >= dragCommitDistancePx)
+      (dragStartPointer &&
+        Math.hypot(
+          event.clientX - dragStartPointer.clientX,
+          event.clientY - dragStartPointer.clientY
+        ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const { xIndex, yIndex } = getPosition(
@@ -1077,12 +1264,16 @@ const EditMode = ({
 
     if (wasDragging && selectedCue) {
       if (!didDragMove) {
+        // Pointer went down on a cue and came up without crossing the 4px drag
+        // threshold: that is a click, so it focuses the lane.
+        commitLaneFocusFromEvent(event)
         clearInternalDragSpanPreview()
         return
       }
 
       const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
       if (targetCue && selectedCue !== targetCue) {
+        commitLaneFocusFromEvent(event)
         await handleElementPositionChange(selectedCue, targetCue)
         clearInternalDragSpanPreview()
         return
@@ -1119,6 +1310,8 @@ const EditMode = ({
         return
       }
 
+      commitLaneFocusFromEvent(event)
+
       const target = laneScreenLayer(yIndex)
       const movedCue = {
         ...selectedCue,
@@ -1141,11 +1334,18 @@ const EditMode = ({
 
     if (!wasDragging) {
       if (
-        event.target.closest(
+        targetElement(event).closest(
           "button, [role='menuitem'], input, textarea, select, a"
         )
       ) {
         return
+      }
+
+      // Skipped while copying: the same gesture is a paste, and handlePaste
+      // runs on the click that follows this mouseup. Frame headers are excluded
+      // because their overhanging buttons reach into row space.
+      if (!isCopied && !targetElement(event).closest(".x-index-label")) {
+        commitLaneFocusFromEvent(event)
       }
 
       if (clickTimeout.current) {
@@ -1161,7 +1361,7 @@ const EditMode = ({
   }
 
   // Handle drag over grid - show preview of where element will be placed
-  const handleGridDragOver = (event) => {
+  const handleGridDragOver = (event: ReactDragEvent) => {
     event.preventDefault()
     hideHoverPreview()
 
@@ -1188,14 +1388,14 @@ const EditMode = ({
     scheduleExternalPreviewFromEvent(event, {
       cueType: dragCueType,
       idleCursor: "copy",
-      isHeaderCell: Boolean(event.target.closest(".x-index-label")),
+      isHeaderCell: Boolean(targetElement(event).closest(".x-index-label")),
       cursorPreview: buildPoolCursorPreview(dragData),
       enableContinuationPreview: false,
     })
   }
 
   // Handle drag leave grid - clear preview when leaving grid boundary
-  const handleGridDragLeave = (event) => {
+  const handleGridDragLeave = (event: ReactDragEvent) => {
     const gridRect = event.currentTarget.getBoundingClientRect()
     const pointerInsideGrid =
       event.clientX >= gridRect.left &&
@@ -1221,7 +1421,7 @@ const EditMode = ({
   }))
 
   // Add a new cue - checks for conflicts and saves to backend
-  const addCue = async (cueData) => {
+  const addCue = async (cueData: CueUpdateInput) => {
     const {
       index,
       cueName,
@@ -1246,7 +1446,7 @@ const EditMode = ({
       index,
       cueName,
       screen,
-      file || "",
+      file || undefined,
       undefined,
       color,
       loop || false,
@@ -1254,6 +1454,10 @@ const EditMode = ({
       normalizeCueOpacity(opacity),
       continuePlayback
     )
+
+    // Focus follows the placement intent, not the request: the lane the user
+    // aimed at is the one they want to work on whether or not the save lands.
+    focusLaneForCue(screen, layer, cueData.cueType)
 
     try {
       await dispatch(createCue(id, formData))
@@ -1275,7 +1479,10 @@ const EditMode = ({
     }
   }
 
-  const handleCueExists = async (existingCue, newCueData) => {
+  const handleCueExists = async (
+    existingCue: Cue,
+    newCueData: CueUpdateInput
+  ) => {
     setConfirmMessage(
       `Frame ${newCueData.index} element already exists on ${rowLabelForCue(newCueData)}. Do you want to replace it?`
     )
@@ -1292,14 +1499,20 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
-  const fetchFileFromUrl = async (url, fileName) => {
+  const fetchFileFromUrl = async (
+    url: string,
+    fileName: string
+  ): Promise<CueUploadFile> => {
     const response = await fetch(url)
     const blob = await response.blob()
     return new File([blob], fileName, { type: blob.type })
   }
 
   // Update existing cue - checks for conflicts with other cues at same position
-  const updateCue = async (previousCueId, updatedCue) => {
+  const updateCue = async (
+    previousCueId: string,
+    updatedCue: CueUpdateInput
+  ) => {
     const previousStillExists = cues.some((cue) => cue._id === previousCueId)
     if (!previousStillExists) {
       await addCue(updatedCue)
@@ -1321,9 +1534,9 @@ const EditMode = ({
   }
 
   const handleExistingCueUpdate = async (
-    existingCue,
-    updatedCue,
-    previousCueId
+    existingCue: Cue,
+    updatedCue: CueUpdateInput,
+    previousCueId: string
   ) => {
     setConfirmMessage(
       `${updatedCue.index} element already exists on ${rowLabelForCue(updatedCue)}. Do you want to replace it?`
@@ -1350,17 +1563,24 @@ const EditMode = ({
     setIsConfirmOpen(true)
   }
 
-  const createUpdatedCueData = async (existingCue, updatedCue) => {
+  const createUpdatedCueData = async (
+    existingCue: Cue,
+    updatedCue: CueUpdateInput
+  ) => {
     let fileObj = null
     if (updatedCue.file) {
       fileObj = await fetchFileFromUrl(
-        updatedCue.file.url,
-        updatedCue.file.name
+        (updatedCue.file as CueFileMeta).url as string,
+        updatedCue.file.name as string
       )
     }
 
-    if (updatedCue.file.driveId) {
-      fileObj.driveId = updatedCue.file.driveId
+    // TODO(ts): BUG -- this reads updatedCue.file outside the guard above, so a
+    // cue whose file is null throws here, as does the assignment when fileObj
+    // was never created. Asserting preserves that exactly; moving the block
+    // inside the guard would be a behaviour change no test covers.
+    if ((updatedCue.file as CueFileMeta)!.driveId) {
+      fileObj!.driveId = (updatedCue.file as CueFileMeta)!.driveId
     }
 
     return {
@@ -1376,17 +1596,17 @@ const EditMode = ({
   }
 
   // Check if cue exists at grid position
-  const cueExists = (xIndex, yIndex) => {
+  const cueExists = (xIndex: number, yIndex: number) => {
     return Boolean(getCueAtPosition(xIndex, yIndex))
   }
 
   // Check if anchor cue (first cell) exists at grid position
-  const anchorCueExists = (xIndex, yIndex) => {
+  const anchorCueExists = (xIndex: number, yIndex: number) => {
     return Boolean(getAnchorCueAtPosition(xIndex, yIndex))
   }
 
-  const handleDoubleClick = (event) => {
-    if (event.target.closest(".x-index-label")) {
+  const handleDoubleClick = (event: ReactMouseEvent) => {
+    if (targetElement(event).closest(".x-index-label")) {
       return
     }
 
@@ -1405,12 +1625,17 @@ const EditMode = ({
     const cue = getCueAtPosition(xIndex, yIndex)
 
     if (cue) {
+      const lane = laneAt(rowModel.rows, yIndex)
+      if (lane) onFocusLane(laneKey(lane))
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     }
   }
   // Dispatch cue update to backend - used for moving cues and updating from toolbox
-  const dispatchUpdateCue = async (cueId, updatedCue) => {
+  const dispatchUpdateCue = async (
+    cueId: string,
+    updatedCue: CueUpdateInput
+  ) => {
     try {
       await dispatch(updatePresentation(id, updatedCue, cueId))
       setTimeout(() => {
@@ -1430,7 +1655,7 @@ const EditMode = ({
     }
   }
 
-  const handleToolboxSave = async (updatedCue) => {
+  const handleToolboxSave = async (updatedCue: CueUpdateInput) => {
     if (!selectedCue) {
       return
     }
@@ -1441,7 +1666,7 @@ const EditMode = ({
   }
 
   // Swap two cues positions - handles element reordering on grid
-  const dispatchSwapCues = async (newTargetCue, newSelectedCue) => {
+  const dispatchSwapCues = async (newTargetCue: Cue, newSelectedCue: Cue) => {
     try {
       await dispatch(swapCues(id, newTargetCue, newSelectedCue))
     } catch (error) {
@@ -1455,29 +1680,37 @@ const EditMode = ({
   }
 
   // Calculate grid cell position from mouse coordinates
-  const getPosition = (event, containerRef, columnWidth, rowHeight, gap) => {
+  const getPosition = (
+    event: { clientX: number; clientY: number },
+    containerRef: RefObject<HTMLDivElement | null>,
+    columnWidth: number,
+    rowHeight: number,
+    gap: number
+  ) => {
     const dropX = event.clientX
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const containerScrollLeft = containerRef.current.scrollLeft
+    // Every caller is a handler bound to this very container.
+    const containerRect = containerRef.current!.getBoundingClientRect()
+    const containerScrollLeft = containerRef.current!.scrollLeft
 
     const relativeDropX = dropX - containerRect.left
     const absoluteDropX = relativeDropX + containerScrollLeft
     const dropY = event.clientY - containerRect.top
-    const timelineRowsTopOffset = frameHeaderHeight + gap
+    const rowsTopOffset = timelineRowsTopOffset()
 
     const cellWidthWithGap = columnWidth + gap
-    const cellHeightWithGap = rowHeight + gap
+    const cellHeightWithGap = rowHeight + rowGap
 
-    const yIndex = Math.floor(
-      (dropY - timelineRowsTopOffset) / cellHeightWithGap
-    )
+    const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
 
     return { xIndex, yIndex }
   }
 
   // Handle swapping elements when dragging one to another's position
-  const handleElementPositionChange = async (selectedCue, targetCue) => {
+  const handleElementPositionChange = async (
+    selectedCue: Cue,
+    targetCue: Cue
+  ) => {
     const newTargetCue = {
       ...targetCue,
       index: selectedCue.index,
@@ -1496,11 +1729,9 @@ const EditMode = ({
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (
-        !(
-          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
-        )
-      ) {
+      if (!(
+        newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+      )) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -1518,7 +1749,11 @@ const EditMode = ({
     }
   }
   // Handle replacing existing cue when dropping new element on occupied cell
-  const handleCueReplace = async (xIndex, yIndex, file) => {
+  const handleCueReplace = async (
+    xIndex: number,
+    yIndex: number,
+    file: CueUploadFile
+  ) => {
     const existingCue = getCueAtPosition(xIndex, yIndex)
     if (!existingCue) return
     const target = laneScreenLayer(yIndex)
@@ -1538,7 +1773,7 @@ const EditMode = ({
   }
 
   // Handle dropping elements on grid - creates new cues or replaces existing ones
-  const handleDrop = async (event) => {
+  const handleDrop = async (event: ReactDragEvent) => {
     event.preventDefault()
     clearExternalPlacementPreview()
 
@@ -1570,12 +1805,14 @@ const EditMode = ({
       gap
     )
     const fallbackDropCell = latestGridDragCellRef.current
+    // The fallback yields undefined when no cell was cached. NaN behaves
+    // identically in every comparison below and satisfies the number signature.
     const xIndex = Number.isFinite(dropCell.xIndex)
       ? dropCell.xIndex
-      : fallbackDropCell?.xIndex
+      : (fallbackDropCell?.xIndex ?? NaN)
     const yIndex = Number.isFinite(dropCell.yIndex)
       ? dropCell.yIndex
-      : fallbackDropCell?.yIndex
+      : (fallbackDropCell?.yIndex ?? NaN)
     latestGridDragCellRef.current = null
 
     if (dragData && dragData.type === "newCueFromForm") {
@@ -1774,28 +2011,40 @@ const EditMode = ({
           flexDirection: "column",
         }}
       >
+        {/* minHeight rather than height: a flex item stretches to its
+            container's height, not to the content's. With a fixed 100% the row
+            stopped at the scrollport while the grid kept going, so the pinned
+            gutter ran out of background partway down and content scrolled past
+            it uncovered. Growing with the content makes the gutter as tall as
+            the timeline it labels. */}
         <Box
           display="flex"
           width="100%"
           marginTop="0px"
-          height="100%"
-          minHeight={0}
+          // The children size themselves (see alignSelf below), so this is only
+          // a floor for a timeline too short to fill the panel.
+          minHeight="100%"
+          alignItems="start"
           overflow="visible"
         >
           <Box
             className="screen-boxes"
             display="grid"
             gridTemplateRows={`${frameHeaderHeight}px repeat(${rowModel.rowCount}, ${rowHeight}px)`}
-            gap={`${gap}px`}
-            left={0}
-            zIndex={2}
-            bg={"transparent"}
+            gap={`${rowGap}px`}
+            // Outside the horizontal scroller, so it needs neither a sticky
+            // pin nor a fill: nothing passes behind it. It sits in the vertical
+            // scroller alongside the timeline body and scrolls up and down with
+            // it, which is what keeps each lane header level with its row.
             flexShrink={0}
+            alignSelf="start"
           >
-            <Box h={`${frameHeaderHeight}px`} bg="transparent" />
+            <Box h={`${frameHeaderHeight}px`} />
 
             <RowHeaders
               rows={rowModel.rows}
+              focusedRowIndex={focusedRowIndex}
+              onFocusLane={onFocusLane}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapsed={toggleGroupCollapsed}
               onAddVisualLayer={addVisualLayer}
@@ -1803,362 +2052,336 @@ const EditMode = ({
               onAddAudioTrack={addAudioTrack}
               maxVisualLayers={DEFAULT_MAX_VISUAL_LAYERS}
               maxAudioTracks={DEFAULT_MAX_AUDIO_TRACKS}
-              gap={gap}
+              rowGap={rowGap}
               rowHeight={rowHeight}
-              screenCount={presentation.screenCount}
+              screenCount={presentation.screenCount as number}
               isAudioMuted={isAudioMuted}
               screenIcon={screenIcon}
               headerActionsRef={headerActionsRef}
             />
           </Box>
+          {/* The horizontal scroller. Splitting it from the vertical one is what
+              lets the gutter stay put without covering anything: frames scroll
+              sideways in here, the gutter is outside and never sees them.
+              minWidth: 0 lets it shrink below the grid's width, which is what
+              gives it something to scroll. */}
           <Box
-            position="relative"
-            pointerEvents="auto"
-            minHeight={0}
-            sx={{
-              ".layout > .react-grid-placeholder": {
-                background: bgColorHover,
-                borderRadius: "16px",
-                opacity: 1,
-                transitionDuration: "0s",
-              },
-              ".layout .react-grid-item, .layout .react-grid-item *": {
-                userSelect: "none",
-                WebkitUserSelect: "none",
-              },
-              ".layout .react-grid-item img, .layout .react-grid-item video": {
-                WebkitUserDrag: "none",
-              },
-            }}
+            className="edit-mode-frames-scroll"
+            flex="1 1 auto"
+            minWidth={0}
+            // clip, not hidden: hidden makes this a scroll container on the
+            // vertical axis too, and a wheel over it is then swallowed rather
+            // than passed up to #edit-mode-scroll, so the timeline would not
+            // scroll vertically under the pointer. clip still trims the
+            // overflow but creates no scroll container, so the wheel reaches
+            // the one box that owns vertical scrolling.
+            // Height from its own content, never stretched to the flex line: a
+            // line sized from stretched items settles at the scrollport height,
+            // and this box clips, so everything past that was cut off -- the
+            // gutter beside it is a grid of fixed tracks and merely overflowed
+            // in visible, so it looked whole and the two disagreed.
+            alignSelf="start"
+            overflowX="auto"
+            overflowY="clip"
+            // X only. A trackpad gesture carries both deltas at once, and
+            // "contain" on every axis stops the vertical part chaining out to
+            // #edit-mode-scroll, so a diagonal two-finger swipe over the tracks
+            // would pan sideways and refuse to move up or down. Containing just
+            // the horizontal axis still keeps a sideways overscroll from
+            // reaching the page.
+            overscrollBehaviorX="contain"
           >
             <Box
-              height={`${frameHeaderHeight + gap + rowModel.rowCount * rowHeight + Math.max(rowModel.rowCount - 1, 0) * gap}px`}
-              minHeight="100%"
-              width="100%"
               position="relative"
-              cursor={isDragging || isCopied ? dragCursorMode : "default"}
-              // id="presentations-grid"
-              data-testid="edit-mode-grid-container"
-              ref={containerRef}
-              onDoubleClick={handleDoubleClick}
-              onMouseDownCapture={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onDragOver={handleGridDragOver}
-              onDragLeave={handleGridDragLeave}
-              onDragStart={(event) => {
-                if (event.target.closest(".react-grid-item")) {
-                  event.preventDefault()
-                }
+              pointerEvents="auto"
+              minHeight={0}
+              width="fit-content"
+              sx={{
+                ".layout > .react-grid-placeholder": {
+                  background: bgColorHover,
+                  borderRadius: "10px",
+                  opacity: 1,
+                  transitionDuration: "0s",
+                },
+                ".layout .react-grid-item, .layout .react-grid-item *": {
+                  userSelect: "none",
+                  WebkitUserSelect: "none",
+                },
+                ".layout .react-grid-item img, .layout .react-grid-item video":
+                  {
+                    WebkitUserDrag: "none",
+                  },
               }}
-              onMouseLeave={() => {
-                hideHoverPreview()
-
-                if (isDragging) {
-                  resetDragInteraction()
-                  return
-                }
-
-                if (isCopied) {
-                  clearExternalPlacementPreview()
-                  setDragCursorMode("copy")
-                }
-
-                updateDragPreviewCell(null)
-                clearInternalDragSpanPreview()
-                hideDragPlacementPreview()
-                if (!isCopied) {
-                  setDragCursorMode("default")
-                }
-              }}
-              onMouseUp={handleMouseUp}
-              onClick={handlePaste}
             >
               <Box
-                className="index-boxes"
-                display="grid"
-                gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
-                gap={`${gap}px`}
-                position="sticky"
-                top={0}
-                zIndex={1}
-                bg={"transparent"}
-                mb={`${gap}px`}
+                height={`${timelineRowsTopOffset() + laneSpanHeight(rowModel.rowCount)}px`}
+                minHeight="100%"
+                width="100%"
+                position="relative"
+                cursor={isDragging || isCopied ? dragCursorMode : "default"}
+                // id="presentations-grid"
+                data-testid="edit-mode-grid-container"
+                ref={containerRef}
+                onDoubleClick={handleDoubleClick}
+                onMouseDownCapture={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onDragOver={handleGridDragOver}
+                onDragLeave={handleGridDragLeave}
+                onDragStart={(event) => {
+                  if (targetElement(event).closest(".react-grid-item")) {
+                    event.preventDefault()
+                  }
+                }}
+                onMouseLeave={() => {
+                  hideHoverPreview()
+
+                  if (isDragging) {
+                    resetDragInteraction()
+                    return
+                  }
+
+                  if (isCopied) {
+                    clearExternalPlacementPreview()
+                    setDragCursorMode("copy")
+                  }
+
+                  updateDragPreviewCell(null)
+                  clearInternalDragSpanPreview()
+                  hideDragPlacementPreview()
+                  if (!isCopied) {
+                    setDragCursorMode("default")
+                  }
+                }}
+                onMouseUp={handleMouseUp}
+                onClick={handlePaste}
               >
-                <ColumnHeaders
-                  xLabels={xLabels}
-                  cueIndex={cueIndex}
-                  bgCurrentFrame={bgCurrentFrame}
-                  bgColorIndex={bgColorIndex}
-                  activeFrameBorderColor={activeFrameBorderColor}
-                  inactiveFrameBorderColor={inactiveFrameBorderColor}
-                  rowHeight={rowHeight}
-                  columnWidth={columnWidth}
-                  indexCount={indexCount}
-                  headerActionsRef={headerActionsRef}
-                />
-              </Box>
-              <Box
-                pointerEvents={isDragging ? "none" : "auto"}
-                id="presentations-grid"
-              >
-                <GridLayoutComponent
-                  layout={layout}
-                  cues={gridCues}
-                  cueRowIndex={rowModel.cueY}
-                  rowCount={rowModel.rowCount}
-                  containerRef={containerRef}
-                  columnWidth={columnWidth}
-                  rowHeight={rowHeight}
-                  gap={gap}
-                  setIsCopied={setIsCopied}
-                  setCopiedCue={setCopiedCue}
-                  id={id}
-                  cueIndex={cueIndex}
-                  isAudioMuted={isAudioMuted}
-                  setSelectedCue={setSelectedCue}
-                  setIsToolboxOpen={setIsToolboxOpen}
-                  indexCount={indexCount}
-                  setShowAlert={setShowAlert}
-                  setAlertData={setAlertData}
-                  screenCount={presentation.screenCount}
-                  isDragging={isDragging}
-                  draggingCueId={
-                    isDragging && selectedCue ? selectedCue._id : null
-                  }
-                  previewCueSpanOverrides={previewCueSpanOverrides}
-                  isCopied={isCopied}
-                  interactionCursor={
-                    !isDragging && isCopied ? dragCursorMode : null
-                  }
-                />
-              </Box>
-
-              {collapsedVisualRowPreviews.map(({ row, frames }) =>
-                frames.map(({ frameIndex, cues: frameCues }) => (
-                  <Box
-                    key={`${row.group}-collapsed-preview-${frameIndex}`}
-                    data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
-                    position="absolute"
-                    left={`${frameIndex * (columnWidth + gap)}px`}
-                    top={`${frameHeaderHeight + gap + row.y * (rowHeight + gap)}px`}
-                    width={`${columnWidth}px`}
-                    height={`${rowHeight}px`}
-                    borderRadius="10px"
-                    overflow="hidden"
-                    bg="rgba(255, 255, 255, 0.06)"
-                    border="1px solid rgba(255, 255, 255, 0.1)"
-                    pointerEvents="none"
-                    zIndex={0}
-                  >
-                    {frameCues.map((cue, stackIndex) => (
-                      <Box
-                        key={`${cue._id}-${stackIndex}`}
-                        position="absolute"
-                        inset="0"
-                        opacity={normalizeCueOpacity(cue.opacity)}
-                        zIndex={100 - Number(cue.layer ?? 0)}
-                      >
-                        {renderCollapsedPreviewMedia(cue)}
-                      </Box>
-                    ))}
-                    {frameCues.length > 0 && (
-                      <Text
-                        position="absolute"
-                        left="8px"
-                        bottom="6px"
-                        maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
-                        color="white"
-                        fontSize="12px"
-                        fontWeight="700"
-                        lineHeight="1.1"
-                        whiteSpace="nowrap"
-                        overflow="hidden"
-                        textOverflow="ellipsis"
-                        textShadow="1px 1px 3px rgba(0,0,0,0.85)"
-                        zIndex={130}
-                      >
-                        {frameCues[frameCues.length - 1].name}
-                      </Text>
-                    )}
-                  </Box>
-                ))
-              )}
-
-              {!isDragging && (
-                // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked
                 <Box
-                  data-testid={
-                    isCopied
-                      ? "copy-drag-placement-preview"
-                      : "pool-drag-placement-preview"
-                  }
-                  ref={externalPlacementPreviewRef}
-                  data-valid-drop-cell="false"
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(0, 0, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px dashed"
-                  borderColor={dragPreviewInvalidBorder}
-                  bg={dragPreviewInvalidBg}
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
-                  pointerEvents="none"
-                  zIndex={20}
-                  display="none"
-                  style={{ willChange: "transform" }}
-                />
-              )}
-
-              {!isDragging && !isCopied && (
-                // Show cursor preview for pool element being dragged - shows a preview of the actual element being dragged from the pool following the cursor
-                <Box
-                  data-testid="pool-drag-cursor-preview"
-                  ref={externalCursorPreviewRef}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(10px, 10px, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px solid"
-                  borderColor={dragPreviewOriginBorder}
-                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
-                  overflow="hidden"
-                  pointerEvents="none"
-                  zIndex={30}
-                  opacity={0.92}
-                  display="none"
-                  style={{ willChange: "transform" }}
+                  className="index-boxes"
+                  display="grid"
+                  gridTemplateColumns={`repeat(${xLabels.length}, ${columnWidth}px)`}
+                  gap={`${gap}px`}
+                  // Derived, not restated. This margin is the second half of
+                  // timelineRowsTopOffset: the band is frameHeaderHeight tall,
+                  // and the first lane starts one row gap below it, which is the
+                  // origin the lane gutter computes independently. Writing the
+                  // gap literally here is what put every track 8px below the
+                  // header naming it, once rows and columns stopped sharing one.
+                  mb={`${timelineRowsTopOffset() - frameHeaderHeight}px`}
                 >
-                  <Box
-                    ref={externalCursorSurfaceRef}
-                    width="100%"
-                    height="100%"
-                    bg="rgba(32,32,32,0.9)"
-                  />
-                  <Box
-                    as="img"
-                    ref={externalCursorImageRef}
-                    alt=""
-                    width="100%"
-                    height="100%"
-                    objectFit="cover"
-                    display="none"
-                  />
-
-                  <Text
-                    ref={externalCursorLabelRef}
-                    position="absolute"
-                    bottom="6px"
-                    left="8px"
-                    right="8px"
-                    color="white"
-                    fontWeight="bold"
-                    bg="rgba(0, 0, 0, 0.55)"
-                    borderRadius="6px"
-                    px={2}
-                    py={1}
-                    whiteSpace="nowrap"
-                    overflow="hidden"
-                    textOverflow="ellipsis"
-                    textAlign="center"
-                    style={{
-                      textShadow: "1px 1px 2px rgb(0, 0, 0)",
-                      display: "none",
-                    }}
+                  <ColumnHeaders
+                    xLabels={xLabels}
+                    cueIndex={cueIndex}
+                    bgCurrentFrame={bgCurrentFrame}
+                    bgColorIndex={bgColorIndex}
+                    activeFrameBorderColor={activeFrameBorderColor}
+                    inactiveFrameBorderColor={inactiveFrameBorderColor}
+                    rowHeight={rowHeight}
+                    columnWidth={columnWidth}
+                    frameHeaderHeight={frameHeaderHeight}
+                    indexCount={indexCount}
+                    headerActionsRef={headerActionsRef}
+                    // Copy mode already treats a header click as "cancel", so
+                    // selecting a frame must not fight it.
+                    onSelectFrame={isCopied ? undefined : onSelectFrame}
                   />
                 </Box>
-              )}
-
-              {isDragging && selectedCue && (
-                // Show placement preview for dragged cue - shows where the cue being dragged from the grid would be placed following the cursor
+                {/* Playhead. Sits at the start of the current frame's column,
+                  and sweeps across it while that frame is playing. The key
+                  restarts the sweep on every frame change; `forwards` holds it
+                  at the column's end until the next frame begins. */}
                 <Box
-                  data-testid="drag-placement-preview"
-                  ref={dragPlacementPreviewRef}
+                  key={`playhead-${cueIndex}-${isAutoplaying}`}
+                  data-testid="timeline-playhead"
                   position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(0, 0, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px dashed"
-                  borderColor={dragPreviewInvalidBorder}
-                  bg={dragPreviewInvalidBg}
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                  top={`${frameHeaderHeight}px`}
+                  bottom={0}
+                  left={`${columnLeft(cueIndex)}px`}
+                  width="2px"
+                  bg="#c084fc"
+                  boxShadow="0 0 8px rgba(192, 132, 252, 0.7)"
                   pointerEvents="none"
-                  zIndex={20}
-                  display="none"
-                  style={{ willChange: "transform" }}
+                  zIndex={3}
+                  transition={isAutoplaying ? undefined : "left 140ms ease"}
+                  sx={
+                    isAutoplaying
+                      ? {
+                          animation: `${playheadSweep} ${autoplayInterval}s linear forwards`,
+                        }
+                      : undefined
+                  }
                 />
-              )}
-
-              {isDragging && selectedCue && (
-                // Show cursor preview for dragged cue - shows a preview of the actual element being dragged from the grid following the cursor
+                {audioStartRow > 0 && (
+                  <Box
+                    data-testid="audio-section-divider"
+                    position="absolute"
+                    left={0}
+                    right={0}
+                    top={`${laneTop(audioStartRow) - rowGap / 2}px`}
+                    height="1px"
+                    bg="#2f6b5f"
+                    opacity={0.7}
+                    pointerEvents="none"
+                    zIndex={3}
+                  />
+                )}
                 <Box
-                  data-testid="drag-cursor-preview"
-                  ref={dragCursorPreviewRef}
-                  position="absolute"
-                  left="0px"
-                  top="0px"
-                  transform="translate3d(10px, 10px, 0)"
-                  width={`${columnWidth}px`}
-                  height={`${rowHeight}px`}
-                  borderRadius="16px"
-                  border="2px solid"
-                  borderColor={dragPreviewOriginBorder}
-                  boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
-                  overflow="hidden"
-                  pointerEvents="none"
-                  zIndex={30}
-                  opacity={0.92}
-                  style={{ willChange: "transform" }}
+                  pointerEvents={isDragging ? "none" : "auto"}
+                  id="presentations-grid"
                 >
-                  {(selectedCue.file?.type?.startsWith("image/") ||
-                    selectedCue.file?.type?.startsWith("video/")) &&
-                  selectedCue.file?.url ? (
-                    selectedCue.file?.type?.startsWith("video/") ? (
-                      <Box
-                        as="video"
-                        src={selectedCue.file?.url}
-                        width="100%"
-                        height="100%"
-                        objectFit="cover"
-                        muted
-                        playsInline
-                        controls={false}
-                        preload="auto"
-                        style={{
-                          transform: "translateZ(0)",
-                          backfaceVisibility: "hidden",
-                          WebkitBackfaceVisibility: "hidden",
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        as="img"
-                        src={selectedCue.file?.url}
-                        alt={selectedCue.name}
-                        width="100%"
-                        height="100%"
-                        objectFit="cover"
-                      />
-                    )
-                  ) : (
+                  <GridLayoutComponent
+                    layout={layout}
+                    cues={gridCues}
+                    cueRowIndex={rowModel.cueY}
+                    focusedRowIndex={focusedRowIndex}
+                    focusLayout={focusLayout}
+                    rowCount={rowModel.rowCount}
+                    containerRef={containerRef}
+                    columnWidth={columnWidth}
+                    rowHeight={rowHeight}
+                    gap={gap}
+                    rowGap={rowGap}
+                    setIsCopied={setIsCopied}
+                    setCopiedCue={setCopiedCue}
+                    id={id}
+                    cueIndex={cueIndex}
+                    isAudioMuted={isAudioMuted}
+                    setSelectedCue={setSelectedCue}
+                    setIsToolboxOpen={setIsToolboxOpen}
+                    indexCount={indexCount}
+                    setShowAlert={setShowAlert}
+                    setAlertData={setAlertData}
+                    screenCount={presentation.screenCount as number}
+                    isDragging={isDragging}
+                    draggingCueId={
+                      isDragging && selectedCue ? selectedCue._id : null
+                    }
+                    previewCueSpanOverrides={previewCueSpanOverrides}
+                    isCopied={isCopied}
+                    interactionCursor={
+                      !isDragging && isCopied ? dragCursorMode : null
+                    }
+                  />
+                </Box>
+
+                {collapsedVisualRowPreviews.map(({ row, frames }) =>
+                  frames.map(({ frameIndex, cues: frameCues }) => (
                     <Box
+                      key={`${row.group}-collapsed-preview-${frameIndex}`}
+                      data-testid={`collapsed-preview-${row.group}-${frameIndex}`}
+                      position="absolute"
+                      left={`${columnLeft(frameIndex)}px`}
+                      top={`${laneTop(row.y)}px`}
+                      width={`${columnWidth}px`}
+                      height={`${rowHeight}px`}
+                      borderRadius="10px"
+                      overflow="hidden"
+                      bg="rgba(255, 255, 255, 0.06)"
+                      border="1px solid rgba(255, 255, 255, 0.1)"
+                      pointerEvents="none"
+                      zIndex={0}
+                    >
+                      {frameCues.map((cue, stackIndex) => (
+                        <Box
+                          key={`${cue._id}-${stackIndex}`}
+                          position="absolute"
+                          inset="0"
+                          opacity={normalizeCueOpacity(cue.opacity)}
+                          zIndex={100 - Number(cue.layer ?? 0)}
+                        >
+                          {renderCollapsedPreviewMedia(cue)}
+                        </Box>
+                      ))}
+                      {frameCues.length > 0 && (
+                        <Text
+                          position="absolute"
+                          left="8px"
+                          bottom="6px"
+                          maxWidth={`${Math.max(columnWidth - 16, 40)}px`}
+                          color="white"
+                          fontSize="12px"
+                          fontWeight="700"
+                          lineHeight="1.1"
+                          whiteSpace="nowrap"
+                          overflow="hidden"
+                          textOverflow="ellipsis"
+                          textShadow="1px 1px 3px rgba(0,0,0,0.85)"
+                          zIndex={130}
+                        >
+                          {frameCues[frameCues.length - 1].name}
+                        </Text>
+                      )}
+                    </Box>
+                  ))
+                )}
+
+                {!isDragging && (
+                  // Show placement preview for copied cue when not dragging - follows cursor and shows where the cue would be placed if clicked
+                  <Box
+                    data-testid={
+                      isCopied
+                        ? "copy-drag-placement-preview"
+                        : "pool-drag-placement-preview"
+                    }
+                    ref={externalPlacementPreviewRef}
+                    data-valid-drop-cell="false"
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(0, 0, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px dashed"
+                    borderColor={dragPreviewInvalidBorder}
+                    bg={dragPreviewInvalidBg}
+                    boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                    pointerEvents="none"
+                    zIndex={20}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  />
+                )}
+
+                {!isDragging && !isCopied && (
+                  // Show cursor preview for pool element being dragged - shows a preview of the actual element being dragged from the pool following the cursor
+                  <Box
+                    data-testid="pool-drag-cursor-preview"
+                    ref={externalCursorPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(10px, 10px, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px solid"
+                    borderColor={dragPreviewOriginBorder}
+                    boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                    overflow="hidden"
+                    pointerEvents="none"
+                    zIndex={30}
+                    opacity={0.92}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  >
+                    <Box
+                      ref={externalCursorSurfaceRef}
                       width="100%"
                       height="100%"
-                      bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                      bg="rgba(32,32,32,0.9)"
                     />
-                  )}
+                    <Box
+                      as="img"
+                      ref={externalCursorImageRef}
+                      alt=""
+                      width="100%"
+                      height="100%"
+                      objectFit="cover"
+                      display="none"
+                    />
 
-                  {selectedCue.name?.trim() && (
-                    // Show cue name on cursor preview if it exists - helps identify the element being dragged, especially for color-based cues without a file preview
                     <Text
+                      ref={externalCursorLabelRef}
                       position="absolute"
                       bottom="6px"
                       left="8px"
@@ -2173,29 +2396,140 @@ const EditMode = ({
                       overflow="hidden"
                       textOverflow="ellipsis"
                       textAlign="center"
-                      style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
-                    >
-                      {selectedCue.name}
-                    </Text>
-                  )}
-                </Box>
-              )}
+                      style={{
+                        textShadow: "1px 1px 2px rgb(0, 0, 0)",
+                        display: "none",
+                      }}
+                    />
+                  </Box>
+                )}
 
-              <Box
-                data-testid="hover-preview"
-                ref={hoverPreviewRef}
-                position="absolute"
-                left="0px"
-                top="0px"
-                width={`${columnWidth}px`}
-                height={`${rowHeight}px`}
-                bg={bgColorHover}
-                borderRadius="16"
-                transition="0"
-                zIndex={-1}
-                pointerEvents="none"
-                display="none"
-              />
+                {isDragging && selectedCue && (
+                  // Show placement preview for dragged cue - shows where the cue being dragged from the grid would be placed following the cursor
+                  <Box
+                    data-testid="drag-placement-preview"
+                    ref={dragPlacementPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(0, 0, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px dashed"
+                    borderColor={dragPreviewInvalidBorder}
+                    bg={dragPreviewInvalidBg}
+                    boxShadow="0 4px 12px rgba(0, 0, 0, 0.16)"
+                    pointerEvents="none"
+                    zIndex={20}
+                    display="none"
+                    style={{ willChange: "transform" }}
+                  />
+                )}
+
+                {isDragging && selectedCue && (
+                  // Show cursor preview for dragged cue - shows a preview of the actual element being dragged from the grid following the cursor
+                  <Box
+                    data-testid="drag-cursor-preview"
+                    ref={dragCursorPreviewRef}
+                    position="absolute"
+                    left="0px"
+                    top="0px"
+                    transform="translate3d(10px, 10px, 0)"
+                    width={`${columnWidth}px`}
+                    height={`${rowHeight}px`}
+                    borderRadius="16px"
+                    border="2px solid"
+                    borderColor={dragPreviewOriginBorder}
+                    boxShadow="0 12px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(18, 24, 38, 0.5)"
+                    overflow="hidden"
+                    pointerEvents="none"
+                    zIndex={30}
+                    opacity={0.92}
+                    style={{ willChange: "transform" }}
+                  >
+                    {(selectedCue.file?.type?.startsWith("image/") ||
+                      selectedCue.file?.type?.startsWith("video/")) &&
+                    selectedCue.file?.url ? (
+                      selectedCue.file?.type?.startsWith("video/") ? (
+                        <Box
+                          as="video"
+                          src={selectedCue.file?.url}
+                          width="100%"
+                          height="100%"
+                          objectFit="cover"
+                          muted
+                          playsInline
+                          controls={false}
+                          preload="auto"
+                          style={{
+                            transform: "translateZ(0)",
+                            backfaceVisibility: "hidden",
+                            WebkitBackfaceVisibility: "hidden",
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          as="img"
+                          src={selectedCue.file?.url}
+                          alt={selectedCue.name}
+                          width="100%"
+                          height="100%"
+                          objectFit="cover"
+                        />
+                      )
+                    ) : (
+                      <Box
+                        width="100%"
+                        height="100%"
+                        bg={selectedCue.color || "rgba(32,32,32,0.9)"}
+                      />
+                    )}
+
+                    {selectedCue.name?.trim() && (
+                      // Show cue name on cursor preview if it exists - helps identify the element being dragged, especially for color-based cues without a file preview
+                      <Text
+                        position="absolute"
+                        bottom="6px"
+                        left="8px"
+                        right="8px"
+                        color="white"
+                        fontWeight="bold"
+                        bg="rgba(0, 0, 0, 0.55)"
+                        borderRadius="6px"
+                        px={2}
+                        py={1}
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        textAlign="center"
+                        style={{ textShadow: "1px 1px 2px rgb(0, 0, 0)" }}
+                      >
+                        {selectedCue.name}
+                      </Text>
+                    )}
+                  </Box>
+                )}
+
+                <Box
+                  data-testid="hover-preview"
+                  ref={hoverPreviewRef}
+                  position="absolute"
+                  left="0px"
+                  top="0px"
+                  width={`${columnWidth}px`}
+                  height={`${rowHeight}px`}
+                  bg={bgColorHover}
+                  // Matches the empty slot it lands on, which is 10px. Was "16",
+                  // unitless and therefore ignored, so the preview was square
+                  // against rounded cells.
+                  borderRadius="10px"
+                  transition="0"
+                  zIndex={-1}
+                  pointerEvents="none"
+                  display="none"
+                />
+              </Box>
             </Box>
           </Box>
 

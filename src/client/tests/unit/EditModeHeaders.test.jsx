@@ -26,7 +26,7 @@ describe("EditModeHeaders RowHeaders", () => {
       onAddAudioTrack: jest.fn(),
       maxVisualLayers: 3,
       maxAudioTracks: 2,
-      gap: 4,
+      rowGap: 4,
       rowHeight: 60,
       screenCount,
       isAudioMuted: false,
@@ -38,6 +38,20 @@ describe("EditModeHeaders RowHeaders", () => {
     render(<RowHeaders {...props} />)
     return { props, headerActionsRef }
   }
+
+  test("toggles a collapsed screen open by double-clicking its track", () => {
+    const collapsed = { "screen-1": true }
+    const { props } = renderRowHeaders({
+      rows: buildRowModel(screenCount, cues, collapsed).rows,
+      collapsedGroups: collapsed,
+    })
+
+    // A collapsed screen is one merged lane, so the double click has to reach
+    // the same handler the chevron does without going through the chevron.
+    fireEvent.doubleClick(screen.getByText("1 layers"))
+
+    expect(props.onToggleGroupCollapsed).toHaveBeenCalledWith("screen-1")
+  })
 
   test("toggles audio mute", () => {
     const { headerActionsRef } = renderRowHeaders()
