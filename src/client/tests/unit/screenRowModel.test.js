@@ -1,5 +1,6 @@
 import {
   buildRowModel,
+  groupLanes,
   dropTargetAt,
   getCueRow,
   planVisualLayerRemoval,
@@ -132,5 +133,50 @@ describe("screenRowModel", () => {
       removedCueIds: [],
       shiftedCues: [],
     })
+  })
+})
+
+describe("groupLanes", () => {
+  test("collapses each screen's lanes into one group", () => {
+    const { rows } = buildRowModel(2, [], {}, { "screen-1": 2, "screen-2": 1 })
+    const groups = groupLanes(rows)
+
+    expect(groups.map((group) => [group.group, group.laneCount])).toEqual([
+      ["screen-1", 2],
+      ["screen-2", 1],
+      ["audio", 1],
+    ])
+  })
+
+  test("records where each group starts so overlays can be positioned", () => {
+    const { rows } = buildRowModel(2, [], {}, { "screen-1": 3, "screen-2": 2 })
+    const groups = groupLanes(rows)
+
+    expect(groups.map((group) => group.startY)).toEqual([0, 3, 5])
+    // startY + laneCount of the last group must cover every row.
+    const last = groups[groups.length - 1]
+    expect(last.startY + last.laneCount).toBe(rows.length)
+  })
+
+  test("labels an expanded screen with its screen name, not its first layer", () => {
+    const { rows } = buildRowModel(1, [], {}, {})
+    const [screenGroup] = groupLanes(rows)
+
+    // The group-start lane's own label is "L1"; screenLabel carries "Screen 1".
+    expect(screenGroup.label).toBe("Screen 1")
+    expect(screenGroup.collapsed).toBe(false)
+  })
+
+  test("marks a collapsed group and keeps its single merged lane", () => {
+    const { rows } = buildRowModel(1, [], { "screen-1": true }, {})
+    const [screenGroup] = groupLanes(rows)
+
+    expect(screenGroup.collapsed).toBe(true)
+    expect(screenGroup.laneCount).toBe(1)
+    expect(screenGroup.label).toBe("Screen 1")
+  })
+
+  test("returns nothing for an empty row list", () => {
+    expect(groupLanes([])).toEqual([])
   })
 })

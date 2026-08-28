@@ -13,7 +13,11 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
-import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { laneScreenFromKey } from "../utils/laneFocus"
+
+import type { Dispatch, SetStateAction } from "react"
+import type { Cue, CueUpdateInput } from "../../types"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import ClickablePopover from "../utils/ClickablePopover"
@@ -34,8 +38,76 @@ import {
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
 
+interface EditModeContainerProps {
+  id: string
+  cues: Cue[]
+  isToolboxOpen: boolean
+  setIsToolboxOpen: (open: boolean) => void
+  transitionType: string
+  onTransitionChange: (value: string) => void
+  cueIndex: number
+  setCueIndex: Dispatch<SetStateAction<number>>
+  isAudioMuted: boolean
+  toggleAudioMute: () => void
+  indexCount: number
+
+  /**
+   * Forwarded to the create/edit path of CuesForm, which is unreachable from
+   * the current UI -- index.jsx supplies none of these. Optional so the types
+   * describe what actually arrives. See the note at the top of CuesForm.jsx.
+   */
+  addCue?: (cueData: CueUpdateInput) => void | Promise<void>
+  onClose?: () => void
+  position?: { index: number; screen: number } | null
+  cueData?: Cue | null
+  /**
+   * Frame navigation. CuesForm's dead create/edit path calls this with a
+   * different shape entirely; that file stays .jsx and is unchecked.
+   */
+  updateCue: (direction: "Next" | "Previous") => void
+  isAudioMode?: boolean
+}
+
+interface AudioTrack {
+  id: string
+  src: string
+  loop: boolean
+  continuePlayback: boolean
+  layer: number
+  name: string
+}
+
+// setCueIndex stays in the container: EditorLayout navigates frames through
+// updateCue rather than setting the index itself.
+interface EditorLayoutProps extends Omit<
+  EditModeContainerProps,
+  "setCueIndex"
+> {
+  presentationName: string
+  screenCount: number
+  screens: Record<string, boolean>
+  toggleScreenVisibility: (screenNumber: number) => void
+  toggleAllScreens: () => void
+  autoplayInterval: number
+  toggleAutoplay: () => void
+  isAutoplaying: boolean
+  audioSourceURL: string
+  audioLoop: boolean
+  audioTracks: AudioTrack[]
+  allowContinuousAudio: boolean
+  toggleAutoplayInterval: (valueString: string) => void
+  onOpenTutorial: () => void
+  editModeBackground: string
+  panelBackground: string
+  outlineColor: string
+  focusedLaneKey: string | null
+  focusedScreen: number | null
+  onFocusLane: (laneKey: string | null) => void
+  onSelectFrame: (index: number) => void
+}
+
 // Base component for different subcomponents of the editor
-function EditorLayout(props) {
+function EditorLayout(props: EditorLayoutProps) {
   const {
     id,
     presentationName,
@@ -70,39 +142,50 @@ function EditorLayout(props) {
     editModeBackground,
     panelBackground,
     outlineColor,
+    focusedLaneKey,
+    focusedScreen,
+    onFocusLane,
+    onSelectFrame,
   } = props
 
   useEffect(() => {
-    const screen_preview_element = document.querySelector("#screen_preview")
-    const resize_handle_element = document.querySelector(
-      "#screen_resize_handle"
-    )
+    const panes = [
+      ["#screen_preview", "#screen_resize_handle"],
+      ["#timeline", "#timeline_resize_handle"],
+    ]
 
-    makeResizable(screen_preview_element, resize_handle_element) // Using the entire container as the handle for resizing
+    const disposers = panes.flatMap(([paneSelector, handleSelector]) => {
+      const pane = document.querySelector<HTMLElement>(paneSelector)
+      const handle = document.querySelector<HTMLElement>(handleSelector)
+      if (!pane || !handle) return []
 
-    const timeline_element = document.querySelector("#timeline")
-    const timeline_resize_handle_element = document.querySelector(
-      "#timeline_resize_handle"
-    )
+      // The shell is viewport-locked, so an unbounded drag would push the other
+      // panes off screen with no way to get them back. Rather than recomputing
+      // the layout, express the ceiling as "how much slack the sibling can give
+      // up": the pair's combined height is invariant during a drag, so this is
+      // exactly "the sum still fits", and it re-resolves on every mousemove and
+      // therefore survives a window resize mid-drag.
+      const sibling = pane.parentElement
+        ?.nextElementSibling as HTMLElement | null
 
-    makeResizable(timeline_element, timeline_resize_handle_element) // Using the entire container as the handle for resizing
+      return [
+        makeResizable(pane, handle, {
+          minHeight: 128,
+          maxHeight: () =>
+            sibling
+              ? pane.offsetHeight + sibling.offsetHeight - 96
+              : Number.POSITIVE_INFINITY,
+        }),
+      ]
+    })
+
+    return () => disposers.forEach((dispose) => dispose())
   }, [])
 
-  // Formatting the grid layout for the editor, using react-grid-layout.
-  // The layout is responsive and changes based on the screen size.
-  // Each grid item (a, b, c) represents a different component of the editor,
-  // such as the cue list, preview area, and toolbox.
   return (
     <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: editModeBackground,
-        display: "flex",
-        flexDirection: "column",
-        gap: "2rem",
-        padding: "2rem",
-      }}
+      className="editor-shell"
+      style={{ backgroundColor: editModeBackground }}
     >
       <Box
         display="flex"
@@ -114,7 +197,6 @@ function EditorLayout(props) {
         outline={outlineColor}
         borderRadius="8px"
         position="relative"
-        key="header"
       >
         <ClickablePopover
           label={
@@ -167,7 +249,6 @@ function EditorLayout(props) {
           borderRadius: "8px",
         }}
         className="screenspreview"
-        key="screensPreview"
       >
         <ScreensDisplay
           screenCount={screenCount}
@@ -177,6 +258,7 @@ function EditorLayout(props) {
           editModeBackground={panelBackground}
           screens={screens}
           toggleScreenVisibility={toggleScreenVisibility}
+          focusedScreen={focusedScreen}
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
@@ -190,11 +272,11 @@ function EditorLayout(props) {
           justifyContent: "space-between",
         }}
         className="no-resize-handle"
-        key="playbackControls"
       >
         <KeyboardHandler
           onNext={() => updateCue("Next")}
           onPrevious={() => updateCue("Previous")}
+          onTogglePlay={toggleAutoplay}
         />
         <PresentationPlaybackControls
           screens={screens}
@@ -208,7 +290,9 @@ function EditorLayout(props) {
           toggleAutoplayInterval={toggleAutoplayInterval}
           audioSourceURL={audioSourceURL}
           audioLoop={audioLoop}
-          audioTracks={audioTracks}
+          // PresentationPlaybackControls is still .jsx and defaults this prop
+          // to [], which infers never[]. Drops away when it is migrated.
+          audioTracks={audioTracks as never[]}
           allowContinuousAudio={allowContinuousAudio}
         />
         <Box mr={4}>
@@ -216,7 +300,7 @@ function EditorLayout(props) {
         </Box>
       </div>
 
-      <div className="edit-workspace" key="editWorkspace">
+      <div className="edit-workspace">
         <div>
           <div className="edit-mode-workspace">
             <div
@@ -242,7 +326,11 @@ function EditorLayout(props) {
                   isAudioMuted={isAudioMuted}
                   toggleAudioMute={toggleAudioMute}
                   indexCount={indexCount}
-                  style={{ zIndex: 1 }}
+                  focusedLaneKey={focusedLaneKey}
+                  onFocusLane={onFocusLane}
+                  isAutoplaying={isAutoplaying}
+                  autoplayInterval={autoplayInterval}
+                  onSelectFrame={onSelectFrame}
                 />
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>
@@ -264,7 +352,6 @@ function EditorLayout(props) {
               }}
             >
               <CuesForm
-                className="cue-editor-form"
                 addCue={addCue}
                 onClose={onClose}
                 position={position}
@@ -302,7 +389,7 @@ const EditModeContainer = ({
   cueData,
   updateCue,
   isAudioMode,
-}) => {
+}: EditModeContainerProps) => {
   const editModeBackground = useColorModeValue("#ffffff", "#120d14")
   const panelBackground = useColorModeValue("#eedef7", "#312238")
   const outlineColor = useColorModeValue(
@@ -310,18 +397,27 @@ const EditModeContainer = ({
     "2px solid #572b6e"
   )
 
-  const dispatch = useDispatch()
-  const presentation = useSelector((state) => state.presentation)
+  const dispatch = useAppDispatch()
+  const presentation = useAppSelector((state) => state.presentation)
   const presentationName = presentation?.name
   const screenCount = presentation?.screenCount
 
-  const [screens, setScreens] = useState({})
-  const [mirroring, setMirroring] = useState({})
+  /**
+   * Which timeline lane is focused, as a stable "group:layer" key.
+   *
+   * Lives here rather than in EditMode because ScreensDisplay is a sibling and
+   * needs the derived screen number. Kept separate from EditMode's selectedCue,
+   * which is reset on toolbox close, on save, on a committed move and when the
+   * cue leaves the store -- a lane outlives all of those.
+   */
+  const [focusedLaneKey, setFocusedLaneKey] = useState<string | null>(null)
+  const [screens, setScreens] = useState<Record<string, boolean>>({})
+  const [mirroring, setMirroring] = useState<Record<string, number>>({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayEnded, setAutoplayEnded] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
-  const autoplayTimerRef = useRef(null)
+  const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
 
@@ -334,14 +430,14 @@ const EditModeContainer = ({
   // - creates a visibility object with keys for each screen number and
   // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
   useEffect(() => {
-    const screenNumbers = [
-      ...new Set(
+    const screenNumbers: number[] = [
+      ...new Set<number>(
         (cues || [])
           .filter((cue) => !isAudioRow(cue.screen, screenCount))
-          .map((cue) => cue.screen)
+          .map((cue) => Number(cue.screen))
       ),
     ]
-    const visibility = {}
+    const visibility: Record<string, boolean> = {}
     screenNumbers.forEach((screenNumber) => {
       visibility[screenNumber] = false
     })
@@ -353,7 +449,7 @@ const EditModeContainer = ({
   }, [cues, screenCount])
 
   // Open or close a window for a specific screen
-  const toggleScreenVisibility = (screenNumber) => {
+  const toggleScreenVisibility = (screenNumber: number) => {
     setScreens((prev) => ({
       ...prev,
       [screenNumber]: !prev[screenNumber],
@@ -377,7 +473,10 @@ const EditModeContainer = ({
     })
   }
 
-  const getActiveCuesForScreen = (screenNumber, index) => {
+  const getActiveCuesForScreen = (
+    screenNumber: number,
+    index: number
+  ): Cue[] => {
     const currentIndex = Number(index)
 
     return (cues || [])
@@ -393,6 +492,10 @@ const EditModeContainer = ({
           Number(secondCue.layer ?? 0) - Number(firstCue.layer ?? 0)
       )
   }
+
+  // null for audio lanes and for a screen that no longer exists, so a stale
+  // focus highlights nothing rather than pointing at a missing tile.
+  const focusedScreen = laneScreenFromKey(focusedLaneKey, screenCount ?? 0)
 
   const audioRow = getAudioRow(screenCount)
   const currentAudioTracks = getActiveCuesForScreen(audioRow, cueIndex)
@@ -420,7 +523,7 @@ const EditModeContainer = ({
   const isCurrentCueAudio = currentAudioTracks.length > 0
   const currentAudioLoop = Boolean(currentAudioCue.loop)
 
-  const handleScreenClose = useCallback((screenNumber) => {
+  const handleScreenClose = useCallback((screenNumber: number) => {
     setScreens((prev) => ({
       ...prev,
       [screenNumber]: false,
@@ -436,13 +539,20 @@ const EditModeContainer = ({
     setIsAutoplaying((prev) => {
       const next = !prev
       if (next && typeof setCueIndex === "function") {
-        setCueIndex(0)
+        // Play from where the playhead is. Rewinding unconditionally made sense
+        // while the only way to reach a frame was to step through it, but now
+        // that a frame can be selected by clicking its header, it threw that
+        // choice away on every press. The one case that still rewinds is the
+        // last frame, where playing forward has nothing to show.
+        setCueIndex((current: number) =>
+          current >= indexCount - 1 ? 0 : current
+        )
       }
       return next
     })
   }
 
-  const toggleAutoplayInterval = (valueString) => {
+  const toggleAutoplayInterval = (valueString: string) => {
     const parsed = Number(valueString)
     if (!Number.isFinite(parsed)) {
       return
@@ -472,7 +582,9 @@ const EditModeContainer = ({
       }
 
       if (typeof setCueIndex === "function") {
-        setCueIndex((prevIndex) => Math.min(indexCount - 1, prevIndex + 1))
+        setCueIndex((prevIndex: number) =>
+          Math.min(indexCount - 1, prevIndex + 1)
+        )
         return
       }
 
@@ -502,7 +614,7 @@ const EditModeContainer = ({
     )
 
     audioCues.forEach((cue) => {
-      const url = cue.file.url
+      const url = cue.file!.url as string
       if (audioPreloadedUrlsRef.current.has(url)) {
         return
       }
@@ -548,7 +660,11 @@ const EditModeContainer = ({
       <EditorLayout
         id={id}
         presentationName={presentationName}
-        screenCount={screenCount}
+        screenCount={screenCount ?? 1}
+        focusedLaneKey={focusedLaneKey}
+        focusedScreen={focusedScreen}
+        onFocusLane={setFocusedLaneKey}
+        onSelectFrame={setCueIndex}
         cues={cues}
         isToolboxOpen={isToolboxOpen}
         setIsToolboxOpen={setIsToolboxOpen}
@@ -590,7 +706,9 @@ const EditModeContainer = ({
 
       {Object.keys(screens).map((screenNumber) => {
         const mirroredScreen = mirroring[screenNumber]
-        const sourceScreen = mirroredScreen ? mirroredScreen : screenNumber
+        const sourceScreen = mirroredScreen
+          ? mirroredScreen
+          : Number(screenNumber)
         const screenData = getActiveCuesForScreen(sourceScreen, cueIndex)
 
         return (

@@ -46,11 +46,32 @@ const App = () => {
   return (
     <ChakraProvider theme={theme}>
       <Fonts />
-      <Box minH="100vh" display="flex" flexDirection="column">
+      {/* The presentation editor is a viewport-locked shell: its panes scroll
+          internally and the page itself never grows. Every other route keeps
+          the ordinary grow-and-body-scroll layout. */}
+      <Box
+        minH={isPresentation ? "100dvh" : "100vh"}
+        h={isPresentation ? "100dvh" : undefined}
+        overflow={isPresentation ? "hidden" : undefined}
+        display="flex"
+        flexDirection="column"
+      >
         <NavBar user={user} setUser={setUser} />
         <Container
           flex="1"
-          pt={isPresentation || isHome || isProfile ? 36 : 30}
+          // min-height 0 is what lets a flex child actually shrink and hand the
+          // overflow to an inner scroller instead of growing the page.
+          minH={0}
+          display={isPresentation ? "flex" : undefined}
+          flexDirection={isPresentation ? "column" : undefined}
+          overflow={isPresentation ? "hidden" : undefined}
+          pt={
+            isPresentation
+              ? "var(--muvico-navbar-h, 4.5rem)"
+              : isHome || isProfile
+                ? 36
+                : 30
+          }
           maxW={isPresentation ? "none" : "container.xl"}
           pl={isPresentation ? 0 : 4}
           pr={isPresentation ? 0 : 4}
@@ -98,7 +119,7 @@ const App = () => {
             <Route path="/privacy" element={<PrivacyPage />} />
           </Routes>
         </Container>
-        <Footer />
+        {!isPresentation && <Footer />}
       </Box>
     </ChakraProvider>
   )

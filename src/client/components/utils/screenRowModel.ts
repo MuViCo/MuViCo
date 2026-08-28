@@ -1,5 +1,6 @@
 import type {
   CollapsedGroups,
+  LaneGroup,
   Cue,
   DropTarget,
   Lane,
@@ -206,3 +207,34 @@ export const planVisualLayerRemoval = (
     { removedCueIds: [], shiftedCues: [] }
   )
 }
+
+/**
+ * Collapses a lane list into its contiguous per-screen (and audio) runs.
+ *
+ * Adjacency grouping is exact rather than a heuristic: buildRowModel walks
+ * screens in order and emits each screen's lanes consecutively before moving on,
+ * then appends the audio lanes. Two runs of the same group can therefore never
+ * be separated by another group's lanes.
+ */
+export const groupLanes = (rows: Lane[]): LaneGroup[] =>
+  rows.reduce<LaneGroup[]>((groups, row) => {
+    const current = groups[groups.length - 1]
+
+    if (current && current.group === row.group) {
+      current.laneCount += 1
+      return groups
+    }
+
+    groups.push({
+      group: row.group,
+      kind: row.kind,
+      // The group-start lane of an expanded screen carries screenLabel ("Screen 3")
+      // while its own label is the layer ("L1"); a collapsed lane only has label.
+      label: row.screenLabel ?? row.label,
+      screen: row.screen,
+      startY: row.y,
+      laneCount: 1,
+      collapsed: Boolean(row.collapsed),
+    })
+    return groups
+  }, [])

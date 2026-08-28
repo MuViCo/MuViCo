@@ -202,8 +202,21 @@ export interface CueUpdateInput {
   index: number
   cueName: string
   screen: number
-  file: CueUploadFile | null
+  /**
+   * Either a File being uploaded, or the stored metadata of the cue's existing
+   * file when an update only changes a flag.
+   *
+   * TODO(ts): the two shapes go through the same field and the same
+   * createFormData argument. On the metadata path the object is appended to the
+   * FormData as-is, which serialises to "[object Object]" and multer reads as a
+   * text field, leaving the stored file untouched -- which is the intent, by
+   * accident rather than by design. Splitting the two paths is a server-contract
+   * change, so the type records the reality instead.
+   */
+  file: CueUploadFile | CueFileMeta | null
   cueId?: string
+  /** Present on the create path, which builds the payload from a lane. */
+  cueType?: CueType
   fileName?: string | null
   color?: string
   loop?: boolean
@@ -309,6 +322,41 @@ export interface Lane {
   canRemoveLayer?: boolean
   groupStart?: boolean
   screenLabel?: string
+}
+
+/**
+ * The imperative callbacks the timeline header components invoke.
+ *
+ * EditMode reassigns this bag on every render into a ref rather than passing
+ * the callbacks as props, so the memoized header components do not re-render
+ * when a handler identity changes.
+ */
+export interface HeaderActions {
+  addIndex: (index: number) => void
+  removeIndex: (index: number) => void
+  increaseScreenCount: () => void
+  decreaseScreenCount: () => void
+  toggleAudioMute: () => void
+}
+
+/**
+ * One screen's (or the audio section's) contiguous run of lanes, as drawn by the
+ * per-screen container in the editor.
+ *
+ * buildRowModel emits every group's lanes consecutively, so a group is fully
+ * described by where it starts and how many lanes it spans -- no lane needs to
+ * know its group's extent.
+ */
+export interface LaneGroup {
+  /** "screen-1" ... "screen-8", or "audio". */
+  group: string
+  kind: LaneKind
+  /** "Screen 3" / "Audio". */
+  label: string
+  screen: number
+  startY: number
+  laneCount: number
+  collapsed: boolean
 }
 
 export interface RowModel {

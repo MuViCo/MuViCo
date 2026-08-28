@@ -1,70 +1,82 @@
 /**
  * makeResizable.ts
  *
- * This module provides a function to make an HTML element resizable by dragging a handle.
- * It listens for mouse events to adjust the size of the target element in real-time.
+ * Makes an element vertically resizable by dragging a handle.
  *
  * Usage:
- *   - Call makeResizable(baseElement, handleElement) where:
- *     - baseElement: The HTML element that should be resized.
- *     - handleElement: The HTML element that will act as the drag handle for resizing.
+ *   const dispose = makeResizable(baseElement, handleElement, options)
+ *   // ...later
+ *   dispose()
  *
- * The function sets up event listeners for 'mousedown', 'mousemove', and 'mouseup' to manage the resizing process.
- * It also changes the cursor to indicate that resizing is in progress.
- *
- * Note: The handleElement can be the same as the baseElement if you want the entire element to be draggable for resizing.
+ * The returned disposer must be called when the owning component unmounts.
+ * The mousemove/mouseup listeners are attached to `document` only for the
+ * duration of a drag, so between drags this costs nothing: the previous version
+ * attached them once and never removed them, which left a mousemove handler
+ * running on every pointer movement anywhere on the page for the rest of the
+ * session, and added another full set on each remount.
  */
 
+export interface ResizableOptions {
+  /** Lower bound in px. */
+  minHeight?: number
+  /**
+   * Upper bound in px. Resolved on every mousemove rather than once, so a
+   * clamp expressed in terms of sibling elements keeps working while the
+   * window is resized mid-drag.
+   */
+  maxHeight?: number | (() => number)
+  /** Called with the committed height when the drag ends. */
+  onResizeEnd?: (height: number) => void
+}
+
 function makeResizable(
-  base_element: HTMLElement,
-  handle_element: HTMLElement
-): void {
-  const resizableBox = base_element
-  const resizeHandle = handle_element
+  baseElement: HTMLElement,
+  handleElement: HTMLElement,
+  options: ResizableOptions = {}
+): () => void {
+  const { minHeight = 50, maxHeight, onResizeEnd } = options
 
-  // --- State Variables for Dragging ---
-  let isResizing = false
+  const resolveMaxHeight = (): number => {
+    if (typeof maxHeight === "function") return maxHeight()
+    if (typeof maxHeight === "number") return maxHeight
+    return Number.POSITIVE_INFINITY
+  }
 
-  // 1. MOUSE DOWN: Start the resizing process
-  resizeHandle.addEventListener("mousedown", (e) => {
-    // Prevent text selection while dragging
-    e.preventDefault()
-    isResizing = true
-    // Change cursor globally while resizing
+  let latestHeight = baseElement.getBoundingClientRect().height
+
+  const handleMouseMove = (event: MouseEvent): void => {
+    const boxTop = baseElement.getBoundingClientRect().top
+    // max can never be below min, or the clamp would invert.
+    const max = Math.max(minHeight, resolveMaxHeight())
+
+    latestHeight = Math.min(Math.max(event.clientY - boxTop, minHeight), max)
+    baseElement.style.height = `${latestHeight}px`
+  }
+
+  const stopResizing = (): void => {
+    document.removeEventListener("mousemove", handleMouseMove)
+    document.removeEventListener("mouseup", stopResizing)
+    // Restore rather than forcing "default", which would override a cursor set
+    // by whatever is under the pointer.
+    document.body.style.cursor = ""
+    onResizeEnd?.(latestHeight)
+  }
+
+  const handleMouseDown = (event: MouseEvent): void => {
+    // Prevent text selection while dragging.
+    event.preventDefault()
     document.body.style.cursor = "ns-resize"
-  })
+    document.addEventListener("mousemove", handleMouseMove)
+    document.addEventListener("mouseup", stopResizing)
+  }
 
-  // 2. MOUSE MOVE: Update the size while the mouse is held down
-  document.addEventListener("mousemove", (e) => {
-    if (!isResizing) return
+  handleElement.addEventListener("mousedown", handleMouseDown)
 
-    // Calculate the new width:
-    // Original Right Edge Position - Current Mouse X Position + Original Width
-
-    // Get the current right edge position of the box
-    const boxRect = resizableBox.getBoundingClientRect()
-
-    // Calculate the new width based on the mouse's horizontal position relative to the box's top edge
-    // e.clientY gives the absolute X position of the mouse on the screen.
-    // e.clientY - boxRect.top gives the mouse position relative to the box's top edge.
-    let newHeight = e.clientY - boxRect.top
-
-    // Ensure the minimum width is not zero or negative
-    if (newHeight < 50) {
-      newHeight = 50
-    }
-
-    // Apply the new width
-    resizableBox.style.height = `${newHeight}px`
-  })
-
-  // 3. MOUSE UP: Stop the resizing process
-  document.addEventListener("mouseup", () => {
-    if (isResizing) {
-      isResizing = false
-      document.body.style.cursor = "default"
-    }
-  })
+  return () => {
+    handleElement.removeEventListener("mousedown", handleMouseDown)
+    document.removeEventListener("mousemove", handleMouseMove)
+    document.removeEventListener("mouseup", stopResizing)
+  }
 }
 
 export default makeResizable

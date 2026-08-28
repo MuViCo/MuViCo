@@ -3,7 +3,7 @@
  * Utility functions for creating and handling FormData objects for cues.
  */
 
-import type { CueUploadFile } from "../../types"
+import type { CueFileMeta, CueUploadFile } from "../../types"
 
 /**
  * Creates and populates a FormData object for a cue.
@@ -19,7 +19,10 @@ export const createFormData = (
   index: number,
   name: string,
   screen: number,
-  file: CueUploadFile | null | undefined,
+  // Either a File being uploaded or the stored metadata of an existing one;
+  // both reach this function through CueUpdateInput.file. Both carry name and
+  // an optional driveId, which is all this reads.
+  file: CueUploadFile | CueFileMeta | null | undefined,
   cueId?: string,
   color?: string,
   loop?: boolean,

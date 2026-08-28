@@ -2,6 +2,49 @@
  * components for rendering the row and column headers in the presentation editor, including controls for adding/removing screens and frames, and toggling audio mute.
  */
 import React from "react"
+import { TIMELINE_METRICS } from "./timelineMetrics"
+import { groupLanes } from "../utils/screenRowModel"
+import { GROUP_PAD, laneFocusLayout, laneKey } from "../utils/laneFocus"
+import type { LaneFocusLayout } from "../utils/laneFocus"
+
+import type { RefObject, ReactNode } from "react"
+import type { CollapsedGroups, HeaderActions, Lane } from "../../types"
+
+interface RowHeadersProps {
+  rows: Lane[]
+  collapsedGroups: CollapsedGroups
+  onToggleGroupCollapsed: (group: string) => void
+  onAddVisualLayer: (screen: number) => void
+  onRemoveVisualLayer: (screen: number, layer: number) => void
+  onAddAudioTrack: () => void
+  maxVisualLayers: number
+  maxAudioTracks: number
+  rowGap: number
+  rowHeight: number
+  screenCount: number
+  isAudioMuted: boolean
+  screenIcon: string
+  headerActionsRef: RefObject<HeaderActions>
+  /** Row index of the focused lane, or -1. */
+  focusedRowIndex?: number
+  onFocusLane?: (laneKey: string) => void
+}
+
+interface ColumnHeadersProps {
+  xLabels: string[]
+  cueIndex: number
+  bgCurrentFrame: string
+  bgColorIndex: string
+  activeFrameBorderColor?: string
+  inactiveFrameBorderColor?: string
+  rowHeight: number
+  columnWidth: number
+  indexCount: number
+  frameHeaderHeight: number
+  headerActionsRef: RefObject<HeaderActions>
+  /** Omitted while copying, when a header click means "cancel" instead. */
+  onSelectFrame?: (index: number) => void
+}
 import { Box, Text, IconButton, Button, Tooltip } from "@chakra-ui/react"
 import {
   AddIcon,
@@ -11,6 +54,50 @@ import {
 } from "@chakra-ui/icons"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
 import trashIcon from "../../public/icons/trash.svg"
+
+/**
+ * Timeline palette, taken from the editor design draft.
+ *
+ * The draft builds depth out of four near-black violets rather than one flat
+ * surface, and puts every accent on small light chips with dark text instead of
+ * colouring whole rows. That is what stops the timeline reading as a wall of
+ * saturated blocks.
+ */
+const TIMELINE_PALETTE = {
+  /**
+   * Group-start row: the screen's own identity. Light violet, a shade below the
+   * original purple.200 so it sits better against the dark timeline.
+   */
+  screenRow: "#cbb0ee",
+  /** Layer rows, a step darker so they read as subordinate to their screen. */
+  laneRow: "#ab89d6",
+  /**
+   * Audio lives in a different colour family entirely, as the design draft
+   * does. Sharing one scroller with the screens is deliberate -- their row
+   * indices are the same coordinate space the grid and every hit test use --
+   * so the separation has to be carried by colour rather than by layout.
+   */
+  audioRow: "#7fd4bd",
+  audioLaneRow: "#5fb9a2",
+  audioBorder: "#2f6b5f",
+  audioAccent: "#d8f4ec",
+  /** Track controls: one family, revealed on hover over the gutter. */
+  controlBg: "#3a2447",
+  controlBgDanger: "#5a1f3a",
+  controlBorder: "#6d5a7d",
+  controlText: "#f0e4ff",
+  /** Panel behind a group. */
+  groupPanel: "#241333",
+  border: "#4a2d63",
+  borderSubtle: "#3a2447",
+  accent: "#c084fc",
+  /** Light chip carrying dark text -- screen badges, the active frame. */
+  chip: "#c79dff",
+  chipText: "#160b1f",
+  textPrimary: "#f0e4ff",
+  textSecondary: "#cbb6dd",
+  textMuted: "#8b7499",
+}
 
 // Base component for rendering row headers, memoized for performance optimization. Displays screen labels and an audio row with a mute/unmute button, as well as controls for adding/removing screens.
 const RowHeadersBase = ({
@@ -22,14 +109,16 @@ const RowHeadersBase = ({
   onAddAudioTrack,
   maxVisualLayers,
   maxAudioTracks,
-  gap,
+  rowGap,
   rowHeight,
   screenCount,
   isAudioMuted,
   screenIcon,
   headerActionsRef,
-}) => {
-  return rows.map((row) => {
+  focusedRowIndex = -1,
+  onFocusLane = () => {},
+}: RowHeadersProps): ReactNode => {
+  const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
     const lastGroupRow = groupRows[groupRows.length - 1]
@@ -61,13 +150,77 @@ const RowHeadersBase = ({
         display="flex"
         alignItems="center"
         justifyContent={row.groupStart ? "space-between" : "center"}
-        bg={isAudio ? "rgb(204, 46, 252)" : "purple.200"}
-        border="2px solid #b55fe0"
-        marginRight={`${gap}px`}
-        h={`${rowHeight}px`}
-        width="120px"
+        bg={
+          row.y === focusedRowIndex
+            ? isAudio
+              ? TIMELINE_PALETTE.audioAccent
+              : TIMELINE_PALETTE.chip
+            : isAudio
+              ? row.groupStart
+                ? TIMELINE_PALETTE.audioRow
+                : TIMELINE_PALETTE.audioLaneRow
+              : row.groupStart
+                ? TIMELINE_PALETTE.screenRow
+                : TIMELINE_PALETTE.laneRow
+        }
+        color={TIMELINE_PALETTE.chipText}
+        border="1px solid"
+        borderWidth={row.y === focusedRowIndex ? "2px" : "1px"}
+        borderColor={
+          row.y === focusedRowIndex
+            ? TIMELINE_PALETTE.accent
+            : isAudio
+              ? TIMELINE_PALETTE.audioBorder
+              : row.groupStart
+                ? TIMELINE_PALETTE.accent
+                : TIMELINE_PALETTE.border
+        }
+        borderRadius="7px"
+        // Drawn taller or shorter than its track without moving it: the track
+        // is the coordinate the frame columns and the hit tests share. What the
+        // focused lane gains, its siblings give back, so consecutive lanes stay
+        // exactly one row gap apart.
+        h={`${rowHeight + (focusLayout.delta[row.y] ?? 0)}px`}
+        alignSelf="start"
+        transform={`translateY(${focusLayout.offset[row.y] ?? 0}px)`}
+        // Narrower than the gutter by the frame's padding on each side, so the
+        // cell sits inside the frame rather than against it.
+        width={`${TIMELINE_METRICS.rowHeaderWidth - 2 * GROUP_PAD}px`}
+        justifySelf="center"
         position="relative"
-        px="6px"
+        px="8px"
+        cursor="pointer"
+        onClick={(event) => {
+          // Buttons inside the cell keep their own behaviour.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onFocusLane(laneKey(row))
+        }}
+        onDoubleClick={(event) => {
+          // Same targets the single click ignores: the chevron already toggles,
+          // and the track controls have their own actions.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onToggleGroupCollapsed(row.group)
+        }}
+        boxShadow={
+          row.y === focusedRowIndex
+            ? "0 0 0 3px rgba(192, 132, 252, 0.35), 0 6px 18px rgba(60, 16, 96, 0.45)"
+            : "none"
+        }
+        zIndex={row.y === focusedRowIndex ? 2 : 1}
+        transition="background-color 120ms ease, border-color 120ms ease, box-shadow 140ms ease, height 140ms ease, transform 140ms ease"
+        _hover={{
+          borderColor: isAudio
+            ? TIMELINE_PALETTE.audioAccent
+            : TIMELINE_PALETTE.accent,
+        }}
       >
         {row.groupStart && (
           <IconButton
@@ -104,6 +257,7 @@ const RowHeadersBase = ({
                     <SpeakerIcon boxSize="36px" />
                   )
                 }
+                color={TIMELINE_PALETTE.chipText}
                 sx={{
                   width: "44px",
                   height: "44px",
@@ -137,29 +291,34 @@ const RowHeadersBase = ({
                   width="50px"
                   height="50px"
                   flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
                 >
-                  <Box
-                    as="img"
-                    src={screenIcon}
-                    alt=""
-                    width="50px"
-                    height="50px"
-                    aria-hidden="true"
-                  />
-                  <Text
-                    as="span"
-                    position="absolute"
-                    top="43%"
-                    left="50%"
-                    transform="translate(-50%, -50%)"
-                    fontSize="19px"
-                    fontWeight="700"
-                    lineHeight="1"
-                    color="black"
-                    pointerEvents="none"
-                  >
-                    {row.screen}
-                  </Text>
+                  <Box position="relative" width="34px" height="34px">
+                    <Box
+                      as="img"
+                      src={screenIcon}
+                      alt=""
+                      width="34px"
+                      height="34px"
+                      aria-hidden="true"
+                    />
+                    <Text
+                      as="span"
+                      position="absolute"
+                      top="43%"
+                      left="50%"
+                      transform="translate(-50%, -50%)"
+                      fontSize="13px"
+                      fontWeight="700"
+                      lineHeight="1"
+                      color="black"
+                      pointerEvents="none"
+                    >
+                      {row.screen}
+                    </Text>
+                  </Box>
                 </Box>
               </Tooltip>
               <Text as="span" fontSize="13px" lineHeight="1" noOfLines={1}>
@@ -191,14 +350,19 @@ const RowHeadersBase = ({
                 icon={<MinusIcon boxSize="9px" />}
                 size="xs"
                 variant="solid"
-                color="black"
-                bg="orange.100"
-                border="1px solid rgba(221, 107, 32, 0.48)"
+                color={TIMELINE_PALETTE.controlText}
+                bg={TIMELINE_PALETTE.controlBgDanger}
+                borderWidth="1px"
+                borderColor={TIMELINE_PALETTE.controlBorder}
                 borderRadius="6px"
                 position="absolute"
                 top="50%"
                 right="4px"
                 transform="translateY(-50%)"
+                opacity={0}
+                visibility="hidden"
+                transition="opacity 120ms ease"
+                _groupHover={{ opacity: 1, visibility: "visible" }}
                 aria-label={`Remove layer from screen ${row.screen}`}
                 title={
                   canRemoveVisualLayer
@@ -208,7 +372,9 @@ const RowHeadersBase = ({
                 isDisabled={!canRemoveVisualLayer}
                 onClick={(event) => {
                   event.stopPropagation()
-                  onRemoveVisualLayer(row.screen, row.layer)
+                  // canRemoveVisualLayer above requires Number(row.layer ?? 0) > 0,
+                  // so the layer is defined wherever this button is enabled.
+                  onRemoveVisualLayer(row.screen, row.layer as number)
                 }}
                 _hover={{
                   bg: "orange.50",
@@ -236,15 +402,20 @@ const RowHeadersBase = ({
                   leftIcon={<MinusIcon boxSize="8px" />}
                   size="xs"
                   variant="solid"
-                  color="black"
-                  bg="red.100"
-                  border="1px solid rgba(197, 48, 48, 0.45)"
+                  color={TIMELINE_PALETTE.controlText}
+                  bg={TIMELINE_PALETTE.controlBgDanger}
+                  borderWidth="1px"
+                  borderColor={TIMELINE_PALETTE.controlBorder}
                   borderRadius="6px"
                   height="20px"
                   minW="60px"
                   px="4px"
                   fontSize="10px"
                   lineHeight="1"
+                  opacity={0}
+                  visibility="hidden"
+                  transition="opacity 120ms ease"
+                  _groupHover={{ opacity: 1, visibility: "visible" }}
                   aria-label="Remove screen"
                   title="Remove screen"
                   onClick={(event) => {
@@ -270,21 +441,25 @@ const RowHeadersBase = ({
                   position="absolute"
                   left="6px"
                   right="6px"
-                  bottom="-16px"
+                  bottom="-14px"
                   display="flex"
                   gap="4px"
                   zIndex="30"
+                  opacity={0}
+                  visibility="hidden"
+                  transition="opacity 120ms ease"
+                  _groupHover={{ opacity: 1, visibility: "visible" }}
                 >
                   {canAddVisualLayer && (
                     <Button
                       leftIcon={<AddIcon boxSize="8px" />}
                       size="xs"
                       variant="solid"
-                      color="black"
-                      bg="green.100"
+                      color={TIMELINE_PALETTE.controlText}
+                      bg={TIMELINE_PALETTE.controlBg}
                       border="1px solid rgba(34, 139, 34, 0.45)"
                       borderRadius="6px"
-                      height="22px"
+                      height="20px"
                       flex="1"
                       minW="0"
                       px="4px"
@@ -313,11 +488,12 @@ const RowHeadersBase = ({
                       leftIcon={<AddIcon boxSize="8px" />}
                       size="xs"
                       variant="solid"
-                      color="black"
-                      bg="blue.100"
-                      border="1px solid rgba(49, 130, 206, 0.48)"
+                      color={TIMELINE_PALETTE.chipText}
+                      bg={TIMELINE_PALETTE.accent}
+                      borderWidth="1px"
+                      borderColor={TIMELINE_PALETTE.controlBorder}
                       borderRadius="6px"
-                      height="22px"
+                      height="20px"
                       flex="1"
                       minW="0"
                       px="4px"
@@ -354,6 +530,10 @@ const RowHeadersBase = ({
             position="absolute"
             bottom="1px"
             right="1px"
+            opacity={0}
+            visibility="hidden"
+            transition="opacity 120ms ease"
+            _groupHover={{ opacity: 1, visibility: "visible" }}
             aria-label="Add audio track"
             title="Add audio track"
             isDisabled={!canAddAudioTrack}
@@ -374,6 +554,76 @@ const RowHeadersBase = ({
         )}
       </Box>
     )
+  }
+
+  /**
+   * Each screen's lanes live inside one bordered container so the gutter reads
+   * as "these are the tracks of screen N" rather than a flat list of rows.
+   *
+   * The wrapper spans `laneCount` parent tracks and re-declares the same track
+   * sizes inside, so it contributes no box of its own and the 1:1 alignment
+   * with the react-grid-layout rows survives. The border is an `outline`, not a
+   * `border`: a 2px border would grow the box and push every lane below it out
+   * of alignment with the grid.
+   */
+  const groups = groupLanes(rows)
+  const focusLayout = laneFocusLayout(groups, focusedRowIndex, rowHeight)
+
+  return groups.map((group) => {
+    const groupRows = rows.slice(group.startY, group.startY + group.laneCount)
+    const isAudioGroup = group.kind === "audio" || group.kind === "audio-track"
+
+    return (
+      <Box
+        key={group.group}
+        className="lane-group"
+        data-testid={`lane-group-${group.group}`}
+        role="group"
+        aria-label={group.label}
+        gridRow={`span ${group.laneCount}`}
+        display="grid"
+        gridTemplateRows={`repeat(${group.laneCount}, ${rowHeight}px)`}
+        // Explicit: the lane cells are narrower than the gutter now, so the box
+        // would otherwise shrink to them and take the frame with it.
+        w={`${TIMELINE_METRICS.rowHeaderWidth}px`}
+        gap={`${rowGap}px`}
+        // Horizontal, so it takes the column gap rather than the row gap: this
+        // is the space between the gutter and the first frame column.
+        marginRight={`${TIMELINE_METRICS.gap}px`}
+        position="relative"
+        // The add-layer and add-screen buttons deliberately overhang.
+        overflow="visible"
+      >
+        {/* The frame, on a layer of its own rather than on the box: the box
+            carries the grid tracks the timeline aligns to, so it cannot be
+            resized. The layer reaches GROUP_PAD outside the lanes on every
+            side, taking that room out of the wide gap at the screen's edge --
+            the gap its lanes have closed between themselves by reaching towards
+            each other. The dark fill shows through the gaps between lanes, which
+            is what makes the run read as one container: the lane cells are
+            light, so an outline alone would just add another line in their own
+            colour. */}
+        <Box
+          aria-hidden="true"
+          position="absolute"
+          left={0}
+          right={0}
+          top={`-${GROUP_PAD}px`}
+          bottom={`-${GROUP_PAD}px`}
+          bg={TIMELINE_PALETTE.groupPanel}
+          // Dashed when collapsed: until now the only signal that a group was
+          // collapsed was its label text.
+          outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
+            isAudioGroup
+              ? TIMELINE_PALETTE.audioBorder
+              : TIMELINE_PALETTE.accent
+          }`}
+          borderRadius="12px"
+          pointerEvents="none"
+        />
+        {groupRows.map(renderLaneHeader)}
+      </Box>
+    )
   })
 }
 
@@ -388,10 +638,10 @@ const ColumnHeadersBase = ({
   rowHeight,
   columnWidth,
   indexCount,
+  frameHeaderHeight,
   headerActionsRef,
-}) => {
-  const frameHeaderHeight = `calc(${rowHeight}px - 45px)`
-
+  onSelectFrame,
+}: ColumnHeadersProps): ReactNode => {
   return xLabels.map((label, index) => (
     <Box
       key={label}
@@ -400,15 +650,33 @@ const ColumnHeadersBase = ({
       alignItems="center"
       justifyContent="center"
       role="group"
-      h={frameHeaderHeight}
+      h={`${frameHeaderHeight}px`}
     >
       <Box
         className="x-index-label"
+        cursor={onSelectFrame ? "pointer" : undefined}
+        onClick={(event) => {
+          // The add/remove frame buttons overhang into this box.
+          if (
+            (event.target as HTMLElement).closest("button, [role='menuitem']")
+          ) {
+            return
+          }
+          onSelectFrame?.(index)
+        }}
         display="flex"
         alignItems="center"
         justifyContent="center"
+        // The active chip is light with dark text; the rest are deep with muted
+        // text, so exactly one frame reads as current.
+        color={TIMELINE_PALETTE.chipText}
+        fontSize="12px"
+        fontWeight={index === cueIndex ? 700 : 600}
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-        border={`${index === cueIndex ? 4 : 2}px solid`}
+        // Thin: a heavy outline made the header band read as a row of framed
+        // boxes. The current frame is already marked by its light fill, bold
+        // text and ring, so its border only has to be a shade stronger.
+        border={`${index === cueIndex ? 2 : 1}px solid`}
         borderColor={
           index === cueIndex ? activeFrameBorderColor : inactiveFrameBorderColor
         }
@@ -418,7 +686,7 @@ const ColumnHeadersBase = ({
             : "none"
         }
         transition="border-color 120ms ease, box-shadow 140ms ease"
-        h={frameHeaderHeight}
+        h={`${frameHeaderHeight}px`}
         width={`${columnWidth}px`}
       >
         <Text fontWeight="bold" color="black">
@@ -428,7 +696,7 @@ const ColumnHeadersBase = ({
           position="absolute"
           top="0"
           right="-14px"
-          h={frameHeaderHeight}
+          h={`${frameHeaderHeight}px`}
           w="28px"
           aria-hidden="true"
           zIndex="1"
@@ -441,7 +709,7 @@ const ColumnHeadersBase = ({
           top="0"
           right="0"
           transform="translateX(65%)"
-          h={frameHeaderHeight}
+          h={`${frameHeaderHeight}px`}
           w="30px"
           minW="20px"
           borderRadius="0"
@@ -483,7 +751,7 @@ const ColumnHeadersBase = ({
             top="0"
             left="0"
             transform="translateX(-65%)"
-            h={frameHeaderHeight}
+            h={`${frameHeaderHeight}px`}
             w="30px"
             minW="20px"
             borderRadius="0"

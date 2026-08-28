@@ -84,7 +84,10 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
   }
 })
 
-jest.mock("../../components/utils/ResizeElement", () => jest.fn())
+// makeResizable returns a disposer the caller must invoke on unmount.
+jest.mock("../../components/utils/ResizeElement", () =>
+  jest.fn(() => jest.fn())
+)
 
 describe("EditModeContainer screen visibility across cue edits", () => {
   const dispatchMock = jest.fn()

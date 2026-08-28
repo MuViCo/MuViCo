@@ -215,9 +215,34 @@ const NavBar = ({
     }
   }, [isHomepage, isPresentationPage])
 
+  const navRef = useRef<HTMLDivElement | null>(null)
+
+  // The navbar is position:fixed, so it takes no space in flow. Routes that lay
+  // themselves out against the viewport need its real height, which is
+  // responsive -- publish it rather than have callers hardcode a guess.
+  useEffect(() => {
+    const element = navRef.current
+    if (!element) return
+
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--muvico-navbar-h",
+        `${element.getBoundingClientRect().height}px`
+      )
+
+    publish()
+    // jsdom has no ResizeObserver and setup-jest does not stub it; publishing
+    // once is enough there.
+    if (typeof ResizeObserver === "undefined") return
+    const observer = new ResizeObserver(publish)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
       <Box
+        ref={navRef}
         position="fixed"
         as="nav"
         w="100%"

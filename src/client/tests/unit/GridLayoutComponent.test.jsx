@@ -42,6 +42,7 @@ describe("GridLayoutComponent", () => {
     columnWidth: 150,
     rowHeight: 100,
     gap: 10,
+    rowGap: 10,
     cueIndex: 0,
     isAudioMuted: false,
     setSelectedCue: jest.fn(),
