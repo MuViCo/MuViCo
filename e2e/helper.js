@@ -32,15 +32,38 @@ const addPresentation = async (
   await page.waitForURL(/\/presentation\//)
 }
 
+/**
+ * Centre of a timeline slot, read from the DOM rather than recomputed here.
+ *
+ * The empty-cell backdrop is laid out from the same geometry as the drop
+ * hit-test, so asking it where a slot is keeps these tests correct across
+ * changes to the row height, the column width or the gaps.
+ */
+const gridCellPoint = async (page, row, column) => {
+  const cell = page.getByTestId(`grid-empty-cell-${row}-${column}`)
+  const box = await cell.boundingBox()
+  if (!box) throw new Error(`Grid cell ${row}-${column} not found`)
+  return { clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 }
+}
+
+/**
+ * The add/remove screen controls only appear while their screen's lane group is
+ * hovered, so every test that clicks one has to hover the group first.
+ */
+const revealScreenControls = async (page, screen) => {
+  const group = page.getByTestId(`lane-group-screen-${screen}`)
+  await group.hover()
+  return group
+}
+
 const addBlankCue = async (page, name, index, screen) => {
-  const gridContainer = page.locator('[data-testid="edit-mode-grid-container"]')
   const dropArea = page.locator('[data-testid="drop-area"]')
 
-  const containerBox = await gridContainer.boundingBox()
-  if (!containerBox) throw new Error("Grid container bounding box not found")
-
-  const clientX = containerBox.x + Number(index) * 160 + 80
-  const clientY = containerBox.y + Number(screen) * 110 + 10
+  const { clientX, clientY } = await gridCellPoint(
+    page,
+    Number(screen) - 1,
+    Number(index)
+  )
 
   const dragData = {
     type: "newCueFromForm",
@@ -73,15 +96,15 @@ const uploadAudioFile = async (page, files) => {
 
 const dragToGrid = async (page, source, index, screen) => {
   const dropArea = page.locator('[data-testid="drop-area"]')
-  const gridContainer = page.locator('[data-testid="edit-mode-grid-container"]')
 
   const sourceBox = await source.boundingBox()
   if (!sourceBox) throw new Error("Drag source bounding box not found")
-  const containerBox = await gridContainer.boundingBox()
-  if (!containerBox) throw new Error("Grid container bounding box not found")
 
-  const clientX = containerBox.x + Number(index) * 160 + 80
-  const clientY = containerBox.y + Number(screen) * 110 + 10
+  const { clientX, clientY } = await gridCellPoint(
+    page,
+    Number(screen) - 1,
+    Number(index)
+  )
 
   const dataTransfer = await page.evaluateHandle(() => new DataTransfer())
   await source.dispatchEvent("dragstart", {
@@ -111,6 +134,8 @@ export {
   loginWith,
   disableTutorials,
   addPresentation,
+  gridCellPoint,
+  revealScreenControls,
   addBlankCue,
   uploadMediaFile,
   uploadAudioFile,

@@ -4,6 +4,8 @@ import {
   addPresentation,
   addBlankCue,
   openCueMenu,
+  gridCellPoint,
+  revealScreenControls,
   uploadMediaFile,
   dragPoolItemToGrid,
 } from "./helper"
@@ -101,11 +103,7 @@ describe("GridLayout", () => {
       return dt
     })
 
-    const sourceBox = await source.boundingBox()
-    if (!sourceBox) throw new Error("Source element bounding box not found")
-
-    const dropX = sourceBox.x + 300
-    const dropY = sourceBox.y + 200
+    const { clientX: dropX, clientY: dropY } = await gridCellPoint(page, 1, 2)
 
     await dropArea.dispatchEvent("dragenter", {
       clientX: dropX,
@@ -229,6 +227,7 @@ describe("GridLayout", () => {
     ).toBeVisible()
     await expect(page.getByText("Screen 3", { exact: true })).not.toBeVisible()
 
+    await revealScreenControls(page, 2)
     const addButton = page.getByRole("button", { name: "Add screen" })
     await expect(addButton).toBeVisible()
     await addButton.click()
@@ -236,6 +235,7 @@ describe("GridLayout", () => {
     await expect(page.getByText("Screen added").first()).toBeVisible()
     await expect(page.getByText("Screen 3", { exact: true })).toBeVisible()
 
+    await revealScreenControls(page, 3)
     await expect(page.getByRole("button", { name: "Add screen" })).toBeVisible()
   })
 
@@ -244,6 +244,7 @@ describe("GridLayout", () => {
 
     await expect(page.getByText("Screen 2", { exact: true })).toBeVisible()
 
+    await revealScreenControls(page, 2)
     const removeButton = page.getByRole("button", { name: "Remove screen" })
     await expect(removeButton).toBeVisible()
     await removeButton.click()
@@ -266,12 +267,14 @@ describe("GridLayout", () => {
   test("user can remove screen with cues", async ({ page }) => {
     await page.getByText("testi").click()
 
+    await revealScreenControls(page, 2)
     const addButton = page.getByRole("button", { name: "Add screen" })
     await addButton.click()
     await expect(page.getByText("Screen 3", { exact: true })).toBeVisible()
 
     await addBlankCue(page, "testcue", "1", "3")
 
+    await revealScreenControls(page, 3)
     const removeButton = page.getByRole("button", { name: "Remove screen" })
     await expect(removeButton).toBeVisible()
     await removeButton.click()
@@ -294,6 +297,7 @@ describe("GridLayout", () => {
   test("new screen gets initial element", async ({ page }) => {
     await page.getByText("testi").click()
 
+    await revealScreenControls(page, 2)
     const addButton = page.getByRole("button", { name: "Add screen" })
     await addButton.click()
     await expect(page.getByText("Screen 3", { exact: true })).toBeVisible()
@@ -311,6 +315,13 @@ describe("GridLayout", () => {
   }) => {
     await page.getByText("testi").click()
 
+    await revealScreenControls(page, 1)
+    await expect(page.getByRole("button", { name: "Add screen" })).toHaveCount(0)
+    await expect(
+      page.getByRole("button", { name: "Remove screen" })
+    ).toHaveCount(0)
+
+    await revealScreenControls(page, 2)
     await expect(page.getByRole("button", { name: "Add screen" })).toHaveCount(
       1
     )
