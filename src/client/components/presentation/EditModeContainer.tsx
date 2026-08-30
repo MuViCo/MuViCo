@@ -17,12 +17,12 @@ import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { laneScreenFromKey } from "../utils/laneFocus"
 
 import type { Dispatch, SetStateAction } from "react"
-import type { Cue, CueUpdateInput } from "../../types"
+import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import ClickablePopover from "../utils/ClickablePopover"
 import EditMode from "./EditMode"
-import CuesForm from "./CuesForm"
+import EditorDock from "./EditorDock"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
 import PresentationTitle from "./PresentationTitle"
 import StatusTooltip from "./StatusToolTip"
@@ -79,10 +79,8 @@ interface AudioTrack {
 
 // setCueIndex stays in the container: EditorLayout navigates frames through
 // updateCue rather than setting the index itself.
-interface EditorLayoutProps extends Omit<
-  EditModeContainerProps,
-  "setCueIndex"
-> {
+interface EditorLayoutProps
+  extends Omit<EditModeContainerProps, "setCueIndex"> {
   presentationName: string
   screenCount: number
   screens: Record<string, boolean>
@@ -94,6 +92,7 @@ interface EditorLayoutProps extends Omit<
   audioSourceURL: string
   audioLoop: boolean
   audioTracks: AudioTrack[]
+  scores: ScoreDocument[]
   allowContinuousAudio: boolean
   toggleAutoplayInterval: (valueString: string) => void
   onOpenTutorial: () => void
@@ -136,6 +135,7 @@ function EditorLayout(props: EditorLayoutProps) {
     audioSourceURL = "",
     audioLoop = false,
     audioTracks = [],
+    scores = [],
     allowContinuousAudio = false,
     toggleAutoplayInterval = () => {},
     onOpenTutorial = () => {},
@@ -351,7 +351,9 @@ function EditorLayout(props: EditorLayoutProps) {
                 paddingBottom: "5px",
               }}
             >
-              <CuesForm
+              <EditorDock
+                presentationId={id}
+                scores={scores}
                 addCue={addCue}
                 onClose={onClose}
                 position={position}
@@ -661,6 +663,7 @@ const EditModeContainer = ({
         id={id}
         presentationName={presentationName}
         screenCount={screenCount ?? 1}
+        scores={presentation.scores}
         focusedLaneKey={focusedLaneKey}
         focusedScreen={focusedScreen}
         onFocusLane={setFocusedLaneKey}

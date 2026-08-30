@@ -68,6 +68,47 @@ export interface Cue {
   layer: number
 }
 
+/* --------------------------------------------------------------- scores -- */
+
+export type ScoreSource = "upload" | "imslp"
+
+export interface ScoreFileMeta {
+  id?: string
+  name?: string
+  url?: string
+  driveId?: string
+  size?: string
+  type?: string
+}
+
+export interface ScoreMarkerRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface ScoreMarker {
+  _id: string
+  page: number
+  frameIndex: number
+  measureLabel?: string
+  note?: string
+  rect?: ScoreMarkerRect
+}
+
+export interface ScoreDocument {
+  _id: string
+  title: string
+  source: ScoreSource
+  sourceUrl?: string
+  imslpId?: string
+  pageCount?: number
+  file?: ScoreFileMeta
+  markers: ScoreMarker[]
+  createdAt?: string
+}
+
 /* --------------------------------------------------------- presentations -- */
 
 /** presentationSchema.storage enum. */
@@ -91,6 +132,7 @@ export interface Presentation {
   /** ISO date string. */
   lastUsed: string
   cues: Cue[]
+  scores?: ScoreDocument[]
   /**
    * TODO(ts): injected by the toJSON transform
    * (`returnedObject.audioCues = cues.filter(c => c.cueType === "audio")`),
@@ -225,6 +267,29 @@ export interface CueUpdateInput {
   continuePlayback?: boolean
 }
 
+export interface UploadScoreInput {
+  file: File
+  title?: string
+  sourceUrl?: string
+  imslpId?: string
+  pageCount?: number
+}
+
+export interface ImportScoreInput {
+  sourceUrl: string
+  title?: string
+  imslpId?: string
+  pageCount?: number
+}
+
+export interface ScoreMarkerInput {
+  page: number
+  frameIndex: number
+  measureLabel?: string
+  note?: string
+  rect?: ScoreMarkerRect
+}
+
 /** CuesForm media/sound pool entries. */
 export interface MediaPoolItem {
   id: string
@@ -285,6 +350,7 @@ export interface SwapCuesResponse {
 export interface SaveIndexCountResponse {
   indexCount: number
   removedCuesCount: number
+  removedScoreMarkersCount?: number
 }
 
 /** PUT /api/presentation/:id/screenCount */

@@ -14,16 +14,39 @@ import axios from "axios"
 import getToken from "../auth"
 import type {
   Cue,
+  ImportScoreInput,
   Presentation,
   SaveIndexCountResponse,
   SaveScreenCountResponse,
   ShiftIndexesResponse,
+  ScoreDocument,
+  ScoreMarker,
+  ScoreMarkerInput,
   SwapCuesPayload,
   SwapCuesResponse,
   UpdateNameResponse,
+  UploadScoreInput,
 } from "../types"
 
 const baseUrl = "/api/presentation/"
+
+const authHeaders = () => ({
+  Authorization: `bearer ${getToken()}`,
+})
+
+const jsonConfig = () => ({
+  headers: {
+    "Content-Type": "application/json",
+    ...authHeaders(),
+  },
+})
+
+const multipartConfig = () => ({
+  headers: {
+    "Content-Type": "multipart/form-data",
+    ...authHeaders(),
+  },
+})
 
 const get = async (id: string): Promise<Presentation> => {
   const config = {
@@ -35,6 +58,16 @@ const get = async (id: string): Promise<Presentation> => {
   return response.data
 }
 
+const appendOptionalField = (
+  formData: FormData,
+  key: string,
+  value?: string | number
+) => {
+  if (value !== undefined && value !== null && value !== "") {
+    formData.append(key, String(value))
+  }
+}
+
 const remove = async (id: string): Promise<void> => {
   const config = {
     headers: {
@@ -43,6 +76,91 @@ const remove = async (id: string): Promise<void> => {
     },
   }
   const response = await axios.delete<void>(`${baseUrl}${id}`, config)
+  return response.data
+}
+
+const getScores = async (id: string): Promise<ScoreDocument[]> => {
+  const response = await axios.get<ScoreDocument[]>(`${baseUrl}${id}/scores`, {
+    headers: authHeaders(),
+  })
+  return response.data
+}
+
+const uploadScorePdf = async (
+  id: string,
+  input: UploadScoreInput
+): Promise<ScoreDocument> => {
+  const formData = new FormData()
+  formData.append("score", input.file)
+  appendOptionalField(formData, "title", input.title)
+  appendOptionalField(formData, "sourceUrl", input.sourceUrl)
+  appendOptionalField(formData, "imslpId", input.imslpId)
+  appendOptionalField(formData, "pageCount", input.pageCount)
+
+  const response = await axios.post<ScoreDocument>(
+    `${baseUrl}${id}/scores/upload`,
+    formData,
+    multipartConfig()
+  )
+  return response.data
+}
+
+const importImslpScore = async (
+  id: string,
+  input: ImportScoreInput
+): Promise<ScoreDocument> => {
+  const response = await axios.post<ScoreDocument>(
+    `${baseUrl}${id}/scores/import`,
+    input,
+    jsonConfig()
+  )
+  return response.data
+}
+
+const deleteScore = async (id: string, scoreId: string): Promise<void> => {
+  const response = await axios.delete<void>(
+    `${baseUrl}${id}/scores/${scoreId}`,
+    { headers: authHeaders() }
+  )
+  return response.data
+}
+
+const createScoreMarker = async (
+  id: string,
+  scoreId: string,
+  marker: ScoreMarkerInput
+): Promise<ScoreMarker> => {
+  const response = await axios.post<ScoreMarker>(
+    `${baseUrl}${id}/scores/${scoreId}/markers`,
+    marker,
+    jsonConfig()
+  )
+  return response.data
+}
+
+const updateScoreMarker = async (
+  id: string,
+  scoreId: string,
+  markerId: string,
+  marker: ScoreMarkerInput
+): Promise<ScoreMarker> => {
+  const response = await axios.put<ScoreMarker>(
+    `${baseUrl}${id}/scores/${scoreId}/markers/${markerId}`,
+    marker,
+    jsonConfig()
+  )
+  return response.data
+}
+
+const deleteScoreMarker = async (
+  id: string,
+  scoreId: string,
+  markerId: string
+): Promise<void> => {
+  const response = await axios.delete<void>(
+    `${baseUrl}${id}/scores/${scoreId}/markers/${markerId}`,
+    { headers: authHeaders() }
+  )
   return response.data
 }
 
@@ -213,4 +331,11 @@ export default {
   shiftIndexes,
   updatePresentationName,
   swapCues,
+  getScores,
+  uploadScorePdf,
+  importImslpScore,
+  deleteScore,
+  createScoreMarker,
+  updateScoreMarker,
+  deleteScoreMarker,
 }

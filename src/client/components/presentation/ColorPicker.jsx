@@ -8,55 +8,80 @@
 import { HexColorPicker, HexColorInput } from "react-colorful"
 import { Box } from "@chakra-ui/react"
 
-
 export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
-    return (
-        <Box
-        className="picker"
-        bg="none"
-        outline="solid 1px #8282824a"
-        rounded={"9px"}
-        sx={{
-            width: "100%",
+  return (
+    <Box
+      className="picker"
+      bg="none"
+      border="1px solid rgba(130, 130, 130, 0.29)"
+      rounded="6px"
+      overflow="hidden"
+      sx={{
+        width: "100%",
 
-            "& .react-colorful": {
-                width: "auto",
-            },
+        "& .react-colorful": {
+          width: "100%",
+          height: "140px",
+        },
+        "& .react-colorful__saturation": {
+          borderRadius: "0",
+          flex: "1 1 auto",
+          minHeight: 0,
+        },
+        "& .react-colorful__hue": {
+          height: "14px",
+          borderRadius: "0",
+        },
+      }}
+    >
+      <HexColorPicker color={color} onChange={onChange} />
+      <HexColorInput
+        style={{
+          width: "100%",
+          backgroundColor: "#2c2c2c",
+          color: "#ffffff",
+          border: "none",
+          padding: "4px 8px",
+          fontSize: "12px",
+          fontFamily: "monospace",
+          display: "block",
+          boxSizing: "border-box",
         }}
-        >
-            <HexColorPicker color={color} onChange={onChange} />
-            <HexColorInput style={{width: "100%", outline: "1px solid #8282824a"}} color={color} prefixed onChange={onChange} />
-            
-            <Box
-            
-                className="picker__swatches"
-                sx={{
-                    display: "flex",
-                    padding: "12px",
-                    flexWrap: "wrap",
-                }}
-            >
-                
-                {presetColors.map((presetColor) => (
-                    <Box
-                        key={presetColor}
-                        className="picker__swatch"
-                        style={{
-                            background: presetColor,
-                            width: "24px",
-                            height: "24px",
-                            margin: "4px",
-                            border: "none",
-                            padding: "1px",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            outline: "1px solid #8282824a",
-                        }}
-                        onClick={() => onChange(presetColor)}
-                    />
-                ))}
-                
-            </Box>
-        </Box>
-    )
+        color={color}
+        prefixed
+        onChange={onChange}
+      />
+
+      <Box
+        className="picker__swatches"
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(8, 1fr)",
+          gap: "6px",
+          padding: "10px",
+          backgroundColor: "transparent",
+        }}
+      >
+        {presetColors.map((presetColor) => (
+          <Box
+            key={presetColor}
+            className="picker__swatch"
+            style={{
+              background: presetColor,
+              aspectRatio: "1/1",
+              width: "100%",
+              border: "1px solid rgba(0,0,0,0.1)",
+              borderRadius: "4px",
+              cursor: "pointer",
+              boxShadow:
+                color === presetColor
+                  ? "0 0 0 2px #fff, 0 0 0 4px #9244ff"
+                  : "none",
+            }}
+            onClick={() => onChange(presetColor)}
+          />
+        ))}
+      </Box>
+    </Box>
+  )
 }

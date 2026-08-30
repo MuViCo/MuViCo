@@ -251,9 +251,15 @@
 
 .cue-editor-form {
   display: flex !important;
-  flex-grow: 0;
+  flex-direction: column;
+  flex-grow: 1;
+  flex-shrink: 0;
   overflow: hidden !important;
-  padding: 1rem;
+  padding: 0.5rem;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .edit-mode-timeline {

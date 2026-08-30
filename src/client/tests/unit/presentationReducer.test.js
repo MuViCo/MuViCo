@@ -25,10 +25,7 @@ import reducer, {
   beginSave,
   endSave,
 } from "../../redux/presentationReducer"
-import {
-  saveIndexCount,
-  saveScreenCount,
-} from "../../redux/presentationThunks"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import presentationService from "../../services/presentation"
 import { configureStore } from "@reduxjs/toolkit"
 import { createFormData } from "../../components/utils/formDataUtils"
@@ -52,6 +49,13 @@ jest.mock("../../services/presentation", () => ({
   saveIndexCountApi: jest.fn(),
   shiftIndexes: jest.fn(),
   updatePresentationName: jest.fn(),
+  getScores: jest.fn(),
+  uploadScorePdf: jest.fn(),
+  importImslpScore: jest.fn(),
+  deleteScore: jest.fn(),
+  createScoreMarker: jest.fn(),
+  updateScoreMarker: jest.fn(),
+  deleteScoreMarker: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -152,6 +156,7 @@ describe("presentationReducer actions", () => {
 describe("presentationReducer reducer", () => {
   const initialState = {
     cues: [],
+    scores: [],
     name: "",
     screenCount: 3,
     indexCount: 5,
