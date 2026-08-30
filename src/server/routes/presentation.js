@@ -21,6 +21,8 @@ const {
   generateSignedUrlForS3,
   processS3Files,
   processDriveCueFiles,
+  processS3ScoreFiles,
+  processDriveScoreFiles,
 } = require("../utils/helper")
 const {
   getAudioRow,
@@ -34,8 +36,139 @@ const router = express.Router()
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage })
+const PDF_MIME_TYPES = ["application/pdf", "application/x-pdf"]
+const MAX_SCORE_FILE_SIZE = 50 * 1024 * 1024
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
+
+const parseOptionalPositiveInteger = (rawValue) => {
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
+    return undefined
+  }
+
+  const value = Number(rawValue)
+  if (!Number.isInteger(value) || value < 1) {
+    return null
+  }
+
+  return value
+}
+
+const parseMarkerInteger = (rawValue) => {
+  const value = Number(rawValue)
+  return Number.isInteger(value) ? value : null
+}
+
+const isPdfFile = (file) => {
+  if (!file) {
+    return false
+  }
+
+  return (
+    PDF_MIME_TYPES.includes(file.mimetype) ||
+    file.originalname.toLowerCase().endsWith(".pdf")
+  )
+}
+
+const trimText = (value, fallback = "") =>
+  typeof value === "string" ? value.trim() : fallback
+
+const validateScoreTitle = (title) => {
+  const trimmedTitle = trimText(title)
+  if (trimmedTitle.length === 0 || trimmedTitle.length > 150) {
+    return null
+  }
+
+  return trimmedTitle
+}
+
+const parseUrl = (rawUrl) => {
+  const sourceUrl = trimText(rawUrl)
+  if (!sourceUrl) {
+    return null
+  }
+
+  try {
+    const url = new URL(sourceUrl)
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return null
+    }
+
+    return url
+  } catch {
+    return null
+  }
+}
+
+const isImslpUrl = (url) =>
+  url.hostname === "imslp.org" || url.hostname.endsWith(".imslp.org")
+
+const parseMarkerRect = (rawRect) => {
+  if (rawRect === undefined || rawRect === null || rawRect === "") {
+    return undefined
+  }
+
+  const rect = typeof rawRect === "string" ? JSON.parse(rawRect) : rawRect
+  const keys = ["x", "y", "width", "height"]
+  const parsed = {}
+
+  for (const key of keys) {
+    if (rect[key] === undefined || rect[key] === null || rect[key] === "") {
+      continue
+    }
+
+    const value = Number(rect[key])
+    if (!Number.isFinite(value) || value < 0 || value > 1) {
+      return null
+    }
+
+    parsed[key] = value
+  }
+
+  return parsed
+}
+
+const processPresentationScoreFiles = async (presentation, user) => {
+  if (user.driveToken) {
+    presentation.scores = await processDriveScoreFiles(
+      presentation.scores || [],
+      user.driveToken
+    )
+  } else {
+    presentation.scores = await processS3ScoreFiles(
+      presentation.scores || [],
+      presentation._id
+    )
+  }
+
+  return presentation
+}
+
+const uploadScoreFile = async (presentationId, fileId, file, user) => {
+  const key = `${presentationId}/${fileId}`
+
+  if (user.driveToken) {
+    return uploadDriveFile(file.buffer, key, file.mimetype, user.driveToken)
+  }
+
+  await uploadFileS3(file.buffer, key, file.mimetype)
+  return null
+}
+
+const deleteScoreFile = async (presentationId, score, user) => {
+  if (!score.file) {
+    return
+  }
+
+  if (user.driveToken && score.file.driveId) {
+    await deleteDriveFile(score.file.driveId, user.driveToken)
+    return
+  }
+
+  if (score.file.id) {
+    await deleteFileS3(`${presentationId}/${score.file.id}`)
+  }
+}
 
 const parseCueOpacity = (rawOpacity, fallback = 1) => {
   if (rawOpacity === undefined || rawOpacity === null || rawOpacity === "") {
@@ -177,6 +310,7 @@ router.get(
           presentation._id
         )
       }
+      await processPresentationScoreFiles(presentation, user)
 
       res.json(presentation)
     } catch (error) {
@@ -198,6 +332,10 @@ router.delete(
 
       for (const cue of presentation.cues) {
         await deleteObject(presentation._id, cue._id, user.driveToken)
+      }
+
+      for (const score of presentation.scores || []) {
+        await deleteScoreFile(presentation._id, score, user)
       }
 
       await Presentation.findByIdAndDelete(presentation._id)
@@ -238,15 +376,27 @@ router.put(
 
       // If reducing index count, remove cues from indexes that will be removed
       let removedCuesCount = 0
+      let removedScoreMarkersCount = 0
       if (newIndexCount < presentation.indexCount) {
         const cuesToRemove = presentation.cues.filter(
           (cue) => Number(cue.index) >= newIndexCount
         )
         removedCuesCount = cuesToRemove.length
+        removedScoreMarkersCount = (presentation.scores || []).reduce(
+          (count, score) =>
+            count +
+            (score.markers || []).filter(
+              (marker) => Number(marker.frameIndex) >= newIndexCount
+            ).length,
+          0
+        )
 
         updateQuery.$pull = {
           cues: {
             _id: { $in: cuesToRemove.map((cue) => cue._id) },
+          },
+          "scores.$[].markers": {
+            frameIndex: { $gte: newIndexCount },
           },
         }
       }
@@ -260,6 +410,7 @@ router.put(
       res.json({
         indexCount: updatedPresentation.indexCount,
         removedCuesCount: removedCuesCount,
+        removedScoreMarkersCount: removedScoreMarkersCount,
       })
     } catch (err) {
       next(err)
@@ -359,6 +510,337 @@ router.put(
       res.json({ name: updated.name })
     } catch (err) {
       next(err)
+    }
+  }
+)
+
+router.get(
+  "/:id/scores",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { user, presentation } = req
+      await processPresentationScoreFiles(presentation, user)
+      res.json(presentation.scores || [])
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.post(
+  "/:id/scores/upload",
+  userExtractor,
+  requirePresentationAccess,
+  upload.single("score"),
+  async (req, res, next) => {
+    try {
+      const { file, presentation, user } = req
+      const fileId = generateFileId()
+      const pageCount = parseOptionalPositiveInteger(req.body.pageCount)
+
+      if (!file) {
+        return res.status(400).json({ error: "Score PDF file is required" })
+      }
+
+      if (!isPdfFile(file)) {
+        return res.status(400).json({ error: "Only PDF scores are allowed" })
+      }
+
+      if (file.size > MAX_SCORE_FILE_SIZE && !user.isAdmin) {
+        return res.status(400).json({ error: "File size exceeds 50 MB limit" })
+      }
+
+      if (pageCount === null) {
+        return res.status(400).json({
+          error: "pageCount must be a positive integer",
+        })
+      }
+
+      const title =
+        validateScoreTitle(req.body.title) ||
+        validateScoreTitle(file.originalname)
+
+      if (!title) {
+        return res
+          .status(400)
+          .json({ error: "Score title must be between 1 and 150 characters" })
+      }
+
+      const sourceUrl = trimText(req.body.sourceUrl)
+      const imslpId = trimText(req.body.imslpId)
+      const source = sourceUrl || imslpId ? "imslp" : "upload"
+
+      const score = {
+        title,
+        source,
+        ...(sourceUrl && { sourceUrl }),
+        ...(imslpId && { imslpId }),
+        ...(pageCount && { pageCount }),
+        file: {
+          id: fileId,
+          name: file.originalname,
+          url: "",
+          size: String(file.size),
+          type: file.mimetype || "application/pdf",
+        },
+      }
+
+      presentation.scores.push(score)
+      const createdScore = presentation.scores[presentation.scores.length - 1]
+
+      try {
+        const driveResponse = await uploadScoreFile(
+          presentation._id,
+          fileId,
+          file,
+          user
+        )
+
+        if (driveResponse?.id) {
+          createdScore.file.driveId = driveResponse.id
+        }
+      } catch (error) {
+        logger.error("Score upload error:", error)
+        return res.status(500).json({ error: "Score upload failed" })
+      }
+
+      await presentation.save({ validateModifiedOnly: true })
+
+      const [processedScore] = user.driveToken
+        ? await processDriveScoreFiles([createdScore], user.driveToken)
+        : await processS3ScoreFiles([createdScore], presentation._id)
+
+      res.status(201).json(processedScore)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.post(
+  "/:id/scores/import",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const parsedUrl = parseUrl(req.body.sourceUrl)
+      const pageCount = parseOptionalPositiveInteger(req.body.pageCount)
+
+      if (!parsedUrl || !isImslpUrl(parsedUrl)) {
+        return res.status(400).json({
+          error: "A valid IMSLP URL is required",
+        })
+      }
+
+      if (pageCount === null) {
+        return res.status(400).json({
+          error: "pageCount must be a positive integer",
+        })
+      }
+
+      const title =
+        validateScoreTitle(req.body.title) ||
+        validateScoreTitle(
+          decodeURIComponent(parsedUrl.pathname.split("/").pop() || "")
+        )
+
+      if (!title) {
+        return res
+          .status(400)
+          .json({ error: "Score title must be between 1 and 150 characters" })
+      }
+
+      presentation.scores.push({
+        title,
+        source: "imslp",
+        sourceUrl: parsedUrl.toString(),
+        imslpId: trimText(req.body.imslpId),
+        ...(pageCount && { pageCount }),
+        file: {
+          name: title,
+          url: parsedUrl.toString(),
+          size: "0",
+          type: "application/pdf",
+        },
+      })
+
+      await presentation.save({ validateModifiedOnly: true })
+
+      res.status(201).json(presentation.scores[presentation.scores.length - 1])
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.delete(
+  "/:id/scores/:scoreId",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation, user } = req
+      const { scoreId } = req.params
+      const score = presentation.scores.id(scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      await deleteScoreFile(presentation._id, score, user)
+      score.deleteOne()
+      await presentation.save({ validateModifiedOnly: true })
+
+      res.status(204).end()
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+const buildMarkerFromBody = (body, presentation, score) => {
+  const page = parseMarkerInteger(body.page)
+  const frameIndex = parseMarkerInteger(body.frameIndex)
+
+  if (page === null || page < 1) {
+    return { error: "marker page must be a positive integer" }
+  }
+
+  if (
+    frameIndex === null ||
+    frameIndex < 0 ||
+    frameIndex >= presentation.indexCount
+  ) {
+    return {
+      error: `marker frameIndex must be between 0 and ${presentation.indexCount - 1}`,
+    }
+  }
+
+  if (score.pageCount && page > score.pageCount) {
+    return { error: `marker page must be between 1 and ${score.pageCount}` }
+  }
+
+  let rect
+  try {
+    rect = parseMarkerRect(body.rect)
+  } catch {
+    return { error: "marker rect must be valid JSON" }
+  }
+
+  if (rect === null) {
+    return { error: "marker rect values must be between 0 and 1" }
+  }
+
+  const measureLabel = trimText(body.measureLabel)
+  const note = trimText(body.note)
+
+  if (measureLabel.length > 80) {
+    return { error: "marker measureLabel must be at most 80 characters" }
+  }
+
+  if (note.length > 300) {
+    return { error: "marker note must be at most 300 characters" }
+  }
+
+  return {
+    marker: {
+      page,
+      frameIndex,
+      measureLabel,
+      note,
+      ...(rect && { rect }),
+    },
+  }
+}
+
+router.post(
+  "/:id/scores/:scoreId/markers",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const score = presentation.scores.id(req.params.scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      const result = buildMarkerFromBody(req.body, presentation, score)
+      if (result.error) {
+        return res.status(400).json({ error: result.error })
+      }
+
+      score.markers.push(result.marker)
+      await presentation.save({ validateModifiedOnly: true })
+
+      res.status(201).json(score.markers[score.markers.length - 1])
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.put(
+  "/:id/scores/:scoreId/markers/:markerId",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const score = presentation.scores.id(req.params.scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      const marker = score.markers.id(req.params.markerId)
+      if (!marker) {
+        return res.status(404).json({ error: "Score marker not found" })
+      }
+
+      const result = buildMarkerFromBody(req.body, presentation, score)
+      if (result.error) {
+        return res.status(400).json({ error: result.error })
+      }
+
+      marker.set(result.marker)
+      await presentation.save({ validateModifiedOnly: true })
+
+      res.json(marker)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.delete(
+  "/:id/scores/:scoreId/markers/:markerId",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const score = presentation.scores.id(req.params.scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      const marker = score.markers.id(req.params.markerId)
+      if (!marker) {
+        return res.status(404).json({ error: "Score marker not found" })
+      }
+
+      marker.deleteOne()
+      await presentation.save({ validateModifiedOnly: true })
+
+      res.status(204).end()
+    } catch (error) {
+      next(error)
     }
   }
 )
