@@ -85,12 +85,12 @@ const addBlankCue = async (page, name, index, screen) => {
 }
 
 const uploadMediaFile = async (page, files) => {
-  await page.getByRole("button", { name: "Media" }).click()
+  await page.getByRole("tab", { name: "Media" }).click()
   await page.locator("#media-upload").setInputFiles(files)
 }
 
 const uploadAudioFile = async (page, files) => {
-  await page.getByRole("button", { name: "Audio", exact: true }).click()
+  await page.getByRole("tab", { name: "Audio", exact: true }).click()
   await page.locator("#sound-upload").setInputFiles(files)
 }
 
