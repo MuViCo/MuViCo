@@ -839,7 +839,6 @@ const EditMode = ({
     }
   }
 
-  // Add a new screen - updates audio cue row numbers and creates initial element
   const handleIncreaseScreenCount = async () => {
     if ((presentation.screenCount ?? 0) >= 8) {
       showToast({
@@ -858,23 +857,9 @@ const EditMode = ({
 
       await dispatch(fetchPresentationInfo(id))
 
-      const formData = createFormData(
-        0,
-        `initial element for screen ${newScreenNumber}`,
-        newScreenNumber,
-        null,
-        undefined,
-        undefined,
-        false,
-        0,
-        1
-      )
-
-      await dispatch(createCue(id, formData))
-
       showToast({
         title: "Screen added",
-        description: `Screen ${newScreenNumber} has been added with initial element`,
+        description: `Screen ${newScreenNumber} has been added`,
         status: "success",
       })
     } catch (error) {
