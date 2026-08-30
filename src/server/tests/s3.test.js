@@ -13,6 +13,7 @@ import {
 const {
   uploadFileS3,
   deleteFileS3,
+  getObjectStreamS3,
   getObjectSignedUrl,
 } = require("../utils/s3")
 
@@ -54,6 +55,19 @@ describe("S3 operations", () => {
     })
 
     const url = await getObjectSignedUrl("key")
-    expect(url).toContain("https://")
+    expect(url).toContain("X-Amz-Signature=")
+    expect(url).toContain("/key")
+  })
+
+  it("should get an object stream", async () => {
+    S3Mock.on(GetObjectCommand).resolves({
+      Body: "stream",
+      ContentType: "application/pdf",
+    })
+
+    const response = await getObjectStreamS3("presentation-1/score-1")
+
+    expect(response.Body).toBe("stream")
+    expect(response.ContentType).toBe("application/pdf")
   })
 })

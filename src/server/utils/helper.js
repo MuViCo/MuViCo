@@ -83,6 +83,7 @@ const generateSignedScoreUrlForS3 = async (score, presentationId) => {
 
   const key = `${presentationId}/${score.file.id.toString()}`
   score.file.url = await getObjectSignedUrl(key)
+  score.file.proxyUrl = `/api/presentation/${presentationId}/scores/${score._id}/file`
 
   return score
 }

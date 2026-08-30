@@ -21,6 +21,7 @@ import {
   ChevronRightIcon,
   ExternalLinkIcon,
 } from "@chakra-ui/icons"
+import getToken from "../../auth"
 
 import type {
   PDFDocumentLoadingTask,
@@ -224,6 +225,7 @@ const ThumbnailCanvas = ({
 export interface ScorePdfViewerProps {
   scores: ScoreDocument[]
   selectedScore: ScoreDocument | null
+  previewUrl: string | null
   onSelectScore: (id: string) => void
   onOpenExternal: () => void
   onUpload: () => void
@@ -232,6 +234,7 @@ export interface ScorePdfViewerProps {
 const ScorePdfViewer = ({
   scores,
   selectedScore,
+  previewUrl,
   onSelectScore,
   onOpenExternal,
   onUpload,
@@ -261,7 +264,8 @@ const ScorePdfViewer = ({
   const expandOverlay = useColorModeValue("blackAlpha.600", "blackAlpha.800")
   const emptyText = useColorModeValue("gray.700", "whiteAlpha.800")
 
-  const url = selectedScore ? (getScoreUrl(selectedScore) ?? null) : null
+  const url =
+    previewUrl ?? (selectedScore ? (getScoreUrl(selectedScore) ?? null) : null)
   const showThumbs = viewerWidth >= THUMB_HIDE_THRESHOLD
   const mainColWidth = showThumbs ? viewerWidth - THUMB_COL_WIDTH : viewerWidth
 
@@ -316,8 +320,13 @@ const ScorePdfViewer = ({
         const { GlobalWorkerOptions, getDocument } = await import("pdfjs-dist")
         if (cancelled) return
         GlobalWorkerOptions.workerSrc = workerUrl
+        const token = getToken()
         loadingTask = getDocument({
           url,
+          httpHeaders:
+            url.startsWith("/api/") && token
+              ? { Authorization: `bearer ${token}` }
+              : undefined,
           disableRange: true,
           disableStream: true,
         })

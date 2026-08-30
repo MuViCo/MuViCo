@@ -30,6 +30,9 @@ interface ScorePanelProps {
 
 const getScoreUrl = (score: ScoreDocument) => score.file?.url ?? score.sourceUrl
 
+const getScorePreviewUrl = (score: ScoreDocument) =>
+  score.file?.proxyUrl ?? getScoreUrl(score)
+
 const getPdfTitle = (file: File) => file.name.replace(/\.pdf$/i, "").trim()
 
 const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
@@ -167,6 +170,9 @@ const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
       <ScorePdfViewer
         scores={scores}
         selectedScore={selectedScore}
+        previewUrl={
+          selectedScore ? (getScorePreviewUrl(selectedScore) ?? null) : null
+        }
         onSelectScore={setSelectedScoreId}
         onOpenExternal={() => {
           if (selectedScore) openScore(selectedScore)
