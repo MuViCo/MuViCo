@@ -92,6 +92,22 @@ const safeInlineFilename = (name) => {
   return filename || fallback
 }
 
+const setScoreFileHeaders = (res, score, contentType, contentLength) => {
+  const filename = safeInlineFilename(score.file.name || score.title)
+  res.setHeader(
+    "Content-Type",
+    contentType || score.file.type || "application/pdf"
+  )
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+  )
+  res.setHeader("Cache-Control", "private, max-age=300")
+  if (contentLength !== undefined) {
+    res.setHeader("Content-Length", contentLength)
+  }
+}
+
 const parseUrl = (rawUrl) => {
   const sourceUrl = trimText(rawUrl)
   if (!sourceUrl) {
@@ -634,14 +650,6 @@ router.get(
         return res.status(404).json({ error: "Score file not found" })
       }
 
-      const filename = safeInlineFilename(score.file.name || score.title)
-      res.setHeader("Content-Type", score.file.type || "application/pdf")
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
-      )
-      res.setHeader("Cache-Control", "private, max-age=300")
-
       if (user.driveToken && score.file.driveId) {
         const fileStream = await getDriveFileStream(
           score.file.driveId,
@@ -650,6 +658,7 @@ router.get(
         if (!fileStream || typeof fileStream.pipe !== "function") {
           return res.status(404).json({ error: "Score file not found" })
         }
+        setScoreFileHeaders(res, score)
         return fileStream.pipe(res)
       }
 
@@ -660,18 +669,16 @@ router.get(
       const key = `${presentation._id}/${score.file.id}`
       const response = await getObjectStreamS3(key)
 
-      if (response.ContentType) {
-        res.setHeader("Content-Type", response.ContentType)
-      }
-
-      if (response.ContentLength !== undefined) {
-        res.setHeader("Content-Length", response.ContentLength)
-      }
-
       if (!response.Body || typeof response.Body.pipe !== "function") {
         return res.status(404).json({ error: "Score file not found" })
       }
 
+      setScoreFileHeaders(
+        res,
+        score,
+        response.ContentType,
+        response.ContentLength
+      )
       return response.Body.pipe(res)
     } catch (error) {
       next(error)
