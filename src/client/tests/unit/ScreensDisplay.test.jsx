@@ -251,4 +251,56 @@ describe("ScreensDisplay", () => {
     )
     expect(colorDivs.length).toBeGreaterThan(0)
   })
+
+  test("crops a spanning cue's image differently on each screen it covers", () => {
+    const cues = [
+      {
+        _id: "cue-span",
+        name: "Wide banner",
+        index: 0,
+        screen: 1,
+        spanScreens: [1, 2],
+        file: { url: "https://example.com/wide.png", type: "image/png" },
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false, 2: false }}
+      />
+    )
+
+    // Before the image's natural size is known, each tile falls back to the
+    // plain full-bleed image -- fire load on both hidden probes.
+    const probes = document.querySelectorAll(
+      'img[src="https://example.com/wide.png"][alt=""]'
+    )
+    expect(probes).toHaveLength(2)
+    probes.forEach((probe) => {
+      Object.defineProperty(probe, "naturalWidth", {
+        value: 1600,
+        configurable: true,
+      })
+      Object.defineProperty(probe, "naturalHeight", {
+        value: 900,
+        configurable: true,
+      })
+      fireEvent.load(probe)
+    })
+
+    const croppedTiles = screen.getAllByRole("img", { name: "Wide banner" })
+    expect(croppedTiles).toHaveLength(2)
+    const positions = croppedTiles.map(
+      (tile) =>
+        tile.getAttribute("style").match(/background-position: ([^;]+)/)[1]
+    )
+    // Screen 1 is the first (leftmost) slice, screen 2 the last -- their
+    // crops must differ, not show the same full image twice.
+    expect(positions[0]).toBe("0% 50%")
+    expect(positions[1]).toBe("100% 50%")
+  })
 })

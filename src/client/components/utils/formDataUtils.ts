@@ -8,7 +8,7 @@ import type { CueFileMeta, CueUploadFile } from "../../types"
 /**
  * Creates and populates a FormData object for a cue.
  *
- * The ten positional parameters are kept as they are; collapsing them into an
+ * The positional parameters are kept as they are; collapsing them into an
  * options object would mean touching every call site.
  *
  * FormData.append only accepts `string | Blob`, so the numeric and boolean
@@ -28,7 +28,11 @@ export const createFormData = (
   loop?: boolean,
   layer: number = 0,
   opacity: number = 1,
-  continuePlayback: boolean = false
+  continuePlayback: boolean = false,
+  // Omitted (the default) means "don't touch the cue's existing span" on the
+  // server -- only callers that actually mean to add/change/clear a span
+  // (the Multi-screen picker) need to pass this.
+  spanScreens?: number[]
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -60,6 +64,9 @@ export const createFormData = (
     formData.append("loop", String(loop))
   }
   formData.append("continuePlayback", String(Boolean(continuePlayback)))
+  if (spanScreens !== undefined) {
+    formData.append("spanScreens", JSON.stringify(spanScreens))
+  }
 
   return formData
 }

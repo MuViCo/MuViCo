@@ -164,10 +164,12 @@ describe("Screen", () => {
       expect(popup.document.title).toBe("Screen 1 • Frame 2")
     })
 
-    expect(global.console.log).toHaveBeenCalledWith(
-      "Rendering media with file:",
-      null
+    const popup = window.open.mock.results.at(-1).value
+    const incomingLayer = popup.document.body.querySelector(
+      '[data-testid="incoming-cue-layer"]'
     )
+    expect(incomingLayer.querySelector("img")).toBeNull()
+    expect(incomingLayer.children.length).toBeGreaterThan(0)
   })
 
   test("does not open popup when screen is not visible", () => {
@@ -874,6 +876,132 @@ describe("Screen", () => {
           'img[src="http://example.com/named-only.jpg"]'
         )
       ).toBeTruthy()
+    })
+  })
+
+  describe("multi-screen image spanning", () => {
+    const spanCue = {
+      file: {
+        url: "http://example.com/wide.jpg",
+        type: "image/jpg",
+        name: "wide.jpg",
+      },
+      index: 0,
+      name: "span-cue",
+      screen: 1,
+      spanScreens: [1, 2],
+      _id: "id-span",
+      loop: false,
+    }
+
+    test("renders the plain full-bleed image until the spanning image's size is known", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={spanCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800, 2: 800 }}
+          />
+        )
+      })
+
+      const popup = window.open.mock.results.at(-1).value
+      await waitFor(() => {
+        expect(
+          popup.document.body.querySelector(
+            'img[src="http://example.com/wide.jpg"]'
+          )
+        ).toBeTruthy()
+      })
+    })
+
+    test("crops to this screen's slice of the combined canvas once the image loads", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={2}
+            screenData={spanCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800, 2: 500 }}
+          />
+        )
+      })
+
+      const popup = window.open.mock.results.at(-1).value
+      const probe = await waitFor(() =>
+        within(popup.document.body).getByTestId("span-image-probe")
+      )
+
+      Object.defineProperty(probe, "naturalWidth", {
+        value: 2000,
+        configurable: true,
+      })
+      Object.defineProperty(probe, "naturalHeight", {
+        value: 1000,
+        configurable: true,
+      })
+      await act(async () => {
+        fireEvent.load(probe)
+      })
+
+      // Screen 2 sits after screen 1's 800px, and the canvas (1300px total)
+      // scales the 2000x1000 image to a 1300x650 canvas -- so screen 2's
+      // background-position offset is -800px and its background-size is
+      // 1300px x 650px.
+      await waitFor(() => {
+        const cropBox = popup.document.body.querySelector(
+          '[style*="background-image"]'
+        )
+        expect(cropBox).toBeTruthy()
+        const style = cropBox.getAttribute("style")
+        expect(style).toContain("background-position: -800px 50%")
+        expect(style).toContain("background-size: 1300px 650px")
+      })
+    })
+
+    test("reports this screen's live width via onWidthChange", async () => {
+      window.open = jest.fn(() => {
+        const listeners = {}
+        const fakeDoc = {
+          title: "",
+          documentElement: { style: {} },
+          body: document.createElement("body"),
+          head: document.createElement("head"),
+        }
+        return {
+          document: fakeDoc,
+          innerWidth: 654,
+          close: jest.fn(),
+          addEventListener: jest.fn((eventName, handler) => {
+            listeners[eventName] = handler
+          }),
+          removeEventListener: jest.fn((eventName) => {
+            delete listeners[eventName]
+          }),
+          listeners,
+        }
+      })
+
+      const onWidthChange = jest.fn()
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={spanCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{}}
+            onWidthChange={onWidthChange}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(onWidthChange).toHaveBeenCalledWith(1, 654)
+      })
     })
   })
 })
