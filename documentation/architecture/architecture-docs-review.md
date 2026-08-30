@@ -17,7 +17,7 @@
 `documentation/archive/architecture/overview.md`
 
 - Contains only the text: "_todo: summary of architecture files_".
-- Was meant to be some sort of architecture overview,  but the exact vision is left unclear.
+- Was meant to be some sort of architecture overview, but the exact vision is left unclear.
 
 `documentation/archive/architecture/sprint 1.png`
 
@@ -111,7 +111,6 @@ components/homepage/index.jsx
   components/homepage/StorageInfoModal.jsx
   components/tutorial/TutorialGuide.jsx
   components/utils/AlertDialog.jsx
-  components/utils/addInitialElements.js
   components/utils/toastUtils.js
   components/utils/useDeletePresentation.js
   services/presentations.js
@@ -193,8 +192,7 @@ components/utils/FeatureSection.jsx
   components/utils/NestedList.jsx
 components/utils/NestedList.jsx
 components/utils/Togglable.jsx
-components/utils/addInitialElements.js
-  components/utils/formDataUtils.js
+components/utils/formDataUtils.js
   services/presentation.js
 components/utils/config.js
 components/utils/fileTypeUtils.js
@@ -243,7 +241,7 @@ utils/transitionUtils.js
 
 ```Nushell
 ~/MuViCo$ npx madge --extensions js,jsx --exclude 'test' src/server
-Processed 19 files (685ms) 
+Processed 19 files (685ms)
 
 app.js
   routes/admin.js
