@@ -1,14 +1,5 @@
-/**
- * ScoreMarkerOverlay.tsx
- * Absolutely-positioned layer sitting on top of the rendered PDF page:
- * captures a click to place a new marker, and renders existing markers as
- * small clickable pins that open an edit form when clicked.
- *
- * Deliberately has no pdfjs-dist involvement, so it's testable on its own —
- * everything here works in fractions (0-1) of its own box, which is always
- * sized to exactly match the canvas underneath it. That's what lets a
- * marker's position stay correct across zoom levels with no scale math here.
- */
+// Overlay on the rendered PDF page: click to place a marker, or click an
+// existing pin to edit it. Positions are fractions (0-1) so zoom doesn't matter.
 
 import { Box, Text } from "@chakra-ui/react"
 import { keyframes } from "@emotion/react"
@@ -16,8 +7,7 @@ import { keyframes } from "@emotion/react"
 import type { MouseEvent } from "react"
 import type { ScoreMarker } from "../../types"
 
-/** A ring that pings outward from a marker pin, used to point out which pin
- * a "jump to this marker" action landed on when several sit close together. */
+// Ring that pings outward from a pin to show which marker was jumped to.
 const markerPing = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(128, 90, 213, 0.7); }
   70% { box-shadow: 0 0 0 14px rgba(128, 90, 213, 0); }

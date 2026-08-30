@@ -59,8 +59,7 @@ const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
 const getScoreUrl = (s: ScoreDocument) => s.file?.url ?? s.sourceUrl
 
-/** Either placing a brand-new marker at a clicked point, or editing an
- * existing one's frame / deleting it. */
+// Either placing a new marker, or editing/deleting an existing one.
 type MarkerFormState =
   | { mode: "placing"; x: number; y: number }
   | { mode: "editing"; marker: ScoreMarker }
@@ -542,19 +541,14 @@ const ScorePdfViewer = ({
     [selectedScore]
   )
 
-  /* Briefly pings the pin so it's obvious which one a "jump to marker" click
-     landed on, then clears itself — a marker's own pin doesn't stay ringed. */
+  // Clears the ping a few seconds after a "jump to marker" click.
   useEffect(() => {
     if (!highlightedMarkerId) return
     const timer = setTimeout(() => setHighlightedMarkerId(null), 3000)
     return () => clearTimeout(timer)
   }, [highlightedMarkerId])
 
-  /* Scrolls the highlighted marker into view: needed even when the page
-     doesn't change, since switching between two markers on the same page is
-     otherwise a no-op if the target pin is scrolled out of sight. The delay
-     lets a page change's canvas resize (which the overlay's percentage
-     positions depend on) settle before we measure where to scroll. */
+  // Scrolls the target marker into view (needed even on same-page jumps).
   useEffect(() => {
     if (!highlightedMarkerId) return
     const timer = setTimeout(() => {
