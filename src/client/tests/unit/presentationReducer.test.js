@@ -24,11 +24,15 @@ import reducer, {
   updatePresentationName,
   beginSave,
   endSave,
+  fetchScores,
+  uploadScorePdf,
+  importImslpScore,
+  deleteScoreDocument,
+  createScoreMarker,
+  updateScoreMarker,
+  deleteScoreMarker,
 } from "../../redux/presentationReducer"
-import {
-  saveIndexCount,
-  saveScreenCount,
-} from "../../redux/presentationThunks"
+import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import presentationService from "../../services/presentation"
 import { configureStore } from "@reduxjs/toolkit"
 import { createFormData } from "../../components/utils/formDataUtils"
@@ -52,6 +56,13 @@ jest.mock("../../services/presentation", () => ({
   saveIndexCountApi: jest.fn(),
   shiftIndexes: jest.fn(),
   updatePresentationName: jest.fn(),
+  getScores: jest.fn(),
+  uploadScorePdf: jest.fn(),
+  importImslpScore: jest.fn(),
+  deleteScore: jest.fn(),
+  createScoreMarker: jest.fn(),
+  updateScoreMarker: jest.fn(),
+  deleteScoreMarker: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -152,6 +163,7 @@ describe("presentationReducer actions", () => {
 describe("presentationReducer reducer", () => {
   const initialState = {
     cues: [],
+    scores: [],
     name: "",
     screenCount: 3,
     indexCount: 5,
@@ -475,6 +487,67 @@ describe("presentationReducer reducer", () => {
     expect(originalState.cues).toHaveLength(2)
     // Result should have 1 less
     expect(result.cues).toHaveLength(1)
+  })
+
+  // --- Score Synchronous Actions ---
+
+  it("should handle setScores", () => {
+    const scores = [{ _id: "s1", name: "Score 1" }]
+    const action = { type: "presentation/setScores", payload: scores }
+    const result = reducer(initialState, action)
+    expect(result.scores).toEqual(scores)
+  })
+
+  it("should handle addScore", () => {
+    const score = { _id: "s1", name: "Score 1" }
+    const action = { type: "presentation/addScore", payload: score }
+    const result = reducer(initialState, action)
+    expect(result.scores).toEqual([score])
+  })
+
+  it("should handle removeScoreFromState", () => {
+    const state = { ...initialState, scores: [{ _id: "s1" }, { _id: "s2" }] }
+    const action = { type: "presentation/removeScoreFromState", payload: "s1" }
+    const result = reducer(state, action)
+    expect(result.scores).toEqual([{ _id: "s2" }])
+  })
+
+  it("should handle addScoreMarker", () => {
+    const state = { ...initialState, scores: [{ _id: "s1", markers: [] }] }
+    const marker = { _id: "m1", label: "Marker 1" }
+    const action = {
+      type: "presentation/addScoreMarker",
+      payload: { scoreId: "s1", marker },
+    }
+    const result = reducer(state, action)
+    expect(result.scores[0].markers).toEqual([marker])
+  })
+
+  it("should handle updateScoreMarkerInState", () => {
+    const state = {
+      ...initialState,
+      scores: [{ _id: "s1", markers: [{ _id: "m1", label: "Marker 1" }] }],
+    }
+    const updatedMarker = { _id: "m1", label: "Updated Marker" }
+    const action = {
+      type: "presentation/updateScoreMarkerInState",
+      payload: { scoreId: "s1", marker: updatedMarker },
+    }
+    const result = reducer(state, action)
+    expect(result.scores[0].markers[0].label).toBe("Updated Marker")
+  })
+
+  it("should handle removeScoreMarkerFromState", () => {
+    const state = {
+      ...initialState,
+      scores: [{ _id: "s1", markers: [{ _id: "m1" }, { _id: "m2" }] }],
+    }
+    const action = {
+      type: "presentation/removeScoreMarkerFromState",
+      payload: { scoreId: "s1", markerId: "m1" },
+    }
+    const result = reducer(state, action)
+    expect(result.scores[0].markers).toEqual([{ _id: "m2" }])
   })
 })
 
@@ -1301,6 +1374,107 @@ describe("presentationReducer asynchronous actions", () => {
       store.dispatch(updatePresentationName("123", ""))
     ).rejects.toThrow("Name invalid")
   })
+})
+
+it("should handle fetchScores", async () => {
+  const store = makeStore()
+  const scores = [{ _id: "s1", name: "Score 1" }]
+  presentationService.getScores.mockResolvedValue(scores)
+  const result = await store.dispatch(fetchScores("123"))
+  expect(result).toEqual(scores)
+  expect(store.getState().presentation.scores).toEqual(scores)
+})
+
+it("should handle uploadScorePdf", async () => {
+  const store = makeStore()
+  const score = { _id: "s1", name: "Score 1" }
+  presentationService.uploadScorePdf.mockResolvedValue(score)
+  const result = await store.dispatch(
+    uploadScorePdf("123", { file: "test.pdf", name: "Score 1" })
+  )
+  expect(result).toEqual(score)
+  expect(store.getState().presentation.scores).toEqual([score])
+})
+
+it("should handle importImslpScore", async () => {
+  const store = makeStore()
+  const score = { _id: "s1", name: "Score 1" }
+  presentationService.importImslpScore.mockResolvedValue(score)
+  const result = await store.dispatch(
+    importImslpScore("123", { imslpUrl: "url", name: "Score 1" })
+  )
+  expect(result).toEqual(score)
+  expect(store.getState().presentation.scores).toEqual([score])
+})
+
+it("should handle deleteScoreDocument", async () => {
+  const store = makeStore()
+  const initialState = {
+    cues: [],
+    scores: [{ _id: "s1" }],
+    name: "",
+    screenCount: 3,
+    indexCount: 5,
+    pendingSaves: 0,
+  }
+  store.dispatch(setPresentationInfo(initialState))
+
+  presentationService.deleteScore.mockResolvedValue({})
+  await store.dispatch(deleteScoreDocument("123", "s1"))
+  expect(store.getState().presentation.scores).toEqual([])
+})
+
+it("should handle createScoreMarker", async () => {
+  const store = makeStore()
+  const initialState = {
+    cues: [],
+    scores: [{ _id: "s1", markers: [] }],
+    name: "",
+    screenCount: 3,
+    indexCount: 5,
+    pendingSaves: 0,
+  }
+  store.dispatch(setPresentationInfo(initialState))
+
+  const marker = { _id: "m1", label: "M1" }
+  presentationService.createScoreMarker.mockResolvedValue(marker)
+  await store.dispatch(createScoreMarker("123", "s1", { label: "M1" }))
+  expect(store.getState().presentation.scores[0].markers).toEqual([marker])
+})
+
+it("should handle updateScoreMarker", async () => {
+  const store = makeStore()
+  const initialState = {
+    cues: [],
+    scores: [{ _id: "s1", markers: [{ _id: "m1", label: "Old" }] }],
+    name: "",
+    screenCount: 3,
+    indexCount: 5,
+    pendingSaves: 0,
+  }
+  store.dispatch(setPresentationInfo(initialState))
+
+  const updatedMarker = { _id: "m1", label: "New" }
+  presentationService.updateScoreMarker.mockResolvedValue(updatedMarker)
+  await store.dispatch(updateScoreMarker("123", "s1", "m1", { label: "New" }))
+  expect(store.getState().presentation.scores[0].markers[0].label).toBe("New")
+})
+
+it("should handle deleteScoreMarker", async () => {
+  const store = makeStore()
+  const initialState = {
+    cues: [],
+    scores: [{ _id: "s1", markers: [{ _id: "m1" }] }],
+    name: "",
+    screenCount: 3,
+    indexCount: 5,
+    pendingSaves: 0,
+  }
+  store.dispatch(setPresentationInfo(initialState))
+
+  presentationService.deleteScoreMarker.mockResolvedValue({})
+  await store.dispatch(deleteScoreMarker("123", "s1", "m1"))
+  expect(store.getState().presentation.scores[0].markers).toEqual([])
 })
 
 afterAll(() => {

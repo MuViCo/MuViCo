@@ -33,6 +33,12 @@ import {
   SimpleGrid,
   Image,
   IconButton,
+  useColorModeValue,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
 } from "@chakra-ui/react"
 import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
 import { SpeakerIcon } from "../../lib/icons"
@@ -425,77 +431,112 @@ const CuesForm = ({
     return brightness >= 186 ? "black" : "white"
   }
 
-  const tabStyles = {
-    button: (isActive) => ({
-      padding: "8px 16px",
-      border: "none",
-      backgroundColor: isActive ? "#D6BCFA" : "#9244ff",
-      color: !isActive ? "white" : "black",
-      cursor: "pointer",
-      fontWeight: isActive ? "bold" : "normal",
-      borderRadius: "4px 4px 0 0",
-      borderBottomLeftRadius: "0px",
-      borderBottomRightRadius: "0px",
-      transition: "all 0.2s",
-      width: "100px",
-    }),
-    tabContent: {
-      padding: "16px",
-      backgroundColor: "#D6BCFA",
-      borderRadius: "0 0 4px 4px",
-      minHeight: "200px",
-      overflowY: "auto",
-    },
-  }
+  const surfaceBg = useColorModeValue("gray.50", "#140f1a")
+  const borderColor = useColorModeValue("purple.200", "whiteAlpha.200")
+  const textColor = useColorModeValue("gray.800", "whiteAlpha.900")
+  const mutedText = useColorModeValue("gray.600", "whiteAlpha.500")
+
+  const activeTabBg = surfaceBg
+  const activeTabColor = textColor
+  const inactiveTabBg = "transparent"
+  const inactiveTabColor = mutedText
+  const tabHoverBg = useColorModeValue("blackAlpha.50", "whiteAlpha.50")
 
   // Render the form with three tabs: Colors, Media, and Audio
   // The colors tab allows creating colored elements by dragging them to the grid
   // The media tab allows uploading and dragging images/videos to the grid
   // The audio tab allows uploading and dragging audio files to the grid
   return (
-    <div className="cue-editor-form">
-      <form onSubmit={cueData ? handleUpdateSubmit : onAddCue}>
-        <FormControl as="fieldset">
-          {cueData ? (
-            <Heading size="md" mb={4}>
-              Edit Element
+    <div className="cue-editor-form custom-scrollbar">
+      <form
+        onSubmit={cueData ? handleUpdateSubmit : onAddCue}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          minHeight: 0,
+          width: "100%",
+        }}
+      >
+        <FormControl
+          as="fieldset"
+          display="flex"
+          flexDirection="column"
+          height="100%"
+          minH={0}
+          width="100%"
+        >
+          <Box px={1} pb={3} flexShrink={0}>
+            <Heading size="sm" color={textColor}>
+              {cueData ? "Edit element" : "Add element"}
             </Heading>
-          ) : (
-            <Heading size="md" mb={4} color="white">
-              Add element
-            </Heading>
-          )}
+          </Box>
 
-          <Box>
-            <div className="cue-form-tabs">
-              <Button
-                onClick={() => setActiveTab("colors")}
-                style={tabStyles.button(activeTab === "colors")}
-                variant="unstyled"
-              >
-                Colors
-              </Button>
-              <Button
-                onClick={() => setActiveTab("media")}
-                style={tabStyles.button(activeTab === "media")}
-                variant="unstyled"
-              >
-                Media
-              </Button>
-              <Button
-                onClick={() => setActiveTab("audio")}
-                style={tabStyles.button(activeTab === "audio")}
-                variant="unstyled"
-              >
-                Audio
-              </Button>
-            </div>
+          <Tabs
+            index={["colors", "media", "audio"].indexOf(activeTab)}
+            onChange={(idx) => setActiveTab(["colors", "media", "audio"][idx])}
+            variant="enclosed"
+            size="sm"
+            display="flex"
+            flexDirection="column"
+            flex="1 1 0"
+            minHeight={0}
+          >
+            <TabList flexShrink={0} borderColor={borderColor}>
+              {["Colors", "Media", "Audio"].map((tabLabel, idx) => {
+                const tabId = tabLabel.toLowerCase()
+                const isActive = activeTab === tabId
+                return (
+                  <Tab
+                    key={tabId}
+                    _selected={{
+                      color: activeTabColor,
+                      bg: activeTabBg,
+                      borderColor: borderColor,
+                      borderBottomColor: "transparent",
+                    }}
+                    color={inactiveTabColor}
+                    bg={inactiveTabBg}
+                    flex="1"
+                    borderTopRadius="md"
+                    borderBottomRadius="0"
+                    marginRight={idx < 2 ? "1px" : "0"}
+                    _hover={{
+                      bg: isActive ? activeTabBg : tabHoverBg,
+                      color: textColor,
+                    }}
+                    fontWeight={isActive ? "bold" : "normal"}
+                  >
+                    {tabLabel}
+                  </Tab>
+                )
+              })}
+            </TabList>
 
-            <Box style={tabStyles.tabContent}>
-              {/* COLORS TAB - Create colored elements */}
-              {activeTab === "colors" && (
-                <VStack spacing={4} align="stretch">
-                  <FormHelperText color="black">
+            <TabPanels
+              flex="1 1 0"
+              minHeight={0}
+              overflowY="auto"
+              bg={surfaceBg}
+              border="1px solid"
+              borderColor={borderColor}
+              borderTop="none"
+              borderBottomRadius="md"
+              sx={{
+                "&::-webkit-scrollbar": { width: "8px" },
+                "&::-webkit-scrollbar-track": {
+                  bg: useColorModeValue("blackAlpha.50", "whiteAlpha.50"),
+                  borderRadius: "4px",
+                },
+                "&::-webkit-scrollbar-thumb": {
+                  bg: useColorModeValue("blackAlpha.300", "whiteAlpha.300"),
+                  borderRadius: "4px",
+                },
+              }}
+            >
+              <TabPanel p={3}>
+                <VStack spacing={3} align="stretch">
+                  <FormHelperText color={mutedText} mt={0}>
                     Select a color and drag it to the grid
                   </FormHelperText>
 
@@ -504,18 +545,25 @@ const CuesForm = ({
                     onChange={setSelectedColor}
                     presetColors={presetColors}
                   />
-                  <FormHelperText mb={2} color="black">
-                    Element name
-                  </FormHelperText>
                   <Input
+                    variant="flushed"
                     data-testid="cue-name"
                     id="cue-name"
                     value={cueName}
-                    placeholder="Color Element"
-                    mb={2}
-                    color="black"
-                    sx={{ color: "black !important", caretColor: "black" }}
-                    _placeholder={{ color: "#acacac" }}
+                    placeholder="Element name"
+                    color={textColor}
+                    borderColor={useColorModeValue(
+                      "blackAlpha.300",
+                      "whiteAlpha.300"
+                    )}
+                    _focus={{
+                      borderColor: useColorModeValue(
+                        "purple.500",
+                        "purple.300"
+                      ),
+                    }}
+                    _placeholder={{ color: mutedText }}
+                    sx={{ caretColor: "currentColor" }}
                     onChange={(e) => setCueName(e.target.value)}
                     required
                   />
@@ -546,30 +594,53 @@ const CuesForm = ({
                       )
                     }}
                     onDragEnd={() => mediaStore.clearActiveDragData()}
-                    p={6}
-                    bg={selectedColor || "purple.100"}
-                    border="2px dashed"
-                    borderColor="purple.400"
+                    p={3}
+                    mt={1}
+                    bg={selectedColor || "purple.500"}
                     borderRadius="md"
-                    textAlign="center"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
                     cursor="grab"
-                    _active={{ cursor: "grabbing" }}
-                    _hover={{ opacity: 0.8 }}
+                    _active={{ cursor: "grabbing", transform: "scale(0.98)" }}
+                    _hover={{ opacity: 0.9 }}
+                    boxShadow="0 4px 12px rgba(0,0,0,0.2)"
+                    transition="all 0.1s"
                   >
+                    <Box
+                      mr={2}
+                      opacity={0.8}
+                      color={getContrastTextColor(selectedColor)}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="5" cy="3" r="1.5" />
+                        <circle cx="5" cy="8" r="1.5" />
+                        <circle cx="5" cy="13" r="1.5" />
+                        <circle cx="11" cy="3" r="1.5" />
+                        <circle cx="11" cy="8" r="1.5" />
+                        <circle cx="11" cy="13" r="1.5" />
+                      </svg>
+                    </Box>
                     <Text
                       color={getContrastTextColor(selectedColor)}
                       fontWeight="bold"
+                      fontSize="sm"
                     >
-                      Drag color to grid
+                      Drag to grid
                     </Text>
                   </Box>
                 </VStack>
-              )}
+              </TabPanel>
 
-              {/* MEDIA TAB - Upload and manage images/videos */}
-              {activeTab === "media" && (
+              <TabPanel p={3}>
                 <VStack spacing={4} align="stretch">
-                  <FormHelperText color="black">
+                  <FormHelperText color={mutedText}>
                     Upload images or videos and drag them to the grid
                     <Tooltip
                       label={
@@ -589,7 +660,7 @@ const CuesForm = ({
                         variant="ghost"
                         size="xs"
                         marginLeft={2}
-                        color="black"
+                        color={mutedText}
                       >
                         <InfoOutlineIcon />
                       </Button>
@@ -610,8 +681,6 @@ const CuesForm = ({
                     onClick={() => mediaInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
-                    _hover={{ backgroundColor: "#b366ff" }}
-                    color="black"
                   >
                     Upload Images/Videos
                   </Button>
@@ -619,7 +688,7 @@ const CuesForm = ({
                   {mediaFiles.length > 0 && (
                     <>
                       <Divider />
-                      <Text fontWeight="bold">
+                      <Text fontWeight="bold" color={textColor}>
                         Media Pool ({mediaFiles.length})
                       </Text>
                       <SimpleGrid columns={2} spacing={3}>
@@ -660,7 +729,7 @@ const CuesForm = ({
                             _active={{ cursor: "grabbing" }}
                             _hover={{
                               borderColor: "purple.500",
-                              bg: "purple.50",
+                              bg: "whiteAlpha.100",
                             }}
                           >
                             <IconButton
@@ -683,11 +752,21 @@ const CuesForm = ({
                               />
                             )}
                             {media.type.startsWith("video/") && (
-                              <Box bg="gray.200" p={4} textAlign="center">
+                              <Box
+                                bg="whiteAlpha.200"
+                                p={4}
+                                textAlign="center"
+                                borderRadius="md"
+                              >
                                 <Text fontSize="2xl">🎥</Text>
                               </Box>
                             )}
-                            <Text fontSize="xs" mt={1} noOfLines={1}>
+                            <Text
+                              fontSize="xs"
+                              mt={1}
+                              noOfLines={1}
+                              color={textColor}
+                            >
                               {media.name}
                             </Text>
                           </Box>
@@ -696,12 +775,11 @@ const CuesForm = ({
                     </>
                   )}
                 </VStack>
-              )}
+              </TabPanel>
 
-              {/* AUDIO TAB - Upload and manage audio files */}
-              {activeTab === "audio" && (
+              <TabPanel p={3}>
                 <VStack spacing={4} align="stretch">
-                  <FormHelperText color="black">
+                  <FormHelperText color={mutedText}>
                     Upload audio files and drag them to the grid
                     <Tooltip
                       label={
@@ -717,7 +795,7 @@ const CuesForm = ({
                         variant="ghost"
                         size="xs"
                         marginLeft={2}
-                        color="black"
+                        color={mutedText}
                       >
                         <InfoOutlineIcon />
                       </Button>
@@ -738,7 +816,6 @@ const CuesForm = ({
                     onClick={() => soundInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
-                    color="black"
                   >
                     Upload Audio Files
                   </Button>
@@ -746,7 +823,7 @@ const CuesForm = ({
                   {soundFiles.length > 0 && (
                     <>
                       <Divider />
-                      <Text fontWeight="bold" color="black">
+                      <Text fontWeight="bold" color={textColor}>
                         Sound Pool ({soundFiles.length})
                       </Text>
                       <VStack spacing={2} align="stretch">
@@ -788,14 +865,14 @@ const CuesForm = ({
                             _active={{ cursor: "grabbing" }}
                             _hover={{
                               borderColor: "purple.500",
-                              bg: "purple.50",
+                              bg: "whiteAlpha.100",
                             }}
                           >
                             <Box
                               display="flex"
                               alignItems="center"
                               flex={1}
-                              color="black"
+                              color={textColor}
                             >
                               <SpeakerIcon boxSize="20px" mr={2} />
                               <Text fontSize="sm" noOfLines={1}>
@@ -814,9 +891,9 @@ const CuesForm = ({
                     </>
                   )}
                 </VStack>
-              )}
-            </Box>
-          </Box>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
 
           {error && <Error error={error} />}
         </FormControl>

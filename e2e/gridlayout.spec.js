@@ -140,7 +140,7 @@ describe("GridLayout", () => {
     page,
   }) => {
     await page.getByText("testi").click()
-    await page.getByRole("button", { name: "Colors" }).click()
+    await page.getByRole("tab", { name: "Colors" }).click()
     await page.getByTestId("cue-name").fill("dragged cue")
 
     const source = page.locator(".droppable-color-element")
@@ -316,7 +316,9 @@ describe("GridLayout", () => {
     await page.getByText("testi").click()
 
     await revealScreenControls(page, 1)
-    await expect(page.getByRole("button", { name: "Add screen" })).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Add screen" })).toHaveCount(
+      0
+    )
     await expect(
       page.getByRole("button", { name: "Remove screen" })
     ).toHaveCount(0)
@@ -369,7 +371,7 @@ describe("GridLayout", () => {
       page.getByText('Copying in progress for element "copysource2".')
     ).toBeVisible()
 
-    await page.getByRole("button", { name: "Colors" }).click()
+    await page.getByRole("tab", { name: "Colors" }).click()
 
     await expect(page.getByText("Cancelled copying").first()).toBeVisible()
     await expect(

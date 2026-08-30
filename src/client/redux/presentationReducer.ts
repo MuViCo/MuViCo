@@ -18,13 +18,19 @@ import type {
 import type {
   Cue,
   CueUpdateInput,
+  ImportScoreInput,
   Presentation,
   ShiftIndexesResponse,
+  ScoreDocument,
+  ScoreMarker,
+  ScoreMarkerInput,
+  UploadScoreInput,
 } from "../types"
 import type { RootState } from "./store"
 
 export interface PresentationState {
   cues: Cue[]
+  scores: ScoreDocument[]
   /**
    * Null until a presentation is loaded. The server default is 1, but nothing
    * has been fetched yet at startup, and removePresentation resets to null.
@@ -49,6 +55,7 @@ type AppThunk<R = void> = ThunkAction<
 
 const initialState: PresentationState = {
   cues: [],
+  scores: [],
   name: "",
   screenCount: null,
   indexCount: 5,
@@ -64,6 +71,7 @@ const presentationSlice = createSlice({
   reducers: {
     setPresentationInfo(state, action: PayloadAction<Presentation>) {
       state.cues = action.payload.cues
+      state.scores = action.payload.scores ?? []
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
       state.indexCount = action.payload.indexCount
@@ -74,6 +82,56 @@ const presentationSlice = createSlice({
     addCue(state, action: PayloadAction<Cue>) {
       state.cues.push(action.payload)
     },
+    setScores(state, action: PayloadAction<ScoreDocument[]>) {
+      state.scores = action.payload
+    },
+    addScore(state, action: PayloadAction<ScoreDocument>) {
+      state.scores.push(action.payload)
+    },
+    removeScoreFromState(state, action: PayloadAction<string>) {
+      state.scores = state.scores.filter(
+        (score) => score._id !== action.payload
+      )
+    },
+    addScoreMarker(
+      state,
+      action: PayloadAction<{ scoreId: string; marker: ScoreMarker }>
+    ) {
+      const score = state.scores.find(
+        (item) => item._id === action.payload.scoreId
+      )
+      if (score) {
+        score.markers = [...(score.markers ?? []), action.payload.marker]
+      }
+    },
+    updateScoreMarkerInState(
+      state,
+      action: PayloadAction<{ scoreId: string; marker: ScoreMarker }>
+    ) {
+      const score = state.scores.find(
+        (item) => item._id === action.payload.scoreId
+      )
+      if (score) {
+        score.markers = (score.markers ?? []).map((marker) =>
+          marker._id === action.payload.marker._id
+            ? action.payload.marker
+            : marker
+        )
+      }
+    },
+    removeScoreMarkerFromState(
+      state,
+      action: PayloadAction<{ scoreId: string; markerId: string }>
+    ) {
+      const score = state.scores.find(
+        (item) => item._id === action.payload.scoreId
+      )
+      if (score) {
+        score.markers = (score.markers ?? []).filter(
+          (marker) => marker._id !== action.payload.markerId
+        )
+      }
+    },
     editCue(state, action: PayloadAction<Cue>) {
       const cueToChange = action.payload
       const updatedCues = state.cues.map((cue) =>
@@ -83,6 +141,7 @@ const presentationSlice = createSlice({
     },
     removePresentation(state) {
       state.cues = initialState.cues
+      state.scores = initialState.scores
       state.name = initialState.name
       state.screenCount = initialState.screenCount
       state.indexCount = initialState.indexCount
@@ -161,6 +220,12 @@ export const {
   setPresentationInfo,
   deleteCue,
   addCue,
+  setScores,
+  addScore,
+  removeScoreFromState,
+  addScoreMarker,
+  updateScoreMarkerInState,
+  removeScoreMarkerFromState,
   editCue,
   removePresentation,
   incrementIndexCount,
@@ -184,6 +249,148 @@ export const fetchPresentationInfo =
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)
       throw new Error(errorMessage)
+    }
+  }
+
+export const fetchScores =
+  (id: string): AppThunk<ScoreDocument[]> =>
+  async (dispatch) => {
+    try {
+      const scores = await presentationService.getScores(id)
+      dispatch(setScores(scores))
+      return scores
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+export const uploadScorePdf =
+  (presentationId: string, input: UploadScoreInput): AppThunk<ScoreDocument> =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const score = await presentationService.uploadScorePdf(
+        presentationId,
+        input
+      )
+      dispatch(addScore(score))
+      return score
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+export const importImslpScore =
+  (presentationId: string, input: ImportScoreInput): AppThunk<ScoreDocument> =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const score = await presentationService.importImslpScore(
+        presentationId,
+        input
+      )
+      dispatch(addScore(score))
+      return score
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+export const deleteScoreDocument =
+  (presentationId: string, scoreId: string): AppThunk =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      await presentationService.deleteScore(presentationId, scoreId)
+      dispatch(removeScoreFromState(scoreId))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+export const createScoreMarker =
+  (
+    presentationId: string,
+    scoreId: string,
+    markerInput: ScoreMarkerInput
+  ): AppThunk<ScoreMarker> =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const marker = await presentationService.createScoreMarker(
+        presentationId,
+        scoreId,
+        markerInput
+      )
+      dispatch(addScoreMarker({ scoreId, marker }))
+      return marker
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+export const updateScoreMarker =
+  (
+    presentationId: string,
+    scoreId: string,
+    markerId: string,
+    markerInput: ScoreMarkerInput
+  ): AppThunk<ScoreMarker> =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const marker = await presentationService.updateScoreMarker(
+        presentationId,
+        scoreId,
+        markerId,
+        markerInput
+      )
+      dispatch(updateScoreMarkerInState({ scoreId, marker }))
+      return marker
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+export const deleteScoreMarker =
+  (presentationId: string, scoreId: string, markerId: string): AppThunk =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      await presentationService.deleteScoreMarker(
+        presentationId,
+        scoreId,
+        markerId
+      )
+      dispatch(removeScoreMarkerFromState({ scoreId, markerId }))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
     }
   }
 

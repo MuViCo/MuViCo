@@ -10,6 +10,11 @@ const remove = presentation.default.remove
 const addCue = presentation.default.addCue
 const removeCue = presentation.default.removeCue
 const updateCue = presentation.default.updateCue
+const getScores = presentation.default.getScores
+const uploadScorePdf = presentation.default.uploadScorePdf
+const importImslpScore = presentation.default.importImslpScore
+const deleteScore = presentation.default.deleteScore
+const createScoreMarker = presentation.default.createScoreMarker
 
 jest.mock("axios")
 
@@ -42,6 +47,8 @@ const new_mockCue = {
 }
 
 const cueId = "123456789"
+const scoreId = "score-1"
+const markerId = "marker-1"
 // Shared multipart payload fixture for addCue/updateCue request contract checks.
 const formData = new FormData()
 formData.append("index", 1)
@@ -150,14 +157,133 @@ describe("presentation services api tests", () => {
     )
   })
 
+  test("getScores in presentation api call behaves as expected", async () => {
+    const response = [
+      {
+        _id: scoreId,
+        title: "Piano score",
+        source: "upload",
+        file: { name: "score.pdf", url: "http://example.com/score.pdf" },
+        markers: [],
+      },
+    ]
+
+    axios.get.mockResolvedValue({ data: response })
+
+    const result = await getScores(id)
+    expect(result).toEqual(response)
+    expect(axios.get).toHaveBeenCalledWith(`${baseUrl}${id}/scores`, {
+      headers: { Authorization: token },
+    })
+  })
+
+  test("uploadScorePdf in presentation api call behaves as expected", async () => {
+    const file = new File(["score"], "score.pdf", { type: "application/pdf" })
+    const response = {
+      _id: scoreId,
+      title: "Score",
+      source: "upload",
+      file: { name: "score.pdf" },
+      markers: [],
+    }
+
+    axios.post.mockResolvedValue({ data: response })
+
+    const result = await uploadScorePdf(id, {
+      file,
+      title: "Score",
+      pageCount: 12,
+    })
+
+    expect(result).toEqual(response)
+    const [url, body, config] = axios.post.mock.calls.at(-1)
+    expect(url).toBe(`${baseUrl}${id}/scores/upload`)
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get("score")).toBe(file)
+    expect(body.get("title")).toBe("Score")
+    expect(body.get("pageCount")).toBe("12")
+    expect(config).toEqual({
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: token,
+      },
+    })
+  })
+
+  test("importImslpScore in presentation api call behaves as expected", async () => {
+    const body = {
+      sourceUrl: "https://imslp.org/wiki/File:IMSLP939945.pdf",
+      title: "IMSLP score",
+    }
+    const response = {
+      _id: scoreId,
+      title: "IMSLP score",
+      source: "imslp",
+      sourceUrl: body.sourceUrl,
+      markers: [],
+    }
+
+    axios.post.mockResolvedValue({ data: response })
+
+    const result = await importImslpScore(id, body)
+    expect(result).toEqual(response)
+    expect(axios.post).toHaveBeenCalledWith(
+      `${baseUrl}${id}/scores/import`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      }
+    )
+  })
+
+  test("deleteScore in presentation api call behaves as expected", async () => {
+    axios.delete.mockResolvedValue({ data: undefined })
+
+    const result = await deleteScore(id, scoreId)
+    expect(result).toBeUndefined()
+    expect(axios.delete).toHaveBeenCalledWith(
+      `${baseUrl}${id}/scores/${scoreId}`,
+      {
+        headers: { Authorization: token },
+      }
+    )
+  })
+
+  test("createScoreMarker in presentation api call behaves as expected", async () => {
+    const marker = {
+      page: 1,
+      frameIndex: 2,
+      measureLabel: "A",
+    }
+    const response = {
+      _id: markerId,
+      ...marker,
+    }
+
+    axios.post.mockResolvedValue({ data: response })
+
+    const result = await createScoreMarker(id, scoreId, marker)
+    expect(result).toEqual(response)
+    expect(axios.post).toHaveBeenCalledWith(
+      `${baseUrl}${id}/scores/${scoreId}/markers`,
+      marker,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      }
+    )
+  })
+
   test("shiftIndexes in presentation api call behaves as expected", async () => {
     // Contract: shiftIndexes sends JSON body with startIndex + direction.
     const response = {
       shifted: true,
-      cues: [
-        { ...mockCues[0] },
-        { ...mockCues[1], index: 2 }
-      ]
+      cues: [{ ...mockCues[0] }, { ...mockCues[1], index: 2 }],
     }
 
     axios.put.mockResolvedValue({ data: response })
@@ -166,8 +292,12 @@ describe("presentation services api tests", () => {
     const direction = "right"
     const body = { startIndex, direction }
 
-    const result = await presentation.default.shiftIndexes(id, startIndex, direction)
-    
+    const result = await presentation.default.shiftIndexes(
+      id,
+      startIndex,
+      direction
+    )
+
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/shiftIndexes`,
@@ -175,8 +305,8 @@ describe("presentation services api tests", () => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: token
-        }
+          Authorization: token,
+        },
       }
     )
   })
@@ -200,7 +330,8 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 
   test("saveScreenCountApi in presentation api call behaves as expected", async () => {
@@ -212,7 +343,10 @@ describe("presentation services api tests", () => {
 
     const screenCount = 3
 
-    const result = await presentation.default.saveScreenCountApi(id, screenCount)
+    const result = await presentation.default.saveScreenCountApi(
+      id,
+      screenCount
+    )
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/screenCount`,
@@ -222,7 +356,8 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 
   test("updatePresentationName in presentation api call behaves as expected", async () => {
@@ -235,7 +370,10 @@ describe("presentation services api tests", () => {
 
     const newName = "Updated Presentation Name"
 
-    const result = await presentation.default.updatePresentationName(id, newName)
+    const result = await presentation.default.updatePresentationName(
+      id,
+      newName
+    )
     expect(result).toEqual(response)
     expect(axios.put).toHaveBeenCalledWith(
       `${baseUrl}${id}/name`,
@@ -245,6 +383,7 @@ describe("presentation services api tests", () => {
           "Content-Type": "application/json",
           Authorization: token,
         },
-      })
+      }
+    )
   })
 })
