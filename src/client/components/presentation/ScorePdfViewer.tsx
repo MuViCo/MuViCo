@@ -1,5 +1,6 @@
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react"
 import {
   Box,
   Button,
@@ -10,6 +11,7 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Select,
   Spinner,
   Text,
   VStack,
@@ -28,7 +30,15 @@ import type {
   PDFDocumentProxy,
   RenderTask,
 } from "pdfjs-dist/types/src/pdf"
-import type { ScoreDocument } from "../../types"
+import type { ScoreDocument, ScoreMarker } from "../../types"
+import ScoreMarkerOverlay from "./ScoreMarkerOverlay"
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { useCustomToast } from "../utils/toastUtils"
+import {
+  createScoreMarker,
+  deleteScoreMarker,
+  updateScoreMarker,
+} from "../../redux/presentationReducer"
 
 /* -------------------------------------------------------------------------- */
 /*  Constants                                                                  */
@@ -49,6 +59,11 @@ const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
 const getScoreUrl = (s: ScoreDocument) => s.file?.url ?? s.sourceUrl
 
+// Either placing a new marker, or editing/deleting an existing one.
+type MarkerFormState =
+  | { mode: "placing"; x: number; y: number }
+  | { mode: "editing"; marker: ScoreMarker }
+
 /* -------------------------------------------------------------------------- */
 /*  PdfCanvas — main page canvas                                               */
 /* -------------------------------------------------------------------------- */
@@ -59,6 +74,18 @@ interface PdfCanvasProps {
   scale: number
   background: string
   testId?: string
+  markers?: ScoreMarker[]
+  isPlacingMarker?: boolean
+  onPlaceMarker?: (x: number, y: number) => void
+  onSelectMarker?: (marker: ScoreMarker) => void
+  onDeleteMarker?: (markerId: string) => void
+  markerForm?: MarkerFormState | null
+  markerFrameInput?: string
+  indexCount?: number
+  onMarkerFrameInputChange?: (value: string) => void
+  onConfirmMarker?: () => void
+  onCancelMarker?: () => void
+  highlightedMarkerId?: string | null
 }
 
 const PdfCanvas = ({
@@ -67,6 +94,18 @@ const PdfCanvas = ({
   scale,
   background,
   testId,
+  markers = [],
+  isPlacingMarker = false,
+  onPlaceMarker,
+  onSelectMarker,
+  onDeleteMarker,
+  markerForm = null,
+  markerFrameInput = "",
+  indexCount = 0,
+  onMarkerFrameInputChange,
+  onConfirmMarker,
+  onCancelMarker,
+  highlightedMarkerId = null,
 }: PdfCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [isRendering, setIsRendering] = useState(false)
@@ -136,6 +175,84 @@ const PdfCanvas = ({
           borderRadius: "3px",
         }}
       />
+      {onPlaceMarker && onSelectMarker && (
+        <ScoreMarkerOverlay
+          markers={markers}
+          isPlacing={isPlacingMarker}
+          onPlace={onPlaceMarker}
+          onSelectMarker={onSelectMarker}
+          highlightedMarkerId={highlightedMarkerId}
+        />
+      )}
+      {markerForm &&
+        (() => {
+          const pos =
+            markerForm.mode === "placing"
+              ? { x: markerForm.x, y: markerForm.y }
+              : {
+                  x: markerForm.marker.rect?.x ?? 0,
+                  y: markerForm.marker.rect?.y ?? 0,
+                }
+          const isEditing = markerForm.mode === "editing"
+          return (
+            <Box
+              position="absolute"
+              left={`${pos.x * 100}%`}
+              top={`${pos.y * 100}%`}
+              transform="translate(-50%, 8px)"
+              bg="white"
+              color="black"
+              borderRadius="6px"
+              boxShadow="0 4px 16px rgba(0,0,0,0.35)"
+              p={2}
+              zIndex={2}
+              data-testid="marker-form"
+            >
+              <HStack spacing={1}>
+                <Select
+                  autoFocus
+                  aria-label="Frame"
+                  size="xs"
+                  width="110px"
+                  value={markerFrameInput}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                    onMarkerFrameInputChange?.(e.target.value)
+                  }
+                  onKeyDown={(e: ReactKeyboardEvent<HTMLSelectElement>) => {
+                    if (e.key === "Enter") onConfirmMarker?.()
+                    if (e.key === "Escape") onCancelMarker?.()
+                  }}
+                >
+                  {Array.from({ length: indexCount }, (_, frameIndex) => (
+                    <option key={frameIndex} value={frameIndex}>
+                      Frame {frameIndex}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  size="xs"
+                  colorScheme="purple"
+                  onClick={onConfirmMarker}
+                >
+                  {isEditing ? "Save" : "Add"}
+                </Button>
+                {isEditing && (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="red"
+                    onClick={() => onDeleteMarker?.(markerForm.marker._id)}
+                  >
+                    Delete
+                  </Button>
+                )}
+                <Button size="xs" variant="ghost" onClick={onCancelMarker}>
+                  Cancel
+                </Button>
+              </HStack>
+            </Box>
+          )
+        })()}
     </Box>
   )
 }
@@ -223,6 +340,7 @@ const ThumbnailCanvas = ({
 /* -------------------------------------------------------------------------- */
 
 export interface ScorePdfViewerProps {
+  presentationId: string
   scores: ScoreDocument[]
   selectedScore: ScoreDocument | null
   previewUrl: string | null
@@ -232,6 +350,7 @@ export interface ScorePdfViewerProps {
 }
 
 const ScorePdfViewer = ({
+  presentationId,
   scores,
   selectedScore,
   previewUrl,
@@ -239,6 +358,9 @@ const ScorePdfViewer = ({
   onOpenExternal,
   onUpload,
 }: ScorePdfViewerProps) => {
+  const dispatch = useAppDispatch()
+  const showToast = useCustomToast()
+  const indexCount = useAppSelector((state) => state.presentation.indexCount)
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pageNumber, setPageNumber] = useState(1)
   const [pageInput, setPageInput] = useState("1")
@@ -248,6 +370,12 @@ const ScorePdfViewer = ({
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [viewerWidth, setViewerWidth] = useState<number>(0)
+  const [isPlacingMarker, setIsPlacingMarker] = useState(false)
+  const [markerForm, setMarkerForm] = useState<MarkerFormState | null>(null)
+  const [markerFrameInput, setMarkerFrameInput] = useState("")
+  const [highlightedMarkerId, setHighlightedMarkerId] = useState<string | null>(
+    null
+  )
 
   /** Natural width of page 1 at scale=1, used to compute fit-to-width. */
   const naturalPageWidthRef = useRef<number | null>(null)
@@ -398,6 +526,131 @@ const ScorePdfViewer = ({
     if (pw && mainColWidth > 40)
       setZoom(Number(clamp((mainColWidth - 32) / pw, 0.3, 3.0).toFixed(2)))
   }, [mainColWidth])
+
+  /* ── Frame markers ────────────────────────────────────────────────────── */
+  const currentPageMarkers = useMemo(
+    () => (selectedScore?.markers ?? []).filter((m) => m.page === pageNumber),
+    [selectedScore, pageNumber]
+  )
+
+  const allMarkers = useMemo(
+    () =>
+      [...(selectedScore?.markers ?? [])].sort(
+        (a, b) => a.page - b.page || a.frameIndex - b.frameIndex
+      ),
+    [selectedScore]
+  )
+
+  // Clears the ping a few seconds after a "jump to marker" click.
+  useEffect(() => {
+    if (!highlightedMarkerId) return
+    const timer = setTimeout(() => setHighlightedMarkerId(null), 3000)
+    return () => clearTimeout(timer)
+  }, [highlightedMarkerId])
+
+  // Scrolls the target marker into view (needed even on same-page jumps).
+  useEffect(() => {
+    if (!highlightedMarkerId) return
+    const timer = setTimeout(() => {
+      const el = canvasAreaRef.current?.querySelector<HTMLElement>(
+        `[data-marker-id="${highlightedMarkerId}"]`
+      )
+      el?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      })
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [highlightedMarkerId, pageNumber])
+
+  const handleGoToMarker = (marker: ScoreMarker) => {
+    goToPage(marker.page)
+    setHighlightedMarkerId(marker._id)
+  }
+
+  const handlePlaceMarker = (x: number, y: number) => {
+    setMarkerForm({ mode: "placing", x, y })
+    setMarkerFrameInput("0")
+  }
+
+  const handleSelectMarker = (marker: ScoreMarker) => {
+    setMarkerForm({ mode: "editing", marker })
+    setMarkerFrameInput(String(marker.frameIndex))
+    setHighlightedMarkerId(null)
+  }
+
+  const handleCancelMarker = () => {
+    setMarkerForm(null)
+    setMarkerFrameInput("")
+  }
+
+  const handleConfirmMarker = async () => {
+    if (!markerForm || !selectedScore) return
+    const frameIndex = Number(markerFrameInput)
+    if (
+      !Number.isInteger(frameIndex) ||
+      frameIndex < 0 ||
+      frameIndex >= indexCount
+    ) {
+      showToast({
+        title: "Invalid frame number",
+        description: `Enter a whole number between 0 and ${indexCount - 1}.`,
+        status: "warning",
+      })
+      return
+    }
+
+    try {
+      if (markerForm.mode === "placing") {
+        await dispatch(
+          createScoreMarker(presentationId, selectedScore._id, {
+            page: pageNumber,
+            frameIndex,
+            rect: { x: markerForm.x, y: markerForm.y, width: 0, height: 0 },
+          })
+        )
+      } else {
+        await dispatch(
+          updateScoreMarker(
+            presentationId,
+            selectedScore._id,
+            markerForm.marker._id,
+            {
+              page: markerForm.marker.page,
+              frameIndex,
+              rect: markerForm.marker.rect,
+            }
+          )
+        )
+      }
+      setMarkerForm(null)
+      setMarkerFrameInput("")
+    } catch (error) {
+      showToast({
+        title: "Couldn't save marker",
+        description: error instanceof Error ? error.message : undefined,
+        status: "error",
+      })
+    }
+  }
+
+  const handleDeleteMarker = async (markerId: string) => {
+    if (!selectedScore) return
+    try {
+      await dispatch(
+        deleteScoreMarker(presentationId, selectedScore._id, markerId)
+      )
+      setMarkerForm(null)
+      setMarkerFrameInput("")
+    } catch (error) {
+      showToast({
+        title: "Couldn't remove marker",
+        description: error instanceof Error ? error.message : undefined,
+        status: "error",
+      })
+    }
+  }
 
   /* ======================================================================== */
   /*  Viewer JSX — shared between normal and expanded modes                   */
@@ -572,6 +825,31 @@ const ScorePdfViewer = ({
           </Box>
         </HStack>
 
+        <Button
+          aria-label={isPlacingMarker ? "Stop adding markers" : "Add marker"}
+          leftIcon={
+            <Text fontSize="12px" lineHeight={1}>
+              📍
+            </Text>
+          }
+          size="xs"
+          variant={isPlacingMarker ? "solid" : "outline"}
+          colorScheme="purple"
+          flexShrink={0}
+          isDisabled={!pdf || !selectedScore}
+          title={
+            isPlacingMarker
+              ? "Click the score to place a marker; click here again to stop"
+              : "Add a marker to the score"
+          }
+          onClick={() => {
+            handleCancelMarker()
+            setIsPlacingMarker((prev) => !prev)
+          }}
+        >
+          {isPlacingMarker ? "Placing…" : "Marker"}
+        </Button>
+
         {/* Expand */}
         <IconButton
           aria-label={isExpanded ? "Close expanded viewer" : "Expand viewer"}
@@ -693,6 +971,18 @@ const ScorePdfViewer = ({
               scale={effectiveZoom}
               background="#ffffff"
               testId="score-pdf-viewer"
+              markers={currentPageMarkers}
+              isPlacingMarker={isPlacingMarker}
+              onPlaceMarker={handlePlaceMarker}
+              onSelectMarker={handleSelectMarker}
+              onDeleteMarker={handleDeleteMarker}
+              markerForm={markerForm}
+              markerFrameInput={markerFrameInput}
+              indexCount={indexCount}
+              onMarkerFrameInputChange={setMarkerFrameInput}
+              onConfirmMarker={handleConfirmMarker}
+              onCancelMarker={handleCancelMarker}
+              highlightedMarkerId={highlightedMarkerId}
             />
           ) : loadError ? (
             <VStack mt={8} spacing={3}>
@@ -716,6 +1006,44 @@ const ScorePdfViewer = ({
           )}
         </Box>
       </HStack>
+
+      {/* ── Marker recap — where every marker sits across the score's pages ── */}
+      {allMarkers.length > 0 && (
+        <HStack
+          px={2}
+          py="4px"
+          bg={toolbarBg}
+          borderTop="1px solid"
+          borderColor={borderColor}
+          flex="0 0 auto"
+          spacing={1}
+          overflowX="auto"
+          flexWrap="nowrap"
+        >
+          <Text
+            fontSize="10px"
+            fontWeight={700}
+            color={mutedText}
+            flexShrink={0}
+            mr={1}
+          >
+            Markers:
+          </Text>
+          {allMarkers.map((marker, i) => (
+            <Button
+              key={marker._id}
+              size="xs"
+              variant={marker.page === pageNumber ? "solid" : "outline"}
+              colorScheme="purple"
+              flexShrink={0}
+              title={`Marker ${i + 1} — Page ${marker.page}, Frame ${marker.frameIndex}`}
+              onClick={() => handleGoToMarker(marker)}
+            >
+              {`${i + 1} · P${marker.page}`}
+            </Button>
+          ))}
+        </HStack>
+      )}
     </Box>
   )
 
