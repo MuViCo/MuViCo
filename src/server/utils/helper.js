@@ -43,6 +43,28 @@ const processDriveCueFiles = async (cues, accessToken) => {
   return processedCues
 }
 
+const generateDriveFileUrl = async (file, accessToken) => {
+  if (!file?.driveId) {
+    return file
+  }
+
+  try {
+    const metadata = await getDriveFileMetadata(file.driveId, accessToken)
+    file.type = metadata.mimeType
+    file.size = metadata.size
+    const baseUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://muvico.live"
+        : "http://localhost:3000"
+
+    file.url = `${baseUrl}/api/media/${file.driveId}?access_token=${accessToken}`
+  } catch (error) {
+    logger.error("Error fetching file metadata:", error)
+  }
+
+  return file
+}
+
 const generateSignedUrlForS3 = async (cue, presentationId) => {
   if (!cue.file?.id) {
     return cue
@@ -52,6 +74,17 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
   cue.file.url = await getObjectSignedUrl(key)
 
   return cue
+}
+
+const generateSignedScoreUrlForS3 = async (score, presentationId) => {
+  if (!score.file?.id) {
+    return score
+  }
+
+  const key = `${presentationId}/${score.file.id.toString()}`
+  score.file.url = await getObjectSignedUrl(key)
+
+  return score
 }
 
 const processS3Files = async (cues, presentationId) => {
@@ -75,8 +108,33 @@ const processS3Files = async (cues, presentationId) => {
   return processedCues
 }
 
+const processS3ScoreFiles = async (scores, presentationId) => {
+  return Promise.all(
+    scores.map(async (score) => {
+      if (!score.file?.id) {
+        return score
+      }
+
+      await generateSignedScoreUrlForS3(score, presentationId)
+      return score
+    })
+  )
+}
+
+const processDriveScoreFiles = async (scores, accessToken) => {
+  return Promise.all(
+    scores.map(async (score) => {
+      await generateDriveFileUrl(score.file, accessToken)
+      return score
+    })
+  )
+}
+
 module.exports = {
   processDriveCueFiles,
+  processDriveScoreFiles,
   generateSignedUrlForS3,
+  generateSignedScoreUrlForS3,
   processS3Files,
+  processS3ScoreFiles,
 }

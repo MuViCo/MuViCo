@@ -139,6 +139,117 @@ describe("test presentation", () => {
         .expect("Content-Type", /application\/json/)
     })
   })
+
+  describe("Score documents", () => {
+    const imslpUrl =
+      "https://imslp.org/wiki/Special:ImagefromIndex/939945/apano-stin-triantafyllia.pdf"
+
+    const importScore = () =>
+      api
+        .post(`/api/presentation/${testPresentationId}/scores/import`)
+        .set("Authorization", authHeader)
+        .send({
+          title: "Apano stin Triantafyllia.pdf",
+          sourceUrl: imslpUrl,
+          imslpId: "IMSLP939945",
+          pageCount: 12,
+        })
+
+    test("imports IMSLP score metadata", async () => {
+      const response = await importScore().expect(201)
+
+      expect(response.body.title).toBe("Apano stin Triantafyllia.pdf")
+      expect(response.body.source).toBe("imslp")
+      expect(response.body.sourceUrl).toBe(imslpUrl)
+      expect(response.body.imslpId).toBe("IMSLP939945")
+      expect(response.body.pageCount).toBe(12)
+      expect(response.body.file.type).toBe("application/pdf")
+    })
+
+    test("rejects non-PDF score uploads", async () => {
+      const response = await api
+        .post(`/api/presentation/${testPresentationId}/scores/upload`)
+        .set("Authorization", authHeader)
+        .attach("score", mockImageBuffer, {
+          filename: "mock_image.png",
+          contentType: "image/png",
+        })
+        .field("title", "Not a score")
+        .expect(400)
+
+      expect(response.body.error).toBe("Only PDF scores are allowed")
+    })
+
+    test("adds, updates and deletes score markers", async () => {
+      const scoreResponse = await importScore().expect(201)
+      const scoreId = scoreResponse.body._id
+
+      const createMarkerResponse = await api
+        .post(
+          `/api/presentation/${testPresentationId}/scores/${scoreId}/markers`
+        )
+        .set("Authorization", authHeader)
+        .send({
+          page: 3,
+          frameIndex: 2,
+          measureLabel: "m. 12",
+          note: "Rehearsal B",
+          rect: { x: 0.1, y: 0.2, width: 0.6, height: 0.1 },
+        })
+        .expect(201)
+
+      expect(createMarkerResponse.body.page).toBe(3)
+      expect(createMarkerResponse.body.frameIndex).toBe(2)
+      expect(createMarkerResponse.body.measureLabel).toBe("m. 12")
+
+      const markerId = createMarkerResponse.body._id
+
+      const updateMarkerResponse = await api
+        .put(
+          `/api/presentation/${testPresentationId}/scores/${scoreId}/markers/${markerId}`
+        )
+        .set("Authorization", authHeader)
+        .send({
+          page: 4,
+          frameIndex: 3,
+          measureLabel: "m. 16",
+        })
+        .expect(200)
+
+      expect(updateMarkerResponse.body.page).toBe(4)
+      expect(updateMarkerResponse.body.frameIndex).toBe(3)
+      expect(updateMarkerResponse.body.measureLabel).toBe("m. 16")
+
+      await api
+        .delete(
+          `/api/presentation/${testPresentationId}/scores/${scoreId}/markers/${markerId}`
+        )
+        .set("Authorization", authHeader)
+        .expect(204)
+
+      const presentation = await Presentation.findById(testPresentationId)
+      const score = presentation.scores.id(scoreId)
+      expect(score.markers).toHaveLength(0)
+    })
+
+    test("rejects markers outside the timeline", async () => {
+      const scoreResponse = await importScore().expect(201)
+      const scoreId = scoreResponse.body._id
+
+      const response = await api
+        .post(
+          `/api/presentation/${testPresentationId}/scores/${scoreId}/markers`
+        )
+        .set("Authorization", authHeader)
+        .send({ page: 1, frameIndex: 10 })
+        .expect(400)
+
+      expect(response.body.error).toBe(
+        "marker frameIndex must be between 0 and 4"
+      )
+    })
+  })
+
   describe("DELETE", () => {
     test(" /api/presentation/:id", async () => {
       await api

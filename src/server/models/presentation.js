@@ -175,6 +175,94 @@ const presentationSchema = mongoose.Schema(
         },
       },
     ],
+    scores: [
+      {
+        title: {
+          type: String,
+          required: true,
+          minlength: 1,
+          maxlength: 150,
+        },
+        source: {
+          type: String,
+          required: true,
+          default: "upload",
+          enum: {
+            values: ["upload", "imslp"],
+            message: "source must be either upload or imslp",
+          },
+        },
+        sourceUrl: {
+          type: String,
+          maxlength: 1000,
+        },
+        imslpId: {
+          type: String,
+          maxlength: 80,
+        },
+        pageCount: {
+          type: Number,
+          min: 1,
+          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          validate: {
+            validator: (v) => v === undefined || Number.isInteger(v),
+            message: "pageCount must be an integer",
+          },
+        },
+        file: {
+          id: String,
+          name: String,
+          url: String,
+          driveId: String,
+          size: { type: String, default: "0" },
+          type: { type: String, default: "application/pdf" },
+        },
+        markers: [
+          {
+            page: {
+              type: Number,
+              required: true,
+              min: 1,
+              set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+              validate: {
+                validator: Number.isInteger,
+                message: "marker page must be an integer",
+              },
+            },
+            frameIndex: {
+              type: Number,
+              required: true,
+              min: 0,
+              set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+              validate: {
+                validator: Number.isInteger,
+                message: "marker frameIndex must be an integer",
+              },
+            },
+            measureLabel: {
+              type: String,
+              default: "",
+              maxlength: 80,
+            },
+            note: {
+              type: String,
+              default: "",
+              maxlength: 300,
+            },
+            rect: {
+              x: { type: Number, min: 0, max: 1 },
+              y: { type: Number, min: 0, max: 1 },
+              width: { type: Number, min: 0, max: 1 },
+              height: { type: Number, min: 0, max: 1 },
+            },
+          },
+        ],
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 )
@@ -251,6 +339,36 @@ presentationSchema.pre("save", function (next) {
           value: layer,
         })
       )
+    }
+  }
+
+  for (const score of this.scores || []) {
+    for (const marker of score.markers || []) {
+      if (marker.frameIndex < 0 || marker.frameIndex >= this.indexCount) {
+        validationError.addError(
+          "scores.markers.frameIndex",
+          new mongoose.Error.ValidatorError({
+            message: `Score marker frameIndex ${marker.frameIndex} exceeds indexCount`,
+            path: "scores.markers.frameIndex",
+            value: marker.frameIndex,
+          })
+        )
+      }
+
+      if (
+        score.pageCount &&
+        marker.page &&
+        Number(marker.page) > Number(score.pageCount)
+      ) {
+        validationError.addError(
+          "scores.markers.page",
+          new mongoose.Error.ValidatorError({
+            message: `Score marker page ${marker.page} exceeds pageCount`,
+            path: "scores.markers.page",
+            value: marker.page,
+          })
+        )
+      }
     }
   }
 
