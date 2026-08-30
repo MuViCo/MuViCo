@@ -9,8 +9,12 @@
 const express = require("express")
 const multer = require("multer")
 const crypto = require("crypto")
-const { uploadFileS3, deleteFileS3 } = require("../utils/s3")
-const { uploadDriveFile, deleteDriveFile } = require("../utils/drive")
+const { uploadFileS3, deleteFileS3, getObjectStreamS3 } = require("../utils/s3")
+const {
+  uploadDriveFile,
+  deleteDriveFile,
+  getDriveFileStream,
+} = require("../utils/drive")
 const Presentation = require("../models/presentation")
 const {
   userExtractor,
@@ -80,6 +84,12 @@ const validateScoreTitle = (title) => {
   }
 
   return trimmedTitle
+}
+
+const safeInlineFilename = (name) => {
+  const fallback = "score.pdf"
+  const filename = trimText(name, fallback).replace(/["\\\r\n]/g, "_")
+  return filename || fallback
 }
 
 const parseUrl = (rawUrl) => {
@@ -601,6 +611,68 @@ router.get(
       const { user, presentation } = req
       await processPresentationScoreFiles(presentation, user)
       res.json(presentation.scores || [])
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.get(
+  "/:id/scores/:scoreId/file",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation, user } = req
+      const score = presentation.scores.id(req.params.scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      if (!score.file) {
+        return res.status(404).json({ error: "Score file not found" })
+      }
+
+      const filename = safeInlineFilename(score.file.name || score.title)
+      res.setHeader("Content-Type", score.file.type || "application/pdf")
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+      )
+      res.setHeader("Cache-Control", "private, max-age=300")
+
+      if (user.driveToken && score.file.driveId) {
+        const fileStream = await getDriveFileStream(
+          score.file.driveId,
+          user.driveToken
+        )
+        if (!fileStream || typeof fileStream.pipe !== "function") {
+          return res.status(404).json({ error: "Score file not found" })
+        }
+        return fileStream.pipe(res)
+      }
+
+      if (!score.file.id) {
+        return res.status(404).json({ error: "Score file not found" })
+      }
+
+      const key = `${presentation._id}/${score.file.id}`
+      const response = await getObjectStreamS3(key)
+
+      if (response.ContentType) {
+        res.setHeader("Content-Type", response.ContentType)
+      }
+
+      if (response.ContentLength !== undefined) {
+        res.setHeader("Content-Length", response.ContentLength)
+      }
+
+      if (!response.Body || typeof response.Body.pipe !== "function") {
+        return res.status(404).json({ error: "Score file not found" })
+      }
+
+      return response.Body.pipe(res)
     } catch (error) {
       next(error)
     }

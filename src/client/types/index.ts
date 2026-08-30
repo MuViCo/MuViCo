@@ -82,6 +82,7 @@ export interface ScoreFileMeta {
   id?: string
   name?: string
   url?: string
+  proxyUrl?: string
   driveId?: string
   size?: string
   type?: string

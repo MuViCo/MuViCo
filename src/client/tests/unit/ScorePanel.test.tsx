@@ -15,20 +15,21 @@ jest.mock("../../components/presentation/ScorePdfViewer", () => {
   return function MockScorePdfViewer({
     selectedScore,
     scores,
+    previewUrl,
   }: {
     selectedScore: {
       _id: string
       title: string
-      file?: { url?: string }
+      file?: { proxyUrl?: string; url?: string }
       sourceUrl?: string
     } | null
     scores: { _id: string }[]
+    previewUrl: string | null
   }) {
-    const url = selectedScore?.file?.url ?? selectedScore?.sourceUrl ?? ""
     return (
       <div
         data-testid="score-pdf-viewer"
-        data-url={url}
+        data-url={previewUrl ?? ""}
         data-score-count={scores.length}
         data-selected-id={selectedScore?._id ?? ""}
       />
@@ -114,6 +115,7 @@ const score = {
   source: "upload" as const,
   file: {
     name: "IMSLP939945-PMLP1474190-apano-stin-triantafyllia.pdf",
+    proxyUrl: "/api/presentation/presentation-1/scores/score-1/file",
     url: "https://example.com/score.pdf",
     type: "application/pdf",
   },
@@ -133,7 +135,10 @@ describe("ScorePanel", () => {
     )
 
     const viewer = screen.getByTestId("score-pdf-viewer")
-    expect(viewer).toHaveAttribute("data-url", "https://example.com/score.pdf")
+    expect(viewer).toHaveAttribute(
+      "data-url",
+      "/api/presentation/presentation-1/scores/score-1/file"
+    )
     expect(viewer).toHaveAttribute("data-score-count", "1")
     expect(viewer).toHaveAttribute("data-selected-id", "score-1")
   })
