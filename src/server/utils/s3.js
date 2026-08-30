@@ -62,6 +62,15 @@ const deleteFileS3 = (fileName) => {
   return s3Internal.send(new DeleteObjectCommand(deleteParams))
 }
 
+const getObjectStreamS3 = (fileName) => {
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: fileName,
+  }
+
+  return s3Internal.send(new GetObjectCommand(params))
+}
+
 const getObjectSignedUrl = async (key) => {
   const params = {
     Bucket: BUCKET_NAME,
@@ -118,6 +127,7 @@ const getFileType = async (cue, presentationId) => {
 module.exports = {
   uploadFileS3,
   deleteFileS3,
+  getObjectStreamS3,
   getObjectSignedUrl,
   getFileSize,
   getFileType,

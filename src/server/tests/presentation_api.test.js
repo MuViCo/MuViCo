@@ -5,6 +5,15 @@
  */
 const supertest = require("supertest")
 const mongoose = require("mongoose")
+const { Readable } = require("stream")
+const { mockClient } = require("aws-sdk-client-mock")
+const {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+} = require("@aws-sdk/client-s3")
 const { generateHash } = require("../utils/auth.js")
 const jwt = require("jsonwebtoken")
 const config = require("../utils/config")
@@ -16,6 +25,7 @@ const fs = require("fs")
 const path = require("path")
 
 const api = supertest(app)
+const S3Mock = mockClient(S3Client)
 
 let authHeader
 let testPresentationId
@@ -28,6 +38,13 @@ jest.setTimeout(15000)
 
 describe("test presentation", () => {
   beforeEach(async () => {
+    S3Mock.reset()
+    S3Mock.on(PutObjectCommand).resolves({})
+    S3Mock.on(DeleteObjectCommand).resolves({})
+    S3Mock.on(HeadObjectCommand).resolves({
+      ContentType: "image/png",
+      ContentLength: mockImageBuffer.length,
+    })
     await User.deleteMany({})
     await Presentation.deleteMany({})
     await api
@@ -178,6 +195,74 @@ describe("test presentation", () => {
         .expect(400)
 
       expect(response.body.error).toBe("Only PDF scores are allowed")
+    })
+
+    test("streams S3 score PDFs through the application route", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "Inline Score",
+        source: "upload",
+        file: {
+          id: "score-file-1",
+          name: 'inline "score".pdf',
+          type: "application/pdf",
+        },
+      })
+      await presentation.save()
+
+      const score = presentation.scores[0]
+      S3Mock.on(GetObjectCommand).resolves({
+        Body: Readable.from([Buffer.from("%PDF")]),
+        ContentType: "application/pdf",
+        ContentLength: 4,
+      })
+
+      const response = await api
+        .get(`/api/presentation/${testPresentationId}/scores/${score._id}/file`)
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      expect(response.headers["content-type"]).toMatch(/application\/pdf/)
+      expect(response.headers["content-disposition"]).toContain(
+        'inline; filename="inline _score_.pdf"'
+      )
+      expect(response.headers["cache-control"]).toBe("private, max-age=300")
+      expect(response.headers["content-length"]).toBe("4")
+      expect(S3Mock.commandCalls(GetObjectCommand)).toHaveLength(1)
+    })
+
+    test("returns 404 when streaming an unknown score", async () => {
+      const response = await api
+        .get(
+          `/api/presentation/${testPresentationId}/scores/${new mongoose.Types.ObjectId()}/file`
+        )
+        .set("Authorization", authHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("Score not found")
+    })
+
+    test("returns 404 when a score has no S3 file id", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "External Score",
+        source: "imslp",
+        sourceUrl: imslpUrl,
+        file: {
+          name: "external-score.pdf",
+          type: "application/pdf",
+        },
+      })
+      await presentation.save()
+
+      const score = presentation.scores[0]
+      const response = await api
+        .get(`/api/presentation/${testPresentationId}/scores/${score._id}/file`)
+        .set("Authorization", authHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("Score file not found")
+      expect(S3Mock.commandCalls(GetObjectCommand)).toHaveLength(0)
     })
 
     test("adds, updates and deletes score markers", async () => {

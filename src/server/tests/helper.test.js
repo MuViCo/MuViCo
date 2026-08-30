@@ -6,6 +6,7 @@ const {
   processDriveCueFiles,
   generateSignedUrlForS3,
   processS3Files,
+  processS3ScoreFiles,
 } = require("../utils/helper")
 const { getDriveFileMetadata } = require("../utils/drive")
 const { getObjectSignedUrl } = require("../utils/s3")
@@ -238,6 +239,40 @@ describe("Helper utility functions", () => {
       expect(result).toHaveLength(3)
       expect(getFileType).toHaveBeenCalledTimes(2)
       expect(getFileSize).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe("processS3ScoreFiles", () => {
+    test("adds signed and proxy URLs to S3 score files", async () => {
+      const scores = [
+        {
+          _id: "score-1",
+          file: {
+            id: "file-1",
+            name: "score.pdf",
+            url: "",
+          },
+        },
+      ]
+
+      getObjectSignedUrl.mockResolvedValue("https://s3.signed.url")
+
+      const result = await processS3ScoreFiles(scores, "pres-123")
+
+      expect(getObjectSignedUrl).toHaveBeenCalledWith("pres-123/file-1")
+      expect(result[0].file.url).toBe("https://s3.signed.url")
+      expect(result[0].file.proxyUrl).toBe(
+        "/api/presentation/pres-123/scores/score-1/file"
+      )
+    })
+
+    test("skips score files without S3 id", async () => {
+      const scores = [{ _id: "score-1", file: { name: "score.pdf" } }]
+
+      const result = await processS3ScoreFiles(scores, "pres-123")
+
+      expect(result[0].file.proxyUrl).toBeUndefined()
+      expect(getObjectSignedUrl).not.toHaveBeenCalled()
     })
   })
 })
