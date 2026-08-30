@@ -20,7 +20,6 @@ import AdminControls from "./AdminControls"
 import PresentationsGrid from "./PresentationsGrid"
 import PresentationFormWrapper from "./PresentationFormWrapper"
 import LinkGoogleDriveButton from "./LinkGoogleDriveButton"
-import addInitialElements from "../utils/addInitialElements"
 import { useCustomToast } from "../utils/toastUtils"
 import useDeletePresentation from "../utils/useDeletePresentation"
 import Dialog from "../utils/AlertDialog"
@@ -88,12 +87,6 @@ const HomePage = ({ user, setUser }: HomePageProps) => {
         presentationObject.startingFrameColor
       )
 
-      await addInitialElements(
-        createdPresentation.id,
-        presentationObject.screenCount,
-        showToast,
-        presentationObject.startingFrameColor
-      )
       navigate(`/presentation/${createdPresentation.id}`)
     } catch (error) {
       console.error("Error creating presentation: ", error)

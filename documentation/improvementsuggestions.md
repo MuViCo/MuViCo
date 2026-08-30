@@ -56,7 +56,7 @@ _Note: This is a list of suggestions from previous teams, as of December 2025. I
 - **Issue:**  
   The term "Cue" is used inconsistently throughout the codebase.
   - In some functions, like `addCue`, it refers to an element.
-  - Elsewhere, for example in `addInitialElements`, a different term is used.
+  - Some older utilities and UI text used different terms for timeline elements.
 - **Recommendation:**  
   Consider standardizing terminology—using "element" throughout—in order to avoid confusion. This change will clarify that a Cue represents one element in the presentation grid.
 
