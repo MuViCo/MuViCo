@@ -1,3 +1,4 @@
+import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Box,
@@ -314,7 +315,7 @@ const ScorePdfViewer = ({
       try {
         const { GlobalWorkerOptions, getDocument } = await import("pdfjs-dist")
         if (cancelled) return
-        GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+        GlobalWorkerOptions.workerSrc = workerUrl
         loadingTask = getDocument({
           url,
           disableRange: true,
