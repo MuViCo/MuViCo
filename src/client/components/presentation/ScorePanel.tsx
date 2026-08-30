@@ -168,6 +168,7 @@ const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
 
       {/* Viewer — takes all available vertical space */}
       <ScorePdfViewer
+        presentationId={presentationId}
         scores={scores}
         selectedScore={selectedScore}
         previewUrl={
