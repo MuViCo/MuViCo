@@ -155,6 +155,38 @@ describe("test presentation", () => {
         .expect(200)
         .expect("Content-Type", /application\/json/)
     })
+
+    test("legacy cues are returned with layered timeline defaults", async () => {
+      await Presentation.collection.updateOne(
+        { _id: testPresentationId },
+        {
+          $set: {
+            cues: [
+              {
+                _id: new mongoose.Types.ObjectId(),
+                index: 0,
+                screen: 1,
+                name: "Legacy cue",
+              },
+            ],
+          },
+        }
+      )
+
+      const response = await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      expect(response.body.cues[0]).toEqual(
+        expect.objectContaining({
+          cueType: "visual",
+          layer: 0,
+          opacity: 1,
+          continuePlayback: false,
+        })
+      )
+    })
   })
 
   describe("Score documents", () => {

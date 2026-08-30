@@ -20,8 +20,39 @@ const {
   getMaxLayers,
 } = require("../utils/cueType")
 
-// Normalizes and validates cues, ensuring they have the correct cueType and screen assignments
-const normalizePresentationCues = (presentationObject) => {
+const normalizeCueLayer = (layer, cueType, repairInvalid) => {
+  if (layer === undefined || layer === null) {
+    return 0
+  }
+  const parsedLayer = Number(layer ?? 0)
+  const isValidLayer =
+    Number.isInteger(parsedLayer) &&
+    parsedLayer >= 0 &&
+    parsedLayer < getMaxLayers(cueType)
+
+  if (isValidLayer) {
+    return parsedLayer
+  }
+
+  return repairInvalid ? 0 : layer
+}
+
+const normalizeCueOpacity = (opacity, repairInvalid) => {
+  if (opacity === undefined || opacity === null) {
+    return 1
+  }
+  const parsedOpacity = Number(opacity ?? 1)
+  const isValidOpacity =
+    Number.isFinite(parsedOpacity) && parsedOpacity >= 0 && parsedOpacity <= 1
+
+  if (isValidOpacity) {
+    return parsedOpacity
+  }
+
+  return repairInvalid ? 1 : opacity
+}
+
+const normalizePresentationCues = (presentationObject, options = {}) => {
   const screenCount = Number(presentationObject.screenCount) || 1
   const cues = Array.isArray(presentationObject.cues)
     ? presentationObject.cues
@@ -38,6 +69,16 @@ const normalizePresentationCues = (presentationObject) => {
     return {
       ...normalizedCue,
       cueType,
+      layer: normalizeCueLayer(
+        normalizedCue.layer,
+        cueType,
+        options.repairInvalid === true
+      ),
+      opacity: normalizeCueOpacity(
+        normalizedCue.opacity,
+        options.repairInvalid === true
+      ),
+      continuePlayback: normalizedCue.continuePlayback ?? false,
       ...(cueType === "audio" ? { screen: getAudioRow(screenCount) } : {}),
     }
   })
@@ -419,7 +460,7 @@ presentationSchema.pre("save", function (next) {
 // Transform document when converting to JSON: format IDs and extract audio cues
 presentationSchema.set("toJSON", {
   transform: (document, returnedObject) => {
-    normalizePresentationCues(returnedObject)
+    normalizePresentationCues(returnedObject, { repairInvalid: true })
     returnedObject.audioCues = returnedObject.cues.filter(
       (cue) => cue.cueType === "audio"
     )
