@@ -9,7 +9,8 @@
  */
 
 import { Button } from "@chakra-ui/react"
-import React, { useEffect, useMemo, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import type { SyntheticEvent } from "react"
 import { usePrefersReducedMotion } from "@chakra-ui/react"
 import {
   buildCueVisualSpanMap,
@@ -17,8 +18,92 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { isType } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 
 import type { Cue, CueFileMeta } from "../../types"
+
+// Preview tiles are all the same size (height: 100%, aspectRatio: 16/9), so
+// -- unlike the real popups, which can be any size the user drags them to --
+// every spanned screen can be assumed equal-width here. That lets the crop
+// be expressed as plain CSS percentages of this tile's own box, with no
+// measurement needed.
+const TILE_ASPECT_RATIO = 16 / 9
+
+const SpannedTilePreview = ({
+  imageSrc,
+  name,
+  spanScreens,
+  screenNumber,
+}: {
+  imageSrc: string
+  name: string
+  spanScreens: number[]
+  screenNumber: number
+}) => {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
+
+  const handleProbeLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = event.currentTarget
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setAspectRatio(naturalWidth / naturalHeight)
+    }
+  }
+
+  if (!aspectRatio) {
+    return (
+      <>
+        <img
+          src={imageSrc}
+          alt={name}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+        />
+        <img
+          src={imageSrc}
+          alt=""
+          onLoad={handleProbeLoad}
+          style={{ display: "none" }}
+        />
+      </>
+    )
+  }
+
+  // Equal-width fallback (empty widthMap) is exactly right here: every tile
+  // genuinely is the same width, unlike real popups.
+  const { canvasWidth, canvasHeight } = computeScreenSpanLayout(
+    spanScreens,
+    {},
+    aspectRatio
+  )
+  const screenCount = spanScreens.length
+  const tileWidth = canvasWidth / screenCount
+  const tileHeight = tileWidth / TILE_ASPECT_RATIO
+  const orderedScreens = [...spanScreens].sort((a, b) => a - b)
+  const position = orderedScreens.indexOf(screenNumber)
+
+  // CSS background-position percentages don't scale linearly with pixel
+  // offset -- X% means "align the point X% across the image with the point
+  // X% across the box", i.e. positionPx = (boxSize - bgSize) * (X/100).
+  // Solving that for the desired positionPx (-position * tileWidth) gives
+  // this fraction; it happens to simplify to the screen's plain fractional
+  // position across the span (0% for the first screen, 100% for the last).
+  const backgroundPositionXPercent =
+    screenCount > 1 ? (position / (screenCount - 1)) * 100 : 0
+
+  return (
+    <div
+      role="img"
+      aria-label={name}
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundImage: `url(${imageSrc})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: `${backgroundPositionXPercent}% 50%`,
+        backgroundSize: `${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`,
+      }}
+    />
+  )
+}
 
 export interface ScreensDisplayProps {
   screenCount?: number
@@ -105,11 +190,18 @@ export const ScreensDisplay = ({
   )
   const screenSortedCuesByScreen = useMemo(() => {
     return (cues || []).reduce<Record<number, Cue[]>>((acc, cue) => {
-      const screenNumber = Number(cue.screen)
-      if (!acc[screenNumber]) {
-        acc[screenNumber] = []
-      }
-      acc[screenNumber].push(cue)
+      // A spanning cue must show up in the preview of every screen it
+      // spans, not just its primary screen -- otherwise a screen with no
+      // cue of its own looks empty even though it's covered by the span.
+      const screenNumbers = cue.spanScreens?.length
+        ? cue.spanScreens
+        : [Number(cue.screen)]
+      screenNumbers.forEach((screenNumber) => {
+        if (!acc[screenNumber]) {
+          acc[screenNumber] = []
+        }
+        acc[screenNumber].push(cue)
+      })
       return acc
     }, {})
   }, [cues])
@@ -145,9 +237,20 @@ export const ScreensDisplay = ({
     return sortByLayerPriority(cueStack)
   }
 
-  const renderCuePreview = (cue: Cue) => {
+  const renderCuePreview = (cue: Cue, screenNumber: number) => {
     if (cue?.file?.url) {
       if (isImageFile(cue.file)) {
+        if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
+          return (
+            <SpannedTilePreview
+              imageSrc={cue.file.url}
+              name={cue.name}
+              spanScreens={cue.spanScreens}
+              screenNumber={screenNumber}
+            />
+          )
+        }
+
         return (
           <img
             src={cue.file.url}
@@ -308,7 +411,7 @@ export const ScreensDisplay = ({
                     opacity: normalizeCueOpacity(cue.opacity),
                   }}
                 >
-                  {renderCuePreview(cue)}
+                  {renderCuePreview(cue, screenNumber)}
                 </div>
               ))
             ) : (

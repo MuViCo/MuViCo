@@ -60,6 +60,12 @@ export interface Cue {
   index: number
   name: string
   screen: number
+  /**
+   * Screens this cue's image spans across (visual cues only), in addition to
+   * `screen`, its primary/grid position. Present only when the cue actually
+   * spans more than one screen -- absent, not an empty array, means "no span".
+   */
+  spanScreens?: number[]
   color?: string
   file: CueFileMeta | null
   loop: boolean
@@ -265,6 +271,11 @@ export interface CueUpdateInput {
   layer?: number
   opacity?: number
   continuePlayback?: boolean
+  /**
+   * See `Cue.spanScreens`. Omitted entirely means "don't touch the cue's
+   * existing span"; an explicit empty array means "clear it".
+   */
+  spanScreens?: number[]
 }
 
 export interface UploadScoreInput {

@@ -140,6 +140,16 @@ const presentationSchema = mongoose.Schema(
             message: "screen must be an integer",
           },
         },
+        // Screens a visual cue's image spans across (in addition to `screen`,
+        // its primary/grid position). Undefined or a single-element array
+        // means "no span". Range/membership/cueType are checked in the
+        // pre("save") hook below, where screenCount is available.
+        spanScreens: {
+          type: [Number],
+          default: undefined,
+          set: (v) =>
+            Array.isArray(v) ? v.map((n) => Math.round(Number(n))) : v,
+        },
         // Hex color code for visual cues
         color: {
           type: String,
@@ -339,6 +349,32 @@ presentationSchema.pre("save", function (next) {
           value: layer,
         })
       )
+    }
+
+    if (cue.spanScreens !== undefined) {
+      const spanScreens = cue.spanScreens || []
+      const isValidSpan =
+        cue.cueType === "visual" &&
+        spanScreens.length > 1 &&
+        spanScreens.includes(cue.screen) &&
+        new Set(spanScreens).size === spanScreens.length &&
+        spanScreens.every(
+          (screenNumber) =>
+            Number.isInteger(screenNumber) &&
+            screenNumber >= 1 &&
+            screenNumber <= this.screenCount
+        )
+
+      if (!isValidSpan) {
+        validationError.addError(
+          "cues.spanScreens",
+          new mongoose.Error.ValidatorError({
+            message: `Cue spanScreens ${JSON.stringify(spanScreens)} is invalid for screen ${cue.screen}, cueType ${cue.cueType}, screenCount ${this.screenCount}`,
+            path: "cues.spanScreens",
+            value: cue.spanScreens,
+          })
+        )
+      }
     }
   }
 
