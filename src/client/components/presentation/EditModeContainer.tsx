@@ -415,6 +415,28 @@ const EditModeContainer = ({
   const [focusedLaneKey, setFocusedLaneKey] = useState<string | null>(null)
   const [screens, setScreens] = useState<Record<string, boolean>>({})
   const [mirroring, setMirroring] = useState<Record<string, number>>({})
+  // Live pixel width of each open screen popup, reported by <Screen> on
+  // mount and on resize. Only screens actually referenced by some cue's
+  // spanScreens need to be tracked -- see handleScreenWidthChange below.
+  // Same-JS-context portal architecture (see Screen.jsx), so this is plain
+  // React state, no cross-window messaging involved.
+  const [screenWidths, setScreenWidths] = useState<Record<number, number>>({})
+  const spannedScreenNumbers = useMemo(() => {
+    const spanned = new Set<number>()
+    for (const cue of cues || []) {
+      cue.spanScreens?.forEach((screenNumber) => spanned.add(screenNumber))
+    }
+    return spanned
+  }, [cues])
+  const handleScreenWidthChange = useCallback(
+    (screenNumber: number, width: number) => {
+      if (!spannedScreenNumbers.has(screenNumber)) return
+      setScreenWidths((prev) =>
+        prev[screenNumber] === width ? prev : { ...prev, [screenNumber]: width }
+      )
+    },
+    [spannedScreenNumbers]
+  )
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayEnded, setAutoplayEnded] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
@@ -432,13 +454,19 @@ const EditModeContainer = ({
   // - creates a visibility object with keys for each screen number and
   // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
   useEffect(() => {
-    const screenNumbers: number[] = [
-      ...new Set<number>(
-        (cues || [])
-          .filter((cue) => !isAudioRow(cue.screen, screenCount))
-          .map((cue) => Number(cue.screen))
-      ),
-    ]
+    const screenNumberSet = new Set<number>()
+    ;(cues || [])
+      .filter((cue) => !isAudioRow(cue.screen, screenCount))
+      .forEach((cue) => {
+        screenNumberSet.add(Number(cue.screen))
+        // A spanning cue must be openable on every screen it spans, not
+        // just its own primary screen -- otherwise a screen with no cue of
+        // its own on any frame could never be opened to show its slice.
+        cue.spanScreens?.forEach((screenNumber) =>
+          screenNumberSet.add(Number(screenNumber))
+        )
+      })
+    const screenNumbers: number[] = [...screenNumberSet]
     const visibility: Record<string, boolean> = {}
     screenNumbers.forEach((screenNumber) => {
       visibility[screenNumber] = false
@@ -482,7 +510,11 @@ const EditModeContainer = ({
     const currentIndex = Number(index)
 
     return (cues || [])
-      .filter((cue) => Number(cue.screen) === Number(screenNumber))
+      .filter(
+        (cue) =>
+          Number(cue.screen) === Number(screenNumber) ||
+          cue.spanScreens?.includes(Number(screenNumber))
+      )
       .filter((cue) => {
         const cueStartIndex = Number(cue.index)
         const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
@@ -722,6 +754,8 @@ const EditModeContainer = ({
             isVisible={screens[screenNumber]}
             onClose={handleScreenClose}
             transitionType={transitionType}
+            screenWidths={screenWidths}
+            onWidthChange={handleScreenWidthChange}
           />
         )
       })}

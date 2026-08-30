@@ -19,6 +19,7 @@ import createCache from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 
 const mediaFillProps = {
   width: "100%",
@@ -26,8 +27,66 @@ const mediaFillProps = {
   objectFit: "contain",
 }
 
-const renderMedia = (file, name, color) => {
-  console.log("Rendering media with file:", file)
+// An image cue that spans several screens. Renders the normal full-bleed
+// "contain" image until the image's natural size is known (a hidden probe
+// <img> reports it via onLoad), then switches to a cropped slice of the
+// full multi-screen canvas -- see screenSpanLayout.ts for the geometry.
+const SpannedImage = ({
+  imageSrc,
+  name,
+  spanScreens,
+  screenNumber,
+  screenWidths,
+}) => {
+  const [aspectRatio, setAspectRatio] = useState(null)
+
+  const handleProbeLoad = (event) => {
+    const { naturalWidth, naturalHeight } = event.target
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setAspectRatio(naturalWidth / naturalHeight)
+    }
+  }
+
+  if (!aspectRatio) {
+    return (
+      <>
+        <Image src={imageSrc} alt={name} {...mediaFillProps} />
+        <img
+          data-testid="span-image-probe"
+          src={imageSrc}
+          alt=""
+          onLoad={handleProbeLoad}
+          style={{ display: "none" }}
+        />
+      </>
+    )
+  }
+
+  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+    spanScreens,
+    screenWidths || {},
+    aspectRatio
+  )
+  const offsetPx = offsets[Number(screenNumber)] ?? 0
+
+  return (
+    <div
+      role="img"
+      aria-label={name}
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundImage: `url(${imageSrc})`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: `-${offsetPx}px 50%`,
+        backgroundSize: `${canvasWidth}px ${canvasHeight}px`,
+      }}
+    />
+  )
+}
+
+const renderMedia = (cue, screenNumber, screenWidths) => {
+  const { file, name, color, spanScreens } = cue
 
   if (!file) {
     return <Box bg={color} width="100%" height="100%" />
@@ -35,6 +94,19 @@ const renderMedia = (file, name, color) => {
 
   if (isType.image(file)) {
     const imageSrc = file.url || `/${file.name}`
+
+    if (spanScreens?.length > 1) {
+      return (
+        <SpannedImage
+          imageSrc={imageSrc}
+          name={name}
+          spanScreens={spanScreens}
+          screenNumber={screenNumber}
+          screenWidths={screenWidths}
+        />
+      )
+    }
+
     return <Image src={imageSrc} alt={name} {...mediaFillProps} />
   }
   // check if media is video
@@ -71,7 +143,7 @@ const cueStackKey = (cueStack) =>
     )
     .join("|")
 
-const renderCueStack = (cueStack) => {
+const renderCueStack = (cueStack, screenNumber, screenWidths) => {
   const normalizedStack = normalizeCueStack(cueStack)
 
   if (normalizedStack.length === 0) {
@@ -90,7 +162,7 @@ const renderCueStack = (cueStack) => {
       alignItems="center"
       overflow="hidden"
     >
-      {renderMedia(cue.file, cue.name, cue.color)}
+      {renderMedia(cue, screenNumber, screenWidths)}
     </Box>
   ))
 }
@@ -101,6 +173,7 @@ const ScreenContent = ({
   previousScreenData,
   showText,
   transitionType,
+  screenWidths,
 }) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
   const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
@@ -162,7 +235,7 @@ const ScreenContent = ({
           zIndex={1}
           animation={animStyle(exitAnim)}
         >
-          {renderCueStack(previousScreenData)}
+          {renderCueStack(previousScreenData, screenNumber, screenWidths)}
         </Box>
       )}
 
@@ -182,7 +255,7 @@ const ScreenContent = ({
         color="white"
         animation={animStyle(enterAnim)}
       >
-        {renderCueStack(currentScreenData)}
+        {renderCueStack(currentScreenData, screenNumber, screenWidths)}
       </Box>
     </Box>
   )
@@ -194,6 +267,8 @@ const Screen = ({
   isVisible,
   onClose,
   transitionType,
+  screenWidths,
+  onWidthChange,
 }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -293,6 +368,30 @@ const Screen = ({
     }
   }, [isWindowReady])
 
+  // Report this popup's live width up so a spanning cue's neighbors can
+  // compute their crop against it. Only screens actually referenced by some
+  // cue's spanScreens are tracked by the parent (see
+  // EditModeContainer.tsx's handleScreenWidthChange), so reporting on every
+  // open screen unconditionally is harmless.
+  useEffect(() => {
+    if (!isWindowReady || !windowRef.current || !onWidthChange) {
+      return undefined
+    }
+
+    const reportWidth = () => {
+      const width = windowRef.current?.innerWidth
+      if (width) {
+        onWidthChange(Number(screenNumber), width)
+      }
+    }
+
+    reportWidth()
+    windowRef.current.addEventListener("resize", reportWidth)
+    return () => {
+      windowRef.current?.removeEventListener("resize", reportWidth)
+    }
+  }, [isWindowReady, screenNumber, onWidthChange])
+
   useEffect(() => {
     // Update media states when screenData changes
     const nextScreenData = normalizeCueStack(screenData)
@@ -358,6 +457,7 @@ const Screen = ({
             previousScreenData={previousScreenData}
             showText={showText}
             transitionType={transitionType}
+            screenWidths={screenWidths}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body

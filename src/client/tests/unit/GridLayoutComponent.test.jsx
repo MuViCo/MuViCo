@@ -767,4 +767,135 @@ describe("GridLayoutComponent", () => {
     )
     expect(contentBox).toHaveStyle({ cursor: "copy" })
   })
+
+  describe("Multi-screen menu button", () => {
+    const visualCueWithFile = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      cueType: "visual",
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
+    }
+
+    it("opens the multi-screen modal for the clicked cue", () => {
+      const setSelectedCue = jest.fn()
+      const setIsMultiScreenModalOpen = jest.fn()
+
+      renderGrid(
+        [visualCueWithFile],
+        [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }],
+        { setSelectedCue, setIsMultiScreenModalOpen }
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+      fireEvent.mouseDown(screen.getByLabelText("Multi-screen Visual cue"))
+
+      expect(setSelectedCue).toHaveBeenCalledWith(visualCueWithFile)
+      expect(setIsMultiScreenModalOpen).toHaveBeenCalledWith(true)
+    })
+
+    it("does not show the button for a color-only visual cue", () => {
+      const colorOnlyCue = { ...visualCueWithFile, file: null }
+
+      renderGrid(
+        [colorOnlyCue],
+        [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+
+      expect(
+        screen.queryByLabelText("Multi-screen Visual cue")
+      ).not.toBeInTheDocument()
+    })
+
+    it("does not show the button for an audio cue", () => {
+      const audioCue = {
+        _id: "audio-1",
+        index: 0,
+        screen: 9,
+        name: "Audio cue",
+        cueType: "audio",
+        file: {
+          type: "audio/mpeg",
+          url: "https://example.com/track.mp3",
+          name: "track.mp3",
+        },
+      }
+
+      renderGrid(
+        [audioCue],
+        [{ i: "audio-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+
+      expect(
+        screen.queryByLabelText("Multi-screen Audio cue")
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe("span indicators on non-primary screens", () => {
+    const spanCue = {
+      _id: "cue-span",
+      index: 0,
+      screen: 1,
+      layer: 0,
+      name: "Wide banner",
+      cueType: "visual",
+      spanScreens: [1, 2],
+      file: {
+        type: "image/png",
+        url: "https://example.com/wide.png",
+        name: "wide.png",
+      },
+    }
+
+    it("marks the other spanned screen's row when a row is known for it", () => {
+      renderGrid(
+        [spanCue],
+        [{ i: "cue-span", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: { "2:0": 1 } }
+      )
+
+      const indicator = screen.getByTestId("span-indicator-cue-span-span-2")
+      expect(indicator).toBeInTheDocument()
+      expect(indicator).toHaveAttribute(
+        "title",
+        'Covered by "Wide banner"\'s multi-screen span'
+      )
+    })
+
+    it("renders no indicator when the spanned screen's row isn't known", () => {
+      renderGrid(
+        [spanCue],
+        [{ i: "cue-span", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: {} }
+      )
+
+      expect(
+        screen.queryByTestId("span-indicator-cue-span-span-2")
+      ).not.toBeInTheDocument()
+    })
+
+    it("renders no indicator for a cue without a span", () => {
+      const plainCue = { ...spanCue, _id: "cue-plain", spanScreens: undefined }
+
+      renderGrid(
+        [plainCue],
+        [{ i: "cue-plain", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: { "2:0": 1 } }
+      )
+
+      expect(screen.getByTestId("grid-span-indicators").children).toHaveLength(
+        0
+      )
+    })
+  })
 })

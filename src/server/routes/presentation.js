@@ -183,18 +183,80 @@ const parseCueOpacity = (rawOpacity, fallback = 1) => {
   return opacity
 }
 
+// A cue's occupied screens: spanScreens when it's a valid multi-screen span,
+// otherwise just its own primary screen.
+const occupiedScreens = (screen, spanScreens) =>
+  Array.isArray(spanScreens) && spanScreens.length > 1
+    ? spanScreens
+    : [Number(screen)]
+
+// Parses the `spanScreens` form field (a JSON-encoded array of screen
+// numbers, or absent/empty for "no span"). Range/membership/cueType checks
+// happen at the call site, where `screen`, `cueType` and `screenCount` are
+// known -- this only handles shape.
+const parseSpanScreens = (raw) => {
+  if (raw === undefined || raw === null || raw === "") {
+    return { spanScreens: null, error: null }
+  }
+
+  let parsed
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return { spanScreens: null, error: "spanScreens must be valid JSON" }
+  }
+
+  if (!Array.isArray(parsed)) {
+    return { spanScreens: null, error: "spanScreens must be an array" }
+  }
+  if (parsed.length === 0) {
+    return { spanScreens: null, error: null }
+  }
+
+  const normalized = parsed.map(Number)
+  if (normalized.some((screenNumber) => !Number.isInteger(screenNumber))) {
+    return {
+      spanScreens: null,
+      error: "spanScreens must contain only integers",
+    }
+  }
+
+  return { spanScreens: normalized, error: null }
+}
+
+// Full validity check once `screen`/`cueType`/`screenCount` are known: must
+// be visual, include the cue's own screen, have no duplicates, and every
+// entry must be a valid screen number.
+const isValidSpanScreens = (spanScreens, screen, cueType, screenCount) =>
+  cueType === "visual" &&
+  spanScreens.length > 1 &&
+  spanScreens.includes(screen) &&
+  new Set(spanScreens).size === spanScreens.length &&
+  spanScreens.every(
+    (screenNumber) => screenNumber >= 1 && screenNumber <= screenCount
+  )
+
 const hasPositionConflict = (
   cues,
   index,
   screen,
   layer,
-  excludedCueId = null
+  excludedCueId = null,
+  spanScreens = null
 ) => {
+  const candidateScreens = occupiedScreens(screen, spanScreens)
+
   return cues.some((cue) => {
-    const samePosition =
-      Number(cue.index) === Number(index) &&
-      Number(cue.screen) === Number(screen) &&
-      Number(cue.layer ?? 0) === Number(layer ?? 0)
+    if (Number(cue.index) !== Number(index)) {
+      return false
+    }
+    if (Number(cue.layer ?? 0) !== Number(layer ?? 0)) {
+      return false
+    }
+
+    const samePosition = occupiedScreens(cue.screen, cue.spanScreens).some(
+      (occupiedScreen) => candidateScreens.includes(occupiedScreen)
+    )
     if (!samePosition) {
       return false
     }
@@ -226,13 +288,15 @@ const hasSwapTargetConflict = (
       return false
     }
 
+    const cueScreens = occupiedScreens(cue.screen, cue.spanScreens)
+
     return (
       (Number(cue.index) === firstTargetIndex &&
-        Number(cue.screen) === firstTargetScreen &&
-        Number(cue.layer ?? 0) === firstTargetLayer) ||
+        Number(cue.layer ?? 0) === firstTargetLayer &&
+        cueScreens.includes(firstTargetScreen)) ||
       (Number(cue.index) === secondTargetIndex &&
-        Number(cue.screen) === secondTargetScreen &&
-        Number(cue.layer ?? 0) === secondTargetLayer)
+        Number(cue.layer ?? 0) === secondTargetLayer &&
+        cueScreens.includes(secondTargetScreen))
     )
   })
 }
@@ -462,6 +526,20 @@ router.put(
               cue.screen <= presentation.screenCount
             )
         )
+
+        // A surviving cue's own screen is guaranteed valid (it just passed
+        // the filter above), but its spanScreens may still reference a
+        // screen number that no longer exists -- drop those, and drop the
+        // whole field if fewer than 2 valid screens remain (a "span" of one
+        // screen is meaningless).
+        presentation.cues.forEach((cue) => {
+          if (!Array.isArray(cue.spanScreens)) return
+          const validSpanScreens = cue.spanScreens.filter(
+            (screenNumber) => screenNumber <= newScreenCount
+          )
+          cue.spanScreens =
+            validSpanScreens.length > 1 ? validSpanScreens : undefined
+        })
       }
 
       // Must be presentation.save(), not a query-style update, since it
@@ -869,9 +947,16 @@ router.put(
       const color = req.body.color || "#000000"
       const layer = Number(req.body.layer) || 0
       const opacity = parseCueOpacity(req.body.opacity, 1)
+      const { spanScreens, error: spanScreensError } = parseSpanScreens(
+        req.body.spanScreens
+      )
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (spanScreensError) {
+        return res.status(400).json({ error: spanScreensError })
       }
 
       if (opacity === null) {
@@ -943,6 +1028,21 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
+      if (
+        spanScreens &&
+        !isValidSpanScreens(
+          spanScreens,
+          screen,
+          cueType,
+          presentation.screenCount
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            "spanScreens must include the cue's own screen, have no duplicates, only reference visual cues and valid screen numbers.",
+        })
+      }
+
       const maxLayers = getMaxLayers(cueType)
       if (layer < 0 || layer >= maxLayers) {
         return res.status(400).json({
@@ -950,7 +1050,16 @@ router.put(
         })
       }
 
-      if (hasPositionConflict(presentation.cues, index, screen, layer)) {
+      if (
+        hasPositionConflict(
+          presentation.cues,
+          index,
+          screen,
+          layer,
+          null,
+          spanScreens
+        )
+      ) {
         return res.status(400).json({
           error: "A cue with the same index, screen and layer already exists.",
         })
@@ -972,6 +1081,7 @@ router.put(
               index: index,
               name: trimmedCueName,
               screen: screen,
+              ...(spanScreens ? { spanScreens } : {}),
               file: file ? fileObject : null,
               color: color,
               loop: loop,
@@ -1220,15 +1330,20 @@ router.put(
         })
       }
 
-      // Apply the swap and persist the normalized cue types.
+      // Apply the swap and persist the normalized cue types. A swapped cue
+      // always lands on a new screen, so any previous span is stale -- clear
+      // it rather than carry it along; the user can re-open Multi-screen
+      // from its new position.
       firstCue.index = parsedFirstIndex
       firstCue.screen = parsedFirstScreen
       firstCue.cueType = firstTargetCueType
       firstCue.layer = parsedFirstLayer
+      firstCue.spanScreens = undefined
       secondCue.index = parsedSecondIndex
       secondCue.screen = parsedSecondScreen
       secondCue.cueType = secondTargetCueType
       secondCue.layer = parsedSecondLayer
+      secondCue.spanScreens = undefined
 
       await presentation.save({ validateModifiedOnly: true })
 
@@ -1285,8 +1400,21 @@ router.put(
       const image = req.body.image
       const shouldClearFile = image === "null"
 
+      // Whether this request even mentions spanScreens at all -- distinct
+      // from `spanScreens` being null/empty, which means "clear the span".
+      // A save that doesn't touch spanScreens (e.g. the name/opacity ToolBox
+      // modal) must not silently wipe out an existing span.
+      const spanScreensProvided = req.body.spanScreens !== undefined
+      const { spanScreens, error: spanScreensError } = parseSpanScreens(
+        req.body.spanScreens
+      )
+
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (spanScreensError) {
+        return res.status(400).json({ error: spanScreensError })
       }
 
       if (opacity === null) {
@@ -1355,6 +1483,21 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
+      if (
+        spanScreens &&
+        !isValidSpanScreens(
+          spanScreens,
+          screen,
+          cueType,
+          presentation.screenCount
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            "spanScreens must include the cue's own screen, have no duplicates, only reference visual cues and valid screen numbers.",
+        })
+      }
+
       const layer =
         req.body.layer !== undefined
           ? Number(req.body.layer) || 0
@@ -1366,16 +1509,38 @@ router.put(
         })
       }
 
-      if (hasPositionConflict(presentation.cues, index, screen, layer, cueId)) {
+      if (
+        hasPositionConflict(
+          presentation.cues,
+          index,
+          screen,
+          layer,
+          cueId,
+          spanScreens
+        )
+      ) {
         return res.status(400).json({
           error: "A cue with the same index, screen and layer already exists.",
         })
       }
 
       // Update cue fields
+      const isMovingToAnotherScreen = screen !== cue.screen
       cue.index = index
       cue.screen = screen
       cue.cueType = cueType
+      if (spanScreensProvided) {
+        // Honor an explicit spanScreens even when the screen also changed in
+        // the same request -- it was already validated above against the
+        // NEW screen, so it's guaranteed consistent.
+        cue.spanScreens = spanScreens || undefined
+      } else if (isMovingToAnotherScreen) {
+        // A span is only meaningful relative to where the cue actually
+        // lives; moving it without saying anything about spanScreens
+        // invalidates any previous span rather than silently carrying it,
+        // possibly stale, to the new screen.
+        cue.spanScreens = undefined
+      }
       cue.name = trimmedCueName
       cue.loop = loop
       cue.continuePlayback =

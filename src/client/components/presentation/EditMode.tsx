@@ -99,6 +99,7 @@ import {
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
+import MultiScreenModal from "./MultiScreenModal"
 import GridLayoutComponent from "./GridLayoutComponent"
 import useEditModeDragPreviewState from "./useEditModeDragPreviewState"
 import useEditModeDragPreviewController from "./useEditModeDragPreviewController"
@@ -192,6 +193,7 @@ const EditMode = ({
   const presentation = useAppSelector((state) => state.presentation)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
+  const [isMultiScreenModalOpen, setIsMultiScreenModalOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
   const [confirmAction, setConfirmAction] = useState<
@@ -1247,11 +1249,11 @@ const EditMode = ({
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-      (dragStartPointer &&
-        Math.hypot(
-          event.clientX - dragStartPointer.clientX,
-          event.clientY - dragStartPointer.clientY
-        ) >= dragCommitDistancePx)
+        (dragStartPointer &&
+          Math.hypot(
+            event.clientX - dragStartPointer.clientX,
+            event.clientY - dragStartPointer.clientY
+          ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const { xIndex, yIndex } = getPosition(
@@ -1419,6 +1421,22 @@ const EditMode = ({
     h: 1,
     static: false,
   }))
+
+  // Row index for a given (screen, layer), so a spanning cue can be marked
+  // on the OTHER screens it covers, not just its own row. Two keys per row:
+  // the exact layer, and a "screen:*" fallback for a collapsed group (which
+  // has one representative row with no single layer of its own).
+  const screenLayerRowIndex = useMemo(() => {
+    const map: Record<string, number> = {}
+    rowModel.rows.forEach((row, index) => {
+      if (row.kind === "layer") {
+        map[`${row.screen}:${row.layer ?? 0}`] = index
+      } else if (row.kind === "screen") {
+        map[`${row.screen}:*`] = index
+      }
+    })
+    return map
+  }, [rowModel.rows])
 
   // Add a new cue - checks for conflicts and saves to backend
   const addCue = async (cueData: CueUpdateInput) => {
@@ -1665,6 +1683,16 @@ const EditMode = ({
     setIsToolboxOpen(false)
   }
 
+  const handleMultiScreenSave = async (updatedCue: CueUpdateInput) => {
+    if (!selectedCue) {
+      return
+    }
+
+    await dispatchUpdateCue(selectedCue._id, updatedCue)
+    setSelectedCue(null)
+    setIsMultiScreenModalOpen(false)
+  }
+
   // Swap two cues positions - handles element reordering on grid
   const dispatchSwapCues = async (newTargetCue: Cue, newSelectedCue: Cue) => {
     try {
@@ -1729,9 +1757,11 @@ const EditMode = ({
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (!(
-        newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
-      )) {
+      if (
+        !(
+          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+        )
+      ) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -2247,6 +2277,8 @@ const EditMode = ({
                     isAudioMuted={isAudioMuted}
                     setSelectedCue={setSelectedCue}
                     setIsToolboxOpen={setIsToolboxOpen}
+                    setIsMultiScreenModalOpen={setIsMultiScreenModalOpen}
+                    screenLayerRowIndex={screenLayerRowIndex}
                     indexCount={indexCount}
                     setShowAlert={setShowAlert}
                     setAlertData={setAlertData}
@@ -2540,6 +2572,16 @@ const EditMode = ({
             onClose={() => {
               setSelectedCue(null)
               setIsToolboxOpen(false)
+            }}
+          />
+          <MultiScreenModal
+            isOpen={isMultiScreenModalOpen}
+            cue={selectedCue}
+            screenCount={presentation.screenCount as number}
+            onSave={handleMultiScreenSave}
+            onClose={() => {
+              setSelectedCue(null)
+              setIsMultiScreenModalOpen(false)
             }}
           />
         </Box>

@@ -1696,6 +1696,211 @@ describe("Presentation model cue layer validation", () => {
   })
 })
 
+describe("Multi-screen image spanning (spanScreens)", () => {
+  let spanAuthHeader
+  let spanPresentationId
+
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    await api
+      .post("/api/signup")
+      .send({ username: "spanuser", password: "spanpassword" })
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ username: "spanuser", password: "spanpassword" })
+    spanAuthHeader = `Bearer ${loginResponse.body.token}`
+
+    const homeResponse = await api
+      .post("/api/home")
+      .set("Authorization", spanAuthHeader)
+      .send({ name: "Span test presentation", screenCount: 3 })
+    spanPresentationId = homeResponse.body.id
+  })
+
+  const createSpanCue = async (screen, spanScreens, index = 0) =>
+    api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .attach("image", mockImageBuffer, "mock_image.png")
+      .field("index", index)
+      .field("cueName", "Span cue")
+      .field("screen", screen)
+      .field("spanScreens", JSON.stringify(spanScreens))
+
+  test("creates a cue spanning multiple screens", async () => {
+    const response = await createSpanCue(1, [1, 2, 3])
+    expect(response.status).toBe(200)
+
+    const cue = response.body.cues.find((c) => c.name === "Span cue")
+    expect(cue.spanScreens).toEqual([1, 2, 3])
+  })
+
+  test("rejects spanScreens that don't include the cue's own screen", async () => {
+    const response = await createSpanCue(1, [2, 3])
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects spanScreens with duplicate entries", async () => {
+    const response = await createSpanCue(1, [1, 2, 2])
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects spanScreens referencing a screen beyond screenCount", async () => {
+    const response = await createSpanCue(1, [1, 2, 5])
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects a single-element spanScreens", async () => {
+    const response = await createSpanCue(1, [1])
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects spanScreens on an audio cue", async () => {
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .attach("image", mockAudioBuffer, {
+        filename: "mock_audio.mp3",
+        contentType: "audio/mpeg",
+      })
+      .field("index", 0)
+      .field("cueName", "Span audio")
+      .field("screen", 4) // audio row = screenCount + 1
+      .field("spanScreens", JSON.stringify([4, 5]))
+
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects a cue placed on a screen already covered by another cue's span, at the same index/layer", async () => {
+    await createSpanCue(1, [1, 2, 3])
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 0)
+      .field("cueName", "Conflicting cue")
+      .field("screen", 2)
+
+    expect(response.status).toBe(400)
+  })
+
+  test("allows a cue on the same screen at a different index (no conflict)", async () => {
+    await createSpanCue(1, [1, 2, 3])
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 1)
+      .field("cueName", "Non-conflicting cue")
+      .field("screen", 2)
+
+    expect(response.status).toBe(200)
+  })
+
+  test("preserves spanScreens when an unrelated field is updated without mentioning it", async () => {
+    const createResponse = await createSpanCue(1, [1, 2, 3])
+    const cueId = createResponse.body.cues.find(
+      (c) => c.name === "Span cue"
+    )._id
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}/${cueId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 0)
+      .field("cueName", "Span cue renamed")
+      .field("screen", 1)
+
+    expect(response.status).toBe(200)
+    expect(response.body.spanScreens).toEqual([1, 2, 3])
+  })
+
+  test("clears spanScreens when the cue's screen changes without a new spanScreens", async () => {
+    const createResponse = await createSpanCue(1, [1, 2, 3])
+    const cueId = createResponse.body.cues.find(
+      (c) => c.name === "Span cue"
+    )._id
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}/${cueId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 0)
+      .field("cueName", "Span cue moved")
+      .field("screen", 2)
+
+    expect(response.status).toBe(200)
+    expect(response.body.spanScreens).toBeUndefined()
+  })
+
+  test("clears spanScreens when explicitly sent as an empty array", async () => {
+    const createResponse = await createSpanCue(1, [1, 2, 3])
+    const cueId = createResponse.body.cues.find(
+      (c) => c.name === "Span cue"
+    )._id
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}/${cueId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 0)
+      .field("cueName", "Span cue cleared")
+      .field("screen", 1)
+      .field("spanScreens", JSON.stringify([]))
+
+    expect(response.status).toBe(200)
+    expect(response.body.spanScreens).toBeUndefined()
+  })
+
+  test("truncates a surviving cue's spanScreens when screenCount shrinks", async () => {
+    await createSpanCue(1, [1, 2, 3])
+
+    await api
+      .put(`/api/presentation/${spanPresentationId}/screenCount`)
+      .set("Authorization", spanAuthHeader)
+      .send({ screenCount: 2 })
+      .expect(200)
+
+    const response = await api
+      .get(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+
+    const cue = response.body.cues.find((c) => c.name === "Span cue")
+    expect(cue.spanScreens).toEqual([1, 2])
+  })
+
+  test("clears spanScreens on a swapped cue", async () => {
+    const spanResponse = await createSpanCue(1, [1, 2, 3])
+    const spanCue = spanResponse.body.cues.find((c) => c.name === "Span cue")
+
+    const otherResponse = await api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .field("index", 3)
+      .field("cueName", "Swap partner")
+      .field("screen", 2)
+    const otherCue = otherResponse.body.cues.find(
+      (c) => c.name === "Swap partner"
+    )
+
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}/swapCues`)
+      .set("Authorization", spanAuthHeader)
+      .send({
+        firstCueId: spanCue._id,
+        secondCueId: otherCue._id,
+        firstIndex: otherCue.index,
+        firstScreen: otherCue.screen,
+        firstLayer: 0,
+        secondIndex: spanCue.index,
+        secondScreen: spanCue.screen,
+        secondLayer: 0,
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.firstCue.spanScreens).toBeUndefined()
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })
