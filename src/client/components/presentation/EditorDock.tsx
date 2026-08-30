@@ -99,6 +99,7 @@ const EditorDock = ({
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging.current) return
+    const delta = dragStartX.current - e.clientX
     const next = Math.min(
       DOCK_MAX,
       Math.max(DOCK_MIN, dragStartWidth.current + delta)
