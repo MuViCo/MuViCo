@@ -64,10 +64,7 @@ const baseScore: ScoreDocument = {
   markers: [],
 }
 
-const renderViewer = (
-  score: ScoreDocument,
-  previewUrl: string | null = null
-) =>
+const renderViewer = (score: ScoreDocument, previewUrl: string | null = null) =>
   renderWithChakra(
     <ScorePdfViewer
       presentationId="presentation-1"
@@ -105,10 +102,7 @@ describe("ScorePdfViewer", () => {
     jest.clearAllMocks()
     mockIndexCount = 5
     mockGetDocument.mockReturnValue(makeLoadingTask())
-    window.localStorage.setItem(
-      "user",
-      JSON.stringify({ token: "test-token" })
-    )
+    window.localStorage.setItem("user", JSON.stringify({ token: "test-token" }))
     global.ResizeObserver = class {
       observe() {}
       disconnect() {}
@@ -132,10 +126,7 @@ describe("ScorePdfViewer", () => {
       markers: [],
     }
 
-    renderViewer(
-      score,
-      "/api/presentation/presentation-1/scores/score-1/file"
-    )
+    renderViewer(score, "/api/presentation/presentation-1/scores/score-1/file")
 
     await waitFor(() => {
       expect(mockGetDocument).toHaveBeenCalledWith(
