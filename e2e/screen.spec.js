@@ -58,6 +58,7 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
+      await addBlankCue(page, "test cue", "0", "2")
       //Goes to frame 4
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
@@ -133,6 +134,7 @@ describe("Screen", () => {
 
       await page.goto("http://localhost:3000/home")
       await page.getByText("title-test").click()
+      await addBlankCue(page, "test cue", "0", "2")
       // Goes to frame 4
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight")
