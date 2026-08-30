@@ -18,15 +18,17 @@ jest.mock("pdfjs-dist", () => ({
   getDocument: mockGetDocument,
 }))
 
+let mockIndexCount = 5
 const mockDispatch = jest.fn()
 jest.mock("../../redux/hooks", () => ({
   useAppDispatch: () => mockDispatch,
   useAppSelector: (selector: (state: unknown) => unknown) =>
-    selector({ presentation: { indexCount: 5 } }),
+    selector({ presentation: { indexCount: mockIndexCount } }),
 }))
 
+const mockShowToast = jest.fn()
 jest.mock("../../components/utils/toastUtils", () => ({
-  useCustomToast: () => jest.fn(),
+  useCustomToast: () => mockShowToast,
 }))
 
 jest.mock("../../redux/presentationReducer", () => ({
@@ -83,9 +85,25 @@ const waitForPdfLoaded = () =>
     expect(screen.getByTestId("score-pdf-viewer")).toBeInTheDocument()
   )
 
+// jsdom never lays out elements, so give the overlay a real size before
+// simulating a click on it.
+const stubOverlayRect = (overlay: HTMLElement) =>
+  jest.spyOn(overlay, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 300,
+    top: 0,
+    left: 0,
+    right: 300,
+    bottom: 300,
+    toJSON: () => {},
+  })
+
 describe("ScorePdfViewer", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockIndexCount = 5
     mockGetDocument.mockReturnValue(makeLoadingTask())
     window.localStorage.setItem(
       "user",
@@ -138,18 +156,7 @@ describe("ScorePdfViewer", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
       const overlay = screen.getByTestId("score-marker-overlay")
-      // jsdom never lays out elements, so give the overlay a real size.
-      jest.spyOn(overlay, "getBoundingClientRect").mockReturnValue({
-        x: 0,
-        y: 0,
-        width: 300,
-        height: 300,
-        top: 0,
-        left: 0,
-        right: 300,
-        bottom: 300,
-        toJSON: () => {},
-      })
+      stubOverlayRect(overlay)
       fireEvent.click(overlay, { clientX: 10, clientY: 10 })
 
       const form = await screen.findByTestId("marker-form")
@@ -232,7 +239,7 @@ describe("ScorePdfViewer", () => {
       })
     })
 
-    test("lists every marker in the recap bar and jumps to the clicked one's page", async () => {
+    test("lists every marker in the recap bar, jumps to and scrolls the clicked one into view", async () => {
       mockGetDocument.mockReturnValue(makeLoadingTask(2))
       const score: ScoreDocument = {
         ...baseScore,
@@ -262,6 +269,98 @@ describe("ScorePdfViewer", () => {
       await waitFor(() => {
         expect(screen.getByLabelText("Page")).toHaveValue("2")
       })
+      // The jump also scrolls the marker's pin into view, on a short delay.
+      await waitFor(
+        () =>
+          expect(window.Element.prototype.scrollIntoView).toHaveBeenCalled(),
+        { timeout: 1000 }
+      )
+    })
+
+    test("Enter confirms and Escape cancels from the frame select", async () => {
+      renderViewer(baseScore)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
+      const overlay = screen.getByTestId("score-marker-overlay")
+      stubOverlayRect(overlay)
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      const form = await screen.findByTestId("marker-form")
+
+      fireEvent.keyDown(form.querySelector("select")!, { key: "Escape" })
+      expect(screen.queryByTestId("marker-form")).not.toBeInTheDocument()
+
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      const form2 = await screen.findByTestId("marker-form")
+      fireEvent.keyDown(form2.querySelector("select")!, { key: "Enter" })
+
+      await waitFor(() => expect(createScoreMarker).toHaveBeenCalled())
+    })
+
+    test("rejects placing a marker when the presentation has no frames", async () => {
+      mockIndexCount = 0
+      renderViewer(baseScore)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
+      const overlay = screen.getByTestId("score-marker-overlay")
+      stubOverlayRect(overlay)
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      await screen.findByTestId("marker-form")
+      fireEvent.click(screen.getByRole("button", { name: "Add" }))
+
+      await waitFor(() =>
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Invalid frame number" })
+        )
+      )
+      expect(createScoreMarker).not.toHaveBeenCalled()
+    })
+
+    test("shows an error toast when saving a marker fails", async () => {
+      mockDispatch.mockRejectedValueOnce(new Error("network down"))
+      renderViewer(baseScore)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
+      const overlay = screen.getByTestId("score-marker-overlay")
+      stubOverlayRect(overlay)
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      await screen.findByTestId("marker-form")
+      fireEvent.click(screen.getByRole("button", { name: "Add" }))
+
+      await waitFor(() =>
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Couldn't save marker" })
+        )
+      )
+    })
+
+    test("shows an error toast when deleting a marker fails", async () => {
+      mockDispatch.mockRejectedValueOnce(new Error("network down"))
+      const score: ScoreDocument = {
+        ...baseScore,
+        markers: [
+          {
+            _id: "marker-1",
+            page: 1,
+            frameIndex: 2,
+            rect: { x: 0.5, y: 0.5, width: 0, height: 0 },
+          },
+        ],
+      }
+      renderViewer(score)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByTitle("Frame 2 — click to edit"))
+      await screen.findByTestId("marker-form")
+      fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+
+      await waitFor(() =>
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "Couldn't remove marker" })
+        )
+      )
     })
   })
 })

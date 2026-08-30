@@ -55,6 +55,24 @@ describe("ScoreMarkerOverlay", () => {
     expect(onPlace).toHaveBeenCalledWith(0.25, 0.25)
   })
 
+  test("ignores a click while placing if the overlay has no size yet", () => {
+    const onPlace = jest.fn()
+    render(
+      <ScoreMarkerOverlay
+        markers={[]}
+        isPlacing={true}
+        onPlace={onPlace}
+        onSelectMarker={jest.fn()}
+      />
+    )
+
+    const overlay = screen.getByTestId("score-marker-overlay")
+    stubRect(overlay, { width: 0, height: 0 })
+    fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+
+    expect(onPlace).not.toHaveBeenCalled()
+  })
+
   test("renders a pin per marker with a rect, skipping markers without one", () => {
     render(
       <ScoreMarkerOverlay
