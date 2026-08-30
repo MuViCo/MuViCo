@@ -21,6 +21,7 @@ import {
   EditIcon,
   ChevronDownIcon,
   TimeIcon,
+  ExternalLinkIcon,
 } from "@chakra-ui/icons"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
@@ -55,6 +56,9 @@ interface GridLayoutComponentProps {
   isAudioMuted: boolean
   setSelectedCue: (cue: Cue | null) => void
   setIsToolboxOpen: (open: boolean) => void
+  setIsMultiScreenModalOpen: (open: boolean) => void
+  /** "screen:layer" (and "screen:*" for a collapsed group) -> row index. */
+  screenLayerRowIndex?: Record<string, number>
   indexCount: number
   setShowAlert: (show: boolean) => void
   setAlertData: (data: AlertData) => void
@@ -198,6 +202,8 @@ const GridLayoutComponent = ({
   isAudioMuted,
   setSelectedCue,
   setIsToolboxOpen,
+  setIsMultiScreenModalOpen,
+  screenLayerRowIndex = {},
   indexCount,
   setShowAlert,
   setAlertData,
@@ -220,6 +226,45 @@ const GridLayoutComponent = ({
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
+
+  // Passive markers on the OTHER screens a spanning cue covers, so an
+  // otherwise-empty row at that column reads as "covered by a span"
+  // instead of "nothing here". Not real grid items: no drag, no menu, just
+  // a positioned overlay reusing the same row/column math as the empty-cell
+  // background layer below.
+  const spanIndicators = useMemo(() => {
+    const indicators: Array<{
+      key: string
+      row: number
+      x: number
+      w: number
+      cue: Cue
+    }> = []
+
+    cues.forEach((cue) => {
+      if (!cue.spanScreens || cue.spanScreens.length < 2) return
+
+      const layer = Number(cue.layer ?? 0)
+      cue.spanScreens
+        .filter((screenNumber) => screenNumber !== cue.screen)
+        .forEach((screenNumber) => {
+          const row =
+            screenLayerRowIndex[`${screenNumber}:${layer}`] ??
+            screenLayerRowIndex[`${screenNumber}:*`]
+          if (row === undefined) return
+
+          indicators.push({
+            key: `${cue._id}-span-${screenNumber}`,
+            row,
+            x: cue.index,
+            w: getCueVisualSpanFromMap(cue, cueVisualSpanMap),
+            cue,
+          })
+        })
+    })
+
+    return indicators
+  }, [cues, screenLayerRowIndex, cueVisualSpanMap])
   const gridWidth = gridContentWidth(indexCount, {
     ...TIMELINE_METRICS,
     columnWidth,
@@ -331,6 +376,12 @@ const GridLayoutComponent = ({
     setIsToolboxOpen(true)
   }
 
+  const handleOpenMultiScreen = (cueId: string) => {
+    const cue = cues.find((candidate) => candidate._id === cueId)
+    setSelectedCue(cue ?? null)
+    setIsMultiScreenModalOpen(true)
+  }
+
   // helper component for rendering edit mode buttons for each cue, including options to edit, copy, delete, and toggle loop for audio cues
   const EditModeCueButtons = (cue: Cue) => (
     <Menu isLazy>
@@ -396,11 +447,9 @@ const GridLayoutComponent = ({
             w="100%"
             h="30px"
             borderRadius={
-              cue.file != null
-                ? cue.cueType === "audio"
-                  ? "0"
-                  : "0 0 0.375rem 0.375rem"
-                : "0 0 0.375rem 0.375rem"
+              // A file always means a button follows below: Loop/Continue
+              // for audio, Multi-screen for visual.
+              cue.file != null ? "0" : "0 0 0.375rem 0.375rem"
             }
             _hover={{ bg: "gray.600", color: "white" }}
             backgroundColor="gray.500"
@@ -460,6 +509,26 @@ const GridLayoutComponent = ({
               />
             </>
           )}
+          {cue.file != null && cue.cueType === "visual" && (
+            <IconButton
+              icon={<ExternalLinkIcon />}
+              size="xs"
+              w="100%"
+              h="30px"
+              borderRadius="0 0 0.375rem 0.375rem"
+              _hover={{ bg: "purple.600", color: "white" }}
+              backgroundColor={
+                cue.spanScreens?.length ? "purple.500" : "gray.500"
+              }
+              draggable={false}
+              aria-label={`Multi-screen ${cue.name}`}
+              title="Span across multiple screens"
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                handleOpenMultiScreen(cue._id)
+              }}
+            />
+          )}
         </MenuList>
       </Portal>
     </Menu>
@@ -508,6 +577,55 @@ const GridLayoutComponent = ({
               />
             ))
           )}
+        </Box>
+        <Box
+          data-testid="grid-span-indicators"
+          position="absolute"
+          inset="0"
+          pointerEvents="none"
+          zIndex={1}
+        >
+          {spanIndicators.map((indicator) => (
+            <Box
+              key={indicator.key}
+              data-testid={`span-indicator-${indicator.key}`}
+              position="absolute"
+              left={`${columnLeft(indicator.x, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
+              top={`${
+                laneOffset(indicator.row, {
+                  ...TIMELINE_METRICS,
+                  rowHeight,
+                  rowGap,
+                }) + (focusLayout.offset[indicator.row] ?? 0)
+              }px`}
+              width={`${gridContentWidth(indicator.w, { ...TIMELINE_METRICS, columnWidth, gap })}px`}
+              height={`${rowHeight + (focusLayout.delta[indicator.row] ?? 0)}px`}
+              borderRadius="10px"
+              outline="2px solid var(--chakra-colors-purple-300)"
+              outlineOffset="-2px"
+              overflow="hidden"
+              title={`Covered by "${indicator.cue.name}"'s multi-screen span`}
+            >
+              {renderMedia(
+                indicator.cue,
+                cueIndex,
+                cues,
+                isAudioMuted,
+                screenCount
+              )}
+              <Box
+                position="absolute"
+                top="3px"
+                right="3px"
+                bg="rgba(0, 0, 0, 0.55)"
+                borderRadius="4px"
+                p="2px"
+                display="flex"
+              >
+                <ExternalLinkIcon color="purple.200" boxSize={2.5} />
+              </Box>
+            </Box>
+          ))}
         </Box>
         <GridLayout
           className="layout"
