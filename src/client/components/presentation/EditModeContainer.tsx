@@ -450,27 +450,18 @@ const EditModeContainer = ({
     [cues, indexCount]
   )
 
-  // Initialize screen visibility state based on cues and screen count
+  // Initialize screen visibility state for every screen number (1..screenCount)
   // - creates a visibility object with keys for each screen number and
   // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
   useEffect(() => {
-    const screenNumberSet = new Set<number>()
-    ;(cues || [])
-      .filter((cue) => !isAudioRow(cue.screen, screenCount))
-      .forEach((cue) => {
-        screenNumberSet.add(Number(cue.screen))
-        // A spanning cue must be openable on every screen it spans, not
-        // just its own primary screen -- otherwise a screen with no cue of
-        // its own on any frame could never be opened to show its slice.
-        cue.spanScreens?.forEach((screenNumber) =>
-          screenNumberSet.add(Number(screenNumber))
-        )
-      })
-    const screenNumbers: number[] = [...screenNumberSet]
     const visibility: Record<string, boolean> = {}
-    screenNumbers.forEach((screenNumber) => {
+    for (
+      let screenNumber = 1;
+      screenNumber <= (screenCount ?? 0);
+      screenNumber += 1
+    ) {
       visibility[screenNumber] = false
-    })
+    }
     // Only add defaults for screen numbers we haven't seen yet - keep
     // existing screens' open/closed state untouched so that editing a cue
     // doesn't close every currently open presentation window

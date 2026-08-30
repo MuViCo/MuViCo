@@ -249,13 +249,6 @@ describe("GridLayout", () => {
     await expect(removeButton).toBeVisible()
     await removeButton.click()
 
-    await expect(
-      page.getByText(
-        "Screen 2 has existing elements. Deleting this screen will also delete all elements on this screen. Delete anyway?"
-      )
-    ).toBeVisible()
-    await page.getByRole("button", { name: "Yes" }).click()
-
     await expect(page.getByText("Screen removed").first()).toBeVisible()
     await expect(page.getByText("Screen removed").first()).not.toBeVisible({
       timeout: 5000,
@@ -294,7 +287,7 @@ describe("GridLayout", () => {
     await expect(page.getByText("Screen 2", { exact: true })).toBeVisible()
   })
 
-  test("new screen gets initial element", async ({ page }) => {
+  test("new screen has no initial element", async ({ page }) => {
     await page.getByText("testi").click()
 
     await revealScreenControls(page, 2)
@@ -302,12 +295,10 @@ describe("GridLayout", () => {
     await addButton.click()
     await expect(page.getByText("Screen 3", { exact: true })).toBeVisible()
 
-    const initialElementTestId = `cue-initial element for screen ${3}`
-    await page
-      .getByTestId(initialElementTestId)
-      .waitFor({ state: "visible", timeout: 20000 })
-
     await expect(page.getByText("Screen added").first()).toBeVisible()
+    await expect(
+      page.getByTestId(`cue-initial element for screen ${3}`)
+    ).not.toBeVisible()
   })
 
   test("screen management buttons only show on last screen", async ({

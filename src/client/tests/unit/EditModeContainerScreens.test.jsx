@@ -239,12 +239,15 @@ describe("EditModeContainer screen visibility across cue edits", () => {
       "data-visible",
       "true"
     )
+    expect(screen.getByTestId("mock-screen-3")).toHaveAttribute(
+      "data-visible",
+      "true"
+    )
 
     editCue()
 
-    // Screens that were already open (1 and 2) stay open even though screen 2
-    // no longer has any cue assigned to it - only newly-seen screen numbers
-    // default to closed.
+    // Every declared screen (1..screenCount) is already open from "Toggle
+    // all screens", so moving a cue onto screen 3 doesn't change visibility.
     expect(screen.getByTestId("mock-screen-1")).toHaveAttribute(
       "data-visible",
       "true"
@@ -255,7 +258,7 @@ describe("EditModeContainer screen visibility across cue edits", () => {
     )
     expect(screen.getByTestId("mock-screen-3")).toHaveAttribute(
       "data-visible",
-      "false"
+      "true"
     )
   })
 })
