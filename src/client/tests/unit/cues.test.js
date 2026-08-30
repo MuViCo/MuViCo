@@ -5,7 +5,13 @@
  */
 import CuesForm from "../../components/presentation/CuesForm"
 import mediaStore from "../../components/presentation/mediaFileStore"
-import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { MemoryRouter } from "react-router-dom"
 
@@ -49,7 +55,9 @@ describe("CuesForm", () => {
   test("uses media tab by default when no tab preference is stored", () => {
     renderCuesForm()
 
-    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+    expect(
+      screen.getByText("Upload images or videos and drag them to the grid")
+    ).toBeInTheDocument()
   })
 
   test("restores active tab from localStorage", () => {
@@ -57,7 +65,9 @@ describe("CuesForm", () => {
 
     renderCuesForm()
 
-    expect(screen.getByText("Upload audio files and drag them to the grid")).toBeInTheDocument()
+    expect(
+      screen.getByText("Upload audio files and drag them to the grid")
+    ).toBeInTheDocument()
   })
 
   test("ignores invalid stored tab values and falls back to media", () => {
@@ -65,17 +75,21 @@ describe("CuesForm", () => {
 
     renderCuesForm()
 
-    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+    expect(
+      screen.getByText("Upload images or videos and drag them to the grid")
+    ).toBeInTheDocument()
   })
 
   test("renders add mode with tabs", () => {
     renderCuesForm()
 
     expect(screen.getByText("Add element")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Colors" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Media" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Audio" })).toBeInTheDocument()
-    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Colors" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Media" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Audio" })).toBeInTheDocument()
+    expect(
+      screen.getByText("Upload images or videos and drag them to the grid")
+    ).toBeInTheDocument()
   })
 
   test("renders edit mode title when cue data is provided", () => {
@@ -89,31 +103,41 @@ describe("CuesForm", () => {
       },
     })
 
-    expect(screen.getByText("Edit Element")).toBeInTheDocument()
+    expect(screen.getByText("Edit element")).toBeInTheDocument()
   })
 
   test("switches between tabs", () => {
     renderCuesForm()
 
-    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
-    expect(screen.getByText("Select a color and drag it to the grid")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Colors" }))
+    expect(
+      screen.getByText("Select a color and drag it to the grid")
+    ).toBeInTheDocument()
     expect(screen.getByTestId("cue-name")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
-    expect(screen.getByText("Upload audio files and drag them to the grid")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Audio" }))
+    expect(
+      screen.getByText("Upload audio files and drag them to the grid")
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Media" }))
-    expect(screen.getByText("Upload images or videos and drag them to the grid")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("tab", { name: "Media" }))
+    expect(
+      screen.getByText("Upload images or videos and drag them to the grid")
+    ).toBeInTheDocument()
   })
 
   test("persists selected tab to localStorage", () => {
     renderCuesForm()
 
-    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
-    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe("colors")
+    fireEvent.click(screen.getByRole("tab", { name: "Colors" }))
+    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe(
+      "colors"
+    )
 
-    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
-    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe("audio")
+    fireEvent.click(screen.getByRole("tab", { name: "Audio" }))
+    expect(window.localStorage.getItem("editModeMediaPoolActiveTab")).toBe(
+      "audio"
+    )
   })
 
   test("pre-fills cue name from cueData when editing", () => {
@@ -127,7 +151,7 @@ describe("CuesForm", () => {
       },
     })
 
-    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Colors" }))
 
     expect(screen.getByTestId("cue-name")).toHaveValue("Existing cue")
   })
@@ -159,7 +183,9 @@ describe("CuesForm", () => {
     const audioFile = new File(["audio"], "sound.mp3", { type: "audio/mpeg" })
     const pdfFile = new File(["pdf"], "doc.pdf", { type: "application/pdf" })
 
-    fireEvent.change(mediaInput, { target: { files: [imageFile, audioFile, pdfFile] } })
+    fireEvent.change(mediaInput, {
+      target: { files: [imageFile, audioFile, pdfFile] },
+    })
 
     expect(screen.getByText("Media Pool (1)")).toBeInTheDocument()
     expect(screen.getByText("photo.png")).toBeInTheDocument()
@@ -214,7 +240,7 @@ describe("CuesForm", () => {
   test("adds uploaded audio file to sound pool and sets drag payload", () => {
     renderCuesForm()
 
-    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Audio" }))
 
     const soundInput = document.getElementById("sound-upload")
     const audioFile = new File(["audio"], "sound.wav", { type: "audio/wav" })
@@ -250,7 +276,7 @@ describe("CuesForm", () => {
   test("filters invalid files from audio uploads", () => {
     renderCuesForm()
 
-    fireEvent.click(screen.getByRole("button", { name: "Audio" }))
+    fireEvent.click(screen.getByRole("tab", { name: "Audio" }))
 
     const soundInput = document.getElementById("sound-upload")
     const audioFile = new File(["audio"], "sound.wav", { type: "audio/wav" })
@@ -266,10 +292,14 @@ describe("CuesForm", () => {
   test("sets drag payload for color element", () => {
     renderCuesForm()
 
-    fireEvent.click(screen.getByRole("button", { name: "Colors" }))
-    fireEvent.change(screen.getByTestId("cue-name"), { target: { value: "Warm color" } })
+    fireEvent.click(screen.getByRole("tab", { name: "Colors" }))
+    fireEvent.change(screen.getByTestId("cue-name"), {
+      target: { value: "Warm color" },
+    })
 
-    const colorDragElement = screen.getByText("Drag color to grid").closest("[draggable='true']")
+    const colorDragElement = screen
+      .getByText("Drag to grid")
+      .closest("[draggable='true']")
     const dataTransfer = createDataTransfer()
 
     fireEvent.dragStart(colorDragElement, { dataTransfer })
@@ -326,7 +356,7 @@ describe("CuesForm", () => {
       },
     })
 
-    const form = screen.getByText("Edit Element").closest("form")
+    const form = screen.getByText("Edit element").closest("form")
     fireEvent.submit(form)
 
     await waitFor(() => {
@@ -349,7 +379,9 @@ describe("CuesForm", () => {
     const mediaInput = document.getElementById("media-upload")
     const firstImage = new File(["img1"], "photo1.png", { type: "image/png" })
     const secondImage = new File(["img2"], "photo2.png", { type: "image/png" })
-    fireEvent.change(mediaInput, { target: { files: [firstImage, secondImage] } })
+    fireEvent.change(mediaInput, {
+      target: { files: [firstImage, secondImage] },
+    })
 
     unmount()
 
