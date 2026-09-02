@@ -11,6 +11,8 @@ import {
 import { AttachmentIcon, ViewIcon } from "@chakra-ui/icons"
 import CuesForm from "./CuesForm"
 import ScorePanel from "./ScorePanel"
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
+import { removeMedia, uploadMedia } from "../../redux/presentationReducer"
 
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
 
@@ -59,6 +61,21 @@ const EditorDock = ({
   isAudioMode,
   indexCount,
 }: EditorDockProps) => {
+  const dispatch = useAppDispatch()
+  // The dock, not CuesForm, owns the store wiring: CuesForm is unit-tested
+  // rendered standalone, with no Provider around it.
+  const mediaLibrary = useAppSelector((state) => state.presentation.media)
+
+  const handleUploadMedia = useCallback(
+    (file: File) => dispatch(uploadMedia(presentationId, file)),
+    [dispatch, presentationId]
+  )
+
+  const handleDeleteMedia = useCallback(
+    (mediaId: string) => dispatch(removeMedia(presentationId, mediaId)),
+    [dispatch, presentationId]
+  )
+
   const [activeTab, setActiveTab] = useState<DockTab>("elements")
   const [dockWidth, setDockWidth] = useState<number>(readStoredWidth)
   const isDragging = useRef(false)
@@ -204,6 +221,9 @@ const EditorDock = ({
               screenCount={screenCount}
               isAudioMode={isAudioMode}
               indexCount={indexCount}
+              mediaLibrary={mediaLibrary}
+              onUploadMedia={handleUploadMedia}
+              onDeleteMedia={handleDeleteMedia}
             />
           ) : (
             <ScorePanel presentationId={presentationId} scores={scores} />

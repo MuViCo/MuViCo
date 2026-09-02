@@ -1435,6 +1435,7 @@ const EditMode = ({
       continuePlayback = false,
       color,
       opacity = 1,
+      mediaId,
     } = cueData
 
     //Check if cue with same index and screen already exists
@@ -1455,7 +1456,9 @@ const EditMode = ({
       loop || false,
       layer,
       normalizeCueOpacity(opacity),
-      continuePlayback
+      continuePlayback,
+      undefined,
+      mediaId
     )
 
     // Focus follows the placement intent, not the request: the lane the user
@@ -1866,15 +1869,14 @@ const EditMode = ({
         dragData.elementType === "media" ||
         dragData.elementType === "sound"
       ) {
-        // Media or sound element - has a file
+        // Media or sound element. The id addresses an entry in the
+        // presentation's media library, already stored server-side -- the cue
+        // will reuse that stored object instead of uploading anything.
         const isSound = dragData.elementType === "sound"
-        const fileId = isSound ? dragData.soundId : dragData.mediaId
+        const mediaId = isSound ? dragData.soundId : dragData.mediaId
         const cueType = isSound ? "audio" : "visual"
 
-        // Retrieve the file from mediaStore
-        const file = mediaStore.getFile(fileId)
-
-        if (!file) {
+        if (!mediaId) {
           showToast({
             title: "File not found",
             description:
@@ -1901,20 +1903,17 @@ const EditMode = ({
           return
         }
 
-        // Create cue with the actual file
         const dataToSave = {
           index: xIndex,
           cueName: dragData.cueName,
           screen: target.screen,
           layer: target.layer,
-          file: file,
+          file: null,
+          mediaId,
           opacity: 1,
         }
 
         await addCue(dataToSave)
-
-        // Clean up the file from store after successful creation
-        mediaStore.removeFile(fileId)
         return
       }
 

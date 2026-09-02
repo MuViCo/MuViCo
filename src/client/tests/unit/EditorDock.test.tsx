@@ -11,6 +11,15 @@ jest.mock("../../components/presentation/ScorePanel", () => () => (
   <div data-testid="score-panel">Scores</div>
 ))
 
+// The dock reads the media library from the store and dispatches the upload
+// and delete thunks; this test only cares about tab switching, so stub the
+// hooks rather than standing up a Provider.
+jest.mock("../../redux/hooks", () => ({
+  useAppDispatch: () => jest.fn(),
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ presentation: { media: [] } }),
+}))
+
 const renderWithChakra = (component: React.ReactElement) =>
   render(<ChakraProvider>{component}</ChakraProvider>)
 

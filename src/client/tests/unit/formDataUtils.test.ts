@@ -81,4 +81,29 @@ describe("createFormData", () => {
     const untouched = createFormData(0, "Cue", 1, undefined)
     expect(untouched.get("image")).toBeNull()
   })
+
+  test("appends mediaId as its own scalar field when a cue is built from the library", () => {
+    const formData = createFormData(
+      0,
+      "Cue",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      0,
+      1,
+      false,
+      undefined,
+      "media-9"
+    )
+
+    expect(formData.get("mediaId")).toBe("media-9")
+  })
+
+  test("omits mediaId when the cue carries an uploaded file instead", () => {
+    const formData = createFormData(0, "Cue", 1, null)
+
+    expect(formData.get("mediaId")).toBeNull()
+  })
 })

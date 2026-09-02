@@ -164,6 +164,7 @@ describe("presentationReducer reducer", () => {
   const initialState = {
     cues: [],
     scores: [],
+    media: [],
     name: "",
     screenCount: 3,
     indexCount: 5,

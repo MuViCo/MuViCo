@@ -43,6 +43,7 @@ import {
 import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
 import { SpeakerIcon } from "../../lib/icons"
 import { useState, useEffect, useRef } from "react"
+import type { ChangeEvent, FormEvent } from "react"
 import Error from "../utils/Error"
 import { getNextAvailableIndex } from "../utils/numberInputUtils"
 import { ColorPickerWithPresets } from "./ColorPicker"
@@ -53,6 +54,13 @@ import {
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
+
+import type {
+  Cue,
+  CueFileMeta,
+  CueUpdateInput,
+  MediaLibraryItem,
+} from "../../types"
 
 // Create a transparent 1x1 pixel image to suppress the default browser drag ghost image
 const transparentDragImage = (() => {
@@ -67,7 +75,7 @@ const transparentDragImage = (() => {
 })()
 
 // Suppress the native browser drag ghost by setting it to the transparent image
-const suppressNativeDragGhost = (dataTransfer) => {
+const suppressNativeDragGhost = (dataTransfer: DataTransfer | null) => {
   if (!dataTransfer?.setDragImage || !transparentDragImage) {
     return
   }
@@ -87,7 +95,37 @@ const suppressNativeDragGhost = (dataTransfer) => {
  * - screenCount: Total number of screens in the presentation
  * - isAudioMode: Boolean indicating if in audio mode
  * - indexCount: Count of indices
+ * - mediaLibrary: The presentation's stored media (MediaLibraryItem[]); the
+ *   media and sound pools are two views of this one list, split by MIME type
+ * - onUploadMedia: (File) => Promise, adds a file to the library
+ * - onDeleteMedia: (mediaId) => Promise, removes an entry from the library
+ *
+ * The pools are deliberately driven by props rather than by useSelector: this
+ * component is unit-tested rendered standalone, with no store around it.
  */
+interface CuesFormProps {
+  /* The create/edit form path these five feed is unreachable from the running
+     app -- see the note at the top of this file. Typed as loosely as the call
+     sites actually are, so the dead path can be deleted without a type churn. */
+  addCue?: (cueData: CueUpdateInput) => void | Promise<void>
+  onClose?: () => void
+  position?: { index: number; screen: number } | null
+  cueData?: Cue | null
+  /* The live prop is EditMode's frame stepper; the dead form path below calls
+     it with (cueId, updatedCue) instead. The signature here describes the live
+     one -- the dead call site casts. */
+  updateCue?: (direction: "Next" | "Previous") => void
+  isAudioMode?: boolean
+
+  cues: Cue[]
+  screenCount: number
+  indexCount: number
+
+  mediaLibrary?: MediaLibraryItem[]
+  onUploadMedia?: (file: File) => Promise<unknown>
+  onDeleteMedia?: (mediaId: string) => Promise<unknown>
+}
+
 const CuesForm = ({
   addCue,
   onClose,
@@ -98,9 +136,13 @@ const CuesForm = ({
   screenCount,
   isAudioMode = false,
   indexCount,
-}) => {
-  const [file, setFile] = useState("")
-  const [actualFile, setActualFile] = useState(null)
+  mediaLibrary = [],
+  onUploadMedia,
+  onDeleteMedia,
+}: CuesFormProps) => {
+  // "" rather than null when empty: the dead form path compares `file !== ""`.
+  const [file, setFile] = useState<File | "">("")
+  const [actualFile, setActualFile] = useState<CueFileMeta | File | null>(null)
   const [fileName, setFileName] = useState("")
   const [index, setIndex] = useState(position?.index || 0)
   const [cueName, setCueName] = useState("")
@@ -108,8 +150,8 @@ const CuesForm = ({
   const [cueId, setCueId] = useState("")
   const [loop, setLoop] = useState(false)
   const [continuePlayback, setContinuePlayback] = useState(false)
-  const [error, setError] = useState(null)
-  const [color, setColor] = useState()
+  const [error, setError] = useState<string | null>(null)
+  const [color, setColor] = useState<string | undefined>()
   const [selectedColor, setSelectedColor] = useState("#9244ff")
   const presetColors = [
     "#000000",
@@ -130,12 +172,19 @@ const CuesForm = ({
     "#ff007f",
   ]
 
-  // Media pool management state - for uploading and displaying media/audio files before adding to cue
-  const [mediaFiles, setMediaFiles] = useState([])
-  const [soundFiles, setSoundFiles] = useState([])
-  const mediaFilesRef = useRef([])
-  const mediaInputRef = useRef(null)
-  const soundInputRef = useRef(null)
+  // The pools are two views of the presentation's stored media library, split
+  // by MIME type. Entries live on the server, so they are still here after a
+  // reload -- unlike the previous in-memory File + blob: preview pool, which
+  // could not survive one.
+  const mediaFiles = mediaLibrary.filter(
+    (item) => !isAudioMimeType(item.type || "")
+  )
+  const soundFiles = mediaLibrary.filter((item) =>
+    isAudioMimeType(item.type || "")
+  )
+  const [isUploading, setIsUploading] = useState(false)
+  const mediaInputRef = useRef<HTMLInputElement | null>(null)
+  const soundInputRef = useRef<HTMLInputElement | null>(null)
 
   const getInitialActiveTab = () => {
     if (typeof window === "undefined") return "media"
@@ -152,7 +201,7 @@ const CuesForm = ({
 
   const audioRow = getAudioRow(screenCount)
 
-  const isAudioFile = () => isAudioMimeType(file?.type)
+  const isAudioFile = () => isAudioMimeType(file ? file.type : "")
 
   // Update form fields when position changes
   useEffect(() => {
@@ -167,20 +216,6 @@ const CuesForm = ({
       window.localStorage.setItem("editModeMediaPoolActiveTab", activeTab)
     }
   }, [activeTab])
-
-  useEffect(() => {
-    mediaFilesRef.current = mediaFiles
-  }, [mediaFiles])
-
-  useEffect(() => {
-    return () => {
-      mediaFilesRef.current.forEach((media) => {
-        if (media?.preview) {
-          URL.revokeObjectURL(media.preview)
-        }
-      })
-    }
-  }, [])
 
   // Auto-calculate the next available index when adding a new cue
   useEffect(() => {
@@ -239,7 +274,7 @@ const CuesForm = ({
     position?.screen,
   ])
 
-  const checkFileType = (file) => {
+  const checkFileType = (file: { type?: string } | "" | null | undefined) => {
     if (!file || !file.type) {
       return false
     }
@@ -263,7 +298,7 @@ const CuesForm = ({
   }
 
   // Handle adding a new cue - validates and calls addCue callback
-  const onAddCue = (event) => {
+  const onAddCue = (event: FormEvent) => {
     event.preventDefault()
 
     if (file !== "") {
@@ -281,8 +316,8 @@ const CuesForm = ({
       }
     }
 
-    addCue({
-      file,
+    addCue?.({
+      file: file || null,
       index,
       cueName,
       screen,
@@ -298,10 +333,10 @@ const CuesForm = ({
     setCueName("")
     setIndex(0)
     setScreen(0)
-    onClose()
+    onClose?.()
   }
 
-  const handleUpdateSubmit = async (event) => {
+  const handleUpdateSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const fileToUse = actualFile || file
@@ -324,16 +359,21 @@ const CuesForm = ({
       }
     }
 
-    await updateCue(cueId, updatedCue)
+    // Dead path: the live updateCue takes a direction, not (cueId, cue). The
+    // cast records that mismatch rather than widening the prop type for it.
+    await (updateCue as unknown as (id: string, cue: unknown) => Promise<void>)(
+      cueId,
+      updatedCue
+    )
 
-    onClose()
+    onClose?.()
 
     setFileName("")
     setCueName("")
   }
 
-  const fileSelected = (event) => {
-    const selected = event.target.files[0]
+  const fileSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = event.target.files?.[0]
     if (selected) {
       if (cueName === "" || cueName === fileName) {
         setCueName(selected.name)
@@ -358,58 +398,58 @@ const CuesForm = ({
     setError(null)
   }
 
-  // Handle uploading images/videos to media pool - creates preview URLs for drag-and-drop
-  const handleMediaUpload = (event) => {
-    const files = Array.from(event.target.files)
-    const validMediaFiles = files.filter((file) => {
-      const isImage = file.type.startsWith("image/")
-      const isVideo = file.type.startsWith("video/")
-      return isImage || isVideo
-    })
+  // Uploading is a network call now, not a local push: the file is stored the
+  // moment it is picked, whether or not it is ever dragged onto the timeline.
+  const uploadToLibrary = async (files: File[]) => {
+    if (!onUploadMedia || files.length === 0) {
+      return
+    }
 
-    // Create media objects with preview URLs
-    const newMediaFiles = validMediaFiles.map((file, idx) => ({
-      id: `media-${Date.now()}-${idx}`,
-      file,
-      name: file.name,
-      type: file.type,
-      preview: URL.createObjectURL(file),
-    }))
-
-    setMediaFiles((prev) => [...prev, ...newMediaFiles])
-  }
-
-  const handleSoundUpload = (event) => {
-    const files = Array.from(event.target.files)
-    const validAudioFiles = files.filter((file) => isAudioMimeType(file.type))
-
-    // Create sound objects
-    const newSoundFiles = validAudioFiles.map((file, idx) => ({
-      id: `sound-${Date.now()}-${idx}`,
-      file,
-      name: file.name,
-      type: file.type,
-    }))
-
-    setSoundFiles((prev) => [...prev, ...newSoundFiles])
-  }
-
-  const removeMediaFile = (id) => {
-    setMediaFiles((prev) => {
-      const file = prev.find((f) => f.id === id)
-      if (file?.preview) {
-        URL.revokeObjectURL(file.preview)
+    setIsUploading(true)
+    setError(null)
+    try {
+      for (const file of files) {
+        await onUploadMedia(file)
       }
-      return prev.filter((f) => f.id !== id)
-    })
+    } catch (uploadError) {
+      setError(uploadError.message || "Upload failed")
+    } finally {
+      setIsUploading(false)
+    }
   }
 
-  const removeSoundFile = (id) => {
-    setSoundFiles((prev) => prev.filter((f) => f.id !== id))
+  const handleMediaUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []).filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+    )
+    // Clearing lets the same file be picked again after a failed upload.
+    event.target.value = ""
+    await uploadToLibrary(files)
+  }
+
+  const handleSoundUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []).filter((file) =>
+      isAudioMimeType(file.type)
+    )
+    event.target.value = ""
+    await uploadToLibrary(files)
+  }
+
+  const removeFromLibrary = async (mediaId: string) => {
+    if (!onDeleteMedia) {
+      return
+    }
+
+    setError(null)
+    try {
+      await onDeleteMedia(mediaId)
+    } catch (deleteError) {
+      setError(deleteError.message || "Delete failed")
+    }
   }
 
   // Calculate contrasting text color (black or white) based on background color brightness
-  const getContrastTextColor = (hexColor) => {
+  const getContrastTextColor = (hexColor?: string) => {
     const current = (hexColor || "").replace("#", "")
     // Validate hex color format
     if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(current)) return "white"
@@ -419,7 +459,7 @@ const CuesForm = ({
       current.length === 3
         ? current
             .split("")
-            .map((char) => `${char}${char}`)
+            .map((char: string) => `${char}${char}`)
             .join("")
         : current
 
@@ -681,6 +721,8 @@ const CuesForm = ({
                     onClick={() => mediaInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
+                    isLoading={isUploading}
+                    loadingText="Uploading"
                   >
                     Upload Images/Videos
                   </Button>
@@ -698,15 +740,16 @@ const CuesForm = ({
                             draggable={true}
                             onDragStart={(e) => {
                               suppressNativeDragGhost(e.dataTransfer)
-                              // Store the file in mediaStore so it can be retrieved on drop
-                              mediaStore.addFile(media.id, media.file)
+                              // mediaId addresses the stored entry; the drop
+                              // handler sends it to the server, which reuses
+                              // that object instead of uploading anything.
                               const dragData = {
                                 type: "newCueFromForm",
                                 cueName: media.name,
                                 elementType: "media",
                                 mediaId: media.id,
                                 mimeType: media.type,
-                                previewUrl: media.preview,
+                                previewUrl: media.url,
                               }
                               mediaStore.setActiveDragData(dragData)
 
@@ -733,25 +776,26 @@ const CuesForm = ({
                             }}
                           >
                             <IconButton
+                              aria-label={`Remove ${media.name}`}
                               icon={<DeleteIcon />}
                               size="xs"
                               colorScheme="red"
                               position="absolute"
                               top={1}
                               right={1}
-                              onClick={() => removeMediaFile(media.id)}
+                              onClick={() => removeFromLibrary(media.id)}
                               zIndex={1}
                             />
-                            {media.type.startsWith("image/") && (
+                            {media.type?.startsWith("image/") && (
                               <Image
-                                src={media.preview}
+                                src={media.url}
                                 alt={media.name}
                                 maxH="100px"
                                 objectFit="contain"
                                 w="100%"
                               />
                             )}
-                            {media.type.startsWith("video/") && (
+                            {media.type?.startsWith("video/") && (
                               <Box
                                 bg="whiteAlpha.200"
                                 p={4}
@@ -816,6 +860,8 @@ const CuesForm = ({
                     onClick={() => soundInputRef.current?.click()}
                     colorScheme="purple"
                     variant="outline"
+                    isLoading={isUploading}
+                    loadingText="Uploading"
                   >
                     Upload Audio Files
                   </Button>
@@ -833,8 +879,6 @@ const CuesForm = ({
                             draggable={true}
                             onDragStart={(e) => {
                               suppressNativeDragGhost(e.dataTransfer)
-                              // Store the file in mediaStore so it can be retrieved on drop
-                              mediaStore.addFile(sound.id, sound.file)
                               const dragData = {
                                 type: "newCueFromForm",
                                 cueName: sound.name,
@@ -880,10 +924,11 @@ const CuesForm = ({
                               </Text>
                             </Box>
                             <IconButton
+                              aria-label={`Remove ${sound.name}`}
                               icon={<DeleteIcon />}
                               size="sm"
                               colorScheme="red"
-                              onClick={() => removeSoundFile(sound.id)}
+                              onClick={() => removeFromLibrary(sound.id)}
                             />
                           </Box>
                         ))}

@@ -32,7 +32,12 @@ export const createFormData = (
   // Omitted (the default) means "don't touch the cue's existing span" on the
   // server -- only callers that actually mean to add/change/clear a span
   // (the Multi-screen picker) need to pass this.
-  spanScreens?: number[]
+  spanScreens?: number[],
+  // Id of a media-library entry to build the cue from instead of uploading.
+  // Sent as its own scalar field, never inside `file`: an object appended to
+  // FormData serialises to "[object Object]", which is exactly the trap the
+  // note on CueUpdateInput.file describes.
+  mediaId?: string
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -66,6 +71,9 @@ export const createFormData = (
   formData.append("continuePlayback", String(Boolean(continuePlayback)))
   if (spanScreens !== undefined) {
     formData.append("spanScreens", JSON.stringify(spanScreens))
+  }
+  if (mediaId) {
+    formData.append("mediaId", mediaId)
   }
 
   return formData
