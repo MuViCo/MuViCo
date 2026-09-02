@@ -360,6 +360,19 @@ function EditorLayout(props: EditorLayoutProps) {
           </div>
         </div>
       </div>
+
+      {/* Shown instead of the grid on phone widths (see the matching media
+          query in styles.css) -- editing the screens x frames grid needs
+          real estate the grid itself has no way to shrink to. */}
+      <div className="edit-workspace-mobile-notice">
+        <p className="edit-workspace-mobile-notice-title">
+          Editing needs a bigger screen
+        </p>
+        <p className="edit-workspace-mobile-notice-body">
+          Use a tablet or a computer to build the grid. You can still preview
+          and play this presentation here.
+        </p>
+      </div>
     </div>
   )
 }
