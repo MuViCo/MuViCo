@@ -24,8 +24,7 @@ const DOCK_TABS: { id: DockTab; label: string }[] = [
 ]
 
 const DOCK_WIDTH_KEY = "muvico.dockWidth"
-// Same key the media pool used for its own strip, which this one replaces. A
-// stored "audio" lands on Media, where audio now lives.
+// A stored "audio" falls back to Media, where audio now lives.
 const DOCK_TAB_KEY = "editModeMediaPoolActiveTab"
 const DOCK_MIN = 280
 const DOCK_MAX = 760
@@ -80,8 +79,7 @@ const EditorDock = ({
   indexCount,
 }: EditorDockProps) => {
   const dispatch = useAppDispatch()
-  // The dock, not CuesForm, owns the store wiring: CuesForm is unit-tested
-  // rendered standalone, with no Provider around it.
+  // The dock owns the store wiring: CuesForm is tested without a Provider.
   const mediaLibrary = useAppSelector((state) => state.presentation.media)
 
   const handleUploadMedia = useCallback(
@@ -206,9 +204,7 @@ const EditorDock = ({
         pl="5px"
       >
         {/* ── Tab switcher ─────────────────────────────────────────────── */}
-        {/* One strip for the whole dock. There used to be a second one inside
-            CuesForm, so the panel opened on two rows of tabs stacked on top of
-            each other. */}
+        {/* One strip for the whole dock. */}
         <Tabs
           index={DOCK_TABS.findIndex((tab) => tab.id === activeTab)}
           onChange={(index) => setActiveTab(DOCK_TABS[index].id)}

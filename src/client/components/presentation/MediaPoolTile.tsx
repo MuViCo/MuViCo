@@ -1,10 +1,4 @@
-/**
- * One draggable tile in the media pool.
- *
- * The three media kinds need genuinely different previews -- a still, a video
- * frame, a single icon -- so the whole tile lives here rather than as three
- * branches inside CuesForm's render.
- */
+/** One draggable tile in the media pool: still, video frame, or audio icon. */
 
 import {
   Box,
@@ -13,10 +7,11 @@ import {
   Text,
   useColorModeValue,
 } from "@chakra-ui/react"
-import { DeleteIcon } from "@chakra-ui/icons"
+import { DeleteIcon, WarningTwoIcon } from "@chakra-ui/icons"
 import { SpeakerIcon } from "../../lib/icons"
 import mediaStore from "./mediaFileStore"
 
+import { useState } from "react"
 import { dragDataForMedia, mediaKind } from "../utils/mediaKind"
 
 import type { MediaLibraryItem } from "../../types"
@@ -27,7 +22,8 @@ interface MediaPoolTileProps {
   suppressDragGhost: (dataTransfer: DataTransfer | null) => void
 }
 
-const PREVIEW_HEIGHT = "100px"
+// One height for every kind; previews crop rather than letterbox.
+const PREVIEW_HEIGHT = "68px"
 
 const MediaPoolTile = ({
   item,
@@ -37,7 +33,8 @@ const MediaPoolTile = ({
   const textColor = useColorModeValue("gray.800", "whiteAlpha.900")
   const mutedText = useColorModeValue("gray.600", "whiteAlpha.500")
   const placeholderBg = useColorModeValue("blackAlpha.50", "whiteAlpha.200")
-  const kind = mediaKind(item.type)
+  const kind = mediaKind(item)
+  const [isBroken, setIsBroken] = useState(false)
 
   return (
     <Box
@@ -72,21 +69,37 @@ const MediaPoolTile = ({
         zIndex={1}
       />
 
-      {kind === "image" && (
+      {kind === "image" && !isBroken && (
         <Image
           src={item.url}
           alt={item.name}
-          maxH={PREVIEW_HEIGHT}
-          objectFit="contain"
+          h={PREVIEW_HEIGHT}
+          objectFit="cover"
           w="100%"
+          borderRadius="md"
+          // An entry can outlive its stored object; show that, not a blank tile.
+          onError={() => setIsBroken(true)}
         />
       )}
 
-      {kind === "video" && (
+      {isBroken && (
+        <Box
+          h={PREVIEW_HEIGHT}
+          bg={placeholderBg}
+          borderRadius="md"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          title="This file is no longer in storage"
+        >
+          <WarningTwoIcon boxSize="20px" color={mutedText} />
+        </Box>
+      )}
+
+      {kind === "video" && !isBroken && (
         <Box position="relative" borderRadius="md" overflow="hidden">
-          {/* The media fragment asks for a frame just past the start: at
-              exactly 0s some encodes hand back a black frame. `preload` is
-              metadata only, so this costs a range request, not the file. */}
+          {/* Past 0s, where some encodes are black. Metadata only: a range
+              request, not the whole file. */}
           <Box
             as="video"
             data-testid={`video-preview-${item.id}`}
@@ -96,8 +109,9 @@ const MediaPoolTile = ({
             preload="metadata"
             h={PREVIEW_HEIGHT}
             w="100%"
-            objectFit="contain"
-            // The tile owns the drag; a video element would swallow the press.
+            objectFit="cover"
+            onError={() => setIsBroken(true)}
+            // The tile owns the drag; the video would swallow the press.
             sx={{ pointerEvents: "none", backgroundColor: "black" }}
           />
           <Box
@@ -116,7 +130,7 @@ const MediaPoolTile = ({
         </Box>
       )}
 
-      {kind === "audio" && (
+      {kind === "audio" && !isBroken && (
         <Box
           h={PREVIEW_HEIGHT}
           bg={placeholderBg}
@@ -125,7 +139,7 @@ const MediaPoolTile = ({
           alignItems="center"
           justifyContent="center"
         >
-          <SpeakerIcon boxSize="32px" color={mutedText} />
+          <SpeakerIcon boxSize="22px" color={mutedText} />
         </Box>
       )}
 

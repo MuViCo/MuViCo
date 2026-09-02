@@ -1336,6 +1336,9 @@ router.put(
             id: fileId,
             name: file?.originalname || `file-${fileId}`,
             url: "",
+            // Or the schema default applies, and an mp4 is stored as image/jpeg.
+            ...(file?.mimetype && { type: file.mimetype }),
+            ...(file?.size !== undefined && { size: String(file.size) }),
             ...(driveId && { driveId }),
           }
 
@@ -1892,6 +1895,8 @@ router.put(
               id: newFileId,
               name: file.originalname,
               url: `https://${BUCKET_NAME}.s3.amazonaws.com/${fileName}`,
+              type: file.mimetype,
+              size: String(file.size),
             }
             await generateSignedUrlForS3(cue, id)
           } catch (error) {

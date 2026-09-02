@@ -173,6 +173,17 @@ describe("CuesForm", () => {
     expect(preview).toHaveAttribute("preload", "metadata")
   })
 
+  test("previews a legacy video whose stored type is the schema default", () => {
+    renderCuesForm({
+      mediaLibrary: [
+        // What a cue uploaded before the routes recorded `type` reads back as.
+        mediaItem({ id: "media-6", name: "vanha.mp4", type: "image/jpeg" }),
+      ],
+    })
+
+    expect(screen.getByTestId("video-preview-media-6").tagName).toBe("VIDEO")
+  })
+
   test("previews every audio entry with the same icon and no media request", () => {
     renderCuesForm({
       mediaLibrary: [

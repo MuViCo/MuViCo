@@ -62,9 +62,7 @@ import type {
   MediaLibraryItem,
 } from "../../types"
 
-// One input for every kind now that the audio pool was folded into the media
-// pool. Mirrors what the server accepts (isAllowedMimeType) rather than the
-// browser's own idea of "audio/*".
+// One input for every kind. Mirrors the server's isAllowedMimeType.
 const MEDIA_UPLOAD_ACCEPT =
   "image/*,video/mp4,video/3gpp,audio/mpeg,audio/wav,audio/vnd.wave"
 
@@ -130,11 +128,7 @@ interface CuesFormProps {
   mediaLibrary?: MediaLibraryItem[]
   onUploadMedia?: (file: File) => Promise<unknown>
   onDeleteMedia?: (mediaId: string) => Promise<unknown>
-  /**
-   * Which section to show. Controlled by EditorDock, which owns the single
-   * Colors / Media / Scores tab strip -- this component used to carry a second
-   * strip of its own underneath it.
-   */
+  /** Which section to show. EditorDock owns the tab strip. */
   activeTab?: "colors" | "media"
 }
 
@@ -185,10 +179,7 @@ const CuesForm = ({
     "#ff007f",
   ]
 
-  // One pool for images, videos and audio alike: the tile shows what kind it
-  // is, and the drop target still refuses audio on a visual row. Entries live
-  // on the server, so they are all still here after a reload -- unlike the
-  // previous in-memory File + blob: preview pool, which could not survive one.
+  // One pool for every kind; entries live on the server, so a reload keeps them.
   const [mediaSearch, setMediaSearch] = useState("")
   const normalizedSearch = mediaSearch.trim().toLowerCase()
   const visibleMedia = normalizedSearch
@@ -399,8 +390,7 @@ const CuesForm = ({
     setError(null)
   }
 
-  // Uploading is a network call now, not a local push: the file is stored the
-  // moment it is picked, whether or not it is ever dragged onto the timeline.
+  // Uploading stores the file immediately, used on the timeline or not.
   const uploadToLibrary = async (files: File[]) => {
     if (!onUploadMedia || files.length === 0) {
       return
@@ -431,9 +421,7 @@ const CuesForm = ({
     await uploadToLibrary(files)
   }
 
-  // Cues built from a library entry share its stored object, so there is no
-  // way to keep them working once the entry is gone -- hence the count in the
-  // dialog below.
+  // Cues share the entry's stored object, so they cannot outlive it.
   const cuesUsingPendingDelete = pendingDelete
     ? cues.filter((cue) => cue.file?.id === pendingDelete.id).length
     : 0
@@ -487,8 +475,7 @@ const CuesForm = ({
   const scrollTrackBg = useColorModeValue("blackAlpha.50", "whiteAlpha.50")
   const scrollThumbBg = useColorModeValue("blackAlpha.300", "whiteAlpha.300")
 
-  // One section at a time, chosen by EditorDock's tab strip: colours to drag a
-  // solid onto the grid, or the media pool.
+  // One section at a time: colours to drag onto the grid, or the media pool.
   return (
     <div className="cue-editor-form custom-scrollbar">
       <form
@@ -656,9 +643,7 @@ const CuesForm = ({
                       />
                     </InputGroup>
 
-                    {/* Compact once there is something in the pool: the big
-                        button belongs to the empty state, where uploading is
-                        the only thing left to do. */}
+                    {/* The big button belongs to the empty state. */}
                     <Tooltip label="Upload media" placement="bottom-end">
                       <IconButton
                         aria-label="Upload media"
