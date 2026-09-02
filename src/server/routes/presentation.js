@@ -543,11 +543,16 @@ router.post(
 )
 
 /**
- * Removes an entry from the media library.
+ * Removes an entry from the media library -- permanently.
  *
- * The stored object is deleted only when no cue still points at it. A cue
- * created from this entry shares its key, so deleting unconditionally would
- * pull the bytes out from under a cue that is still on the timeline.
+ * The library owns the stored object, and a cue created from an entry shares
+ * that object rather than holding a copy. There is therefore no way to keep a
+ * cue working once its entry is gone, so the cues built from this entry are
+ * removed with it and the object is deleted. The client warns before calling
+ * this; the response reports which cues went, so it can drop them from view.
+ *
+ * Deleting a cue does the opposite and leaves the library untouched -- see
+ * deleteObject above.
  */
 router.delete(
   "/:id/media/:mediaId",
@@ -566,25 +571,27 @@ router.delete(
         return res.status(404).json({ error: "Media not found" })
       }
 
-      const stillUsedByCue = presentation.cues.some(
-        (cue) => cue.file?.id === mediaId
-      )
+      const deletedCueIds = presentation.cues
+        .filter((cue) => cue.file?.id === mediaId)
+        .map((cue) => cue._id.toString())
 
       const driveId = entry.driveId
+
+      for (const cueId of deletedCueIds) {
+        presentation.cues.pull({ _id: cueId })
+      }
       presentation.media.pull({ _id: entry._id })
       await presentation.save({ validateModifiedOnly: true })
 
-      if (!stillUsedByCue) {
-        if (user.driveToken) {
-          if (driveId) {
-            await deleteDriveFile(driveId, user.driveToken)
-          }
-        } else {
-          await deleteFileS3(`${id}/${mediaId}`)
+      if (user.driveToken) {
+        if (driveId) {
+          await deleteDriveFile(driveId, user.driveToken)
         }
+      } else {
+        await deleteFileS3(`${id}/${mediaId}`)
       }
 
-      return res.status(204).end()
+      return res.json({ mediaId, deletedCueIds })
     } catch (error) {
       next(error)
     }

@@ -22,6 +22,7 @@ import type {
   ScoreDocument,
   ScoreMarker,
   ScoreMarkerInput,
+  DeleteMediaResponse,
   MediaLibraryItem,
   SwapCuesPayload,
   SwapCuesResponse,
@@ -197,10 +198,15 @@ const uploadMedia = async (
   return response.data
 }
 
-const deleteMedia = async (id: string, mediaId: string): Promise<void> => {
-  await axios.delete(`${baseUrl}${id}/media/${mediaId}`, {
-    headers: authHeaders(),
-  })
+const deleteMedia = async (
+  id: string,
+  mediaId: string
+): Promise<DeleteMediaResponse> => {
+  const response = await axios.delete<DeleteMediaResponse>(
+    `${baseUrl}${id}/media/${mediaId}`,
+    { headers: authHeaders() }
+  )
+  return response.data
 }
 
 const addCue = async (

@@ -267,6 +267,18 @@ export interface MediaLibraryItem {
   createdAt?: string
 }
 
+/**
+ * DELETE /api/presentation/:id/media/:mediaId
+ *
+ * Deleting a library entry deletes the stored object, and the cues built from
+ * that entry shared it rather than holding a copy -- so they go too. Their ids
+ * come back here for the client to drop from view.
+ */
+export interface DeleteMediaResponse {
+  mediaId: string
+  deletedCueIds: string[]
+}
+
 /* --------------------------------------------------------------- uploads -- */
 
 /**

@@ -39,6 +39,12 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
 } from "@chakra-ui/react"
 import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
 import { SpeakerIcon } from "../../lib/icons"
@@ -183,8 +189,14 @@ const CuesForm = ({
     isAudioMimeType(item.type || "")
   )
   const [isUploading, setIsUploading] = useState(false)
+  // Deleting a library entry deletes the stored object and every cue built from
+  // it, so it goes through a confirmation rather than straight off the button.
+  const [pendingDelete, setPendingDelete] = useState<MediaLibraryItem | null>(
+    null
+  )
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const soundInputRef = useRef<HTMLInputElement | null>(null)
+  const cancelDeleteRef = useRef<HTMLButtonElement | null>(null)
 
   const getInitialActiveTab = () => {
     if (typeof window === "undefined") return "media"
@@ -435,14 +447,24 @@ const CuesForm = ({
     await uploadToLibrary(files)
   }
 
-  const removeFromLibrary = async (mediaId: string) => {
-    if (!onDeleteMedia) {
+  // Cues built from a library entry share its stored object, so there is no
+  // way to keep them working once the entry is gone -- hence the count in the
+  // dialog below.
+  const cuesUsingPendingDelete = pendingDelete
+    ? cues.filter((cue) => cue.file?.id === pendingDelete.id).length
+    : 0
+
+  const confirmDelete = async () => {
+    const item = pendingDelete
+    setPendingDelete(null)
+
+    if (!item || !onDeleteMedia) {
       return
     }
 
     setError(null)
     try {
-      await onDeleteMedia(mediaId)
+      await onDeleteMedia(item.id)
     } catch (deleteError) {
       setError(deleteError.message || "Delete failed")
     }
@@ -783,7 +805,7 @@ const CuesForm = ({
                               position="absolute"
                               top={1}
                               right={1}
-                              onClick={() => removeFromLibrary(media.id)}
+                              onClick={() => setPendingDelete(media)}
                               zIndex={1}
                             />
                             {media.type?.startsWith("image/") && (
@@ -928,7 +950,7 @@ const CuesForm = ({
                               icon={<DeleteIcon />}
                               size="sm"
                               colorScheme="red"
-                              onClick={() => removeFromLibrary(sound.id)}
+                              onClick={() => setPendingDelete(sound)}
                             />
                           </Box>
                         ))}
@@ -943,6 +965,47 @@ const CuesForm = ({
           {error && <Error error={error} />}
         </FormControl>
       </form>
+
+      <AlertDialog
+        isOpen={Boolean(pendingDelete)}
+        leastDestructiveRef={cancelDeleteRef}
+        onClose={() => setPendingDelete(null)}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete media permanently?
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              <Text>
+                &quot;{pendingDelete?.name}&quot; will be removed from the pool
+                and deleted from storage. This cannot be undone.
+              </Text>
+              {cuesUsingPendingDelete > 0 && (
+                <Text mt={3} fontWeight="bold">
+                  {cuesUsingPendingDelete === 1
+                    ? "1 element on the timeline uses it and will be deleted too."
+                    : `${cuesUsingPendingDelete} elements on the timeline use it and will be deleted too.`}
+                </Text>
+              )}
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button
+                ref={cancelDeleteRef}
+                onClick={() => setPendingDelete(null)}
+              >
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </div>
   )
 }

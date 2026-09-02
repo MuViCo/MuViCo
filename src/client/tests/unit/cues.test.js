@@ -212,15 +212,57 @@ describe("CuesForm", () => {
     expect(onUploadMedia).toHaveBeenCalledWith(imageFile)
   })
 
-  test("removing a pool item deletes the library entry", async () => {
+  test("removing a pool item asks for confirmation before deleting", async () => {
     const { onDeleteMedia } = renderCuesForm({ mediaLibrary: [mediaItem()] })
 
     const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
     fireEvent.click(fileCard.querySelector("button"))
 
+    // The delete is permanent, so nothing happens until it is confirmed.
+    expect(
+      await screen.findByText("Delete media permanently?")
+    ).toBeInTheDocument()
+    expect(onDeleteMedia).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+
     await waitFor(() => {
       expect(onDeleteMedia).toHaveBeenCalledWith("media-1")
     })
+  })
+
+  test("cancelling the confirmation leaves the entry alone", async () => {
+    const { onDeleteMedia } = renderCuesForm({ mediaLibrary: [mediaItem()] })
+
+    const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
+    fireEvent.click(fileCard.querySelector("button"))
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }))
+
+    await waitFor(() => {
+      expect(screen.queryByText("Delete media permanently?")).toBeNull()
+    })
+    expect(onDeleteMedia).not.toHaveBeenCalled()
+  })
+
+  test("warns how many timeline elements the deletion will take with it", async () => {
+    renderCuesForm({
+      mediaLibrary: [mediaItem()],
+      cues: [
+        { _id: "cue-1", file: { id: "media-1" } },
+        { _id: "cue-2", file: { id: "media-1" } },
+        { _id: "cue-3", file: { id: "other" } },
+      ],
+    })
+
+    const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
+    fireEvent.click(fileCard.querySelector("button"))
+
+    expect(
+      await screen.findByText(
+        "2 elements on the timeline use it and will be deleted too."
+      )
+    ).toBeInTheDocument()
   })
 
   test("drag payload carries the stored media id, not an in-memory file", () => {
@@ -279,6 +321,7 @@ describe("CuesForm", () => {
 
     const removeButtons = within(soundItem).getAllByRole("button")
     fireEvent.click(removeButtons[0])
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
 
     await waitFor(() => {
       expect(onDeleteMedia).toHaveBeenCalledWith("media-2")

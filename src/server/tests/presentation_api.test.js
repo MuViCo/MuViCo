@@ -2150,9 +2150,10 @@ describe("Media library (media pool)", () => {
     expect(presentation.media[0].id).toBe(uploaded.body.id)
   })
 
-  test("keeps the stored object when the library entry is removed while a cue still uses it", async () => {
+  test("removing a library entry also removes the cues built from it", async () => {
     const uploaded = await uploadMedia()
-    await createCueFromMedia(uploaded.body.id)
+    const created = await createCueFromMedia(uploaded.body.id)
+    const cue = created.body.cues.find((c) => c.name === "From library")
 
     const response = await api
       .delete(
@@ -2160,12 +2161,37 @@ describe("Media library (media pool)", () => {
       )
       .set("Authorization", mediaAuthHeader)
 
-    expect(response.status).toBe(204)
-    expect(S3Mock.commandCalls(DeleteObjectCommand)).toHaveLength(0)
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toEqual([cue._id])
+
+    // The cue shared the entry's object, so nothing could have kept it working.
+    const deletes = S3Mock.commandCalls(DeleteObjectCommand)
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0].args[0].input.Key).toBe(
+      `${mediaPresentationId}/${uploaded.body.id}`
+    )
 
     const presentation = await Presentation.findById(mediaPresentationId)
     expect(presentation.media).toHaveLength(0)
-    expect(presentation.cues).toHaveLength(1)
+    expect(presentation.cues).toHaveLength(0)
+  })
+
+  test("removes every cue built from the entry, not just the first", async () => {
+    const uploaded = await uploadMedia()
+    await createCueFromMedia(uploaded.body.id, 0, 1)
+    await createCueFromMedia(uploaded.body.id, 1, 2)
+
+    const response = await api
+      .delete(
+        `/api/presentation/${mediaPresentationId}/media/${uploaded.body.id}`
+      )
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toHaveLength(2)
+
+    const presentation = await Presentation.findById(mediaPresentationId)
+    expect(presentation.cues).toHaveLength(0)
   })
 
   test("deletes the stored object when an unused library entry is removed", async () => {
@@ -2177,7 +2203,8 @@ describe("Media library (media pool)", () => {
       )
       .set("Authorization", mediaAuthHeader)
 
-    expect(response.status).toBe(204)
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toEqual([])
     const deletes = S3Mock.commandCalls(DeleteObjectCommand)
     expect(deletes).toHaveLength(1)
     expect(deletes[0].args[0].input.Key).toBe(

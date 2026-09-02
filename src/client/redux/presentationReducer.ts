@@ -480,12 +480,21 @@ export const uploadMedia =
     }
   }
 
+/**
+ * Deletes a library entry, and with it every cue built from that entry: the cue
+ * shared the entry's stored object, so nothing could keep it working. The
+ * caller is expected to have confirmed with the user first.
+ */
 export const removeMedia =
   (id: string, mediaId: string): AppThunk =>
   async (dispatch) => {
     dispatch(beginSave())
     try {
-      await presentationService.deleteMedia(id, mediaId)
+      const { deletedCueIds } = await presentationService.deleteMedia(
+        id,
+        mediaId
+      )
+      deletedCueIds.forEach((cueId) => dispatch(deleteCue(cueId)))
       dispatch(removeMediaItemFromState(mediaId))
     } catch (error) {
       const errorMessage = error.response?.data?.error || "An error occurred"
