@@ -84,15 +84,16 @@ const addBlankCue = async (page, name, index, screen) => {
   await dropArea.dispatchEvent("drop", { clientX, clientY, dataTransfer })
 }
 
+// Images, videos and audio share one pool and one input now; the tile shows
+// which kind an entry is, and the drop target still refuses audio on a visual
+// row. uploadAudioFile is kept as its own name so the audio specs still read
+// as being about audio.
 const uploadMediaFile = async (page, files) => {
-  await page.getByRole("tab", { name: "Media" }).click()
+  await page.getByRole("tab", { name: "Media", exact: true }).click()
   await page.locator("#media-upload").setInputFiles(files)
 }
 
-const uploadAudioFile = async (page, files) => {
-  await page.getByRole("tab", { name: "Audio", exact: true }).click()
-  await page.locator("#sound-upload").setInputFiles(files)
-}
+const uploadAudioFile = uploadMediaFile
 
 const dragToGrid = async (page, source, index, screen) => {
   const dropArea = page.locator('[data-testid="drop-area"]')
