@@ -48,15 +48,19 @@ const MediaPoolTile = ({
         event.dataTransfer.setData("text/plain", JSON.stringify(dragData))
       }}
       onDragEnd={() => mediaStore.clearActiveDragData()}
+      role="group"
       position="relative"
       border="2px solid"
-      borderColor="purple.300"
+      borderColor="transparent"
       borderRadius="md"
       p={2}
       cursor="grab"
+      transition="border-color 0.15s, background 0.15s"
       _active={{ cursor: "grabbing" }}
-      _hover={{ borderColor: "purple.500", bg: "whiteAlpha.100" }}
+      _hover={{ borderColor: "purple.400", bg: "whiteAlpha.100" }}
+      _focusWithin={{ borderColor: "purple.400" }}
     >
+      {/* Hover-only, but still focusable so it stays reachable by keyboard. */}
       <IconButton
         aria-label={`Remove ${item.name}`}
         icon={<DeleteIcon />}
@@ -67,6 +71,10 @@ const MediaPoolTile = ({
         right={1}
         onClick={() => onDelete(item)}
         zIndex={1}
+        opacity={0}
+        transition="opacity 0.15s"
+        _groupHover={{ opacity: 1 }}
+        _focusVisible={{ opacity: 1 }}
       />
 
       {kind === "image" && !isBroken && (
