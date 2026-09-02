@@ -109,6 +109,40 @@ const processS3Files = async (cues, presentationId) => {
   return processedCues
 }
 
+/*
+ * Media-library entries share cue.file's shape and its storage key
+ * (`${presentationId}/${id}`), so signing is the same operation. Unlike the cue
+ * path this does NOT issue HeadObject calls for type/size: both are recorded on
+ * the entry when it is uploaded, so the extra round-trips would buy nothing.
+ */
+const generateSignedMediaUrlForS3 = async (item, presentationId) => {
+  if (!item?.id) {
+    return item
+  }
+
+  const key = `${presentationId}/${item.id.toString()}`
+  item.url = await getObjectSignedUrl(key)
+
+  return item
+}
+
+const processS3MediaFiles = async (media, presentationId) => {
+  return Promise.all(
+    (media || []).map((item) =>
+      generateSignedMediaUrlForS3(item, presentationId)
+    )
+  )
+}
+
+const processDriveMediaFiles = async (media, accessToken) => {
+  return Promise.all(
+    (media || []).map(async (item) => {
+      await generateDriveFileUrl(item, accessToken)
+      return item
+    })
+  )
+}
+
 const processS3ScoreFiles = async (scores, presentationId) => {
   return Promise.all(
     scores.map(async (score) => {
@@ -133,6 +167,9 @@ const processDriveScoreFiles = async (scores, accessToken) => {
 
 module.exports = {
   processDriveCueFiles,
+  processDriveMediaFiles,
+  generateSignedMediaUrlForS3,
+  processS3MediaFiles,
   processDriveScoreFiles,
   generateSignedUrlForS3,
   generateSignedScoreUrlForS3,

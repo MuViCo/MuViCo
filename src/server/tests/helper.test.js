@@ -7,6 +7,8 @@ const {
   generateSignedUrlForS3,
   processS3Files,
   processS3ScoreFiles,
+  processS3MediaFiles,
+  processDriveMediaFiles,
 } = require("../utils/helper")
 const { getDriveFileMetadata } = require("../utils/drive")
 const { getObjectSignedUrl } = require("../utils/s3")
@@ -273,6 +275,66 @@ describe("Helper utility functions", () => {
 
       expect(result[0].file.proxyUrl).toBeUndefined()
       expect(getObjectSignedUrl).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("processS3MediaFiles", () => {
+    test("signs every library entry under presentationId/mediaId", async () => {
+      getObjectSignedUrl.mockResolvedValue("https://s3.signed.url")
+
+      const media = [
+        { id: "media-1", name: "a.png" },
+        { id: "media-2", name: "b.png" },
+      ]
+
+      const result = await processS3MediaFiles(media, "pres-123")
+
+      expect(getObjectSignedUrl).toHaveBeenCalledWith("pres-123/media-1")
+      expect(getObjectSignedUrl).toHaveBeenCalledWith("pres-123/media-2")
+      expect(result[0].url).toBe("https://s3.signed.url")
+      expect(result[1].url).toBe("https://s3.signed.url")
+    })
+
+    test("does not call HeadObject: type and size are stored on the entry", async () => {
+      getObjectSignedUrl.mockResolvedValue("https://s3.signed.url")
+
+      await processS3MediaFiles([{ id: "media-1", type: "image/png" }], "p")
+
+      expect(getFileType).not.toHaveBeenCalled()
+      expect(getFileSize).not.toHaveBeenCalled()
+    })
+
+    test("tolerates an empty or missing library", async () => {
+      await expect(processS3MediaFiles(undefined, "p")).resolves.toEqual([])
+      expect(getObjectSignedUrl).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("processDriveMediaFiles", () => {
+    test("builds a proxy URL and enriches metadata for Drive entries", async () => {
+      getDriveFileMetadata.mockResolvedValue({
+        mimeType: "image/png",
+        size: "2048",
+      })
+
+      const result = await processDriveMediaFiles(
+        [{ id: "media-1", driveId: "drive-123" }],
+        "test-token"
+      )
+
+      expect(result[0].url).toContain("api/media/drive-123")
+      expect(result[0].type).toBe("image/png")
+      expect(result[0].size).toBe("2048")
+    })
+
+    test("leaves an entry without a driveId untouched", async () => {
+      const result = await processDriveMediaFiles(
+        [{ id: "media-1" }],
+        "test-token"
+      )
+
+      expect(result[0].url).toBeUndefined()
+      expect(getDriveFileMetadata).not.toHaveBeenCalled()
     })
   })
 })
