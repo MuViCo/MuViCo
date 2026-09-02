@@ -454,9 +454,6 @@ routes/users.js
   utils/auth.js
   utils/logger.js
   utils/middleware.js
-scripts/backfillMediaLibrary.js
-  utils/config.js
-  utils/mediaLibraryBackfill.js
 scripts/migrateLegacyPresentationCues.js
   utils/config.js
   utils/legacyPresentationMigration.js
@@ -473,7 +470,6 @@ utils/helper.js
 utils/legacyPresentationMigration.js
   utils/cueType.js
 utils/logger.js
-utils/mediaLibraryBackfill.js
 utils/middleware.js
   models/presentation.js
   models/user.js
