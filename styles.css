@@ -6,27 +6,8 @@
 /* Use !important so Chakra Button defaults do not override these Edit Mode button styles. */
 
 .edit-mode-btn {
-  background-color: #bd5bff !important;
-  color: #ffffff !important;
-  border: 0 !important;
-  border-radius: 0.375rem !important;
-  font-size: 0.875rem !important;
-  min-height: 2rem !important;
-  padding: 0.5rem 0.75rem !important;
-}
-
-.edit-mode-btn:hover,
-.edit-mode-btn[data-hover] {
-  background-color: #8941b9 !important;
-}
-
-.edit-mode-btn:active,
-.edit-mode-btn[data-active] {
-  background-color: #553c9a !important;
-}
-
-.edit-mode-btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
+  min-height: 2.25rem !important;
+  font-size: 0.8125rem !important;
 }
 
 .edit-mode-btn-settings {
@@ -38,30 +19,27 @@
 }
 
 .show-mode-nav-btn {
-  background-color: #bd5bff !important;
-  color: #ffffff !important;
-  border: 0 !important;
-  border-radius: 0.375rem !important;
-  width: 2.75rem !important;
-  height: 2.75rem !important;
-  min-width: 2.75rem !important;
+  border-radius: 8px !important;
+  width: 2.625rem !important;
+  height: 2.625rem !important;
+  min-width: 2.625rem !important;
   padding: 0 !important;
   transition:
     background-color 0.15s ease,
-    transform 0.15s ease,
+    border-color 0.15s ease,
     box-shadow 0.15s ease !important;
 }
 
-.show-mode-nav-btn:hover,
-.show-mode-nav-btn[data-hover] {
-  background-color: #8941b9 !important;
-  transform: translateY(-1px) !important;
+.show-mode-nav-btn-secondary {
+  background-color: var(--muvico-control) !important;
+  border: 1px solid var(--muvico-border) !important;
+  color: var(--muvico-text-secondary) !important;
 }
 
-.show-mode-nav-btn:active,
-.show-mode-nav-btn[data-active] {
-  background-color: #553c9a !important;
-  transform: translateY(0) !important;
+.show-mode-nav-btn-secondary:hover,
+.show-mode-nav-btn-secondary[data-hover] {
+  background-color: var(--muvico-control-hover) !important;
+  border-color: var(--muvico-border-strong) !important;
 }
 
 .show-mode-nav-btn:focus-visible {
@@ -72,73 +50,53 @@
  * Common shape, height and interaction feel for show mode actions.
  * State-specific colors are defined below.
  */
-.show-mode-autoplay-btn,
-.show-mode-open-all-btn {
+.show-mode-autoplay-btn {
   border: 0 !important;
-  border-radius: 0.375rem !important;
+  border-radius: 8px !important;
   font-weight: 600 !important;
-  height: 2.75rem !important;
-  color: #ffffff !important;
+  height: 2.625rem !important;
   transition:
     background-color 0.15s ease,
-    transform 0.15s ease,
     box-shadow 0.15s ease !important;
 }
 
 .show-mode-autoplay-btn {
-  min-width: 2.75rem !important;
-  min-height: 2.75rem !important;
+  min-width: 3.125rem !important;
+  min-height: 2.625rem !important;
   padding: 0 !important;
 }
 
-/* Primary action state (start autoplay / open all). */
-.show-mode-autoplay-btn-start,
-.show-mode-open-all-btn-open {
+.show-mode-autoplay-btn-start {
   background-color: #bd5bff !important;
   color: #ffffff !important;
 }
 
-/* Opposite action state (stop autoplay / close all). */
-.show-mode-autoplay-btn-stop,
-.show-mode-open-all-btn-close {
+.show-mode-autoplay-btn-stop {
   background-color: #e53e3e !important;
   color: #ffffff !important;
 }
 
 .show-mode-autoplay-btn-start:hover,
-.show-mode-autoplay-btn-start[data-hover],
-.show-mode-open-all-btn-open:hover,
-.show-mode-open-all-btn-open[data-hover] {
+.show-mode-autoplay-btn-start[data-hover] {
   background-color: #8941b9 !important;
-  transform: translateY(-1px) !important;
 }
 
 .show-mode-autoplay-btn-stop:hover,
-.show-mode-autoplay-btn-stop[data-hover],
-.show-mode-open-all-btn-close:hover,
-.show-mode-open-all-btn-close[data-hover] {
+.show-mode-autoplay-btn-stop[data-hover] {
   background-color: #c53030 !important;
-  transform: translateY(-1px) !important;
 }
 
 .show-mode-autoplay-btn-start:active,
-.show-mode-autoplay-btn-start[data-active],
-.show-mode-open-all-btn-open:active,
-.show-mode-open-all-btn-open[data-active] {
+.show-mode-autoplay-btn-start[data-active] {
   background-color: #553c9a !important;
-  transform: translateY(0) !important;
 }
 
 .show-mode-autoplay-btn-stop:active,
-.show-mode-autoplay-btn-stop[data-active],
-.show-mode-open-all-btn-close:active,
-.show-mode-open-all-btn-close[data-active] {
+.show-mode-autoplay-btn-stop[data-active] {
   background-color: #9b2c2c !important;
-  transform: translateY(0) !important;
 }
 
-.show-mode-autoplay-btn:focus-visible,
-.show-mode-open-all-btn:focus-visible {
+.show-mode-autoplay-btn:focus-visible {
   box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.45) !important;
 }
 
@@ -154,10 +112,159 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem 1rem;
+  gap: 0;
+  padding: 0 0 0.75rem;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.editor-context-bar {
+  flex: 0 0 auto;
+}
+
+.editor-transport-bar {
+  flex: 0 0 auto;
+  min-height: 64px;
+  padding: 8px 14px;
+}
+
+.editor-save-status {
+  flex: 0 0 24px;
+  margin-left: 10px;
+}
+
+.presentation-transport {
+  min-width: 0;
+  gap: 14px;
+}
+
+.transport-navigation,
+.transport-secondary-controls {
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.transport-secondary-controls {
+  display: flex;
+  align-items: center;
+}
+
+.transport-divider {
+  width: 1px;
+  height: 32px;
+  margin: 0 7px;
+  background: var(--muvico-border);
+}
+
+.transport-frame-label {
+  min-width: 128px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.transport-frame-total,
+.transport-interval-unit {
+  color: var(--muvico-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.transport-interval {
+  height: 38px;
+  gap: 7px;
+  padding: 0 8px;
+  border: 1px solid var(--muvico-border);
+  border-radius: 8px;
+  background: var(--muvico-control);
+}
+
+.transport-label {
+  color: var(--muvico-text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.show-mode-open-all-btn {
+  height: 38px !important;
+  white-space: nowrap;
+}
+
+.screen-status-open,
+.screen-status-closed,
+.audio-state-playing,
+.audio-state-ready {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.screen-status-open,
+.audio-state-playing {
+  background: var(--muvico-audio);
+  box-shadow: 0 0 0 3px rgba(127, 212, 189, 0.12);
+}
+
+.screen-status-closed,
+.audio-state-ready {
+  background: var(--muvico-text-muted);
+}
+
+.transport-audio-status {
+  min-width: 0;
+  margin-left: auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--muvico-border);
+  border-radius: 8px;
+  background: var(--muvico-control);
+}
+
+.transport-audio-icon {
+  width: 16px !important;
+  height: 16px !important;
+  color: var(--muvico-audio);
+  flex: 0 0 auto;
+}
+
+.transport-audio-tracks {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.transport-audio-track {
+  min-width: 0;
+  max-width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.transport-audio-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muvico-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transport-audio-loop {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--muvico-audio-surface);
+  color: var(--muvico-audio);
+  font-size: 0.625rem;
+  font-weight: 700;
 }
 
 .editor-shell > .edit-workspace {
@@ -165,6 +272,7 @@
   min-height: 0;
   min-width: 0;
   display: flex;
+  padding: 12px 14px 0;
 }
 
 .editor-shell > .edit-workspace > div {
@@ -208,7 +316,7 @@
   /* Never shrinks: the preview strip is the one thing that must stay visible,
 	   and shrinking would fight the resize handle. */
   flex: 0 0 auto;
-  height: 15rem;
+  height: 12rem;
   min-height: 8rem;
 }
 
@@ -235,7 +343,7 @@
 .edit-mode-workspace {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 12px;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
@@ -244,9 +352,47 @@
 .edit-mode-workspace > div {
   align-items: center;
   gap: 12px;
-  background-color: #312238;
-  outline: 2px solid #572b6e;
+  background-color: var(--muvico-surface);
   border-radius: 8px;
+}
+
+@media (max-width: 1100px) {
+  .editor-transport-bar {
+    min-height: 0;
+  }
+
+  .presentation-transport {
+    flex-wrap: wrap;
+  }
+
+  .transport-audio-status {
+    order: 3;
+    margin-left: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .editor-context-bar {
+    padding-inline: 10px !important;
+  }
+
+  .editor-transport-bar {
+    padding-inline: 10px;
+  }
+
+  .transport-secondary-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .transport-frame-label {
+    min-width: 104px;
+  }
+
+  .editor-shell > .edit-workspace {
+    padding-inline: 8px;
+  }
 }
 
 .cue-editor-form {

@@ -23,12 +23,12 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Text,
+  Tooltip,
 } from "@chakra-ui/react"
-import { QuestionIcon } from "@chakra-ui/icons"
-import nextbutton from "../../public/icons/nextbutton.svg"
-import previousbutton from "../../public/icons/previousbutton.svg"
+import { ArrowBackIcon, ArrowForwardIcon } from "@chakra-ui/icons"
 import pausebutton from "../../public/icons/pausebutton.svg"
 import playbutton from "../../public/icons/playbutton.svg"
+import { SpeakerIcon } from "../../lib/icons"
 
 // autoplay controls component used in both presentation navigation and autoplay
 const AutoplayControls = ({ toggleAutoplay, isAutoplaying }) => {
@@ -55,11 +55,13 @@ const AutoplayControls = ({ toggleAutoplay, isAutoplaying }) => {
 
 // Component for adjusting autoplay interval (seconds per frame)
 const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
-  <Box display="flex" alignItems="center" gap="10px">
+  <Box className="transport-interval" display="flex" alignItems="center">
+    <Text className="transport-label">Auto</Text>
     <NumberInput
       id="autoplaytime"
       value={autoplayInterval}
-      width="100px"
+      width="76px"
+      size="sm"
       onChange={(valueString) => toggleAutoplayInterval(valueString)}
       min={0.1}
       step={0.1}
@@ -70,9 +72,7 @@ const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
         <NumberDecrementStepper />
       </NumberInputStepper>
     </NumberInput>
-    <Text fontSize="sm" fontWeight="bold">
-      sec / frame
-    </Text>
+    <Text className="transport-interval-unit">sec/frame</Text>
   </Box>
 )
 
@@ -88,9 +88,17 @@ const ScreenToggleButtons = ({ screens, toggleAllScreens }) => {
     <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
       <Button
         onClick={toggleAllScreens}
-        size="md"
+        size="sm"
+        variant="muvico-secondary"
         id="open-all-screens-button"
-        className={`show-mode-open-all-btn ${hasOpenScreen ? "show-mode-open-all-btn-close" : "show-mode-open-all-btn-open"}`}
+        className="show-mode-open-all-btn"
+        leftIcon={
+          <Box
+            className={
+              hasOpenScreen ? "screen-status-open" : "screen-status-closed"
+            }
+          />
+        }
       >
         {hasOpenScreen ? "Close all screens" : "Open all screens"}
       </Button>
@@ -102,16 +110,8 @@ const ScreenToggleButtons = ({ screens, toggleAllScreens }) => {
 const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
   <IconButton
     aria-label="Previous Cue"
-    icon={
-      <img
-        src={previousbutton}
-        alt=""
-        width="35"
-        height="35"
-        aria-hidden="true"
-      />
-    }
-    className="show-mode-nav-btn"
+    icon={<ArrowBackIcon boxSize={5} />}
+    className="show-mode-nav-btn show-mode-nav-btn-secondary"
     onClick={() => updateCue("Previous")}
     isDisabled={cueIndex === 0}
   />
@@ -121,10 +121,8 @@ const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
 const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   <IconButton
     aria-label="Next Cue"
-    icon={
-      <img src={nextbutton} alt="" width="35" height="35" aria-hidden="true" />
-    }
-    className="show-mode-nav-btn"
+    icon={<ArrowForwardIcon boxSize={5} />}
+    className="show-mode-nav-btn show-mode-nav-btn-secondary"
     onClick={() => updateCue("Next")}
     isDisabled={cueIndex === indexCount - 1}
   />
@@ -166,7 +164,49 @@ const CueAudioPlayer = ({
   if (!src) return null
 
   return (
-    <audio ref={audioRef} loop={loop} controls src={src} preload="metadata" />
+    <audio ref={audioRef} loop={loop} src={src} preload="metadata" hidden />
+  )
+}
+
+const getTrackLabel = (track, index) => {
+  if (track.name) return track.name
+  const sourceName = String(track.src || "")
+    .split("?")[0]
+    .split("/")
+    .pop()
+  return sourceName || `Audio ${index + 1}`
+}
+
+const AudioTrackStatus = ({ tracks, isAutoplaying }) => {
+  if (tracks.length === 0) return null
+
+  return (
+    <Box
+      className="transport-audio-status"
+      role="group"
+      aria-label="Active audio tracks"
+    >
+      <SpeakerIcon className="transport-audio-icon" />
+      <Box className="transport-audio-tracks">
+        {tracks.map((track, index) => {
+          const label = getTrackLabel(track, index)
+          return (
+            <Tooltip key={track.id || `${track.src}-${index}`} label={label}>
+              <Box className="transport-audio-track">
+                <Text className="transport-audio-name">{label}</Text>
+                {track.loop && (
+                  <Text className="transport-audio-loop">loop</Text>
+                )}
+              </Box>
+            </Tooltip>
+          )
+        })}
+      </Box>
+      <Box
+        className={isAutoplaying ? "audio-state-playing" : "audio-state-ready"}
+        aria-label={isAutoplaying ? "Audio playing" : "Audio ready"}
+      />
+    </Box>
   )
 }
 
@@ -202,29 +242,18 @@ const PresentationPlaybackControls = ({
 
   return (
     <Box
-      bg=""
+      className="presentation-transport"
       display="flex"
-      flexDirection="row"
       alignItems="center"
-      justifyContent="left"
-      gap={4}
-      ml={2.5}
-      mt={1.5}
+      width="100%"
     >
       <Box
         id="presentation-frame-navigation"
         display="flex"
-        flexDirection="row"
         alignItems="center"
-        gap={4}
+        className="transport-navigation"
       >
         <CueNavigationPrevious cueIndex={cueIndex} updateCue={updateCue} />
-        <Box w="150px" display="flex" justifyContent="center">
-          <Heading size="md" textAlign="center" whiteSpace="nowrap">
-            {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
-          </Heading>
-        </Box>
-
         <AutoplayControls
           toggleAutoplay={toggleAutoplay}
           isAutoplaying={isAutoplaying}
@@ -234,15 +263,27 @@ const PresentationPlaybackControls = ({
           updateCue={updateCue}
           indexCount={indexCount}
         />
+        <Box className="transport-divider" />
+        <Box className="transport-frame-label">
+          <Heading as="h2" size="sm" whiteSpace="nowrap">
+            {cueIndex > 0 ? `Frame ${cueIndex}` : "Frame 0"}
+          </Heading>
+          <Text className="transport-frame-total">/ {indexCount}</Text>
+        </Box>
       </Box>
-      <ScreenToggleButtons
-        screens={screens}
-        toggleAllScreens={toggleAllScreens}
-      />
-
-      <AutoplayInterval
-        autoplayInterval={autoplayInterval}
-        toggleAutoplayInterval={toggleAutoplayInterval}
+      <Box className="transport-secondary-controls">
+        <AutoplayInterval
+          autoplayInterval={autoplayInterval}
+          toggleAutoplayInterval={toggleAutoplayInterval}
+        />
+        <ScreenToggleButtons
+          screens={screens}
+          toggleAllScreens={toggleAllScreens}
+        />
+      </Box>
+      <AudioTrackStatus
+        tracks={resolvedAudioTracks.filter((track) => track.src)}
+        isAutoplaying={isAutoplaying}
       />
       {resolvedAudioTracks.map((track, trackIndex) => (
         <CueAudioPlayer
