@@ -23,7 +23,10 @@ The application is designed for creating and performing multi-screen multimedia 
 ### Compute & container orchestration
 
 - **[Upcloud Kubernetes](https://upcloud.com/docs/products/managed-kubernetes)**  
-  Runs the MuViCo backend in a managed Kubernetes cluster. The deployment manifests live under `/manifests/` and are applied to the cluster using `kubectl`.
+  Runs MuViCo (a single image containing both the built frontend and the backend server) in a managed Kubernetes cluster. As of the switch to GitOps (see [Section 4](#4-cicd-how-production-deployments-are-automated)), the cluster is never touched directly — deployment manifests live in a separate `gitops` repository, applied automatically by Argo CD. `/manifests/` in this repository is a legacy reference kept in sync for documentation purposes only.
+
+- **[Argo CD](https://argo-cd.readthedocs.io/)**  
+  Continuously reconciles the cluster against the `gitops` repository (an "App-of-Apps" layout) and syncs automatically when it drifts, so every change to what's running goes through a Git commit. Production and staging are separate Argo CD projects, so an issue in one cannot affect the other.
 
 - **[GitHub Container Registry (ghcr.io)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)**  
   Container registry used to store built images, at `ghcr.io/muvico/muvico`. The CI pipeline builds images from the repository and pushes them using the workflow's own `GITHUB_TOKEN` (tags include `staging` and release tags). The package is public, so no pull credentials are needed on the cluster.
@@ -142,30 +145,26 @@ MuViCo uses GitHub Actions to automate testing, building container images, and p
 
 ### Deploying to Upcloud Kubernetes
 
-Production and staging are deployed to an Upcloud Kubernetes cluster. Deployment manifests live in the `/manifests/` directory.
+Production and staging are deployed to an Upcloud Kubernetes cluster, but nobody deploys to it directly — deployment is entirely GitOps-driven through a separate `gitops` repository and Argo CD:
 
-To deploy an updated image to the cluster:
+- **Staging** tracks the `staging`-tagged image, so every push to `main` reaches it automatically once CI pushes that tag.
+- **Production** tracks release tags of the form `vX.Y.Z`. **Argo CD Image Updater** watches GHCR for tags matching that pattern and writes the new version back into `environments/prod/deployment.yaml` in the `gitops` repo when a release is published — it does not deploy every commit, only an explicitly published release.
+- Argo CD (the `muvico-prod` / `muvico-staging` Applications) picks up any change to the `gitops` repo and syncs it to the cluster automatically, self-healing and pruning drift.
 
-1. Ensure you have access to the cluster kubeconfig (`muvico-cluster_kubeconfig.yaml`) and that `kubectl` is installed.
-2. Apply (or re-apply) the manifests:
+To deploy a new production version:
 
-```bash
-kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml apply -f manifests/
-```
+1. Publish a GitHub Release with tag `vX.Y.Z` (see `Definition of Done and conventions.md` for the release checklist). `prod.yml` builds and pushes the tagged image.
+2. Argo CD Image Updater detects the new tag and writes it into the `gitops` repo.
+3. Argo CD syncs the cluster to match — no manual `kubectl` step is involved.
 
-3. If the image tag updated (e.g. a new `staging` build or a new release tag), restart the deployment so it pulls the new image:
-
-```bash
-kubectl --kubeconfig=muvico-cluster_kubeconfig.yaml rollout restart deployment muvico-{staging-}dep
-```
-
-This process ensures that [https://muvico.live](https://muvico.live) is running the latest container image produced by the CI pipeline.
+This process ensures that [https://muvico.live](https://muvico.live) is running the image produced from the most recently published release, and that the cluster's state always matches what's committed in `gitops`.
 
 ---
 
 ## 5. Operational tips
 
-- **Manual redeploy**: Trigger a redeployment by re-applying the Kubernetes manifests (see above).
+- **Checking deployment state**: Look at the `muvico-prod` / `muvico-staging` Argo CD Applications for sync status and health, rather than querying the cluster directly.
+- **Manual redeploy**: Push a change to the `gitops` repository (e.g. bump the image tag by hand) and let Argo CD sync it — there is no direct `kubectl apply` step in normal operation.
 
 ## 6. Notes
 

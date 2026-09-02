@@ -8,7 +8,7 @@ Ensure the MuViCo presentation window is **active** (focused) when using these k
 
 ### Action
 
- - Keyboard Shortcut
+- Keyboard Shortcut
 
 ### Next Cue
 
@@ -18,9 +18,13 @@ Ensure the MuViCo presentation window is **active** (focused) when using these k
 
 - ← (Arrow Left), PageUp, ↓ (Arrow Down)
 
+### Toggle Autoplay
+
+- Space
+
 ### Tutorial
 
 - While in the tutorial:
-    - Next step: → (Arrow Right), Enter
-    - Previous step: ← (Arrow Left)
-    - Quit tutorial: Esc
+  - Next step: → (Arrow Right), Enter
+  - Previous step: ← (Arrow Left)
+  - Quit tutorial: Esc

@@ -7,7 +7,7 @@
 - Thumbnails for the presentation list/card view
 - In the presentation editor grid, replace full-size image files with thumbnails to improve loading performance
 - Add lyrics automatically to presentations
-- Expand the presentation settings menu which currently only contains the transition type setting
+- ~~Expand the presentation settings menu which currently only contains the transition type setting~~ (done — it also has a delete-presentation action now)
 - Improve the presentation list colors on the home page
 - Add sorting settings and methods to the presentation list/grid
 - Enable login with email
@@ -123,7 +123,7 @@ _Note: This is a list of suggestions from previous teams, as of December 2025. I
 
 ### **Introduce effect features**
 
-- Currently there is a default crossfade effect when changing index from image to image. Consider adding more effects that could be both audio and visual, such as sound- and transition effects to enrich the user experience.
+- ~~Currently there is a default crossfade effect when changing index from image to image.~~ (done — the presentation settings menu now offers a choice of transitions: fade, slide from left/right, zoom, or none.) Sound effects on transitions are still an open idea.
 
 ### **Random element**
 
