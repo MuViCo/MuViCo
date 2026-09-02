@@ -283,6 +283,12 @@
   width: 100%;
 }
 
+/* Swaps in for .edit-workspace below the phone breakpoint (see that media
+   query) -- hidden here so it never flashes in above it. */
+.edit-workspace-mobile-notice {
+  display: none;
+}
+
 /* Vertical only. Sideways scrolling belongs to .edit-mode-frames-scroll inside,
    so the lane gutter -- which sits in this box, outside that one -- never has
    frames passing behind it and needs no fill of its own to hide them. The cost
@@ -392,6 +398,44 @@
 
   .editor-shell > .edit-workspace {
     padding-inline: 8px;
+  }
+}
+
+/* Below this, the grid has nowhere left to give: editing is gated to
+   tablet/desktop and this notice takes the grid's place instead. Preview and
+   playback (the transport bar, above) stay available at every width. */
+@media (max-width: 640px) {
+  .editor-shell > .edit-workspace {
+    display: none;
+  }
+
+  .edit-workspace-mobile-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 12px 14px 0;
+    padding: 20px 16px;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--muvico-border);
+    border-radius: 8px;
+    background: var(--muvico-surface);
+  }
+
+  .edit-workspace-mobile-notice-title {
+    margin: 0;
+    font-weight: 600;
+    color: var(--muvico-text-secondary);
+  }
+
+  .edit-workspace-mobile-notice-body {
+    margin: 0;
+    max-width: 32ch;
+    font-size: 0.8125rem;
+    color: var(--muvico-text-muted);
   }
 }
 
