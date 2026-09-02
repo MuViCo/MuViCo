@@ -18,19 +18,36 @@ With MuViCo you can easily add, assemble and edit video, image and audio element
 
 - [Node.js](https://nodejs.org/en/learn/getting-started/introduction-to-nodejs)
 - [Express.js](https://expressjs.com/en/5x/api.html)
+- [Mongoose](https://mongoosejs.com/) (MongoDB object modeling)
+- [JWT](https://github.com/auth0/node-jsonwebtoken) + [bcrypt](https://github.com/kelektiv/node.bcrypt.js) (authentication, password hashing)
+- [Multer](https://github.com/expressjs/multer) (file upload handling)
+- [AWS SDK v3](https://github.com/aws/aws-sdk-js-v3) (S3-compatible object storage)
+- [firebase-admin](https://firebase.google.com/docs/admin/setup) (verifying Google sign-in)
 
 #### Frontend
 
-- [React](https://react.dev/learn)
-- JavaScript (ES6+)
+- [React](https://react.dev/learn) 19
+- [TypeScript](https://www.typescriptlang.org/) (the codebase is progressively migrating from JavaScript)
+- [Vite](https://vite.dev/) (build tool and dev server)
+- [Chakra UI](https://v2.chakra-ui.com/) (components, light/dark theme)
+- [Redux Toolkit](https://redux-toolkit.js.org/) (global state)
+- [react-grid-layout](https://github.com/react-grid-layout/react-grid-layout) (editor grid)
+- [Framer Motion](https://www.framer.com/motion/) (animations)
+- [Axios](https://axios-http.com/)
 
-#### Testing
+#### Testing & CI/CD
 
-- [Jest](https://jestjs.io/docs/tutorial-react)
+- [Jest](https://jestjs.io/docs/tutorial-react) + [Supertest](https://github.com/ladjs/supertest) (unit and integration tests)
+- [Playwright](https://playwright.dev/) (end-to-end tests)
+- [GitHub Actions](https://github.com/features/actions) (continuous integration)
+- [Codecov](https://about.codecov.io/) (test coverage)
+- [Trivy](https://trivy.dev/) (container vulnerability scanning)
+- [Argo CD](https://argo-cd.readthedocs.io/) (continuous deployment)
 
-#### Database
+#### Database & storage
 
-- [mongodb](https://www.mongodb.com/)
+- [MongoDB](https://www.mongodb.com/) (MongoDB Atlas in production)
+- S3-compatible object storage for media files (Upcloud Object Storage in production, [Garage](https://garagehq.deuxfleurs.fr/) locally)
 
 ### Use
 
