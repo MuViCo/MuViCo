@@ -27,11 +27,12 @@ jest.mock("../../redux/presentationReducer", () => ({
   })),
 }))
 
+const mockHandleDeletePresentation = jest.fn()
 jest.mock("../../components/utils/useDeletePresentation", () => {
   return function useDeletePresentation() {
     return {
       isDialogOpen: false,
-      handleDeletePresentation: jest.fn(),
+      handleDeletePresentation: mockHandleDeletePresentation,
       handleConfirmDelete: jest.fn(),
       handleCancelDelete: jest.fn(),
     }
@@ -48,6 +49,9 @@ jest.mock("../../components/presentation/EditModeContainer", () => {
           onClick={() => props.onTransitionChange("slide-left")}
         >
           change-transition
+        </button>
+        <button type="button" onClick={() => props.onDeletePresentation()}>
+          delete-presentation
         </button>
       </div>
     )
@@ -98,5 +102,13 @@ describe("PresentationPage transition preference", () => {
       window.localStorage.getItem("presentation-presentation-1-transition")
     ).toBe("slide-left")
     expect(screen.getByTestId("transition-type").textContent).toBe("slide-left")
+  })
+
+  test("wires EditModeContainer's onDeletePresentation to handleDeletePresentation(id)", () => {
+    render(<PresentationPage user={{}} />)
+
+    fireEvent.click(screen.getByText("delete-presentation"))
+
+    expect(mockHandleDeletePresentation).toHaveBeenCalledWith("presentation-1")
   })
 })

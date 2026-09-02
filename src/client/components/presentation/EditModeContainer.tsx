@@ -141,7 +141,7 @@ function EditorLayout(props: EditorLayoutProps) {
     allowContinuousAudio = false,
     toggleAutoplayInterval = () => {},
     onOpenTutorial = () => {},
-    onDeletePresentation = () => {},
+    onDeletePresentation,
     editModeBackground,
     panelBackground,
     panelBorderColor,
