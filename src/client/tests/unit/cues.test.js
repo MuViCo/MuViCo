@@ -58,6 +58,14 @@ const createDataTransfer = () => ({
   setData: jest.fn(),
 })
 
+// The delete button only exists while the tile is hovered.
+const clickRemoveOn = (name) => {
+  const tile = screen.getByText(name).closest("[draggable='true']")
+  fireEvent.mouseEnter(tile)
+  fireEvent.click(within(tile).getByRole("button", { name: `Remove ${name}` }))
+  return tile
+}
+
 describe("CuesForm", () => {
   beforeEach(() => {
     mediaStore.clear()
@@ -231,8 +239,7 @@ describe("CuesForm", () => {
   test("removing a pool item asks for confirmation before deleting", async () => {
     const { onDeleteMedia } = renderCuesForm({ mediaLibrary: [mediaItem()] })
 
-    const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
-    fireEvent.click(fileCard.querySelector("button"))
+    clickRemoveOn("photo.png")
 
     // The delete is permanent, so nothing happens until it is confirmed.
     expect(
@@ -250,8 +257,7 @@ describe("CuesForm", () => {
   test("cancelling the confirmation leaves the entry alone", async () => {
     const { onDeleteMedia } = renderCuesForm({ mediaLibrary: [mediaItem()] })
 
-    const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
-    fireEvent.click(fileCard.querySelector("button"))
+    clickRemoveOn("photo.png")
 
     fireEvent.click(await screen.findByRole("button", { name: "Cancel" }))
 
@@ -271,8 +277,7 @@ describe("CuesForm", () => {
       ],
     })
 
-    const fileCard = screen.getByText("photo.png").closest("[draggable='true']")
-    fireEvent.click(fileCard.querySelector("button"))
+    clickRemoveOn("photo.png")
 
     expect(
       await screen.findByText(
@@ -332,8 +337,7 @@ describe("CuesForm", () => {
     expect(payload.elementType).toBe("sound")
     expect(payload.soundId).toBe("media-2")
 
-    const removeButtons = within(soundItem).getAllByRole("button")
-    fireEvent.click(removeButtons[0])
+    clickRemoveOn("sound.wav")
     fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
 
     await waitFor(() => {

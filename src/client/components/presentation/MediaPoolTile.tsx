@@ -35,6 +35,7 @@ const MediaPoolTile = ({
   const placeholderBg = useColorModeValue("blackAlpha.50", "whiteAlpha.200")
   const kind = mediaKind(item)
   const [isBroken, setIsBroken] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
 
   return (
     <Box
@@ -48,7 +49,8 @@ const MediaPoolTile = ({
         event.dataTransfer.setData("text/plain", JSON.stringify(dragData))
       }}
       onDragEnd={() => mediaStore.clearActiveDragData()}
-      role="group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       position="relative"
       border="2px solid"
       borderColor="transparent"
@@ -58,24 +60,21 @@ const MediaPoolTile = ({
       transition="border-color 0.15s, background 0.15s"
       _active={{ cursor: "grabbing" }}
       _hover={{ borderColor: "purple.400", bg: "whiteAlpha.100" }}
-      _focusWithin={{ borderColor: "purple.400" }}
     >
-      {/* Hover-only, but still focusable so it stays reachable by keyboard. */}
-      <IconButton
-        aria-label={`Remove ${item.name}`}
-        icon={<DeleteIcon />}
-        size="xs"
-        colorScheme="red"
-        position="absolute"
-        top={1}
-        right={1}
-        onClick={() => onDelete(item)}
-        zIndex={1}
-        opacity={0}
-        transition="opacity 0.15s"
-        _groupHover={{ opacity: 1 }}
-        _focusVisible={{ opacity: 1 }}
-      />
+      {/* Only while this tile is hovered. */}
+      {isHovered && (
+        <IconButton
+          aria-label={`Remove ${item.name}`}
+          icon={<DeleteIcon />}
+          size="xs"
+          colorScheme="red"
+          position="absolute"
+          top={1}
+          right={1}
+          onClick={() => onDelete(item)}
+          zIndex={1}
+        />
+      )}
 
       {kind === "image" && !isBroken && (
         <Image
