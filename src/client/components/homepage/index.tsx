@@ -7,6 +7,7 @@ import {
   Button,
   Container,
   Box,
+  Flex,
   useDisclosure,
   IconButton,
 } from "@chakra-ui/react"
@@ -166,48 +167,41 @@ const HomePage = ({ user, setUser }: HomePageProps) => {
   }
 
   return (
-    <Container maxW="container.lg">
+    <Container maxW="1280px" className="presentations-page">
       <AdminControls isAdmin={user.isAdmin} navigate={navigate} />
-
-      <Box
-        display="flex"
-        flexDirection={["column", "row"]}
-        alignItems={["flex-start", "center"]}
-        justifyContent="space-between"
-        p={4}
-        gap={4}
-      >
-        <PresentationFormWrapper
-          createPresentation={createPresentation}
-          togglableRef={togglableRef}
-          handleCancel={handleCancel}
-        />
-
-        <Box display="flex" alignItems="center" gap={1}>
-          {user.driveToken ? (
-            <Button onClick={handleDriveOff}>Link AWS</Button>
-          ) : (
-            <LinkGoogleDriveButton onDriveLinked={handleDriveLinked} />
-          )}
-          <IconButton
-            className="help-button"
-            aria-label="Storage options help"
-            icon={<QuestionIcon />}
-            variant="ghost"
-            size="lg"
-            ml={1}
-            onClick={onOpen}
-            colorScheme="purple"
-          />
-          <StorageInfoModal isOpen={isOpen} onClose={onClose} user={user} />
-        </Box>
-      </Box>
 
       <PresentationsGrid
         presentations={presentations}
         handlePresentationClick={handlePresentationClick}
         handleDeletePresentation={handleDeletePresentation}
         handleEditPresentation={handleEditPresentation}
+        headerActions={
+          <Flex className="presentations-header-actions">
+            {user.driveToken ? (
+              <Button variant="muvico-secondary" onClick={handleDriveOff}>
+                Use MuViCo storage
+              </Button>
+            ) : (
+              <LinkGoogleDriveButton onDriveLinked={handleDriveLinked} />
+            )}
+            <PresentationFormWrapper
+              createPresentation={createPresentation}
+              togglableRef={togglableRef}
+              handleCancel={handleCancel}
+            />
+            <IconButton
+              className="help-button"
+              aria-label="Storage options help"
+              icon={<QuestionIcon />}
+              variant="ghost"
+              size="lg"
+              ml={1}
+              onClick={onOpen}
+              colorScheme="purple"
+            />
+            <StorageInfoModal isOpen={isOpen} onClose={onClose} user={user} />
+          </Flex>
+        }
       />
       <Dialog
         isOpen={isDialogOpen}

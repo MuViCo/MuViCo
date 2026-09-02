@@ -62,9 +62,8 @@ const LinkGoogleDriveButton = ({
   return (
     <Button
       onClick={handleLinkGoogleDrive}
-      colorScheme="purple"
-      variant="outline"
-      size="md"
+      variant="muvico-secondary"
+      size="sm"
       fontWeight="medium"
       display="flex"
       alignItems="center"
@@ -72,9 +71,10 @@ const LinkGoogleDriveButton = ({
       gap={2}
       px={4}
       py={2}
+      className="link-google-drive-button"
       id="link-google-drive-button"
     >
-      <Box width="20px" height="20px" mr={3} bg="transparent">
+      <Box width="20px" height="20px" bg="transparent">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 48 48"

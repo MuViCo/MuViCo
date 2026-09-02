@@ -139,6 +139,7 @@ export interface Presentation {
   /** ISO date string. */
   lastUsed: string
   cues: Cue[]
+  previewCue?: Cue
   scores?: ScoreDocument[]
   /**
    * TODO(ts): injected by the toJSON transform

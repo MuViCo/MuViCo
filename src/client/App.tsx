@@ -68,9 +68,11 @@ const App = () => {
           pt={
             isPresentation
               ? "var(--muvico-navbar-h, 4.5rem)"
-              : isHome || isProfile
-                ? 36
-                : 30
+              : isHome
+                ? 24
+                : isProfile
+                  ? 36
+                  : 30
           }
           maxW={isPresentation ? "none" : "container.xl"}
           pl={isPresentation ? 0 : 4}

@@ -1,61 +1,191 @@
-/*
- * This component renders a grid of presentations on the homepage, allowing users to view, edit, and delete their presentations.
- * It supports both grid and list views, with a toggle button to switch between them. Each presentation card displays the presentation name and description, and includes edit and delete buttons.
- * The component also includes an edit modal for updating presentation details, with validation for the description length.
- */
-import React, { useState, useEffect } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import {
-  SimpleGrid,
-  Card,
-  CardHeader,
-  Heading,
-  IconButton,
-  Button,
-  HStack,
-  Flex,
-  List,
-  ListItem,
   Box,
-  Tooltip,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
+  Button,
+  Flex,
   FormControl,
   FormLabel,
+  Heading,
+  Icon,
+  IconButton,
   Input,
+  InputGroup,
+  InputLeftElement,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  SimpleGrid,
   Text,
   Textarea,
+  Tooltip,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react"
-import { DeleteIcon, EditIcon } from "@chakra-ui/icons"
+import {
+  FiEdit2,
+  FiFileText,
+  FiGrid,
+  FiList,
+  FiMonitor,
+  FiSearch,
+  FiTrash2,
+} from "react-icons/fi"
 import { motion } from "framer-motion"
-import randomLinearGradient from "../utils/randomGradient"
 
-import type { ChangeEvent, MouseEvent } from "react"
-import type { Presentation, UpdatePresentationInput } from "../../types"
+import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from "react"
+import type { Cue, Presentation, UpdatePresentationInput } from "../../types"
 
 type EditPresentation = (
   presentationId: string,
   updated: UpdatePresentationInput
 ) => Promise<void>
 
+type ViewMode = "grid" | "list"
+type SortMode = "recent" | "name"
+
 interface EditModalProps {
   isOpen: boolean
   onClose: () => void
   presentation: Presentation | null
-  handleEditPresentation: EditPresentation
+  handleEditPresentation?: EditPresentation
 }
 
 interface PresentationsGridProps {
   presentations: Presentation[]
   handlePresentationClick: (presentationId: string) => void
-  handleDeletePresentation: (presentationId: string) => void
-  handleEditPresentation: EditPresentation
+  handleDeletePresentation?: (presentationId: string) => void
+  handleEditPresentation?: EditPresentation
+  headerActions?: ReactNode
+}
+
+const previewPalettes = [
+  ["#24303f", "#1c2634"],
+  ["#33283f", "#2a2035"],
+  ["#4a4436", "#3d3830"],
+  ["#263a34", "#1f302b"],
+  ["#3d2b2b", "#322323"],
+]
+
+const getTimestamp = (presentation: Presentation) => {
+  const value =
+    presentation.lastUsed || presentation.updatedAt || presentation.createdAt
+  const timestamp = new Date(value || 0).getTime()
+  return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
+const formatRelativeDate = (presentation: Presentation) => {
+  const timestamp = getTimestamp(presentation)
+  if (!timestamp) return "Recently"
+
+  const elapsed = Math.max(0, Date.now() - timestamp)
+  const minutes = Math.floor(elapsed / 60000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (minutes < 1) return "Just now"
+  if (minutes < 60) return `${minutes} min ago`
+  if (hours < 24) return `${hours} h ago`
+  if (days === 1) return "Yesterday"
+  if (days < 30) return `${days} days ago`
+  if (days < 365) return `${Math.floor(days / 30)} months ago`
+  return `${Math.floor(days / 365)} years ago`
+}
+
+const getPreviewCue = (presentation: Presentation) =>
+  presentation.previewCue ||
+  [...(presentation.cues || [])]
+    .filter(
+      (cue) =>
+        cue.cueType !== "audio" &&
+        (Number(cue.screen) === 1 || cue.spanScreens?.includes(1))
+    )
+    .sort(
+      (first, second) =>
+        Number(first.index) - Number(second.index) ||
+        Number(first.layer ?? 0) - Number(second.layer ?? 0)
+    )[0]
+
+const getPreviewBackground = (presentation: Presentation, previewCue?: Cue) => {
+  const colorCue = previewCue?.file
+    ? undefined
+    : previewCue ||
+      presentation.cues?.find(
+        (cue) => cue.cueType !== "audio" && !cue.file && cue.color
+      )
+  if (colorCue?.color) return colorCue.color
+
+  const hash = Array.from(presentation.name || "").reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0
+  )
+  const [first, second] = previewPalettes[hash % previewPalettes.length]
+  return `repeating-linear-gradient(135deg, ${first} 0 12px, ${second} 12px 24px)`
+}
+
+const getPresentationMeta = (presentation: Presentation) => {
+  const screenCount = Number(presentation.screenCount) || 1
+  const frameCount = Number(presentation.indexCount) || 0
+  const cueCount = presentation.cues?.length || 0
+  const score = presentation.scores?.[0]
+  const scoreName = score?.title || score?.file?.name || "No score"
+  const previewCue = getPreviewCue(presentation)
+  const previewUrl = previewCue?.file?.url
+  const previewType = previewCue?.file?.type || ""
+  const previewName = previewCue?.file?.name || ""
+  const isVideoPreview =
+    previewType.startsWith("video/") ||
+    /\.(mp4|webm|mov|m4v|ogv)$/i.test(previewName)
+
+  return {
+    screenCount,
+    frameCount,
+    cueCount,
+    scoreName,
+    hasScore: Boolean(score),
+    updatedLabel: formatRelativeDate(presentation),
+    previewBackground: getPreviewBackground(presentation, previewCue),
+    previewUrl,
+    isVideoPreview,
+    previewOpacity: previewCue?.opacity ?? 1,
+  }
+}
+
+const PreviewMedia = ({
+  name,
+  url,
+  isVideo,
+  opacity,
+}: {
+  name: string
+  url?: string
+  isVideo: boolean
+  opacity: number
+}) => {
+  if (!url) return null
+
+  return isVideo ? (
+    <video
+      className="presentation-preview-media"
+      src={url}
+      aria-label={`Preview of ${name}`}
+      preload="metadata"
+      muted
+      playsInline
+      style={{ opacity }}
+    />
+  ) : (
+    <img
+      className="presentation-preview-media"
+      src={url}
+      alt={`Preview of ${name}`}
+      loading="lazy"
+      style={{ opacity }}
+    />
+  )
 }
 
 const EditModal = ({
@@ -100,17 +230,12 @@ const EditModal = ({
   }, [isOpen, presentation])
 
   const handleClose = () => {
-    if (isSaving) {
-      return
-    }
-    onClose()
+    if (!isSaving) onClose()
   }
 
   const handleSaveEdit = async () => {
     const trimmedName = editName.trim()
-    if (!trimmedName || !presentation?.id) {
-      return
-    }
+    if (!trimmedName || !presentation?.id || !handleEditPresentation) return
 
     setSaveError("")
     setIsSaving(true)
@@ -129,8 +254,8 @@ const EditModal = ({
 
   return (
     <Modal isCentered isOpen={isOpen} onClose={handleClose}>
-      <ModalOverlay />
-      <ModalContent>
+      <ModalOverlay backdropFilter="blur(8px)" />
+      <ModalContent className="presentation-edit-modal">
         <ModalHeader>Edit presentation</ModalHeader>
         <ModalCloseButton isDisabled={isSaving} />
         <ModalBody>
@@ -151,7 +276,7 @@ const EditModal = ({
             />
           </FormControl>
           {saveError && (
-            <Text mt={3} color="red.500" role="alert">
+            <Text mt={3} color="red.400" role="alert">
               {saveError}
             </Text>
           )}
@@ -159,14 +284,14 @@ const EditModal = ({
         <ModalFooter>
           <Button
             mr={3}
-            variant="ghost"
+            variant="muvico-secondary"
             onClick={handleClose}
             isDisabled={isSaving}
           >
             Cancel
           </Button>
           <Button
-            colorScheme="purple"
+            variant="muvico-primary"
             onClick={handleSaveEdit}
             isLoading={isSaving}
             isDisabled={!editName.trim()}
@@ -184,19 +309,40 @@ const PresentationsGrid = ({
   handlePresentationClick,
   handleDeletePresentation,
   handleEditPresentation,
+  headerActions,
 }: PresentationsGridProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const [viewMode, setViewMode] = useState(() => {
-    // Initialize from localStorage, default to "grid"
-    return localStorage.getItem("presentationsLayoutMode") || "grid"
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const storedMode = localStorage.getItem("presentationsLayoutMode")
+    return storedMode === "grid" || storedMode === "list" ? storedMode : "list"
   })
+  const [sortMode, setSortMode] = useState<SortMode>("recent")
+  const [searchQuery, setSearchQuery] = useState("")
   const [editingPresentation, setEditingPresentation] =
     useState<Presentation | null>(null)
 
-  // Save to localStorage whenever viewMode changes
   useEffect(() => {
     localStorage.setItem("presentationsLayoutMode", viewMode)
   }, [viewMode])
+
+  const visiblePresentations = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
+    const filtered = presentations.filter((presentation) => {
+      if (!normalizedQuery) return true
+      return `${presentation.name || ""} ${presentation.description || ""}`
+        .toLocaleLowerCase()
+        .includes(normalizedQuery)
+    })
+
+    return filtered.sort((first, second) => {
+      if (sortMode === "name") {
+        return (first.name || "").localeCompare(second.name || "", undefined, {
+          sensitivity: "base",
+        })
+      }
+      return getTimestamp(second) - getTimestamp(first)
+    })
+  }, [presentations, searchQuery, sortMode])
 
   const openEditModal = (presentation: Presentation, event: MouseEvent) => {
     event.stopPropagation()
@@ -208,294 +354,261 @@ const PresentationsGrid = ({
     onClose()
     setEditingPresentation(null)
   }
-  // Render functions for grid and list views
+
+  const handleCardKeyDown = (event: KeyboardEvent, presentationId: string) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      handlePresentationClick(presentationId)
+    }
+  }
+
+  const deletePresentation = (presentationId: string, event: MouseEvent) => {
+    event.stopPropagation()
+    handleDeletePresentation?.(presentationId)
+  }
+
+  const renderActions = (presentation: Presentation, compact = false) => (
+    <Flex className="presentation-item-actions">
+      <Tooltip label="Edit presentation">
+        <IconButton
+          icon={<Icon as={FiEdit2} />}
+          size={compact ? "xs" : "sm"}
+          variant="muvico-secondary"
+          aria-label="Edit presentation"
+          onClick={(event) => openEditModal(presentation, event)}
+        />
+      </Tooltip>
+      <Tooltip label="Delete presentation">
+        <IconButton
+          icon={<Icon as={FiTrash2} />}
+          size={compact ? "xs" : "sm"}
+          variant="muvico-secondary"
+          className="presentation-delete-button"
+          aria-label="Delete presentation"
+          onClick={(event) => deletePresentation(presentation.id, event)}
+        />
+      </Tooltip>
+    </Flex>
+  )
+
   const renderGrid = () => (
-    // this is the default view, it shows presentations in a grid format with cards
     <SimpleGrid
-      columns={[1, 2, 3]}
-      gap={5}
+      className="presentations-card-grid"
       id="presentations-grid"
-      minH="400px"
+      minH="280px"
     >
-      {presentations.map((presentation) => (
-        <motion.div
-          key={presentation.id}
-          whileHover={{ scale: 1.05 }}
-          onHoverStart={(e) => {}}
-          onHoverEnd={(e) => {}}
-        >
-          <Card
-            height="280px"
-            onClick={() => handlePresentationClick(presentation.id)}
-            cursor="pointer"
-            justifyContent="center"
-            textAlign="center"
-            bg={randomLinearGradient()}
+      {visiblePresentations.map((presentation) => {
+        const meta = getPresentationMeta(presentation)
+        return (
+          <motion.div
+            key={presentation.id}
+            whileHover={{ y: -2 }}
+            transition={{ duration: 0.15 }}
           >
-            <CardHeader>
-              <Heading
-                size="md"
-                color={"white"}
-                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
+            <Box
+              className="presentation-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => handlePresentationClick(presentation.id)}
+              onKeyDown={(event) => handleCardKeyDown(event, presentation.id)}
+            >
+              <Box
+                className="presentation-card-preview"
+                style={{ background: meta.previewBackground }}
               >
-                {presentation.name}
-              </Heading>
-              <Tooltip
-                label={presentation.description || ""}
-                placement="auto"
-                openDelay={800}
-                closeDelay={100}
-              >
-                <h2
-                  style={{
-                    marginTop: "0.5em",
-                    fontSize: "0.9em",
-                    color: "rgba(255, 255, 255, 0.8)",
-                    textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                    whiteSpace: "pre-wrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: "vertical",
-                  }}
-                >
-                  {presentation.description || ""}
-                </h2>
-              </Tooltip>
-            </CardHeader>
-            <IconButton
-              icon={<EditIcon />}
-              size="md"
-              backgroundColor="transparent"
-              _hover={{ bg: "purple.300", color: "white" }}
-              position="absolute"
-              draggable={false}
-              zIndex="10"
-              top="4px"
-              right="50px"
-              aria-label={"Edit presentation"}
-              title="Edit presentation"
-              onClick={(e) => openEditModal(presentation, e)}
-            />
-            <IconButton
-              icon={<DeleteIcon />}
-              size="md"
-              position="absolute"
-              _hover={{ bg: "red.500", color: "white" }}
-              backgroundColor="red.300"
-              draggable={false}
-              zIndex="10"
-              top="4px"
-              right="4px"
-              aria-label={"Delete presentation"}
-              title="Delete presentation"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeletePresentation(presentation.id)
-              }}
-            />
-          </Card>
-        </motion.div>
-      ))}
+                <PreviewMedia
+                  name={presentation.name}
+                  url={meta.previewUrl}
+                  isVideo={meta.isVideoPreview}
+                  opacity={meta.previewOpacity}
+                />
+                <Box className="presentation-screen-badge">
+                  <Icon as={FiMonitor} />
+                  {meta.screenCount}{" "}
+                  {meta.screenCount === 1 ? "screen" : "screens"}
+                </Box>
+                {meta.hasScore && (
+                  <Box className="presentation-score-badge">
+                    <Icon as={FiFileText} />
+                    <Text as="span">{meta.scoreName}</Text>
+                  </Box>
+                )}
+                {renderActions(presentation, true)}
+              </Box>
+              <Box className="presentation-card-body">
+                <Heading as="h2" size="sm" title={presentation.name}>
+                  {presentation.name}
+                </Heading>
+                <Text className="presentation-card-description">
+                  {presentation.description || "No description"}
+                </Text>
+                <Flex className="presentation-card-meta">
+                  <Text>
+                    {meta.frameCount} frames · {meta.cueCount} cues
+                  </Text>
+                  <Text>{meta.updatedLabel}</Text>
+                </Flex>
+              </Box>
+            </Box>
+          </motion.div>
+        )
+      })}
     </SimpleGrid>
   )
 
   const renderList = () => (
-    // this view shows presentations in a list format, with the name and description on the left and edit/delete buttons on the right
-    <List id="presentations-grid" spacing={3} minH="400px">
-      {presentations.map((presentation) => (
-        <motion.div
-          key={presentation.id}
-          whileHover={{ scale: 1.02 }}
-          style={{ originX: 0 }}
-        >
-          <ListItem
-            p={4}
-            borderWidth="1px"
-            borderRadius="md"
-            cursor="pointer"
-            bg={randomLinearGradient()}
-            onClick={() => handlePresentationClick(presentation.id)}
-            position="relative"
+    <Box id="presentations-grid" role="list" className="presentations-list">
+      <Box className="presentations-list-header" aria-hidden="true">
+        <Text>Preview</Text>
+        <Text>Name</Text>
+        <Text>Content</Text>
+        <Text>Score</Text>
+        <Text>Modified</Text>
+        <Box />
+      </Box>
+      {visiblePresentations.map((presentation) => {
+        const meta = getPresentationMeta(presentation)
+        return (
+          <motion.div
+            key={presentation.id}
+            whileHover={{ x: 2 }}
+            transition={{ duration: 0.15 }}
           >
-            <Flex align="center" justify="space-between" pr={24}>
-              <Box flex="1" minW={0}>
-                <Flex align="center" minW={0} gap="20px">
-                  <Heading
-                    size="md"
-                    color="white"
-                    style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.4)" }}
-                    flexShrink={0}
-                  >
-                    {presentation.name}
-                  </Heading>
-                  <Tooltip
-                    label={presentation.description || ""}
-                    placement="auto"
-                    openDelay={800}
-                    closeDelay={100}
-                  >
-                    <p
-                      style={{
-                        fontSize: "1.2em",
-                        color: "rgba(255, 255, 255, 0.8)",
-                        textShadow: "1px 1px 3px rgba(0,0,0,0.3)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        flex: "1",
-                        minWidth: "0",
-                        textAlign: "left",
-                      }}
-                    >
-                      {presentation.description || ""}
-                    </p>
-                  </Tooltip>
-                </Flex>
+            <Box
+              role="listitem"
+              className="presentation-list-item"
+              tabIndex={0}
+              onClick={() => handlePresentationClick(presentation.id)}
+              onKeyDown={(event) => handleCardKeyDown(event, presentation.id)}
+            >
+              <Box
+                className="presentation-list-preview"
+                style={{ background: meta.previewBackground }}
+              >
+                <PreviewMedia
+                  name={presentation.name}
+                  url={meta.previewUrl}
+                  isVideo={meta.isVideoPreview}
+                  opacity={meta.previewOpacity}
+                />
+                <Text>{meta.screenCount}</Text>
               </Box>
-            </Flex>
-            <IconButton
-              icon={<EditIcon />}
-              size="sm"
-              backgroundColor="transparent"
-              _hover={{ bg: "purple.300", color: "white" }}
-              position="absolute"
-              draggable={false}
-              zIndex="10"
-              top="4px"
-              right="40px"
-              aria-label={"Edit presentation"}
-              title="Edit presentation"
-              onClick={(e) => openEditModal(presentation, e)}
-            />
-            <IconButton
-              icon={<DeleteIcon />}
-              size="sm"
-              position="absolute"
-              _hover={{ bg: "red.500", color: "white" }}
-              backgroundColor="red.300"
-              draggable={false}
-              zIndex="10"
-              top="4px"
-              right="4px"
-              aria-label={"Delete presentation"}
-              title="Delete presentation"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeletePresentation(presentation.id)
-              }}
-            />
-          </ListItem>
-        </motion.div>
-      ))}
-    </List>
+              <Box className="presentation-list-identity">
+                <Heading as="h2" size="sm" title={presentation.name}>
+                  {presentation.name}
+                </Heading>
+                <Text>{presentation.description || "No description"}</Text>
+              </Box>
+              <Text className="presentation-list-content">
+                {meta.frameCount} frames <span>·</span> {meta.cueCount} cues
+              </Text>
+              <Box
+                className={`presentation-list-score ${
+                  meta.hasScore ? "has-score" : ""
+                }`}
+              >
+                <Icon as={FiFileText} />
+                <Text as="span" title={meta.scoreName}>
+                  {meta.scoreName}
+                </Text>
+              </Box>
+              <Text className="presentation-list-date">
+                {meta.updatedLabel}
+              </Text>
+              {renderActions(presentation)}
+            </Box>
+          </motion.div>
+        )
+      })}
+    </Box>
   )
 
   return (
-    <>
-      {/* heading and toggle buttons on same row */}
-      <Flex
-        justify="space-between"
-        align="center"
-        p={6}
-        gap={4}
-        flexWrap="wrap"
-      >
-        <Heading>Presentations</Heading>
-
-        {/* view mode toggle buttons */}
-        <HStack spacing={2}>
-          <Button
-            onClick={() => setViewMode("grid")}
-            isActive={viewMode === "grid"}
-            colorScheme="purple"
-            variant={viewMode === "grid" ? "solid" : "outline"}
-            px={6}
-            py={2}
-            fontSize="md"
-            fontWeight="semibold"
-            borderRadius="lg"
-            transition="all 0.2s"
-            _hover={{
-              transform: "translateY(-2px)",
-              boxShadow: "lg",
-            }}
-            data-testid="grid-button"
-          >
-            {/* SVG icons for grid and list views */}
-            <svg
-              width="24px"
-              height="24px"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M3 2C2.44772 2 2 2.44772 2 3V10C2 10.5523 2.44772 11 3 11H10C10.5523 11 11 10.5523 11 10V3C11 2.44772 10.5523 2 10 2H3ZM4 9V4H9V9H4Z"
-                fill="#ffffff"
-              />
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M14 2C13.4477 2 13 2.44772 13 3V10C13 10.5523 13.4477 11 14 11H21C21.5523 11 22 10.5523 22 10V3C22 2.44772 21.5523 2 21 2H14ZM15 9V4H20V9H15Z"
-                fill="#ffffff"
-              />
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M13 14C13 13.4477 13.4477 13 14 13H21C21.5523 13 22 13.4477 22 14V21C22 21.5523 21.5523 22 21 22H14C13.4477 22 13 21.5523 13 21V14ZM15 15V20H20V15H15Z"
-                fill="#ffffff"
-              />
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M3 13C2.44772 13 2 13.4477 2 14V21C2 21.5523 2.44772 22 3 22H10C10.5523 22 11 21.5523 11 21V14C11 13.4477 10.5523 13 10 13H3ZM4 20V15H9V20H4Z"
-                fill="#ffffff"
-              />
-            </svg>
-          </Button>
-          <Button
-            onClick={() => setViewMode("list")}
-            isActive={viewMode === "list"}
-            colorScheme="purple"
-            variant={viewMode === "list" ? "solid" : "outline"}
-            px={6}
-            py={2}
-            fontSize="md"
-            fontWeight="semibold"
-            borderRadius="lg"
-            transition="all 0.2s"
-            _hover={{
-              transform: "translateY(-2px)",
-              boxShadow: "lg",
-            }}
-            data-testid="list-button"
-          >
-            <svg
-              fill="#ffffff"
-              width="24px"
-              height="24px"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="3" y="17" width="18" height="2" rx="1" ry="1" />
-              <rect x="3" y="11" width="18" height="2" rx="1" ry="1" />
-              <rect x="3" y="5" width="18" height="2" rx="1" ry="1" />
-            </svg>
-          </Button>
-        </HStack>
+    <Box className="presentations-browser">
+      <Flex className="presentations-browser-header">
+        <Box>
+          <Heading as="h1">Presentations</Heading>
+          <Text>
+            {presentations.length}{" "}
+            {presentations.length === 1 ? "project" : "projects"}
+          </Text>
+        </Box>
+        {headerActions}
       </Flex>
 
-      {presentations.length === 0 && (
-        <Heading size="md" textAlign="center" color="gray.500" mt="50px">
-          No presentations found. Create a new presentation to get started!
-        </Heading>
-      )}
+      <Flex className="presentations-toolbar">
+        <InputGroup className="presentations-search">
+          <InputLeftElement pointerEvents="none">
+            <Icon as={FiSearch} />
+          </InputLeftElement>
+          <Input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search presentations..."
+            aria-label="Search presentations"
+          />
+        </InputGroup>
 
-      {viewMode === "grid" ? renderGrid() : renderList()}
+        <Flex className="presentations-segmented-control">
+          <Button
+            onClick={() => setSortMode("recent")}
+            aria-pressed={sortMode === "recent"}
+            data-active={sortMode === "recent" ? "true" : undefined}
+          >
+            Recent
+          </Button>
+          <Button
+            onClick={() => setSortMode("name")}
+            aria-pressed={sortMode === "name"}
+            data-active={sortMode === "name" ? "true" : undefined}
+          >
+            A → Z
+          </Button>
+        </Flex>
+
+        <Flex className="presentations-segmented-control presentations-view-control">
+          <Tooltip label="Grid view">
+            <IconButton
+              icon={<Icon as={FiGrid} />}
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              data-active={viewMode === "grid" ? "true" : undefined}
+              data-testid="grid-button"
+            />
+          </Tooltip>
+          <Tooltip label="List view">
+            <IconButton
+              icon={<Icon as={FiList} />}
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+              data-active={viewMode === "list" ? "true" : undefined}
+              data-testid="list-button"
+            />
+          </Tooltip>
+        </Flex>
+      </Flex>
+
+      {visiblePresentations.length === 0 ? (
+        <Box className="presentations-empty-state">
+          <Icon as={FiMonitor} />
+          <Heading size="sm">
+            {presentations.length === 0
+              ? "No presentations yet"
+              : "No matching presentations"}
+          </Heading>
+          <Text>
+            {presentations.length === 0
+              ? "Create a presentation to start building your show."
+              : "Try another name or description."}
+          </Text>
+        </Box>
+      ) : viewMode === "grid" ? (
+        renderGrid()
+      ) : (
+        renderList()
+      )}
 
       <EditModal
         isOpen={isOpen}
@@ -503,7 +616,7 @@ const PresentationsGrid = ({
         presentation={editingPresentation}
         handleEditPresentation={handleEditPresentation}
       />
-    </>
+    </Box>
   )
 }
 
