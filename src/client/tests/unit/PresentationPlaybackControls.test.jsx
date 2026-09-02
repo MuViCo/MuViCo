@@ -54,6 +54,7 @@ describe("PresentationPlaybackControls", () => {
     renderControls({ cueIndex: 4 })
 
     expect(screen.getByRole("heading", { name: "Frame 4" })).toBeInTheDocument()
+    expect(screen.getByText("/ 10")).toBeInTheDocument()
   })
 
   test("calls updateCue for previous and next buttons", () => {
@@ -229,6 +230,25 @@ describe("PresentationPlaybackControls", () => {
     await waitFor(() => {
       expect(playSpy).toHaveBeenCalledTimes(2)
     })
+  })
+
+  test("shows compact audio track status without native browser controls", () => {
+    const { container } = renderControls({
+      audioTracks: [
+        {
+          id: "track-a1",
+          name: "Background music",
+          src: "https://example.com/music.mp3",
+          loop: true,
+        },
+      ],
+    })
+
+    expect(
+      screen.getByRole("group", { name: "Active audio tracks" })
+    ).toHaveTextContent("Background music")
+    expect(screen.getByText("loop")).toBeInTheDocument()
+    expect(container.querySelector("audio")).toHaveAttribute("hidden")
   })
 
   test("keeps a continuous audio track playing after autoplay reaches the end", async () => {

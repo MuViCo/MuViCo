@@ -5,13 +5,7 @@
  * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Box,
-  Button,
-  FormLabel,
-  Select,
-  useColorModeValue,
-} from "@chakra-ui/react"
+import { Box, Button, FormLabel, HStack, Select } from "@chakra-ui/react"
 import "react-grid-layout/css/styles.css"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { laneScreenFromKey } from "../utils/laneFocus"
@@ -98,7 +92,7 @@ interface EditorLayoutProps
   onOpenTutorial: () => void
   editModeBackground: string
   panelBackground: string
-  outlineColor: string
+  panelBorderColor: string
   focusedLaneKey: string | null
   focusedScreen: number | null
   onFocusLane: (laneKey: string | null) => void
@@ -141,7 +135,7 @@ function EditorLayout(props: EditorLayoutProps) {
     onOpenTutorial = () => {},
     editModeBackground,
     panelBackground,
-    outlineColor,
+    panelBorderColor,
     focusedLaneKey,
     focusedScreen,
     onFocusLane,
@@ -188,54 +182,59 @@ function EditorLayout(props: EditorLayoutProps) {
       style={{ backgroundColor: editModeBackground }}
     >
       <Box
+        className="editor-context-bar"
         display="flex"
         alignItems="center"
         justifyContent="space-between"
         gap="12px"
-        padding="12px 20px"
+        minH="52px"
+        padding="8px 14px"
         backgroundColor={panelBackground}
-        outline={outlineColor}
-        borderRadius="8px"
-        position="relative"
+        borderBottom="1px solid"
+        borderColor={panelBorderColor}
       >
-        <ClickablePopover
-          label={
-            <Box>
-              <FormLabel
-                htmlFor="transition-type-select"
-                mb={2}
-                fontWeight={700}
-              >
-                Transition Type:
-              </FormLabel>
-              <Select
-                id="transition-type-select"
-                data-testid="transition-type-select"
-                value={transitionType}
-                onChange={(e) => onTransitionChange(e.target.value)}
-              >
-                <option value="fade">Fade</option>
-                <option value="slide-left">Slide From Left</option>
-                <option value="slide-right">Slide From Right</option>
-                <option value="zoom">Zoom</option>
-                <option value="none">None</option>
-              </Select>
-            </Box>
-          }
-        >
-          <Button
-            aria-label="Presentation Settings"
-            className="edit-mode-btn edit-mode-btn-settings"
+        <HStack minW={0} spacing={3}>
+          <ClickablePopover
+            label={
+              <Box>
+                <FormLabel
+                  htmlFor="transition-type-select"
+                  mb={2}
+                  fontWeight={700}
+                >
+                  Transition Type:
+                </FormLabel>
+                <Select
+                  id="transition-type-select"
+                  data-testid="transition-type-select"
+                  value={transitionType}
+                  onChange={(e) => onTransitionChange(e.target.value)}
+                >
+                  <option value="fade">Fade</option>
+                  <option value="slide-left">Slide From Left</option>
+                  <option value="slide-right">Slide From Right</option>
+                  <option value="zoom">Zoom</option>
+                  <option value="none">None</option>
+                </Select>
+              </Box>
+            }
           >
-            <img src={settingsIcon} alt="" width="24" height="24" />
-          </Button>
-        </ClickablePopover>
+            <Button
+              aria-label="Presentation Settings"
+              className="edit-mode-btn edit-mode-btn-settings"
+              variant="muvico-primary"
+            >
+              <img src={settingsIcon} alt="" width="20" height="20" />
+            </Button>
+          </ClickablePopover>
 
-        <Box position="absolute" left="50%" transform="translateX(-50%)">
-          <PresentationTitle id={id} presentationName={presentationName} />
-        </Box>
+          <Box minW={0}>
+            <PresentationTitle id={id} presentationName={presentationName} />
+          </Box>
+        </HStack>
         <Button
           className="edit-mode-btn edit-mode-btn-tutorial"
+          variant="muvico-secondary"
           onClick={onOpenTutorial}
         >
           Tutorial
@@ -245,8 +244,7 @@ function EditorLayout(props: EditorLayoutProps) {
         id="screen_preview"
         style={{
           backgroundColor: panelBackground,
-          outline: outlineColor,
-          borderRadius: "8px",
+          borderBottom: `1px solid ${panelBorderColor}`,
         }}
         className="screenspreview"
       >
@@ -266,12 +264,12 @@ function EditorLayout(props: EditorLayoutProps) {
       <div
         style={{
           backgroundColor: editModeBackground,
-          borderRadius: "8px",
+          borderBottom: `1px solid ${panelBorderColor}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
-        className="no-resize-handle"
+        className="no-resize-handle editor-transport-bar"
       >
         <KeyboardHandler
           onNext={() => updateCue("Next")}
@@ -290,12 +288,10 @@ function EditorLayout(props: EditorLayoutProps) {
           toggleAutoplayInterval={toggleAutoplayInterval}
           audioSourceURL={audioSourceURL}
           audioLoop={audioLoop}
-          // PresentationPlaybackControls is still .jsx and defaults this prop
-          // to [], which infers never[]. Drops away when it is migrated.
           audioTracks={audioTracks as never[]}
           allowContinuousAudio={allowContinuousAudio}
         />
-        <Box mr={4}>
+        <Box className="editor-save-status">
           <StatusTooltip />
         </Box>
       </div>
@@ -309,7 +305,7 @@ function EditorLayout(props: EditorLayoutProps) {
               style={{
                 height: "100%",
                 width: "100%",
-                outline: outlineColor,
+                border: `1px solid ${panelBorderColor}`,
                 borderRadius: "8px",
                 backgroundColor: panelBackground,
                 boxSizing: "border-box",
@@ -340,15 +336,11 @@ function EditorLayout(props: EditorLayoutProps) {
               className="edit-mode-cue-form"
               style={{
                 height: "100%",
-                outline: outlineColor,
+                border: `1px solid ${panelBorderColor}`,
                 borderRadius: "8px",
                 backgroundColor: panelBackground,
                 boxSizing: "border-box",
-                padding: "10px",
-                paddingLeft: "5px",
-                paddingTop: "5px",
-                paddingRight: "5px",
-                paddingBottom: "5px",
+                padding: "5px",
               }}
             >
               <EditorDock
@@ -392,12 +384,9 @@ const EditModeContainer = ({
   updateCue,
   isAudioMode,
 }: EditModeContainerProps) => {
-  const editModeBackground = useColorModeValue("#ffffff", "#120d14")
-  const panelBackground = useColorModeValue("#eedef7", "#312238")
-  const outlineColor = useColorModeValue(
-    "2px solid #572b6e",
-    "2px solid #572b6e"
-  )
+  const editModeBackground = "var(--muvico-canvas)"
+  const panelBackground = "var(--muvico-surface)"
+  const panelBorderColor = "var(--muvico-border)"
 
   const dispatch = useAppDispatch()
   const presentation = useAppSelector((state) => state.presentation)
@@ -720,7 +709,7 @@ const EditModeContainer = ({
         allowContinuousAudio={autoplayEnded}
         editModeBackground={editModeBackground}
         panelBackground={panelBackground}
-        outlineColor={outlineColor}
+        panelBorderColor={panelBorderColor}
       />
 
       <TutorialGuide
