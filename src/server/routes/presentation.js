@@ -24,7 +24,9 @@ const { BUCKET_NAME } = require("../utils/config")
 const {
   generateSignedUrlForS3,
   processS3Files,
+  processS3MediaFiles,
   processDriveCueFiles,
+  processDriveMediaFiles,
   processS3ScoreFiles,
   processDriveScoreFiles,
 } = require("../utils/helper")
@@ -330,7 +332,7 @@ const hasSwapTargetConflict = (
 const deleteObject = async (id, cueId, driveToken) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
-    { "cues.$": 1 }
+    { "cues.$": 1, media: 1 }
   )
 
   if (!cue) {
@@ -349,7 +351,21 @@ const deleteObject = async (id, cueId, driveToken) => {
     { new: true }
   )
 
-  const fileName = cue.cues[0].file.id
+  const fileName = cue.cues[0].file?.id
+
+  // Colour-only cues carry no file, so there is nothing to remove from storage.
+  if (!fileName) {
+    return updatedPresentation
+  }
+
+  // The media library owns the bytes of any cue created from it: cue and
+  // library entry address the same key, and only an explicit library delete may
+  // remove it. Legacy cues never appear in `media`, so this never fires for
+  // them and their delete path is byte-for-byte the previous one.
+  const isLibraryOwned = (cue.media || []).some((item) => item.id === fileName)
+  if (isLibraryOwned) {
+    return updatedPresentation
+  }
 
   if (driveToken) {
     const driveFileId = cue.cues[0].file.driveId
@@ -357,7 +373,7 @@ const deleteObject = async (id, cueId, driveToken) => {
       const presentation = await Presentation.findById(id)
 
       const sameFileCount = presentation.cues.filter(
-        (c) => c.file.driveId === driveFileId
+        (c) => c.file?.driveId === driveFileId
       ).length
 
       if (sameFileCount === 0) {
@@ -394,11 +410,15 @@ router.get(
           presentation.cues,
           driveToken
         )
+        await processDriveMediaFiles(presentation.media, driveToken)
       } else {
         presentation.cues = await processS3Files(
           presentation.cues,
           presentation._id
         )
+        // Signed in place, so the media pool repopulates from the response the
+        // editor already fetches on mount -- no extra client request.
+        await processS3MediaFiles(presentation.media, presentation._id)
       }
       await processPresentationScoreFiles(presentation, user)
 
@@ -424,12 +444,154 @@ router.delete(
         await deleteObject(presentation._id, cue._id, user.driveToken)
       }
 
+      // Cues created from the library were skipped by deleteObject above,
+      // because the library owns their bytes. Remove those objects here, or
+      // dropping the presentation would orphan every pooled file.
+      for (const item of presentation.media || []) {
+        if (user.driveToken) {
+          if (item.driveId) {
+            await deleteDriveFile(item.driveId, user.driveToken)
+          }
+        } else {
+          await deleteFileS3(`${presentation._id}/${item.id}`)
+        }
+      }
+
       for (const score of presentation.scores || []) {
         await deleteScoreFile(presentation._id, score, user)
       }
 
       await Presentation.findByIdAndDelete(presentation._id)
       return res.status(204).end()
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+/**
+ * Media library ("media pool") for a presentation.
+ *
+ * Uploads land here first and stay here: an entry is independent of any cue, so
+ * the pool survives a reload. Dragging an entry onto the timeline creates a cue
+ * that reuses the entry's `id` (see PUT /:id below) -- the same storage object,
+ * no copy, no second upload.
+ */
+router.post(
+  "/:id/media",
+  userExtractor,
+  requirePresentationAccess,
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params
+      const { file, user, presentation } = req
+
+      if (!file) {
+        return res.status(400).json({ error: "No file provided" })
+      }
+
+      if (file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+        return res.status(400).json({ error: "File size exceeds 50 MB limit" })
+      }
+
+      if (!isAllowedMimeType(file.mimetype)) {
+        return res
+          .status(400)
+          .json({ error: `Invalid filetype: ${file.originalname}` })
+      }
+
+      const mediaId = generateFileId()
+      const key = `${id}/${mediaId}`
+
+      const entry = {
+        id: mediaId,
+        name: file.originalname || `file-${mediaId}`,
+        url: "",
+        size: String(file.size),
+        type: file.mimetype,
+      }
+
+      if (user.driveToken) {
+        const driveResponse = await uploadDriveFile(
+          file.buffer,
+          key,
+          file.mimetype,
+          user.driveToken
+        )
+        entry.driveId = driveResponse.id
+      } else {
+        await uploadFileS3(file.buffer, key, file.mimetype)
+      }
+
+      presentation.media.push(entry)
+      await presentation.save({ validateModifiedOnly: true })
+
+      const saved = presentation.media[presentation.media.length - 1]
+
+      if (user.driveToken) {
+        await processDriveMediaFiles([saved], user.driveToken)
+      } else {
+        await processS3MediaFiles([saved], id)
+      }
+
+      return res.status(201).json(saved)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+/**
+ * Removes an entry from the media library -- permanently.
+ *
+ * The library owns the stored object, and a cue created from an entry shares
+ * that object rather than holding a copy. There is therefore no way to keep a
+ * cue working once its entry is gone, so the cues built from this entry are
+ * removed with it and the object is deleted. The client warns before calling
+ * this; the response reports which cues went, so it can drop them from view.
+ *
+ * Deleting a cue does the opposite and leaves the library untouched -- see
+ * deleteObject above.
+ */
+router.delete(
+  "/:id/media/:mediaId",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { id, mediaId } = req.params
+      const { user, presentation } = req
+
+      const entry = (presentation.media || []).find(
+        (item) => item.id === mediaId
+      )
+
+      if (!entry) {
+        return res.status(404).json({ error: "Media not found" })
+      }
+
+      const deletedCueIds = presentation.cues
+        .filter((cue) => cue.file?.id === mediaId)
+        .map((cue) => cue._id.toString())
+
+      const driveId = entry.driveId
+
+      for (const cueId of deletedCueIds) {
+        presentation.cues.pull({ _id: cueId })
+      }
+      presentation.media.pull({ _id: entry._id })
+      await presentation.save({ validateModifiedOnly: true })
+
+      if (user.driveToken) {
+        if (driveId) {
+          await deleteDriveFile(driveId, user.driveToken)
+        }
+      } else {
+        await deleteFileS3(`${id}/${mediaId}`)
+      }
+
+      return res.json({ mediaId, deletedCueIds })
     } catch (error) {
       next(error)
     }
@@ -1018,7 +1180,7 @@ router.put(
       const { id } = req.params
       const fileId = generateFileId()
       const { file, user, presentation } = req
-      const { cueName, driveId } = req.body
+      const { cueName, driveId, mediaId } = req.body
       const index = Number(req.body.index)
       const screen = Number(req.body.screen)
       const loop = req.body.loop
@@ -1067,6 +1229,22 @@ router.put(
         })
       }
 
+      // A cue gets its media either from a multipart upload (the original
+      // path) or by naming an existing library entry. In the second case no
+      // bytes move: the cue copies the entry's id, hence its storage key.
+      const libraryEntry = mediaId
+        ? (presentation.media || []).find((item) => item.id === mediaId)
+        : null
+
+      if (mediaId && !libraryEntry) {
+        return res
+          .status(404)
+          .json({ error: "Media not found in this presentation" })
+      }
+
+      const hasMedia = Boolean(file || libraryEntry)
+      const mediaMimeType = file ? file.mimetype : libraryEntry?.type
+
       if (index < 0 || index > 100) {
         return res.status(400).json({
           error: `Invalid cue index: ${index}. Index must be between 0 and 100.`,
@@ -1086,13 +1264,13 @@ router.put(
       const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
 
       if (cueType === "audio") {
-        if (file && !isAudioMimeType(file.mimetype)) {
+        if (hasMedia && !isAudioMimeType(mediaMimeType)) {
           return res.status(400).json({
             error: "Only audio files are allowed on the audio screen.",
           })
         }
       } else {
-        if (file && isAudioMimeType(file.mimetype)) {
+        if (hasMedia && isAudioMimeType(mediaMimeType)) {
           return res.status(400).json({
             error:
               "Audio files are not allowed on visual screens. Please use the audio screen.",
@@ -1100,7 +1278,7 @@ router.put(
         }
       }
 
-      const isColorOnlyCue = cueType === "visual" && !file
+      const isColorOnlyCue = cueType === "visual" && !hasMedia
       if (!isColorOnlyCue && trimmedCueName.length === 0) {
         return res
           .status(400)
@@ -1144,12 +1322,22 @@ router.put(
         })
       }
 
-      const fileObject = {
-        id: fileId,
-        name: file?.originalname || `file-${fileId}`,
-        url: "",
-        ...(driveId && { driveId }),
-      }
+      // Same id as the library entry => same storage key => one shared object.
+      const fileObject = libraryEntry
+        ? {
+            id: libraryEntry.id,
+            name: libraryEntry.name,
+            url: "",
+            size: libraryEntry.size,
+            type: libraryEntry.type,
+            ...(libraryEntry.driveId && { driveId: libraryEntry.driveId }),
+          }
+        : {
+            id: fileId,
+            name: file?.originalname || `file-${fileId}`,
+            url: "",
+            ...(driveId && { driveId }),
+          }
 
       const updatedPresentation = await Presentation.findByIdAndUpdate(
         presentation._id,
@@ -1161,7 +1349,7 @@ router.put(
               name: trimmedCueName,
               screen: screen,
               ...(spanScreens ? { spanScreens } : {}),
-              file: file ? fileObject : null,
+              file: hasMedia ? fileObject : null,
               color: color,
               loop: loop,
               continuePlayback: cueType === "audio" ? continuePlayback : false,
@@ -1214,6 +1402,9 @@ router.put(
           const fileName = `${id}/${fileId}`
 
           await uploadFileS3(file.buffer, fileName, file.mimetype)
+        }
+        // A library-created cue uploads nothing but still needs a signed URL.
+        if (hasMedia) {
           updatedPresentation.cues = await processS3Files(
             updatedPresentation.cues,
             id
@@ -1640,11 +1831,18 @@ router.put(
         if (file) {
           const newFileId = generateFileId()
 
-          if (cue.file && cue.file.url) {
+          // The library owns the bytes of a cue created from it; only an
+          // explicit library delete may remove them. Never true for a legacy
+          // cue, whose id is not in `media`.
+          const isLibraryOwned = (presentation.media || []).some(
+            (item) => item.id === cue.file?.id
+          )
+
+          if (cue.file && cue.file.url && !isLibraryOwned) {
             const driveToken = user.driveToken
             if (cue.file.driveId) {
               const sameFileCount = presentation.cues.filter(
-                (c) => c.file.driveId === cue.file.driveId
+                (c) => c.file?.driveId === cue.file.driveId
               ).length
 
               if (sameFileCount === 0) {
@@ -1677,7 +1875,13 @@ router.put(
         if (file) {
           const newFileId = generateFileId()
 
-          if (cue.file && cue.file.url) {
+          // See the Drive branch above: a library-owned object outlives the
+          // cue that referenced it.
+          const isLibraryOwned = (presentation.media || []).some(
+            (item) => item.id === cue.file?.id
+          )
+
+          if (cue.file && cue.file.url && !isLibraryOwned) {
             const oldFileName = cue.file.url.split("/").pop()
             await deleteFileS3(`${id}/${oldFileName}`)
           }

@@ -142,6 +142,12 @@ export interface Presentation {
   previewCue?: Cue
   scores?: ScoreDocument[]
   /**
+   * The presentation's media library -- the editor's "media pool". Absent on
+   * responses from a server that predates it, and on documents created before
+   * the field existed, so every read site must tolerate undefined.
+   */
+  media?: MediaLibraryItem[]
+  /**
    * TODO(ts): injected by the toJSON transform
    * (`returnedObject.audioCues = cues.filter(c => c.cueType === "audio")`),
    * but no client read site was found. Optional so it neither has to be
@@ -235,6 +241,44 @@ export interface UsernameAvailability {
   available: boolean
 }
 
+/* --------------------------------------------------------- media library -- */
+
+/**
+ * One entry in a presentation's media library.
+ *
+ * Same shape as CueFileMeta plus `_id`/`createdAt`, because it is stored the
+ * same way and under the same key. `id` is the storage handle: a cue created
+ * from this entry copies it verbatim, so both point at the same stored object.
+ *
+ * `url` is a presigned URL regenerated on every read and valid for a few hours
+ * -- never persist it, never treat a stale one as usable.
+ */
+export interface MediaLibraryItem {
+  /** Mongo subdocument id. Identifies the library entry itself. */
+  _id?: string
+  /** Storage handle, shared with any cue created from this entry. */
+  id: string
+  name: string
+  url?: string
+  driveId?: string
+  /** String, not number -- the schema declares `size: { type: String }`. */
+  size?: string
+  type?: string
+  createdAt?: string
+}
+
+/**
+ * DELETE /api/presentation/:id/media/:mediaId
+ *
+ * Deleting a library entry deletes the stored object, and the cues built from
+ * that entry shared it rather than holding a copy -- so they go too. Their ids
+ * come back here for the client to drop from view.
+ */
+export interface DeleteMediaResponse {
+  mediaId: string
+  deletedCueIds: string[]
+}
+
 /* --------------------------------------------------------------- uploads -- */
 
 /**
@@ -273,6 +317,12 @@ export interface CueUpdateInput {
   layer?: number
   opacity?: number
   continuePlayback?: boolean
+  /**
+   * Id of an existing media-library entry to build the cue from, instead of
+   * uploading a file. Mutually exclusive with a File in `file`: the server
+   * reuses the entry's stored object rather than writing a new one.
+   */
+  mediaId?: string
   /**
    * See `Cue.spanScreens`. Omitted entirely means "don't touch the cue's
    * existing span"; an explicit empty array means "clear it".

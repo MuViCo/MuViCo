@@ -31,6 +31,8 @@ import reducer, {
   createScoreMarker,
   updateScoreMarker,
   deleteScoreMarker,
+  uploadMedia,
+  removeMedia,
 } from "../../redux/presentationReducer"
 import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
 import presentationService from "../../services/presentation"
@@ -63,6 +65,8 @@ jest.mock("../../services/presentation", () => ({
   createScoreMarker: jest.fn(),
   updateScoreMarker: jest.fn(),
   deleteScoreMarker: jest.fn(),
+  uploadMedia: jest.fn(),
+  deleteMedia: jest.fn(),
 }))
 
 const makeStore = () => {
@@ -164,6 +168,7 @@ describe("presentationReducer reducer", () => {
   const initialState = {
     cues: [],
     scores: [],
+    media: [],
     name: "",
     screenCount: 3,
     indexCount: 5,
@@ -1475,6 +1480,44 @@ it("should handle deleteScoreMarker", async () => {
   presentationService.deleteScoreMarker.mockResolvedValue({})
   await store.dispatch(deleteScoreMarker("123", "s1", "m1"))
   expect(store.getState().presentation.scores[0].markers).toEqual([])
+})
+
+it("should add the uploaded file to the media library", async () => {
+  const store = makeStore()
+  const item = { id: "media-1", name: "photo.png", type: "image/png" }
+
+  presentationService.uploadMedia.mockResolvedValue(item)
+  await store.dispatch(uploadMedia("123", new File(["x"], "photo.png")))
+
+  expect(store.getState().presentation.media).toEqual([item])
+})
+
+it("should drop the cues the server deleted along with the media entry", async () => {
+  const store = makeStore()
+  store.dispatch(
+    setPresentationInfo({
+      cues: [
+        { _id: "cue-1", file: { id: "media-1" } },
+        { _id: "cue-2", file: { id: "media-1" } },
+        { _id: "cue-3", file: { id: "media-2" } },
+      ],
+      scores: [],
+      media: [{ id: "media-1" }, { id: "media-2" }],
+      name: "",
+      screenCount: 3,
+      indexCount: 5,
+    })
+  )
+
+  presentationService.deleteMedia.mockResolvedValue({
+    mediaId: "media-1",
+    deletedCueIds: ["cue-1", "cue-2"],
+  })
+  await store.dispatch(removeMedia("123", "media-1"))
+
+  const state = store.getState().presentation
+  expect(state.media).toEqual([{ id: "media-2" }])
+  expect(state.cues.map((cue) => cue._id)).toEqual(["cue-3"])
 })
 
 afterAll(() => {

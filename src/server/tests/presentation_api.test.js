@@ -2018,6 +2018,260 @@ describe("Multi-screen image spanning (spanScreens)", () => {
   })
 })
 
+describe("Media library (media pool)", () => {
+  let mediaAuthHeader
+  let mediaPresentationId
+
+  beforeEach(async () => {
+    S3Mock.reset()
+    S3Mock.on(PutObjectCommand).resolves({})
+    S3Mock.on(DeleteObjectCommand).resolves({})
+    S3Mock.on(HeadObjectCommand).resolves({
+      ContentType: "image/png",
+      ContentLength: mockImageBuffer.length,
+    })
+
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    await api
+      .post("/api/signup")
+      .send({ username: "mediauser", password: "mediapassword" })
+    const loginResponse = await api
+      .post("/api/login")
+      .send({ username: "mediauser", password: "mediapassword" })
+    mediaAuthHeader = `Bearer ${loginResponse.body.token}`
+
+    const homeResponse = await api
+      .post("/api/home")
+      .set("Authorization", mediaAuthHeader)
+      .send({ name: "Media test presentation", screenCount: 3 })
+    mediaPresentationId = homeResponse.body.id
+  })
+
+  const uploadMedia = async (filename = "mock_image.png") =>
+    api
+      .post(`/api/presentation/${mediaPresentationId}/media`)
+      .set("Authorization", mediaAuthHeader)
+      .attach("file", mockImageBuffer, filename)
+
+  const createCueFromMedia = async (mediaId, index = 0, screen = 1) =>
+    api
+      .put(`/api/presentation/${mediaPresentationId}`)
+      .set("Authorization", mediaAuthHeader)
+      .field("index", index)
+      .field("cueName", "From library")
+      .field("screen", screen)
+      .field("mediaId", mediaId)
+
+  test("uploads a file to the library and stores it under presentationId/mediaId", async () => {
+    const response = await uploadMedia()
+
+    expect(response.status).toBe(201)
+    expect(response.body.id).toBeDefined()
+    expect(response.body.name).toBe("mock_image.png")
+    expect(response.body.type).toBe("image/png")
+    expect(response.body.url).toContain(response.body.id)
+
+    const puts = S3Mock.commandCalls(PutObjectCommand)
+    expect(puts).toHaveLength(1)
+    expect(puts[0].args[0].input.Key).toBe(
+      `${mediaPresentationId}/${response.body.id}`
+    )
+  })
+
+  test("returns the library, signed, from GET /:id so it survives a reload", async () => {
+    const uploaded = await uploadMedia()
+
+    const response = await api
+      .get(`/api/presentation/${mediaPresentationId}`)
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(response.body.media).toHaveLength(1)
+    expect(response.body.media[0].id).toBe(uploaded.body.id)
+    expect(response.body.media[0].url).toContain(uploaded.body.id)
+  })
+
+  test("rejects an upload with no file", async () => {
+    const response = await api
+      .post(`/api/presentation/${mediaPresentationId}/media`)
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects a disallowed filetype", async () => {
+    const response = await api
+      .post(`/api/presentation/${mediaPresentationId}/media`)
+      .set("Authorization", mediaAuthHeader)
+      .attach("file", Buffer.from("not media"), {
+        filename: "notes.txt",
+        contentType: "text/plain",
+      })
+
+    expect(response.status).toBe(400)
+  })
+
+  test("creates a cue from a library entry without uploading a second object", async () => {
+    const uploaded = await uploadMedia()
+    const putsAfterUpload = S3Mock.commandCalls(PutObjectCommand).length
+
+    const response = await createCueFromMedia(uploaded.body.id)
+
+    expect(response.status).toBe(200)
+    const cue = response.body.cues.find((c) => c.name === "From library")
+    // Same id as the library entry => same S3 key => one object, shared.
+    expect(cue.file.id).toBe(uploaded.body.id)
+    expect(cue.file.url).toContain(uploaded.body.id)
+    expect(S3Mock.commandCalls(PutObjectCommand)).toHaveLength(putsAfterUpload)
+  })
+
+  test("rejects a cue referencing a media id that is not in this presentation", async () => {
+    const response = await createCueFromMedia("deadbeefdeadbeef")
+
+    expect(response.status).toBe(404)
+  })
+
+  test("keeps the stored object when a cue created from the library is deleted", async () => {
+    const uploaded = await uploadMedia()
+    const created = await createCueFromMedia(uploaded.body.id)
+    const cue = created.body.cues.find((c) => c.name === "From library")
+
+    const response = await api
+      .delete(`/api/presentation/${mediaPresentationId}/${cue._id}`)
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(S3Mock.commandCalls(DeleteObjectCommand)).toHaveLength(0)
+
+    const presentation = await Presentation.findById(mediaPresentationId)
+    expect(presentation.media).toHaveLength(1)
+    expect(presentation.media[0].id).toBe(uploaded.body.id)
+  })
+
+  test("removing a library entry also removes the cues built from it", async () => {
+    const uploaded = await uploadMedia()
+    const created = await createCueFromMedia(uploaded.body.id)
+    const cue = created.body.cues.find((c) => c.name === "From library")
+
+    const response = await api
+      .delete(
+        `/api/presentation/${mediaPresentationId}/media/${uploaded.body.id}`
+      )
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toEqual([cue._id])
+
+    // The cue shared the entry's object, so nothing could have kept it working.
+    const deletes = S3Mock.commandCalls(DeleteObjectCommand)
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0].args[0].input.Key).toBe(
+      `${mediaPresentationId}/${uploaded.body.id}`
+    )
+
+    const presentation = await Presentation.findById(mediaPresentationId)
+    expect(presentation.media).toHaveLength(0)
+    expect(presentation.cues).toHaveLength(0)
+  })
+
+  test("removes every cue built from the entry, not just the first", async () => {
+    const uploaded = await uploadMedia()
+    await createCueFromMedia(uploaded.body.id, 0, 1)
+    await createCueFromMedia(uploaded.body.id, 1, 2)
+
+    const response = await api
+      .delete(
+        `/api/presentation/${mediaPresentationId}/media/${uploaded.body.id}`
+      )
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toHaveLength(2)
+
+    const presentation = await Presentation.findById(mediaPresentationId)
+    expect(presentation.cues).toHaveLength(0)
+  })
+
+  test("deletes the stored object when an unused library entry is removed", async () => {
+    const uploaded = await uploadMedia()
+
+    const response = await api
+      .delete(
+        `/api/presentation/${mediaPresentationId}/media/${uploaded.body.id}`
+      )
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(200)
+    expect(response.body.deletedCueIds).toEqual([])
+    const deletes = S3Mock.commandCalls(DeleteObjectCommand)
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0].args[0].input.Key).toBe(
+      `${mediaPresentationId}/${uploaded.body.id}`
+    )
+  })
+
+  test("returns 404 for an unknown library entry", async () => {
+    const response = await api
+      .delete(`/api/presentation/${mediaPresentationId}/media/deadbeefdeadbeef`)
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(404)
+  })
+
+  test("still deletes the object of a cue uploaded the legacy way", async () => {
+    const created = await api
+      .put(`/api/presentation/${mediaPresentationId}`)
+      .set("Authorization", mediaAuthHeader)
+      .attach("image", mockImageBuffer, "mock_image.png")
+      .field("index", 0)
+      .field("cueName", "Legacy cue")
+      .field("screen", 1)
+
+    const cue = created.body.cues.find((c) => c.name === "Legacy cue")
+
+    await api
+      .delete(`/api/presentation/${mediaPresentationId}/${cue._id}`)
+      .set("Authorization", mediaAuthHeader)
+
+    const deletes = S3Mock.commandCalls(DeleteObjectCommand)
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0].args[0].input.Key).toBe(
+      `${mediaPresentationId}/${cue.file.id}`
+    )
+  })
+
+  test("rejects an audio library entry dropped on a visual screen", async () => {
+    const uploaded = await api
+      .post(`/api/presentation/${mediaPresentationId}/media`)
+      .set("Authorization", mediaAuthHeader)
+      .attach("file", mockAudioBuffer, {
+        filename: "mock_audio.mp3",
+        contentType: "audio/mpeg",
+      })
+
+    const response = await createCueFromMedia(uploaded.body.id, 0, 1)
+
+    expect(response.status).toBe(400)
+  })
+
+  test("removes library objects when the presentation is deleted", async () => {
+    const uploaded = await uploadMedia()
+    await createCueFromMedia(uploaded.body.id)
+
+    const response = await api
+      .delete(`/api/presentation/${mediaPresentationId}`)
+      .set("Authorization", mediaAuthHeader)
+
+    expect(response.status).toBe(204)
+    const deletedKeys = S3Mock.commandCalls(DeleteObjectCommand).map(
+      (call) => call.args[0].input.Key
+    )
+    expect(deletedKeys).toContain(`${mediaPresentationId}/${uploaded.body.id}`)
+  })
+})
+
 afterAll(async () => {
   await mongoose.connection.close()
 })

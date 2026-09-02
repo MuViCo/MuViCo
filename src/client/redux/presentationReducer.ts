@@ -19,6 +19,7 @@ import type {
   Cue,
   CueUpdateInput,
   ImportScoreInput,
+  MediaLibraryItem,
   Presentation,
   ShiftIndexesResponse,
   ScoreDocument,
@@ -31,6 +32,12 @@ import type { RootState } from "./store"
 export interface PresentationState {
   cues: Cue[]
   scores: ScoreDocument[]
+  /**
+   * The presentation's media library, backing the editor's media pool. Filled
+   * by setPresentationInfo from the GET the editor already makes on mount,
+   * which is what lets the pool survive a reload.
+   */
+  media: MediaLibraryItem[]
   /**
    * Null until a presentation is loaded. The server default is 1, but nothing
    * has been fetched yet at startup, and removePresentation resets to null.
@@ -56,6 +63,7 @@ type AppThunk<R = void> = ThunkAction<
 const initialState: PresentationState = {
   cues: [],
   scores: [],
+  media: [],
   name: "",
   screenCount: null,
   indexCount: 5,
@@ -72,6 +80,7 @@ const presentationSlice = createSlice({
     setPresentationInfo(state, action: PayloadAction<Presentation>) {
       state.cues = action.payload.cues
       state.scores = action.payload.scores ?? []
+      state.media = action.payload.media ?? []
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
       state.indexCount = action.payload.indexCount
@@ -84,6 +93,12 @@ const presentationSlice = createSlice({
     },
     setScores(state, action: PayloadAction<ScoreDocument[]>) {
       state.scores = action.payload
+    },
+    addMediaItem(state, action: PayloadAction<MediaLibraryItem>) {
+      state.media.push(action.payload)
+    },
+    removeMediaItemFromState(state, action: PayloadAction<string>) {
+      state.media = state.media.filter((item) => item.id !== action.payload)
     },
     addScore(state, action: PayloadAction<ScoreDocument>) {
       state.scores.push(action.payload)
@@ -142,6 +157,7 @@ const presentationSlice = createSlice({
     removePresentation(state) {
       state.cues = initialState.cues
       state.scores = initialState.scores
+      state.media = initialState.media
       state.name = initialState.name
       state.screenCount = initialState.screenCount
       state.indexCount = initialState.indexCount
@@ -221,6 +237,8 @@ export const {
   deleteCue,
   addCue,
   setScores,
+  addMediaItem,
+  removeMediaItemFromState,
   addScore,
   removeScoreFromState,
   addScoreMarker,
@@ -429,6 +447,55 @@ export const createCue =
       // silently drop a cue the server did create, which the e2e suite cannot
       // verify either way. Tracked separately.
       dispatch(addCue(newCue as Cue))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+/**
+ * Uploads a file to the presentation's media library.
+ *
+ * Unlike the old pool, which only held the File in memory until it was dragged
+ * onto the timeline, this stores it immediately -- so it is still there after a
+ * reload, whether or not it was ever used.
+ */
+export const uploadMedia =
+  (id: string, file: File): AppThunk<MediaLibraryItem> =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const item = await presentationService.uploadMedia(id, file)
+      dispatch(addMediaItem(item))
+      return item
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      dispatch(endSave())
+    }
+  }
+
+/**
+ * Deletes a library entry, and with it every cue built from that entry: the cue
+ * shared the entry's stored object, so nothing could keep it working. The
+ * caller is expected to have confirmed with the user first.
+ */
+export const removeMedia =
+  (id: string, mediaId: string): AppThunk =>
+  async (dispatch) => {
+    dispatch(beginSave())
+    try {
+      const { deletedCueIds } = await presentationService.deleteMedia(
+        id,
+        mediaId
+      )
+      deletedCueIds.forEach((cueId) => dispatch(deleteCue(cueId)))
+      dispatch(removeMediaItemFromState(mediaId))
     } catch (error) {
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)

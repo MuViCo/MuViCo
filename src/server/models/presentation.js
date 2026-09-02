@@ -230,6 +230,28 @@ const presentationSchema = mongoose.Schema(
         },
       },
     ],
+    // Presentation-scoped media library (the editor's "media pool"). Entries
+    // are uploaded on their own, independently of any cue, which is what lets
+    // the pool survive a page reload -- cue-embedded files never could.
+    //
+    // A cue created from a library entry reuses that entry's `id`, so cue and
+    // entry address the SAME storage object (`${presentationId}/${id}`); no
+    // copy is made. The deletion guards in routes/presentation.js are what keep
+    // that sharing safe. Absent on every pre-existing document, where it reads
+    // back as [] and no guard ever fires -- so legacy behaviour is unchanged.
+    media: [
+      {
+        id: { type: String, required: true },
+        name: { type: String, required: true, maxlength: 255 },
+        // Transient, exactly like cue.file.url: overwritten with a fresh
+        // presigned URL on every read. Never trust a persisted value.
+        url: String,
+        driveId: String,
+        size: { type: String, default: "0" },
+        type: { type: String, default: "image/jpeg" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     scores: [
       {
         title: {

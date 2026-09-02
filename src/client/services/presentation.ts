@@ -22,6 +22,8 @@ import type {
   ScoreDocument,
   ScoreMarker,
   ScoreMarkerInput,
+  DeleteMediaResponse,
+  MediaLibraryItem,
   SwapCuesPayload,
   SwapCuesResponse,
   UpdateNameResponse,
@@ -174,6 +176,39 @@ const deleteScoreMarker = async (
  *    which is used when you’re sending form data that includes files.
  * @returns {Promise} A promise that resolves to the response data from the server.
  */
+/**
+ * Adds a file to the presentation's media library.
+ *
+ * Uploading here is what makes the media pool survive a reload; the entry is
+ * independent of any cue until one is created from it. There is no matching
+ * list call: GET /:id already returns `media`, signed.
+ */
+const uploadMedia = async (
+  id: string,
+  file: File
+): Promise<MediaLibraryItem> => {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const response = await axios.post<MediaLibraryItem>(
+    `${baseUrl}${id}/media`,
+    formData,
+    multipartConfig()
+  )
+  return response.data
+}
+
+const deleteMedia = async (
+  id: string,
+  mediaId: string
+): Promise<DeleteMediaResponse> => {
+  const response = await axios.delete<DeleteMediaResponse>(
+    `${baseUrl}${id}/media/${mediaId}`,
+    { headers: authHeaders() }
+  )
+  return response.data
+}
+
 const addCue = async (
   id: string,
   formData: FormData
@@ -325,6 +360,8 @@ export default {
   remove,
   addCue,
   removeCue,
+  uploadMedia,
+  deleteMedia,
   updateCue,
   saveIndexCountApi,
   saveScreenCountApi,
