@@ -22,6 +22,10 @@ const {
   PRIVATE_S3_ENDPOINT,
 } = require("./config")
 
+const signedUrlCache = new Map()
+const SIGNED_URL_CACHE_MS = 165 * 60 * 1000
+const SIGNED_URL_CACHE_LIMIT = 1000
+
 const s3Internal = new S3Client({
   endpoint: PRIVATE_S3_ENDPOINT || PUBLIC_S3_ENDPOINT,
   forcePathStyle: true,
@@ -42,14 +46,16 @@ const s3Public = new S3Client({
   },
 })
 
-const uploadFileS3 = (fileBuffer, fileName, mimetype) => {
+const uploadFileS3 = (fileBuffer, fileName, mimetype, cacheControl) => {
   const uploadParams = {
     Bucket: BUCKET_NAME,
     Body: fileBuffer,
     Key: fileName,
     ContentType: mimetype,
+    ...(cacheControl && { CacheControl: cacheControl }),
   }
 
+  signedUrlCache.delete(fileName)
   return s3Internal.send(new PutObjectCommand(uploadParams))
 }
 
@@ -59,6 +65,7 @@ const deleteFileS3 = (fileName) => {
     Key: fileName,
   }
 
+  signedUrlCache.delete(fileName)
   return s3Internal.send(new DeleteObjectCommand(deleteParams))
 }
 
@@ -71,7 +78,23 @@ const getObjectStreamS3 = (fileName) => {
   return s3Internal.send(new GetObjectCommand(params))
 }
 
+const getObjectBufferS3 = async (fileName) => {
+  const response = await getObjectStreamS3(fileName)
+  if (typeof response.Body?.transformToByteArray === "function") {
+    return Buffer.from(await response.Body.transformToByteArray())
+  }
+
+  const chunks = []
+  for await (const chunk of response.Body || []) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+  return Buffer.concat(chunks)
+}
+
 const getObjectSignedUrl = async (key) => {
+  const cached = signedUrlCache.get(key)
+  if (cached?.expiresAt > Date.now()) return cached.url
+
   const params = {
     Bucket: BUCKET_NAME,
     Key: key,
@@ -80,27 +103,16 @@ const getObjectSignedUrl = async (key) => {
   const command = new GetObjectCommand(params)
   const seconds = 3 * 60 * 60
   const url = await getSignedUrl(s3Public, command, { expiresIn: seconds })
-  return url
-}
 
-const getFileSize = async (cue, presentationId) => {
-  const key = `${presentationId}/${cue.file.id.toString()}`
-  const params = {
-    Bucket: BUCKET_NAME,
-    Key: key,
+  if (signedUrlCache.size >= SIGNED_URL_CACHE_LIMIT) {
+    signedUrlCache.delete(signedUrlCache.keys().next().value)
   }
-  try {
-    const response = await s3Internal.send(new HeadObjectCommand(params))
-    if (response.ContentLength !== undefined) {
-      cue.file.size = response.ContentLength
-      return cue
-    } else {
-      throw new Error("ContentLength is missing from S3 response.")
-    }
-  } catch (error) {
-    logger.error("Error getting file size:", error)
-    throw error
-  }
+  signedUrlCache.set(key, {
+    url,
+    expiresAt: Date.now() + SIGNED_URL_CACHE_MS,
+  })
+
+  return url
 }
 
 const getFileType = async (cue, presentationId) => {
@@ -119,8 +131,32 @@ const getFileType = async (cue, presentationId) => {
       throw new Error("ContentType is missing from S3 response.")
     }
   } catch (error) {
-    logger.error("Error getting file type:", error)
-    throw error
+    logger.error(`Error getting file type for ${key}:`, error.message || error)
+    return cue
+  }
+}
+
+const getFileSize = async (cue, presentationId) => {
+  const fileName = cue.file.id
+  const key = `${presentationId}/${fileName}`
+
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: key,
+  }
+
+  try {
+    const response = await s3Internal.send(new HeadObjectCommand(params))
+    if (response.ContentLength) {
+      cue.file.size = response.ContentLength.toString()
+      return cue
+    } else {
+      logger.warn(`ContentLength is missing from S3 response for ${key}`)
+      return cue
+    }
+  } catch (error) {
+    logger.error(`Error getting file size for ${key}:`, error.message || error)
+    return cue
   }
 }
 
@@ -128,6 +164,7 @@ module.exports = {
   uploadFileS3,
   deleteFileS3,
   getObjectStreamS3,
+  getObjectBufferS3,
   getObjectSignedUrl,
   getFileSize,
   getFileType,

@@ -54,6 +54,8 @@ const normalizeCueOpacity = (opacity, repairInvalid) => {
 
 const normalizePresentationCues = (presentationObject, options = {}) => {
   const screenCount = Number(presentationObject.screenCount) || 1
+  presentationObject.screenCount = screenCount
+  presentationObject.indexCount = Number(presentationObject.indexCount) || 5
   const cues = Array.isArray(presentationObject.cues)
     ? presentationObject.cues
     : []
@@ -203,6 +205,8 @@ const presentationSchema = mongoose.Schema(
           name: String,
           url: String,
           driveId: String,
+          thumbnailId: String,
+          thumbnailDriveId: String,
           size: { type: String, default: "0" },
           type: { type: String, default: "image/jpeg" },
         },
