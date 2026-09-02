@@ -2,13 +2,12 @@ import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Box,
-  Button,
-  ButtonGroup,
-  HStack,
+  Tab,
+  TabList,
+  Tabs,
   VStack,
   useColorModeValue,
 } from "@chakra-ui/react"
-import { AttachmentIcon, ViewIcon } from "@chakra-ui/icons"
 import CuesForm from "./CuesForm"
 import ScorePanel from "./ScorePanel"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
@@ -16,12 +15,30 @@ import { removeMedia, uploadMedia } from "../../redux/presentationReducer"
 
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
 
-type DockTab = "elements" | "scores"
+type DockTab = "colors" | "media" | "scores"
+
+const DOCK_TABS: { id: DockTab; label: string }[] = [
+  { id: "colors", label: "Colors" },
+  { id: "media", label: "Media" },
+  { id: "scores", label: "Scores" },
+]
 
 const DOCK_WIDTH_KEY = "muvico.dockWidth"
+// A stored "audio" falls back to Media, where audio now lives.
+const DOCK_TAB_KEY = "editModeMediaPoolActiveTab"
 const DOCK_MIN = 280
 const DOCK_MAX = 760
 const DOCK_DEFAULT = 380
+
+function readStoredTab(): DockTab {
+  try {
+    const saved = localStorage.getItem(DOCK_TAB_KEY)
+    if (DOCK_TABS.some((tab) => tab.id === saved)) {
+      return saved as DockTab
+    }
+  } catch {}
+  return "media"
+}
 
 function readStoredWidth(): number {
   try {
@@ -62,8 +79,7 @@ const EditorDock = ({
   indexCount,
 }: EditorDockProps) => {
   const dispatch = useAppDispatch()
-  // The dock, not CuesForm, owns the store wiring: CuesForm is unit-tested
-  // rendered standalone, with no Provider around it.
+  // The dock owns the store wiring: CuesForm is tested without a Provider.
   const mediaLibrary = useAppSelector((state) => state.presentation.media)
 
   const handleUploadMedia = useCallback(
@@ -76,19 +92,28 @@ const EditorDock = ({
     [dispatch, presentationId]
   )
 
-  const [activeTab, setActiveTab] = useState<DockTab>("elements")
+  const [activeTab, setActiveTab] = useState<DockTab>(readStoredTab)
   const [dockWidth, setDockWidth] = useState<number>(readStoredWidth)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
   const dragStartWidth = useRef(0)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const tabBg = useColorModeValue("whiteAlpha.700", "blackAlpha.300")
-  const activeBg = useColorModeValue("purple.500", "purple.300")
-  const activeColor = useColorModeValue("white", "gray.900")
-  const inactiveColor = useColorModeValue("gray.900", "whiteAlpha.900")
+  const surfaceBg = useColorModeValue("gray.50", "#140f1a")
+  const borderColor = useColorModeValue("purple.200", "whiteAlpha.200")
+  const textColor = useColorModeValue("gray.800", "whiteAlpha.900")
+  const mutedText = useColorModeValue("gray.600", "whiteAlpha.500")
+  const tabHoverBg = useColorModeValue("blackAlpha.50", "whiteAlpha.50")
   const handleColor = useColorModeValue("purple.200", "purple.800")
   const handleHoverColor = useColorModeValue("purple.400", "purple.500")
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DOCK_TAB_KEY, activeTab)
+    } catch {
+      // ignore
+    }
+  }, [activeTab])
 
   /* Persist width to localStorage */
   useEffect(() => {
@@ -179,26 +204,45 @@ const EditorDock = ({
         pl="5px"
       >
         {/* ── Tab switcher ─────────────────────────────────────────────── */}
-        <HStack justify="flex-end" align="center" px={2} pt={2}>
-          <ButtonGroup isAttached size="sm" bg={tabBg} borderRadius="8px">
-            <Button
-              leftIcon={<AttachmentIcon />}
-              bg={activeTab === "elements" ? activeBg : "transparent"}
-              color={activeTab === "elements" ? activeColor : inactiveColor}
-              onClick={() => setActiveTab("elements")}
-            >
-              Elements
-            </Button>
-            <Button
-              leftIcon={<ViewIcon />}
-              bg={activeTab === "scores" ? activeBg : "transparent"}
-              color={activeTab === "scores" ? activeColor : inactiveColor}
-              onClick={() => setActiveTab("scores")}
-            >
-              Scores
-            </Button>
-          </ButtonGroup>
-        </HStack>
+        {/* One strip for the whole dock. */}
+        <Tabs
+          index={DOCK_TABS.findIndex((tab) => tab.id === activeTab)}
+          onChange={(index) => setActiveTab(DOCK_TABS[index].id)}
+          variant="enclosed"
+          size="sm"
+          flexShrink={0}
+          pt={2}
+        >
+          <TabList borderColor={borderColor}>
+            {DOCK_TABS.map((tab, index) => {
+              const isActive = activeTab === tab.id
+              return (
+                <Tab
+                  key={tab.id}
+                  _selected={{
+                    color: textColor,
+                    bg: surfaceBg,
+                    borderColor: borderColor,
+                    borderBottomColor: "transparent",
+                  }}
+                  color={mutedText}
+                  bg="transparent"
+                  flex="1"
+                  borderTopRadius="md"
+                  borderBottomRadius="0"
+                  marginRight={index < DOCK_TABS.length - 1 ? "1px" : "0"}
+                  _hover={{
+                    bg: isActive ? surfaceBg : tabHoverBg,
+                    color: textColor,
+                  }}
+                  fontWeight={isActive ? "bold" : "normal"}
+                >
+                  {tab.label}
+                </Tab>
+              )
+            })}
+          </TabList>
+        </Tabs>
 
         {/* ── Tab content ──────────────────────────────────────────────── */}
         <Box
@@ -210,8 +254,11 @@ const EditorDock = ({
           overflow={activeTab === "scores" ? "hidden" : "auto"}
           p={activeTab === "scores" ? 2 : undefined}
         >
-          {activeTab === "elements" ? (
+          {activeTab === "scores" ? (
+            <ScorePanel presentationId={presentationId} scores={scores} />
+          ) : (
             <CuesForm
+              activeTab={activeTab}
               addCue={addCue}
               onClose={onClose}
               position={position}
@@ -225,8 +272,6 @@ const EditorDock = ({
               onUploadMedia={handleUploadMedia}
               onDeleteMedia={handleDeleteMedia}
             />
-          ) : (
-            <ScorePanel presentationId={presentationId} scores={scores} />
           )}
         </Box>
       </VStack>

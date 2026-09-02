@@ -84,15 +84,14 @@ const addBlankCue = async (page, name, index, screen) => {
   await dropArea.dispatchEvent("drop", { clientX, clientY, dataTransfer })
 }
 
+// One pool and one input for every kind. uploadAudioFile keeps its own name
+// so the audio specs still read as being about audio.
 const uploadMediaFile = async (page, files) => {
-  await page.getByRole("tab", { name: "Media" }).click()
+  await page.getByRole("tab", { name: "Media", exact: true }).click()
   await page.locator("#media-upload").setInputFiles(files)
 }
 
-const uploadAudioFile = async (page, files) => {
-  await page.getByRole("tab", { name: "Audio", exact: true }).click()
-  await page.locator("#sound-upload").setInputFiles(files)
-}
+const uploadAudioFile = uploadMediaFile
 
 const dragToGrid = async (page, source, index, screen) => {
   const dropArea = page.locator('[data-testid="drop-area"]')

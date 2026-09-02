@@ -23,22 +23,16 @@ import {
   FormHelperText,
   Input,
   Button,
-  Heading,
-  Divider,
   Tooltip,
   Box,
   VStack,
   HStack,
   Text,
   SimpleGrid,
-  Image,
   IconButton,
   useColorModeValue,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
+  InputGroup,
+  InputLeftElement,
   AlertDialog,
   AlertDialogBody,
   AlertDialogContent,
@@ -46,8 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
 } from "@chakra-ui/react"
-import { InfoOutlineIcon, DeleteIcon } from "@chakra-ui/icons"
-import { SpeakerIcon } from "../../lib/icons"
+import { InfoOutlineIcon, AddIcon, SearchIcon } from "@chakra-ui/icons"
 import { useState, useEffect, useRef } from "react"
 import type { ChangeEvent, FormEvent } from "react"
 import Error from "../utils/Error"
@@ -60,6 +53,7 @@ import {
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
+import MediaPoolTile from "./MediaPoolTile"
 
 import type {
   Cue,
@@ -67,6 +61,10 @@ import type {
   CueUpdateInput,
   MediaLibraryItem,
 } from "../../types"
+
+// One input for every kind. Mirrors the server's isAllowedMimeType.
+const MEDIA_UPLOAD_ACCEPT =
+  "image/*,video/mp4,video/3gpp,audio/mpeg,audio/wav,audio/vnd.wave"
 
 // Create a transparent 1x1 pixel image to suppress the default browser drag ghost image
 const transparentDragImage = (() => {
@@ -130,6 +128,8 @@ interface CuesFormProps {
   mediaLibrary?: MediaLibraryItem[]
   onUploadMedia?: (file: File) => Promise<unknown>
   onDeleteMedia?: (mediaId: string) => Promise<unknown>
+  /** Which section to show. EditorDock owns the tab strip. */
+  activeTab?: "colors" | "media"
 }
 
 const CuesForm = ({
@@ -145,6 +145,7 @@ const CuesForm = ({
   mediaLibrary = [],
   onUploadMedia,
   onDeleteMedia,
+  activeTab = "media",
 }: CuesFormProps) => {
   // "" rather than null when empty: the dead form path compares `file !== ""`.
   const [file, setFile] = useState<File | "">("")
@@ -178,16 +179,15 @@ const CuesForm = ({
     "#ff007f",
   ]
 
-  // The pools are two views of the presentation's stored media library, split
-  // by MIME type. Entries live on the server, so they are still here after a
-  // reload -- unlike the previous in-memory File + blob: preview pool, which
-  // could not survive one.
-  const mediaFiles = mediaLibrary.filter(
-    (item) => !isAudioMimeType(item.type || "")
-  )
-  const soundFiles = mediaLibrary.filter((item) =>
-    isAudioMimeType(item.type || "")
-  )
+  // One pool for every kind; entries live on the server, so a reload keeps them.
+  const [mediaSearch, setMediaSearch] = useState("")
+  const normalizedSearch = mediaSearch.trim().toLowerCase()
+  const visibleMedia = normalizedSearch
+    ? mediaLibrary.filter((item) =>
+        (item.name || "").toLowerCase().includes(normalizedSearch)
+      )
+    : mediaLibrary
+  const hasMedia = mediaLibrary.length > 0
   const [isUploading, setIsUploading] = useState(false)
   // Deleting a library entry deletes the stored object and every cue built from
   // it, so it goes through a confirmation rather than straight off the button.
@@ -195,21 +195,7 @@ const CuesForm = ({
     null
   )
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
-  const soundInputRef = useRef<HTMLInputElement | null>(null)
   const cancelDeleteRef = useRef<HTMLButtonElement | null>(null)
-
-  const getInitialActiveTab = () => {
-    if (typeof window === "undefined") return "media"
-
-    const savedTab = window.localStorage.getItem("editModeMediaPoolActiveTab")
-    if (savedTab === "colors" || savedTab === "media" || savedTab === "audio") {
-      return savedTab
-    }
-
-    return "media"
-  }
-
-  const [activeTab, setActiveTab] = useState(getInitialActiveTab)
 
   const audioRow = getAudioRow(screenCount)
 
@@ -222,12 +208,6 @@ const CuesForm = ({
       setScreen(position.screen)
     }
   }, [position])
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("editModeMediaPoolActiveTab", activeTab)
-    }
-  }, [activeTab])
 
   // Auto-calculate the next available index when adding a new cue
   useEffect(() => {
@@ -410,8 +390,7 @@ const CuesForm = ({
     setError(null)
   }
 
-  // Uploading is a network call now, not a local push: the file is stored the
-  // moment it is picked, whether or not it is ever dragged onto the timeline.
+  // Uploading stores the file immediately, used on the timeline or not.
   const uploadToLibrary = async (files: File[]) => {
     if (!onUploadMedia || files.length === 0) {
       return
@@ -432,24 +411,17 @@ const CuesForm = ({
 
   const handleMediaUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []).filter(
-      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+      (file) =>
+        file.type.startsWith("image/") ||
+        file.type.startsWith("video/") ||
+        isAudioMimeType(file.type)
     )
     // Clearing lets the same file be picked again after a failed upload.
     event.target.value = ""
     await uploadToLibrary(files)
   }
 
-  const handleSoundUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []).filter((file) =>
-      isAudioMimeType(file.type)
-    )
-    event.target.value = ""
-    await uploadToLibrary(files)
-  }
-
-  // Cues built from a library entry share its stored object, so there is no
-  // way to keep them working once the entry is gone -- hence the count in the
-  // dialog below.
+  // Cues share the entry's stored object, so they cannot outlive it.
   const cuesUsingPendingDelete = pendingDelete
     ? cues.filter((cue) => cue.file?.id === pendingDelete.id).length
     : 0
@@ -498,16 +470,12 @@ const CuesForm = ({
   const textColor = useColorModeValue("gray.800", "whiteAlpha.900")
   const mutedText = useColorModeValue("gray.600", "whiteAlpha.500")
 
-  const activeTabBg = surfaceBg
-  const activeTabColor = textColor
-  const inactiveTabBg = "transparent"
-  const inactiveTabColor = mutedText
-  const tabHoverBg = useColorModeValue("blackAlpha.50", "whiteAlpha.50")
+  const inputBorderColor = useColorModeValue("blackAlpha.300", "whiteAlpha.300")
+  const inputFocusColor = useColorModeValue("purple.500", "purple.300")
+  const scrollTrackBg = useColorModeValue("blackAlpha.50", "whiteAlpha.50")
+  const scrollThumbBg = useColorModeValue("blackAlpha.300", "whiteAlpha.300")
 
-  // Render the form with three tabs: Colors, Media, and Audio
-  // The colors tab allows creating colored elements by dragging them to the grid
-  // The media tab allows uploading and dragging images/videos to the grid
-  // The audio tab allows uploading and dragging audio files to the grid
+  // One section at a time: colours to drag onto the grid, or the media pool.
   return (
     <div className="cue-editor-form custom-scrollbar">
       <form
@@ -528,439 +496,241 @@ const CuesForm = ({
           minH={0}
           width="100%"
         >
-          <Box px={1} pb={3} flexShrink={0}>
-            <Heading size="sm" color={textColor}>
-              {cueData ? "Edit element" : "Add element"}
-            </Heading>
-          </Box>
-
-          <Tabs
-            index={["colors", "media", "audio"].indexOf(activeTab)}
-            onChange={(idx) => setActiveTab(["colors", "media", "audio"][idx])}
-            variant="enclosed"
-            size="sm"
-            display="flex"
-            flexDirection="column"
+          <Box
             flex="1 1 0"
             minHeight={0}
+            overflowY="auto"
+            bg={surfaceBg}
+            border="1px solid"
+            borderColor={borderColor}
+            borderRadius="md"
+            p={3}
+            sx={{
+              "&::-webkit-scrollbar": { width: "8px" },
+              "&::-webkit-scrollbar-track": {
+                bg: scrollTrackBg,
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                bg: scrollThumbBg,
+                borderRadius: "4px",
+              },
+            }}
           >
-            <TabList flexShrink={0} borderColor={borderColor}>
-              {["Colors", "Media", "Audio"].map((tabLabel, idx) => {
-                const tabId = tabLabel.toLowerCase()
-                const isActive = activeTab === tabId
-                return (
-                  <Tab
-                    key={tabId}
-                    _selected={{
-                      color: activeTabColor,
-                      bg: activeTabBg,
-                      borderColor: borderColor,
-                      borderBottomColor: "transparent",
-                    }}
-                    color={inactiveTabColor}
-                    bg={inactiveTabBg}
-                    flex="1"
-                    borderTopRadius="md"
-                    borderBottomRadius="0"
-                    marginRight={idx < 2 ? "1px" : "0"}
-                    _hover={{
-                      bg: isActive ? activeTabBg : tabHoverBg,
-                      color: textColor,
-                    }}
-                    fontWeight={isActive ? "bold" : "normal"}
-                  >
-                    {tabLabel}
-                  </Tab>
-                )
-              })}
-            </TabList>
+            {activeTab === "colors" && (
+              <VStack spacing={3} align="stretch">
+                <FormHelperText color={mutedText} mt={0}>
+                  Select a color and drag it to the grid
+                </FormHelperText>
 
-            <TabPanels
-              flex="1 1 0"
-              minHeight={0}
-              overflowY="auto"
-              bg={surfaceBg}
-              border="1px solid"
-              borderColor={borderColor}
-              borderTop="none"
-              borderBottomRadius="md"
-              sx={{
-                "&::-webkit-scrollbar": { width: "8px" },
-                "&::-webkit-scrollbar-track": {
-                  bg: useColorModeValue("blackAlpha.50", "whiteAlpha.50"),
-                  borderRadius: "4px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  bg: useColorModeValue("blackAlpha.300", "whiteAlpha.300"),
-                  borderRadius: "4px",
-                },
-              }}
-            >
-              <TabPanel p={3}>
-                <VStack spacing={3} align="stretch">
-                  <FormHelperText color={mutedText} mt={0}>
-                    Select a color and drag it to the grid
-                  </FormHelperText>
+                <ColorPickerWithPresets
+                  color={selectedColor}
+                  onChange={setSelectedColor}
+                  presetColors={presetColors}
+                />
+                <Input
+                  variant="flushed"
+                  data-testid="cue-name"
+                  id="cue-name"
+                  value={cueName}
+                  placeholder="Element name"
+                  color={textColor}
+                  borderColor={inputBorderColor}
+                  _focus={{ borderColor: inputFocusColor }}
+                  _placeholder={{ color: mutedText }}
+                  sx={{ caretColor: "currentColor" }}
+                  onChange={(e) => setCueName(e.target.value)}
+                  required
+                />
 
-                  <ColorPickerWithPresets
-                    color={selectedColor}
-                    onChange={setSelectedColor}
-                    presetColors={presetColors}
-                  />
-                  <Input
-                    variant="flushed"
-                    data-testid="cue-name"
-                    id="cue-name"
-                    value={cueName}
-                    placeholder="Element name"
-                    color={textColor}
-                    borderColor={useColorModeValue(
-                      "blackAlpha.300",
-                      "whiteAlpha.300"
-                    )}
-                    _focus={{
-                      borderColor: useColorModeValue(
-                        "purple.500",
-                        "purple.300"
-                      ),
-                    }}
-                    _placeholder={{ color: mutedText }}
-                    sx={{ caretColor: "currentColor" }}
-                    onChange={(e) => setCueName(e.target.value)}
-                    required
-                  />
+                <Box
+                  className="droppable-color-element"
+                  draggable={true}
+                  onDragStart={(e) => {
+                    suppressNativeDragGhost(e.dataTransfer)
+                    const normalizedCueName = cueName.trim()
+                    const dragData = {
+                      type: "newCueFromForm",
+                      cueName: normalizedCueName,
+                      color: selectedColor || "#e014ee",
+                      opacity: 1,
+                      elementType: "color",
+                    }
 
+                    mediaStore.setActiveDragData(dragData)
+
+                    e.dataTransfer.setData(
+                      "application/json",
+                      JSON.stringify(dragData)
+                    )
+                    e.dataTransfer.setData(
+                      "text/plain",
+                      JSON.stringify(dragData)
+                    )
+                  }}
+                  onDragEnd={() => mediaStore.clearActiveDragData()}
+                  p={3}
+                  mt={1}
+                  bg={selectedColor || "purple.500"}
+                  borderRadius="md"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  cursor="grab"
+                  _active={{ cursor: "grabbing", transform: "scale(0.98)" }}
+                  _hover={{ opacity: 0.9 }}
+                  boxShadow="0 4px 12px rgba(0,0,0,0.2)"
+                  transition="all 0.1s"
+                >
                   <Box
-                    className="droppable-color-element"
-                    draggable={true}
-                    onDragStart={(e) => {
-                      suppressNativeDragGhost(e.dataTransfer)
-                      const normalizedCueName = cueName.trim()
-                      const dragData = {
-                        type: "newCueFromForm",
-                        cueName: normalizedCueName,
-                        color: selectedColor || "#e014ee",
-                        opacity: 1,
-                        elementType: "color",
-                      }
-
-                      mediaStore.setActiveDragData(dragData)
-
-                      e.dataTransfer.setData(
-                        "application/json",
-                        JSON.stringify(dragData)
-                      )
-                      e.dataTransfer.setData(
-                        "text/plain",
-                        JSON.stringify(dragData)
-                      )
-                    }}
-                    onDragEnd={() => mediaStore.clearActiveDragData()}
-                    p={3}
-                    mt={1}
-                    bg={selectedColor || "purple.500"}
-                    borderRadius="md"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    cursor="grab"
-                    _active={{ cursor: "grabbing", transform: "scale(0.98)" }}
-                    _hover={{ opacity: 0.9 }}
-                    boxShadow="0 4px 12px rgba(0,0,0,0.2)"
-                    transition="all 0.1s"
+                    mr={2}
+                    opacity={0.8}
+                    color={getContrastTextColor(selectedColor)}
                   >
-                    <Box
-                      mr={2}
-                      opacity={0.8}
-                      color={getContrastTextColor(selectedColor)}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="currentColor"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <circle cx="5" cy="3" r="1.5" />
-                        <circle cx="5" cy="8" r="1.5" />
-                        <circle cx="5" cy="13" r="1.5" />
-                        <circle cx="11" cy="3" r="1.5" />
-                        <circle cx="11" cy="8" r="1.5" />
-                        <circle cx="11" cy="13" r="1.5" />
-                      </svg>
-                    </Box>
-                    <Text
-                      color={getContrastTextColor(selectedColor)}
-                      fontWeight="bold"
-                      fontSize="sm"
-                    >
-                      Drag to grid
-                    </Text>
+                      <circle cx="5" cy="3" r="1.5" />
+                      <circle cx="5" cy="8" r="1.5" />
+                      <circle cx="5" cy="13" r="1.5" />
+                      <circle cx="11" cy="3" r="1.5" />
+                      <circle cx="11" cy="8" r="1.5" />
+                      <circle cx="11" cy="13" r="1.5" />
+                    </svg>
                   </Box>
-                </VStack>
-              </TabPanel>
-
-              <TabPanel p={3}>
-                <VStack spacing={4} align="stretch">
-                  <FormHelperText color={mutedText}>
-                    Upload images or videos and drag them to the grid
-                    <Tooltip
-                      label={
-                        <>
-                          <strong>Valid image types: </strong>.apng, .avif,
-                          .bmp, .cur, .gif, .ico, .jfif, .jpe, .jpeg, .jpg,
-                          .png, .svg and .webp
-                          <br />
-                          <strong>Valid video types: </strong> .mp4 and .3gp
-                        </>
-                      }
-                      placement="right-end"
-                      p={2}
-                      fontSize="sm"
-                    >
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        marginLeft={2}
-                        color={mutedText}
-                      >
-                        <InfoOutlineIcon />
-                      </Button>
-                    </Tooltip>
-                  </FormHelperText>
-
-                  <Input
-                    type="file"
-                    id="media-upload"
-                    ref={mediaInputRef}
-                    style={{ display: "none" }}
-                    onChange={handleMediaUpload}
-                    accept="image/*,video/mp4,video/3gpp"
-                    multiple
-                  />
-
-                  <Button
-                    onClick={() => mediaInputRef.current?.click()}
-                    colorScheme="purple"
-                    variant="outline"
-                    isLoading={isUploading}
-                    loadingText="Uploading"
+                  <Text
+                    color={getContrastTextColor(selectedColor)}
+                    fontWeight="bold"
+                    fontSize="sm"
                   >
-                    Upload Images/Videos
-                  </Button>
+                    Drag to grid
+                  </Text>
+                </Box>
+              </VStack>
+            )}
 
-                  {mediaFiles.length > 0 && (
-                    <>
-                      <Divider />
-                      <Text fontWeight="bold" color={textColor}>
-                        Media Pool ({mediaFiles.length})
-                      </Text>
-                      <SimpleGrid columns={2} spacing={3}>
-                        {mediaFiles.map((media) => (
-                          <Box
-                            key={media.id}
-                            draggable={true}
-                            onDragStart={(e) => {
-                              suppressNativeDragGhost(e.dataTransfer)
-                              // mediaId addresses the stored entry; the drop
-                              // handler sends it to the server, which reuses
-                              // that object instead of uploading anything.
-                              const dragData = {
-                                type: "newCueFromForm",
-                                cueName: media.name,
-                                elementType: "media",
-                                mediaId: media.id,
-                                mimeType: media.type,
-                                previewUrl: media.url,
-                              }
-                              mediaStore.setActiveDragData(dragData)
+            {activeTab === "media" && (
+              <VStack spacing={3} align="stretch">
+                <Input
+                  type="file"
+                  id="media-upload"
+                  ref={mediaInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleMediaUpload}
+                  accept={MEDIA_UPLOAD_ACCEPT}
+                  multiple
+                />
 
-                              e.dataTransfer.setData(
-                                "application/json",
-                                JSON.stringify(dragData)
-                              )
-                              e.dataTransfer.setData(
-                                "text/plain",
-                                JSON.stringify(dragData)
-                              )
-                            }}
-                            onDragEnd={() => mediaStore.clearActiveDragData()}
-                            position="relative"
-                            border="2px solid"
-                            borderColor="purple.300"
-                            borderRadius="md"
-                            p={2}
-                            cursor="grab"
-                            _active={{ cursor: "grabbing" }}
-                            _hover={{
-                              borderColor: "purple.500",
-                              bg: "whiteAlpha.100",
-                            }}
-                          >
-                            <IconButton
-                              aria-label={`Remove ${media.name}`}
-                              icon={<DeleteIcon />}
-                              size="xs"
-                              colorScheme="red"
-                              position="absolute"
-                              top={1}
-                              right={1}
-                              onClick={() => setPendingDelete(media)}
-                              zIndex={1}
-                            />
-                            {media.type?.startsWith("image/") && (
-                              <Image
-                                src={media.url}
-                                alt={media.name}
-                                maxH="100px"
-                                objectFit="contain"
-                                w="100%"
-                              />
-                            )}
-                            {media.type?.startsWith("video/") && (
-                              <Box
-                                bg="whiteAlpha.200"
-                                p={4}
-                                textAlign="center"
-                                borderRadius="md"
-                              >
-                                <Text fontSize="2xl">🎥</Text>
-                              </Box>
-                            )}
-                            <Text
-                              fontSize="xs"
-                              mt={1}
-                              noOfLines={1}
-                              color={textColor}
-                            >
-                              {media.name}
-                            </Text>
-                          </Box>
-                        ))}
-                      </SimpleGrid>
-                    </>
-                  )}
-                </VStack>
-              </TabPanel>
+                {hasMedia && (
+                  <HStack spacing={2} align="center">
+                    <InputGroup size="sm">
+                      <InputLeftElement pointerEvents="none">
+                        <SearchIcon color={mutedText} />
+                      </InputLeftElement>
+                      <Input
+                        id="media-search"
+                        aria-label="Search media"
+                        placeholder="Search media"
+                        value={mediaSearch}
+                        onChange={(event) => setMediaSearch(event.target.value)}
+                        color={textColor}
+                        _placeholder={{ color: mutedText }}
+                        sx={{ caretColor: "currentColor" }}
+                      />
+                    </InputGroup>
 
-              <TabPanel p={3}>
-                <VStack spacing={4} align="stretch">
-                  <FormHelperText color={mutedText}>
-                    Upload audio files and drag them to the grid
-                    <Tooltip
-                      label={
-                        <>
-                          <strong>Valid audio types: </strong> .mp3 and .wav
-                        </>
-                      }
-                      placement="right-end"
-                      p={2}
-                      fontSize="sm"
-                    >
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        marginLeft={2}
-                        color={mutedText}
-                      >
-                        <InfoOutlineIcon />
-                      </Button>
+                    {/* The big button belongs to the empty state. */}
+                    <Tooltip label="Upload media" placement="bottom-end">
+                      <IconButton
+                        aria-label="Upload media"
+                        icon={<AddIcon />}
+                        size="sm"
+                        colorScheme="purple"
+                        isLoading={isUploading}
+                        onClick={() => mediaInputRef.current?.click()}
+                      />
                     </Tooltip>
-                  </FormHelperText>
+                  </HStack>
+                )}
 
-                  <Input
-                    type="file"
-                    id="sound-upload"
-                    ref={soundInputRef}
-                    style={{ display: "none" }}
-                    onChange={handleSoundUpload}
-                    accept="audio/mpeg,audio/wav,audio/vnd.wave"
-                    multiple
-                  />
+                {!hasMedia && (
+                  <VStack spacing={4} align="stretch" py={4}>
+                    <FormHelperText color={mutedText} mt={0} textAlign="center">
+                      Upload images, videos or audio and drag them to the grid
+                      <Tooltip
+                        label={
+                          <>
+                            <strong>Valid image types: </strong>.apng, .avif,
+                            .bmp, .cur, .gif, .ico, .jfif, .jpe, .jpeg, .jpg,
+                            .png, .svg and .webp
+                            <br />
+                            <strong>Valid video types: </strong> .mp4 and .3gp
+                            <br />
+                            <strong>Valid audio types: </strong> .mp3 and .wav
+                          </>
+                        }
+                        placement="right-end"
+                        p={2}
+                        fontSize="sm"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          marginLeft={2}
+                          color={mutedText}
+                        >
+                          <InfoOutlineIcon />
+                        </Button>
+                      </Tooltip>
+                    </FormHelperText>
 
-                  <Button
-                    onClick={() => soundInputRef.current?.click()}
-                    colorScheme="purple"
-                    variant="outline"
-                    isLoading={isUploading}
-                    loadingText="Uploading"
-                  >
-                    Upload Audio Files
-                  </Button>
+                    <Button
+                      data-testid="media-upload-cta"
+                      size="lg"
+                      colorScheme="purple"
+                      leftIcon={<AddIcon />}
+                      isLoading={isUploading}
+                      loadingText="Uploading"
+                      onClick={() => mediaInputRef.current?.click()}
+                    >
+                      Upload media
+                    </Button>
+                  </VStack>
+                )}
 
-                  {soundFiles.length > 0 && (
-                    <>
-                      <Divider />
-                      <Text fontWeight="bold" color={textColor}>
-                        Sound Pool ({soundFiles.length})
-                      </Text>
-                      <VStack spacing={2} align="stretch">
-                        {soundFiles.map((sound) => (
-                          <Box
-                            key={sound.id}
-                            draggable={true}
-                            onDragStart={(e) => {
-                              suppressNativeDragGhost(e.dataTransfer)
-                              const dragData = {
-                                type: "newCueFromForm",
-                                cueName: sound.name,
-                                elementType: "sound",
-                                soundId: sound.id,
-                                mimeType: sound.type,
-                              }
-                              mediaStore.setActiveDragData(dragData)
+                {hasMedia && (
+                  <Text fontSize="xs" color={mutedText}>
+                    {normalizedSearch
+                      ? `Media Pool (${visibleMedia.length} of ${mediaLibrary.length})`
+                      : `Media Pool (${mediaLibrary.length})`}
+                  </Text>
+                )}
 
-                              e.dataTransfer.setData(
-                                "application/json",
-                                JSON.stringify(dragData)
-                              )
-                              e.dataTransfer.setData(
-                                "text/plain",
-                                JSON.stringify(dragData)
-                              )
-                            }}
-                            onDragEnd={() => mediaStore.clearActiveDragData()}
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="space-between"
-                            border="2px solid"
-                            borderColor="purple.300"
-                            borderRadius="md"
-                            p={3}
-                            cursor="grab"
-                            _active={{ cursor: "grabbing" }}
-                            _hover={{
-                              borderColor: "purple.500",
-                              bg: "whiteAlpha.100",
-                            }}
-                          >
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              flex={1}
-                              color={textColor}
-                            >
-                              <SpeakerIcon boxSize="20px" mr={2} />
-                              <Text fontSize="sm" noOfLines={1}>
-                                {sound.name}
-                              </Text>
-                            </Box>
-                            <IconButton
-                              aria-label={`Remove ${sound.name}`}
-                              icon={<DeleteIcon />}
-                              size="sm"
-                              colorScheme="red"
-                              onClick={() => setPendingDelete(sound)}
-                            />
-                          </Box>
-                        ))}
-                      </VStack>
-                    </>
-                  )}
-                </VStack>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
+                {hasMedia && visibleMedia.length === 0 && (
+                  <Text fontSize="sm" color={mutedText} py={4}>
+                    No media matches &quot;{mediaSearch.trim()}&quot;.
+                  </Text>
+                )}
+
+                {visibleMedia.length > 0 && (
+                  <SimpleGrid columns={2} spacing={3}>
+                    {visibleMedia.map((item) => (
+                      <MediaPoolTile
+                        key={item.id}
+                        item={item}
+                        onDelete={setPendingDelete}
+                        suppressDragGhost={suppressNativeDragGhost}
+                      />
+                    ))}
+                  </SimpleGrid>
+                )}
+              </VStack>
+            )}
+          </Box>
 
           {error && <Error error={error} />}
         </FormControl>
