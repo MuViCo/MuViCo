@@ -471,3 +471,486 @@
   justify-content: start;
   gap: 0.5rem;
 }
+
+.presentations-page {
+  min-height: calc(100vh - 80px);
+  padding-block: 32px 48px;
+}
+
+.presentations-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.presentations-browser-header {
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.presentations-browser-header h1 {
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.presentations-browser-header > div:first-child > p {
+  margin-top: 4px;
+  color: var(--muvico-text-muted);
+  font-size: 0.8125rem;
+}
+
+.presentations-header-actions {
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.presentations-header-actions .help-button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border: 1px solid var(--muvico-border);
+  color: var(--muvico-text-muted);
+}
+
+.link-google-drive-button {
+  height: 36px !important;
+}
+
+.presentations-toolbar {
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.presentations-search {
+  min-width: 200px;
+  flex: 1 1 360px;
+}
+
+.presentations-search input {
+  height: 38px;
+  border-color: var(--muvico-border);
+  border-radius: 8px;
+  background: var(--muvico-control);
+  color: var(--muvico-text);
+  font-size: 0.8125rem;
+}
+
+.presentations-search input::placeholder,
+.presentations-search > div {
+  color: var(--muvico-text-muted);
+}
+
+.presentations-search input:hover,
+.presentations-search input:focus-visible {
+  border-color: var(--muvico-border-strong);
+}
+
+.presentations-segmented-control {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--muvico-border);
+  border-radius: 8px;
+  background: var(--muvico-control);
+}
+
+.presentations-segmented-control button {
+  height: 30px;
+  min-width: 0;
+  padding-inline: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muvico-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.presentations-segmented-control button:hover {
+  background: var(--muvico-control-hover);
+}
+
+.presentations-segmented-control button[data-active="true"] {
+  background: var(--muvico-border-strong);
+  color: var(--muvico-text);
+}
+
+.presentations-view-control button {
+  width: 34px;
+  padding: 0;
+}
+
+.presentations-view-control button[data-active="true"] {
+  background: #c084fc;
+  color: #160b1f;
+}
+
+.presentations-list {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presentations-list-header,
+.presentation-list-item {
+  display: grid;
+  grid-template-columns: 104px minmax(180px, 1fr) 140px 150px 112px 78px;
+  align-items: center;
+  gap: 16px;
+}
+
+.presentations-list-header {
+  padding: 0 14px 2px;
+}
+
+.presentations-list-header p {
+  color: var(--muvico-text-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.presentation-list-item {
+  min-height: 72px;
+  padding: 9px 14px 9px 11px;
+  border: 1px solid var(--muvico-border);
+  border-left: 3px solid var(--muvico-border-strong);
+  border-radius: 8px;
+  background: var(--muvico-control);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.presentation-list-item:hover,
+.presentation-list-item:focus-visible {
+  border-color: var(--muvico-border-strong);
+  background: var(--muvico-control-hover);
+  outline: none;
+}
+
+.presentation-list-preview {
+  position: relative;
+  width: 104px;
+  height: 48px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.presentation-preview-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.presentation-list-preview p {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  min-width: 19px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.58);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-align: center;
+  z-index: 1;
+}
+
+.presentation-list-identity,
+.presentation-list-score {
+  min-width: 0;
+}
+
+.presentation-list-identity h2,
+.presentation-card-body h2 {
+  overflow: hidden;
+  color: var(--muvico-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-list-identity p {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muvico-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-list-content,
+.presentation-list-date {
+  color: var(--muvico-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.presentation-list-content span {
+  padding-inline: 3px;
+  color: var(--muvico-border-strong);
+}
+
+.presentation-list-score {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  height: 25px;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 8px;
+  border: 1px solid var(--muvico-border);
+  border-radius: 5px;
+  color: var(--muvico-text-muted);
+  font-size: 0.6875rem;
+}
+
+.presentation-list-score.has-score {
+  border-color: var(--muvico-border-strong);
+  background: var(--muvico-control-hover);
+  color: var(--muvico-text-secondary);
+}
+
+.presentation-list-score span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-item-actions {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.presentation-list-item:hover .presentation-item-actions,
+.presentation-list-item:focus-within .presentation-item-actions,
+.presentation-card:hover .presentation-item-actions,
+.presentation-card:focus-within .presentation-item-actions {
+  opacity: 1;
+}
+
+.presentation-delete-button:hover {
+  border-color: #e5484d !important;
+  background: rgba(229, 72, 77, 0.14) !important;
+  color: #e5484d !important;
+}
+
+.presentations-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+  gap: 14px;
+}
+
+.presentation-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--muvico-border);
+  border-radius: 8px;
+  background: var(--muvico-control);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.presentation-card:hover,
+.presentation-card:focus-visible {
+  border-color: var(--muvico-border-strong);
+  outline: none;
+}
+
+.presentation-card-preview {
+  position: relative;
+  height: 126px;
+  border-bottom: 2px solid var(--muvico-border-strong);
+}
+
+.presentation-card-preview .presentation-item-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.presentation-card-preview .presentation-item-actions button {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(8, 6, 10, 0.82);
+  color: #e0c9ff;
+}
+
+.presentation-screen-badge,
+.presentation-score-badge {
+  position: absolute;
+  display: inline-flex;
+  max-width: calc(100% - 16px);
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(8, 6, 10, 0.76);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.presentation-screen-badge {
+  top: 8px;
+  left: 8px;
+}
+
+.presentation-score-badge {
+  bottom: 8px;
+  left: 8px;
+}
+
+.presentation-score-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-card-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+}
+
+.presentation-card-description {
+  overflow: hidden;
+  color: var(--muvico-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-card-meta {
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muvico-text-muted);
+  font-size: 0.6875rem;
+}
+
+.presentations-empty-state {
+  display: flex;
+  min-height: 280px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px dashed var(--muvico-border);
+  border-radius: 8px;
+  color: var(--muvico-text-muted);
+  text-align: center;
+}
+
+.presentations-empty-state > svg {
+  width: 28px;
+  height: 28px;
+}
+
+.presentations-empty-state p {
+  max-width: 360px;
+  font-size: 0.8125rem;
+}
+
+.presentation-create-modal,
+.presentation-edit-modal {
+  border: 1px solid var(--muvico-border);
+  background: var(--muvico-surface) !important;
+}
+
+@media (max-width: 980px) {
+  .presentations-list-header,
+  .presentation-list-item {
+    grid-template-columns: 92px minmax(160px, 1fr) 126px 100px 70px;
+  }
+
+  .presentations-list-header > :nth-child(4),
+  .presentation-list-score {
+    display: none;
+  }
+
+  .presentation-list-preview {
+    width: 92px;
+  }
+}
+
+@media (max-width: 760px) {
+  .presentations-page {
+    padding-block: 20px 32px;
+  }
+
+  .presentations-browser-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .presentations-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .presentations-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .presentations-search {
+    flex-basis: 100%;
+  }
+
+  .presentations-list-header {
+    display: none;
+  }
+
+  .presentation-list-item {
+    grid-template-columns: 72px minmax(0, 1fr) 70px;
+    gap: 12px;
+  }
+
+  .presentation-list-preview {
+    width: 72px;
+    height: 44px;
+  }
+
+  .presentation-list-content,
+  .presentation-list-score,
+  .presentation-list-date {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .presentations-browser-header h1 {
+    font-size: 1.625rem;
+  }
+
+  .presentations-header-actions > button,
+  .presentations-header-actions > div {
+    flex: 1 1 auto;
+  }
+
+  .presentations-header-actions .help-button {
+    flex: 0 0 36px;
+  }
+
+  .presentations-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

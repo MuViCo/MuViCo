@@ -47,7 +47,7 @@ const PresentationForm = ({
     setName("")
     setDescription("")
     setScreenCount(1)
-    setStartingFrameColor("#FF0000") // this is a debugging color, it should be set to black by default, but it is set to red for testing purposes
+    setStartingFrameColor("#000000")
     onCancel()
   }
 
@@ -102,11 +102,16 @@ const PresentationForm = ({
           />
         </FormControl>
         <Flex align="center" mt={2} mb={4}>
-          <Button id="create-button" type="submit" colorScheme="purple">
-            create
+          <Button id="create-button" type="submit" variant="muvico-primary">
+            Create
           </Button>
-          <Button id="cancel-button" ml={2} onClick={onCancel}>
-            cancel
+          <Button
+            id="cancel-button"
+            ml={2}
+            variant="muvico-secondary"
+            onClick={onCancel}
+          >
+            Cancel
           </Button>
         </Flex>
       </form>

@@ -122,6 +122,51 @@ describe("GET /presentations", () => {
     const contents = response.body.map((r) => r.name)
     expect(contents).toContain("Test presentation")
   })
+
+  test("returns the earliest highest-priority visual cue on screen 1 as preview", async () => {
+    const presentation = await Presentation.findById(presentationId)
+    presentation.screenCount = 2
+    presentation.cues = [
+      {
+        cueType: "visual",
+        index: 0,
+        name: "Other screen",
+        screen: 2,
+        layer: 0,
+        color: "#111111",
+      },
+      {
+        cueType: "visual",
+        index: 1,
+        name: "Lower priority",
+        screen: 1,
+        layer: 1,
+        color: "#222222",
+      },
+      {
+        cueType: "visual",
+        index: 1,
+        name: "Screen 1 preview",
+        screen: 1,
+        layer: 0,
+        file: {
+          id: "preview-file",
+          name: "preview.png",
+          url: "",
+          type: "image/png",
+        },
+      },
+    ]
+    await presentation.save()
+
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    expect(response.body[0].previewCue.name).toBe("Screen 1 preview")
+    expect(response.body[0].previewCue.file.url).toContain("preview-file")
+  })
 })
 
 describe("POST /presentations", () => {

@@ -339,7 +339,7 @@ describe("PresentationForm", () => {
     const screenCountInput = screen.getByTestId("presentation-screen-count")
     fireEvent.change(nameInput, { target: { value: "Test Presentation" } })
     fireEvent.change(screenCountInput, { target: { value: 1 } })
-    fireEvent.click(screen.getByText("create"))
+    fireEvent.click(screen.getByRole("button", { name: /create/i }))
 
     expect(createPresentationMock).toHaveBeenCalledWith({
       description: "",
@@ -355,7 +355,7 @@ describe("PresentationForm", () => {
       <PresentationForm createPresentation={() => {}} onCancel={onCancelMock} />
     )
 
-    fireEvent.click(screen.getByText("cancel"))
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }))
 
     expect(onCancelMock).toHaveBeenCalled()
   })
@@ -544,7 +544,7 @@ describe("PresentationsGrid", () => {
     )
   })
 
-  test("defaults to grid view when localStorage is empty", () => {
+  test("defaults to list view when localStorage is empty", () => {
     // Mock localStorage with no stored value
     const mockLocalStorage = {
       getItem: jest.fn(() => null),
@@ -562,11 +562,100 @@ describe("PresentationsGrid", () => {
       />
     )
 
-    // Should default to grid (check that grid view is rendered, not list)
-    const gridBtn = screen.getByTestId("grid-button")
-    expect(gridBtn).toBeInTheDocument()
-    // Grid view should be active by default, so no list items
-    expect(screen.queryByRole("listitem")).toBeNull()
+    expect(screen.getByTestId("list-button")).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    )
+    expect(screen.getAllByRole("listitem")).toHaveLength(mock_data.length)
+  })
+
+  test("filters presentations by name or description", () => {
+    render(
+      <PresentationsGrid
+        presentations={[
+          { id: "123", name: "Valse triste", description: "Sibelius" },
+          { id: "456", name: "Nocturne", description: "Chopin" },
+        ]}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText("Search presentations"), {
+      target: { value: "Chopin" },
+    })
+
+    expect(screen.getByText("Nocturne")).toBeInTheDocument()
+    expect(screen.queryByText("Valse triste")).not.toBeInTheDocument()
+  })
+
+  test("sorts presentations alphabetically", () => {
+    render(
+      <PresentationsGrid
+        presentations={mock_data}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "A → Z" }))
+
+    const items = screen.getAllByRole("listitem")
+    expect(items[0]).toHaveTextContent("Another Presentation")
+    expect(items[1]).toHaveTextContent("Test Presentation")
+  })
+
+  test("shows presentation content and score metadata", () => {
+    render(
+      <PresentationsGrid
+        presentations={[
+          {
+            id: "123",
+            name: "Score project",
+            screenCount: 4,
+            indexCount: 12,
+            cues: [{ _id: "cue-1", cueType: "visual", color: "#112233" }],
+            scores: [{ _id: "score-1", title: "Valse triste.pdf" }],
+          },
+        ]}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    expect(screen.getByText(/12 frames/)).toBeInTheDocument()
+    expect(screen.getByText(/1 cues/)).toBeInTheDocument()
+    expect(screen.getByText("Valse triste.pdf")).toBeInTheDocument()
+  })
+
+  test("shows the preview media selected from screen 1", () => {
+    render(
+      <PresentationsGrid
+        presentations={[
+          {
+            id: "123",
+            name: "Visual project",
+            screenCount: 2,
+            previewCue: {
+              _id: "cue-preview",
+              cueType: "visual",
+              index: 0,
+              name: "Landscape",
+              screen: 1,
+              layer: 0,
+              opacity: 0.8,
+              file: {
+                name: "landscape.png",
+                url: "https://example.com/landscape.png",
+                type: "image/png",
+              },
+            },
+          },
+        ]}
+        handlePresentationClick={() => {}}
+      />
+    )
+
+    const preview = screen.getByAltText("Preview of Visual project")
+    expect(preview).toHaveAttribute("src", "https://example.com/landscape.png")
+    expect(preview).toHaveStyle({ opacity: "0.8" })
   })
 
   test("opens modal from edit action with prefilled name and description", async () => {
