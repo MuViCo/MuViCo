@@ -1,7 +1,8 @@
-const express = require("express")
-const User = require("../models/user")
-const Presentation = require("../models/presentation")
-const { userExtractor } = require("../utils/middleware")
+import express from "express"
+
+import User from "../models/user"
+import Presentation from "../models/presentation"
+import { userExtractor } from "../utils/middleware"
 
 const router = express.Router()
 
@@ -41,4 +42,5 @@ router.get("/userspresentations/:id", userExtractor, async (req, res) => {
   const presentations = await Presentation.find({ user: req.params.id })
   return res.json(presentations.map((presentation) => presentation.toJSON()))
 })
-module.exports = router
+
+export = router

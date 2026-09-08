@@ -1,12 +1,13 @@
-const express = require("express")
-const router = express.Router()
-const { getDriveFileStream, getDriveFileMetadata } = require("../utils/drive")
+import express from "express"
 
-const logger = require("../utils/logger")
+import { getDriveFileStream, getDriveFileMetadata } from "../utils/drive"
+import * as logger from "../utils/logger"
+
+const router = express.Router()
 
 router.get("/:fileId", async (req, res) => {
   const { fileId } = req.params
-  const accessToken = req.query.access_token
+  const accessToken = req.query.access_token as string
   if (!accessToken) {
     return res.status(401).send("Access token missing")
   }
@@ -16,7 +17,7 @@ router.get("/:fileId", async (req, res) => {
     const mimeType = metadata.mimeType
 
     const fileStream = await getDriveFileStream(fileId, accessToken)
-    res.setHeader("Content-Type", mimeType)
+    res.setHeader("Content-Type", mimeType as string)
     fileStream.pipe(res)
   } catch (error) {
     logger.error("Error streaming file:", error)
@@ -24,4 +25,4 @@ router.get("/:fileId", async (req, res) => {
   }
 })
 
-module.exports = router
+export = router

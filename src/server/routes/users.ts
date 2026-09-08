@@ -4,24 +4,28 @@
  * The routes interact with the User model to perform database operations and return JSON responses.
  * Input validation is included to ensure that required fields are present and meet specified criteria, such as password strength requirements.
  */
+import express from "express"
 
-const express = require("express")
-const { userExtractor } = require("../utils/middleware")
-const router = express.Router()
-const User = require("../models/user")
-const {
+import { userExtractor } from "../utils/middleware"
+import User from "../models/user"
+import {
   minPwLength,
   maxPwLength,
   invalidPwCharRegex,
-} = require("../../constants.js")
-const { generateHash, checkPassword } = require("../utils/auth")
+} from "../../constants.js"
+import { generateHash, checkPassword } from "../utils/auth"
+import * as logger from "../utils/logger"
 
-const logger = require("../utils/logger")
+const router = express.Router()
 
 router.post("/link-drive", userExtractor, async (req, res) => {
   try {
     const { driveAccessToken } = req.body
-    const user = req.user
+    const { user } = req
+
+    if (!user) {
+      return res.status(401).json({ error: "authentication required" })
+    }
 
     user.driveToken = driveAccessToken
     await user.save()
@@ -41,7 +45,11 @@ router.post("/link-drive", userExtractor, async (req, res) => {
 
 router.post("/unlink-drive", userExtractor, async (req, res) => {
   try {
-    const user = req.user
+    const { user } = req
+
+    if (!user) {
+      return res.status(401).json({ error: "authentication required" })
+    }
 
     user.driveToken = null
     await user.save()
@@ -109,7 +117,11 @@ router.post("/change-password", userExtractor, async (req, res) => {
     })
   }
 
-  if (!(await checkPassword(currentPassword, user.passwordHash))) {
+  // TODO(ts): user.passwordHash is optional (a Firebase-only account has
+  // none); checkPassword's signature requires a string, unchanged from the
+  // original, where this same call would already fail at runtime for such
+  // an account.
+  if (!(await checkPassword(currentPassword, user.passwordHash as string))) {
     return res.status(400).json({
       error: "Current password is not valid",
     })
@@ -130,4 +142,4 @@ router.post("/change-password", userExtractor, async (req, res) => {
   }
 })
 
-module.exports = router
+export = router

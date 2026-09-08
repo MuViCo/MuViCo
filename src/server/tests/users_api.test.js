@@ -49,11 +49,10 @@ describe("POST /link-drive and /unlink-drive", () => {
   })
 
   test("linking drive unsuccesfully", async () => {
-    global.console = { ...console, error: jest.fn() }
     await api
       .post("/api/users/link-drive")
       .send({ driveAccessToken: "test-token" })
-      .expect(500)
+      .expect(401)
       .expect("Content-Type", /application\/json/)
   })
 
@@ -76,7 +75,6 @@ describe("POST /link-drive and /unlink-drive", () => {
   })
 
   test("unlinking drive unsuccesfully", async () => {
-    global.console = { ...console, error: jest.fn() }
     await api
       .post("/api/users/link-drive")
       .set("Authorization", authHeader)
@@ -86,7 +84,7 @@ describe("POST /link-drive and /unlink-drive", () => {
 
     await api
       .post("/api/users/unlink-drive")
-      .expect(500)
+      .expect(401)
       .expect("Content-Type", /application\/json/)
   })
 })

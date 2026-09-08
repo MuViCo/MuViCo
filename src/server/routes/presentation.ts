@@ -5,23 +5,20 @@
  * The routes interact with the Presentation model to perform CRUD operations and ensure that users can only access and modify presentations they have permissions for.
  * The module also includes error handling for various edge cases, such as file size limits, invalid input data, and conflicts in cue positioning.
  */
+import express, { type Response } from "express"
+import multer from "multer"
+import crypto from "crypto"
 
-const express = require("express")
-const multer = require("multer")
-const crypto = require("crypto")
-const { uploadFileS3, deleteFileS3, getObjectStreamS3 } = require("../utils/s3")
-const {
+import { uploadFileS3, deleteFileS3, getObjectStreamS3 } from "../utils/s3"
+import {
   uploadDriveFile,
   deleteDriveFile,
   getDriveFileStream,
-} = require("../utils/drive")
-const Presentation = require("../models/presentation")
-const {
-  userExtractor,
-  requirePresentationAccess,
-} = require("../utils/middleware")
-const { BUCKET_NAME } = require("../utils/config")
-const {
+} from "../utils/drive"
+import Presentation from "../models/presentation"
+import { userExtractor, requirePresentationAccess } from "../utils/middleware"
+import { BUCKET_NAME } from "../utils/config"
+import {
   generateSignedUrlForS3,
   processS3Files,
   processS3MediaFiles,
@@ -29,15 +26,59 @@ const {
   processDriveMediaFiles,
   processS3ScoreFiles,
   processDriveScoreFiles,
-} = require("../utils/helper")
-const {
+} from "../utils/helper"
+import {
   getAudioRow,
   getCueTypeFromScreen,
   getMaxLayers,
   isAudioMimeType,
   isAllowedMimeType,
-} = require("../utils/cueType")
-const logger = require("../utils/logger")
+} from "../utils/cueType"
+import * as logger from "../utils/logger"
+import type {
+  Cue,
+  CueFile,
+  CueType,
+  PresentationDocument,
+  Score,
+  ScoreMarker,
+  UserDocument,
+} from "../types"
+
+/*
+ * Mongoose promotes array-of-object schema paths to Types.DocumentArray on a
+ * hydrated document, with .id()/.pull() and (one level down)
+ * subdocument .set()/.deleteOne() -- but only when the document type comes
+ * from Mongoose's own schema inference. PresentationAttrs is a hand-written
+ * interface, so HydratedDocument<PresentationAttrs> doesn't know to promote
+ * its array fields, and typing them as DocumentArray in ../types would make
+ * that type wrong everywhere else it's used (raw collection reads,
+ * migration scripts). findScore/marker.set/deleteOne below are the
+ * documented boundary cast, all in one place instead of at every call site.
+ */
+type ScoreSubdocument = Score & {
+  markers: (ScoreMarker & {
+    set: (value: Partial<ScoreMarker>) => void
+    deleteOne: () => void
+  })[] & {
+    id: (id: unknown) =>
+      | (ScoreMarker & {
+          set: (value: Partial<ScoreMarker>) => void
+          deleteOne: () => void
+        })
+      | null
+  }
+  deleteOne: () => void
+}
+
+const findScore = (
+  presentation: PresentationDocument,
+  scoreId: unknown
+): ScoreSubdocument | null =>
+  // @ts-expect-error -- scores.id() lives on the Mongoose DocumentArray at
+  // runtime; Score[] (the read-side type) doesn't declare it.
+  presentation.scores.id(scoreId)
+
 const router = express.Router()
 
 const storage = multer.memoryStorage()
@@ -47,7 +88,7 @@ const MAX_SCORE_FILE_SIZE = 50 * 1024 * 1024
 
 const generateFileId = () => crypto.randomBytes(8).toString("hex")
 
-const parseOptionalPositiveInteger = (rawValue) => {
+const parseOptionalPositiveInteger = (rawValue: unknown) => {
   if (rawValue === undefined || rawValue === null || rawValue === "") {
     return undefined
   }
@@ -60,12 +101,12 @@ const parseOptionalPositiveInteger = (rawValue) => {
   return value
 }
 
-const parseMarkerInteger = (rawValue) => {
+const parseMarkerInteger = (rawValue: unknown) => {
   const value = Number(rawValue)
   return Number.isInteger(value) ? value : null
 }
 
-const isPdfFile = (file) => {
+const isPdfFile = (file: Express.Multer.File | undefined) => {
   if (!file) {
     return false
   }
@@ -76,10 +117,10 @@ const isPdfFile = (file) => {
   )
 }
 
-const trimText = (value, fallback = "") =>
+const trimText = (value: unknown, fallback = "") =>
   typeof value === "string" ? value.trim() : fallback
 
-const validateScoreTitle = (title) => {
+const validateScoreTitle = (title: unknown) => {
   const trimmedTitle = trimText(title)
   if (trimmedTitle.length === 0 || trimmedTitle.length > 150) {
     return null
@@ -88,17 +129,22 @@ const validateScoreTitle = (title) => {
   return trimmedTitle
 }
 
-const safeInlineFilename = (name) => {
+const safeInlineFilename = (name: unknown) => {
   const fallback = "score.pdf"
   const filename = trimText(name, fallback).replace(/["\\\r\n]/g, "_")
   return filename || fallback
 }
 
-const setScoreFileHeaders = (res, score, contentType, contentLength) => {
-  const filename = safeInlineFilename(score.file.name || score.title)
+const setScoreFileHeaders = (
+  res: Response,
+  score: Score,
+  contentType?: string,
+  contentLength?: number
+) => {
+  const filename = safeInlineFilename(score.file?.name || score.title)
   res.setHeader(
     "Content-Type",
-    contentType || score.file.type || "application/pdf"
+    contentType || score.file?.type || "application/pdf"
   )
   res.setHeader(
     "Content-Disposition",
@@ -110,7 +156,7 @@ const setScoreFileHeaders = (res, score, contentType, contentLength) => {
   }
 }
 
-const parseUrl = (rawUrl) => {
+const parseUrl = (rawUrl: unknown) => {
   const sourceUrl = trimText(rawUrl)
   if (!sourceUrl) {
     return null
@@ -128,17 +174,17 @@ const parseUrl = (rawUrl) => {
   }
 }
 
-const isImslpUrl = (url) =>
+const isImslpUrl = (url: URL) =>
   url.hostname === "imslp.org" || url.hostname.endsWith(".imslp.org")
 
-const parseMarkerRect = (rawRect) => {
+const parseMarkerRect = (rawRect: unknown) => {
   if (rawRect === undefined || rawRect === null || rawRect === "") {
     return undefined
   }
 
   const rect = typeof rawRect === "string" ? JSON.parse(rawRect) : rawRect
-  const keys = ["x", "y", "width", "height"]
-  const parsed = {}
+  const keys = ["x", "y", "width", "height"] as const
+  const parsed: { x?: number; y?: number; width?: number; height?: number } = {}
 
   for (const key of keys) {
     if (rect[key] === undefined || rect[key] === null || rect[key] === "") {
@@ -156,7 +202,10 @@ const parseMarkerRect = (rawRect) => {
   return parsed
 }
 
-const processPresentationScoreFiles = async (presentation, user) => {
+const processPresentationScoreFiles = async (
+  presentation: PresentationDocument,
+  user: UserDocument
+) => {
   if (user.driveToken) {
     presentation.scores = await processDriveScoreFiles(
       presentation.scores || [],
@@ -172,7 +221,12 @@ const processPresentationScoreFiles = async (presentation, user) => {
   return presentation
 }
 
-const uploadScoreFile = async (presentationId, fileId, file, user) => {
+const uploadScoreFile = async (
+  presentationId: unknown,
+  fileId: string,
+  file: Express.Multer.File,
+  user: UserDocument
+) => {
   const key = `${presentationId}/${fileId}`
 
   if (user.driveToken) {
@@ -183,7 +237,11 @@ const uploadScoreFile = async (presentationId, fileId, file, user) => {
   return null
 }
 
-const deleteScoreFile = async (presentationId, score, user) => {
+const deleteScoreFile = async (
+  presentationId: unknown,
+  score: Score,
+  user: UserDocument
+) => {
   if (!score.file) {
     return
   }
@@ -198,7 +256,7 @@ const deleteScoreFile = async (presentationId, score, user) => {
   }
 }
 
-const parseCueOpacity = (rawOpacity, fallback = 1) => {
+const parseCueOpacity = (rawOpacity: unknown, fallback: number | undefined) => {
   if (rawOpacity === undefined || rawOpacity === null || rawOpacity === "") {
     return fallback
   }
@@ -213,7 +271,10 @@ const parseCueOpacity = (rawOpacity, fallback = 1) => {
 
 // A cue's occupied screens: spanScreens when it's a valid multi-screen span,
 // otherwise just its own primary screen.
-const occupiedScreens = (screen, spanScreens) =>
+const occupiedScreens = (
+  screen: unknown,
+  spanScreens: number[] | null | undefined
+) =>
   Array.isArray(spanScreens) && spanScreens.length > 1
     ? spanScreens
     : [Number(screen)]
@@ -222,14 +283,16 @@ const occupiedScreens = (screen, spanScreens) =>
 // numbers, or absent/empty for "no span"). Range/membership/cueType checks
 // happen at the call site, where `screen`, `cueType` and `screenCount` are
 // known -- this only handles shape.
-const parseSpanScreens = (raw) => {
+const parseSpanScreens = (
+  raw: unknown
+): { spanScreens: number[] | null; error: string | null } => {
   if (raw === undefined || raw === null || raw === "") {
     return { spanScreens: null, error: null }
   }
 
   let parsed
   try {
-    parsed = JSON.parse(raw)
+    parsed = JSON.parse(raw as string)
   } catch {
     return { spanScreens: null, error: "spanScreens must be valid JSON" }
   }
@@ -255,7 +318,12 @@ const parseSpanScreens = (raw) => {
 // Full validity check once `screen`/`cueType`/`screenCount` are known: must
 // be visual, include the cue's own screen, have no duplicates, and every
 // entry must be a valid screen number.
-const isValidSpanScreens = (spanScreens, screen, cueType, screenCount) =>
+const isValidSpanScreens = (
+  spanScreens: number[],
+  screen: number,
+  cueType: CueType,
+  screenCount: number
+) =>
   cueType === "visual" &&
   spanScreens.length > 1 &&
   spanScreens.includes(screen) &&
@@ -265,12 +333,12 @@ const isValidSpanScreens = (spanScreens, screen, cueType, screenCount) =>
   )
 
 const hasPositionConflict = (
-  cues,
-  index,
-  screen,
-  layer,
-  excludedCueId = null,
-  spanScreens = null
+  cues: Cue[],
+  index: number,
+  screen: number,
+  layer: number | undefined,
+  excludedCueId: unknown = null,
+  spanScreens: number[] | null = null
 ) => {
   const candidateScreens = occupiedScreens(screen, spanScreens)
 
@@ -293,26 +361,32 @@ const hasPositionConflict = (
       return true
     }
 
-    return cue._id.toString() !== excludedCueId.toString()
+    return (
+      cue._id.toString() !==
+      (excludedCueId as { toString(): string }).toString()
+    )
   })
 }
 
 // Checks if there is a cue (other than the two being swapped) that already occupies one of the target positions
 const hasSwapTargetConflict = (
-  cues,
-  firstCueId,
-  secondCueId,
-  firstTargetIndex,
-  firstTargetScreen,
-  firstTargetLayer,
-  secondTargetIndex,
-  secondTargetScreen,
-  secondTargetLayer
+  cues: Cue[],
+  firstCueId: unknown,
+  secondCueId: unknown,
+  firstTargetIndex: number,
+  firstTargetScreen: number,
+  firstTargetLayer: number,
+  secondTargetIndex: number,
+  secondTargetScreen: number,
+  secondTargetLayer: number
 ) => {
   return cues.some((cue) => {
     const cueId = cue._id.toString()
 
-    if (cueId === firstCueId.toString() || cueId === secondCueId.toString()) {
+    if (
+      cueId === (firstCueId as { toString(): string }).toString() ||
+      cueId === (secondCueId as { toString(): string }).toString()
+    ) {
       return false
     }
 
@@ -329,7 +403,11 @@ const hasSwapTargetConflict = (
   })
 }
 
-const deleteObject = async (id, cueId, driveToken) => {
+const deleteObject = async (
+  id: unknown,
+  cueId: unknown,
+  driveToken: string | null | undefined
+) => {
   const cue = await Presentation.findOne(
     { _id: id, "cues._id": cueId },
     { "cues.$": 1, media: 1 }
@@ -368,11 +446,11 @@ const deleteObject = async (id, cueId, driveToken) => {
   }
 
   if (driveToken) {
-    const driveFileId = cue.cues[0].file.driveId
+    const driveFileId = cue.cues[0].file?.driveId
     if (driveFileId) {
       const presentation = await Presentation.findById(id)
 
-      const sameFileCount = presentation.cues.filter(
+      const sameFileCount = presentation!.cues.filter(
         (c) => c.file?.driveId === driveFileId
       ).length
 
@@ -401,26 +479,26 @@ router.get(
       const { user, presentation } = req
 
       // Update lastUsed for MRU sorting
-      presentation.lastUsed = new Date()
-      await presentation.save()
+      presentation!.lastUsed = new Date()
+      await presentation!.save()
 
-      if (user.driveToken) {
-        const driveToken = user.driveToken
-        presentation.cues = await processDriveCueFiles(
-          presentation.cues,
+      if (user!.driveToken) {
+        const driveToken = user!.driveToken
+        presentation!.cues = await processDriveCueFiles(
+          presentation!.cues,
           driveToken
         )
-        await processDriveMediaFiles(presentation.media, driveToken)
+        await processDriveMediaFiles(presentation!.media, driveToken)
       } else {
-        presentation.cues = await processS3Files(
-          presentation.cues,
-          presentation._id
+        presentation!.cues = await processS3Files(
+          presentation!.cues,
+          presentation!._id
         )
         // Signed in place, so the media pool repopulates from the response the
         // editor already fetches on mount -- no extra client request.
-        await processS3MediaFiles(presentation.media, presentation._id)
+        await processS3MediaFiles(presentation!.media, presentation!._id)
       }
-      await processPresentationScoreFiles(presentation, user)
+      await processPresentationScoreFiles(presentation!, user!)
 
       res.json(presentation)
     } catch (error) {
@@ -440,28 +518,28 @@ router.delete(
     try {
       const { user, presentation } = req
 
-      for (const cue of presentation.cues) {
-        await deleteObject(presentation._id, cue._id, user.driveToken)
+      for (const cue of presentation!.cues) {
+        await deleteObject(presentation!._id, cue._id, user!.driveToken)
       }
 
       // Cues created from the library were skipped by deleteObject above,
       // because the library owns their bytes. Remove those objects here, or
       // dropping the presentation would orphan every pooled file.
-      for (const item of presentation.media || []) {
-        if (user.driveToken) {
+      for (const item of presentation!.media || []) {
+        if (user!.driveToken) {
           if (item.driveId) {
-            await deleteDriveFile(item.driveId, user.driveToken)
+            await deleteDriveFile(item.driveId, user!.driveToken)
           }
         } else {
-          await deleteFileS3(`${presentation._id}/${item.id}`)
+          await deleteFileS3(`${presentation!._id}/${item.id}`)
         }
       }
 
-      for (const score of presentation.scores || []) {
-        await deleteScoreFile(presentation._id, score, user)
+      for (const score of presentation!.scores || []) {
+        await deleteScoreFile(presentation!._id, score, user!)
       }
 
-      await Presentation.findByIdAndDelete(presentation._id)
+      await Presentation.findByIdAndDelete(presentation!._id)
       return res.status(204).end()
     } catch (error) {
       next(error)
@@ -491,7 +569,7 @@ router.post(
         return res.status(400).json({ error: "No file provided" })
       }
 
-      if (file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+      if (file.size > 50 * 1024 * 1024 && !user!.isAdmin) {
         return res.status(400).json({ error: "File size exceeds 50 MB limit" })
       }
 
@@ -504,7 +582,14 @@ router.post(
       const mediaId = generateFileId()
       const key = `${id}/${mediaId}`
 
-      const entry = {
+      const entry: {
+        id: string
+        name: string
+        url: string
+        size: string
+        type: string
+        driveId?: string
+      } = {
         id: mediaId,
         name: file.originalname || `file-${mediaId}`,
         url: "",
@@ -512,25 +597,25 @@ router.post(
         type: file.mimetype,
       }
 
-      if (user.driveToken) {
+      if (user!.driveToken) {
         const driveResponse = await uploadDriveFile(
           file.buffer,
           key,
           file.mimetype,
-          user.driveToken
+          user!.driveToken
         )
-        entry.driveId = driveResponse.id
+        entry.driveId = driveResponse.id as string
       } else {
         await uploadFileS3(file.buffer, key, file.mimetype)
       }
 
-      presentation.media.push(entry)
-      await presentation.save({ validateModifiedOnly: true })
+      presentation!.media.push(entry)
+      await presentation!.save({ validateModifiedOnly: true })
 
-      const saved = presentation.media[presentation.media.length - 1]
+      const saved = presentation!.media[presentation!.media.length - 1]
 
-      if (user.driveToken) {
-        await processDriveMediaFiles([saved], user.driveToken)
+      if (user!.driveToken) {
+        await processDriveMediaFiles([saved], user!.driveToken)
       } else {
         await processS3MediaFiles([saved], id)
       }
@@ -563,7 +648,7 @@ router.delete(
       const { id, mediaId } = req.params
       const { user, presentation } = req
 
-      const entry = (presentation.media || []).find(
+      const entry = (presentation!.media || []).find(
         (item) => item.id === mediaId
       )
 
@@ -571,21 +656,24 @@ router.delete(
         return res.status(404).json({ error: "Media not found" })
       }
 
-      const deletedCueIds = presentation.cues
+      const deletedCueIds = presentation!.cues
         .filter((cue) => cue.file?.id === mediaId)
         .map((cue) => cue._id.toString())
 
       const driveId = entry.driveId
 
       for (const cueId of deletedCueIds) {
-        presentation.cues.pull({ _id: cueId })
+        // @ts-expect-error -- pull() lives on the Mongoose DocumentArray at
+        // runtime; Cue[] (the read-side type) doesn't declare it.
+        presentation!.cues.pull({ _id: cueId })
       }
-      presentation.media.pull({ _id: entry._id })
-      await presentation.save({ validateModifiedOnly: true })
+      // @ts-expect-error -- same as above.
+      presentation!.media.pull({ _id: entry._id })
+      await presentation!.save({ validateModifiedOnly: true })
 
-      if (user.driveToken) {
+      if (user!.driveToken) {
         if (driveId) {
-          await deleteDriveFile(driveId, user.driveToken)
+          await deleteDriveFile(driveId, user!.driveToken)
         }
       } else {
         await deleteFileS3(`${id}/${mediaId}`)
@@ -622,19 +710,22 @@ router.put(
           .json({ error: "indexCount must be between 1 and 101" })
       }
 
-      const updateQuery = {
+      const updateQuery: {
+        $set: { indexCount: number }
+        $pull?: Record<string, unknown>
+      } = {
         $set: { indexCount: newIndexCount },
       }
 
       // If reducing index count, remove cues from indexes that will be removed
       let removedCuesCount = 0
       let removedScoreMarkersCount = 0
-      if (newIndexCount < presentation.indexCount) {
-        const cuesToRemove = presentation.cues.filter(
+      if (newIndexCount < presentation!.indexCount) {
+        const cuesToRemove = presentation!.cues.filter(
           (cue) => Number(cue.index) >= newIndexCount
         )
         removedCuesCount = cuesToRemove.length
-        removedScoreMarkersCount = (presentation.scores || []).reduce(
+        removedScoreMarkersCount = (presentation!.scores || []).reduce(
           (count, score) =>
             count +
             (score.markers || []).filter(
@@ -654,13 +745,13 @@ router.put(
       }
 
       const updatedPresentation = await Presentation.findByIdAndUpdate(
-        presentation._id,
+        presentation!._id,
         updateQuery,
         { new: true }
       )
 
       res.json({
-        indexCount: updatedPresentation.indexCount,
+        indexCount: updatedPresentation!.indexCount,
         removedCuesCount: removedCuesCount,
         removedScoreMarkersCount: removedScoreMarkersCount,
       })
@@ -697,30 +788,35 @@ router.put(
 
       // If reducing screen count, remove cues from screens that will be removed
       let removedCuesCount = 0
-      if (newScreenCount < presentation.screenCount) {
-        const cuesToRemove = presentation.cues.filter(
+      if (newScreenCount < presentation!.screenCount) {
+        const cuesToRemove = presentation!.cues.filter(
           (cue) =>
             cue.screen > newScreenCount &&
-            cue.screen <= presentation.screenCount
+            cue.screen <= presentation!.screenCount
         )
         removedCuesCount = cuesToRemove.length
 
         // Remove cues from screens being deleted (excludes the audio row,
         // which always sits at screenCount + 1 and must survive)
-        presentation.cues = presentation.cues.filter(
+        // TODO(ts): filter() returns a plain Cue[], not the
+        // Types.DocumentArray<Cue> presentation.cues is hydrated as; cast to
+        // unknown first since neither array type is assignable to the
+        // other. Mongoose's array-path setter accepts a plain array at
+        // runtime, which is what the original assignment relied on.
+        presentation!.cues = presentation!.cues.filter(
           (cue) =>
             !(
               cue.screen > newScreenCount &&
-              cue.screen <= presentation.screenCount
+              cue.screen <= presentation!.screenCount
             )
-        )
+        ) as unknown as PresentationDocument["cues"]
 
         // A surviving cue's own screen is guaranteed valid (it just passed
         // the filter above), but its spanScreens may still reference a
         // screen number that no longer exists -- drop those, and drop the
         // whole field if fewer than 2 valid screens remain (a "span" of one
         // screen is meaningless).
-        presentation.cues.forEach((cue) => {
+        presentation!.cues.forEach((cue) => {
           if (!Array.isArray(cue.spanScreens)) return
           const validSpanScreens = cue.spanScreens.filter(
             (screenNumber) => screenNumber <= newScreenCount
@@ -732,11 +828,11 @@ router.put(
 
       // Must be presentation.save(), not a query-style update, since it
       // triggers the pre("validate") hook the audio-row repositioning depends on.
-      presentation.screenCount = newScreenCount
-      await presentation.save()
+      presentation!.screenCount = newScreenCount
+      await presentation!.save()
 
       res.json({
-        screenCount: presentation.screenCount,
+        screenCount: presentation!.screenCount,
         removedCuesCount: removedCuesCount,
       })
     } catch (err) {
@@ -770,8 +866,8 @@ router.put(
         })
       }
 
-      presentation.name = trimmedName
-      const updated = await presentation.save({ validateModifiedOnly: true })
+      presentation!.name = trimmedName
+      const updated = await presentation!.save({ validateModifiedOnly: true })
 
       res.json({ name: updated.name })
     } catch (err) {
@@ -787,8 +883,8 @@ router.get(
   async (req, res, next) => {
     try {
       const { user, presentation } = req
-      await processPresentationScoreFiles(presentation, user)
-      res.json(presentation.scores || [])
+      await processPresentationScoreFiles(presentation!, user!)
+      res.json(presentation!.scores || [])
     } catch (error) {
       next(error)
     }
@@ -802,7 +898,7 @@ router.get(
   async (req, res, next) => {
     try {
       const { presentation, user } = req
-      const score = presentation.scores.id(req.params.scoreId)
+      const score = findScore(presentation!, req.params.scoreId)
 
       if (!score) {
         return res.status(404).json({ error: "Score not found" })
@@ -812,10 +908,10 @@ router.get(
         return res.status(404).json({ error: "Score file not found" })
       }
 
-      if (user.driveToken && score.file.driveId) {
+      if (user!.driveToken && score.file.driveId) {
         const fileStream = await getDriveFileStream(
           score.file.driveId,
-          user.driveToken
+          user!.driveToken
         )
         if (!fileStream || typeof fileStream.pipe !== "function") {
           return res.status(404).json({ error: "Score file not found" })
@@ -828,10 +924,13 @@ router.get(
         return res.status(404).json({ error: "Score file not found" })
       }
 
-      const key = `${presentation._id}/${score.file.id}`
+      const key = `${presentation!._id}/${score.file.id}`
       const response = await getObjectStreamS3(key)
 
-      if (!response.Body || typeof response.Body.pipe !== "function") {
+      if (
+        !response.Body ||
+        typeof (response.Body as { pipe?: unknown }).pipe !== "function"
+      ) {
         return res.status(404).json({ error: "Score file not found" })
       }
 
@@ -841,7 +940,7 @@ router.get(
         response.ContentType,
         response.ContentLength
       )
-      return response.Body.pipe(res)
+      return (response.Body as unknown as NodeJS.ReadableStream).pipe(res)
     } catch (error) {
       next(error)
     }
@@ -867,7 +966,7 @@ router.post(
         return res.status(400).json({ error: "Only PDF scores are allowed" })
       }
 
-      if (file.size > MAX_SCORE_FILE_SIZE && !user.isAdmin) {
+      if (file.size > MAX_SCORE_FILE_SIZE && !user!.isAdmin) {
         return res.status(400).json({ error: "File size exceeds 50 MB limit" })
       }
 
@@ -891,12 +990,13 @@ router.post(
       const imslpId = trimText(req.body.imslpId)
       const source = sourceUrl || imslpId ? "imslp" : "upload"
 
-      const score = {
+      const score: Score = {
         title,
         source,
         ...(sourceUrl && { sourceUrl }),
         ...(imslpId && { imslpId }),
         ...(pageCount && { pageCount }),
+        markers: [],
         file: {
           id: fileId,
           name: file.originalname,
@@ -906,30 +1006,30 @@ router.post(
         },
       }
 
-      presentation.scores.push(score)
-      const createdScore = presentation.scores[presentation.scores.length - 1]
+      presentation!.scores.push(score)
+      const createdScore = presentation!.scores[presentation!.scores.length - 1]
 
       try {
         const driveResponse = await uploadScoreFile(
-          presentation._id,
+          presentation!._id,
           fileId,
           file,
-          user
+          user!
         )
 
         if (driveResponse?.id) {
-          createdScore.file.driveId = driveResponse.id
+          createdScore.file!.driveId = driveResponse.id
         }
       } catch (error) {
         logger.error("Score upload error:", error)
         return res.status(500).json({ error: "Score upload failed" })
       }
 
-      await presentation.save({ validateModifiedOnly: true })
+      await presentation!.save({ validateModifiedOnly: true })
 
-      const [processedScore] = user.driveToken
-        ? await processDriveScoreFiles([createdScore], user.driveToken)
-        : await processS3ScoreFiles([createdScore], presentation._id)
+      const [processedScore] = user!.driveToken
+        ? await processDriveScoreFiles([createdScore], user!.driveToken)
+        : await processS3ScoreFiles([createdScore], presentation!._id)
 
       res.status(201).json(processedScore)
     } catch (error) {
@@ -972,11 +1072,12 @@ router.post(
           .json({ error: "Score title must be between 1 and 150 characters" })
       }
 
-      presentation.scores.push({
+      presentation!.scores.push({
         title,
         source: "imslp",
         sourceUrl: parsedUrl.toString(),
         imslpId: trimText(req.body.imslpId),
+        markers: [],
         ...(pageCount && { pageCount }),
         file: {
           name: title,
@@ -986,9 +1087,11 @@ router.post(
         },
       })
 
-      await presentation.save({ validateModifiedOnly: true })
+      await presentation!.save({ validateModifiedOnly: true })
 
-      res.status(201).json(presentation.scores[presentation.scores.length - 1])
+      res
+        .status(201)
+        .json(presentation!.scores[presentation!.scores.length - 1])
     } catch (error) {
       next(error)
     }
@@ -1003,15 +1106,15 @@ router.delete(
     try {
       const { presentation, user } = req
       const { scoreId } = req.params
-      const score = presentation.scores.id(scoreId)
+      const score = findScore(presentation!, scoreId)
 
       if (!score) {
         return res.status(404).json({ error: "Score not found" })
       }
 
-      await deleteScoreFile(presentation._id, score, user)
+      await deleteScoreFile(presentation!._id, score, user!)
       score.deleteOne()
-      await presentation.save({ validateModifiedOnly: true })
+      await presentation!.save({ validateModifiedOnly: true })
 
       res.status(204).end()
     } catch (error) {
@@ -1020,7 +1123,11 @@ router.delete(
   }
 )
 
-const buildMarkerFromBody = (body, presentation, score) => {
+const buildMarkerFromBody = (
+  body: Record<string, unknown>,
+  presentation: PresentationDocument,
+  score: Score
+) => {
   const page = parseMarkerInteger(body.page)
   const frameIndex = parseMarkerInteger(body.frameIndex)
 
@@ -1082,19 +1189,19 @@ router.post(
   async (req, res, next) => {
     try {
       const { presentation } = req
-      const score = presentation.scores.id(req.params.scoreId)
+      const score = findScore(presentation!, req.params.scoreId)
 
       if (!score) {
         return res.status(404).json({ error: "Score not found" })
       }
 
-      const result = buildMarkerFromBody(req.body, presentation, score)
+      const result = buildMarkerFromBody(req.body, presentation!, score)
       if (result.error) {
         return res.status(400).json({ error: result.error })
       }
 
-      score.markers.push(result.marker)
-      await presentation.save({ validateModifiedOnly: true })
+      score.markers.push(result.marker!)
+      await presentation!.save({ validateModifiedOnly: true })
 
       res.status(201).json(score.markers[score.markers.length - 1])
     } catch (error) {
@@ -1110,7 +1217,7 @@ router.put(
   async (req, res, next) => {
     try {
       const { presentation } = req
-      const score = presentation.scores.id(req.params.scoreId)
+      const score = findScore(presentation!, req.params.scoreId)
 
       if (!score) {
         return res.status(404).json({ error: "Score not found" })
@@ -1121,13 +1228,13 @@ router.put(
         return res.status(404).json({ error: "Score marker not found" })
       }
 
-      const result = buildMarkerFromBody(req.body, presentation, score)
+      const result = buildMarkerFromBody(req.body, presentation!, score)
       if (result.error) {
         return res.status(400).json({ error: result.error })
       }
 
-      marker.set(result.marker)
-      await presentation.save({ validateModifiedOnly: true })
+      marker.set(result.marker!)
+      await presentation!.save({ validateModifiedOnly: true })
 
       res.json(marker)
     } catch (error) {
@@ -1143,7 +1250,7 @@ router.delete(
   async (req, res, next) => {
     try {
       const { presentation } = req
-      const score = presentation.scores.id(req.params.scoreId)
+      const score = findScore(presentation!, req.params.scoreId)
 
       if (!score) {
         return res.status(404).json({ error: "Score not found" })
@@ -1155,7 +1262,7 @@ router.delete(
       }
 
       marker.deleteOne()
-      await presentation.save({ validateModifiedOnly: true })
+      await presentation!.save({ validateModifiedOnly: true })
 
       res.status(204).end()
     } catch (error) {
@@ -1221,7 +1328,7 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
-      const audioRow = getAudioRow(presentation.screenCount)
+      const audioRow = getAudioRow(presentation!.screenCount)
 
       if (screen < 1 || screen > audioRow) {
         return res.status(400).json({
@@ -1233,7 +1340,7 @@ router.put(
       // path) or by naming an existing library entry. In the second case no
       // bytes move: the cue copies the entry's id, hence its storage key.
       const libraryEntry = mediaId
-        ? (presentation.media || []).find((item) => item.id === mediaId)
+        ? (presentation!.media || []).find((item) => item.id === mediaId)
         : null
 
       if (mediaId && !libraryEntry) {
@@ -1251,7 +1358,7 @@ router.put(
         })
       }
 
-      if (file && file.size > 50 * 1024 * 1024 && !user.isAdmin) {
+      if (file && file.size > 50 * 1024 * 1024 && !user!.isAdmin) {
         return res.status(400).json({ error: "File size exceeds 50 MB limit" })
       }
 
@@ -1261,7 +1368,7 @@ router.put(
           .json({ error: `Invalid filetype: ${file.originalname}` })
       }
 
-      const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
+      const cueType = getCueTypeFromScreen(screen, presentation!.screenCount)
 
       if (cueType === "audio") {
         if (hasMedia && !isAudioMimeType(mediaMimeType)) {
@@ -1291,7 +1398,7 @@ router.put(
           spanScreens,
           screen,
           cueType,
-          presentation.screenCount
+          presentation!.screenCount
         )
       ) {
         return res.status(400).json({
@@ -1309,7 +1416,7 @@ router.put(
 
       if (
         hasPositionConflict(
-          presentation.cues,
+          presentation!.cues,
           index,
           screen,
           layer,
@@ -1323,7 +1430,7 @@ router.put(
       }
 
       // Same id as the library entry => same storage key => one shared object.
-      const fileObject = libraryEntry
+      const fileObject: CueFile = libraryEntry
         ? {
             id: libraryEntry.id,
             name: libraryEntry.name,
@@ -1342,8 +1449,8 @@ router.put(
             ...(driveId && { driveId }),
           }
 
-      const updatedPresentation = await Presentation.findByIdAndUpdate(
-        presentation._id,
+      const updatedPresentation = (await Presentation.findByIdAndUpdate(
+        presentation!._id,
         {
           $push: {
             cues: {
@@ -1362,20 +1469,20 @@ router.put(
           },
         },
         { new: true }
-      )
+      ))!
 
-      if (user.driveToken) {
+      if (user!.driveToken) {
         if (file) {
           if (driveId) {
             updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
-              if (cue.file.id === fileId) {
+              if (cue.file?.id === fileId) {
                 cue.file.driveId = driveId
               }
               return cue
             })
           } else {
             const fileName = `${id}/${fileId}`
-            const driveToken = user.driveToken
+            const driveToken = user!.driveToken
             const driveResponse = await uploadDriveFile(
               file.buffer,
               fileName,
@@ -1384,15 +1491,15 @@ router.put(
             )
 
             updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
-              if (cue.file.id === fileId) {
-                cue.file.driveId = driveResponse.id
+              if (cue.file?.id === fileId) {
+                cue.file.driveId = driveResponse.id as string
               }
               return cue
             })
           }
         }
 
-        const driveToken = user.driveToken
+        const driveToken = user!.driveToken
         updatedPresentation.cues = await processDriveCueFiles(
           updatedPresentation.cues,
           driveToken
@@ -1442,7 +1549,7 @@ router.put(
       }
 
       let modified = false
-      for (const cue of presentation.cues) {
+      for (const cue of presentation!.cues) {
         if (cue.index > startIndex) {
           if (direction === "left") {
             cue.index = Number(cue.index) - 1
@@ -1455,7 +1562,7 @@ router.put(
       }
 
       if (modified) {
-        await presentation.save({ validateModifiedOnly: true })
+        await presentation!.save({ validateModifiedOnly: true })
       }
 
       res.json({ shifted: modified })
@@ -1494,7 +1601,7 @@ router.put(
       const parsedSecondIndex = Number(secondIndex)
       const parsedSecondScreen = Number(secondScreen)
       const parsedSecondLayer = Number(secondLayer ?? 0)
-      const maxScreen = presentation.screenCount + 1
+      const maxScreen = presentation!.screenCount + 1
 
       // Validate request payload.
       if (
@@ -1529,9 +1636,9 @@ router.put(
 
       if (
         parsedFirstIndex < 0 ||
-        parsedFirstIndex >= presentation.indexCount ||
+        parsedFirstIndex >= presentation!.indexCount ||
         parsedSecondIndex < 0 ||
-        parsedSecondIndex >= presentation.indexCount ||
+        parsedSecondIndex >= presentation!.indexCount ||
         parsedFirstScreen < 1 ||
         parsedFirstScreen > maxScreen ||
         parsedSecondScreen < 1 ||
@@ -1541,8 +1648,11 @@ router.put(
       }
 
       // Resolve and validate the cues being swapped.
-      const firstCue = presentation.cues.id(firstCueId)
-      const secondCue = presentation.cues.id(secondCueId)
+      // @ts-expect-error -- cues.id() lives on the Mongoose DocumentArray at
+      // runtime; Cue[] (the read-side type) doesn't declare it.
+      const firstCue: Cue = presentation!.cues.id(firstCueId)
+      // @ts-expect-error -- same as above.
+      const secondCue: Cue = presentation!.cues.id(secondCueId)
 
       if (!firstCue || !secondCue) {
         return res.status(404).json({ error: "Cue not found" })
@@ -1550,18 +1660,18 @@ router.put(
 
       const firstTargetCueType = getCueTypeFromScreen(
         parsedFirstScreen,
-        presentation.screenCount
+        presentation!.screenCount
       )
       const secondTargetCueType = getCueTypeFromScreen(
         parsedSecondScreen,
-        presentation.screenCount
+        presentation!.screenCount
       )
       const firstCurrentCueType =
         firstCue.cueType ??
-        getCueTypeFromScreen(firstCue.screen, presentation.screenCount)
+        getCueTypeFromScreen(firstCue.screen, presentation!.screenCount)
       const secondCurrentCueType =
         secondCue.cueType ??
-        getCueTypeFromScreen(secondCue.screen, presentation.screenCount)
+        getCueTypeFromScreen(secondCue.screen, presentation!.screenCount)
       const firstCueMatchesTargetRow =
         firstCurrentCueType === firstTargetCueType
       const secondCueMatchesTargetRow =
@@ -1587,7 +1697,7 @@ router.put(
       // Reject swaps that would collide with a third cue.
       if (
         hasSwapTargetConflict(
-          presentation.cues,
+          presentation!.cues,
           firstCueId,
           secondCueId,
           parsedFirstIndex,
@@ -1618,13 +1728,13 @@ router.put(
       secondCue.layer = parsedSecondLayer
       secondCue.spanScreens = undefined
 
-      await presentation.save({ validateModifiedOnly: true })
+      await presentation!.save({ validateModifiedOnly: true })
 
       // Rehydrate file URLs for the response.
-      if (user.driveToken) {
+      if (user!.driveToken) {
         const [updatedFirstCue, updatedSecondCue] = await processDriveCueFiles(
           [firstCue, secondCue],
-          user.driveToken
+          user!.driveToken
         )
         return res.json({
           firstCue: updatedFirstCue,
@@ -1711,7 +1821,7 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
-      const audioRow = getAudioRow(presentation.screenCount)
+      const audioRow = getAudioRow(presentation!.screenCount)
 
       if (screen < 1 || screen > audioRow) {
         return res.status(400).json({
@@ -1719,13 +1829,13 @@ router.put(
         })
       }
 
-      if (index < 0 || index >= presentation.indexCount) {
+      if (index < 0 || index >= presentation!.indexCount) {
         return res.status(400).json({
-          error: `Invalid cue index: ${index}. Index must be between 0 and ${presentation.indexCount - 1}.`,
+          error: `Invalid cue index: ${index}. Index must be between 0 and ${presentation!.indexCount - 1}.`,
         })
       }
 
-      const cueType = getCueTypeFromScreen(screen, presentation.screenCount)
+      const cueType = getCueTypeFromScreen(screen, presentation!.screenCount)
 
       if (cueType === "audio") {
         if (file && !isAudioMimeType(file.mimetype)) {
@@ -1742,7 +1852,9 @@ router.put(
         }
       }
 
-      const cue = presentation.cues.id(cueId)
+      // @ts-expect-error -- cues.id() lives on the Mongoose DocumentArray at
+      // runtime; Cue[] (the read-side type) doesn't declare it.
+      const cue: Cue = presentation!.cues.id(cueId)
       if (!cue) {
         return res.status(404).json({ error: "Cue not found" })
       }
@@ -1762,7 +1874,7 @@ router.put(
           spanScreens,
           screen,
           cueType,
-          presentation.screenCount
+          presentation!.screenCount
         )
       ) {
         return res.status(400).json({
@@ -1784,7 +1896,7 @@ router.put(
 
       if (
         hasPositionConflict(
-          presentation.cues,
+          presentation!.cues,
           index,
           screen,
           layer,
@@ -1830,22 +1942,22 @@ router.put(
         cue.file = null
       }
 
-      if (user.driveToken) {
+      if (user!.driveToken) {
         if (file) {
           const newFileId = generateFileId()
 
           // The library owns the bytes of a cue created from it; only an
           // explicit library delete may remove them. Never true for a legacy
           // cue, whose id is not in `media`.
-          const isLibraryOwned = (presentation.media || []).some(
+          const isLibraryOwned = (presentation!.media || []).some(
             (item) => item.id === cue.file?.id
           )
 
           if (cue.file && cue.file.url && !isLibraryOwned) {
-            const driveToken = user.driveToken
+            const driveToken = user!.driveToken
             if (cue.file.driveId) {
-              const sameFileCount = presentation.cues.filter(
-                (c) => c.file?.driveId === cue.file.driveId
+              const sameFileCount = presentation!.cues.filter(
+                (c) => c.file?.driveId === cue.file!.driveId
               ).length
 
               if (sameFileCount === 0) {
@@ -1855,7 +1967,7 @@ router.put(
           }
           try {
             const fileName = `${id}/${newFileId}`
-            const driveToken = user.driveToken
+            const driveToken = user!.driveToken
             const driveResponse = await uploadDriveFile(
               file.buffer,
               fileName,
@@ -1863,15 +1975,15 @@ router.put(
               driveToken
             )
 
-            cue.file.driveId = driveResponse.id
+            cue.file!.driveId = driveResponse.id as string
           } catch (error) {
             logger.error("File upload error:", error)
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save({ validateModifiedOnly: true })
+        await presentation!.save({ validateModifiedOnly: true })
 
-        const driveToken = user.driveToken
+        const driveToken = user!.driveToken
         const updatedCue = await processDriveCueFiles([cue], driveToken)
         res.json(updatedCue[0])
       } else {
@@ -1880,7 +1992,7 @@ router.put(
 
           // See the Drive branch above: a library-owned object outlives the
           // cue that referenced it.
-          const isLibraryOwned = (presentation.media || []).some(
+          const isLibraryOwned = (presentation!.media || []).some(
             (item) => item.id === cue.file?.id
           )
 
@@ -1904,7 +2016,7 @@ router.put(
             return res.status(500).json({ error: "File upload failed" })
           }
         }
-        await presentation.save({ validateModifiedOnly: true })
+        await presentation!.save({ validateModifiedOnly: true })
 
         const updatedCue = await processS3Files([cue], id)
         res.json(updatedCue[0])
@@ -1927,9 +2039,9 @@ router.delete(
       const { cueId } = req.params
       const { user, presentation } = req
       const updatedPresentation = await deleteObject(
-        presentation._id,
+        presentation!._id,
         cueId,
-        user.driveToken
+        user!.driveToken
       )
 
       if (!updatedPresentation) {
@@ -1944,4 +2056,4 @@ router.delete(
   }
 )
 
-module.exports = router
+export = router

@@ -4,18 +4,31 @@
  * The routes interact with the Presentation model to perform database operations and return JSON responses.
  * Input validation is included to ensure that required fields are present and meet specified criteria.
  */
+import express from "express"
 
-const express = require("express")
-const {
-  userExtractor,
-  requirePresentationAccess,
-} = require("../utils/middleware")
-const Presentation = require("../models/presentation")
-const { generateSignedUrlForS3 } = require("../utils/helper")
+import { userExtractor, requirePresentationAccess } from "../utils/middleware"
+import Presentation from "../models/presentation"
+import { generateSignedUrlForS3 } from "../utils/helper"
+import type { UserDocument } from "../types"
 
 const router = express.Router()
 
-const getPreviewCue = (presentation) =>
+interface PreviewCue {
+  cueType: string
+  screen: number
+  spanScreens?: number[]
+  index: number
+  layer?: number
+  file?: { driveId?: string; id?: string; url?: string } | null
+}
+
+interface PreviewablePresentation {
+  cues: PreviewCue[]
+  id: string
+  [key: string]: unknown
+}
+
+const getPreviewCue = (presentation: PreviewablePresentation) =>
   presentation.cues
     .filter(
       (cue) =>
@@ -28,7 +41,10 @@ const getPreviewCue = (presentation) =>
         Number(first.layer ?? 0) - Number(second.layer ?? 0)
     )[0]
 
-const addPreviewCue = async (presentation, user) => {
+const addPreviewCue = async (
+  presentation: { toJSON: () => PreviewablePresentation },
+  user: UserDocument
+) => {
   const result = presentation.toJSON()
   const previewCue = getPreviewCue(result)
 
@@ -80,7 +96,10 @@ router.get(
   requirePresentationAccess,
   async (req, res) => {
     const { presentation } = req
-    return res.json(presentation.toJSON())
+    // requirePresentationAccess guarantees req.presentation is set before
+    // this handler runs; TS can't see across middleware, hence the assertion
+    // (here and at every other `presentation!`/`user!` in this layer).
+    return res.json(presentation!.toJSON())
   }
 )
 
@@ -171,9 +190,9 @@ router.put(
           .json({ error: "description must be at most 500 characters long" })
       }
 
-      presentation.name = trimmedName
-      presentation.description = trimmedDescription
-      const updatedPresentation = await presentation.save({
+      presentation!.name = trimmedName
+      presentation!.description = trimmedDescription
+      const updatedPresentation = await presentation!.save({
         validateModifiedOnly: true,
       })
 
@@ -184,4 +203,4 @@ router.put(
   }
 )
 
-module.exports = router
+export = router

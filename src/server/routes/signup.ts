@@ -4,17 +4,17 @@
  * The routes interact with the User model to perform database operations and return JSON responses.
  * Error handling is included to manage invalid input and other issues that may arise during the signup process.
  */
+import express from "express"
 
-const express = require("express")
-const { validatePassword, generateHash } = require("../utils/auth")
-const User = require("../models/user")
-const {
+import { validatePassword, generateHash } from "../utils/auth"
+import User from "../models/user"
+import {
   minUsernameLength,
   maxUsernameLength,
   usernameAllowedCharsRegex,
   usernameStartEndRegex,
   usernameConsecutiveSpecialsRegex,
-} = require("../../constants.js")
+} from "../../constants.js"
 
 const router = express.Router()
 
@@ -102,4 +102,4 @@ router.post("/", async (req, res, next) => {
   }
 })
 
-module.exports = router
+export = router

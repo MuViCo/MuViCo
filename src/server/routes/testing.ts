@@ -1,6 +1,9 @@
-const router = require("express").Router()
-const Presentation = require("../models/presentation")
-const User = require("../models/user")
+import express from "express"
+
+import Presentation from "../models/presentation"
+import User from "../models/user"
+
+const router = express.Router()
 
 router.post("/reset", async (request, response) => {
   await Presentation.deleteMany({})
@@ -9,4 +12,4 @@ router.post("/reset", async (request, response) => {
   response.status(204).end()
 })
 
-module.exports = router
+export = router

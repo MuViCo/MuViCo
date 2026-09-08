@@ -3,20 +3,21 @@
  * It uses JWT for token generation and includes error handling for invalid credentials. The routes interact with the User model to retrieve user data and manage authentication state.
  * The Firebase route also handles linking legacy accounts based on email prefixes to ensure a smooth transition for users authenticating with Google.
  */
+import jwt from "jsonwebtoken"
+import express from "express"
 
-const jwt = require("jsonwebtoken")
-const express = require("express")
-const { checkPassword } = require("../utils/auth")
-const User = require("../models/user")
-const config = require("../utils/config")
-const verifyToken = require("../utils/verifyToken")
-const { generateUniqueUsername } = require("../utils/username")
-const {
+import { checkPassword } from "../utils/auth"
+import User from "../models/user"
+import * as config from "../utils/config"
+import verifyToken from "../utils/verifyToken"
+import { generateUniqueUsername } from "../utils/username"
+import {
   REFRESH_TOKEN_COOKIE_NAME,
   hashToken,
   issueRefreshToken,
   clearRefreshTokenCookie,
-} = require("../utils/refreshToken")
+} from "../utils/refreshToken"
+import type { UserDocument } from "../types"
 
 const router = express.Router()
 
@@ -24,8 +25,8 @@ const router = express.Router()
 // what keeps users logged in longer.
 const ACCESS_TOKEN_EXPIRES_IN_SECONDS = 60 * 60 // 1 hour
 
-const signAccessToken = (user) =>
-  jwt.sign({ username: user.username, id: user._id }, config.SECRET, {
+const signAccessToken = (user: UserDocument) =>
+  jwt.sign({ username: user.username, id: user._id }, config.SECRET as string, {
     expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS,
   })
 
@@ -34,11 +35,13 @@ router.post("/", async (req, res) => {
 
   const user = await User.findOne({ username })
   /**
-   
+
 Checks if the entered password is correct for the given user.*
 @type {boolean}*/
   const passwordCorrect =
-    user === null ? false : await checkPassword(password, user.passwordHash)
+    user === null
+      ? false
+      : await checkPassword(password, user.passwordHash as string)
 
   if (!(user && passwordCorrect)) {
     return res.status(401).json({
@@ -52,7 +55,9 @@ Checks if the entered password is correct for the given user.*
   return res.status(200).send({
     token,
     username: user.username,
-    name: user.name,
+    // TODO(ts): user.name isn't a field on UserAttrs -- it never was, this
+    // response has always sent `name: undefined`. Preserved as-is.
+    name: (user as unknown as { name?: string }).name,
     isAdmin: user.isAdmin,
     id: user.id,
     driveToken: user.driveToken || null,
@@ -61,7 +66,9 @@ Checks if the entered password is correct for the given user.*
 
 router.post("/firebase", verifyToken, async (req, res) => {
   const { driveAccessToken } = req.body
-  const { uid, email } = req.user
+  // TODO(ts): see utils/verifyToken.ts -- req.user here is a Firebase
+  // DecodedIdToken, not the UserDocument the shared Request.user type says.
+  const { uid, email } = req.user as unknown as { uid: string; email?: string }
 
   try {
     let user = await User.findOne({ firebaseUid: uid })
@@ -104,13 +111,13 @@ router.post("/firebase", verifyToken, async (req, res) => {
     return res.status(200).send({
       token,
       username: user.username,
-      name: user.name,
+      name: (user as unknown as { name?: string }).name,
       isAdmin: user.isAdmin,
       id: user._id,
       driveToken: user.driveToken,
     })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: (error as Error).message })
   }
 })
 
@@ -152,4 +159,4 @@ router.post("/logout", async (req, res) => {
   return res.status(204).end()
 })
 
-module.exports = router
+export = router

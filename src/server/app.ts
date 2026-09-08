@@ -1,43 +1,61 @@
-const express = require("express")
-const cookieParser = require("cookie-parser")
-const cors = require("cors")
-const morgan = require("morgan")
-const mongoose = require("mongoose")
-const path = require("path")
-const config = require("./utils/config")
+import express from "express"
+import cookieParser from "cookie-parser"
+import cors from "cors"
+import morgan from "morgan"
+import mongoose from "mongoose"
+import path from "path"
 
-const logger = require("./utils/logger")
+import * as config from "./utils/config"
+import * as logger from "./utils/logger"
 
-const signupRouter = require("./routes/signup")
-const loginRouter = require("./routes/login")
-const presentationsRouter = require("./routes/presentations")
-const presentationRouter = require("./routes/presentation")
-const termsRouter = require("./routes/terms")
-const adminRouter = require("./routes/admin")
-const middleware = require("./utils/middleware")
-const driveProxy = require("./routes/driveProxy")
-const usersRouter = require("./routes/users")
+import signupRouter from "./routes/signup"
+import loginRouter from "./routes/login"
+import presentationsRouter from "./routes/presentations"
+import presentationRouter from "./routes/presentation"
+import termsRouter from "./routes/terms"
+import adminRouter from "./routes/admin"
+import * as middleware from "./utils/middleware"
+import driveProxy from "./routes/driveProxy"
+import usersRouter from "./routes/users"
+// Statically imported rather than required only under NODE_ENV=test, like
+// the original: it's still mounted only in the test branch below, and a
+// static import is what a CommonJS-target `import` lowers to anyway --
+// there's no bundle size to save by deferring it.
+import testingRouter from "./routes/testing"
+
+// Set by @shelf/jest-mongodb's globalSetup for the Backend test project.
+declare global {
+  var __MONGO_URI__: string | undefined
+}
 
 const app = express()
 
 mongoose.set("strictQuery", false)
 
-morgan.token("data", (req, res) => {
-  if (req === "POST") {
-    JSON.stringify(req.body)
+// Pre-existing dead code, left behaving exactly as before: the original
+// compared the whole request object to the string "POST" (always false,
+// which TS rejects outright -- no overlap between the two types), and even
+// with that fixed to req.method, the JSON.stringify result was never
+// returned. So this token has always logged "undefined" regardless of
+// method; fixing either half would start actually logging request bodies,
+// which is a behaviour change and arguably not one to make silently here.
+morgan.token("data", (req) => {
+  if (req.method === "POST") {
+    JSON.stringify((req as express.Request).body)
   }
+  return undefined
 })
 
 if (process.env.NODE_ENV === "test" && global.__MONGO_URI__) {
   mongoose.connect(global.__MONGO_URI__)
 } else {
   mongoose
-    .connect(config.MONGODB_URI)
+    .connect(config.MONGODB_URI as string)
     .then(() => {
       logger.info("connected to MongoDB")
     })
     .catch((error) => {
-      logger.error("error connection to MongoDB:", error.message)
+      logger.error("error connection to MongoDB:", (error as Error).message)
     })
 }
 
@@ -72,11 +90,10 @@ if (process.env.NODE_ENV === "production") {
 }
 
 if (process.env.NODE_ENV === "test") {
-  const testingRouter = require("./routes/testing")
   app.use("/api/testing", testingRouter)
 }
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
 
-module.exports = app
+export = app
