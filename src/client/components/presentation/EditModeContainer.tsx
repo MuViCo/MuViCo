@@ -5,7 +5,8 @@
  * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Box, Button, FormLabel, HStack, Select } from "@chakra-ui/react"
+import { Box, Button, FormLabel, HStack, Icon, Select } from "@chakra-ui/react"
+import { FiPlay } from "react-icons/fi"
 import "react-grid-layout/css/styles.css"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { laneScreenFromKey } from "../utils/laneFocus"
@@ -18,6 +19,7 @@ import ClickablePopover from "../utils/ClickablePopover"
 import EditMode from "./EditMode"
 import EditorDock from "./EditorDock"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
+import CueAudioPlayers from "./CueAudioPlayers"
 import PresentationTitle from "./PresentationTitle"
 import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
@@ -27,6 +29,7 @@ import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
+import ShowMode from "./ShowMode"
 import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
@@ -60,6 +63,9 @@ interface EditModeContainerProps {
    */
   updateCue: (direction: "Next" | "Previous") => void
   isAudioMode?: boolean
+  isShowMode?: boolean
+  onEnterShow?: () => void
+  onExitShow?: () => void
 }
 
 interface AudioTrack {
@@ -97,6 +103,7 @@ interface EditorLayoutProps
   focusedScreen: number | null
   onFocusLane: (laneKey: string | null) => void
   onSelectFrame: (index: number) => void
+  onEnterShow: () => void
 }
 
 // Base component for different subcomponents of the editor
@@ -140,6 +147,7 @@ function EditorLayout(props: EditorLayoutProps) {
     focusedScreen,
     onFocusLane,
     onSelectFrame,
+    onEnterShow,
   } = props
 
   useEffect(() => {
@@ -232,13 +240,23 @@ function EditorLayout(props: EditorLayoutProps) {
             <PresentationTitle id={id} presentationName={presentationName} />
           </Box>
         </HStack>
-        <Button
-          className="edit-mode-btn edit-mode-btn-tutorial"
-          variant="muvico-secondary"
-          onClick={onOpenTutorial}
-        >
-          Tutorial
-        </Button>
+        <HStack spacing={2}>
+          <Button
+            className="edit-mode-btn edit-mode-btn-tutorial"
+            variant="muvico-secondary"
+            onClick={onOpenTutorial}
+          >
+            Tutorial
+          </Button>
+          <Button
+            className="edit-mode-btn"
+            variant="muvico-primary"
+            leftIcon={<Icon as={FiPlay} />}
+            onClick={onEnterShow}
+          >
+            Show mode
+          </Button>
+        </HStack>
       </Box>
       <div
         id="screen_preview"
@@ -290,6 +308,7 @@ function EditorLayout(props: EditorLayoutProps) {
           audioLoop={audioLoop}
           audioTracks={audioTracks as never[]}
           allowContinuousAudio={allowContinuousAudio}
+          renderAudioPlayers={false}
         />
         <Box className="editor-save-status">
           <StatusTooltip />
@@ -396,6 +415,9 @@ const EditModeContainer = ({
   cueData,
   updateCue,
   isAudioMode,
+  isShowMode = false,
+  onEnterShow = () => {},
+  onExitShow = () => {},
 }: EditModeContainerProps) => {
   const editModeBackground = "var(--muvico-canvas)"
   const panelBackground = "var(--muvico-surface)"
@@ -443,6 +465,7 @@ const EditModeContainer = ({
   const [autoplayEnded, setAutoplayEnded] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
+  const [isBlackout, setIsBlackout] = useState(false)
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
@@ -667,6 +690,10 @@ const EditModeContainer = ({
   }, [])
 
   useEffect(() => {
+    if (!isShowMode) setIsBlackout(false)
+  }, [isShowMode])
+
+  useEffect(() => {
     const previousBodyBackgroundColor = document.body.style.backgroundColor
     const previousBodyBackgroundImage = document.body.style.backgroundImage
 
@@ -684,45 +711,78 @@ const EditModeContainer = ({
 
   return (
     <>
-      <EditorLayout
-        id={id}
-        presentationName={presentationName}
-        screenCount={screenCount ?? 1}
-        scores={presentation.scores}
-        focusedLaneKey={focusedLaneKey}
-        focusedScreen={focusedScreen}
-        onFocusLane={setFocusedLaneKey}
-        onSelectFrame={setCueIndex}
-        cues={cues}
-        isToolboxOpen={isToolboxOpen}
-        setIsToolboxOpen={setIsToolboxOpen}
-        cueIndex={cueIndex}
-        isAudioMuted={isAudioMuted}
-        toggleAudioMute={toggleAudioMute}
-        indexCount={indexCount}
-        addCue={addCue}
-        onClose={onClose}
-        position={position}
-        cueData={cueData}
-        updateCue={updateCue}
-        isAudioMode={isAudioMode}
-        transitionType={transitionType}
-        onTransitionChange={onTransitionChange}
-        screens={screens}
-        toggleScreenVisibility={toggleScreenVisibility}
-        toggleAllScreens={toggleAllScreens}
-        autoplayInterval={autoplayInterval}
-        toggleAutoplay={toggleAutoplay}
+      {isShowMode ? (
+        <ShowMode
+          presentationName={presentationName}
+          screenCount={screenCount ?? 1}
+          scores={presentation.scores}
+          cueIndex={cueIndex}
+          indexCount={indexCount}
+          screens={screens}
+          audioTracks={currentAudioTracks}
+          autoplayInterval={autoplayInterval}
+          isAutoplaying={isAutoplaying}
+          isBlackout={isBlackout}
+          getActiveCuesForScreen={getActiveCuesForScreen}
+          onSetCueIndex={setCueIndex}
+          onPrevious={() => updateCue("Previous")}
+          onNext={() => updateCue("Next")}
+          onToggleAutoplay={toggleAutoplay}
+          onToggleBlackout={() => setIsBlackout((active) => !active)}
+          onToggleScreen={toggleScreenVisibility}
+          onExit={() => {
+            setIsBlackout(false)
+            onExitShow()
+          }}
+        />
+      ) : (
+        <EditorLayout
+          id={id}
+          presentationName={presentationName}
+          screenCount={screenCount ?? 1}
+          scores={presentation.scores}
+          focusedLaneKey={focusedLaneKey}
+          focusedScreen={focusedScreen}
+          onFocusLane={setFocusedLaneKey}
+          onSelectFrame={setCueIndex}
+          onEnterShow={onEnterShow}
+          cues={cues}
+          isToolboxOpen={isToolboxOpen}
+          setIsToolboxOpen={setIsToolboxOpen}
+          cueIndex={cueIndex}
+          isAudioMuted={isAudioMuted}
+          toggleAudioMute={toggleAudioMute}
+          indexCount={indexCount}
+          addCue={addCue}
+          onClose={onClose}
+          position={position}
+          cueData={cueData}
+          updateCue={updateCue}
+          isAudioMode={isAudioMode}
+          transitionType={transitionType}
+          onTransitionChange={onTransitionChange}
+          screens={screens}
+          toggleScreenVisibility={toggleScreenVisibility}
+          toggleAllScreens={toggleAllScreens}
+          autoplayInterval={autoplayInterval}
+          toggleAutoplay={toggleAutoplay}
+          isAutoplaying={isAutoplaying}
+          toggleAutoplayInterval={toggleAutoplayInterval}
+          onOpenTutorial={handleOpenTutorial}
+          audioSourceURL={currentAudioSrc}
+          audioLoop={currentAudioLoop}
+          audioTracks={currentAudioTracks}
+          allowContinuousAudio={autoplayEnded}
+          editModeBackground={editModeBackground}
+          panelBackground={panelBackground}
+          panelBorderColor={panelBorderColor}
+        />
+      )}
+
+      <CueAudioPlayers
+        tracks={currentAudioTracks}
         isAutoplaying={isAutoplaying}
-        toggleAutoplayInterval={toggleAutoplayInterval}
-        onOpenTutorial={handleOpenTutorial}
-        audioSourceURL={currentAudioSrc}
-        audioLoop={currentAudioLoop}
-        audioTracks={currentAudioTracks}
         allowContinuousAudio={autoplayEnded}
-        editModeBackground={editModeBackground}
-        panelBackground={panelBackground}
-        panelBorderColor={panelBorderColor}
       />
 
       <TutorialGuide
@@ -749,6 +809,7 @@ const EditModeContainer = ({
             transitionType={transitionType}
             screenWidths={screenWidths}
             onWidthChange={handleScreenWidthChange}
+            isBlackout={isBlackout}
           />
         )
       })}

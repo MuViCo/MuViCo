@@ -16,7 +16,7 @@ import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
-import { isType } from "../utils/fileTypeUtils"
+import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 
@@ -205,21 +205,6 @@ export const ScreensDisplay = ({
       return acc
     }, {})
   }, [cues])
-
-  const getCleanUrl = (file?: CueFileMeta | null): string => {
-    const url = file?.url || ""
-    return String(url).split("?")[0].split("#")[0]
-  }
-
-  const isImageFile = (file?: CueFileMeta | null): boolean => {
-    if (isType.image(file)) return true
-    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file)) // check common image file extensions
-  }
-
-  const isVideoFile = (file?: CueFileMeta | null): boolean => {
-    if (isType.video(file)) return true
-    return /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file)) // check common video file extensions
-  }
 
   const getCurrentCueStackForScreen = (screenNumber: number): Cue[] => {
     const cuesOnScreen = screenSortedCuesByScreen[Number(screenNumber)] || []

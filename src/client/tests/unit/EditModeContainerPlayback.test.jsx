@@ -83,6 +83,7 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
     )
   }
 })
+jest.mock("../../components/presentation/CueAudioPlayers", () => () => null)
 
 // makeResizable returns a disposer the caller must invoke on unmount.
 jest.mock("../../components/utils/ResizeElement", () =>

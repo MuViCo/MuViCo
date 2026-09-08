@@ -137,6 +137,40 @@ describe("Screen", () => {
     })
   })
 
+  test("covers the output with black without removing the current cue", async () => {
+    const screenData = {
+      file: null,
+      color: "#ff00ff",
+      index: 0,
+      name: "color cue",
+      screen: 1,
+      _id: "color-cue",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          isBlackout={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    await waitFor(() => {
+      expect(
+        within(popup.document.body).getByTestId("screen-blackout")
+      ).toBeTruthy()
+      expect(
+        within(popup.document.body).getByTestId("incoming-cue-layer")
+      ).toBeTruthy()
+    })
+  })
+
   test("renders a color background when cue has no file but has color", async () => {
     const screenData = {
       file: null,

@@ -109,7 +109,10 @@ describe("ScorePdfViewer", () => {
     } as unknown as typeof ResizeObserver
     Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
       configurable: true,
-      value: jest.fn(() => ({ setTransform: jest.fn() })),
+      value: jest.fn(() => ({
+        setTransform: jest.fn(),
+        drawImage: jest.fn(),
+      })),
     })
   })
 
