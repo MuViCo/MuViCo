@@ -5,7 +5,7 @@
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const jwt = require("jsonwebtoken")
-const { generateHash } = require("../utils/auth.js")
+const { generateHash } = require("../utils/auth")
 const { hashToken } = require("../utils/refreshToken")
 const User = require("../models/user")
 const app = require("../app")

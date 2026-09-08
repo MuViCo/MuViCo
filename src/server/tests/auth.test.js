@@ -2,7 +2,7 @@
  * Authentication utility tests.
  * Verifies password validation boundaries, unsupported characters, and accepted character set.
  */
-const { validatePassword } = require("../utils/auth.js")
+const { validatePassword } = require("../utils/auth")
 const { minPwLength, maxPwLength } = require("../../constants.js")
 
 describe("Password validation", () => {

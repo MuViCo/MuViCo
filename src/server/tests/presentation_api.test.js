@@ -14,7 +14,7 @@ const {
   GetObjectCommand,
   HeadObjectCommand,
 } = require("@aws-sdk/client-s3")
-const { generateHash } = require("../utils/auth.js")
+const { generateHash } = require("../utils/auth")
 const jwt = require("jsonwebtoken")
 const config = require("../utils/config")
 const Presentation = require("../models/presentation")

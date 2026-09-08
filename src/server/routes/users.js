@@ -14,7 +14,7 @@ const {
   maxPwLength,
   invalidPwCharRegex,
 } = require("../../constants.js")
-const { generateHash, checkPassword } = require("../utils/auth.js")
+const { generateHash, checkPassword } = require("../utils/auth")
 
 const logger = require("../utils/logger")
 

@@ -6,7 +6,7 @@
  */
 
 const express = require("express")
-const { validatePassword, generateHash } = require("../utils/auth.js")
+const { validatePassword, generateHash } = require("../utils/auth")
 const User = require("../models/user")
 const {
   minUsernameLength,

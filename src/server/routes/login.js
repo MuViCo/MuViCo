@@ -6,7 +6,7 @@
 
 const jwt = require("jsonwebtoken")
 const express = require("express")
-const { checkPassword } = require("../utils/auth.js")
+const { checkPassword } = require("../utils/auth")
 const User = require("../models/user")
 const config = require("../utils/config")
 const verifyToken = require("../utils/verifyToken")
