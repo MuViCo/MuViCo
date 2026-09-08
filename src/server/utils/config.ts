@@ -2,34 +2,21 @@
  * Configuration utility for server environment variables.
  * Loads .env values and exposes runtime config, including test-safe MongoDB URI selection.
  */
-require("dotenv").config()
+import dotenv from "dotenv"
 
-const {
-  PORT,
-  SECRET,
-  BUCKET_NAME,
-  BUCKET_REGION,
-  ACCESS_KEY,
-  SECRET_ACCESS_KEY,
-  PUBLIC_S3_ENDPOINT,
-  PRIVATE_S3_ENDPOINT,
-  FIREBASE_SERVICE_KEY,
-} = process.env
+dotenv.config()
 
-const MONGODB_URI =
+export const PORT = process.env.PORT
+export const SECRET = process.env.SECRET
+export const BUCKET_NAME = process.env.BUCKET_NAME
+export const BUCKET_REGION = process.env.BUCKET_REGION
+export const ACCESS_KEY = process.env.ACCESS_KEY
+export const SECRET_ACCESS_KEY = process.env.SECRET_ACCESS_KEY
+export const PUBLIC_S3_ENDPOINT = process.env.PUBLIC_S3_ENDPOINT
+export const PRIVATE_S3_ENDPOINT = process.env.PRIVATE_S3_ENDPOINT
+export const FIREBASE_SERVICE_KEY = process.env.FIREBASE_SERVICE_KEY
+
+export const MONGODB_URI =
   process.env.NODE_ENV === "test"
     ? process.env.TEST_MONGODB_URI
     : process.env.MONGODB_URI
-
-module.exports = {
-  MONGODB_URI,
-  PORT,
-  SECRET,
-  BUCKET_NAME,
-  BUCKET_REGION,
-  ACCESS_KEY,
-  SECRET_ACCESS_KEY,
-  PUBLIC_S3_ENDPOINT,
-  PRIVATE_S3_ENDPOINT,
-  FIREBASE_SERVICE_KEY,
-}

@@ -14,9 +14,27 @@
  * Pure functions only, no database access: the script in ../scripts owns the
  * connection, so the decisions below can be unit-tested against plain objects.
  */
+import type { CueFile, MediaEntry } from "../types"
 
 const DEFAULT_MIME_TYPE = "image/jpeg"
 const DEFAULT_SIZE = "0"
+
+/*
+ * Read from the raw `presentations` collection (script.ts), not through the
+ * Presentation model, so fields are whatever the stored document actually
+ * has -- no schema defaults, no normalization hooks.
+ */
+interface RawCue {
+  file?: CueFile | null
+}
+
+interface RawPresentation {
+  _id: unknown
+  createdAt?: Date
+  lastUsed?: Date
+  cues?: RawCue[]
+  media?: MediaEntry[]
+}
 
 /**
  * Builds a library entry from a cue's stored file metadata.
@@ -24,8 +42,11 @@ const DEFAULT_SIZE = "0"
  * `url` is deliberately omitted: it is a presigned URL regenerated on every
  * read, and a cue's persisted copy of it is usually stale already.
  */
-const entryFromCueFile = (file, createdAt) => ({
-  id: file.id,
+export const entryFromCueFile = (
+  file: CueFile,
+  createdAt: Date | undefined
+): MediaEntry => ({
+  id: file.id as string,
   name: file.name || `file-${file.id}`,
   type: file.type || DEFAULT_MIME_TYPE,
   size: file.size || DEFAULT_SIZE,
@@ -39,14 +60,14 @@ const entryFromCueFile = (file, createdAt) => ({
  * Cues that share a file id -- which is what happens when the same pooled
  * media was dropped on several rows -- collapse into a single entry.
  */
-const backfillPresentationMedia = (presentation) => {
+export const backfillPresentationMedia = (presentation: RawPresentation) => {
   const cues = Array.isArray(presentation.cues) ? presentation.cues : []
   const media = Array.isArray(presentation.media) ? presentation.media : []
 
   const knownIds = new Set(media.map((item) => item.id).filter(Boolean))
   const createdAt = presentation.createdAt || presentation.lastUsed || undefined
 
-  const addedEntries = []
+  const addedEntries: MediaEntry[] = []
   let cuesWithFile = 0
   let cuesAlreadyInLibrary = 0
   let cuesSharingAddedId = 0
@@ -91,7 +112,9 @@ const backfillPresentationMedia = (presentation) => {
   }
 }
 
-const summarizeBackfill = (results) =>
+type BackfillResult = ReturnType<typeof backfillPresentationMedia>
+
+export const summarizeBackfill = (results: BackfillResult[]) =>
   results.reduce(
     (summary, result) => {
       summary.presentations += 1
@@ -122,9 +145,3 @@ const summarizeBackfill = (results) =>
       driveEntries: 0,
     }
   )
-
-module.exports = {
-  entryFromCueFile,
-  backfillPresentationMedia,
-  summarizeBackfill,
-}

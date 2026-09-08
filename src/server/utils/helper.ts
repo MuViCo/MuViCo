@@ -2,13 +2,28 @@
  * Helper utility for cue file URL enrichment.
  * Builds Drive proxy URLs and S3 signed URLs, then attaches file metadata for cue responses.
  */
-const { getDriveFileMetadata } = require("./drive")
-const { getObjectSignedUrl } = require("./s3")
-const { getFileSize, getFileType } = require("../utils/s3")
+import { getDriveFileMetadata } from "./drive"
+import { getObjectSignedUrl, getFileSize, getFileType } from "./s3"
 
-const logger = require("../utils/logger")
+import * as logger from "../utils/logger"
+import type { CueFile, MediaEntry, Score } from "../types"
 
-const generateDriveFileUrlForCue = async (cue, accessToken) => {
+/*
+ * Every function below reads/writes cue.file (or score.file / media entry)
+ * in place and returns the same object. Callers pass hydrated Mongoose
+ * subdocuments as often as plain objects, so the parameter types here are
+ * structural rather than the ../types Cue/Score/MediaEntry shapes directly:
+ * a generic keeps the caller's own (possibly more specific) type on the way
+ * out instead of widening it to the structural type on return.
+ */
+interface FileHolder {
+  file?: CueFile | null
+}
+
+const generateDriveFileUrlForCue = async <T extends FileHolder>(
+  cue: T,
+  accessToken: string
+) => {
   if (!cue.file) {
     return cue
   }
@@ -16,8 +31,8 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
   if (cue.file.driveId) {
     try {
       const metadata = await getDriveFileMetadata(cue.file.driveId, accessToken)
-      cue.file.type = metadata.mimeType
-      cue.file.size = metadata.size
+      cue.file.type = metadata.mimeType ?? undefined
+      cue.file.size = metadata.size ?? undefined
       const baseUrl =
         process.env.NODE_ENV === "production"
           ? "https://muvico.live"
@@ -32,7 +47,10 @@ const generateDriveFileUrlForCue = async (cue, accessToken) => {
   return cue
 }
 
-const processDriveCueFiles = async (cues, accessToken) => {
+export const processDriveCueFiles = async <T extends FileHolder>(
+  cues: T[],
+  accessToken: string
+) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
       await generateDriveFileUrlForCue(cue, accessToken)
@@ -43,15 +61,28 @@ const processDriveCueFiles = async (cues, accessToken) => {
   return processedCues
 }
 
-const generateDriveFileUrl = async (file, accessToken) => {
+// Operates on a flat file-shaped object directly (a MediaEntry, or a Cue's or
+// Score's *.file*), not a `{ file }` wrapper -- unlike the cue-processing
+// functions above, which take the cue and reach into cue.file themselves.
+interface DriveFileLike {
+  driveId?: string
+  type?: string
+  size?: string
+  url?: string
+}
+
+const generateDriveFileUrl = async <T extends DriveFileLike>(
+  file: T | null | undefined,
+  accessToken: string
+) => {
   if (!file?.driveId) {
     return file
   }
 
   try {
     const metadata = await getDriveFileMetadata(file.driveId, accessToken)
-    file.type = metadata.mimeType
-    file.size = metadata.size
+    file.type = metadata.mimeType ?? undefined
+    file.size = metadata.size ?? undefined
     const baseUrl =
       process.env.NODE_ENV === "production"
         ? "https://muvico.live"
@@ -65,7 +96,10 @@ const generateDriveFileUrl = async (file, accessToken) => {
   return file
 }
 
-const generateSignedUrlForS3 = async (cue, presentationId) => {
+export const generateSignedUrlForS3 = async <T extends FileHolder>(
+  cue: T,
+  presentationId: unknown
+) => {
   if (!cue.file?.id) {
     return cue
   }
@@ -76,7 +110,10 @@ const generateSignedUrlForS3 = async (cue, presentationId) => {
   return cue
 }
 
-const generateSignedScoreUrlForS3 = async (score, presentationId) => {
+const generateSignedScoreUrlForS3 = async (
+  score: Score,
+  presentationId: unknown
+) => {
   if (!score.file?.id) {
     return score
   }
@@ -88,18 +125,26 @@ const generateSignedScoreUrlForS3 = async (score, presentationId) => {
   return score
 }
 
-const processS3Files = async (cues, presentationId) => {
+interface ToObjectable {
+  toObject?: () => unknown
+}
+
+export const processS3Files = async <T extends FileHolder & ToObjectable>(
+  cues: T[],
+  presentationId: unknown
+) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
-      const cueObject =
+      const cueObject = (
         typeof cue?.toObject === "function" ? cue.toObject() : cue
+      ) as FileHolder
 
       if (!cueObject.file) {
         return cue
       }
 
       await generateSignedUrlForS3(cue, presentationId)
-      if (cue.file.url) {
+      if (cue.file?.url) {
         await getFileType(cue, presentationId)
         await getFileSize(cue, presentationId)
       }
@@ -115,7 +160,12 @@ const processS3Files = async (cues, presentationId) => {
  * path this does NOT issue HeadObject calls for type/size: both are recorded on
  * the entry when it is uploaded, so the extra round-trips would buy nothing.
  */
-const generateSignedMediaUrlForS3 = async (item, presentationId) => {
+export const generateSignedMediaUrlForS3 = async <
+  T extends { id?: string; url?: string },
+>(
+  item: T | null | undefined,
+  presentationId: unknown
+) => {
   if (!item?.id) {
     return item
   }
@@ -126,7 +176,10 @@ const generateSignedMediaUrlForS3 = async (item, presentationId) => {
   return item
 }
 
-const processS3MediaFiles = async (media, presentationId) => {
+export const processS3MediaFiles = async (
+  media: MediaEntry[] | null | undefined,
+  presentationId: unknown
+) => {
   return Promise.all(
     (media || []).map((item) =>
       generateSignedMediaUrlForS3(item, presentationId)
@@ -134,7 +187,10 @@ const processS3MediaFiles = async (media, presentationId) => {
   )
 }
 
-const processDriveMediaFiles = async (media, accessToken) => {
+export const processDriveMediaFiles = async (
+  media: MediaEntry[] | null | undefined,
+  accessToken: string
+) => {
   return Promise.all(
     (media || []).map(async (item) => {
       await generateDriveFileUrl(item, accessToken)
@@ -143,7 +199,10 @@ const processDriveMediaFiles = async (media, accessToken) => {
   )
 }
 
-const processS3ScoreFiles = async (scores, presentationId) => {
+export const processS3ScoreFiles = async (
+  scores: Score[],
+  presentationId: unknown
+) => {
   return Promise.all(
     scores.map(async (score) => {
       if (!score.file?.id) {
@@ -156,23 +215,14 @@ const processS3ScoreFiles = async (scores, presentationId) => {
   )
 }
 
-const processDriveScoreFiles = async (scores, accessToken) => {
+export const processDriveScoreFiles = async (
+  scores: Score[],
+  accessToken: string
+) => {
   return Promise.all(
     scores.map(async (score) => {
       await generateDriveFileUrl(score.file, accessToken)
       return score
     })
   )
-}
-
-module.exports = {
-  processDriveCueFiles,
-  processDriveMediaFiles,
-  generateSignedMediaUrlForS3,
-  processS3MediaFiles,
-  processDriveScoreFiles,
-  generateSignedUrlForS3,
-  generateSignedScoreUrlForS3,
-  processS3Files,
-  processS3ScoreFiles,
 }

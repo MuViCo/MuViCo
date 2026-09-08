@@ -1,19 +1,43 @@
-const { getAudioRow, getCueTypeFromScreen, getMaxLayers } = require("./cueType")
+import { getAudioRow, getCueTypeFromScreen, getMaxLayers } from "./cueType"
+import type { CueType } from "../types"
 
-const hasOwn = (object, key) =>
+/*
+ * Reads/writes the raw `presentations` collection (script.ts), not the
+ * Presentation model, so a legacy document's fields are exactly what's
+ * stored -- possibly missing cueType/layer/opacity/continuePlayback
+ * entirely, which is what this migration backfills.
+ */
+interface RawCue {
+  cueType?: string
+  layer?: unknown
+  opacity?: unknown
+  continuePlayback?: unknown
+  screen?: unknown
+  index?: unknown
+  [key: string]: unknown
+}
+
+interface RawPresentation {
+  _id: unknown
+  screenCount?: unknown
+  cues?: RawCue[]
+  [key: string]: unknown
+}
+
+const hasOwn = (object: object, key: string) =>
   Object.prototype.hasOwnProperty.call(object, key)
 
-const isFiniteNumber = (value) => Number.isFinite(Number(value))
-const isValidLayerNumber = (value) => Number.isInteger(Number(value))
+const isFiniteNumber = (value: unknown) => Number.isFinite(Number(value))
+const isValidLayerNumber = (value: unknown) => Number.isInteger(Number(value))
 
-const normalizeCue = (cue, screenCount) => {
-  const nextCue = { ...cue }
-  const changes = []
+export const normalizeCue = (cue: RawCue, screenCount: number) => {
+  const nextCue: RawCue = { ...cue }
+  const changes: string[] = []
 
-  const cueType =
+  const cueType: CueType =
     nextCue.cueType === "visual" || nextCue.cueType === "audio"
       ? nextCue.cueType
-      : getCueTypeFromScreen(nextCue.screen, screenCount)
+      : getCueTypeFromScreen(nextCue.screen as number, screenCount)
 
   if (nextCue.cueType !== cueType) {
     nextCue.cueType = cueType
@@ -65,21 +89,21 @@ const normalizeCue = (cue, screenCount) => {
   return { cue: nextCue, changes }
 }
 
-const normalizedSlotKey = (cue, screenCount) => {
-  const cueType =
+const normalizedSlotKey = (cue: RawCue, screenCount: number) => {
+  const cueType: CueType =
     cue.cueType === "visual" || cue.cueType === "audio"
       ? cue.cueType
-      : getCueTypeFromScreen(cue.screen, screenCount)
+      : getCueTypeFromScreen(cue.screen as number, screenCount)
   const screen =
     cueType === "audio" ? getAudioRow(screenCount) : Number(cue.screen)
   return [Number(cue.index), screen, Number(cue.layer ?? 0)].join(":")
 }
 
-const normalizePresentation = (presentation) => {
+export const normalizePresentation = (presentation: RawPresentation) => {
   const screenCount = Number(presentation.screenCount) || 1
   const cues = Array.isArray(presentation.cues) ? presentation.cues : []
-  const changedFields = new Set()
-  const slotCounts = new Map()
+  const changedFields = new Set<string>()
+  const slotCounts = new Map<string, number>()
 
   const normalizedCues = cues.map((cue) => {
     const result = normalizeCue(cue, screenCount)
@@ -104,7 +128,9 @@ const normalizePresentation = (presentation) => {
   }
 }
 
-const summarizeMigration = (results) => {
+type MigrationResult = ReturnType<typeof normalizePresentation>
+
+export const summarizeMigration = (results: MigrationResult[]) => {
   return results.reduce(
     (summary, result) => {
       summary.presentations += 1
@@ -125,13 +151,7 @@ const summarizeMigration = (results) => {
       cues: 0,
       changedPresentations: 0,
       duplicateSlots: 0,
-      changedFields: {},
+      changedFields: {} as Record<string, number>,
     }
   )
-}
-
-module.exports = {
-  normalizeCue,
-  normalizePresentation,
-  summarizeMigration,
 }

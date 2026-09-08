@@ -2,21 +2,21 @@
  * Authentication utility for password handling.
  * Validates password rules and provides bcrypt compare/hash helpers.
  */
-const bcrypt = require("bcrypt")
-const {
+import bcrypt from "bcrypt"
+import {
   minPwLength,
   maxPwLength,
   invalidPwCharRegex,
   saltRounds,
-} = require("../../constants.js")
+} from "../../constants.js"
 
-const validationError = (message) => {
+const validationError = (message: string) => {
   const error = new Error(message)
   error.name = "ValidationError"
   return error
 }
 
-const validatePassword = (password) => {
+export const validatePassword = (password: string) => {
   if (password.trim().length === 0) {
     throw validationError("password cannot contain only spaces")
   }
@@ -34,16 +34,15 @@ const validatePassword = (password) => {
   }
 }
 
-const checkPassword = (plaintextPassword, pwHash) => {
+// pwHash matches bcrypt.compare's own (data: string, encrypted: string)
+// signature -- callers with a possibly-undefined passwordHash (a
+// Firebase-only account has none) cast at the call site instead of this
+// function silently substituting a value bcrypt was never asked to compare
+// against.
+export const checkPassword = (plaintextPassword: string, pwHash: string) => {
   return bcrypt.compare(plaintextPassword, pwHash)
 }
 
-const generateHash = (plaintextPassword) => {
+export const generateHash = (plaintextPassword: string) => {
   return bcrypt.hash(plaintextPassword, saltRounds)
-}
-
-module.exports = {
-  validatePassword,
-  checkPassword,
-  generateHash,
 }

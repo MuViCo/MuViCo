@@ -2,11 +2,11 @@
  * Google Drive utility for cue media files.
  * Handles Drive authentication, MuViCo folder management, and file upload/delete/read operations.
  */
-const { google } = require("googleapis")
-const { OAuth2Client } = require("google-auth-library")
-const { Readable } = require("stream")
+import { google, type drive_v3 } from "googleapis"
+import { OAuth2Client } from "google-auth-library"
+import { Readable } from "stream"
 
-const logger = require("../utils/logger")
+import * as logger from "../utils/logger"
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
@@ -14,7 +14,10 @@ const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
 
 const oauth2Client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI)
 
-const driveAuth = (accessToken, refreshToken = null) => {
+export const driveAuth = (
+  accessToken: string,
+  refreshToken: string | null = null
+) => {
   oauth2Client.setCredentials({
     access_token: accessToken,
     refresh_token: refreshToken,
@@ -22,7 +25,7 @@ const driveAuth = (accessToken, refreshToken = null) => {
   return google.drive({ version: "v3", auth: oauth2Client })
 }
 
-const getOrCreateMuViCoFolder = async (drive) => {
+export const getOrCreateMuViCoFolder = async (drive: drive_v3.Drive) => {
   const query =
     "mimeType = 'application/vnd.google-apps.folder' and name = 'MuViCo' and trashed = false"
   const { data } = await drive.files.list({
@@ -43,18 +46,27 @@ const getOrCreateMuViCoFolder = async (drive) => {
   return res.data.id
 }
 
-const uploadDriveFile = async (fileBuffer, fileName, mimeType, accessToken) => {
+export const uploadDriveFile = async (
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  accessToken: string
+) => {
   const drive = driveAuth(accessToken)
   const folderId = await getOrCreateMuViCoFolder(drive)
   const stream = Readable.from(fileBuffer)
   try {
     const res = await drive.files.create({
-      requestBody: { name: fileName, mimeType, parents: [folderId] },
+      // TODO(ts): folderId is string | null | undefined per googleapis'
+      // types; the original JS passed it through unchecked and so does this.
+      requestBody: { name: fileName, mimeType, parents: [folderId as string] },
       media: { mimeType, body: stream },
       fields: "id",
     })
     await drive.permissions.create({
-      fileId: res.data.id,
+      // TODO(ts): same as above -- res.data.id is unchecked, matching the
+      // original.
+      fileId: res.data.id as string,
       requestBody: { role: "reader", type: "anyone" },
     })
     return res.data
@@ -64,7 +76,7 @@ const uploadDriveFile = async (fileBuffer, fileName, mimeType, accessToken) => {
   }
 }
 
-const deleteDriveFile = async (fileId, accessToken) => {
+export const deleteDriveFile = async (fileId: string, accessToken: string) => {
   const drive = driveAuth(accessToken)
   try {
     await drive.files.delete({ fileId })
@@ -75,7 +87,10 @@ const deleteDriveFile = async (fileId, accessToken) => {
   }
 }
 
-const getDriveFileMetadata = async (fileId, accessToken) => {
+export const getDriveFileMetadata = async (
+  fileId: string,
+  accessToken: string
+) => {
   const drive = driveAuth(accessToken)
   try {
     const res = await drive.files.get({
@@ -94,7 +109,10 @@ const getDriveFileMetadata = async (fileId, accessToken) => {
   }
 }
 
-const getDriveFileStream = async (fileId, accessToken) => {
+export const getDriveFileStream = async (
+  fileId: string,
+  accessToken: string
+) => {
   const drive = driveAuth(accessToken)
   try {
     const res = await drive.files.get(
@@ -106,13 +124,4 @@ const getDriveFileStream = async (fileId, accessToken) => {
     logger.error("Drive fetch file error:", error)
     throw error
   }
-}
-
-module.exports = {
-  driveAuth,
-  getOrCreateMuViCoFolder,
-  uploadDriveFile,
-  deleteDriveFile,
-  getDriveFileMetadata,
-  getDriveFileStream,
 }

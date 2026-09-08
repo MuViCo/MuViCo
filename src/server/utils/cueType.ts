@@ -2,11 +2,13 @@
  * Cue type utility for screen-based cue classification and MIME validation.
  * Defines allowed cue types and whitelisted MIME types for visual/audio media.
  */
-const VALID_CUE_TYPES = ["visual", "audio"]
+import type { CueType } from "../types"
 
-const MAX_VISUAL_LAYERS = 3
-const MAX_AUDIO_TRACKS = 2
-const getMaxLayers = (cueType) =>
+export const VALID_CUE_TYPES: CueType[] = ["visual", "audio"]
+
+export const MAX_VISUAL_LAYERS = 3
+export const MAX_AUDIO_TRACKS = 2
+export const getMaxLayers = (cueType: CueType) =>
   cueType === "audio" ? MAX_AUDIO_TRACKS : MAX_VISUAL_LAYERS
 
 const VALID_VIDEO_MIME_TYPES = ["video/mp4", "video/3gpp"]
@@ -24,15 +26,20 @@ const VALID_IMAGE_MIME_TYPES = [
 ]
 const VALID_AUDIO_MIME_TYPES = ["audio/mpeg", "audio/wav", "audio/vnd.wave"]
 
-const getAudioRow = (screenCount) => Number(screenCount) + 1
+export const getAudioRow = (screenCount: number | string) =>
+  Number(screenCount) + 1
 
-const isAudioScreen = (screen, screenCount) =>
-  Number(screen) === getAudioRow(screenCount)
+export const isAudioScreen = (
+  screen: number | string,
+  screenCount: number | string
+) => Number(screen) === getAudioRow(screenCount)
 
-const getCueTypeFromScreen = (screen, screenCount) =>
-  isAudioScreen(screen, screenCount) ? "audio" : "visual"
+export const getCueTypeFromScreen = (
+  screen: number | string,
+  screenCount: number | string
+): CueType => (isAudioScreen(screen, screenCount) ? "audio" : "visual")
 
-const isAudioMimeType = (mimeType = "") => mimeType.startsWith("audio/")
+export const isAudioMimeType = (mimeType = "") => mimeType.startsWith("audio/")
 
 const getFileTypeFromMime = (mimeType = "") => {
   if (mimeType.startsWith("image/")) {
@@ -50,7 +57,7 @@ const getFileTypeFromMime = (mimeType = "") => {
   return ""
 }
 
-const isAllowedMimeType = (mimeType = "") => {
+export const isAllowedMimeType = (mimeType = "") => {
   const fileType = getFileTypeFromMime(mimeType)
 
   if (fileType === "image") {
@@ -66,16 +73,4 @@ const isAllowedMimeType = (mimeType = "") => {
   }
 
   return false
-}
-
-module.exports = {
-  VALID_CUE_TYPES,
-  MAX_VISUAL_LAYERS,
-  MAX_AUDIO_TRACKS,
-  getMaxLayers,
-  getAudioRow,
-  isAudioScreen,
-  getCueTypeFromScreen,
-  isAudioMimeType,
-  isAllowedMimeType,
 }
