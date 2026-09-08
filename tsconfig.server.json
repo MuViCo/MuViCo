@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    /* No bundler in front of the server, so tsc both checks and compiles it
+       (unlike tsconfig.json, where Vite owns emission). */
+    "outDir": "server-dist",
+    "rootDir": "src",
+
+    "skipLibCheck": true,
+
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    /* Plain CommonJS output, no loader flags needed to run it with node. */
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+
+    "allowJs": false,
+    "checkJs": false,
+
+    "strict": true,
+    /* Same as tsconfig.json: strict would break the many existing
+       `catch (error) { error.message }` sites. */
+    "useUnknownInCatchVariables": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "types": ["node", "jest"]
+  },
+  "include": ["src/server/**/*.ts", "src/constants.d.ts"],
+  "exclude": ["node_modules", "server-dist", "coverage", "playwright-report"]
+}

@@ -81,7 +81,7 @@ module.exports = defineConfig({
   // Start the backend and frontend servers before running e2e tests
   webServer: [
     {
-      command: "NODE_ENV=test node src/server/index.js",
+      command: "NODE_ENV=test npx tsx src/server/index.ts",
       port: 8000,
     },
     {
