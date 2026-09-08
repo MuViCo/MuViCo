@@ -22,7 +22,7 @@
     "isolatedModules": true,
     "moduleDetection": "force",
 
-    "allowJs": true,
+    "allowJs": false,
     "checkJs": false,
 
     "strict": true,
@@ -38,6 +38,6 @@
 
     "types": ["node", "jest"]
   },
-  "include": ["src/server/**/*.ts", "src/server/**/*.js", "src/constants.d.ts"],
+  "include": ["src/server/**/*.ts", "src/constants.d.ts"],
   "exclude": ["node_modules", "server-dist", "coverage", "playwright-report"]
 }
