@@ -10,6 +10,7 @@ uploads
 node_modules
 dist
 dist-ssr
+server-dist
 *.local
 
 # Editor directories and files
