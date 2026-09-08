@@ -51,6 +51,12 @@ jest.mock("../../components/presentation/EditModeContainer", () => {
         >
           change-transition
         </button>
+        <button type="button" onClick={props.onEnterShow}>
+          enter-show
+        </button>
+        <button type="button" onClick={props.onExitShow}>
+          exit-show
+        </button>
       </div>
     )
   }
@@ -111,5 +117,21 @@ describe("PresentationPage transition preference", () => {
     render(<PresentationPage user={{}} />)
 
     expect(screen.getByTestId("show-mode-route")).toHaveTextContent("true")
+  })
+
+  test("navigates between edit and show routes", () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    render(<PresentationPage user={{}} />)
+
+    fireEvent.click(screen.getByText("enter-show"))
+    fireEvent.click(screen.getByText("exit-show"))
+
+    expect(navigate).toHaveBeenNthCalledWith(
+      1,
+      "/presentation/presentation-1/show"
+    )
+    expect(navigate).toHaveBeenNthCalledWith(2, "/presentation/presentation-1")
   })
 })

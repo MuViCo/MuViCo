@@ -1,6 +1,6 @@
 import React from "react"
 import { ChakraProvider } from "@chakra-ui/react"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import ScorePdfViewer from "../../components/presentation/ScorePdfViewer"
 import {
@@ -12,6 +12,7 @@ import {
 import type { ScoreDocument } from "../../types"
 
 const mockGetDocument = jest.fn()
+let resizeCallback: ResizeObserverCallback
 
 jest.mock("pdfjs-dist", () => ({
   GlobalWorkerOptions: { workerSrc: "" },
@@ -52,7 +53,7 @@ const makeLoadingTask = (numPages = 1) => {
     getPage: jest.fn().mockResolvedValue(page),
     destroy: jest.fn().mockResolvedValue(undefined),
   }
-  return { promise: Promise.resolve(pdf), destroy: jest.fn() }
+  return { promise: Promise.resolve(pdf), destroy: jest.fn(), page }
 }
 
 const baseScore: ScoreDocument = {
@@ -104,9 +105,16 @@ describe("ScorePdfViewer", () => {
     mockGetDocument.mockReturnValue(makeLoadingTask())
     window.localStorage.setItem("user", JSON.stringify({ token: "test-token" }))
     global.ResizeObserver = class {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback
+      }
       observe() {}
       disconnect() {}
     } as unknown as typeof ResizeObserver
+    Object.defineProperty(window, "devicePixelRatio", {
+      configurable: true,
+      value: 1,
+    })
     Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
       configurable: true,
       value: jest.fn(() => ({
@@ -141,6 +149,39 @@ describe("ScorePdfViewer", () => {
         })
       )
     })
+  })
+
+  test("renders page thumbnails at the current device pixel ratio", async () => {
+    const loadingTask = makeLoadingTask(2)
+    mockGetDocument.mockReturnValue(loadingTask)
+    Object.defineProperty(window, "devicePixelRatio", {
+      configurable: true,
+      value: 2,
+    })
+
+    renderViewer({ ...baseScore, pageCount: 2 })
+    await waitForPdfLoaded()
+
+    act(() => {
+      resizeCallback(
+        [
+          {
+            contentRect: { width: 700 },
+          } as ResizeObserverEntry,
+        ],
+        {} as ResizeObserver
+      )
+    })
+
+    expect(await screen.findByText("Pages")).toBeInTheDocument()
+    await waitFor(() =>
+      expect(loadingTask.page.render.mock.calls.length).toBeGreaterThanOrEqual(
+        3
+      )
+    )
+    expect(loadingTask.page.render).toHaveBeenCalledWith(
+      expect.objectContaining({ transform: [2, 0, 0, 2, 0, 0] })
+    )
   })
 
   describe("markers", () => {

@@ -286,7 +286,7 @@ const ShowScoreViewer = ({
     scrollRef.current
       ?.querySelector<HTMLElement>(`[data-page="${activePage}"]`)
       ?.scrollIntoView({ block: "start", behavior: "smooth" })
-  }, [activePage, pageMode])
+  }, [activePage, pageMode, pdf])
 
   if (!score) {
     return (
@@ -411,6 +411,14 @@ const ShowScoreViewer = ({
                 markers={score.markers}
                 activeMarker={activeMarker}
                 pageWidth={pageWidth}
+                onLoad={
+                  pageNumber === 1
+                    ? (w, ratio) => {
+                        setBaseWidth((prev) => prev ?? w)
+                        setAspectRatio((prev) => prev ?? ratio)
+                      }
+                    : undefined
+                }
               />
             )
           )}

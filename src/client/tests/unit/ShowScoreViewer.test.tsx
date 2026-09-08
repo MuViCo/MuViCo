@@ -1,11 +1,12 @@
 import React from "react"
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import ShowScoreViewer from "../../components/presentation/ShowScoreViewer"
 import type { ScoreDocument } from "../../types"
 
 const mockGetDocument = jest.fn()
 let resizeCallback: ResizeObserverCallback
+let resizeCallbacks: ResizeObserverCallback[]
 
 jest.mock("pdfjs-dist", () => ({
   GlobalWorkerOptions: { workerSrc: "" },
@@ -23,6 +24,12 @@ const score: ScoreDocument = {
   pageCount: 2,
   markers: [
     {
+      _id: "marker-0",
+      page: 1,
+      frameIndex: 0,
+      rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
+    },
+    {
       _id: "marker-1",
       page: 2,
       frameIndex: 3,
@@ -35,9 +42,11 @@ const score: ScoreDocument = {
 describe("ShowScoreViewer", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    resizeCallbacks = []
     global.ResizeObserver = class {
       constructor(callback: ResizeObserverCallback) {
         resizeCallback = callback
+        resizeCallbacks.push(callback)
       }
       observe() {}
       disconnect() {}
@@ -120,9 +129,11 @@ describe("ShowScoreViewer", () => {
     )
 
     fireEvent.click(screen.getByRole("button", { name: "Scrolling" }))
+    fireEvent.click(screen.getByRole("button", { name: "Two pages" }))
     fireEvent.click(screen.getByRole("button", { name: "Auto page turn" }))
 
     expect(onPageModeChange).toHaveBeenCalledWith("scroll")
+    expect(onPageModeChange).toHaveBeenCalledWith("two")
     expect(onAutoPageTurnChange).toHaveBeenCalledWith(true)
   })
 
@@ -139,6 +150,11 @@ describe("ShowScoreViewer", () => {
     await waitFor(() =>
       expect(document.querySelector('[data-page="1"]')).toBeInTheDocument()
     )
+    expect(screen.getByRole("button", { name: "Fit" })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Fit" }))
+    expect(screen.getByRole("button", { name: "100%" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "100%" }))
     expect(screen.getByRole("button", { name: "Fit" })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }))
@@ -194,5 +210,140 @@ describe("ShowScoreViewer", () => {
 
     finishFirstRender()
     await waitFor(() => expect(renderPage).toHaveBeenCalledTimes(2))
+  })
+
+  test("shows a load error when the PDF cannot be opened", async () => {
+    mockGetDocument.mockReturnValue({
+      promise: Promise.reject(new Error("invalid PDF")),
+      destroy: jest.fn(),
+    })
+
+    render(
+      <ShowScoreViewer
+        score={score}
+        cueIndex={0}
+        pageMode="two"
+        autoPageTurn={false}
+      />
+    )
+
+    expect(
+      await screen.findByText("PDF preview unavailable.")
+    ).toBeInTheDocument()
+  })
+
+  test("loads a public score without an authorization header", async () => {
+    render(
+      <ShowScoreViewer
+        score={{
+          ...score,
+          file: { url: "https://example.com/public-score.pdf" },
+        }}
+        cueIndex={0}
+        pageMode="two"
+        autoPageTurn={false}
+      />
+    )
+
+    await waitFor(() => expect(mockGetDocument).toHaveBeenCalled())
+    expect(mockGetDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: "https://example.com/public-score.pdf",
+        httpHeaders: undefined,
+      })
+    )
+  })
+
+  test("navigates score pages manually and disables automatic turns", async () => {
+    const onAutoPageTurnChange = jest.fn()
+    render(
+      <ShowScoreViewer
+        score={score}
+        cueIndex={0}
+        pageMode="two"
+        autoPageTurn={false}
+        onAutoPageTurnChange={onAutoPageTurnChange}
+      />
+    )
+
+    await screen.findByText("1 / 2")
+    fireEvent.click(screen.getByRole("button", { name: "Next score page" }))
+
+    expect(await screen.findByText("2 / 2")).toBeInTheDocument()
+    expect(onAutoPageTurnChange).toHaveBeenLastCalledWith(false)
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous score page" }))
+    expect(await screen.findByText("1 / 2")).toBeInTheDocument()
+  })
+
+  test("fits scrolling pages to the measured viewer and follows the active page", async () => {
+    render(
+      <ShowScoreViewer
+        score={score}
+        cueIndex={3}
+        pageMode="scroll"
+        autoPageTurn
+      />
+    )
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".show-score-page")).toHaveLength(2)
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
+    })
+
+    await act(async () => {
+      resizeCallbacks.forEach((callback) =>
+        callback(
+          [
+            {
+              contentRect: { width: 1000, height: 800 },
+            } as ResizeObserverEntry,
+          ],
+          {} as ResizeObserver
+        )
+      )
+    })
+
+    await waitFor(() => {
+      expect(
+        document.querySelector<HTMLElement>('[data-page="1"]')
+      ).toHaveStyle({
+        width: "588px",
+      })
+    })
+  })
+
+  test("recovers from a failed page render", async () => {
+    const renderPage = jest.fn(() => ({
+      promise: Promise.reject(new Error("render failed")),
+      cancel: jest.fn(),
+    }))
+    mockGetDocument.mockReturnValue({
+      promise: Promise.resolve({
+        numPages: 1,
+        getPage: jest.fn().mockResolvedValue({
+          getViewport: jest.fn(({ scale }) => ({
+            width: 600 * scale,
+            height: 800 * scale,
+          })),
+          render: renderPage,
+        }),
+      }),
+      destroy: jest.fn(),
+    })
+
+    render(
+      <ShowScoreViewer
+        score={{ ...score, pageCount: 1 }}
+        cueIndex={0}
+        pageMode="two"
+        autoPageTurn={false}
+      />
+    )
+
+    await waitFor(() => expect(renderPage).toHaveBeenCalled())
+    expect(
+      screen.queryByText("PDF preview unavailable.")
+    ).not.toBeInTheDocument()
   })
 })

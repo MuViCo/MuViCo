@@ -1,5 +1,5 @@
 import React from "react"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import ShowMode from "../../components/presentation/ShowMode"
 
@@ -59,8 +59,8 @@ const renderShowMode = (overrides = {}) => {
     onExit: jest.fn(),
     ...overrides,
   }
-  render(<ShowMode {...props} />)
-  return props
+  const view = render(<ShowMode {...props} />)
+  return { ...props, view }
 }
 
 describe("ShowMode", () => {
@@ -129,5 +129,83 @@ describe("ShowMode", () => {
     fireEvent.click(screen.getByText("Screen wall"))
 
     expect(screen.getByTestId("monitor-window")).toBeInTheDocument()
+  })
+
+  test("selects marked frames and exposes active audio tracks", () => {
+    const props = renderShowMode({
+      cueIndex: 1,
+      isAutoplaying: true,
+      scores: [
+        {
+          _id: "score-1",
+          title: "Concert score",
+          source: "upload",
+          file: { url: "https://example.com/score.pdf" },
+          pageCount: 1,
+          markers: [{ _id: "marker-1", page: 1, frameIndex: 2 }],
+        },
+      ],
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 1,
+          loop: true,
+          continuePlayback: true,
+        },
+      ],
+    })
+
+    expect(document.querySelector(".show-cue-marker-dot")).toBeInTheDocument()
+    expect(screen.getByText("Background music")).toBeInTheDocument()
+    expect(screen.getByText("A2")).toBeInTheDocument()
+    expect(screen.getByText("Loop")).toBeInTheDocument()
+    expect(screen.getByText("Auto on · 5s")).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Go to frame 2" })[0])
+    fireEvent.click(screen.getByRole("button", { name: "Previous frame" }))
+    fireEvent.click(screen.getByText("Auto on · 5s"))
+
+    expect(props.onSetCueIndex).toHaveBeenCalledWith(2)
+    expect(props.onPrevious).toHaveBeenCalledTimes(1)
+    expect(props.onToggleAutoplay).toHaveBeenCalledTimes(1)
+  })
+
+  test("updates the elapsed time and stops its clock on unmount", () => {
+    jest.useFakeTimers()
+    const { view } = renderShowMode()
+
+    act(() => jest.advanceTimersByTime(1000))
+
+    expect(screen.getByText("00:00:01")).toBeInTheDocument()
+    view.unmount()
+    expect(jest.getTimerCount()).toBe(0)
+    jest.useRealTimers()
+  })
+
+  test("opens and closes the score monitor", () => {
+    renderShowMode()
+
+    fireEvent.click(screen.getByRole("button", { name: "Monitor" }))
+    fireEvent.click(screen.getByText("Score only"))
+
+    expect(screen.getByTestId("monitor-window")).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Monitor live" })
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Monitor live" }))
+    fireEvent.click(screen.getByText("Close monitor"))
+
+    expect(screen.queryByTestId("monitor-window")).not.toBeInTheDocument()
+  })
+
+  test("expands the compact score from the control room", () => {
+    renderShowMode()
+
+    fireEvent.click(screen.getByRole("button", { name: /Control room/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Expand" }))
+
+    expect(screen.getByTestId("show-score")).toBeInTheDocument()
   })
 })
