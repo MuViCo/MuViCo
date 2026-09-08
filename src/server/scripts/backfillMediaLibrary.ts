@@ -4,25 +4,25 @@
  * Dry-run by default -- it reports what it would write and touches nothing.
  * Pass --apply to write.
  *
- *   node src/server/scripts/backfillMediaLibrary.js
- *   node src/server/scripts/backfillMediaLibrary.js --apply
+ *   node server-dist/server/scripts/backfillMediaLibrary.js
+ *   node server-dist/server/scripts/backfillMediaLibrary.js --apply
  *
  * MONGODB_URI overrides the configured connection, which is how the same
  * command is pointed at a staging database for a dry-run.
  */
+import mongoose from "mongoose"
 
-const mongoose = require("mongoose")
-const config = require("../utils/config")
-const {
+import * as config from "../utils/config"
+import {
   backfillPresentationMedia,
   summarizeBackfill,
-} = require("../utils/mediaLibraryBackfill")
+} from "../utils/mediaLibraryBackfill"
 
 const shouldApply = process.argv.includes("--apply")
 
 const main = async () => {
   const uri = process.env.MONGODB_URI || config.MONGODB_URI
-  await mongoose.connect(uri)
+  await mongoose.connect(uri as string)
 
   // The raw collection, not the model: this must read documents exactly as
   // stored, without the schema's defaults and normalisation hooks rewriting
@@ -30,7 +30,10 @@ const main = async () => {
   const presentations = mongoose.connection.collection("presentations")
   const documents = await presentations.find({}).toArray()
   const results = documents.map(backfillPresentationMedia)
-  const summary = summarizeBackfill(results)
+  const summary: ReturnType<typeof summarizeBackfill> & {
+    modifiedCount?: number
+    matchedCount?: number
+  } = summarizeBackfill(results)
 
   if (shouldApply) {
     const operations = results
@@ -65,7 +68,7 @@ const main = async () => {
 
 main()
   .catch((error) => {
-    console.error(error.message)
+    console.error((error as Error).message)
     process.exitCode = 1
   })
   .finally(async () => {

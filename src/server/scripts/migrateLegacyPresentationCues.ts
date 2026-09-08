@@ -1,20 +1,24 @@
-const mongoose = require("mongoose")
-const config = require("../utils/config")
-const {
+import mongoose from "mongoose"
+
+import * as config from "../utils/config"
+import {
   normalizePresentation,
   summarizeMigration,
-} = require("../utils/legacyPresentationMigration")
+} from "../utils/legacyPresentationMigration"
 
 const shouldApply = process.argv.includes("--apply")
 
 const main = async () => {
   const uri = process.env.MONGODB_URI || config.MONGODB_URI
-  await mongoose.connect(uri)
+  await mongoose.connect(uri as string)
 
   const presentations = mongoose.connection.collection("presentations")
   const documents = await presentations.find({}).toArray()
   const results = documents.map(normalizePresentation)
-  const summary = summarizeMigration(results)
+  const summary: ReturnType<typeof summarizeMigration> & {
+    modifiedCount?: number
+    matchedCount?: number
+  } = summarizeMigration(results)
 
   if (shouldApply && summary.duplicateSlots > 0) {
     throw new Error(
@@ -58,7 +62,7 @@ const main = async () => {
 
 main()
   .catch((error) => {
-    console.error(error.message)
+    console.error((error as Error).message)
     process.exitCode = 1
   })
   .finally(async () => {

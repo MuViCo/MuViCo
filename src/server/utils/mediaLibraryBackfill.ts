@@ -14,6 +14,8 @@
  * Pure functions only, no database access: the script in ../scripts owns the
  * connection, so the decisions below can be unit-tested against plain objects.
  */
+import type mongoose from "mongoose"
+
 import type { CueFile, MediaEntry } from "../types"
 
 const DEFAULT_MIME_TYPE = "image/jpeg"
@@ -29,7 +31,7 @@ interface RawCue {
 }
 
 interface RawPresentation {
-  _id: unknown
+  _id: mongoose.Types.ObjectId
   createdAt?: Date
   lastUsed?: Date
   cues?: RawCue[]

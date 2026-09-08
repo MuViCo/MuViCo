@@ -1,3 +1,5 @@
+import type mongoose from "mongoose"
+
 import { getAudioRow, getCueTypeFromScreen, getMaxLayers } from "./cueType"
 import type { CueType } from "../types"
 
@@ -18,7 +20,7 @@ interface RawCue {
 }
 
 interface RawPresentation {
-  _id: unknown
+  _id: mongoose.Types.ObjectId
   screenCount?: unknown
   cues?: RawCue[]
   [key: string]: unknown
