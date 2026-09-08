@@ -3,9 +3,7 @@
  * Sanitizes preferred usernames and appends numeric suffixes when names already exist.
  */
 const normalizeUsername = (value) => {
-  const sanitized = (value || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]/g, "")
+  const sanitized = (value || "").toLowerCase().replace(/[^a-z0-9._-]/g, "")
   if (sanitized.length >= 3) {
     return sanitized
   }

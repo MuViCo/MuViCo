@@ -26,7 +26,8 @@ const VALID_AUDIO_MIME_TYPES = ["audio/mpeg", "audio/wav", "audio/vnd.wave"]
 
 const getAudioRow = (screenCount) => Number(screenCount) + 1
 
-const isAudioScreen = (screen, screenCount) => Number(screen) === getAudioRow(screenCount)
+const isAudioScreen = (screen, screenCount) =>
+  Number(screen) === getAudioRow(screenCount)
 
 const getCueTypeFromScreen = (screen, screenCount) =>
   isAudioScreen(screen, screenCount) ? "audio" : "visual"

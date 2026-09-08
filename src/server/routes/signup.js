@@ -1,7 +1,7 @@
 /**
  * This module defines the routes for user signup, including checking username availability and creating new user accounts.
- * It includes input validation for usernames and passwords, ensuring that usernames meet specified criteria and that passwords are strong enough. 
- * The routes interact with the User model to perform database operations and return JSON responses. 
+ * It includes input validation for usernames and passwords, ensuring that usernames meet specified criteria and that passwords are strong enough.
+ * The routes interact with the User model to perform database operations and return JSON responses.
  * Error handling is included to manage invalid input and other issues that may arise during the signup process.
  */
 
@@ -50,11 +50,10 @@ router.post("/", async (req, res, next) => {
       error: "username and password must be strings",
     })
   }
-  
 
   const trimmedUsername = username.trim()
 
-    if (trimmedUsername.length < minUsernameLength) {
+  if (trimmedUsername.length < minUsernameLength) {
     return res.status(400).json({
       error: `username must be at least ${minUsernameLength} characters`,
     })
@@ -87,7 +86,7 @@ router.post("/", async (req, res, next) => {
 
   try {
     validatePassword(password)
-    
+
     const passwordHash = await generateHash(password)
 
     const user = new User({
