@@ -7,12 +7,13 @@
  * This model is used by the user controller and routes to interact with the database
  * when creating, updating, retrieving, and deleting users and their associated presentations.
  */
+import mongoose from "mongoose"
+import uniqueValidator from "mongoose-unique-validator"
 
-const mongoose = require("mongoose")
-const uniqueValidator = require("mongoose-unique-validator")
+import type { UserAttrs } from "../types"
 
 // Define the user schema for authentication and profile data
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema<UserAttrs>({
   username: {
     type: String,
     unique: true,
@@ -37,9 +38,18 @@ const userSchema = mongoose.Schema({
   refreshTokenExpires: { type: Date, default: null },
 })
 
+interface NormalizableUser {
+  [key: string]: unknown
+}
+
 userSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
+  // Same reason as presentation.ts's transform: the reshaped output (id
+  // added, _id/__v/passwordHash/refreshToken* dropped) isn't UserAttrs.
+  transform: (document, ret) => {
+    const returnedObject = ret as unknown as NormalizableUser
+    returnedObject.id = (
+      returnedObject._id as { toString: () => string }
+    ).toString()
     delete returnedObject._id
     delete returnedObject.__v
     delete returnedObject.passwordHash
@@ -51,6 +61,6 @@ userSchema.set("toJSON", {
 userSchema.plugin(uniqueValidator)
 
 // Compile and export the User model
-const User = mongoose.model("User", userSchema)
+const User = mongoose.model<UserAttrs>("User", userSchema)
 
-module.exports = User
+export = User

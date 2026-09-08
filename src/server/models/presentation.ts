@@ -1,26 +1,41 @@
 /*presentation.js - Mongoose schema for presentation data
-  * This schema defines the structure of presentation documents 
+  * This schema defines the structure of presentation documents
     in the MongoDB database.
-  * Each presentation has a name, associated user, storage type, 
+  * Each presentation has a name, associated user, storage type,
     screen count, index count, and array of cues that includes both visual and audio cues.
-  * Cues contain information about their index, 
+  * Cues contain information about their index,
     name, associated media file, loop setting, and color (for cues).
-  * The schema also includes a toJSON transformation to format 
+  * The schema also includes a toJSON transformation to format
     the output when converting documents to JSON.
-  * This file is used by the presentation controller and routes 
-    to interact with the database when creating, updating, retrieving, 
+  * This file is used by the presentation controller and routes
+    to interact with the database when creating, updating, retrieving,
     and deleting presentations and their cues.
 */
+import mongoose from "mongoose"
 
-const mongoose = require("mongoose")
-const {
+import {
   VALID_CUE_TYPES,
   getAudioRow,
   getCueTypeFromScreen,
   getMaxLayers,
-} = require("../utils/cueType")
+} from "../utils/cueType"
+import type { CueType, PresentationAttrs } from "../types"
 
-const normalizeCueLayer = (layer, cueType, repairInvalid) => {
+interface NormalizableCue {
+  toObject?: () => Record<string, unknown>
+  layer?: unknown
+  opacity?: unknown
+  cueType?: unknown
+  screen?: unknown
+  continuePlayback?: unknown
+  [key: string]: unknown
+}
+
+const normalizeCueLayer = (
+  layer: unknown,
+  cueType: CueType,
+  repairInvalid: boolean
+) => {
   if (layer === undefined || layer === null) {
     return 0
   }
@@ -37,7 +52,7 @@ const normalizeCueLayer = (layer, cueType, repairInvalid) => {
   return repairInvalid ? 0 : layer
 }
 
-const normalizeCueOpacity = (opacity, repairInvalid) => {
+const normalizeCueOpacity = (opacity: unknown, repairInvalid: boolean) => {
   if (opacity === undefined || opacity === null) {
     return 1
   }
@@ -52,21 +67,38 @@ const normalizeCueOpacity = (opacity, repairInvalid) => {
   return repairInvalid ? 1 : opacity
 }
 
-const normalizePresentationCues = (presentationObject, options = {}) => {
+interface NormalizablePresentation {
+  screenCount?: unknown
+  indexCount?: unknown
+  cues?: unknown
+  [key: string]: unknown
+}
+
+// Mutates and normalizes in place. Accepts a plain NormalizablePresentation
+// rather than PresentationAttrs/PresentationDocument: it's called both on a
+// pre("validate") hydrated document (this) and on the plain object toJSON
+// hands its transform, and needs to add fields (audioCues, id) and delete
+// others (_id, __v) that neither of those source types allows.
+const normalizePresentationCues = (
+  presentationObject: NormalizablePresentation,
+  options: { repairInvalid?: boolean } = {}
+) => {
   const screenCount = Number(presentationObject.screenCount) || 1
   presentationObject.screenCount = screenCount
   presentationObject.indexCount = Number(presentationObject.indexCount) || 5
   const cues = Array.isArray(presentationObject.cues)
-    ? presentationObject.cues
+    ? (presentationObject.cues as NormalizableCue[])
     : []
   presentationObject.cues = cues.map((cue) => {
-    const normalizedCue =
+    const normalizedCue: NormalizableCue =
       cue && typeof cue.toObject === "function" ? cue.toObject() : { ...cue }
 
     // Determine cueType: use stored type if valid, otherwise infer from screen
-    const cueType = VALID_CUE_TYPES.includes(normalizedCue.cueType)
-      ? normalizedCue.cueType
-      : getCueTypeFromScreen(normalizedCue.screen, screenCount)
+    const cueType: CueType = VALID_CUE_TYPES.includes(
+      normalizedCue.cueType as CueType
+    )
+      ? (normalizedCue.cueType as CueType)
+      : getCueTypeFromScreen(normalizedCue.screen as number, screenCount)
 
     return {
       ...normalizedCue,
@@ -86,8 +118,11 @@ const normalizePresentationCues = (presentationObject, options = {}) => {
   })
 }
 
+const roundIfPresent = (v: number | null | undefined) =>
+  v === undefined || v === null ? v : Math.round(v)
+
 // Define the presentation schema with all required fields and validation
-const presentationSchema = mongoose.Schema(
+const presentationSchema = new mongoose.Schema<PresentationAttrs>(
   {
     // Presentation title
     name: {
@@ -127,7 +162,7 @@ const presentationSchema = mongoose.Schema(
       default: 1,
       min: 1,
       max: 8,
-      set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+      set: roundIfPresent,
       validate: {
         validator: Number.isInteger,
         message: "screenCount must be an integer",
@@ -140,7 +175,7 @@ const presentationSchema = mongoose.Schema(
       default: 5,
       min: 1,
       max: 101,
-      set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+      set: roundIfPresent,
       validate: {
         validator: Number.isInteger,
         message: "indexCount must be an integer",
@@ -166,7 +201,7 @@ const presentationSchema = mongoose.Schema(
         index: {
           type: Number,
           required: true,
-          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          set: roundIfPresent,
           validate: {
             validator: Number.isInteger,
             message: "index must be an integer",
@@ -177,7 +212,7 @@ const presentationSchema = mongoose.Schema(
           type: Number,
           required: true,
           min: 1,
-          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          set: roundIfPresent,
           validate: {
             validator: Number.isInteger,
             message: "screen must be an integer",
@@ -190,7 +225,7 @@ const presentationSchema = mongoose.Schema(
         spanScreens: {
           type: [Number],
           default: undefined,
-          set: (v) =>
+          set: (v: unknown) =>
             Array.isArray(v) ? v.map((n) => Math.round(Number(n))) : v,
         },
         // Hex color code for visual cues
@@ -222,7 +257,7 @@ const presentationSchema = mongoose.Schema(
           type: Number,
           default: 0,
           min: 0,
-          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          set: roundIfPresent,
           validate: {
             validator: Number.isInteger,
             message: "layer must be an integer",
@@ -280,9 +315,10 @@ const presentationSchema = mongoose.Schema(
         pageCount: {
           type: Number,
           min: 1,
-          set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+          set: roundIfPresent,
           validate: {
-            validator: (v) => v === undefined || Number.isInteger(v),
+            validator: (v: number | undefined) =>
+              v === undefined || Number.isInteger(v),
             message: "pageCount must be an integer",
           },
         },
@@ -301,7 +337,7 @@ const presentationSchema = mongoose.Schema(
               type: Number,
               required: true,
               min: 1,
-              set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+              set: roundIfPresent,
               validate: {
                 validator: Number.isInteger,
                 message: "marker page must be an integer",
@@ -311,7 +347,7 @@ const presentationSchema = mongoose.Schema(
               type: Number,
               required: true,
               min: 0,
-              set: (v) => (v === undefined || v === null ? v : Math.round(v)),
+              set: roundIfPresent,
               validate: {
                 validator: Number.isInteger,
                 message: "marker frameIndex must be an integer",
@@ -348,12 +384,20 @@ const presentationSchema = mongoose.Schema(
 presentationSchema.index({ user: 1, lastUsed: -1 })
 
 presentationSchema.pre("validate", function (next) {
-  normalizePresentationCues(this)
+  normalizePresentationCues(this as unknown as NormalizablePresentation)
   next()
 })
 
 presentationSchema.pre("save", function (next) {
-  const validationError = new mongoose.Error.ValidationError(this)
+  // TODO(ts): mongoose's own .d.ts types this constructor's parameter as
+  // MongooseError, but at runtime (and per mongoose's own source) it takes
+  // the document being validated, which is what every caller -- mongoose's
+  // internals included -- actually passes.
+  const validationError = new mongoose.Error.ValidationError(
+    this as unknown as ConstructorParameters<
+      typeof mongoose.Error.ValidationError
+    >[0]
+  )
 
   for (const cue of this.cues) {
     if (cue.index < 0 || cue.index >= this.indexCount) {
@@ -485,15 +529,21 @@ presentationSchema.pre("save", function (next) {
 
 // Transform document when converting to JSON: format IDs and extract audio cues
 presentationSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
+  // The transform reshapes the document (adds id/audioCues, drops
+  // _id/__v) into what the API actually returns, which is not
+  // PresentationAttrs -- see NormalizablePresentation above.
+  transform: (document, ret) => {
+    const returnedObject = ret as unknown as NormalizablePresentation
     normalizePresentationCues(returnedObject, { repairInvalid: true })
-    returnedObject.audioCues = returnedObject.cues.filter(
-      (cue) => cue.cueType === "audio"
-    )
-    returnedObject.id = returnedObject._id.toString()
+    returnedObject.audioCues = (
+      returnedObject.cues as NormalizableCue[]
+    ).filter((cue) => cue.cueType === "audio")
+    returnedObject.id = (
+      returnedObject._id as { toString: () => string }
+    ).toString()
     delete returnedObject._id
     delete returnedObject.__v
   },
 })
 
-module.exports = mongoose.model("Presentation", presentationSchema)
+export = mongoose.model<PresentationAttrs>("Presentation", presentationSchema)
