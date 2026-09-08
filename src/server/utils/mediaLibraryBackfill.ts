@@ -21,11 +21,8 @@ import type { CueFile, MediaEntry } from "../types"
 const DEFAULT_MIME_TYPE = "image/jpeg"
 const DEFAULT_SIZE = "0"
 
-/*
- * Read from the raw `presentations` collection (script.ts), not through the
- * Presentation model, so fields are whatever the stored document actually
- * has -- no schema defaults, no normalization hooks.
- */
+// Read straight from the raw collection, not the Presentation model, so no
+// schema defaults or normalization hooks kick in
 interface RawCue {
   file?: CueFile | null
 }

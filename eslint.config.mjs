@@ -117,9 +117,8 @@ export default defineConfig([
       "no-confirm": "off",
     },
   },
-  // ---- TypeScript block. The JS block above now only matches build config
-  // files (vite.config.js, eslint.config.mjs itself) once src/server/** and
-  // src/client/** are fully migrated. ----
+  // ---- TypeScript block. src/server/** is fully migrated now; the JS block
+  // above only still matches build config files and the remaining client JS. ----
   {
     extends: [
       ...fixupConfigRules(

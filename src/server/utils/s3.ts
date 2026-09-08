@@ -95,9 +95,8 @@ export const getObjectBufferS3 = async (fileName: string) => {
   }
 
   const chunks: Buffer[] = []
-  // TODO(ts): the SDK's Body union type doesn't statically expose
-  // Symbol.asyncIterator, though every branch reaching this fallback (a
-  // Node.js Readable) supports it at runtime.
+  // SDK types don't expose Symbol.asyncIterator here, but a Node Readable
+  // supports it fine at runtime
   const body = (response.Body as unknown as AsyncIterable<Uint8Array>) || []
   for await (const chunk of body) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
@@ -132,12 +131,8 @@ export const getObjectSignedUrl = async (key: string) => {
   return url
 }
 
-/*
- * cue/file here is deliberately untyped (not Cue from ../types): callers pass
- * both hydrated cue subdocuments and plain objects built inline (e.g. the
- * score-file shape in routes/presentation.ts), and both only need file.id
- * read and file.type/file.size written back.
- */
+// Not the Cue type from ../types on purpose: callers pass hydrated cue
+// subdocuments as well as plain objects, and we only touch file.id/type/size
 interface FileBearing {
   file?: { id?: string; type?: string; size?: string } | null
 }

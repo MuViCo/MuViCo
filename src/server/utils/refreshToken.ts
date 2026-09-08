@@ -5,11 +5,8 @@
 import crypto from "crypto"
 import type { Response } from "express"
 
-/*
- * The user document isn't typed yet (models/user.ts lands in the next
- * commit); only the two fields this module actually reads/writes and the
- * ability to persist them are needed here.
- */
+// Only the fields we actually touch, so we don't need a hard dependency on
+// the full User model here.
 interface RefreshableUser {
   refreshTokenHash?: string | null
   refreshTokenExpires?: Date | null

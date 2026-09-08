@@ -57,15 +57,12 @@ export const uploadDriveFile = async (
   const stream = Readable.from(fileBuffer)
   try {
     const res = await drive.files.create({
-      // TODO(ts): folderId is string | null | undefined per googleapis'
-      // types; the original JS passed it through unchecked and so does this.
+      // folderId/id can be null per googleapis' types, unchecked here same as before
       requestBody: { name: fileName, mimeType, parents: [folderId as string] },
       media: { mimeType, body: stream },
       fields: "id",
     })
     await drive.permissions.create({
-      // TODO(ts): same as above -- res.data.id is unchecked, matching the
-      // original.
       fileId: res.data.id as string,
       requestBody: { role: "reader", type: "anyone" },
     })

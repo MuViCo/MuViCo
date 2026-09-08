@@ -1,13 +1,9 @@
 /**
- * Domain model for src/server, derived from the Mongoose schemas
- * (models/presentation.ts, models/user.ts) rather than from prose comments.
+ * Domain types for src/server, matching the Mongoose schemas in models/.
  *
- * These are plain attribute shapes, not Mongoose document types: a route
- * handler's `presentation` is a HydratedDocument<PresentationAttrs>, but a
- * cue pulled out of it, JSON-serialized, or read from the raw collection in a
- * migration script is not a Document at all. Keeping the attributes here and
- * building `HydratedDocument<...>` at each call site (models/*.ts) is what
- * lets both cases use the same field types.
+ * These are plain attributes, not Mongoose documents -- a cue read from the
+ * raw collection or a JSON response isn't a Document, only what a route
+ * handler gets via HydratedDocument<PresentationAttrs> is.
  */
 import type { HydratedDocument, Types } from "mongoose"
 
@@ -120,18 +116,13 @@ export interface UserAttrs {
 
 export type UserDocument = HydratedDocument<UserAttrs>
 
-/*
- * Express augmentation: userExtractor/requirePresentationAccess
- * (utils/middleware.ts) attach these to every authenticated request.
- * `token` is set by getTokenFrom regardless of whether the token is valid.
- */
+// userExtractor/requirePresentationAccess (utils/middleware.ts) attach these
+// to the request once auth passes.
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      // `null` (not just absent) is a real, distinct value here: it's what
-      // userExtractor (utils/middleware.ts) sets when the token's user id no
-      // longer resolves to a User document.
+      // null means "token pointed at a user id that doesn't exist anymore"
       user?: UserDocument | null
       presentation?: PresentationDocument
       token?: string

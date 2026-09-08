@@ -17,10 +17,7 @@ import adminRouter from "./routes/admin"
 import * as middleware from "./utils/middleware"
 import driveProxy from "./routes/driveProxy"
 import usersRouter from "./routes/users"
-// Statically imported rather than required only under NODE_ENV=test, like
-// the original: it's still mounted only in the test branch below, and a
-// static import is what a CommonJS-target `import` lowers to anyway --
-// there's no bundle size to save by deferring it.
+// Imported here but still only mounted below under NODE_ENV=test
 import testingRouter from "./routes/testing"
 
 // Set by @shelf/jest-mongodb's globalSetup for the Backend test project.
@@ -32,13 +29,8 @@ const app = express()
 
 mongoose.set("strictQuery", false)
 
-// Pre-existing dead code, left behaving exactly as before: the original
-// compared the whole request object to the string "POST" (always false,
-// which TS rejects outright -- no overlap between the two types), and even
-// with that fixed to req.method, the JSON.stringify result was never
-// returned. So this token has always logged "undefined" regardless of
-// method; fixing either half would start actually logging request bodies,
-// which is a behaviour change and arguably not one to make silently here.
+// This has always logged "undefined" (the JSON.stringify result is never
+// returned) -- left as-is, fixing it would start logging request bodies
 morgan.token("data", (req) => {
   if (req.method === "POST") {
     JSON.stringify((req as express.Request).body)

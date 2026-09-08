@@ -3,12 +3,9 @@ import type mongoose from "mongoose"
 import { getAudioRow, getCueTypeFromScreen, getMaxLayers } from "./cueType"
 import type { CueType } from "../types"
 
-/*
- * Reads/writes the raw `presentations` collection (script.ts), not the
- * Presentation model, so a legacy document's fields are exactly what's
- * stored -- possibly missing cueType/layer/opacity/continuePlayback
- * entirely, which is what this migration backfills.
- */
+// Raw collection fields, not the Presentation model -- legacy documents can
+// be missing cueType/layer/opacity/continuePlayback entirely, which is
+// exactly what this migration fixes
 interface RawCue {
   cueType?: string
   layer?: unknown

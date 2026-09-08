@@ -74,11 +74,9 @@ interface NormalizablePresentation {
   [key: string]: unknown
 }
 
-// Mutates and normalizes in place. Accepts a plain NormalizablePresentation
-// rather than PresentationAttrs/PresentationDocument: it's called both on a
-// pre("validate") hydrated document (this) and on the plain object toJSON
-// hands its transform, and needs to add fields (audioCues, id) and delete
-// others (_id, __v) that neither of those source types allows.
+// Mutates in place. Takes a loose shape rather than PresentationAttrs since
+// it's called both on a hydrated document and on the plain object toJSON
+// hands to its transform, and adds/removes fields neither type allows.
 const normalizePresentationCues = (
   presentationObject: NormalizablePresentation,
   options: { repairInvalid?: boolean } = {}
@@ -389,10 +387,8 @@ presentationSchema.pre("validate", function (next) {
 })
 
 presentationSchema.pre("save", function (next) {
-  // TODO(ts): mongoose's own .d.ts types this constructor's parameter as
-  // MongooseError, but at runtime (and per mongoose's own source) it takes
-  // the document being validated, which is what every caller -- mongoose's
-  // internals included -- actually passes.
+  // mongoose's own types say this takes a MongooseError, but it actually
+  // wants the document being validated -- that's what mongoose itself passes
   const validationError = new mongoose.Error.ValidationError(
     this as unknown as ConstructorParameters<
       typeof mongoose.Error.ValidationError
@@ -529,9 +525,8 @@ presentationSchema.pre("save", function (next) {
 
 // Transform document when converting to JSON: format IDs and extract audio cues
 presentationSchema.set("toJSON", {
-  // The transform reshapes the document (adds id/audioCues, drops
-  // _id/__v) into what the API actually returns, which is not
-  // PresentationAttrs -- see NormalizablePresentation above.
+  // Reshapes into what the API returns (adds id/audioCues, drops _id/__v),
+  // so it's not a PresentationAttrs anymore -- same as above.
   transform: (document, ret) => {
     const returnedObject = ret as unknown as NormalizablePresentation
     normalizePresentationCues(returnedObject, { repairInvalid: true })

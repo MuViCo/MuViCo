@@ -96,9 +96,9 @@ router.get(
   requirePresentationAccess,
   async (req, res) => {
     const { presentation } = req
-    // requirePresentationAccess guarantees req.presentation is set before
-    // this handler runs; TS can't see across middleware, hence the assertion
-    // (here and at every other `presentation!`/`user!` in this layer).
+    // requirePresentationAccess always sets req.presentation before this
+    // runs, but TS can't see across middleware -- hence the `!` below (and
+    // everywhere else in this file).
     return res.json(presentation!.toJSON())
   }
 )

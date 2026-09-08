@@ -55,8 +55,7 @@ Checks if the entered password is correct for the given user.*
   return res.status(200).send({
     token,
     username: user.username,
-    // TODO(ts): user.name isn't a field on UserAttrs -- it never was, this
-    // response has always sent `name: undefined`. Preserved as-is.
+    // user.name was never a real field, this has always sent undefined
     name: (user as unknown as { name?: string }).name,
     isAdmin: user.isAdmin,
     id: user.id,
@@ -66,8 +65,7 @@ Checks if the entered password is correct for the given user.*
 
 router.post("/firebase", verifyToken, async (req, res) => {
   const { driveAccessToken } = req.body
-  // TODO(ts): see utils/verifyToken.ts -- req.user here is a Firebase
-  // DecodedIdToken, not the UserDocument the shared Request.user type says.
+  // req.user is the raw Firebase token here, not a User doc -- see verifyToken.ts
   const { uid, email } = req.user as unknown as { uid: string; email?: string }
 
   try {

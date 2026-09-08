@@ -29,12 +29,8 @@ const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     await initializeFirebase()
     const decodedToken = await admin.auth().verifyIdToken(token)
-    // TODO(ts): req.user is typed as a UserDocument (../types) for the much
-    // more common userExtractor case (utils/middleware.ts), but this
-    // middleware is the one route (POST /api/login/firebase) that puts a raw
-    // Firebase DecodedIdToken there instead, before a User document even
-    // exists for it. Unifying the two would mean widening req.user's type
-    // for every other route to accommodate this one.
+    // req.user is typed as a User document elsewhere (utils/middleware.ts),
+    // but here it's the raw Firebase token -- there's no User yet at this point
     req.user = decodedToken as unknown as Request["user"]
     next()
   } catch (error) {

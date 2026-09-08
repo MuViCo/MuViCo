@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    /* tsc IS the server's builder here, unlike tsconfig.json where Vite owns
-       emission -- there is no bundler in front of the server, so tsc both
-       checks and compiles it to server-dist/. */
+    /* No bundler in front of the server, so tsc both checks and compiles it
+       (unlike tsconfig.json, where Vite owns emission). */
     "outDir": "server-dist",
     "rootDir": "src",
 
@@ -11,9 +10,7 @@
     "target": "ES2022",
     "lib": ["ES2022"],
 
-    /* Classic CommonJS output: Node runs server-dist/server/index.js directly,
-       no loader flags. Source uses import/export like the rest of the repo;
-       tsc lowers it to require/module.exports. */
+    /* Plain CommonJS output, no loader flags needed to run it with node. */
     "module": "CommonJS",
     "moduleResolution": "Node10",
     "resolveJsonModule": true,
@@ -26,8 +23,8 @@
     "checkJs": false,
 
     "strict": true,
-    /* Same carve-out as tsconfig.json, same reason: strict would break the
-       many existing `catch (error) { error.message }` sites here too. */
+    /* Same as tsconfig.json: strict would break the many existing
+       `catch (error) { error.message }` sites. */
     "useUnknownInCatchVariables": false,
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,

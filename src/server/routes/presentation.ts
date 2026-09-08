@@ -45,17 +45,10 @@ import type {
   UserDocument,
 } from "../types"
 
-/*
- * Mongoose promotes array-of-object schema paths to Types.DocumentArray on a
- * hydrated document, with .id()/.pull() and (one level down)
- * subdocument .set()/.deleteOne() -- but only when the document type comes
- * from Mongoose's own schema inference. PresentationAttrs is a hand-written
- * interface, so HydratedDocument<PresentationAttrs> doesn't know to promote
- * its array fields, and typing them as DocumentArray in ../types would make
- * that type wrong everywhere else it's used (raw collection reads,
- * migration scripts). findScore/marker.set/deleteOne below are the
- * documented boundary cast, all in one place instead of at every call site.
- */
+// Mongoose gives hydrated array-of-subdocument fields .id()/.pull() etc,
+// but only when the doc type comes from its own schema inference -- our
+// hand-written PresentationAttrs doesn't get that for free. Casting once
+// here beats casting at every call site below.
 type ScoreSubdocument = Score & {
   markers: (ScoreMarker & {
     set: (value: Partial<ScoreMarker>) => void
@@ -75,8 +68,7 @@ const findScore = (
   presentation: PresentationDocument,
   scoreId: unknown
 ): ScoreSubdocument | null =>
-  // @ts-expect-error -- scores.id() lives on the Mongoose DocumentArray at
-  // runtime; Score[] (the read-side type) doesn't declare it.
+  // @ts-expect-error -- .id() exists at runtime, not on the Score[] type
   presentation.scores.id(scoreId)
 
 const router = express.Router()
@@ -663,11 +655,10 @@ router.delete(
       const driveId = entry.driveId
 
       for (const cueId of deletedCueIds) {
-        // @ts-expect-error -- pull() lives on the Mongoose DocumentArray at
-        // runtime; Cue[] (the read-side type) doesn't declare it.
+        // @ts-expect-error -- .pull() exists at runtime, not on the Cue[] type
         presentation!.cues.pull({ _id: cueId })
       }
-      // @ts-expect-error -- same as above.
+      // @ts-expect-error -- same as above
       presentation!.media.pull({ _id: entry._id })
       await presentation!.save({ validateModifiedOnly: true })
 
@@ -798,11 +789,8 @@ router.put(
 
         // Remove cues from screens being deleted (excludes the audio row,
         // which always sits at screenCount + 1 and must survive)
-        // TODO(ts): filter() returns a plain Cue[], not the
-        // Types.DocumentArray<Cue> presentation.cues is hydrated as; cast to
-        // unknown first since neither array type is assignable to the
-        // other. Mongoose's array-path setter accepts a plain array at
-        // runtime, which is what the original assignment relied on.
+        // filter() returns a plain array, not the DocumentArray cues is
+        // hydrated as -- mongoose accepts a plain array back fine at runtime
         presentation!.cues = presentation!.cues.filter(
           (cue) =>
             !(
@@ -1648,10 +1636,9 @@ router.put(
       }
 
       // Resolve and validate the cues being swapped.
-      // @ts-expect-error -- cues.id() lives on the Mongoose DocumentArray at
-      // runtime; Cue[] (the read-side type) doesn't declare it.
+      // @ts-expect-error -- .id() exists at runtime, not on the Cue[] type
       const firstCue: Cue = presentation!.cues.id(firstCueId)
-      // @ts-expect-error -- same as above.
+      // @ts-expect-error -- same as above
       const secondCue: Cue = presentation!.cues.id(secondCueId)
 
       if (!firstCue || !secondCue) {
@@ -1852,8 +1839,7 @@ router.put(
         }
       }
 
-      // @ts-expect-error -- cues.id() lives on the Mongoose DocumentArray at
-      // runtime; Cue[] (the read-side type) doesn't declare it.
+      // @ts-expect-error -- .id() exists at runtime, not on the Cue[] type
       const cue: Cue = presentation!.cues.id(cueId)
       if (!cue) {
         return res.status(404).json({ error: "Cue not found" })

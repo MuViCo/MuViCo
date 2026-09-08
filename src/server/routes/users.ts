@@ -117,10 +117,8 @@ router.post("/change-password", userExtractor, async (req, res) => {
     })
   }
 
-  // TODO(ts): user.passwordHash is optional (a Firebase-only account has
-  // none); checkPassword's signature requires a string, unchanged from the
-  // original, where this same call would already fail at runtime for such
-  // an account.
+  // passwordHash can be undefined for a Firebase-only account -- would
+  // already fail here at runtime the same way before this migration
   if (!(await checkPassword(currentPassword, user.passwordHash as string))) {
     return res.status(400).json({
       error: "Current password is not valid",

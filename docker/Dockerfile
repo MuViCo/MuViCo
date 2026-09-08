@@ -15,9 +15,7 @@ ENV VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID
 
 COPY package.json package-lock.json* ./
 
-# Full install here: tsc and vite (both devDependencies) build the image in
-# this stage. The runtime stage below reinstalls with --omit=dev instead of
-# copying node_modules forward, so neither of them ships in the final image.
+# Full install (tsc/vite are devDependencies, needed to build)
 RUN \
   if [ -f package-lock.json ]; then npm ci; \
   else npm i; \

@@ -8,14 +8,8 @@ import { getObjectSignedUrl, getFileSize, getFileType } from "./s3"
 import * as logger from "../utils/logger"
 import type { CueFile, MediaEntry, Score } from "../types"
 
-/*
- * Every function below reads/writes cue.file (or score.file / media entry)
- * in place and returns the same object. Callers pass hydrated Mongoose
- * subdocuments as often as plain objects, so the parameter types here are
- * structural rather than the ../types Cue/Score/MediaEntry shapes directly:
- * a generic keeps the caller's own (possibly more specific) type on the way
- * out instead of widening it to the structural type on return.
- */
+// Generic so callers keep their own (Mongoose subdocument or plain object)
+// type on the way out instead of getting widened to this structural type
 interface FileHolder {
   file?: CueFile | null
 }
@@ -61,9 +55,8 @@ export const processDriveCueFiles = async <T extends FileHolder>(
   return processedCues
 }
 
-// Operates on a flat file-shaped object directly (a MediaEntry, or a Cue's or
-// Score's *.file*), not a `{ file }` wrapper -- unlike the cue-processing
-// functions above, which take the cue and reach into cue.file themselves.
+// Takes the file object directly (a MediaEntry, or cue.file/score.file),
+// unlike the functions above which take the cue/score itself.
 interface DriveFileLike {
   driveId?: string
   type?: string

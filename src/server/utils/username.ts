@@ -3,12 +3,8 @@
  * Sanitizes preferred usernames and appends numeric suffixes when names already exist.
  */
 
-/*
- * generateUniqueUsername is called with the User model, which isn't typed
- * yet (models/user.ts lands in the next commit). A minimal structural type
- * for the one method actually used avoids a premature dependency on it and
- * still catches a caller passing the wrong thing.
- */
+// Only typed against the one method we actually call (User.exists), so we
+// don't need a hard dependency on the full User model here.
 interface UsernameLookup {
   exists: (filter: { username: string }) => Promise<unknown>
 }

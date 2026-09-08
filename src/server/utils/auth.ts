@@ -34,11 +34,8 @@ export const validatePassword = (password: string) => {
   }
 }
 
-// pwHash matches bcrypt.compare's own (data: string, encrypted: string)
-// signature -- callers with a possibly-undefined passwordHash (a
-// Firebase-only account has none) cast at the call site instead of this
-// function silently substituting a value bcrypt was never asked to compare
-// against.
+// pwHash can be undefined for a Firebase-only account (no passwordHash) --
+// callers cast at the call site instead of us silently working around it.
 export const checkPassword = (plaintextPassword: string, pwHash: string) => {
   return bcrypt.compare(plaintextPassword, pwHash)
 }
