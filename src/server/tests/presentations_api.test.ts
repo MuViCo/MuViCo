@@ -12,8 +12,8 @@ const { auth } = require("firebase-admin")
 
 const api = supertest(app)
 
-let authHeader
-let presentationId
+let authHeader: any
+let presentationId: any
 describe("GET /presentations", () => {
   beforeEach(async () => {
     await User.deleteMany({})
@@ -61,7 +61,7 @@ describe("GET /presentations", () => {
       .get("/api/home")
       .expect(401)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("operation not permitted")
       })
   })
@@ -73,7 +73,7 @@ describe("GET /presentations", () => {
       .set("Authorization", authHeader)
       .expect(400)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("malformatted id")
       })
   })
@@ -107,7 +107,7 @@ describe("GET /presentations", () => {
       .set("Authorization", authHeader)
       .expect(403)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("access denied")
       })
   })
@@ -119,7 +119,7 @@ describe("GET /presentations", () => {
 
   test("a specific presentation is within the returned presentations", async () => {
     const response = await api.get("/api/home").set("Authorization", authHeader)
-    const contents = response.body.map((r) => r.name)
+    const contents = response.body.map((r: any) => r.name)
     expect(contents).toContain("Test presentation")
   })
 
@@ -204,7 +204,7 @@ describe("POST /presentations", () => {
       .send({})
       .expect(400)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("name is required and must be a string")
       })
   })
@@ -226,7 +226,7 @@ describe("POST /presentations", () => {
       .expect(200)
 
     expect(response.body.length).toBeGreaterThan(0)
-    response.body.forEach((p) => {
+    response.body.forEach((p: any) => {
       expect(p.storage).toBe("googleDrive")
     })
   })
@@ -295,7 +295,7 @@ describe("PUT /presentations", () => {
       .send({ name: "Valid title", description: longDescription })
       .expect(400)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe(
           "description must be at most 500 characters long"
         )
@@ -308,7 +308,7 @@ describe("PUT /presentations", () => {
       .set("Authorization", authHeader)
       .send({ description: "Only description" })
       .expect(400)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("name is required and must be a string")
       })
 
@@ -317,7 +317,7 @@ describe("PUT /presentations", () => {
       .set("Authorization", authHeader)
       .send({ name: "   ", description: "Desc" })
       .expect(400)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe(
           "name must be between 1 and 100 characters long"
         )
@@ -341,7 +341,7 @@ describe("PUT /presentations", () => {
       .send({ name: "Not allowed", description: "Nope" })
       .expect(403)
       .expect("Content-Type", /application\/json/)
-      .expect((res) => {
+      .expect((res: any) => {
         expect(res.body.error).toBe("access denied")
       })
   })

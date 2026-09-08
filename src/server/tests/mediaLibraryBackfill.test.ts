@@ -9,7 +9,7 @@ const {
   summarizeBackfill,
 } = require("../utils/mediaLibraryBackfill")
 
-const cueWithFile = (file) => ({ _id: "cue", cueType: "visual", file })
+const cueWithFile = (file: any) => ({ _id: "cue", cueType: "visual", file })
 
 describe("entryFromCueFile", () => {
   test("carries the stored metadata across and drops the presigned url", () => {
@@ -73,7 +73,10 @@ describe("backfillPresentationMedia", () => {
       ],
     })
 
-    expect(result.media.map((item) => item.id)).toEqual(["file-1", "file-2"])
+    expect(result.media.map((item: any) => item.id)).toEqual([
+      "file-1",
+      "file-2",
+    ])
     expect(result.counts.cuesWithFile).toBe(3)
     expect(result.counts.cuesSharingAddedId).toBe(1)
   })
@@ -99,7 +102,10 @@ describe("backfillPresentationMedia", () => {
     })
 
     expect(result.media[0]).toBe(existing)
-    expect(result.media.map((item) => item.id)).toEqual(["file-1", "file-2"])
+    expect(result.media.map((item: any) => item.id)).toEqual([
+      "file-1",
+      "file-2",
+    ])
   })
 
   test("ignores colour-only cues, which carry no file", () => {

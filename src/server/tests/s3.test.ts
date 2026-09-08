@@ -56,7 +56,7 @@ describe("S3 operations", () => {
     // We assert URL signing behavior, not object download content.
     S3Mock.on(GetObjectCommand).resolves({
       url: "https://s3.example.com/bucket/object",
-    })
+    } as any)
 
     const url = await getObjectSignedUrl("key")
     expect(url).toContain("X-Amz-Signature=")
@@ -67,7 +67,7 @@ describe("S3 operations", () => {
     S3Mock.on(GetObjectCommand).resolves({
       Body: "stream",
       ContentType: "application/pdf",
-    })
+    } as any)
 
     const response = await getObjectStreamS3("presentation-1/score-1")
 
@@ -154,7 +154,7 @@ describe("S3 operations", () => {
         transformToByteArray: async () =>
           new Uint8Array(Buffer.from("preview_array")),
       },
-    })
+    } as any)
     const response = await getObjectBufferS3("presentation-1/image-2")
     expect(response.toString()).toBe("preview_array")
   })

@@ -13,9 +13,9 @@ const verifyToken = require("../utils/verifyToken")
 
 // Pulls the raw refreshToken cookie value out of a supertest response's
 // Set-Cookie header, e.g. "refreshToken=abc123; Path=/api/login; ..." -> "abc123".
-const getRefreshCookieValue = (response) => {
+const getRefreshCookieValue = (response: any) => {
   const setCookie = response.headers["set-cookie"] || []
-  const cookie = setCookie.find((c) => c.startsWith("refreshToken="))
+  const cookie = setCookie.find((c: any) => c.startsWith("refreshToken="))
   return cookie?.split(";")[0].split("=")[1]
 }
 
@@ -111,7 +111,7 @@ describe("Login API", () => {
     const legacyGoogleUser = new User({ username: "legacyuser" })
     await legacyGoogleUser.save()
 
-    verifyToken.mockImplementationOnce((req, res, next) => {
+    verifyToken.mockImplementationOnce((req: any, res: any, next: any) => {
       req.user = {
         uid: "legacyuid",
         email: "legacyuser@example.com",
@@ -137,7 +137,7 @@ describe("Login API", () => {
     const legacyGoogleUser = new User({ username: "legacy.user" })
     await legacyGoogleUser.save()
 
-    verifyToken.mockImplementationOnce((req, res, next) => {
+    verifyToken.mockImplementationOnce((req: any, res: any, next: any) => {
       req.user = {
         uid: "legacyunsanitizeduid",
         email: "legacy.user@example.com",
@@ -167,7 +167,7 @@ describe("Login API", () => {
     })
     await legacyPasswordUser.save()
 
-    verifyToken.mockImplementationOnce((req, res, next) => {
+    verifyToken.mockImplementationOnce((req: any, res: any, next: any) => {
       req.user = {
         uid: "legacyprotecteduid",
         email: "legacy.user@example.com",
@@ -218,7 +218,7 @@ describe("Login API", () => {
     const driveAccessToken = "new-user-drive-token-456"
 
     // Mock verifyToken to return a new user
-    verifyToken.mockImplementationOnce((req, res, next) => {
+    verifyToken.mockImplementationOnce((req: any, res: any, next: any) => {
       req.user = {
         uid: "newuid",
         email: "newuser@example.com",
@@ -284,7 +284,7 @@ describe("Login API", () => {
       .spyOn(User.prototype, "save")
       .mockRejectedValueOnce(new Error("Database error"))
 
-    verifyToken.mockImplementationOnce((req, res, next) => {
+    verifyToken.mockImplementationOnce((req: any, res: any, next: any) => {
       req.user = {
         uid: "erroruid",
         email: "error@example.com",
@@ -348,7 +348,7 @@ describe("Refresh token flow", () => {
       .expect(200)
 
     const setCookie = response.headers["set-cookie"] || []
-    const cookie = setCookie.find((c) => c.startsWith("refreshToken="))
+    const cookie = setCookie.find((c: any) => c.startsWith("refreshToken="))
 
     expect(cookie).toBeDefined()
     expect(cookie).toMatch(/HttpOnly/)

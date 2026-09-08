@@ -18,7 +18,7 @@ const User = require("../models/user")
 
 const usersInDb = async () => {
   const users = await User.find({})
-  return users.map((user) => user.toJSON())
+  return users.map((user: any) => user.toJSON())
 }
 
 const presentation1 = new Presentation({ name: "Test Presentation 1" })
@@ -54,7 +54,7 @@ describe("creation of a new user", () => {
     const usersAtEnd = await usersInDb()
     expect(usersAtEnd).toHaveLength(usersAtStart.length + 1)
 
-    const usernames = usersAtEnd.map((u) => u.username)
+    const usernames = usersAtEnd.map((u: any) => u.username)
     expect(usernames).toContain(newUser.username)
   })
 

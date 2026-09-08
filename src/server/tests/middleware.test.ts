@@ -20,9 +20,9 @@ const {
 jest.mock("../utils/logger")
 
 describe("Middleware functions", () => {
-  let mockRequest
-  let mockResponse
-  let mockNext
+  let mockRequest: any
+  let mockResponse: any
+  let mockNext: any
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -112,7 +112,7 @@ describe("Middleware functions", () => {
   })
 
   describe("userExtractor", () => {
-    let originalSecret
+    let originalSecret: any
 
     beforeEach(() => {
       originalSecret = process.env.SECRET
@@ -220,8 +220,8 @@ describe("Middleware functions", () => {
   })
 
   describe("requirePresentationAccess", () => {
-    let mockUser
-    let mockPresentation
+    let mockUser: any
+    let mockPresentation: any
 
     beforeEach(() => {
       mockUser = {
@@ -388,7 +388,9 @@ describe("Middleware functions", () => {
     })
 
     test("should handle MongoServerError duplicate key error", () => {
-      const error = new Error("E11000 duplicate key error collection")
+      const error: Error & { code?: number } = new Error(
+        "E11000 duplicate key error collection"
+      )
       error.name = "MongoServerError"
       error.code = 11000
 

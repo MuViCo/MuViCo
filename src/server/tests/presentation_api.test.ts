@@ -27,8 +27,8 @@ const path = require("path")
 const api = supertest(app)
 const S3Mock = mockClient(S3Client)
 
-let authHeader
-let testPresentationId
+let authHeader: any
+let testPresentationId: any
 
 const mockImageBuffer = fs.readFileSync(path.join(__dirname, "mock_image.png"))
 const mockAudioBuffer = Buffer.from("mock-audio")
@@ -74,7 +74,7 @@ describe("test presentation", () => {
     testPresentationId = presentation._id
   })
 
-  const createCue = async (index, cueName, screen) => {
+  const createCue = async (index: any, cueName: any, screen: any) => {
     if (!testPresentationId) {
       throw new Error("Error in createCue: testPresentationId is undefined")
     }
@@ -95,7 +95,7 @@ describe("test presentation", () => {
     return response
   }
 
-  const createAudioCue = async (index, cueName, screen) => {
+  const createAudioCue = async (index: any, cueName: any, screen: any) => {
     if (!testPresentationId) {
       throw new Error(
         "Error in createAudioCue: testPresentationId is undefined"
@@ -119,7 +119,7 @@ describe("test presentation", () => {
     return response
   }
 
-  const setIndexCount = async (id, indexCount) => {
+  const setIndexCount = async (id: any, indexCount: any) => {
     if (!testPresentationId) {
       throw new Error("Error in setIndexCount: testPresentationId is undefined")
     }
@@ -473,7 +473,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.name === "Color Cue"
+        (cue: any) => cue.name === "Color Cue"
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.color).toBe("#ff69b4")
@@ -490,7 +490,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.name === "Opacity Cue"
+        (cue: any) => cue.name === "Opacity Cue"
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.opacity).toBe(0.45)
@@ -511,7 +511,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.name === "Continuous Audio"
+        (cue: any) => cue.name === "Continuous Audio"
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.continuePlayback).toBe(true)
@@ -528,7 +528,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.index === 1 && cue.screen === 2
+        (cue: any) => cue.index === 1 && cue.screen === 2
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.name).toBe("")
@@ -545,7 +545,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.name === "Default Color Cue"
+        (cue: any) => cue.name === "Default Color Cue"
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.color).toBe("#000000")
@@ -640,7 +640,7 @@ describe("test presentation", () => {
         .expect(200)
 
       const createdCue = response.body.cues.find(
-        (cue) => cue.name === "Layered Cue"
+        (cue: any) => cue.name === "Layered Cue"
       )
       expect(createdCue).toBeDefined()
       expect(createdCue.layer).toBe(1)
@@ -648,7 +648,7 @@ describe("test presentation", () => {
   })
 
   describe("PUT /api/presentation/:id/:cueId", () => {
-    let testCueId
+    let testCueId: any
 
     beforeEach(async () => {
       const response = await createCue(1, "Test Cue", 2)
@@ -704,7 +704,7 @@ describe("test presentation", () => {
     test("updates continuous playback when provided", async () => {
       const createResponse = await createAudioCue(2, "Audio Cue", 5)
       const audioCue = createResponse.body.cues.find(
-        (cue) => cue.name === "Audio Cue"
+        (cue: any) => cue.name === "Audio Cue"
       )
 
       const response = await api
@@ -844,8 +844,8 @@ describe("test presentation", () => {
   })
 
   describe("PUT /api/presentation/:id/swapCues", () => {
-    let firstCueId
-    let secondCueId
+    let firstCueId: any
+    let secondCueId: any
 
     beforeEach(async () => {
       await createCue(0, "Swap Cue 1", 1)
@@ -853,10 +853,10 @@ describe("test presentation", () => {
 
       const presentation = await Presentation.findById(testPresentationId)
       const firstCue = presentation.cues.find(
-        (cue) => cue.name === "Swap Cue 1"
+        (cue: any) => cue.name === "Swap Cue 1"
       )
       const secondCue = presentation.cues.find(
-        (cue) => cue.name === "Swap Cue 2"
+        (cue: any) => cue.name === "Swap Cue 2"
       )
 
       firstCueId = firstCue._id.toString()
@@ -972,9 +972,11 @@ describe("test presentation", () => {
 
       const presentation = await Presentation.findById(testPresentationId)
       const visualCue = presentation.cues.find(
-        (cue) => cue.name === "Visual Cue"
+        (cue: any) => cue.name === "Visual Cue"
       )
-      const audioCue = presentation.cues.find((cue) => cue.name === "Audio Cue")
+      const audioCue = presentation.cues.find(
+        (cue: any) => cue.name === "Audio Cue"
+      )
 
       const response = await api
         .put(`/api/presentation/${testPresentationId}/swapCues`)
@@ -1086,13 +1088,17 @@ describe("test presentation", () => {
       expect(updatedPresentation.screenCount).toBe(2)
 
       const screen3Cues = updatedPresentation.cues.filter(
-        (cue) => cue.screen === 3
+        (cue: any) => cue.screen === 3
       )
       expect(screen3Cues.length).toBe(0)
 
       const remainingCues = updatedPresentation.cues
-      expect(remainingCues.filter((cue) => cue.screen === 1).length).toBe(2)
-      expect(remainingCues.filter((cue) => cue.screen === 2).length).toBe(1)
+      expect(remainingCues.filter((cue: any) => cue.screen === 1).length).toBe(
+        2
+      )
+      expect(remainingCues.filter((cue: any) => cue.screen === 2).length).toBe(
+        1
+      )
     })
 
     test("Should not delete audio cues when decreasing screen count", async () => {
@@ -1113,7 +1119,7 @@ describe("test presentation", () => {
       const updatedPresentation =
         await Presentation.findById(testPresentationId)
       const audioCues = updatedPresentation.cues.filter(
-        (cue) => cue.cueType === "audio"
+        (cue: any) => cue.cueType === "audio"
       )
       expect(audioCues.length).toBe(1)
     })
@@ -1134,7 +1140,7 @@ describe("test presentation", () => {
       const updatedPresentation =
         await Presentation.findById(testPresentationId)
       const audioCue = updatedPresentation.cues.find(
-        (cue) => cue.cueType === "audio"
+        (cue: any) => cue.cueType === "audio"
       )
       expect(audioCue.screen).toBe(3)
     })
@@ -1155,7 +1161,7 @@ describe("test presentation", () => {
       const updatedPresentation =
         await Presentation.findById(testPresentationId)
       const audioCue = updatedPresentation.cues.find(
-        (cue) => cue.cueType === "audio"
+        (cue: any) => cue.cueType === "audio"
       )
       expect(audioCue.screen).toBe(5)
     })
@@ -1304,7 +1310,7 @@ describe("test presentation", () => {
   })
 
   describe("Authorization checks", () => {
-    let otherAuthHeader
+    let otherAuthHeader: any
 
     beforeEach(async () => {
       // Create another user
@@ -1360,7 +1366,7 @@ describe("test presentation", () => {
   })
 
   describe("Admin Access", () => {
-    let adminToken
+    let adminToken: any
 
     beforeEach(async () => {
       // Create the admin user before each test in this block
@@ -1396,8 +1402,8 @@ describe("test presentation", () => {
 })
 
 describe("PUT /api/presentation/:id/shiftIndexes", () => {
-  let authHeader
-  let testPresentationId
+  let authHeader: any
+  let testPresentationId: any
 
   beforeEach(async () => {
     await User.deleteMany({})
@@ -1438,9 +1444,9 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
 
     const presentation = await Presentation.findById(testPresentationId)
     const cues = presentation.cues
-    const first = cues.find((c) => c.name === "First Cue")
-    const second = cues.find((c) => c.name === "Second Cue")
-    const third = cues.find((c) => c.name === "Third Cue")
+    const first = cues.find((c: any) => c.name === "First Cue")
+    const second = cues.find((c: any) => c.name === "Second Cue")
+    const third = cues.find((c: any) => c.name === "Third Cue")
     expect(first).toBeDefined()
     expect(second).toBeDefined()
     expect(third).toBeDefined()
@@ -1460,9 +1466,9 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
 
     const presentation = await Presentation.findById(testPresentationId)
     const cues = presentation.cues
-    const first = cues.find((c) => c.name === "First Cue")
-    const second = cues.find((c) => c.name === "Second Cue")
-    const third = cues.find((c) => c.name === "Third Cue")
+    const first = cues.find((c: any) => c.name === "First Cue")
+    const second = cues.find((c: any) => c.name === "Second Cue")
+    const third = cues.find((c: any) => c.name === "Third Cue")
     expect(first).toBeDefined()
     expect(second).toBeDefined()
     expect(third).toBeDefined()
@@ -1533,11 +1539,11 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
 })
 
 describe("MRU (Most Recently Used) sorting", () => {
-  let user
-  let presentation1
-  let presentation2
-  let presentation3
-  let authHeader
+  let user: any
+  let presentation1: any
+  let presentation2: any
+  let presentation3: any
+  let authHeader: any
 
   beforeEach(async () => {
     // Create test user
@@ -1725,14 +1731,14 @@ describe("MRU (Most Recently Used) sorting", () => {
 
     // Should only contain user1's presentations
     expect(user1Response.body.length).toBe(3)
-    expect(user1Response.body.every((p) => p.user === user.id.toString())).toBe(
-      true
-    )
+    expect(
+      user1Response.body.every((p: any) => p.user === user.id.toString())
+    ).toBe(true)
   })
 })
 
 describe("Presentation model cue layer validation", () => {
-  let user
+  let user: any
 
   beforeEach(async () => {
     await User.deleteMany({})
@@ -1814,8 +1820,8 @@ describe("Presentation model cue layer validation", () => {
 })
 
 describe("Multi-screen image spanning (spanScreens)", () => {
-  let spanAuthHeader
-  let spanPresentationId
+  let spanAuthHeader: any
+  let spanPresentationId: any
 
   beforeEach(async () => {
     await User.deleteMany({})
@@ -1836,7 +1842,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
     spanPresentationId = homeResponse.body.id
   })
 
-  const createSpanCue = async (screen, spanScreens, index = 0) =>
+  const createSpanCue = async (screen: any, spanScreens: any, index = 0) =>
     api
       .put(`/api/presentation/${spanPresentationId}`)
       .set("Authorization", spanAuthHeader)
@@ -1850,7 +1856,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
     const response = await createSpanCue(1, [1, 2, 3])
     expect(response.status).toBe(200)
 
-    const cue = response.body.cues.find((c) => c.name === "Span cue")
+    const cue = response.body.cues.find((c: any) => c.name === "Span cue")
     expect(cue.spanScreens).toEqual([1, 2, 3])
   })
 
@@ -1919,7 +1925,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
   test("preserves spanScreens when an unrelated field is updated without mentioning it", async () => {
     const createResponse = await createSpanCue(1, [1, 2, 3])
     const cueId = createResponse.body.cues.find(
-      (c) => c.name === "Span cue"
+      (c: any) => c.name === "Span cue"
     )._id
 
     const response = await api
@@ -1936,7 +1942,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
   test("clears spanScreens when the cue's screen changes without a new spanScreens", async () => {
     const createResponse = await createSpanCue(1, [1, 2, 3])
     const cueId = createResponse.body.cues.find(
-      (c) => c.name === "Span cue"
+      (c: any) => c.name === "Span cue"
     )._id
 
     const response = await api
@@ -1953,7 +1959,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
   test("clears spanScreens when explicitly sent as an empty array", async () => {
     const createResponse = await createSpanCue(1, [1, 2, 3])
     const cueId = createResponse.body.cues.find(
-      (c) => c.name === "Span cue"
+      (c: any) => c.name === "Span cue"
     )._id
 
     const response = await api
@@ -1981,13 +1987,15 @@ describe("Multi-screen image spanning (spanScreens)", () => {
       .get(`/api/presentation/${spanPresentationId}`)
       .set("Authorization", spanAuthHeader)
 
-    const cue = response.body.cues.find((c) => c.name === "Span cue")
+    const cue = response.body.cues.find((c: any) => c.name === "Span cue")
     expect(cue.spanScreens).toEqual([1, 2])
   })
 
   test("clears spanScreens on a swapped cue", async () => {
     const spanResponse = await createSpanCue(1, [1, 2, 3])
-    const spanCue = spanResponse.body.cues.find((c) => c.name === "Span cue")
+    const spanCue = spanResponse.body.cues.find(
+      (c: any) => c.name === "Span cue"
+    )
 
     const otherResponse = await api
       .put(`/api/presentation/${spanPresentationId}`)
@@ -1996,7 +2004,7 @@ describe("Multi-screen image spanning (spanScreens)", () => {
       .field("cueName", "Swap partner")
       .field("screen", 2)
     const otherCue = otherResponse.body.cues.find(
-      (c) => c.name === "Swap partner"
+      (c: any) => c.name === "Swap partner"
     )
 
     const response = await api
@@ -2019,8 +2027,8 @@ describe("Multi-screen image spanning (spanScreens)", () => {
 })
 
 describe("Media library (media pool)", () => {
-  let mediaAuthHeader
-  let mediaPresentationId
+  let mediaAuthHeader: any
+  let mediaPresentationId: any
 
   beforeEach(async () => {
     S3Mock.reset()
@@ -2055,7 +2063,7 @@ describe("Media library (media pool)", () => {
       .set("Authorization", mediaAuthHeader)
       .attach("file", mockImageBuffer, filename)
 
-  const createCueFromMedia = async (mediaId, index = 0, screen = 1) =>
+  const createCueFromMedia = async (mediaId: any, index = 0, screen = 1) =>
     api
       .put(`/api/presentation/${mediaPresentationId}`)
       .set("Authorization", mediaAuthHeader)
@@ -2120,7 +2128,7 @@ describe("Media library (media pool)", () => {
     const response = await createCueFromMedia(uploaded.body.id)
 
     expect(response.status).toBe(200)
-    const cue = response.body.cues.find((c) => c.name === "From library")
+    const cue = response.body.cues.find((c: any) => c.name === "From library")
     // Same id as the library entry => same S3 key => one object, shared.
     expect(cue.file.id).toBe(uploaded.body.id)
     expect(cue.file.url).toContain(uploaded.body.id)
@@ -2136,7 +2144,7 @@ describe("Media library (media pool)", () => {
   test("keeps the stored object when a cue created from the library is deleted", async () => {
     const uploaded = await uploadMedia()
     const created = await createCueFromMedia(uploaded.body.id)
-    const cue = created.body.cues.find((c) => c.name === "From library")
+    const cue = created.body.cues.find((c: any) => c.name === "From library")
 
     const response = await api
       .delete(`/api/presentation/${mediaPresentationId}/${cue._id}`)
@@ -2153,7 +2161,7 @@ describe("Media library (media pool)", () => {
   test("removing a library entry also removes the cues built from it", async () => {
     const uploaded = await uploadMedia()
     const created = await createCueFromMedia(uploaded.body.id)
-    const cue = created.body.cues.find((c) => c.name === "From library")
+    const cue = created.body.cues.find((c: any) => c.name === "From library")
 
     const response = await api
       .delete(
@@ -2229,7 +2237,7 @@ describe("Media library (media pool)", () => {
       .field("cueName", "Legacy cue")
       .field("screen", 1)
 
-    const cue = created.body.cues.find((c) => c.name === "Legacy cue")
+    const cue = created.body.cues.find((c: any) => c.name === "Legacy cue")
 
     await api
       .delete(`/api/presentation/${mediaPresentationId}/${cue._id}`)
@@ -2266,7 +2274,7 @@ describe("Media library (media pool)", () => {
 
     expect(response.status).toBe(204)
     const deletedKeys = S3Mock.commandCalls(DeleteObjectCommand).map(
-      (call) => call.args[0].input.Key
+      (call: any) => call.args[0].input.Key
     )
     expect(deletedKeys).toContain(`${mediaPresentationId}/${uploaded.body.id}`)
   })

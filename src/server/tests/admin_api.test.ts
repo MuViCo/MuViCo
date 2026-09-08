@@ -13,7 +13,7 @@ const app = require("../app")
 
 const api = supertest(app)
 
-let authHeader
+let authHeader: any
 
 describe("Get /admin as admin", () => {
   beforeEach(async () => {
@@ -60,7 +60,7 @@ describe("Get /admin as admin", () => {
     const response = await api
       .get("/api/admin")
       .set("Authorization", authHeader)
-    const usernames = response.body.map((r) => r.username)
+    const usernames = response.body.map((r: any) => r.username)
 
     expect(usernames).toContain("testuser")
   })
@@ -211,7 +211,7 @@ describe("Put /admin/makeadmin/:id", () => {
 })
 
 describe("Get /admin/userspresentations/:id", () => {
-  let userId
+  let userId: any
 
   beforeEach(async () => {
     await User.deleteMany({})
@@ -281,7 +281,7 @@ describe("Get /admin/userspresentations/:id", () => {
       .set("Authorization", authHeader)
       .expect(200)
 
-    const names = result.body.map((p) => p.name)
+    const names = result.body.map((p: any) => p.name)
     expect(names).toContain("User's Presentation 1")
     expect(names).toContain("User's Presentation 2")
   })

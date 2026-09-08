@@ -14,7 +14,7 @@ import { minPwLength } from "../../constants.js"
 
 const api = supertest(app)
 
-let authHeader
+let authHeader: any
 
 describe("POST /link-drive and /unlink-drive", () => {
   beforeEach(async () => {

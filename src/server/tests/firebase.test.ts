@@ -17,7 +17,7 @@ jest.mock("firebase-admin", () => {
 })
 
 describe("verifyToken middleware", () => {
-  let req, res, next
+  let req: any, res: any, next: any
 
   beforeEach(() => {
     req = {
