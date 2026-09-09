@@ -123,19 +123,29 @@ const PdfCanvas = ({
         if (cancelled) return
         const vp = page.getViewport({ scale })
         const dpr = window.devicePixelRatio || 1
-        const ctx = canvas.getContext("2d")
+        const buffer = document.createElement("canvas")
+        buffer.width = Math.floor(vp.width * dpr)
+        buffer.height = Math.floor(vp.height * dpr)
+        const ctx = buffer.getContext("2d")
         if (!ctx) return
-        canvas.width = Math.floor(vp.width * dpr)
-        canvas.height = Math.floor(vp.height * dpr)
-        canvas.style.width = `${Math.floor(vp.width)}px`
-        canvas.style.height = `${Math.floor(vp.height)}px`
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+        const transform = dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined
+
         renderTask = page.render({
           canvasContext: ctx,
           viewport: vp,
+          transform,
           background,
         })
         await renderTask.promise
+        if (cancelled) return
+        const visibleContext = canvas.getContext("2d")
+        if (!visibleContext) return
+        canvas.width = buffer.width
+        canvas.height = buffer.height
+        canvas.style.width = `${Math.floor(vp.width)}px`
+        canvas.style.height = `${Math.floor(vp.height)}px`
+        visibleContext.drawImage(buffer, 0, 0)
       } catch {
         /* cancelled or error — silently ignore */
       } finally {
@@ -296,10 +306,13 @@ const ThumbnailCanvas = ({
         canvas.height = Math.floor(vp.height * dpr)
         canvas.style.width = `${THUMB_WIDTH}px`
         canvas.style.height = `${Math.floor(vp.height)}px`
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+        const transform = dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined
+
         await page.render({
           canvasContext: ctx,
           viewport: vp,
+          transform,
           background: "#ffffff",
         }).promise
       } catch {
@@ -949,12 +962,10 @@ const ScorePdfViewer = ({
           minW={0}
           minH={0}
           bg={surfaceBg}
-          overflowX="hidden"
+          overflowX="auto"
           overflowY="auto"
           p={4}
-          display="flex"
-          alignItems="flex-start"
-          justifyContent="center"
+          textAlign="center"
         >
           {isLoading ? (
             <VStack mt={8}>

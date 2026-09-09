@@ -9,7 +9,7 @@ import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import PresentationPage from "../../components/presentation/index"
 import { useDispatch, useSelector } from "react-redux"
-import { useParams, useNavigate } from "react-router-dom"
+import { useLocation, useParams, useNavigate } from "react-router-dom"
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -19,6 +19,7 @@ jest.mock("react-redux", () => ({
 jest.mock("react-router-dom", () => ({
   useParams: jest.fn(),
   useNavigate: jest.fn(),
+  useLocation: jest.fn(),
 }))
 
 jest.mock("../../redux/presentationReducer", () => ({
@@ -43,11 +44,18 @@ jest.mock("../../components/presentation/EditModeContainer", () => {
     return (
       <div>
         <span data-testid="transition-type">{props.transitionType}</span>
+        <span data-testid="show-mode-route">{String(props.isShowMode)}</span>
         <button
           type="button"
           onClick={() => props.onTransitionChange("slide-left")}
         >
           change-transition
+        </button>
+        <button type="button" onClick={props.onEnterShow}>
+          enter-show
+        </button>
+        <button type="button" onClick={props.onExitShow}>
+          exit-show
         </button>
       </div>
     )
@@ -60,6 +68,7 @@ describe("PresentationPage transition preference", () => {
     window.localStorage.clear()
     useParams.mockReturnValue({ id: "presentation-1" })
     useNavigate.mockReturnValue(jest.fn())
+    useLocation.mockReturnValue({ pathname: "/presentation/presentation-1" })
     useDispatch.mockReturnValue(jest.fn())
     useSelector.mockImplementation((selector) =>
       selector({
@@ -98,5 +107,31 @@ describe("PresentationPage transition preference", () => {
       window.localStorage.getItem("presentation-presentation-1-transition")
     ).toBe("slide-left")
     expect(screen.getByTestId("transition-type").textContent).toBe("slide-left")
+  })
+
+  test("passes show mode state from the route", () => {
+    useLocation.mockReturnValue({
+      pathname: "/presentation/presentation-1/show",
+    })
+
+    render(<PresentationPage user={{}} />)
+
+    expect(screen.getByTestId("show-mode-route")).toHaveTextContent("true")
+  })
+
+  test("navigates between edit and show routes", () => {
+    const navigate = jest.fn()
+    useNavigate.mockReturnValue(navigate)
+
+    render(<PresentationPage user={{}} />)
+
+    fireEvent.click(screen.getByText("enter-show"))
+    fireEvent.click(screen.getByText("exit-show"))
+
+    expect(navigate).toHaveBeenNthCalledWith(
+      1,
+      "/presentation/presentation-1/show"
+    )
+    expect(navigate).toHaveBeenNthCalledWith(2, "/presentation/presentation-1")
   })
 })

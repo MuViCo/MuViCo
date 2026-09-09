@@ -9,7 +9,7 @@
  * - Autoplay instructions popover
  * - Audio player (if audio source URL is provided)
  */
-import React, { useEffect, useRef } from "react"
+import React from "react"
 import ClickablePopover from "../utils/ClickablePopover"
 
 import {
@@ -29,6 +29,7 @@ import { ArrowBackIcon, ArrowForwardIcon } from "@chakra-ui/icons"
 import pausebutton from "../../public/icons/pausebutton.svg"
 import playbutton from "../../public/icons/playbutton.svg"
 import { SpeakerIcon } from "../../lib/icons"
+import CueAudioPlayers from "./CueAudioPlayers"
 
 // autoplay controls component used in both presentation navigation and autoplay
 const AutoplayControls = ({ toggleAutoplay, isAutoplaying }) => {
@@ -128,46 +129,6 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   />
 )
 
-const CueAudioPlayer = ({
-  src,
-  loop,
-  isAutoplaying,
-  continuePlayback,
-  allowContinuousAudio,
-}) => {
-  const audioRef = useRef(null)
-  const hasStartedRef = useRef(false)
-
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (!isAutoplaying || !src) {
-      if (
-        (loop || continuePlayback) &&
-        allowContinuousAudio &&
-        hasStartedRef.current
-      ) {
-        return
-      }
-      audio.pause()
-      return
-    }
-
-    const playPromise = audio.play()
-    hasStartedRef.current = true
-    if (playPromise?.catch) {
-      playPromise.catch(() => {})
-    }
-  }, [src, loop, isAutoplaying, continuePlayback, allowContinuousAudio])
-
-  if (!src) return null
-
-  return (
-    <audio ref={audioRef} loop={loop} src={src} preload="metadata" hidden />
-  )
-}
-
 const getTrackLabel = (track, index) => {
   if (track.name) return track.name
   const sourceName = String(track.src || "")
@@ -225,6 +186,7 @@ const PresentationPlaybackControls = ({
   audioLoop = false,
   audioTracks = [],
   allowContinuousAudio = false,
+  renderAudioPlayers = true,
 }) => {
   const resolvedAudioTracks =
     audioTracks.length > 0
@@ -285,16 +247,13 @@ const PresentationPlaybackControls = ({
         tracks={resolvedAudioTracks.filter((track) => track.src)}
         isAutoplaying={isAutoplaying}
       />
-      {resolvedAudioTracks.map((track, trackIndex) => (
-        <CueAudioPlayer
-          key={track.id || `${track.src}-${trackIndex}`}
-          src={track.src}
-          loop={Boolean(track.loop)}
+      {renderAudioPlayers && (
+        <CueAudioPlayers
+          tracks={resolvedAudioTracks}
           isAutoplaying={isAutoplaying}
-          continuePlayback={Boolean(track.continuePlayback)}
           allowContinuousAudio={allowContinuousAudio}
         />
-      ))}
+      )}
     </Box>
   )
 }

@@ -28,6 +28,7 @@ const App = () => {
 
   const location = useLocation()
   const isPresentation = location.pathname.startsWith("/presentation")
+  const isShowMode = /\/presentation\/[^/]+\/show\/?$/.test(location.pathname)
   const isHome = location.pathname.startsWith("/home")
   const isProfile = location.pathname.startsWith("/profile")
 
@@ -56,7 +57,7 @@ const App = () => {
         display="flex"
         flexDirection="column"
       >
-        <NavBar user={user} setUser={setUser} />
+        {!isShowMode && <NavBar user={user} setUser={setUser} />}
         <Container
           flex="1"
           // min-height 0 is what lets a flex child actually shrink and hand the
@@ -67,7 +68,9 @@ const App = () => {
           overflow={isPresentation ? "hidden" : undefined}
           pt={
             isPresentation
-              ? "var(--muvico-navbar-h, 4.5rem)"
+              ? isShowMode
+                ? 0
+                : "var(--muvico-navbar-h, 4.5rem)"
               : isHome
                 ? 24
                 : isProfile
@@ -91,7 +94,7 @@ const App = () => {
               }
             />
             <Route
-              path="/presentation/:id"
+              path="/presentation/:id/*"
               element={
                 user ? (
                   // userId and setUser used to be passed here too, but

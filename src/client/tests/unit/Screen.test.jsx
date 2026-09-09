@@ -137,6 +137,40 @@ describe("Screen", () => {
     })
   })
 
+  test("covers the output with black without removing the current cue", async () => {
+    const screenData = {
+      file: null,
+      color: "#ff00ff",
+      index: 0,
+      name: "color cue",
+      screen: 1,
+      _id: "color-cue",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          isBlackout={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    await waitFor(() => {
+      expect(
+        within(popup.document.body).getByTestId("screen-blackout")
+      ).toBeTruthy()
+      expect(
+        within(popup.document.body).getByTestId("incoming-cue-layer")
+      ).toBeTruthy()
+    })
+  })
+
   test("renders a color background when cue has no file but has color", async () => {
     const screenData = {
       file: null,
@@ -194,6 +228,49 @@ describe("Screen", () => {
     )
 
     expect(window.open).not.toHaveBeenCalled()
+  })
+
+  test("reports when the browser blocks an output popup", async () => {
+    window.open.mockReturnValueOnce(null)
+    const onClose = jest.fn()
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={2}
+          screenData={null}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+    })
+
+    expect(onClose).toHaveBeenCalledWith(2)
+  })
+
+  test("detects an output popup closed without beforeunload", async () => {
+    jest.useFakeTimers()
+    const onClose = jest.fn()
+    let view
+
+    await act(async () => {
+      view = render(
+        <Screen
+          screenNumber={3}
+          screenData={null}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    popup.closed = true
+    act(() => jest.advanceTimersByTime(750))
+
+    expect(onClose).toHaveBeenCalledWith(3)
+    view.unmount()
+    jest.useRealTimers()
   })
 
   test("renders video media when cue is a video", async () => {

@@ -93,6 +93,10 @@ describe("ScoreMarkerOverlay", () => {
 
     expect(screen.getByText("3")).toBeInTheDocument()
     expect(screen.queryByText("7")).not.toBeInTheDocument()
+    expect(screen.getByTestId("score-marker-pin")).toHaveAttribute(
+      "data-active",
+      "false"
+    )
   })
 
   test("clicking a marker selects it for editing instead of placing a new one", () => {
