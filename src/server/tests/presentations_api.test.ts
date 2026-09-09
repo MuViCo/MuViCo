@@ -1,0 +1,352 @@
+/*
+ * Presentations API integration tests.
+ * Covers listing, fetching, creating, and updating presentations,
+ * including auth rules, validation errors, and user access boundaries.
+ */
+const supertest = require("supertest")
+const mongoose = require("mongoose")
+const Presentation = require("../models/presentation")
+const User = require("../models/user")
+const app = require("../app")
+const { auth } = require("firebase-admin")
+
+const api = supertest(app)
+
+let authHeader: any
+let presentationId: any
+describe("GET /presentations", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+    // Login and get the token
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    // Set the token in the authHeader
+    authHeader = `Bearer ${response.body.token}`
+
+    const createRes = await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Test presentation" })
+      .expect(201)
+      .expect("Content-Type", /application\/json/)
+
+    presentationId = createRes.body.id
+  })
+
+  test("adding a presentation", async () => {
+    await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Moi tää on testi" })
+      .expect(201)
+      .expect("Content-Type", /application\/json/)
+  })
+
+  test("presentations are returned as json", async () => {
+    await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+  })
+
+  test("returns 401 without authorization", async () => {
+    await api
+      .get("/api/home")
+      .expect(401)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("operation not permitted")
+      })
+  })
+
+  test("returns 400 with invalid presentation id", async () => {
+    global.console = { ...console, error: jest.fn() }
+    await api
+      .get("/api/home/invalid-id")
+      .set("Authorization", authHeader)
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("malformatted id")
+      })
+  })
+
+  test("fetches a specific presentation by id", async () => {
+    const response = await api
+      .get(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.name).toBe("Test presentation")
+  })
+
+  test("returns 404 when fetching other user's presentation", async () => {
+    const otherRes = await api
+      .post("/api/signup")
+      .send({ username: "other", password: "secretpw" })
+    const otherLogin = await api
+      .post("/api/login")
+      .send({ username: "other", password: "secretpw" })
+    const otherAuth = `Bearer ${otherLogin.body.token}`
+
+    const otherPres = await api
+      .post("/api/home")
+      .set("Authorization", otherAuth)
+      .send({ name: "Other's presentation" })
+
+    await api
+      .get(`/api/home/${otherPres.body.id}`)
+      .set("Authorization", authHeader)
+      .expect(403)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("access denied")
+      })
+  })
+
+  test("all presentations are returned", async () => {
+    const response = await api.get("/api/home").set("Authorization", authHeader)
+    expect(response.body).toHaveLength(1)
+  })
+
+  test("a specific presentation is within the returned presentations", async () => {
+    const response = await api.get("/api/home").set("Authorization", authHeader)
+    const contents = response.body.map((r: any) => r.name)
+    expect(contents).toContain("Test presentation")
+  })
+
+  test("returns the earliest highest-priority visual cue on screen 1 as preview", async () => {
+    const presentation = await Presentation.findById(presentationId)
+    presentation.screenCount = 2
+    presentation.cues = [
+      {
+        cueType: "visual",
+        index: 0,
+        name: "Other screen",
+        screen: 2,
+        layer: 0,
+        color: "#111111",
+      },
+      {
+        cueType: "visual",
+        index: 1,
+        name: "Lower priority",
+        screen: 1,
+        layer: 1,
+        color: "#222222",
+      },
+      {
+        cueType: "visual",
+        index: 1,
+        name: "Screen 1 preview",
+        screen: 1,
+        layer: 0,
+        file: {
+          id: "preview-file",
+          name: "preview.png",
+          url: "",
+          type: "image/png",
+        },
+      },
+    ]
+    await presentation.save()
+
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    expect(response.body[0].previewCue.name).toBe("Screen 1 preview")
+    expect(response.body[0].previewCue.file.url).toContain("preview-file")
+  })
+})
+
+describe("POST /presentations", () => {
+  beforeEach(async () => {
+    await Presentation.deleteMany({})
+    await User.deleteMany({})
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+    // Login and get the token
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    // Set the token in the authHeader
+    authHeader = `Bearer ${response.body.token}`
+  })
+
+  test("a valid presentation can be added", async () => {
+    await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Test presentation" })
+      .expect(201)
+      .expect("Content-Type", /application\/json/)
+
+    const presentationsAtEnd = await Presentation.find({})
+    expect(presentationsAtEnd).toHaveLength(1)
+  })
+
+  test("returns 400 without name", async () => {
+    await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({})
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("name is required and must be a string")
+      })
+  })
+
+  test("returns only googleDrive presentations when user has driveToken", async () => {
+    const user = await User.findOne({ username: "testuser" })
+    user.driveToken = "test-drive-token"
+    await user.save()
+
+    const presRes = await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Drive presentation" })
+      .expect(201)
+
+    const response = await api
+      .get("/api/home")
+      .set("Authorization", authHeader)
+      .expect(200)
+
+    expect(response.body.length).toBeGreaterThan(0)
+    response.body.forEach((p: any) => {
+      expect(p.storage).toBe("googleDrive")
+    })
+  })
+})
+
+describe("PUT /presentations", () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    await api
+      .post("/api/signup")
+      .send({ username: "testuser", password: "testpassword" })
+
+    const response = await api
+      .post("/api/login")
+      .send({ username: "testuser", password: "testpassword" })
+
+    authHeader = `Bearer ${response.body.token}`
+
+    const createRes = await api
+      .post("/api/home")
+      .set("Authorization", authHeader)
+      .send({ name: "Old title", description: "Old description" })
+      .expect(201)
+
+    presentationId = createRes.body.id
+  })
+
+  test("updates presentation name and description", async () => {
+    const response = await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "Updated title", description: "Updated description" })
+      .expect(200)
+      .expect("Content-Type", /application\/json/)
+
+    expect(response.body.name).toBe("Updated title")
+    expect(response.body.description).toBe("Updated description")
+
+    const updatedInDb = await Presentation.findById(presentationId)
+    expect(updatedInDb.name).toBe("Updated title")
+    expect(updatedInDb.description).toBe("Updated description")
+  })
+
+  test("trims name and description on update", async () => {
+    const response = await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({
+        name: "   Trimmed title   ",
+        description: "   Trimmed description   ",
+      })
+      .expect(200)
+
+    expect(response.body.name).toBe("Trimmed title")
+    expect(response.body.description).toBe("Trimmed description")
+  })
+
+  test("returns 400 when description exceeds max length", async () => {
+    const longDescription = "a".repeat(501)
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "Valid title", description: longDescription })
+      .expect(400)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe(
+          "description must be at most 500 characters long"
+        )
+      })
+  })
+
+  test("returns 400 when name is missing or empty", async () => {
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ description: "Only description" })
+      .expect(400)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("name is required and must be a string")
+      })
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", authHeader)
+      .send({ name: "   ", description: "Desc" })
+      .expect(400)
+      .expect((res: any) => {
+        expect(res.body.error).toBe(
+          "name must be between 1 and 100 characters long"
+        )
+      })
+  })
+
+  test("returns 403 when updating another user's presentation", async () => {
+    await api
+      .post("/api/signup")
+      .send({ username: "other", password: "secretpw" })
+
+    const otherLogin = await api
+      .post("/api/login")
+      .send({ username: "other", password: "secretpw" })
+
+    const otherAuth = `Bearer ${otherLogin.body.token}`
+
+    await api
+      .put(`/api/home/${presentationId}`)
+      .set("Authorization", otherAuth)
+      .send({ name: "Not allowed", description: "Nope" })
+      .expect(403)
+      .expect("Content-Type", /application\/json/)
+      .expect((res: any) => {
+        expect(res.body.error).toBe("access denied")
+      })
+  })
+})
+
+afterAll(async () => {
+  await mongoose.connection.close()
+})
