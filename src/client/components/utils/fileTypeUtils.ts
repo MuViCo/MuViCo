@@ -22,6 +22,21 @@ export const isType = {
   audio: (file: MimeTyped) => file?.type?.includes("audio"),
 }
 
+type MediaFile = (MimeTyped & { url?: string }) | null | undefined
+
+const getCleanUrl = (file: MediaFile): string =>
+  String(file?.url || "")
+    .split("?")[0]
+    .split("#")[0]
+
+export const isImageFile = (file: MediaFile): boolean =>
+  Boolean(isType.image(file)) ||
+  /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(getCleanUrl(file))
+
+export const isVideoFile = (file: MediaFile): boolean =>
+  Boolean(isType.video(file)) ||
+  /\.(mp4|webm|ogg|mov|m4v)$/i.test(getCleanUrl(file))
+
 export const VALID_VISUAL_MIME_TYPES = [
   "image/png",
   "image/jpeg",

@@ -5,7 +5,7 @@
  * The component fetches presentation information from the Redux store and passes necessary props down to the EditModeContainer component for rendering the appropriate UI based on the current mode.
  */
 import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useLocation, useParams, useNavigate } from "react-router-dom"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import { useDispatch, useSelector } from "react-redux"
 
@@ -16,6 +16,7 @@ const PresentationPage = ({ user }) => {
   const { id } = useParams()
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
   const [cueIndex, setCueIndex] = useState(0)
   const [showHint, setShowHint] = useState(false)
   const {
@@ -56,6 +57,7 @@ const PresentationPage = ({ user }) => {
   const presentationInfo = useSelector((state) => state.presentation.cues)
   const presentationName = useSelector((state) => state.presentation.name)
   const indexCount = useSelector((state) => state.presentation.indexCount)
+  const isShowMode = location.pathname.endsWith("/show")
 
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
@@ -86,6 +88,9 @@ const PresentationPage = ({ user }) => {
       isAudioMuted={isAudioMuted}
       toggleAudioMute={toggleAudioMute}
       indexCount={indexCount}
+      isShowMode={isShowMode}
+      onEnterShow={() => navigate(`/presentation/${id}/show`)}
+      onExitShow={() => navigate(`/presentation/${id}`)}
     />
   )
 }

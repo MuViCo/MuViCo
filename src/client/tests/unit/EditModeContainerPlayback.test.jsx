@@ -83,6 +83,28 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
     )
   }
 })
+jest.mock("../../components/presentation/CueAudioPlayers", () => () => null)
+jest.mock("../../components/presentation/ShowMode", () => {
+  return function MockShowMode(props) {
+    return (
+      <div data-testid="mock-show-mode">
+        <span data-testid="mock-blackout">{String(props.isBlackout)}</span>
+        <button type="button" onClick={props.onPrevious}>
+          Show previous
+        </button>
+        <button type="button" onClick={props.onNext}>
+          Show next
+        </button>
+        <button type="button" onClick={props.onToggleBlackout}>
+          Show blackout
+        </button>
+        <button type="button" onClick={props.onExit}>
+          Exit show
+        </button>
+      </div>
+    )
+  }
+})
 
 // makeResizable returns a disposer the caller must invoke on unmount.
 jest.mock("../../components/utils/ResizeElement", () =>
@@ -268,5 +290,33 @@ describe("EditModeContainer playback behavior", () => {
 
     expect(fetchPresentationInfo).toHaveBeenCalledWith("presentation-1")
     expect(dispatchMock).toHaveBeenCalled()
+  })
+
+  test("connects show mode controls to the editor state", () => {
+    const updateCue = jest.fn()
+    const onExitShow = jest.fn()
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        isShowMode
+        updateCue={updateCue}
+        onExitShow={onExitShow}
+      />
+    )
+
+    expect(screen.getByTestId("mock-show-mode")).toBeInTheDocument()
+    expect(screen.getByTestId("mock-blackout")).toHaveTextContent("false")
+
+    fireEvent.click(screen.getByText("Show previous"))
+    fireEvent.click(screen.getByText("Show next"))
+    fireEvent.click(screen.getByText("Show blackout"))
+
+    expect(updateCue).toHaveBeenNthCalledWith(1, "Previous")
+    expect(updateCue).toHaveBeenNthCalledWith(2, "Next")
+    expect(screen.getByTestId("mock-blackout")).toHaveTextContent("true")
+
+    fireEvent.click(screen.getByText("Exit show"))
+    expect(onExitShow).toHaveBeenCalledTimes(1)
   })
 })

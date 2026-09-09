@@ -168,6 +168,18 @@ The Scores tab in the editor's side panel lets you attach a PDF score to the pre
 
 Markers are purely informational — they don't automatically advance the presentation. They're there so a performer can see, at a glance while reading their score, which frame the show should be on at that point.
 
+## Show mode
+
+Click **Show mode** from the editor to run the presentation in a dedicated full-screen workspace. The editor state, current frame, open display windows, audio playback, and score remain active when switching modes.
+
+- **Music stand**: Read the score in a two-page or scrolling layout, follow the marker for the current frame, and enable automatic page turns. The side rail shows live and next screen previews, frame cues, and active audio tracks.
+- **Control room**: Monitor every display, distinguish open and closed output windows, open a display directly, preview which screens will change on the next frame, and view the score in a compact panel.
+- **GO and Previous**: Advance or return one frame while keeping visual and audio cues synchronized.
+- **Auto**: Run frames automatically using the interval configured in the editor.
+- **Blackout**: Mask every output window without changing the current frame or stopping audio. The operator previews remain visible.
+- **Monitor**: Open either the score or the complete screen wall in a separate operator window.
+- **Exit**: Return to the same presentation in the editor.
+
 ## Profile page
 
 Navigate to the profile page from the navigation bar.

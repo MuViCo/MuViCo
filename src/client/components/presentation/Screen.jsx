@@ -174,6 +174,7 @@ const ScreenContent = ({
   showText,
   transitionType,
   screenWidths,
+  isBlackout,
 }) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
   const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
@@ -257,6 +258,15 @@ const ScreenContent = ({
       >
         {renderCueStack(currentScreenData, screenNumber, screenWidths)}
       </Box>
+      {isBlackout && (
+        <Box
+          data-testid="screen-blackout"
+          position="absolute"
+          inset="0"
+          zIndex={1000}
+          bg="black"
+        />
+      )}
     </Box>
   )
 }
@@ -269,6 +279,7 @@ const Screen = ({
   transitionType,
   screenWidths,
   onWidthChange,
+  isBlackout = false,
 }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -295,6 +306,10 @@ const Screen = ({
           `Screen ${screenNumber}`,
           "width=800,height=600"
         )
+        if (!newWindow) {
+          onClose(screenNumber)
+          return
+        }
         windowRef.current = newWindow
         setIsWindowReady(true)
 
@@ -349,6 +364,21 @@ const Screen = ({
       }
     }
   }, [isVisible, screenNumber, onClose])
+
+  useEffect(() => {
+    if (!isVisible) return undefined
+    const interval = window.setInterval(() => {
+      if (windowRef.current?.closed) {
+        windowRef.current = null
+        setIsWindowReady(false)
+        setEmotionCache(null)
+        setCurrentScreenData(null)
+        setPreviousScreenData(null)
+        onClose(screenNumber)
+      }
+    }, 750)
+    return () => window.clearInterval(interval)
+  }, [isVisible, onClose, screenNumber])
 
   useEffect(() => {
     if (windowRef.current && !emotionCache) {
@@ -444,10 +474,7 @@ const Screen = ({
   }, [])
 
   // Only render the portal when the window is ready
-  return windowRef.current &&
-    isWindowReady &&
-    emotionCache &&
-    (currentScreenData || previousScreenData)
+  return windowRef.current && isWindowReady && emotionCache
     ? ReactDOM.createPortal(
         //inject Emotion styles to portal (e.g. fadeOut, fadeIn effects)
         <CacheProvider value={emotionCache}>
@@ -458,6 +485,7 @@ const Screen = ({
             showText={showText}
             transitionType={transitionType}
             screenWidths={screenWidths}
+            isBlackout={isBlackout}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
