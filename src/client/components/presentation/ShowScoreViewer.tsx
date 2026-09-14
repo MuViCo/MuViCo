@@ -345,6 +345,7 @@ const ShowScoreViewer = ({
                 Scrolling
               </Button>
             </Box>
+            {/* Temporarily hidden until automatic page turning is wired up.
             <Button
               className="show-auto-turn"
               data-active={autoPageTurn}
@@ -355,6 +356,7 @@ const ShowScoreViewer = ({
               </Box>
               Auto page turn
             </Button>
+            */}
           </HStack>
         )}
       </Box>

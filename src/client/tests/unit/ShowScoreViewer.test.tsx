@@ -130,11 +130,10 @@ describe("ShowScoreViewer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Scrolling" }))
     fireEvent.click(screen.getByRole("button", { name: "Two pages" }))
-    fireEvent.click(screen.getByRole("button", { name: "Auto page turn" }))
 
     expect(onPageModeChange).toHaveBeenCalledWith("scroll")
     expect(onPageModeChange).toHaveBeenCalledWith("two")
-    expect(onAutoPageTurnChange).toHaveBeenCalledWith(true)
+    expect(onAutoPageTurnChange).not.toHaveBeenCalled()
   })
 
   test("zoom controls still step even before the page is measured", async () => {
