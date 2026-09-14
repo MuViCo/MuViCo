@@ -3,7 +3,13 @@
  * Covers cue rendering states, drag indicators, media/audio behavior, and cue menu actions
  * such as copy, delete, and loop toggle updates.
  */
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import {
+  createEvent,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react"
 import "@testing-library/jest-dom"
 import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"
 import { useDispatch } from "react-redux"
@@ -104,6 +110,98 @@ describe("GridLayoutComponent", () => {
     const firstCallProps = mockGridLayout.mock.calls[0][0]
     expect(firstCallProps.isDraggable).toBe(false)
     expect(firstCallProps.onDragStop).toBeUndefined()
+  })
+
+  it("keeps the cue menu trigger visible in light mode", () => {
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }]
+    )
+
+    expect(screen.getByTestId("cue-menu-button-visual-1")).toHaveStyle({
+      color: "white",
+    })
+  })
+
+  it("opens cue actions at the right-click coordinates", () => {
+    const cue = {
+      _id: "visual-context",
+      index: 0,
+      screen: 1,
+      name: "Context cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    const cueContent = document.querySelector(
+      '[data-cue-content-id="visual-context"]'
+    )
+    const contextMenuEvent = createEvent.contextMenu(cueContent, {
+      clientX: 124,
+      clientY: 236,
+    })
+
+    fireEvent(cueContent, contextMenuEvent)
+
+    expect(contextMenuEvent.defaultPrevented).toBe(true)
+    expect(screen.getByTestId("cue-context-menu")).toBeInTheDocument()
+    expect(screen.getByTestId("cue-context-menu-anchor")).toHaveStyle({
+      left: "124px",
+      top: "236px",
+    })
+  })
+
+  it("opens cue actions with the keyboard context-menu shortcut", () => {
+    const cue = {
+      _id: "visual-keyboard",
+      index: 0,
+      screen: 1,
+      name: "Keyboard cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    fireEvent.keyDown(screen.getByTestId("cue-menu-button-visual-keyboard"), {
+      key: "F10",
+      shiftKey: true,
+    })
+
+    expect(screen.getByTestId("cue-context-menu")).toBeInTheDocument()
+  })
+
+  it("does not open cue actions while copy placement is active", () => {
+    const cue = {
+      _id: "visual-copying",
+      index: 0,
+      screen: 1,
+      name: "Copying cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }], {
+      isCopied: true,
+    })
+
+    fireEvent.contextMenu(
+      document.querySelector('[data-cue-content-id="visual-copying"]'),
+      { clientX: 10, clientY: 20 }
+    )
+
+    expect(screen.queryByTestId("cue-context-menu")).not.toBeInTheDocument()
   })
 
   it("renders continuation overlay only for auto-expanded cue area", () => {
@@ -350,7 +448,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
-    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue"))
+    fireEvent.click(screen.getByLabelText("Copy Visual cue"))
 
     await waitFor(() => {
       expect(setIsCopied).toHaveBeenCalledWith(true)
@@ -381,7 +479,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
-    fireEvent.mouseDown(screen.getByLabelText("Delete Visual cue"))
+    fireEvent.click(screen.getByLabelText("Delete Visual cue"))
 
     fireEvent.click(await screen.findByRole("button", { name: "Yes" }))
 
@@ -419,7 +517,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
-    fireEvent.mouseDown(screen.getByLabelText("Loop audio Audio cue"))
+    fireEvent.click(screen.getByLabelText("Loop audio Audio cue"))
 
     await waitFor(() => {
       expect(updatePresentation).toHaveBeenCalledWith(
@@ -462,7 +560,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
-    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
 
     await waitFor(() => {
       expect(updatePresentation).toHaveBeenCalledWith(
@@ -536,7 +634,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
-    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith(
@@ -584,7 +682,7 @@ describe("GridLayoutComponent", () => {
     )
 
     fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
-    fireEvent.mouseDown(screen.getByLabelText("Continue audio Audio cue"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
 
     await waitFor(() => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -793,7 +891,7 @@ describe("GridLayoutComponent", () => {
       )
 
       fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
-      fireEvent.mouseDown(screen.getByLabelText("Multi-screen Visual cue"))
+      fireEvent.click(screen.getByLabelText("Multi-screen Visual cue"))
 
       expect(setSelectedCue).toHaveBeenCalledWith(visualCueWithFile)
       expect(setIsMultiScreenModalOpen).toHaveBeenCalledWith(true)

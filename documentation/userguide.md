@@ -139,7 +139,10 @@ You can edit element names by double-clicking them.
 or
 
 - **Choose the element to edit**:
-  - Click the top-right corner of the element to open the dropdown menu.
+  - Right-click the element to open its actions at the pointer position.
+  - Alternatively, hover or focus the element and click the three-dot button in
+    its top-right corner. On a keyboard, use `Shift+F10` while that button is
+    focused.
 - **Delete**:
   - Remove the element from the presentation.
 - **Edit**:

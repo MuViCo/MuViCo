@@ -77,14 +77,31 @@ describe("GridLayout", () => {
     await addBlankCue(page, "testcue_del", "2", "2")
 
     const cue = page.locator('[data-testid="cue-testcue_del"]')
-    await cue.hover()
-    await cue.getByRole("button", { name: "Options" }).click()
+    await openCueMenu(cue)
     await page.getByRole("button", { name: `Delete testcue_del` }).click()
 
     await expect(
       page.getByText("Are you sure you want to remove this element?")
     ).toBeVisible()
     await page.getByRole("button", { name: "Yes" }).click()
+  })
+
+  test("user can open cue actions with a right click", async ({ page }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "contextcue", "1", "1")
+
+    await page.getByTestId("cue-contextcue").click({ button: "right" })
+
+    await expect(page.getByRole("menu")).toBeVisible()
+    await expect(
+      page.getByRole("menuitem", { name: "Edit contextcue" })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("menuitem", { name: "Delete contextcue" })
+    ).toBeVisible()
+
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("menu")).not.toBeVisible()
   })
 
   test("should add a cue by dragging and dropping a file", async ({ page }) => {

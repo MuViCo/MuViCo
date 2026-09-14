@@ -851,7 +851,7 @@ describe("EditMode drag swapping", () => {
       expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
     })
 
-    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+    fireEvent.click(screen.getByLabelText("Copy Visual cue 1"))
 
     await waitFor(() => {
       expect(gridContainer).toHaveStyle({ cursor: "copy" })
@@ -884,7 +884,7 @@ describe("EditMode drag swapping", () => {
       expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
     })
 
-    fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+    fireEvent.click(screen.getByLabelText("Copy Visual cue 1"))
 
     fireEvent.mouseMove(gridContainer, {
       clientX: 10,
@@ -915,7 +915,7 @@ describe("EditMode drag swapping", () => {
         expect(screen.getByLabelText("Copy Visual cue 1")).toBeInTheDocument()
       })
 
-      fireEvent.mouseUp(screen.getByLabelText("Copy Visual cue 1"))
+      fireEvent.click(screen.getByLabelText("Copy Visual cue 1"))
 
       fireEvent.mouseMove(gridContainer, {
         clientX: 330,

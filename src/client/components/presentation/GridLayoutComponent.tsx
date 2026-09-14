@@ -2,27 +2,10 @@
  * Component for rendering the grid layout of cues in the presentation editor, using the react-grid-layout library.
  * The component handles rendering of media cues (video, image, audio) with appropriate controls for editing and copying cues in edit mode, and loop indicators in show mode.
  */
-import React, { useState, useMemo } from "react"
-import {
-  Box,
-  IconButton,
-  Tooltip,
-  Text,
-  Menu,
-  MenuButton,
-  MenuList,
-  Portal,
-} from "@chakra-ui/react"
-import {
-  DeleteIcon,
-  CopyIcon,
-  RepeatIcon,
-  ArrowForwardIcon,
-  EditIcon,
-  ChevronDownIcon,
-  TimeIcon,
-  ExternalLinkIcon,
-} from "@chakra-ui/icons"
+import { useState, useMemo } from "react"
+import { Box, Icon, IconButton, Tooltip, Text } from "@chakra-ui/react"
+import { ExternalLinkIcon } from "@chakra-ui/icons"
+import { FiMoreVertical } from "react-icons/fi"
 import GridLayout from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import {
@@ -34,7 +17,7 @@ import {
 } from "./timelineMetrics"
 import type { LaneFocusLayout } from "../utils/laneFocus"
 
-import type { RefObject } from "react"
+import type { MouseEvent as ReactMouseEvent, RefObject } from "react"
 import type { Layout } from "react-grid-layout"
 import type { AlertData, Cue, SpanOverrideMap } from "../../types"
 
@@ -86,6 +69,9 @@ import {
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import CueContextMenu from "./CueContextMenu"
+
+import type { CueContextMenuState } from "./CueContextMenu"
 
 const renderElementBasedOnIndex = (
   currentIndex: number,
@@ -221,6 +207,9 @@ const GridLayoutComponent = ({
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<CueContextMenuState | null>(
+    null
+  )
 
   const cueVisualSpanMap = useMemo(
     () => buildCueVisualSpanMap(cues, indexCount),
@@ -382,157 +371,44 @@ const GridLayoutComponent = ({
     setIsMultiScreenModalOpen(true)
   }
 
-  // helper component for rendering edit mode buttons for each cue, including options to edit, copy, delete, and toggle loop for audio cues
-  const EditModeCueButtons = (cue: Cue) => (
-    <Menu isLazy>
-      <MenuButton
-        as={IconButton}
-        data-testid={`cue-menu-button-${cue._id}`}
-        aria-label="Options"
-        icon={<ChevronDownIcon />}
-        backgroundColor="var(--chakra-colors-gray-700)"
-        _hover={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
-        _active={{ backgroundColor: "var(--chakra-colors-gray-600)" }}
-        variant="outline"
-        position="absolute"
-        zIndex="10"
-        top="3px"
-        left={`${Math.max(columnWidth - 27, 3)}px`}
-        size="xs"
-      />
-      <Portal>
-        <MenuList
-          background="transparent"
-          margin="-5px 0 0 -13px"
-          w="50px"
-          paddingTop={0}
-          paddingBottom={0}
-          minW="none"
-        >
-          <IconButton
-            icon={<DeleteIcon />}
-            size="xs"
-            w="100%"
-            h="30px"
-            borderRadius="0.375rem 0.375rem 0 0"
-            _hover={{ bg: "red.500", color: "white" }}
-            backgroundColor="red.300"
-            draggable={false}
-            aria-label={`Delete ${cue.name}`}
-            title="Delete element"
-            onMouseDown={(e) => {
-              e.stopPropagation()
-              handleRemoveItem(cue._id)
-            }}
-          />
-          <IconButton
-            icon={<EditIcon />}
-            size="xs"
-            w="100%"
-            h="30px"
-            borderRadius={0}
-            _hover={{ bg: "orange.500", color: "white" }}
-            backgroundColor="orange.300"
-            draggable={false}
-            aria-label={`Edit ${cue.name}`}
-            title="Edit element"
-            onMouseDown={(e) => {
-              e.stopPropagation()
-              handleEditItem(cue._id)
-            }}
-          />
-          <IconButton
-            icon={<CopyIcon />}
-            size="xs"
-            w="100%"
-            h="30px"
-            borderRadius={
-              // A file always means a button follows below: Loop/Continue
-              // for audio, Multi-screen for visual.
-              cue.file != null ? "0" : "0 0 0.375rem 0.375rem"
-            }
-            _hover={{ bg: "gray.600", color: "white" }}
-            backgroundColor="gray.500"
-            draggable={false}
-            aria-label={`Copy ${cue.name}`}
-            title="Copy element"
-            onMouseUp={(e) => {
-              e.stopPropagation()
-              setIsCopied(true)
-              setCopiedCue(cue)
-              setShowAlert(true)
-              setAlertData({
-                title: `Copying in progress for element "${cue.name}".`,
-                description:
-                  "Click on available places on the grid to paste. Click outside the grid to cancel.",
-                status: "info",
-              })
-            }}
-          />
-          {cue.file != null && cue.cueType === "audio" && (
-            <>
-              <IconButton
-                icon={cue.loop ? <RepeatIcon /> : <ArrowForwardIcon />}
-                size="xs"
-                w="100%"
-                h="30px"
-                borderRadius={0}
-                _hover={{ bg: "green.600", color: "white" }}
-                backgroundColor="green.500"
-                draggable={false}
-                aria-label={`Loop audio ${cue.name}`}
-                title={cue.loop ? "Disable loop" : "Enable loop"}
-                onMouseDown={(e) => {
-                  e.stopPropagation()
-                  handleLoopToggle(cue)
-                }}
-              />
-              <IconButton
-                icon={<TimeIcon />}
-                size="xs"
-                w="100%"
-                h="30px"
-                borderRadius="0 0 0.375rem 0.375rem"
-                _hover={{ bg: "blue.600", color: "white" }}
-                backgroundColor={cue.continuePlayback ? "blue.500" : "gray.500"}
-                draggable={false}
-                aria-label={`Continue audio ${cue.name}`}
-                title={
-                  cue.continuePlayback
-                    ? "Disable continuous playback"
-                    : "Enable continuous playback"
-                }
-                onMouseDown={(e) => {
-                  e.stopPropagation()
-                  handleContinuePlaybackToggle(cue)
-                }}
-              />
-            </>
-          )}
-          {cue.file != null && cue.cueType === "visual" && (
-            <IconButton
-              icon={<ExternalLinkIcon />}
-              size="xs"
-              w="100%"
-              h="30px"
-              borderRadius="0 0 0.375rem 0.375rem"
-              _hover={{ bg: "purple.600", color: "white" }}
-              backgroundColor={
-                cue.spanScreens?.length ? "purple.500" : "gray.500"
-              }
-              draggable={false}
-              aria-label={`Multi-screen ${cue.name}`}
-              title="Span across multiple screens"
-              onMouseDown={(e) => {
-                e.stopPropagation()
-                handleOpenMultiScreen(cue._id)
-              }}
-            />
-          )}
-        </MenuList>
-      </Portal>
-    </Menu>
-  )
+  const handleCopyItem = (cue: Cue) => {
+    setIsCopied(true)
+    setCopiedCue(cue)
+    setShowAlert(true)
+    setAlertData({
+      title: `Copying in progress for element "${cue.name}".`,
+      description:
+        "Click on available places on the grid to paste. Click outside the grid to cancel.",
+      status: "info",
+    })
+  }
+
+  const openCueContextMenu = (
+    cue: Cue,
+    x: number,
+    y: number,
+    returnFocusTo: HTMLElement
+  ) => {
+    if (isDragging || isCopied) return
+    setContextMenu({ cue, x, y, returnFocusTo })
+  }
+
+  const handleCueContextMenu = (
+    event: ReactMouseEvent<HTMLElement>,
+    cue: Cue
+  ) => {
+    event.preventDefault()
+    event.stopPropagation()
+    openCueContextMenu(cue, event.clientX, event.clientY, event.currentTarget)
+  }
+
+  const openCueContextMenuFromButton = (
+    button: HTMLButtonElement,
+    cue: Cue
+  ) => {
+    const rect = button.getBoundingClientRect()
+    openCueContextMenu(cue, rect.left, rect.bottom, button)
+  }
 
   // helper functions for managing drag-and-drop interactions in the presentation editor
   return (
@@ -734,6 +610,8 @@ const GridLayoutComponent = ({
                         : "grab"
                   }
                   data-cue-content-id={cue._id}
+                  tabIndex={-1}
+                  onContextMenu={(event) => handleCueContextMenu(event, cue)}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
                   data-focused-lane={isLaneFocused ? "true" : undefined}
                   transform={`translateY(${laneShift}px)`}
@@ -751,8 +629,13 @@ const GridLayoutComponent = ({
                           boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
                         }
                   }
-                  sx={
-                    suppressCueHoverEffects
+                  sx={{
+                    "@media (hover: hover) and (pointer: fine)": {
+                      "& [data-cue-menu-trigger]": { opacity: 0 },
+                      "&:hover [data-cue-menu-trigger], &:focus-within [data-cue-menu-trigger]":
+                        { opacity: 1 },
+                    },
+                    ...(suppressCueHoverEffects
                       ? {}
                       : {
                           "&:hover [data-cue-anchor-border], &:hover [data-cue-continuation-border]":
@@ -765,10 +648,54 @@ const GridLayoutComponent = ({
                           "&:hover [data-cue-anchor-hover-tint]": {
                             opacity: 0.18,
                           },
-                        }
-                  }
+                        }),
+                  }}
                 >
-                  {!isDragging && EditModeCueButtons(cue)}
+                  {!isDragging && (
+                    <IconButton
+                      data-cue-menu-trigger
+                      data-testid={`cue-menu-button-${cue._id}`}
+                      aria-label={`Options for ${cue.name}`}
+                      icon={<Icon as={FiMoreVertical} boxSize={4} />}
+                      backgroundColor="var(--chakra-colors-gray-700)"
+                      color="white"
+                      borderColor="whiteAlpha.300"
+                      _hover={{
+                        backgroundColor: "var(--chakra-colors-gray-600)",
+                        color: "white",
+                      }}
+                      _active={{
+                        backgroundColor: "var(--chakra-colors-gray-600)",
+                        color: "white",
+                      }}
+                      _focusVisible={{
+                        opacity: 1,
+                        boxShadow: "0 0 0 3px rgba(192, 132, 252, 0.45)",
+                      }}
+                      variant="outline"
+                      position="absolute"
+                      zIndex="10"
+                      top="3px"
+                      left={`${Math.max(columnWidth - 27, 3)}px`}
+                      size="xs"
+                      isDisabled={isCopied}
+                      transition="opacity 120ms ease, background-color 120ms ease"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        openCueContextMenuFromButton(event.currentTarget, cue)
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "ContextMenu" ||
+                          (event.shiftKey && event.key === "F10")
+                        ) {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          openCueContextMenuFromButton(event.currentTarget, cue)
+                        }
+                      }}
+                    />
+                  )}
 
                   {hasContinuation && isVisualCue ? (
                     <Box
@@ -1051,6 +978,16 @@ const GridLayoutComponent = ({
           })}
         </GridLayout>
       </Box>
+      <CueContextMenu
+        state={contextMenu}
+        onClose={() => setContextMenu(null)}
+        onEdit={(cue) => handleEditItem(cue._id)}
+        onCopy={handleCopyItem}
+        onDelete={(cue) => handleRemoveItem(cue._id)}
+        onToggleLoop={handleLoopToggle}
+        onToggleContinuePlayback={handleContinuePlaybackToggle}
+        onOpenMultiScreen={(cue) => handleOpenMultiScreen(cue._id)}
+      />
       <Dialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
