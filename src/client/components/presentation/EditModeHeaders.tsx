@@ -102,14 +102,6 @@ const TIMELINE_PALETTE_DARK = {
   chipText: "#160b1f",
 }
 
-/**
- * The light timeline keeps the dark one's *relationships* rather than its
- * values: the group panel still sits between the canvas and its lanes, so it
- * becomes a violet tint just above the near-white canvas instead of the
- * near-black violet that would otherwise read as a hole punched in the page.
- * The lane cells themselves are already light chips with dark text, so they
- * carry over unchanged and the two modes stay recognisably the same timeline.
- */
 const TIMELINE_PALETTE_LIGHT: typeof TIMELINE_PALETTE_DARK = {
   screenRow: "#cbb0ee",
   laneRow: "#ab89d6",

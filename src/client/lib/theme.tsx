@@ -18,14 +18,6 @@ const styles = {
     const audio = mode("#287d6a", "#7fd4bd")(props)
     const audioSurface = mode("#dcf0e8", "#16302a")(props)
 
-    /**
-     * Show mode runs its own surface scale rather than reusing the editor's:
-     * a live view is darker and flatter on purpose. The light values keep the
-     * same ordering -- canvas behind panels behind controls -- so the layout
-     * reads identically in either mode. Colours that are already dark ink on a
-     * light chip (chip text, the GO label, the score paper) are left literal in
-     * the stylesheet, since they are correct in both modes.
-     */
     const show = {
       canvas: mode("#f7f4fb", "#08060a")(props),
       canvasDeep: mode("#efe9f6", "#0d0a11")(props),
@@ -109,12 +101,6 @@ const styles = {
         "--show-go": show.go,
         "--show-page-shadow": show.pageShadow,
       },
-      /*
-       * A native <select> drop-down is painted by the browser, which follows
-       * the document colour scheme and not the surface the control sits on.
-       * Pinning both here keeps every frame/transition list legible instead of
-       * rendering as a dark slab in light mode.
-       */
       select: {
         colorScheme: props.colorMode,
       },

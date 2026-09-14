@@ -63,12 +63,6 @@ const ShowMonitorWindow = ({
     }
   }, [onClose, title])
 
-  /*
-   * The popup only ever gets a snapshot of the stylesheets, taken when it
-   * opens, so a later theme switch would strand it on the old palette.
-   * Re-projecting the resolved custom properties onto its root element keeps it
-   * in sync without re-cloning every sheet.
-   */
   useEffect(() => {
     const popup = windowRef.current
     if (!popup || popup.closed) return
