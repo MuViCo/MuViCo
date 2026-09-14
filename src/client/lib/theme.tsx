@@ -109,6 +109,19 @@ const styles = {
         "--show-go": show.go,
         "--show-page-shadow": show.pageShadow,
       },
+      /*
+       * A native <select> drop-down is painted by the browser, which follows
+       * the document colour scheme and not the surface the control sits on.
+       * Pinning both here keeps every frame/transition list legible instead of
+       * rendering as a dark slab in light mode.
+       */
+      select: {
+        colorScheme: props.colorMode,
+      },
+      "select option": {
+        background: control,
+        color: text,
+      },
       body: {
         bg: canvas,
         color: text,

@@ -109,6 +109,14 @@ const PdfCanvas = ({
 }: PdfCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [isRendering, setIsRendering] = useState(false)
+  const markerFormBg = useColorModeValue("#ffffff", "#241333")
+  const markerFormText = useColorModeValue("#211926", "#f0e4ff")
+  const markerFormBorder = useColorModeValue("#d6bcfa", "#4a2d63")
+  const markerSelectBg = useColorModeValue("#ffffff", "#1b1420")
+  const markerFormShadow = useColorModeValue(
+    "0 4px 16px rgba(33, 25, 38, 0.22)",
+    "0 4px 16px rgba(0, 0, 0, 0.55)"
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -210,10 +218,12 @@ const PdfCanvas = ({
               left={`${pos.x * 100}%`}
               top={`${pos.y * 100}%`}
               transform="translate(-50%, 8px)"
-              bg="white"
-              color="black"
+              bg={markerFormBg}
+              color={markerFormText}
+              border="1px solid"
+              borderColor={markerFormBorder}
               borderRadius="6px"
-              boxShadow="0 4px 16px rgba(0,0,0,0.35)"
+              boxShadow={markerFormShadow}
               p={2}
               zIndex={2}
               data-testid="marker-form"
@@ -224,6 +234,9 @@ const PdfCanvas = ({
                   aria-label="Frame"
                   size="xs"
                   width="110px"
+                  bg={markerSelectBg}
+                  color={markerFormText}
+                  borderColor={markerFormBorder}
                   value={markerFrameInput}
                   onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                     onMarkerFrameInputChange?.(e.target.value)
