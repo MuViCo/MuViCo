@@ -18,6 +18,50 @@ const styles = {
     const audio = mode("#287d6a", "#7fd4bd")(props)
     const audioSurface = mode("#dcf0e8", "#16302a")(props)
 
+    /**
+     * Show mode runs its own surface scale rather than reusing the editor's:
+     * a live view is darker and flatter on purpose. The light values keep the
+     * same ordering -- canvas behind panels behind controls -- so the layout
+     * reads identically in either mode. Colours that are already dark ink on a
+     * light chip (chip text, the GO label, the score paper) are left literal in
+     * the stylesheet, since they are correct in both modes.
+     */
+    const show = {
+      canvas: mode("#f7f4fb", "#08060a")(props),
+      canvasDeep: mode("#efe9f6", "#0d0a11")(props),
+      panel: mode("#ffffff", "#100c14")(props),
+      surface: mode("#f6f1fc", "#14101a")(props),
+      control: mode("#ffffff", "#161020")(props),
+      controlAlt: mode("#efe9f6", "#211a28")(props),
+      controlIcon: mode("#e9dcfa", "#241333")(props),
+      border: mode("#e2d3f5", "#221c2a")(props),
+      borderStrong: mode("#d6bcfa", "#2f2637")(props),
+      borderDashed: mode("#c9b6e4", "#3a3145")(props),
+      borderAccent: mode("#c4a7e7", "#4a2d63")(props),
+      borderSubtle: mode("#e2d3f5", "#3a2447")(props),
+      segmentActive: mode("#5b21a8", "#3a2d45")(props),
+      dotOffline: mode("#b9adc6", "#5b5263")(props),
+      toggleKnob: mode("#ffffff", "#0c1a16")(props),
+      text: mode("#211926", "#f0e4ff")(props),
+      textSecondary: mode("#44337a", "#cbb6dd")(props),
+      textMuted: mode("#6b5c73", "#7b6b89")(props),
+      textDim: mode("#8a7d97", "#695d73")(props),
+      textHover: mode("#4a3f56", "#a995b8")(props),
+      heading: mode("#5b21a8", "#e0c9ff")(props),
+      live: mode("#c53030", "#e5484d")(props),
+      liveText: mode("#9b2c2c", "#ff9a9d")(props),
+      liveSurface: mode("#fff5f5", "#1d1016")(props),
+      liveBorder: mode("#feb2b2", "#6b2a2c")(props),
+      next: mode("#287d6a", "#7fd4bd")(props),
+      nextSurface: mode("#dcf0e8", "#101a17")(props),
+      nextText: mode("#1c4f42", "#d9f5ec")(props),
+      audioSurface: mode("#dcf0e8", "#16302a")(props),
+      audioBorder: mode("#b9e0d2", "#22483e")(props),
+      audioBorderStrong: mode("#8fcdb8", "#315846")(props),
+      go: mode("#1f9d60", "#23b26d")(props),
+      pageShadow: mode("rgba(33, 25, 38, 0.16)", "rgba(0, 0, 0, 0.55)")(props),
+    }
+
     return {
       ":root": {
         "--muvico-canvas": canvas,
@@ -31,6 +75,39 @@ const styles = {
         "--muvico-text-muted": textMuted,
         "--muvico-audio": audio,
         "--muvico-audio-surface": audioSurface,
+        "--show-canvas": show.canvas,
+        "--show-canvas-deep": show.canvasDeep,
+        "--show-panel": show.panel,
+        "--show-surface": show.surface,
+        "--show-control": show.control,
+        "--show-control-alt": show.controlAlt,
+        "--show-control-icon": show.controlIcon,
+        "--show-border": show.border,
+        "--show-border-strong": show.borderStrong,
+        "--show-border-dashed": show.borderDashed,
+        "--show-border-accent": show.borderAccent,
+        "--show-border-subtle": show.borderSubtle,
+        "--show-segment-active": show.segmentActive,
+        "--show-dot-offline": show.dotOffline,
+        "--show-toggle-knob": show.toggleKnob,
+        "--show-text": show.text,
+        "--show-text-secondary": show.textSecondary,
+        "--show-text-muted": show.textMuted,
+        "--show-text-dim": show.textDim,
+        "--show-text-hover": show.textHover,
+        "--show-heading": show.heading,
+        "--show-live": show.live,
+        "--show-live-text": show.liveText,
+        "--show-live-surface": show.liveSurface,
+        "--show-live-border": show.liveBorder,
+        "--show-next": show.next,
+        "--show-next-surface": show.nextSurface,
+        "--show-next-text": show.nextText,
+        "--show-audio-surface": show.audioSurface,
+        "--show-audio-border": show.audioBorder,
+        "--show-audio-border-strong": show.audioBorderStrong,
+        "--show-go": show.go,
+        "--show-page-shadow": show.pageShadow,
       },
       body: {
         bg: canvas,
