@@ -45,7 +45,14 @@ interface ColumnHeadersProps {
   /** Omitted while copying, when a header click means "cancel" instead. */
   onSelectFrame?: (index: number) => void
 }
-import { Box, Text, IconButton, Button, Tooltip } from "@chakra-ui/react"
+import {
+  Box,
+  Text,
+  IconButton,
+  Button,
+  Tooltip,
+  useColorModeValue,
+} from "@chakra-ui/react"
 import {
   AddIcon,
   MinusIcon,
@@ -63,7 +70,7 @@ import trashIcon from "../../public/icons/trash.svg"
  * colouring whole rows. That is what stops the timeline reading as a wall of
  * saturated blocks.
  */
-const TIMELINE_PALETTE = {
+const TIMELINE_PALETTE_DARK = {
   /**
    * Group-start row: the screen's own identity. Light violet, a shade below the
    * original purple.200 so it sits better against the dark timeline.
@@ -89,15 +96,32 @@ const TIMELINE_PALETTE = {
   /** Panel behind a group. */
   groupPanel: "#241333",
   border: "#4a2d63",
-  borderSubtle: "#3a2447",
   accent: "#c084fc",
   /** Light chip carrying dark text -- screen badges, the active frame. */
   chip: "#c79dff",
   chipText: "#160b1f",
-  textPrimary: "#f0e4ff",
-  textSecondary: "#cbb6dd",
-  textMuted: "#8b7499",
 }
+
+const TIMELINE_PALETTE_LIGHT: typeof TIMELINE_PALETTE_DARK = {
+  screenRow: "#cbb0ee",
+  laneRow: "#ab89d6",
+  audioRow: "#7fd4bd",
+  audioLaneRow: "#5fb9a2",
+  audioBorder: "#2f6b5f",
+  audioAccent: "#d8f4ec",
+  controlBg: "#ffffff",
+  controlBgDanger: "#fed7d7",
+  controlBorder: "#b794f4",
+  controlText: "#211926",
+  groupPanel: "#e9dcfa",
+  border: "#d6bcfa",
+  accent: "#8941b9",
+  chip: "#c79dff",
+  chipText: "#160b1f",
+}
+
+const useTimelinePalette = () =>
+  useColorModeValue(TIMELINE_PALETTE_LIGHT, TIMELINE_PALETTE_DARK)
 
 // Base component for rendering row headers, memoized for performance optimization. Displays screen labels and an audio row with a mute/unmute button, as well as controls for adding/removing screens.
 const RowHeadersBase = ({
@@ -118,6 +142,8 @@ const RowHeadersBase = ({
   focusedRowIndex = -1,
   onFocusLane = () => {},
 }: RowHeadersProps): ReactNode => {
+  const palette = useTimelinePalette()
+
   const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
     const groupRows = rows.filter((candidate) => candidate.group === row.group)
@@ -153,27 +179,27 @@ const RowHeadersBase = ({
         bg={
           row.y === focusedRowIndex
             ? isAudio
-              ? TIMELINE_PALETTE.audioAccent
-              : TIMELINE_PALETTE.chip
+              ? palette.audioAccent
+              : palette.chip
             : isAudio
               ? row.groupStart
-                ? TIMELINE_PALETTE.audioRow
-                : TIMELINE_PALETTE.audioLaneRow
+                ? palette.audioRow
+                : palette.audioLaneRow
               : row.groupStart
-                ? TIMELINE_PALETTE.screenRow
-                : TIMELINE_PALETTE.laneRow
+                ? palette.screenRow
+                : palette.laneRow
         }
-        color={TIMELINE_PALETTE.chipText}
+        color={palette.chipText}
         border="1px solid"
         borderWidth={row.y === focusedRowIndex ? "2px" : "1px"}
         borderColor={
           row.y === focusedRowIndex
-            ? TIMELINE_PALETTE.accent
+            ? palette.accent
             : isAudio
-              ? TIMELINE_PALETTE.audioBorder
+              ? palette.audioBorder
               : row.groupStart
-                ? TIMELINE_PALETTE.accent
-                : TIMELINE_PALETTE.border
+                ? palette.accent
+                : palette.border
         }
         borderRadius="7px"
         // Drawn taller or shorter than its track without moving it: the track
@@ -217,9 +243,7 @@ const RowHeadersBase = ({
         zIndex={row.y === focusedRowIndex ? 2 : 1}
         transition="background-color 120ms ease, border-color 120ms ease, box-shadow 140ms ease, height 140ms ease, transform 140ms ease"
         _hover={{
-          borderColor: isAudio
-            ? TIMELINE_PALETTE.audioAccent
-            : TIMELINE_PALETTE.accent,
+          borderColor: isAudio ? palette.audioAccent : palette.accent,
         }}
       >
         {row.groupStart && (
@@ -257,7 +281,7 @@ const RowHeadersBase = ({
                     <SpeakerIcon boxSize="36px" />
                   )
                 }
-                color={TIMELINE_PALETTE.chipText}
+                color={palette.chipText}
                 sx={{
                   width: "44px",
                   height: "44px",
@@ -350,10 +374,10 @@ const RowHeadersBase = ({
                 icon={<MinusIcon boxSize="9px" />}
                 size="xs"
                 variant="solid"
-                color={TIMELINE_PALETTE.controlText}
-                bg={TIMELINE_PALETTE.controlBgDanger}
+                color={palette.controlText}
+                bg={palette.controlBgDanger}
                 borderWidth="1px"
-                borderColor={TIMELINE_PALETTE.controlBorder}
+                borderColor={palette.controlBorder}
                 borderRadius="6px"
                 position="absolute"
                 top="50%"
@@ -402,10 +426,10 @@ const RowHeadersBase = ({
                   leftIcon={<MinusIcon boxSize="8px" />}
                   size="xs"
                   variant="solid"
-                  color={TIMELINE_PALETTE.controlText}
-                  bg={TIMELINE_PALETTE.controlBgDanger}
+                  color={palette.controlText}
+                  bg={palette.controlBgDanger}
                   borderWidth="1px"
-                  borderColor={TIMELINE_PALETTE.controlBorder}
+                  borderColor={palette.controlBorder}
                   borderRadius="6px"
                   height="20px"
                   minW="60px"
@@ -455,8 +479,8 @@ const RowHeadersBase = ({
                       leftIcon={<AddIcon boxSize="8px" />}
                       size="xs"
                       variant="solid"
-                      color={TIMELINE_PALETTE.controlText}
-                      bg={TIMELINE_PALETTE.controlBg}
+                      color={palette.controlText}
+                      bg={palette.controlBg}
                       border="1px solid rgba(34, 139, 34, 0.45)"
                       borderRadius="6px"
                       height="20px"
@@ -488,10 +512,10 @@ const RowHeadersBase = ({
                       leftIcon={<AddIcon boxSize="8px" />}
                       size="xs"
                       variant="solid"
-                      color={TIMELINE_PALETTE.chipText}
-                      bg={TIMELINE_PALETTE.accent}
+                      color={palette.chipText}
+                      bg={palette.accent}
                       borderWidth="1px"
-                      borderColor={TIMELINE_PALETTE.controlBorder}
+                      borderColor={palette.controlBorder}
                       borderRadius="6px"
                       height="20px"
                       flex="1"
@@ -599,10 +623,10 @@ const RowHeadersBase = ({
             resized. The layer reaches GROUP_PAD outside the lanes on every
             side, taking that room out of the wide gap at the screen's edge --
             the gap its lanes have closed between themselves by reaching towards
-            each other. The dark fill shows through the gaps between lanes, which
-            is what makes the run read as one container: the lane cells are
-            light, so an outline alone would just add another line in their own
-            colour. */}
+            each other. The panel fill shows through the gaps between lanes,
+            which is what makes the run read as one container: the lane cells
+            are light in both colour modes, so an outline alone would just add
+            another line in their own colour. */}
         <Box
           aria-hidden="true"
           position="absolute"
@@ -610,13 +634,11 @@ const RowHeadersBase = ({
           right={0}
           top={`-${GROUP_PAD}px`}
           bottom={`-${GROUP_PAD}px`}
-          bg={TIMELINE_PALETTE.groupPanel}
+          bg={palette.groupPanel}
           // Dashed when collapsed: until now the only signal that a group was
           // collapsed was its label text.
           outline={`2px ${group.collapsed ? "dashed" : "solid"} ${
-            isAudioGroup
-              ? TIMELINE_PALETTE.audioBorder
-              : TIMELINE_PALETTE.accent
+            isAudioGroup ? palette.audioBorder : palette.accent
           }`}
           borderRadius="12px"
           pointerEvents="none"
@@ -642,6 +664,8 @@ const ColumnHeadersBase = ({
   headerActionsRef,
   onSelectFrame,
 }: ColumnHeadersProps): ReactNode => {
+  const palette = useTimelinePalette()
+
   return xLabels.map((label, index) => (
     <Box
       key={label}
@@ -669,7 +693,7 @@ const ColumnHeadersBase = ({
         justifyContent="center"
         // The active chip is light with dark text; the rest are deep with muted
         // text, so exactly one frame reads as current.
-        color={TIMELINE_PALETTE.chipText}
+        color={palette.chipText}
         fontSize="12px"
         fontWeight={index === cueIndex ? 700 : 600}
         bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
