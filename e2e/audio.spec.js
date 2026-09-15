@@ -105,11 +105,11 @@ describe("Audio cues", () => {
     await openCueMenu(cue)
 
     await expect(
-      page.getByRole("button", { name: "Copy colorcue" })
+      page.getByRole("menuitem", { name: "Copy colorcue" })
     ).toBeVisible()
-    await expect(page.getByRole("button", { name: /Loop audio/ })).toHaveCount(
-      0
-    )
+    await expect(
+      page.getByRole("menuitem", { name: /Loop audio/ })
+    ).toHaveCount(0)
   })
 
   test("user can toggle loop for an audio cue", async ({ page }) => {
@@ -126,7 +126,7 @@ describe("Audio cues", () => {
     const cue = page.getByTestId("cue-loop-audio.mp3")
     await openCueMenu(cue)
 
-    const loopButton = page.getByRole("button", {
+    const loopButton = page.getByRole("menuitem", {
       name: "Loop audio loop-audio.mp3",
     })
     await expect(loopButton).toBeVisible()
@@ -142,7 +142,7 @@ describe("Audio cues", () => {
     const cueAfterReload = page.getByTestId("cue-loop-audio.mp3")
     await openCueMenu(cueAfterReload)
     await expect(
-      page.getByRole("button", { name: "Loop audio loop-audio.mp3" })
+      page.getByRole("menuitem", { name: "Loop audio loop-audio.mp3" })
     ).toHaveAttribute("title", "Disable loop")
   })
 })

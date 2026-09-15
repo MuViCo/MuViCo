@@ -126,7 +126,7 @@ const dragPoolItemToGrid = async (page, fileName, index, screen) => {
 
 const openCueMenu = async (cue) => {
   await cue.hover()
-  await cue.getByRole("button", { name: "Options" }).click()
+  await cue.locator("[data-cue-menu-trigger]").click()
 }
 
 export {

@@ -77,14 +77,33 @@ describe("GridLayout", () => {
     await addBlankCue(page, "testcue_del", "2", "2")
 
     const cue = page.locator('[data-testid="cue-testcue_del"]')
-    await cue.hover()
-    await cue.getByRole("button", { name: "Options" }).click()
-    await page.getByRole("button", { name: `Delete testcue_del` }).click()
+    await openCueMenu(cue)
+    await page.getByRole("menuitem", { name: `Delete testcue_del` }).click()
 
     await expect(
       page.getByText("Are you sure you want to remove this element?")
     ).toBeVisible()
     await page.getByRole("button", { name: "Yes" }).click()
+  })
+
+  test("user can open cue actions with a right click", async ({ page }) => {
+    await page.getByText("testi").click()
+    await addBlankCue(page, "contextcue", "1", "1")
+
+    await page.getByTestId("cue-contextcue").click({ button: "right" })
+
+    const menu = page.getByRole("menu")
+    await expect(menu).toBeVisible()
+    await expect(menu).toBeFocused()
+    await expect(
+      page.getByRole("menuitem", { name: "Edit contextcue" })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("menuitem", { name: "Delete contextcue" })
+    ).toBeVisible()
+
+    await page.keyboard.press("Escape")
+    await expect(menu).not.toBeVisible()
   })
 
   test("should add a cue by dragging and dropping a file", async ({ page }) => {
@@ -331,7 +350,7 @@ describe("GridLayout", () => {
 
     const cue = page.getByTestId("cue-copysource")
     await openCueMenu(cue)
-    await page.getByRole("button", { name: "Copy copysource" }).click()
+    await page.getByRole("menuitem", { name: "Copy copysource" }).click()
 
     await expect(
       page.getByText('Copying in progress for element "copysource".')
@@ -356,7 +375,7 @@ describe("GridLayout", () => {
 
     const cue = page.getByTestId("cue-copysource2")
     await openCueMenu(cue)
-    await page.getByRole("button", { name: "Copy copysource2" }).click()
+    await page.getByRole("menuitem", { name: "Copy copysource2" }).click()
 
     await expect(
       page.getByText('Copying in progress for element "copysource2".')
