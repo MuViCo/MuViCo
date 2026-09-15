@@ -78,7 +78,7 @@ describe("GridLayout", () => {
 
     const cue = page.locator('[data-testid="cue-testcue_del"]')
     await openCueMenu(cue)
-    await page.getByRole("button", { name: `Delete testcue_del` }).click()
+    await page.getByRole("menuitem", { name: `Delete testcue_del` }).click()
 
     await expect(
       page.getByText("Are you sure you want to remove this element?")
@@ -348,7 +348,7 @@ describe("GridLayout", () => {
 
     const cue = page.getByTestId("cue-copysource")
     await openCueMenu(cue)
-    await page.getByRole("button", { name: "Copy copysource" }).click()
+    await page.getByRole("menuitem", { name: "Copy copysource" }).click()
 
     await expect(
       page.getByText('Copying in progress for element "copysource".')
@@ -373,7 +373,7 @@ describe("GridLayout", () => {
 
     const cue = page.getByTestId("cue-copysource2")
     await openCueMenu(cue)
-    await page.getByRole("button", { name: "Copy copysource2" }).click()
+    await page.getByRole("menuitem", { name: "Copy copysource2" }).click()
 
     await expect(
       page.getByText('Copying in progress for element "copysource2".')
