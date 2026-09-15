@@ -12,6 +12,7 @@ import {
   Portal,
   useColorModeValue,
 } from "@chakra-ui/react"
+import { useEffect, useRef } from "react"
 import {
   ArrowForwardIcon,
   CopyIcon,
@@ -52,6 +53,7 @@ const CueContextMenu = ({
   onToggleContinuePlayback,
   onOpenMultiScreen,
 }: CueContextMenuProps) => {
+  const menuListRef = useRef<HTMLDivElement>(null)
   const menuBg = useColorModeValue("white", "#18111f")
   const menuBorder = useColorModeValue("purple.200", "#3a2447")
   const menuText = useColorModeValue("gray.800", "whiteAlpha.900")
@@ -65,6 +67,17 @@ const CueContextMenu = ({
   )
   const dangerText = useColorModeValue("red.600", "red.300")
   const dangerHoverBg = useColorModeValue("red.50", "rgba(229, 72, 77, 0.16)")
+
+  useEffect(() => {
+    if (!state) return
+
+    const focusTimer = window.setTimeout(
+      () => menuListRef.current?.focus({ preventScroll: true }),
+      0
+    )
+
+    return () => window.clearTimeout(focusTimer)
+  }, [state])
 
   if (!state) return null
 
@@ -105,6 +118,7 @@ const CueContextMenu = ({
 
       <Portal>
         <MenuList
+          ref={menuListRef}
           data-testid="cue-context-menu"
           minWidth="210px"
           padding={1}

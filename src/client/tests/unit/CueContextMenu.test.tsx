@@ -99,7 +99,9 @@ describe("CueContextMenu", () => {
   it("closes on Escape and restores focus to the originating element", async () => {
     const { props, returnFocusTo } = renderMenu(visualCue)
 
-    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" })
+    const menu = screen.getByRole("menu")
+    await waitFor(() => expect(menu).toHaveFocus())
+    fireEvent.keyDown(menu, { key: "Escape" })
 
     expect(props.onClose).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(returnFocusTo).toHaveFocus())

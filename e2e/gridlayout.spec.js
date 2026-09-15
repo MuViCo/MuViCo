@@ -92,7 +92,9 @@ describe("GridLayout", () => {
 
     await page.getByTestId("cue-contextcue").click({ button: "right" })
 
-    await expect(page.getByRole("menu")).toBeVisible()
+    const menu = page.getByRole("menu")
+    await expect(menu).toBeVisible()
+    await expect(menu).toBeFocused()
     await expect(
       page.getByRole("menuitem", { name: "Edit contextcue" })
     ).toBeVisible()
@@ -101,7 +103,7 @@ describe("GridLayout", () => {
     ).toBeVisible()
 
     await page.keyboard.press("Escape")
-    await expect(page.getByRole("menu")).not.toBeVisible()
+    await expect(menu).not.toBeVisible()
   })
 
   test("should add a cue by dragging and dropping a file", async ({ page }) => {
