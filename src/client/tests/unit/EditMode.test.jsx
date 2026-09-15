@@ -1218,28 +1218,35 @@ describe("EditMode drag swapping", () => {
     })
 
     it("reverts the index-count increment when the shift request fails", async () => {
-      const cues = [buildCue({ id: "c1", index: 2 })]
-      renderWithFrames(cues, 4)
-      mockDispatch.mockImplementation((action) =>
-        action?.type === "MOCK_SHIFT_INDEXES"
-          ? Promise.reject(new Error("shift failed"))
-          : Promise.resolve({})
-      )
-
-      await act(async () => {
-        fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
-      })
-
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "Error" })
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
+      try {
+        const cues = [buildCue({ id: "c1", index: 2 })]
+        renderWithFrames(cues, 4)
+        mockDispatch.mockImplementation((action) =>
+          action?.type === "MOCK_SHIFT_INDEXES"
+            ? Promise.reject(new Error("shift failed"))
+            : Promise.resolve({})
         )
-      })
-      expect(decrementIndexCount).toHaveBeenCalled()
-      expect(saveIndexCount).toHaveBeenCalledWith({
-        id: "presentation-1",
-        indexCount: 4,
-      })
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByLabelText("Add Frame")[0])
+        })
+
+        await waitFor(() => {
+          expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ title: "Error" })
+          )
+        })
+        expect(decrementIndexCount).toHaveBeenCalled()
+        expect(saveIndexCount).toHaveBeenCalledWith({
+          id: "presentation-1",
+          indexCount: 4,
+        })
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
 
     it("does not shift when removing a frame with no cues after it", async () => {
@@ -1310,25 +1317,32 @@ describe("EditMode drag swapping", () => {
     })
 
     it("shows an error and skips the index-count update when the removal shift request fails", async () => {
-      const cues = [buildCue({ id: "c1", index: 2 })]
-      renderWithFrames(cues, 4)
-      mockDispatch.mockImplementation((action) =>
-        action?.type === "MOCK_SHIFT_INDEXES"
-          ? Promise.reject(new Error("shift failed"))
-          : Promise.resolve({})
-      )
-
-      await act(async () => {
-        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
-      })
-
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "Error" })
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
+      try {
+        const cues = [buildCue({ id: "c1", index: 2 })]
+        renderWithFrames(cues, 4)
+        mockDispatch.mockImplementation((action) =>
+          action?.type === "MOCK_SHIFT_INDEXES"
+            ? Promise.reject(new Error("shift failed"))
+            : Promise.resolve({})
         )
-      })
-      expect(decrementIndexCount).not.toHaveBeenCalled()
-      expect(saveIndexCount).not.toHaveBeenCalled()
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+        })
+
+        await waitFor(() => {
+          expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ title: "Error" })
+          )
+        })
+        expect(decrementIndexCount).not.toHaveBeenCalled()
+        expect(saveIndexCount).not.toHaveBeenCalled()
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
 
     it("delegates to the confirmation dialog instead of shifting directly when the removed frame has a cue on it", async () => {
@@ -1405,31 +1419,38 @@ describe("EditMode drag swapping", () => {
     })
 
     it("skips shrinking the index count when the shift fails while removing a frame with a cue on it", async () => {
-      const cues = [
-        buildCue({ id: "c1", index: 1 }),
-        buildCue({ id: "c2", index: 2 }),
-      ]
-      renderWithFrames(cues, 4)
-      mockDispatch.mockImplementation((action) =>
-        action?.type === "MOCK_SHIFT_INDEXES"
-          ? Promise.reject(new Error("shift failed"))
-          : Promise.resolve({})
-      )
-
-      await act(async () => {
-        fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
-      })
-      await act(async () => {
-        fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
-      })
-
-      await waitFor(() => {
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "Error" })
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {})
+      try {
+        const cues = [
+          buildCue({ id: "c1", index: 1 }),
+          buildCue({ id: "c2", index: 2 }),
+        ]
+        renderWithFrames(cues, 4)
+        mockDispatch.mockImplementation((action) =>
+          action?.type === "MOCK_SHIFT_INDEXES"
+            ? Promise.reject(new Error("shift failed"))
+            : Promise.resolve({})
         )
-      })
-      expect(decrementIndexCount).not.toHaveBeenCalled()
-      expect(saveIndexCount).not.toHaveBeenCalled()
+
+        await act(async () => {
+          fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+        })
+        await act(async () => {
+          fireEvent.click(screen.getByTestId("confirm-dialog-confirm"))
+        })
+
+        await waitFor(() => {
+          expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ title: "Error" })
+          )
+        })
+        expect(decrementIndexCount).not.toHaveBeenCalled()
+        expect(saveIndexCount).not.toHaveBeenCalled()
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
   })
 

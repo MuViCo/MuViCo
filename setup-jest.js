@@ -17,6 +17,9 @@ if (typeof window !== "undefined" && window.localStorage) {
     // ignore (some envs may throw)
   }
 }
+if (typeof window !== "undefined" && window.HTMLMediaElement) {
+  window.HTMLMediaElement.prototype.load = () => {}
+}
 if (typeof window !== "undefined") {
   Object.defineProperty(window, "matchMedia", {
     writable: true,
