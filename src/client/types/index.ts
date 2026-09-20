@@ -138,6 +138,7 @@ export interface Presentation {
   indexCount: number
   /** ISO date string. */
   lastUsed: string
+  shareToken?: string
   cues: Cue[]
   previewCue?: Cue
   scores?: ScoreDocument[]

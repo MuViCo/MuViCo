@@ -6,14 +6,20 @@
  */
 import { useEffect, useState } from "react"
 import { useLocation, useParams, useNavigate } from "react-router-dom"
-import { fetchPresentationInfo } from "../../redux/presentationReducer"
+import {
+  fetchPresentationInfo,
+  fetchSharedPresentationInfo,
+} from "../../redux/presentationReducer"
 import { useDispatch, useSelector } from "react-redux"
 
 import EditModeContainer from "./EditModeContainer"
 import useDeletePresentation from "../utils/useDeletePresentation"
+import { useCustomToast } from "../utils/toastUtils"
 
-const PresentationPage = ({ user }) => {
-  const { id } = useParams()
+const PresentationPage = ({ user, shared = false }) => {
+  const { id: routeId, token } = useParams()
+  const id = shared ? token : routeId
+  const showToast = useCustomToast()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
@@ -27,8 +33,22 @@ const PresentationPage = ({ user }) => {
   } = useDeletePresentation()
 
   useEffect(() => {
+    if (shared) return
     dispatch(fetchPresentationInfo(id))
-  }, [id, navigate, dispatch])
+  }, [id, navigate, dispatch, shared])
+
+  useEffect(() => {
+    if (!shared) return
+    dispatch(fetchSharedPresentationInfo(token)).catch((error) => {
+      showToast({
+        status: "error",
+        title: "Presentation unavailable",
+        description: error.message,
+      })
+      navigate("/home")
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shared, token, dispatch, navigate])
 
   const [presentationSize, setPresentationSize] = useState(0)
   const [isToolboxOpen, setIsToolboxOpen] = useState(false)
@@ -89,8 +109,13 @@ const PresentationPage = ({ user }) => {
       toggleAudioMute={toggleAudioMute}
       indexCount={indexCount}
       isShowMode={isShowMode}
-      onEnterShow={() => navigate(`/presentation/${id}/show`)}
-      onExitShow={() => navigate(`/presentation/${id}`)}
+      onEnterShow={() =>
+        navigate(shared ? `/shared/${token}/show` : `/presentation/${id}/show`)
+      }
+      onExitShow={() =>
+        navigate(shared ? `/shared/${token}` : `/presentation/${id}`)
+      }
+      sharedToken={shared ? token : undefined}
     />
   )
 }

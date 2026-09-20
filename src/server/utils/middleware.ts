@@ -92,6 +92,35 @@ export const requirePresentationAccess = async (
   }
 }
 
+export const requireSharedPresentationAccess = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  try {
+    const { token } = request.params
+    const { user } = request
+
+    if (!user) {
+      return response.status(401).json({ error: "authentication required" })
+    }
+
+    const presentation = await Presentation.findOne({ shareToken: token })
+
+    if (!presentation || presentation.storage !== "aws") {
+      return response
+        .status(404)
+        .json({ error: "shared presentation not found" })
+    }
+
+    request.presentation = presentation
+
+    next()
+  } catch (error) {
+    next(error)
+  }
+}
+
 export const unknownEndpoint = (request: Request, response: Response) => {
   response.status(404).send({ error: "unknown endpoint" })
 }

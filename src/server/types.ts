@@ -96,6 +96,7 @@ export interface PresentationAttrs {
   screenCount: number
   indexCount: number
   lastUsed?: Date
+  shareToken?: string
   cues: Cue[]
   media: MediaEntry[]
   scores: Score[]

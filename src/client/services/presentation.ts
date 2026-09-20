@@ -60,6 +60,27 @@ const get = async (id: string): Promise<Presentation> => {
   return response.data
 }
 
+const getShared = async (token: string): Promise<Presentation> => {
+  const response = await axios.get<Presentation>(
+    `${baseUrl}shared/${encodeURIComponent(token)}`,
+    { headers: authHeaders() }
+  )
+  return response.data
+}
+
+const enableSharing = async (id: string): Promise<string> => {
+  const response = await axios.post<{ shareToken: string }>(
+    `${baseUrl}${id}/share`,
+    {},
+    { headers: authHeaders() }
+  )
+  return response.data.shareToken
+}
+
+const disableSharing = async (id: string): Promise<void> => {
+  await axios.delete(`${baseUrl}${id}/share`, { headers: authHeaders() })
+}
+
 const appendOptionalField = (
   formData: FormData,
   key: string,
@@ -357,6 +378,9 @@ const swapCues = async (
 
 export default {
   get,
+  getShared,
+  enableSharing,
+  disableSharing,
   remove,
   addCue,
   removeCue,

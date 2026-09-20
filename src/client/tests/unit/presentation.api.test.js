@@ -15,6 +15,9 @@ const uploadScorePdf = presentation.default.uploadScorePdf
 const importImslpScore = presentation.default.importImslpScore
 const deleteScore = presentation.default.deleteScore
 const createScoreMarker = presentation.default.createScoreMarker
+const getShared = presentation.default.getShared
+const enableSharing = presentation.default.enableSharing
+const disableSharing = presentation.default.disableSharing
 
 jest.mock("axios")
 
@@ -74,6 +77,43 @@ describe("presentation services api tests", () => {
     const result = await get(id)
     expect(result).toEqual(response)
     expect(axios.get).toHaveBeenCalledWith(`${baseUrl}${id}`, {
+      headers: { Authorization: token },
+    })
+  })
+
+  test("getShared fetches through the share link and escapes the token", async () => {
+    const response = { id: "p1", name: "Shared", cues: [] }
+    axios.get.mockResolvedValue({ data: response })
+
+    const result = await getShared("tok/with?odd chars")
+
+    expect(result).toEqual(response)
+    expect(axios.get).toHaveBeenCalledWith(
+      `${baseUrl}shared/tok%2Fwith%3Fodd%20chars`,
+      { headers: { Authorization: token } }
+    )
+  })
+
+  test("enableSharing posts to the share route and returns the token", async () => {
+    axios.post.mockResolvedValue({ data: { shareToken: "tok-1" } })
+
+    const result = await enableSharing(id)
+
+    expect(result).toBe("tok-1")
+    expect(axios.post).toHaveBeenCalledWith(
+      `${baseUrl}${id}/share`,
+      {},
+      { headers: { Authorization: token } }
+    )
+  })
+
+  test("disableSharing deletes the share route", async () => {
+    axios.delete.mockResolvedValue({ data: undefined })
+
+    const result = await disableSharing(id)
+
+    expect(result).toBeUndefined()
+    expect(axios.delete).toHaveBeenCalledWith(`${baseUrl}${id}/share`, {
       headers: { Authorization: token },
     })
   })

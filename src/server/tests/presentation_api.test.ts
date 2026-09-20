@@ -274,6 +274,30 @@ describe("test presentation", () => {
       expect(response.body.error).toBe("Score not found")
     })
 
+    test("returns 404 when the S3 object has no readable body", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "Empty Score",
+        source: "upload",
+        file: {
+          id: "score-file-2",
+          name: "empty.pdf",
+          type: "application/pdf",
+        },
+      })
+      await presentation.save()
+      S3Mock.on(GetObjectCommand).resolves({})
+
+      const response = await api
+        .get(
+          `/api/presentation/${testPresentationId}/scores/${presentation.scores[0]._id}/file`
+        )
+        .set("Authorization", authHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("Score file not found")
+    })
+
     test("returns 404 when a score has no S3 file id", async () => {
       const presentation = await Presentation.findById(testPresentationId)
       presentation.scores.push({
@@ -1362,6 +1386,322 @@ describe("test presentation", () => {
         .expect(403)
 
       expect(response.body.error).toBe("access denied")
+    })
+  })
+
+  describe("Read-only sharing", () => {
+    let viewerAuthHeader: any
+
+    beforeEach(async () => {
+      await api
+        .post("/api/signup")
+        .send({ username: "vieweruser", password: "viewerpassword" })
+
+      const response = await api
+        .post("/api/login")
+        .send({ username: "vieweruser", password: "viewerpassword" })
+
+      viewerAuthHeader = `Bearer ${response.body.token}`
+    })
+
+    const enableSharing = async () => {
+      const response = await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(200)
+      return response.body.shareToken as string
+    }
+
+    test("the owner can turn sharing on and gets a token", async () => {
+      const token = await enableSharing()
+
+      expect(typeof token).toBe("string")
+      expect(token.length).toBeGreaterThanOrEqual(24)
+      const stored = await Presentation.findById(testPresentationId)
+      expect(stored.shareToken).toBe(token)
+    })
+
+    test("turning sharing on twice keeps the same link", async () => {
+      const first = await enableSharing()
+      const second = await enableSharing()
+
+      expect(second).toBe(first)
+    })
+
+    test("another user cannot turn sharing on or off", async () => {
+      await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(403)
+
+      await enableSharing()
+
+      await api
+        .delete(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(403)
+    })
+
+    test("sharing requires authentication", async () => {
+      await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .expect(401)
+    })
+
+    test("a Google Drive presentation cannot be shared", async () => {
+      await Presentation.findByIdAndUpdate(testPresentationId, {
+        storage: "googleDrive",
+      })
+
+      const response = await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(400)
+
+      expect(response.body.error).toMatch(/Google Drive/)
+      const stored = await Presentation.findById(testPresentationId)
+      expect(stored.shareToken).toBeUndefined()
+    })
+
+    test("a logged-in user can read the presentation through the link", async () => {
+      await createCue(0, "shared cue", 1)
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      expect(response.body.name).toBe("Test presentation")
+      expect(response.body.cues).toHaveLength(1)
+      expect(response.body.cues[0].file.url).toBeTruthy()
+    })
+
+    test("reading through the link does not touch the owner's lastUsed", async () => {
+      const token = await enableSharing()
+      const before = (await Presentation.findById(testPresentationId)).lastUsed
+
+      await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      const after = (await Presentation.findById(testPresentationId)).lastUsed
+      expect(after.getTime()).toBe(before.getTime())
+    })
+
+    test("the link is refused without a login", async () => {
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .expect(401)
+
+      expect(response.body.error).toBe("authentication required")
+    })
+
+    test("an unknown token is a 404", async () => {
+      const response = await api
+        .get("/api/presentation/shared/not-a-real-token")
+        .set("Authorization", viewerAuthHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("shared presentation not found")
+    })
+
+    test("the link gives read access only", async () => {
+      const token = await enableSharing()
+
+      await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/name`)
+        .set("Authorization", viewerAuthHeader)
+        .send({ name: "hijacked" })
+        .expect(403)
+      await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(403)
+      await api
+        .delete(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(403)
+    })
+
+    test("turning sharing off kills the link", async () => {
+      const token = await enableSharing()
+
+      await api
+        .delete(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(204)
+
+      await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(404)
+
+      const renewed = await enableSharing()
+      expect(renewed).not.toBe(token)
+    })
+
+    test("viewers get scores pointed at the share-link file route", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "Shared Score",
+        source: "upload",
+        file: {
+          id: "score-file-shared",
+          name: "shared.pdf",
+          type: "application/pdf",
+        },
+      })
+      await presentation.save()
+      const scoreId = presentation.scores[0]._id
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      expect(response.body.scores[0].file.proxyUrl).toBe(
+        `/api/presentation/shared/${token}/scores/${scoreId}/file`
+      )
+
+      S3Mock.on(GetObjectCommand).resolves({
+        Body: Readable.from([Buffer.from("%PDF")]),
+        ContentType: "application/pdf",
+        ContentLength: 4,
+      })
+
+      const file = await api
+        .get(`/api/presentation/shared/${token}/scores/${scoreId}/file`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+      expect(file.headers["content-type"]).toMatch(/application\/pdf/)
+
+      await api
+        .get(`/api/presentation/${testPresentationId}/scores/${scoreId}/file`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(403)
+    })
+
+    const addSharedScore = async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "Shared Score",
+        source: "upload",
+        file: {
+          id: "score-file-shared",
+          name: "shared.pdf",
+          type: "application/pdf",
+        },
+      })
+      await presentation.save()
+      return presentation.scores[0]._id
+    }
+
+    test("a score with no stored file has no proxy URL in the shared view", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.scores.push({
+        title: "External Score",
+        source: "imslp",
+        sourceUrl: "https://imslp.org/score.pdf",
+      })
+      await presentation.save()
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      expect(response.body.scores).toHaveLength(1)
+      expect(response.body.scores[0].file?.proxyUrl).toBeUndefined()
+    })
+
+    test("an unknown score through the link is a 404", async () => {
+      const token = await enableSharing()
+
+      const response = await api
+        .get(
+          `/api/presentation/shared/${token}/scores/${new mongoose.Types.ObjectId()}/file`
+        )
+        .set("Authorization", viewerAuthHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("Score not found")
+    })
+
+    test("a score whose file has no readable body is a 404", async () => {
+      const scoreId = await addSharedScore()
+      const token = await enableSharing()
+      S3Mock.on(GetObjectCommand).resolves({})
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}/scores/${scoreId}/file`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(404)
+
+      expect(response.body.error).toBe("Score file not found")
+    })
+
+    test("a storage failure while streaming a shared score is a 500", async () => {
+      const scoreId = await addSharedScore()
+      const token = await enableSharing()
+      S3Mock.on(GetObjectCommand).rejects(new Error("storage down"))
+
+      await api
+        .get(`/api/presentation/shared/${token}/scores/${scoreId}/file`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(500)
+    })
+
+    test("a failure while preparing the shared view is a 500", async () => {
+      const token = await enableSharing()
+      const helper = require("../utils/helper")
+      const spy = jest
+        .spyOn(helper, "processS3MediaFiles")
+        .mockRejectedValueOnce(new Error("storage down"))
+
+      await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(500)
+
+      spy.mockRestore()
+    })
+
+    test("a database failure while turning sharing on is a 500", async () => {
+      const spy = jest
+        .spyOn(Presentation.prototype, "save")
+        .mockRejectedValueOnce(new Error("db down"))
+
+      await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(500)
+
+      spy.mockRestore()
+    })
+
+    test("a database failure while turning sharing off is a 500", async () => {
+      await enableSharing()
+      const spy = jest
+        .spyOn(Presentation.prototype, "save")
+        .mockRejectedValueOnce(new Error("db down"))
+
+      await api
+        .delete(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(500)
+
+      spy.mockRestore()
     })
   })
 

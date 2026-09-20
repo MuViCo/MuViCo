@@ -18,6 +18,7 @@ import {
 } from "../../redux/presentationReducer"
 import { useAppDispatch } from "../../redux/hooks"
 import { useCustomToast } from "../utils/toastUtils"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 import ScorePdfViewer from "./ScorePdfViewer"
 
 import type { ScoreDocument } from "../../types"
@@ -38,6 +39,7 @@ const getPdfTitle = (file: File) => file.name.replace(/\.pdf$/i, "").trim()
 const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
   const dispatch = useAppDispatch()
   const showToast = useCustomToast()
+  const readOnly = useReadOnly()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedScoreId, setSelectedScoreId] = useState<string | null>(null)
   const [imslpUrl, setImslpUrl] = useState("")
@@ -182,7 +184,7 @@ const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
       />
 
       {/* Delete selected score */}
-      {selectedScore && (
+      {selectedScore && !readOnly && (
         <HStack justify="flex-end" px={1}>
           <Button
             size="xs"
@@ -201,7 +203,7 @@ const ScorePanel = ({ presentationId, scores }: ScorePanelProps) => {
         </HStack>
       )}
 
-      {scores.length === 0 && (
+      {scores.length === 0 && !readOnly && (
         <>
           <Divider borderColor={borderColor} />
 

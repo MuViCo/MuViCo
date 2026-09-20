@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { removeMedia, uploadMedia } from "../../redux/presentationReducer"
 
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 
 type DockTab = "colors" | "media" | "scores"
 
@@ -92,7 +93,13 @@ const EditorDock = ({
     [dispatch, presentationId]
   )
 
-  const [activeTab, setActiveTab] = useState<DockTab>(readStoredTab)
+  const readOnly = useReadOnly()
+  const tabs = readOnly
+    ? DOCK_TABS.filter((tab) => tab.id === "scores")
+    : DOCK_TABS
+  const [activeTab, setActiveTab] = useState<DockTab>(() =>
+    readOnly ? "scores" : readStoredTab()
+  )
   const [dockWidth, setDockWidth] = useState<number>(readStoredWidth)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
@@ -108,12 +115,13 @@ const EditorDock = ({
   const handleHoverColor = useColorModeValue("purple.400", "purple.500")
 
   useEffect(() => {
+    if (readOnly) return
     try {
       localStorage.setItem(DOCK_TAB_KEY, activeTab)
     } catch {
       // ignore
     }
-  }, [activeTab])
+  }, [activeTab, readOnly])
 
   /* Persist width to localStorage */
   useEffect(() => {
@@ -206,15 +214,15 @@ const EditorDock = ({
         {/* ── Tab switcher ─────────────────────────────────────────────── */}
         {/* One strip for the whole dock. */}
         <Tabs
-          index={DOCK_TABS.findIndex((tab) => tab.id === activeTab)}
-          onChange={(index) => setActiveTab(DOCK_TABS[index].id)}
+          index={tabs.findIndex((tab) => tab.id === activeTab)}
+          onChange={(index) => setActiveTab(tabs[index].id)}
           variant="enclosed"
           size="sm"
           flexShrink={0}
           pt={2}
         >
           <TabList borderColor={borderColor}>
-            {DOCK_TABS.map((tab, index) => {
+            {tabs.map((tab, index) => {
               const isActive = activeTab === tab.id
               return (
                 <Tab
@@ -230,7 +238,7 @@ const EditorDock = ({
                   flex="1"
                   borderTopRadius="md"
                   borderBottomRadius="0"
-                  marginRight={index < DOCK_TABS.length - 1 ? "1px" : "0"}
+                  marginRight={index < tabs.length - 1 ? "1px" : "0"}
                   _hover={{
                     bg: isActive ? surfaceBg : tabHoverBg,
                     color: textColor,

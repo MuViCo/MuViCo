@@ -11,6 +11,9 @@ import reducer, {
   removePresentation,
   editCue,
   fetchPresentationInfo,
+  fetchSharedPresentationInfo,
+  enablePresentationSharing,
+  disablePresentationSharing,
   removeCue,
   createCue,
   deletePresentation,
@@ -49,6 +52,9 @@ beforeAll(() => {
 
 jest.mock("../../services/presentation", () => ({
   get: jest.fn(),
+  getShared: jest.fn(),
+  enableSharing: jest.fn(),
+  disableSharing: jest.fn(),
   removeCue: jest.fn(),
   addCue: jest.fn(),
   remove: jest.fn(),
@@ -172,6 +178,7 @@ describe("presentationReducer reducer", () => {
     name: "",
     screenCount: 3,
     indexCount: 5,
+    shareToken: null,
     pendingSaves: 0,
   }
 
@@ -578,6 +585,122 @@ describe("presentationReducer asynchronous actions", () => {
     await expect(store.dispatch(fetchPresentationInfo("123"))).rejects.toThrow(
       "Not found"
     )
+  })
+
+  it("should fetch a shared presentation by its token", async () => {
+    const store = makeStore()
+    presentationService.get.mockClear()
+    const mockCues = [{ _id: 1, name: "Cue 1" }]
+    presentationService.getShared.mockResolvedValue({
+      name: "Shared show",
+      cues: mockCues,
+    })
+
+    await store.dispatch(fetchSharedPresentationInfo("tok-123"))
+
+    expect(presentationService.getShared).toHaveBeenCalledWith("tok-123")
+    expect(presentationService.get).not.toHaveBeenCalled()
+    expect(store.getState().presentation.name).toBe("Shared show")
+    expect(store.getState().presentation.cues).toEqual(mockCues)
+  })
+
+  it("should surface the server message when a share link fails", async () => {
+    const store = makeStore()
+    presentationService.getShared.mockRejectedValue({
+      response: { data: { error: "shared presentation not found" } },
+    })
+
+    await expect(
+      store.dispatch(fetchSharedPresentationInfo("gone"))
+    ).rejects.toThrow("shared presentation not found")
+  })
+
+  it("should keep the share token from a fetched presentation", async () => {
+    const store = makeStore()
+    presentationService.get.mockResolvedValue({
+      cues: [],
+      shareToken: "tok-abc",
+    })
+
+    await store.dispatch(fetchPresentationInfo("123"))
+
+    expect(store.getState().presentation.shareToken).toBe("tok-abc")
+  })
+
+  it("should store the token when sharing is turned on", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockResolvedValue("tok-new")
+
+    const token = await store.dispatch(enablePresentationSharing("123"))
+
+    expect(presentationService.enableSharing).toHaveBeenCalledWith("123")
+    expect(token).toBe("tok-new")
+    expect(store.getState().presentation.shareToken).toBe("tok-new")
+  })
+
+  it("should clear the token when sharing is turned off", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockResolvedValue("tok-new")
+    presentationService.disableSharing.mockResolvedValue(undefined)
+    await store.dispatch(enablePresentationSharing("123"))
+
+    await store.dispatch(disablePresentationSharing("123"))
+
+    expect(presentationService.disableSharing).toHaveBeenCalledWith("123")
+    expect(store.getState().presentation.shareToken).toBeNull()
+  })
+
+  it("should keep the token and surface the error if turning sharing on fails", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockRejectedValue({
+      response: { data: { error: "Sharing is not available" } },
+    })
+
+    await expect(
+      store.dispatch(enablePresentationSharing("123"))
+    ).rejects.toThrow("Sharing is not available")
+    expect(store.getState().presentation.shareToken).toBeNull()
+  })
+
+  it("should fall back to a generic message when a share link fails without one", async () => {
+    const store = makeStore()
+    presentationService.getShared.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(fetchSharedPresentationInfo("tok"))
+    ).rejects.toThrow("An error occurred")
+  })
+
+  it("should fall back to a generic message when turning sharing on fails without one", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(enablePresentationSharing("123"))
+    ).rejects.toThrow("An error occurred")
+  })
+
+  it("should keep the token and surface the error if turning sharing off fails", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockResolvedValue("tok-new")
+    await store.dispatch(enablePresentationSharing("123"))
+    presentationService.disableSharing.mockRejectedValue({
+      response: { data: { error: "access denied" } },
+    })
+
+    await expect(
+      store.dispatch(disablePresentationSharing("123"))
+    ).rejects.toThrow("access denied")
+    expect(store.getState().presentation.shareToken).toBe("tok-new")
+  })
+
+  it("should fall back to a generic message when turning sharing off fails without one", async () => {
+    const store = makeStore()
+    presentationService.disableSharing.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(disablePresentationSharing("123"))
+    ).rejects.toThrow("An error occurred")
   })
 
   it("should remove cue", async () => {

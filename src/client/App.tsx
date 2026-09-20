@@ -16,6 +16,7 @@ import UsersList from "./components/admin/UsersList"
 import UserPresentations from "./components/admin/UserPresentations"
 import Footer from "./components/footer"
 import Profile from "./components/profilepage/profile"
+import LoginRedirect from "./components/utils/LoginRedirect"
 import authService from "./services/auth"
 
 import type { AuthUser } from "./types"
@@ -27,8 +28,12 @@ const App = () => {
   const [isInitialized, setIsInitialized] = useState(false)
 
   const location = useLocation()
-  const isPresentation = location.pathname.startsWith("/presentation")
-  const isShowMode = /\/presentation\/[^/]+\/show\/?$/.test(location.pathname)
+  const isPresentation =
+    location.pathname.startsWith("/presentation") ||
+    location.pathname.startsWith("/shared/")
+  const isShowMode = /\/(presentation|shared)\/[^/]+\/show\/?$/.test(
+    location.pathname
+  )
   const isHome = location.pathname.startsWith("/home")
   const isProfile = location.pathname.startsWith("/profile")
 
@@ -103,6 +108,16 @@ const App = () => {
                   <PresentationPage user={user} />
                 ) : (
                   <Navigate to="/" />
+                )
+              }
+            />
+            <Route
+              path="/shared/:token/*"
+              element={
+                user ? (
+                  <PresentationPage user={user} shared />
+                ) : (
+                  <LoginRedirect />
                 )
               }
             />

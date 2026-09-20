@@ -10,6 +10,7 @@ import { Box, IconButton, Input, Button } from "@chakra-ui/react"
 import { EditIcon } from "@chakra-ui/icons"
 import { updatePresentationName } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 
 const PresentationTitle = ({ id, presentationName }) => {
   const [isEditingPresentationName, setIsEditingPresentationName] =
@@ -17,6 +18,7 @@ const PresentationTitle = ({ id, presentationName }) => {
   const [newPresentationName, setNewPresentationName] = useState("")
   const showToast = useCustomToast()
   const dispatch = useDispatch()
+  const readOnly = useReadOnly()
 
   useEffect(() => {
     setNewPresentationName(presentationName)
@@ -80,7 +82,7 @@ const PresentationTitle = ({ id, presentationName }) => {
           fontWeight={700}
         />
       )}
-      {!isEditingPresentationName && (
+      {!isEditingPresentationName && !readOnly && (
         <IconButton
           id="edit-presentation-name-button"
           data-testid="edit-presentation-name-button"

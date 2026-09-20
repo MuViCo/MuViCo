@@ -55,6 +55,7 @@ jest.mock("../../components/navbar/SignUp", () => {
 describe("NavBar auth callback wiring", () => {
   beforeEach(() => {
     mockNavigate.mockReset()
+    window.sessionStorage.clear()
   })
 
   test("Login callback sets user and navigates to /home", () => {
@@ -89,5 +90,36 @@ describe("NavBar auth callback wiring", () => {
 
     expect(setUser).toHaveBeenCalledWith({ id: 2, username: "signup-user" })
     expect(mockNavigate).toHaveBeenCalledWith("/home")
+  })
+
+  test("Login returns a visitor sent from a share link to that link", () => {
+    window.sessionStorage.setItem("redirectAfterLogin", "/shared/abc_DEF-123")
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <NavBar user={null} setUser={jest.fn()} />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Login" }))
+    fireEvent.click(screen.getByTestId("mock-login-trigger"))
+
+    expect(mockNavigate).toHaveBeenCalledWith("/shared/abc_DEF-123")
+    expect(window.sessionStorage.getItem("redirectAfterLogin")).toBeNull()
+  })
+
+  test("SignUp also returns a visitor to the share link they came from", () => {
+    window.sessionStorage.setItem("redirectAfterLogin", "/shared/abc_DEF-123")
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <NavBar user={null} setUser={jest.fn()} />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign Up" }))
+    fireEvent.click(screen.getByTestId("mock-signup-trigger"))
+
+    expect(mockNavigate).toHaveBeenCalledWith("/shared/abc_DEF-123")
   })
 })

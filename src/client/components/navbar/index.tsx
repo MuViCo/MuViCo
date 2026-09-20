@@ -27,6 +27,7 @@ import { QuestionIcon } from "@chakra-ui/icons"
 import { motion } from "framer-motion"
 import ThemeToggleButton from "./theme-toggle-button"
 import Login from "./Login"
+import { consumeLoginRedirect } from "../../utils/loginRedirect"
 import SignUp from "./SignUp"
 import hyLogo from "../../public/hy_logo.svg"
 import bHyLogo from "../../public/b_hy_logo.svg"
@@ -128,13 +129,13 @@ const NavBar = ({
   const onLogin = (user: AuthUser) => {
     sessionExpiredHandledRef.current = false
     setUser(user)
-    navigate("/home")
+    navigate(consumeLoginRedirect() ?? "/home")
   }
 
   const onSignup = (user: AuthUser) => {
     sessionExpiredHandledRef.current = false
     setUser(user)
-    navigate("/home")
+    navigate(consumeLoginRedirect() ?? "/home")
   }
 
   const handleOpenManual = () => {
