@@ -133,6 +133,7 @@ import {
 } from "../utils/screenRowModel"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import mediaStore from "./mediaFileStore"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 
 /**
  * EditMode Component - Main editing interface for presentations
@@ -190,6 +191,7 @@ const EditMode = ({
   const inactiveFrameBorderColor = useColorModeValue("#b31bff", "#4a2d63")
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
+  const readOnly = useReadOnly()
   const presentation = useAppSelector((state) => state.presentation)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
@@ -2015,7 +2017,7 @@ const EditMode = ({
     <>
       <CustomAlert showAlert={showAlert} alertData={alertData} />
       <div
-        onDrop={handleDrop}
+        onDrop={readOnly ? undefined : handleDrop}
         onDragOver={(e) => e.preventDefault()}
         data-testid="drop-area"
         style={{
@@ -2136,11 +2138,11 @@ const EditMode = ({
                 // id="presentations-grid"
                 data-testid="edit-mode-grid-container"
                 ref={containerRef}
-                onDoubleClick={handleDoubleClick}
-                onMouseDownCapture={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onDragOver={handleGridDragOver}
-                onDragLeave={handleGridDragLeave}
+                onDoubleClick={readOnly ? undefined : handleDoubleClick}
+                onMouseDownCapture={readOnly ? undefined : handleMouseDown}
+                onMouseMove={readOnly ? undefined : handleMouseMove}
+                onDragOver={readOnly ? undefined : handleGridDragOver}
+                onDragLeave={readOnly ? undefined : handleGridDragLeave}
                 onDragStart={(event) => {
                   if (targetElement(event).closest(".react-grid-item")) {
                     event.preventDefault()
@@ -2166,8 +2168,8 @@ const EditMode = ({
                     setDragCursorMode("default")
                   }
                 }}
-                onMouseUp={handleMouseUp}
-                onClick={handlePaste}
+                onMouseUp={readOnly ? undefined : handleMouseUp}
+                onClick={readOnly ? undefined : handlePaste}
               >
                 <Box
                   className="index-boxes"

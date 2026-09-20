@@ -186,6 +186,11 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
       index: -1,
     },
 
+    shareToken: {
+      type: String,
+      index: { unique: true, sparse: true },
+    },
+
     cues: [
       {
         cueType: {

@@ -13,6 +13,7 @@ import {
 } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditMode from "../../components/presentation/EditMode"
+import { ReadOnlyProvider } from "../../components/utils/ReadOnlyContext"
 import {
   TIMELINE_METRICS,
   laneTop,
@@ -666,6 +667,80 @@ describe("EditMode drag swapping", () => {
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ title: "Cannot drop here" })
     )
+  })
+
+  describe("opened through a share link (read-only)", () => {
+    const renderReadOnly = (extraProps = {}) =>
+      render(
+        <ReadOnlyProvider value>
+          <EditMode
+            id="presentation-1"
+            cues={cues}
+            isToolboxOpen={false}
+            setIsToolboxOpen={jest.fn()}
+            cueIndex={0}
+            isAudioMuted={false}
+            toggleAudioMute={jest.fn()}
+            indexCount={3}
+            {...extraProps}
+          />
+        </ReadOnlyProvider>
+      )
+
+    it("opens the cue editor on double-click for the owner", () => {
+      const setIsToolboxOpen = jest.fn()
+      renderEditMode(cues, 3, { setIsToolboxOpen })
+      const gridContainer = setupGridGeometry()
+
+      fireEvent.doubleClick(gridContainer, {
+        clientX: 20,
+        clientY: rowCenterY(0),
+      })
+
+      expect(setIsToolboxOpen).toHaveBeenCalledWith(true)
+    })
+
+    it("does not open the cue editor on double-click for a viewer", () => {
+      const setIsToolboxOpen = jest.fn()
+      renderReadOnly({ setIsToolboxOpen })
+      const gridContainer = setupGridGeometry()
+
+      fireEvent.doubleClick(gridContainer, {
+        clientX: 20,
+        clientY: rowCenterY(0),
+      })
+
+      expect(setIsToolboxOpen).not.toHaveBeenCalled()
+    })
+
+    it("ignores dropping media on the grid for a viewer", async () => {
+      renderReadOnly()
+      const gridContainer = setupGridGeometry()
+      const dropArea = screen.getByTestId("drop-area")
+      const dataTransfer = buildPoolColorDragDataTransfer()
+
+      fireEvent.dragOver(gridContainer, {
+        dataTransfer,
+        clientX: 330,
+        clientY: rowCenterY(0),
+      })
+
+      const dropEvent = createEvent.drop(dropArea)
+      for (const [key, value] of [
+        ["dataTransfer", dataTransfer],
+        ["clientX", 330],
+        ["clientY", rowCenterY(0)],
+      ]) {
+        Object.defineProperty(dropEvent, key, { value, configurable: true })
+      }
+
+      await act(async () => {
+        fireEvent(dropArea, dropEvent)
+      })
+
+      expect(createCue).not.toHaveBeenCalled()
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
   })
 
   it("focuses the lane an element was dropped onto", async () => {

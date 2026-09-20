@@ -60,6 +60,7 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons"
 import { SpeakerIcon, SpeakerMutedIcon } from "../../lib/icons"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 import trashIcon from "../../public/icons/trash.svg"
 
 /**
@@ -143,6 +144,7 @@ const RowHeadersBase = ({
   onFocusLane = () => {},
 }: RowHeadersProps): ReactNode => {
   const palette = useTimelinePalette()
+  const readOnly = useReadOnly()
 
   const renderLaneHeader = (row: Lane): ReactNode => {
     const isAudio = row.kind === "audio-track" || row.kind === "audio"
@@ -369,49 +371,51 @@ const RowHeadersBase = ({
 
         {!isAudio && (
           <>
-            {row.kind === "layer" && Number(row.layer ?? 0) > 0 && (
-              <IconButton
-                icon={<MinusIcon boxSize="9px" />}
-                size="xs"
-                variant="solid"
-                color={palette.controlText}
-                bg={palette.controlBgDanger}
-                borderWidth="1px"
-                borderColor={palette.controlBorder}
-                borderRadius="6px"
-                position="absolute"
-                top="50%"
-                right="4px"
-                transform="translateY(-50%)"
-                opacity={0}
-                visibility="hidden"
-                transition="opacity 120ms ease"
-                _groupHover={{ opacity: 1, visibility: "visible" }}
-                aria-label={`Remove layer from screen ${row.screen}`}
-                title={
-                  canRemoveVisualLayer
-                    ? "Remove layer"
-                    : "Base layer cannot be removed"
-                }
-                isDisabled={!canRemoveVisualLayer}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  // canRemoveVisualLayer above requires Number(row.layer ?? 0) > 0,
-                  // so the layer is defined wherever this button is enabled.
-                  onRemoveVisualLayer(row.screen, row.layer as number)
-                }}
-                _hover={{
-                  bg: "orange.50",
-                  borderColor: "orange.400",
-                  color: "black",
-                }}
-                _active={{ bg: "white" }}
-                boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                zIndex="10"
-              />
-            )}
+            {!readOnly &&
+              row.kind === "layer" &&
+              Number(row.layer ?? 0) > 0 && (
+                <IconButton
+                  icon={<MinusIcon boxSize="9px" />}
+                  size="xs"
+                  variant="solid"
+                  color={palette.controlText}
+                  bg={palette.controlBgDanger}
+                  borderWidth="1px"
+                  borderColor={palette.controlBorder}
+                  borderRadius="6px"
+                  position="absolute"
+                  top="50%"
+                  right="4px"
+                  transform="translateY(-50%)"
+                  opacity={0}
+                  visibility="hidden"
+                  transition="opacity 120ms ease"
+                  _groupHover={{ opacity: 1, visibility: "visible" }}
+                  aria-label={`Remove layer from screen ${row.screen}`}
+                  title={
+                    canRemoveVisualLayer
+                      ? "Remove layer"
+                      : "Base layer cannot be removed"
+                  }
+                  isDisabled={!canRemoveVisualLayer}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    // canRemoveVisualLayer above requires Number(row.layer ?? 0) > 0,
+                    // so the layer is defined wherever this button is enabled.
+                    onRemoveVisualLayer(row.screen, row.layer as number)
+                  }}
+                  _hover={{
+                    bg: "orange.50",
+                    borderColor: "orange.400",
+                    color: "black",
+                  }}
+                  _active={{ bg: "white" }}
+                  boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  zIndex="10"
+                />
+              )}
 
-            {isLastScreenStart && screenCount > 1 && (
+            {!readOnly && isLastScreenStart && screenCount > 1 && (
               <Box
                 position="absolute"
                 top="4px"
@@ -459,7 +463,8 @@ const RowHeadersBase = ({
               </Box>
             )}
 
-            {isVisualGroupEnd &&
+            {!readOnly &&
+              isVisualGroupEnd &&
               (canAddVisualLayer || (isLastScreenEnd && screenCount < 8)) && (
                 <Box
                   position="absolute"
@@ -545,7 +550,7 @@ const RowHeadersBase = ({
           </>
         )}
 
-        {row.groupStart && isAudio && (
+        {!readOnly && row.groupStart && isAudio && (
           <IconButton
             icon={<AddIcon />}
             size="xs"
@@ -665,6 +670,7 @@ const ColumnHeadersBase = ({
   onSelectFrame,
 }: ColumnHeadersProps): ReactNode => {
   const palette = useTimelinePalette()
+  const readOnly = useReadOnly()
 
   return xLabels.map((label, index) => (
     <Box
@@ -725,136 +731,142 @@ const ColumnHeadersBase = ({
           aria-hidden="true"
           zIndex="1"
         />
-        <IconButton
-          icon={<AddIcon />}
-          variant="solid"
-          color="black"
-          position="absolute"
-          top="0"
-          right="0"
-          transform="translateX(65%)"
-          h={`${frameHeaderHeight}px`}
-          w="30px"
-          minW="20px"
-          borderRadius="0"
-          isDisabled={indexCount >= 100}
-          aria-label="Add Frame"
-          title="Add Frame"
-          onClick={() => {
-            headerActionsRef.current.addIndex(index)
-          }}
-          opacity={index === xLabels.length - 1 ? 0.45 : 0}
-          pointerEvents={index === xLabels.length - 1 ? "auto" : "none"}
-          bg={
-            index === xLabels.length - 1
-              ? "rgba(255,255,255,0.12)"
-              : "transparent"
-          }
-          backdropFilter={index === xLabels.length - 1 ? "blur(2px)" : "none"}
-          _groupHover={{
-            opacity: 1,
-            pointerEvents: "auto",
-          }}
-          _hover={{
-            bg: "rgba(125, 252, 135, 0.75)",
-            borderColor: "green.400",
-            color: "black",
-            borderRadius: "6px",
-            transform: "translateX(65%) scale(1.03)",
-          }}
-          _active={{ bg: "transparent" }}
-          boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-          zIndex="20"
-        />
-        {index !== 0 && (
-          <IconButton
-            icon={<AddIcon />}
-            variant="solid"
-            color="black"
-            position="absolute"
-            top="0"
-            left="0"
-            transform="translateX(-65%)"
-            h={`${frameHeaderHeight}px`}
-            w="30px"
-            minW="20px"
-            borderRadius="0"
-            isDisabled={indexCount >= 100}
-            aria-label="Add Frame Before"
-            title="Add Frame Before"
-            onClick={() => {
-              headerActionsRef.current.addIndex(index - 1)
-            }}
-            opacity="0"
-            pointerEvents="none"
-            _groupHover={
-              indexCount >= 100
-                ? {}
-                : {
-                    opacity: 1,
-                    pointerEvents: "auto",
-                  }
-            }
-            _hover={{
-              bg: "rgba(125, 252, 135, 0.75)",
-              borderColor: "green.400",
-              color: "black",
-              borderRadius: "6px",
-              transform: "translateX(-65%) scale(1.03)",
-            }}
-            _active={{ bg: "transparent" }}
-            boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-            zIndex="20"
-          />
-        )}
-        {index !== 0 && (
-          <IconButton
-            icon={
-              <Box
-                as="img"
-                src={trashIcon}
-                alt=""
-                aria-hidden="true"
-                w="24px"
-                h="24px"
+        {!readOnly && (
+          <>
+            <IconButton
+              icon={<AddIcon />}
+              variant="solid"
+              color="black"
+              position="absolute"
+              top="0"
+              right="0"
+              transform="translateX(65%)"
+              h={`${frameHeaderHeight}px`}
+              w="30px"
+              minW="20px"
+              borderRadius="0"
+              isDisabled={indexCount >= 100}
+              aria-label="Add Frame"
+              title="Add Frame"
+              onClick={() => {
+                headerActionsRef.current.addIndex(index)
+              }}
+              opacity={index === xLabels.length - 1 ? 0.45 : 0}
+              pointerEvents={index === xLabels.length - 1 ? "auto" : "none"}
+              bg={
+                index === xLabels.length - 1
+                  ? "rgba(255,255,255,0.12)"
+                  : "transparent"
+              }
+              backdropFilter={
+                index === xLabels.length - 1 ? "blur(2px)" : "none"
+              }
+              _groupHover={{
+                opacity: 1,
+                pointerEvents: "auto",
+              }}
+              _hover={{
+                bg: "rgba(125, 252, 135, 0.75)",
+                borderColor: "green.400",
+                color: "black",
+                borderRadius: "6px",
+                transform: "translateX(65%) scale(1.03)",
+              }}
+              _active={{ bg: "transparent" }}
+              boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+              zIndex="20"
+            />
+            {index !== 0 && (
+              <IconButton
+                icon={<AddIcon />}
+                variant="solid"
+                color="black"
+                position="absolute"
+                top="0"
+                left="0"
+                transform="translateX(-65%)"
+                h={`${frameHeaderHeight}px`}
+                w="30px"
+                minW="20px"
+                borderRadius="0"
+                isDisabled={indexCount >= 100}
+                aria-label="Add Frame Before"
+                title="Add Frame Before"
+                onClick={() => {
+                  headerActionsRef.current.addIndex(index - 1)
+                }}
+                opacity="0"
+                pointerEvents="none"
+                _groupHover={
+                  indexCount >= 100
+                    ? {}
+                    : {
+                        opacity: 1,
+                        pointerEvents: "auto",
+                      }
+                }
+                _hover={{
+                  bg: "rgba(125, 252, 135, 0.75)",
+                  borderColor: "green.400",
+                  color: "black",
+                  borderRadius: "6px",
+                  transform: "translateX(-65%) scale(1.03)",
+                }}
+                _active={{ bg: "transparent" }}
+                boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                zIndex="20"
               />
-            }
-            size="xs"
-            variant="solid"
-            color="black"
-            position="absolute"
-            top="1%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            w="36px"
-            minW="36px"
-            isDisabled={indexCount <= 1}
-            aria-label="Remove Frame"
-            title="Remove Frame"
-            onClick={() => {
-              headerActionsRef.current.removeIndex(index)
-            }}
-            opacity="0"
-            pointerEvents="none"
-            _groupHover={
-              indexCount <= 1
-                ? {}
-                : {
-                    opacity: 1,
-                    pointerEvents: "auto",
-                  }
-            }
-            _hover={{
-              bg: "rgba(253, 97, 97, 0.75)",
-              borderColor: "red.400",
-              color: "black",
-              borderRadius: "6px",
-              transform: "translate(-50%, -50%) scale(1.03)",
-            }}
-            _active={{ bg: "transparent" }}
-            boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-            zIndex="10"
-          />
+            )}
+            {index !== 0 && (
+              <IconButton
+                icon={
+                  <Box
+                    as="img"
+                    src={trashIcon}
+                    alt=""
+                    aria-hidden="true"
+                    w="24px"
+                    h="24px"
+                  />
+                }
+                size="xs"
+                variant="solid"
+                color="black"
+                position="absolute"
+                top="1%"
+                left="50%"
+                transform="translate(-50%, -50%)"
+                w="36px"
+                minW="36px"
+                isDisabled={indexCount <= 1}
+                aria-label="Remove Frame"
+                title="Remove Frame"
+                onClick={() => {
+                  headerActionsRef.current.removeIndex(index)
+                }}
+                opacity="0"
+                pointerEvents="none"
+                _groupHover={
+                  indexCount <= 1
+                    ? {}
+                    : {
+                        opacity: 1,
+                        pointerEvents: "auto",
+                      }
+                }
+                _hover={{
+                  bg: "rgba(253, 97, 97, 0.75)",
+                  borderColor: "red.400",
+                  color: "black",
+                  borderRadius: "6px",
+                  transform: "translate(-50%, -50%) scale(1.03)",
+                }}
+                _active={{ bg: "transparent" }}
+                boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                zIndex="10"
+              />
+            )}
+          </>
         )}
       </Box>
     </Box>

@@ -17,8 +17,8 @@ const markerPing = keyframes`
 export interface ScoreMarkerOverlayProps {
   markers: ScoreMarker[]
   isPlacing: boolean
-  onPlace: (x: number, y: number) => void
-  onSelectMarker: (marker: ScoreMarker) => void
+  onPlace?: (x: number, y: number) => void
+  onSelectMarker?: (marker: ScoreMarker) => void
   highlightedMarkerId?: string | null
 }
 
@@ -86,7 +86,7 @@ const ScoreMarkerOverlay = ({
   highlightedMarkerId = null,
 }: ScoreMarkerOverlayProps) => {
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!isPlacing) return
+    if (!isPlacing || !onPlace) return
     const rect = event.currentTarget.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
     const x = (event.clientX - rect.left) / rect.width

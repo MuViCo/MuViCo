@@ -70,6 +70,7 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import CueContextMenu from "./CueContextMenu"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 
 import type { CueContextMenuState } from "./CueContextMenu"
 
@@ -204,6 +205,7 @@ const GridLayoutComponent = ({
 }: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
   const dispatch = useAppDispatch()
+  const readOnly = useReadOnly()
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [cueToRemove, setCueToRemove] = useState<string | null>(null)
@@ -389,7 +391,7 @@ const GridLayoutComponent = ({
     y: number,
     returnFocusTo: HTMLElement
   ) => {
-    if (isDragging || isCopied) return
+    if (readOnly || isDragging || isCopied) return
     setContextMenu({ cue, x, y, returnFocusTo })
   }
 
@@ -397,6 +399,7 @@ const GridLayoutComponent = ({
     event: ReactMouseEvent<HTMLElement>,
     cue: Cue
   ) => {
+    if (readOnly) return
     event.preventDefault()
     event.stopPropagation()
     openCueContextMenu(cue, event.clientX, event.clientY, event.currentTarget)
@@ -651,7 +654,7 @@ const GridLayoutComponent = ({
                         }),
                   }}
                 >
-                  {!isDragging && (
+                  {!isDragging && !readOnly && (
                     <IconButton
                       data-cue-menu-trigger
                       data-testid={`cue-menu-button-${cue._id}`}

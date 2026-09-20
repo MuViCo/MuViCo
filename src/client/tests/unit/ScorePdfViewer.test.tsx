@@ -9,6 +9,8 @@ import {
   deleteScoreMarker,
 } from "../../redux/presentationReducer"
 
+import { ReadOnlyProvider } from "../../components/utils/ReadOnlyContext"
+
 import type { ScoreDocument } from "../../types"
 
 const mockGetDocument = jest.fn()
@@ -396,6 +398,78 @@ describe("ScorePdfViewer", () => {
           expect.objectContaining({ title: "Couldn't remove marker" })
         )
       )
+    })
+  })
+
+  describe("read-only (share link)", () => {
+    const scoreWithMarker: ScoreDocument = {
+      ...baseScore,
+      markers: [
+        {
+          _id: "marker-1",
+          page: 1,
+          frameIndex: 2,
+          rect: { x: 0.5, y: 0.5, width: 0, height: 0 },
+        },
+      ],
+    }
+
+    const renderReadOnly = (score: ScoreDocument) =>
+      renderWithChakra(
+        <ReadOnlyProvider value>
+          <ScorePdfViewer
+            presentationId="presentation-1"
+            scores={[score]}
+            selectedScore={score}
+            previewUrl={null}
+            onSelectScore={jest.fn()}
+            onOpenExternal={jest.fn()}
+            onUpload={jest.fn()}
+          />
+        </ReadOnlyProvider>
+      )
+
+    test("has no button to add markers", async () => {
+      renderReadOnly(scoreWithMarker)
+      await waitForPdfLoaded()
+
+      expect(screen.queryByRole("button", { name: "Add marker" })).toBeNull()
+    })
+
+    test("still shows the markers, as pins that cannot be edited", async () => {
+      renderReadOnly(scoreWithMarker)
+      await waitForPdfLoaded()
+
+      const pin = screen.getByTestId("score-marker-pin")
+      expect(pin).toHaveAttribute("title", "Frame 2")
+
+      fireEvent.click(pin)
+
+      expect(screen.queryByTestId("marker-form")).toBeNull()
+      expect(updateScoreMarker).not.toHaveBeenCalled()
+      expect(deleteScoreMarker).not.toHaveBeenCalled()
+    })
+
+    test("an empty score list says so instead of offering an upload", () => {
+      const onUpload = jest.fn()
+      renderWithChakra(
+        <ReadOnlyProvider value>
+          <ScorePdfViewer
+            presentationId="presentation-1"
+            scores={[]}
+            selectedScore={null}
+            previewUrl={null}
+            onSelectScore={jest.fn()}
+            onOpenExternal={jest.fn()}
+            onUpload={onUpload}
+          />
+        </ReadOnlyProvider>
+      )
+
+      expect(
+        screen.getByText("No score is attached to this presentation.")
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Glissez un PDF/)).toBeNull()
     })
   })
 })

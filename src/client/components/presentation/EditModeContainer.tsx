@@ -21,6 +21,8 @@ import EditorDock from "./EditorDock"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
 import CueAudioPlayers from "./CueAudioPlayers"
 import PresentationTitle from "./PresentationTitle"
+import SharePresentationButton from "./SharePresentationButton"
+import { ReadOnlyProvider, useReadOnly } from "../utils/ReadOnlyContext"
 import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
@@ -66,6 +68,7 @@ interface EditModeContainerProps {
   isShowMode?: boolean
   onEnterShow?: () => void
   onExitShow?: () => void
+  sharedToken?: string
 }
 
 interface AudioTrack {
@@ -108,6 +111,7 @@ interface EditorLayoutProps
 
 // Base component for different subcomponents of the editor
 function EditorLayout(props: EditorLayoutProps) {
+  const readOnly = useReadOnly()
   const {
     id,
     presentationName,
@@ -248,6 +252,7 @@ function EditorLayout(props: EditorLayoutProps) {
           >
             Tutorial
           </Button>
+          {!readOnly && <SharePresentationButton presentationId={id} />}
           <Button
             className="edit-mode-btn"
             variant="muvico-primary"
@@ -418,6 +423,7 @@ const EditModeContainer = ({
   isShowMode = false,
   onEnterShow = () => {},
   onExitShow = () => {},
+  sharedToken,
 }: EditModeContainerProps) => {
   const editModeBackground = "var(--muvico-canvas)"
   const panelBackground = "var(--muvico-surface)"
@@ -679,8 +685,9 @@ const EditModeContainer = ({
   }, [cues, screenCount])
 
   useEffect(() => {
+    if (sharedToken) return
     dispatch(fetchPresentationInfo(id))
-  }, [id, dispatch])
+  }, [id, dispatch, sharedToken])
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem("hasSeenHelp_presentation")
@@ -710,7 +717,7 @@ const EditModeContainer = ({
   }, [editModeBackground])
 
   return (
-    <>
+    <ReadOnlyProvider value={Boolean(sharedToken)}>
       {isShowMode ? (
         <ShowMode
           presentationName={presentationName}
@@ -813,7 +820,7 @@ const EditModeContainer = ({
           />
         )
       })}
-    </>
+    </ReadOnlyProvider>
   )
 }
 

@@ -45,6 +45,7 @@ export interface PresentationState {
   screenCount: number | null
   name: string
   indexCount: number
+  shareToken: string | null
   pendingSaves: number
 }
 
@@ -67,6 +68,7 @@ const initialState: PresentationState = {
   name: "",
   screenCount: null,
   indexCount: 5,
+  shareToken: null,
   pendingSaves: 0,
 }
 /** * The presentationSlice manages the state of the presentation, including cues, name, screen count,
@@ -84,6 +86,10 @@ const presentationSlice = createSlice({
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
       state.indexCount = action.payload.indexCount
+      state.shareToken = action.payload.shareToken ?? null
+    },
+    setShareToken(state, action: PayloadAction<string | null>) {
+      state.shareToken = action.payload
     },
     deleteCue(state, action: PayloadAction<string>) {
       state.cues = state.cues.filter((cue) => cue._id !== action.payload)
@@ -161,6 +167,7 @@ const presentationSlice = createSlice({
       state.name = initialState.name
       state.screenCount = initialState.screenCount
       state.indexCount = initialState.indexCount
+      state.shareToken = initialState.shareToken
       state.pendingSaves = initialState.pendingSaves
     },
     beginSave(state) {
@@ -246,6 +253,7 @@ export const {
   removeScoreMarkerFromState,
   editCue,
   removePresentation,
+  setShareToken,
   incrementIndexCount,
   decrementIndexCount,
   incrementScreenCount,
@@ -263,6 +271,46 @@ export const fetchPresentationInfo =
     try {
       const presentation = await presentationService.get(id)
       dispatch(setPresentationInfo(presentation))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+export const fetchSharedPresentationInfo =
+  (token: string): AppThunk =>
+  async (dispatch) => {
+    try {
+      const presentation = await presentationService.getShared(token)
+      dispatch(setPresentationInfo(presentation))
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+export const enablePresentationSharing =
+  (presentationId: string): AppThunk<string> =>
+  async (dispatch) => {
+    try {
+      const shareToken = await presentationService.enableSharing(presentationId)
+      dispatch(setShareToken(shareToken))
+      return shareToken
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || "An error occurred"
+      console.error(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+export const disablePresentationSharing =
+  (presentationId: string): AppThunk =>
+  async (dispatch) => {
+    try {
+      await presentationService.disableSharing(presentationId)
+      dispatch(setShareToken(null))
     } catch (error) {
       const errorMessage = error.response?.data?.error || "An error occurred"
       console.error(errorMessage)

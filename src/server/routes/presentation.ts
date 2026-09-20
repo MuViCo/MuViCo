@@ -16,7 +16,11 @@ import {
   getDriveFileStream,
 } from "../utils/drive"
 import Presentation from "../models/presentation"
-import { userExtractor, requirePresentationAccess } from "../utils/middleware"
+import {
+  userExtractor,
+  requirePresentationAccess,
+  requireSharedPresentationAccess,
+} from "../utils/middleware"
 import { BUCKET_NAME } from "../utils/config"
 import {
   generateSignedUrlForS3,
@@ -146,6 +150,29 @@ const setScoreFileHeaders = (
   if (contentLength !== undefined) {
     res.setHeader("Content-Length", contentLength)
   }
+}
+
+const streamS3ScoreFile = async (
+  res: Response,
+  presentation: PresentationDocument,
+  score: Score
+) => {
+  if (!score.file?.id) {
+    return res.status(404).json({ error: "Score file not found" })
+  }
+
+  const key = `${presentation._id}/${score.file.id}`
+  const response = await getObjectStreamS3(key)
+
+  if (
+    !response.Body ||
+    typeof (response.Body as { pipe?: unknown }).pipe !== "function"
+  ) {
+    return res.status(404).json({ error: "Score file not found" })
+  }
+
+  setScoreFileHeaders(res, score, response.ContentType, response.ContentLength)
+  return (response.Body as unknown as NodeJS.ReadableStream).pipe(res)
 }
 
 const parseUrl = (rawUrl: unknown) => {
@@ -457,6 +484,102 @@ const deleteObject = async (
 
   return updatedPresentation
 }
+
+router.get(
+  "/shared/:token",
+  userExtractor,
+  requireSharedPresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+
+      presentation!.cues = await processS3Files(
+        presentation!.cues,
+        presentation!._id
+      )
+      await processS3MediaFiles(presentation!.media, presentation!._id)
+      presentation!.scores = await processS3ScoreFiles(
+        presentation!.scores || [],
+        presentation!._id
+      )
+
+      for (const score of presentation!.scores) {
+        if (score.file?.proxyUrl) {
+          score.file.proxyUrl = `/api/presentation/shared/${req.params.token}/scores/${score._id}/file`
+        }
+      }
+
+      res.json(presentation)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.get(
+  "/shared/:token/scores/:scoreId/file",
+  userExtractor,
+  requireSharedPresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const score = findScore(presentation!, req.params.scoreId)
+
+      if (!score) {
+        return res.status(404).json({ error: "Score not found" })
+      }
+
+      return await streamS3ScoreFile(res, presentation!, score)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.post(
+  "/:id/share",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+
+      if (presentation!.storage !== "aws") {
+        return res.status(400).json({
+          error:
+            "Sharing is not available for presentations stored on Google Drive",
+        })
+      }
+
+      if (!presentation!.shareToken) {
+        presentation!.shareToken = crypto.randomBytes(24).toString("base64url")
+        await presentation!.save({ validateModifiedOnly: true })
+      }
+
+      return res.json({ shareToken: presentation!.shareToken })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+router.delete(
+  "/:id/share",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+
+      presentation!.shareToken = undefined
+      await presentation!.save({ validateModifiedOnly: true })
+
+      return res.status(204).end()
+    } catch (error) {
+      next(error)
+    }
+  }
+)
 
 /**
  * Returns all files related to a presentation.
@@ -908,27 +1031,7 @@ router.get(
         return fileStream.pipe(res)
       }
 
-      if (!score.file.id) {
-        return res.status(404).json({ error: "Score file not found" })
-      }
-
-      const key = `${presentation!._id}/${score.file.id}`
-      const response = await getObjectStreamS3(key)
-
-      if (
-        !response.Body ||
-        typeof (response.Body as { pipe?: unknown }).pipe !== "function"
-      ) {
-        return res.status(404).json({ error: "Score file not found" })
-      }
-
-      setScoreFileHeaders(
-        res,
-        score,
-        response.ContentType,
-        response.ContentLength
-      )
-      return (response.Body as unknown as NodeJS.ReadableStream).pipe(res)
+      return await streamS3ScoreFile(res, presentation!, score)
     } catch (error) {
       next(error)
     }

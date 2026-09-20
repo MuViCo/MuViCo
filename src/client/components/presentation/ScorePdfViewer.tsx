@@ -34,6 +34,7 @@ import type { ScoreDocument, ScoreMarker } from "../../types"
 import ScoreMarkerOverlay from "./ScoreMarkerOverlay"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 import { useCustomToast } from "../utils/toastUtils"
+import { useReadOnly } from "../utils/ReadOnlyContext"
 import {
   createScoreMarker,
   deleteScoreMarker,
@@ -86,6 +87,7 @@ interface PdfCanvasProps {
   onConfirmMarker?: () => void
   onCancelMarker?: () => void
   highlightedMarkerId?: string | null
+  readOnly?: boolean
 }
 
 const PdfCanvas = ({
@@ -106,6 +108,7 @@ const PdfCanvas = ({
   onConfirmMarker,
   onCancelMarker,
   highlightedMarkerId = null,
+  readOnly = false,
 }: PdfCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [isRendering, setIsRendering] = useState(false)
@@ -193,7 +196,7 @@ const PdfCanvas = ({
           borderRadius: "3px",
         }}
       />
-      {onPlaceMarker && onSelectMarker && (
+      {((onPlaceMarker && onSelectMarker) || readOnly) && (
         <ScoreMarkerOverlay
           markers={markers}
           isPlacing={isPlacingMarker}
@@ -386,6 +389,7 @@ const ScorePdfViewer = ({
 }: ScorePdfViewerProps) => {
   const dispatch = useAppDispatch()
   const showToast = useCustomToast()
+  const readOnly = useReadOnly()
   const indexCount = useAppSelector((state) => state.presentation.indexCount)
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pageNumber, setPageNumber] = useState(1)
@@ -851,30 +855,32 @@ const ScorePdfViewer = ({
           </Box>
         </HStack>
 
-        <Button
-          aria-label={isPlacingMarker ? "Stop adding markers" : "Add marker"}
-          leftIcon={
-            <Text fontSize="12px" lineHeight={1}>
-              📍
-            </Text>
-          }
-          size="xs"
-          variant={isPlacingMarker ? "solid" : "outline"}
-          colorScheme="purple"
-          flexShrink={0}
-          isDisabled={!pdf || !selectedScore}
-          title={
-            isPlacingMarker
-              ? "Click the score to place a marker; click here again to stop"
-              : "Add a marker to the score"
-          }
-          onClick={() => {
-            handleCancelMarker()
-            setIsPlacingMarker((prev) => !prev)
-          }}
-        >
-          {isPlacingMarker ? "Placing…" : "Marker"}
-        </Button>
+        {!readOnly && (
+          <Button
+            aria-label={isPlacingMarker ? "Stop adding markers" : "Add marker"}
+            leftIcon={
+              <Text fontSize="12px" lineHeight={1}>
+                📍
+              </Text>
+            }
+            size="xs"
+            variant={isPlacingMarker ? "solid" : "outline"}
+            colorScheme="purple"
+            flexShrink={0}
+            isDisabled={!pdf || !selectedScore}
+            title={
+              isPlacingMarker
+                ? "Click the score to place a marker; click here again to stop"
+                : "Add a marker to the score"
+            }
+            onClick={() => {
+              handleCancelMarker()
+              setIsPlacingMarker((prev) => !prev)
+            }}
+          >
+            {isPlacingMarker ? "Placing…" : "Marker"}
+          </Button>
+        )}
 
         {/* Expand */}
         <IconButton
@@ -997,9 +1003,10 @@ const ScorePdfViewer = ({
               testId="score-pdf-viewer"
               markers={currentPageMarkers}
               isPlacingMarker={isPlacingMarker}
-              onPlaceMarker={handlePlaceMarker}
-              onSelectMarker={handleSelectMarker}
-              onDeleteMarker={handleDeleteMarker}
+              onPlaceMarker={readOnly ? undefined : handlePlaceMarker}
+              onSelectMarker={readOnly ? undefined : handleSelectMarker}
+              onDeleteMarker={readOnly ? undefined : handleDeleteMarker}
+              readOnly={readOnly}
               markerForm={markerForm}
               markerFrameInput={markerFrameInput}
               indexCount={indexCount}
@@ -1072,6 +1079,26 @@ const ScorePdfViewer = ({
   )
 
   /* ── Empty state ─────────────────────────────────────────────────────────── */
+  if (scores.length === 0 && readOnly) {
+    return (
+      <Box
+        flex="1"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        border="1px dashed"
+        borderColor={borderColor}
+        borderRadius="10px"
+        bg={panelBg}
+        p={6}
+      >
+        <Text fontSize="13px" color={mutedText}>
+          No score is attached to this presentation.
+        </Text>
+      </Box>
+    )
+  }
+
   if (scores.length === 0) {
     return (
       <Box
