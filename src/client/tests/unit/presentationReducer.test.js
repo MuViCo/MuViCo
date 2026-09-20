@@ -662,6 +662,47 @@ describe("presentationReducer asynchronous actions", () => {
     expect(store.getState().presentation.shareToken).toBeNull()
   })
 
+  it("should fall back to a generic message when a share link fails without one", async () => {
+    const store = makeStore()
+    presentationService.getShared.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(fetchSharedPresentationInfo("tok"))
+    ).rejects.toThrow("An error occurred")
+  })
+
+  it("should fall back to a generic message when turning sharing on fails without one", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(enablePresentationSharing("123"))
+    ).rejects.toThrow("An error occurred")
+  })
+
+  it("should keep the token and surface the error if turning sharing off fails", async () => {
+    const store = makeStore()
+    presentationService.enableSharing.mockResolvedValue("tok-new")
+    await store.dispatch(enablePresentationSharing("123"))
+    presentationService.disableSharing.mockRejectedValue({
+      response: { data: { error: "access denied" } },
+    })
+
+    await expect(
+      store.dispatch(disablePresentationSharing("123"))
+    ).rejects.toThrow("access denied")
+    expect(store.getState().presentation.shareToken).toBe("tok-new")
+  })
+
+  it("should fall back to a generic message when turning sharing off fails without one", async () => {
+    const store = makeStore()
+    presentationService.disableSharing.mockRejectedValue(new Error("network"))
+
+    await expect(
+      store.dispatch(disablePresentationSharing("123"))
+    ).rejects.toThrow("An error occurred")
+  })
+
   it("should remove cue", async () => {
     const store = makeStore()
     const initialState = {

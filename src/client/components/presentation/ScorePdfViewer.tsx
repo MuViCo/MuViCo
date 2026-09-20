@@ -108,7 +108,7 @@ const PdfCanvas = ({
   onConfirmMarker,
   onCancelMarker,
   highlightedMarkerId = null,
-  readOnly = false,
+  readOnly,
 }: PdfCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [isRendering, setIsRendering] = useState(false)

@@ -49,7 +49,7 @@ const SharePresentationButton = ({
       showToast({
         status: "error",
         title: "Sharing failed",
-        description: error instanceof Error ? error.message : undefined,
+        description: error.message,
       })
     } finally {
       setIsBusy(false)

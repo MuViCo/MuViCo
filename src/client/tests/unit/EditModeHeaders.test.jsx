@@ -1,7 +1,10 @@
 import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
-import { RowHeaders } from "../../components/presentation/EditModeHeaders"
+import {
+  ColumnHeaders,
+  RowHeaders,
+} from "../../components/presentation/EditModeHeaders"
 import { buildRowModel } from "../../components/utils/screenRowModel"
 
 describe("EditModeHeaders RowHeaders", () => {
@@ -237,5 +240,78 @@ describe("EditModeHeaders RowHeaders", () => {
       screen.queryByLabelText("Add layer to screen 12")
     ).not.toBeInTheDocument()
     expect(screen.queryByLabelText("Add screen")).not.toBeInTheDocument()
+  })
+})
+
+describe("EditModeHeaders ColumnHeaders", () => {
+  const renderColumnHeaders = (overrides = {}) => {
+    const headerActionsRef = {
+      current: { addIndex: jest.fn(), removeIndex: jest.fn() },
+    }
+    const props = {
+      xLabels: ["0", "1", "2"],
+      cueIndex: 0,
+      bgCurrentFrame: "purple",
+      bgColorIndex: "pink",
+      rowHeight: 60,
+      columnWidth: 100,
+      indexCount: 3,
+      frameHeaderHeight: 30,
+      headerActionsRef,
+      onSelectFrame: jest.fn(),
+      ...overrides,
+    }
+
+    render(<ColumnHeaders {...props} />)
+    return { props, headerActionsRef }
+  }
+
+  test("adds a frame after the last one", () => {
+    const { headerActionsRef } = renderColumnHeaders()
+
+    fireEvent.click(screen.getAllByLabelText("Add Frame").at(-1))
+
+    expect(headerActionsRef.current.addIndex).toHaveBeenCalledWith(2)
+  })
+
+  test("adds a frame before a later one", () => {
+    const { headerActionsRef } = renderColumnHeaders()
+
+    fireEvent.click(screen.getAllByLabelText("Add Frame Before")[0])
+
+    expect(headerActionsRef.current.addIndex).toHaveBeenCalledWith(0)
+  })
+
+  test("removes a frame", () => {
+    const { headerActionsRef } = renderColumnHeaders()
+
+    fireEvent.click(screen.getAllByLabelText("Remove Frame")[0])
+
+    expect(headerActionsRef.current.removeIndex).toHaveBeenCalledWith(1)
+  })
+
+  test("cannot add frames past the limit", () => {
+    renderColumnHeaders({ indexCount: 100 })
+
+    for (const button of screen.getAllByLabelText("Add Frame")) {
+      expect(button).toBeDisabled()
+    }
+    for (const button of screen.getAllByLabelText("Add Frame Before")) {
+      expect(button).toBeDisabled()
+    }
+  })
+
+  test("cannot remove the only frame", () => {
+    renderColumnHeaders({ xLabels: ["0"], indexCount: 1 })
+
+    expect(screen.queryByLabelText("Remove Frame")).not.toBeInTheDocument()
+  })
+
+  test("cannot remove frames when only one is left", () => {
+    renderColumnHeaders({ indexCount: 1 })
+
+    for (const button of screen.getAllByLabelText("Remove Frame")) {
+      expect(button).toBeDisabled()
+    }
   })
 })

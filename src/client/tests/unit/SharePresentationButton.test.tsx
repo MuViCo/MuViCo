@@ -12,6 +12,8 @@ jest.mock("../../components/utils/toastUtils", () => ({
   useCustomToast: () => mockShowToast,
 }))
 
+jest.mock("copy-to-clipboard", () => jest.fn(() => true))
+
 jest.mock("../../services/presentation", () => ({
   __esModule: true,
   default: {
@@ -86,6 +88,26 @@ describe("SharePresentationButton", () => {
     )
     expect(
       screen.getByRole("button", { name: "Stop sharing" })
+    ).toBeInTheDocument()
+  })
+
+  test("focusing the link selects it, ready to copy", () => {
+    const select = jest.spyOn(HTMLInputElement.prototype, "select")
+    renderButton("tok-existing")
+
+    fireEvent.focus(screen.getByLabelText("Share link"))
+
+    expect(select).toHaveBeenCalled()
+    select.mockRestore()
+  })
+
+  test("copying the link says so", async () => {
+    renderButton("tok-existing")
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy" }))
+
+    expect(
+      await screen.findByRole("button", { name: "Copied" })
     ).toBeInTheDocument()
   })
 

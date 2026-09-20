@@ -122,6 +122,22 @@ describe("EditModeContainer transition settings", () => {
     )
   })
 
+  test("loads the presentation by id and offers Share to its owner", () => {
+    render(<EditModeContainer {...baseProps} />)
+
+    expect(fetchPresentationInfo).toHaveBeenCalledWith("presentation-1")
+    expect(screen.getByRole("button", { name: "Share" })).toBeInTheDocument()
+  })
+
+  test("opened through a share link it does not fetch by id and hides Share", () => {
+    render(<EditModeContainer {...baseProps} sharedToken="tok-abc" />)
+
+    expect(fetchPresentationInfo).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole("button", { name: "Share" })
+    ).not.toBeInTheDocument()
+  })
+
   test("renders a Presentation Settings button", () => {
     render(<EditModeContainer {...baseProps} />)
 

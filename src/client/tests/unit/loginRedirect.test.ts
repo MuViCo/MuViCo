@@ -48,6 +48,18 @@ describe("loginRedirect", () => {
     expect(window.sessionStorage.getItem("redirectAfterLogin")).toBeNull()
   })
 
+  test("reads as nothing when storage is blocked", () => {
+    const spy = jest
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("blocked")
+      })
+
+    expect(consumeLoginRedirect()).toBeNull()
+
+    spy.mockRestore()
+  })
+
   test("survives blocked storage", () => {
     const spy = jest
       .spyOn(Storage.prototype, "setItem")
