@@ -2,6 +2,8 @@
  * Builds a map of visual spans for each cue in a presentation.
  */
 
+import { occupiedScreens } from "./cueScreenSpanUtils"
+
 import type { Cue } from "../../types"
 
 export const buildCueVisualSpanMap = (
@@ -19,13 +21,16 @@ export const buildCueVisualSpanMap = (
       return
     }
 
-    const laneKey = `${cueScreen}|${Number(cue?.layer ?? 0)}`
-    if (!cuesByLane.has(laneKey)) {
-      cuesByLane.set(laneKey, [])
-    }
+    const cueLayer = Number(cue?.layer ?? 0)
+    occupiedScreens(cue).forEach((screenNumber) => {
+      const laneKey = `${screenNumber}|${cueLayer}`
+      if (!cuesByLane.has(laneKey)) {
+        cuesByLane.set(laneKey, [])
+      }
 
-    // Non-null assertion: the has/set pair immediately above guarantees the key.
-    cuesByLane.get(laneKey)!.push(cue)
+      // Non-null assertion: the has/set pair immediately above guarantees the key.
+      cuesByLane.get(laneKey)!.push(cue)
+    })
   })
   const spanMap = new Map<string, number>()
   cuesByLane.forEach((screenCues) => {
@@ -37,7 +42,12 @@ export const buildCueVisualSpanMap = (
       const nextCue = sortedCues[cuePosition + 1]
       const cueIndex = Number(cue.index)
       const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
-      spanMap.set(cue._id, Math.max(1, endIndex - cueIndex + 1))
+      const span = Math.max(1, endIndex - cueIndex + 1)
+      const shortestSoFar = spanMap.get(cue._id)
+      spanMap.set(
+        cue._id,
+        shortestSoFar === undefined ? span : Math.min(shortestSoFar, span)
+      )
     })
   })
 

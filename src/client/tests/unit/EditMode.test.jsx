@@ -468,6 +468,114 @@ describe("EditMode drag swapping", () => {
     expect(swapCues).not.toHaveBeenCalled()
   })
 
+  it("clears the span when a spanning cue is moved off the screens it spans", async () => {
+    const spanningCues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        spanScreens: [1, 2],
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: spanningCues,
+          name: "Test presentation",
+          screenCount: 3,
+          indexCount: 4,
+        },
+      })
+    )
+
+    renderEditMode(spanningCues, 4)
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: rowCenterY(0),
+    })
+
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 330,
+        clientY: rowCenterY(2),
+      })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ screen: 3, spanScreens: [] }),
+        "visual-1"
+      )
+    })
+  })
+
+  it("keeps the span when a spanning cue is moved onto a screen it already spans", async () => {
+    const spanningCues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        spanScreens: [1, 2],
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: spanningCues,
+          name: "Test presentation",
+          screenCount: 3,
+          indexCount: 4,
+        },
+      })
+    )
+
+    renderEditMode(spanningCues, 4)
+    const gridContainer = setupGridGeometry()
+
+    fireEvent.mouseDown(screen.getByTestId("cue-Visual cue 1"), {
+      clientX: 10,
+      clientY: rowCenterY(0),
+    })
+
+    await act(async () => {
+      fireEvent.mouseUp(gridContainer, {
+        clientX: 330,
+        clientY: rowCenterY(1),
+      })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ screen: 2, spanScreens: [1, 2] }),
+        "visual-1"
+      )
+    })
+  })
+
   it("shows and repositions hover preview on empty slots", () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()

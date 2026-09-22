@@ -67,6 +67,60 @@ describe("screenRowModel", () => {
     })
   })
 
+  test("gives a covered screen the lane a span reaches into", () => {
+    const rowModel = buildRowModel(2, [
+      {
+        _id: "cue-span",
+        cueType: "visual",
+        screen: 1,
+        layer: 1,
+        index: 0,
+        spanScreens: [1, 2],
+      },
+    ])
+
+    const screenTwoLanes = rowModel.rows.filter((row) => row.screen === 2)
+    expect(screenTwoLanes.map((row) => row.label)).toEqual(["L1", "L2"])
+  })
+
+  test("keeps a span-owned lane out of the layer removal control", () => {
+    const rowModel = buildRowModel(2, [
+      {
+        _id: "cue-span",
+        cueType: "visual",
+        screen: 1,
+        layer: 1,
+        index: 0,
+        spanScreens: [1, 2],
+      },
+    ])
+
+    expect(
+      rowModel.rows.find((row) => row.screen === 1 && row.layer === 1)
+    ).toMatchObject({ canRemoveLayer: true })
+    expect(
+      rowModel.rows.find((row) => row.screen === 2 && row.layer === 1)
+    ).toMatchObject({ canRemoveLayer: false })
+  })
+
+  test("does not draw the spanning cue on the covered screen's row", () => {
+    const rowModel = buildRowModel(2, [
+      {
+        _id: "cue-span",
+        cueType: "visual",
+        screen: 1,
+        layer: 1,
+        index: 0,
+        spanScreens: [1, 2],
+      },
+    ])
+
+    const ownRow = rowModel.rows.findIndex(
+      (row) => row.screen === 1 && row.layer === 1
+    )
+    expect(rowModel.cueY["cue-span"]).toBe(ownRow)
+  })
+
   test("maps a drop on L2 to layer 1 for the same screen", () => {
     const rowModel = buildRowModel(1, [], {}, { "screen-1": 2 })
 
