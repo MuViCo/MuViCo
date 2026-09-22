@@ -56,6 +56,90 @@ describe("MultiScreenModal", () => {
     expect(ownScreenCheckbox).toBeDisabled()
   })
 
+  test("disables a screen whose layer is already taken at this frame", () => {
+    const layeredCue = { ...cue, layer: 1 }
+    const cues = [
+      layeredCue,
+      {
+        _id: "cue-blocker",
+        index: 0,
+        screen: 3,
+        layer: 1,
+        name: "Sunset",
+        cueType: "visual",
+      },
+    ]
+
+    render(
+      <MultiScreenModal
+        isOpen={true}
+        cue={layeredCue}
+        screenCount={4}
+        cues={cues}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    const blocked = screen.getByRole("checkbox", { name: /Screen 3/ })
+    expect(blocked).toBeDisabled()
+    expect(screen.getByText(/taken by "Sunset"/)).toBeInTheDocument()
+
+    expect(screen.getByRole("checkbox", { name: /Screen 4/ })).toBeEnabled()
+  })
+
+  test("counts a screen reached by another cue's span as taken", () => {
+    const layeredCue = { ...cue, layer: 1 }
+    const cues = [
+      layeredCue,
+      {
+        _id: "cue-other-span",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "Backdrop",
+        cueType: "visual",
+        spanScreens: [1, 4],
+      },
+    ]
+
+    render(
+      <MultiScreenModal
+        isOpen={true}
+        cue={layeredCue}
+        screenCount={4}
+        cues={cues}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    expect(screen.getByRole("checkbox", { name: /Screen 4/ })).toBeDisabled()
+    expect(screen.getByRole("checkbox", { name: /Screen 1/ })).toBeDisabled()
+    expect(screen.getAllByText(/taken by "Backdrop"/)).toHaveLength(2)
+  })
+
+  test("flags the screens the span will add a lane to", () => {
+    const layeredCue = { ...cue, layer: 1 }
+
+    render(
+      <MultiScreenModal
+        isOpen={true}
+        cue={layeredCue}
+        screenCount={3}
+        cues={[layeredCue]}
+        hasLaneForLayer={(screenNumber) => screenNumber !== 3}
+        onSave={jest.fn()}
+        onClose={jest.fn()}
+      />
+    )
+
+    expect(screen.getByText(/adds a lane/)).toBeInTheDocument()
+    expect(
+      screen.getByRole("checkbox", { name: /Screen 3.*adds a lane/ })
+    ).toBeEnabled()
+  })
+
   test("pre-checks an existing span", () => {
     render(
       <MultiScreenModal

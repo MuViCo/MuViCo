@@ -24,7 +24,17 @@ import {
   Text,
 } from "@chakra-ui/react"
 
-const MultiScreenModal = ({ isOpen, onClose, cue, screenCount, onSave }) => {
+import { occupiedScreens } from "../utils/cueScreenSpanUtils"
+
+const MultiScreenModal = ({
+  isOpen,
+  onClose,
+  cue,
+  screenCount,
+  cues,
+  hasLaneForLayer,
+  onSave,
+}) => {
   const [selectedScreens, setSelectedScreens] = useState([])
 
   useEffect(() => {
@@ -38,6 +48,19 @@ const MultiScreenModal = ({ isOpen, onClose, cue, screenCount, onSave }) => {
   if (!isOpen || !cue) {
     return null
   }
+
+  const layer = Number(cue.layer ?? 0)
+  const layerLabel = `L${layer + 1}`
+
+  const conflictOnScreen = (screenNumber) =>
+    (cues || []).find(
+      (other) =>
+        other._id !== cue._id &&
+        other.cueType === "visual" &&
+        Number(other.index) === Number(cue.index) &&
+        Number(other.layer ?? 0) === layer &&
+        occupiedScreens(other).includes(screenNumber)
+    )
 
   const handleChange = (values) => {
     const asNumbers = values.map(Number)
@@ -74,21 +97,46 @@ const MultiScreenModal = ({ isOpen, onClose, cue, screenCount, onSave }) => {
           <ModalBody>
             <Text mb={3} fontSize="sm" color="gray.500">
               Pick the screens this image should spread across, left to right.
-              Screen {cue.screen} stays included since it's where this element
+              It keeps layer {layerLabel} on every one of them. Screen{" "}
+              {cue.screen} stays included since it&apos;s where this element
               lives.
             </Text>
             <CheckboxGroup value={selectedScreens} onChange={handleChange}>
               <Stack spacing={2}>
-                {screenNumbers.map((screenNumber) => (
-                  <Checkbox
-                    key={screenNumber}
-                    value={screenNumber}
-                    isDisabled={screenNumber === cue.screen}
-                  >
-                    Screen {screenNumber}
-                    {screenNumber === cue.screen ? " (this element)" : ""}
-                  </Checkbox>
-                ))}
+                {screenNumbers.map((screenNumber) => {
+                  const isOwnScreen = screenNumber === cue.screen
+                  const conflict = isOwnScreen
+                    ? undefined
+                    : conflictOnScreen(screenNumber)
+                  const addsLane =
+                    !isOwnScreen &&
+                    !conflict &&
+                    hasLaneForLayer &&
+                    !hasLaneForLayer(screenNumber, layer)
+
+                  let note = layerLabel
+                  if (conflict) {
+                    note = `${layerLabel} · taken by "${conflict.name}"`
+                  } else if (addsLane) {
+                    note = `${layerLabel} · adds a lane`
+                  }
+
+                  return (
+                    <Checkbox
+                      key={screenNumber}
+                      value={screenNumber}
+                      isDisabled={isOwnScreen || Boolean(conflict)}
+                    >
+                      <Text as="span">
+                        Screen {screenNumber}
+                        {isOwnScreen ? " (this element)" : ""}
+                      </Text>
+                      <Text as="span" ml={2} fontSize="xs" color="gray.500">
+                        {note}
+                      </Text>
+                    </Checkbox>
+                  )
+                })}
               </Stack>
             </CheckboxGroup>
           </ModalBody>

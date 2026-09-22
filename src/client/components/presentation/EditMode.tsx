@@ -21,6 +21,7 @@ import {
   laneTop,
   timelineRowsTopOffset,
 } from "./timelineMetrics"
+import { occupiedScreens } from "../utils/cueScreenSpanUtils"
 import { laneFocusLayout, laneKey } from "../utils/laneFocus"
 import { keyframes } from "@emotion/react"
 
@@ -527,13 +528,18 @@ const EditMode = ({
     index: number,
     screen: number,
     layer: number,
-    excludedCueId: string | null = null
-  ) =>
-    cues.find((cue) => {
+    excludedCueId: string | null = null,
+    spanScreens: number[] | null = null
+  ) => {
+    const candidateScreens = occupiedScreens({ screen, spanScreens })
+
+    return cues.find((cue) => {
       const samePosition =
         Number(cue.index) === Number(index) &&
-        Number(cue.screen) === Number(screen) &&
-        Number(cue.layer ?? 0) === Number(layer ?? 0)
+        Number(cue.layer ?? 0) === Number(layer ?? 0) &&
+        occupiedScreens(cue).some((occupiedScreen) =>
+          candidateScreens.includes(occupiedScreen)
+        )
 
       if (!samePosition) {
         return false
@@ -541,6 +547,7 @@ const EditMode = ({
 
       return !excludedCueId || cue._id !== excludedCueId
     })
+  }
 
   const isRowInsideGrid = (xIndex: number, yIndex: number) =>
     Number(xIndex) >= 0 &&
@@ -1302,16 +1309,29 @@ const EditMode = ({
       commitLaneFocusFromEvent(event)
 
       const target = laneScreenLayer(yIndex)
+      const keepsSpan = occupiedScreens(selectedCue).includes(
+        Number(target.screen)
+      )
       const movedCue = {
         ...selectedCue,
         index: xIndex,
         cueName: selectedCue.name,
         screen: target.screen,
         layer: target.layer,
+        ...(keepsSpan ? {} : { spanScreens: [] }),
       }
+
+      const losesSpan = !keepsSpan && (selectedCue.spanScreens?.length ?? 0) > 1
 
       setSelectedCue(null)
       await dispatchUpdateCue(selectedCue._id, movedCue)
+      if (losesSpan) {
+        showToast({
+          title: "Span cleared",
+          description: `${selectedCue.name} moved to screen ${target.screen}, which it did not span across.`,
+          status: "info",
+        })
+      }
       clearInternalDragSpanPreview()
       return
     }
@@ -1425,6 +1445,13 @@ const EditMode = ({
     return map
   }, [rowModel.rows])
 
+  const hasLaneForLayer = useCallback(
+    (screenNumber: number, layer: number) =>
+      screenLayerRowIndex[`${screenNumber}:${layer}`] !== undefined ||
+      screenLayerRowIndex[`${screenNumber}:*`] !== undefined,
+    [screenLayerRowIndex]
+  )
+
   // Add a new cue - checks for conflicts and saves to backend
   const addCue = async (cueData: CueUpdateInput) => {
     const {
@@ -1441,7 +1468,13 @@ const EditMode = ({
     } = cueData
 
     //Check if cue with same index and screen already exists
-    const existingCue = getRowCueConflict(index, screen, layer)
+    const existingCue = getRowCueConflict(
+      index,
+      screen,
+      layer,
+      null,
+      cueData.spanScreens ?? null
+    )
 
     if (existingCue) {
       await handleCueExists(existingCue, cueData)
@@ -1531,7 +1564,8 @@ const EditMode = ({
       updatedCue.index,
       updatedCue.screen,
       updatedCue.layer ?? 0,
-      previousCueId
+      previousCueId,
+      updatedCue.spanScreens ?? null
     )
 
     if (existingCue && existingCue._id !== previousCueId) {
@@ -2564,6 +2598,8 @@ const EditMode = ({
             isOpen={isMultiScreenModalOpen}
             cue={selectedCue}
             screenCount={presentation.screenCount as number}
+            cues={cues}
+            hasLaneForLayer={hasLaneForLayer}
             onSave={handleMultiScreenSave}
             onClose={() => {
               setSelectedCue(null)

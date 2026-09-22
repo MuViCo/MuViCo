@@ -26,6 +26,44 @@ const cue = (overrides: Partial<Cue>): Cue =>
   }) as Cue
 
 describe("buildCueVisualSpanMap", () => {
+  test("a span ends where a cue takes over any lane it reaches", () => {
+    const map = buildCueVisualSpanMap(
+      [
+        cue({
+          _id: "spanning",
+          index: 0,
+          screen: 1,
+          layer: 1,
+          spanScreens: [1, 2],
+        }),
+        cue({ _id: "taker", index: 1, screen: 2, layer: 1 }),
+      ],
+      5
+    )
+
+    expect(map.get("spanning")).toBe(1)
+    expect(map.get("taker")).toBe(4)
+  })
+
+  test("a cue on another screen's lane does not shorten a span it never meets", () => {
+    const map = buildCueVisualSpanMap(
+      [
+        cue({
+          _id: "spanning",
+          index: 0,
+          screen: 1,
+          layer: 1,
+          spanScreens: [1, 2],
+        }),
+        cue({ _id: "elsewhere", index: 1, screen: 3, layer: 1 }),
+        cue({ _id: "other-layer", index: 1, screen: 2, layer: 0 }),
+      ],
+      5
+    )
+
+    expect(map.get("spanning")).toBe(5)
+  })
+
   test("spans each cue up to the next one in the same lane", () => {
     const map = buildCueVisualSpanMap(
       [

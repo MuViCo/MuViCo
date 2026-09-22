@@ -1,3 +1,5 @@
+import { spansOntoScreen } from "./cueScreenSpanUtils"
+
 import type {
   CollapsedGroups,
   LaneGroup,
@@ -38,7 +40,15 @@ export const buildRowModel = (
     const screenCues = cues.filter(
       (c) => c.cueType === "visual" && Number(c.screen) === s
     )
-    const layers = screenCues.map((c) => Number(c.layer ?? 0))
+    const spannedLayers = new Set(
+      cues
+        .filter((c) => c.cueType === "visual" && spansOntoScreen(c, s))
+        .map((c) => Number(c.layer ?? 0))
+    )
+    const layers = [
+      ...screenCues.map((c) => Number(c.layer ?? 0)),
+      ...spannedLayers,
+    ]
     const presentLayers = [...new Set(layers)]
 
     const minimumLayerCount = Number(minimumLanes[group] ?? 1)
@@ -72,7 +82,7 @@ export const buildRowModel = (
             layer: L,
             label: `L${L + 1}`,
             laneTotal: count,
-            canRemoveLayer: L > 0,
+            canRemoveLayer: L > 0 && !spannedLayers.has(L),
             groupStart: L === 0,
             screenLabel: `Screen ${s}`,
           },
