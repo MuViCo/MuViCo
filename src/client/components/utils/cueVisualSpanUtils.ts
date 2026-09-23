@@ -6,9 +6,10 @@ import { occupiedScreens } from "./cueScreenSpanUtils"
 
 import type { Cue } from "../../types"
 
-export const buildCueVisualSpanMap = (
+const buildSpanMap = (
   cues: Cue[],
-  indexCount: number
+  indexCount: number,
+  applyDuration: boolean
 ): Map<string, number> => {
   const cuesByLane = new Map<string, Cue[]>()
 
@@ -42,7 +43,12 @@ export const buildCueVisualSpanMap = (
       const nextCue = sortedCues[cuePosition + 1]
       const cueIndex = Number(cue.index)
       const endIndex = nextCue ? Number(nextCue.index) - 1 : indexCount - 1
-      const span = Math.max(1, endIndex - cueIndex + 1)
+      const untilNext = Math.max(1, endIndex - cueIndex + 1)
+      const declared = Number(cue.duration)
+      const span =
+        applyDuration && Number.isInteger(declared)
+          ? Math.max(1, Math.min(untilNext, declared))
+          : untilNext
       const shortestSoFar = spanMap.get(cue._id)
       spanMap.set(
         cue._id,
@@ -53,6 +59,16 @@ export const buildCueVisualSpanMap = (
 
   return spanMap
 }
+
+export const buildCueVisualSpanMap = (
+  cues: Cue[],
+  indexCount: number
+): Map<string, number> => buildSpanMap(cues, indexCount, true)
+
+export const buildCueMaxSpanMap = (
+  cues: Cue[],
+  indexCount: number
+): Map<string, number> => buildSpanMap(cues, indexCount, false)
 
 export const getCueVisualSpanFromMap = (
   cue: Pick<Cue, "_id"> | null | undefined,

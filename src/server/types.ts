@@ -27,6 +27,7 @@ export interface Cue {
   name: string
   screen: number
   spanScreens?: number[]
+  duration?: number
   color?: string
   file?: CueFile | null
   loop?: boolean

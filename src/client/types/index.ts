@@ -66,6 +66,7 @@ export interface Cue {
    * spans more than one screen -- absent, not an empty array, means "no span".
    */
   spanScreens?: number[]
+  duration?: number
   color?: string
   file: CueFileMeta | null
   loop: boolean
@@ -329,6 +330,7 @@ export interface CueUpdateInput {
    * existing span"; an explicit empty array means "clear it".
    */
   spanScreens?: number[]
+  duration?: number | null
 }
 
 export interface UploadScoreInput {
