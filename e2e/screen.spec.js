@@ -50,7 +50,7 @@ describe("Screen", () => {
       await expect(popup).toHaveTitle("Screen 2 • Frame 4")
     })
 
-    test("user can see the window title to show the last frame number that has an element", async ({
+    test("user sees no frame in the window title when the screen has nothing on it", async ({
       page,
       context,
     }) => {
@@ -72,8 +72,7 @@ describe("Screen", () => {
         openButton.click(),
       ])
 
-      //Title shows starting frame because there the last element
-      await expect(popup).toHaveTitle("Screen 2 • Starting Frame")
+      await expect(popup).toHaveTitle("Screen 2")
     })
   })
   describe("Open screens", () => {
@@ -147,7 +146,7 @@ describe("Screen", () => {
         screen2Area.getByRole("button", { name: "Open" }).click(),
       ])
 
-      await expect(popup).toHaveTitle("Screen 2 • Starting Frame")
+      await expect(popup).toHaveTitle("Screen 2")
 
       const closePromise = popup.waitForEvent("close").catch(() => null)
       await screen2Area.getByRole("button", { name: "Close" }).click()
