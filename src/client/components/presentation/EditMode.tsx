@@ -77,6 +77,8 @@ interface EditModeProps {
  * only ever reached from a pointer event on an element, so the narrowing is
  * safe -- and `closest` on a non-element would already throw today.
  */
+const NEW_CUE_DURATION = 1
+
 const targetElement = (event: { target: EventTarget | null }): HTMLElement =>
   event.target as HTMLElement
 
@@ -105,6 +107,7 @@ import GridLayoutComponent from "./GridLayoutComponent"
 import useEditModeDragPreviewState from "./useEditModeDragPreviewState"
 import useEditModeDragPreviewController from "./useEditModeDragPreviewController"
 import {
+  buildCueMaxSpanMap,
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
@@ -962,7 +965,7 @@ const EditMode = ({
 
     if (
       targetElement(event).closest(
-        "button, [role='menuitem'], input, textarea, select, a"
+        "button, [role='menuitem'], input, textarea, select, a, [data-cue-resize-handle]"
       )
     ) {
       return
@@ -1433,6 +1436,60 @@ const EditMode = ({
   // on the OTHER screens it covers, not just its own row. Two keys per row:
   // the exact layer, and a "screen:*" fallback for a collapsed group (which
   // has one representative row with no single layer of its own).
+  const cueMaxSpanMap = useMemo(
+    () => buildCueMaxSpanMap(cues, indexCount),
+    [cues, indexCount]
+  )
+
+  const handleCueResizeStart = useCallback(
+    (cue: Cue, startEvent: MouseEvent) => {
+      if (readOnly) return
+
+      const maxSpan = cueMaxSpanMap.get(cue._id) ?? 1
+      const startSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+      let nextSpan = startSpan
+
+      const spanAt = (event: { clientX: number; clientY: number }) => {
+        const { xIndex } = getPosition(
+          event,
+          containerRef,
+          columnWidth,
+          rowHeight,
+          gap
+        )
+        return Math.min(maxSpan, Math.max(1, xIndex - Number(cue.index) + 1))
+      }
+
+      const onMove = (event: MouseEvent) => {
+        nextSpan = spanAt(event)
+        setInternalDragSpanOverridesIfChanged({ [cue._id]: nextSpan })
+      }
+
+      const onUp = async (event: MouseEvent) => {
+        document.removeEventListener("mousemove", onMove)
+        document.removeEventListener("mouseup", onUp)
+        document.body.style.cursor = ""
+        nextSpan = spanAt(event)
+        clearInternalDragSpanPreview()
+
+        if (nextSpan === startSpan) return
+
+        await dispatchUpdateCue(cue._id, {
+          ...cue,
+          cueName: cue.name,
+          duration: nextSpan >= maxSpan ? null : nextSpan,
+        })
+      }
+
+      document.body.style.cursor = "ew-resize"
+      document.addEventListener("mousemove", onMove)
+      document.addEventListener("mouseup", onUp)
+      onMove(startEvent)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cueMaxSpanMap, cueVisualSpanMap, readOnly, columnWidth, rowHeight, gap]
+  )
+
   const screenLayerRowIndex = useMemo(() => {
     const map: Record<string, number> = {}
     rowModel.rows.forEach((row, index) => {
@@ -1493,7 +1550,8 @@ const EditMode = ({
       normalizeCueOpacity(opacity),
       continuePlayback,
       undefined,
-      mediaId
+      mediaId,
+      NEW_CUE_DURATION
     )
 
     // Focus follows the placement intent, not the request: the lane the user
@@ -2019,7 +2077,11 @@ const EditMode = ({
       undefined,
       false,
       target.layer,
-      1
+      1,
+      false,
+      undefined,
+      undefined,
+      NEW_CUE_DURATION
     )
 
     try {
@@ -2298,6 +2360,7 @@ const EditMode = ({
                     setSelectedCue={setSelectedCue}
                     setIsToolboxOpen={setIsToolboxOpen}
                     setIsMultiScreenModalOpen={setIsMultiScreenModalOpen}
+                    onCueResizeStart={handleCueResizeStart}
                     screenLayerRowIndex={screenLayerRowIndex}
                     indexCount={indexCount}
                     setShowAlert={setShowAlert}

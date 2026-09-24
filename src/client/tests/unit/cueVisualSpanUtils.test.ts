@@ -26,6 +26,49 @@ const cue = (overrides: Partial<Cue>): Cue =>
   }) as Cue
 
 describe("buildCueVisualSpanMap", () => {
+  test("an explicit duration caps the run and leaves the lane empty after it", () => {
+    const map = buildCueVisualSpanMap(
+      [cue({ _id: "short", index: 1, layer: 0, duration: 2 })],
+      5
+    )
+
+    expect(map.get("short")).toBe(2)
+  })
+
+  test("a duration never extends a run the next cue already cuts short", () => {
+    const map = buildCueVisualSpanMap(
+      [
+        cue({ _id: "capped", index: 0, layer: 0, duration: 4 }),
+        cue({ _id: "next", index: 1, layer: 0 }),
+      ],
+      5
+    )
+
+    expect(map.get("capped")).toBe(1)
+  })
+
+  test("a duration past the end of the timeline is clamped to it", () => {
+    const map = buildCueVisualSpanMap(
+      [cue({ _id: "overrun", index: 3, layer: 0, duration: 99 })],
+      5
+    )
+
+    expect(map.get("overrun")).toBe(2)
+  })
+
+  test("layers run out independently of one another", () => {
+    const map = buildCueVisualSpanMap(
+      [
+        cue({ _id: "l1", index: 1, layer: 0, duration: 2 }),
+        cue({ _id: "l2", index: 1, layer: 1, duration: 3 }),
+      ],
+      5
+    )
+
+    expect(map.get("l1")).toBe(2)
+    expect(map.get("l2")).toBe(3)
+  })
+
   test("a span ends where a cue takes over any lane it reaches", () => {
     const map = buildCueVisualSpanMap(
       [

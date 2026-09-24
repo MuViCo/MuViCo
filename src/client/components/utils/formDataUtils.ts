@@ -37,7 +37,8 @@ export const createFormData = (
   // Sent as its own scalar field, never inside `file`: an object appended to
   // FormData serialises to "[object Object]", which is exactly the trap the
   // note on CueUpdateInput.file describes.
-  mediaId?: string
+  mediaId?: string,
+  duration?: number | null
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -71,6 +72,9 @@ export const createFormData = (
   formData.append("continuePlayback", String(Boolean(continuePlayback)))
   if (spanScreens !== undefined) {
     formData.append("spanScreens", JSON.stringify(spanScreens))
+  }
+  if (duration !== undefined) {
+    formData.append("duration", duration === null ? "" : String(duration))
   }
   if (mediaId) {
     formData.append("mediaId", mediaId)

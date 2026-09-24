@@ -447,7 +447,15 @@ const Screen = ({
       setCurrentScreenData([])
     }
     const firstCue = nextScreenData[0]
-    windowRef.current.document.title = `Screen ${screenNumber} • ${firstCue?.index === 0 ? "Starting Frame" : `Frame ${firstCue?.index ?? ""}`}`
+    const frameLabel =
+      firstCue?.index === undefined
+        ? null
+        : firstCue.index === 0
+          ? "Starting Frame"
+          : `Frame ${firstCue.index}`
+    windowRef.current.document.title = frameLabel
+      ? `Screen ${screenNumber} • ${frameLabel}`
+      : `Screen ${screenNumber}`
   }, [screenData, currentScreenData, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens

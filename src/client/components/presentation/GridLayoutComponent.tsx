@@ -40,6 +40,7 @@ interface GridLayoutComponentProps {
   setSelectedCue: (cue: Cue | null) => void
   setIsToolboxOpen: (open: boolean) => void
   setIsMultiScreenModalOpen: (open: boolean) => void
+  onCueResizeStart?: (cue: Cue, event: MouseEvent) => void
   /** "screen:layer" (and "screen:*" for a collapsed group) -> row index. */
   screenLayerRowIndex?: Record<string, number>
   indexCount: number
@@ -190,6 +191,7 @@ const GridLayoutComponent = ({
   setSelectedCue,
   setIsToolboxOpen,
   setIsMultiScreenModalOpen,
+  onCueResizeStart,
   screenLayerRowIndex = {},
   indexCount,
   setShowAlert,
@@ -634,8 +636,10 @@ const GridLayoutComponent = ({
                   }
                   sx={{
                     "@media (hover: hover) and (pointer: fine)": {
-                      "& [data-cue-menu-trigger]": { opacity: 0 },
-                      "&:hover [data-cue-menu-trigger], &:focus-within [data-cue-menu-trigger]":
+                      "& [data-cue-menu-trigger], & [data-cue-resize-handle]": {
+                        opacity: 0,
+                      },
+                      "&:hover [data-cue-menu-trigger], &:focus-within [data-cue-menu-trigger], &:hover [data-cue-resize-handle]":
                         { opacity: 1 },
                     },
                     ...(suppressCueHoverEffects
@@ -654,6 +658,29 @@ const GridLayoutComponent = ({
                         }),
                   }}
                 >
+                  {!isDragging && !readOnly && cue.cueType === "visual" && (
+                    <Box
+                      data-cue-resize-handle
+                      data-testid={`cue-resize-handle-${cue._id}`}
+                      role="separator"
+                      aria-label={`Resize ${cue.name}`}
+                      position="absolute"
+                      zIndex="11"
+                      top={0}
+                      bottom={0}
+                      right={0}
+                      width="10px"
+                      cursor="ew-resize"
+                      transition="opacity 120ms ease, background-color 120ms ease"
+                      _hover={{ backgroundColor: "rgba(192, 132, 252, 0.85)" }}
+                      onMouseDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        onCueResizeStart?.(cue, event.nativeEvent)
+                      }}
+                    />
+                  )}
+
                   {!isDragging && !readOnly && (
                     <IconButton
                       data-cue-menu-trigger

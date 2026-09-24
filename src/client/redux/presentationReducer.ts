@@ -586,7 +586,9 @@ export const updatePresentation =
         updatedCueData.layer ?? 0,
         updatedCueData.opacity ?? 1,
         updatedCueData.continuePlayback ?? false,
-        updatedCueData.spanScreens
+        updatedCueData.spanScreens,
+        undefined,
+        updatedCueData.duration
       )
       // TODO(ts): both cueId sources are optional, so this is undefined when
       // neither is supplied and the request URL ends in "/undefined". Every

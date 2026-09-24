@@ -266,6 +266,16 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
             message: "layer must be an integer",
           },
         },
+        duration: {
+          type: Number,
+          default: undefined,
+          min: 1,
+          set: roundIfPresent,
+          validate: {
+            validator: (v: unknown) => v === undefined || Number.isInteger(v),
+            message: "duration must be an integer",
+          },
+        },
       },
     ],
     // Presentation-scoped media library (the editor's "media pool"). Entries
@@ -462,6 +472,24 @@ presentationSchema.pre("save", function (next) {
           value: layer,
         })
       )
+    }
+
+    if (cue.duration !== undefined) {
+      const isValidDuration =
+        cue.cueType === "visual" &&
+        Number.isInteger(cue.duration) &&
+        cue.duration >= 1
+
+      if (!isValidDuration) {
+        validationError.addError(
+          "cues.duration",
+          new mongoose.Error.ValidatorError({
+            message: `Cue duration ${cue.duration} is invalid for cueType ${cue.cueType}`,
+            path: "cues.duration",
+            value: cue.duration,
+          })
+        )
+      }
     }
 
     if (cue.spanScreens !== undefined) {

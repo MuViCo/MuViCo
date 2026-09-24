@@ -576,6 +576,124 @@ describe("EditMode drag swapping", () => {
     })
   })
 
+  const renderLoneCue = (overrides = {}) => {
+    const loneCue = [{ ...cues[0], layer: 0, ...overrides }]
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: loneCue,
+          name: "Test presentation",
+          screenCount: 2,
+          indexCount: 4,
+        },
+      })
+    )
+    renderEditMode(loneCue, 4)
+    setupGridGeometry()
+    return screen.getByTestId("cue-resize-handle-visual-1")
+  }
+
+  it("creates a new element one frame long instead of running to the end", async () => {
+    renderEditMode()
+    const gridContainer = setupGridGeometry()
+    const dropArea = screen.getByTestId("drop-area")
+    const dataTransfer = buildPoolColorDragDataTransfer()
+
+    fireEvent.dragOver(gridContainer, {
+      dataTransfer,
+      clientX: 330,
+      clientY: rowCenterY(0),
+    })
+
+    const dropEvent = createEvent.drop(dropArea)
+    for (const [key, value] of [
+      ["dataTransfer", dataTransfer],
+      ["clientX", 330],
+      ["clientY", rowCenterY(0)],
+    ]) {
+      Object.defineProperty(dropEvent, key, { value, configurable: true })
+    }
+
+    await act(async () => {
+      fireEvent(dropArea, dropEvent)
+    })
+
+    await waitFor(() => {
+      expect(createCue).toHaveBeenCalled()
+    })
+    const formData = createCue.mock.calls.at(-1)[1]
+    expect(formData.get("duration")).toBe("1")
+  })
+
+  it("does not start a move when the resize handle is grabbed", async () => {
+    const handle = renderLoneCue()
+
+    fireEvent.mouseDown(handle, { clientX: 500, clientY: rowCenterY(0) })
+    fireEvent.mouseMove(screen.getByTestId("edit-mode-grid-container"), {
+      clientX: 330,
+      clientY: rowCenterY(1),
+    })
+
+    expect(
+      screen.queryByTestId("drag-placement-preview")
+    ).not.toBeInTheDocument()
+
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: 170, clientY: rowCenterY(0) })
+    })
+  })
+
+  it("stores a duration when a cue's right edge is dragged inwards", async () => {
+    const handle = renderLoneCue()
+
+    fireEvent.mouseDown(handle, { clientX: 500, clientY: rowCenterY(0) })
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: 170, clientY: rowCenterY(0) })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ cueName: "Visual cue 1", duration: 2 }),
+        "visual-1"
+      )
+    })
+  })
+
+  it("clears the duration when a cue is dragged back out to its full run", async () => {
+    const handle = renderLoneCue({ duration: 2 })
+
+    fireEvent.mouseDown(handle, { clientX: 170, clientY: rowCenterY(0) })
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: 900, clientY: rowCenterY(0) })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ duration: null }),
+        "visual-1"
+      )
+    })
+  })
+
+  it("never shortens a cue below a single frame", async () => {
+    const handle = renderLoneCue({ duration: 3 })
+
+    fireEvent.mouseDown(handle, { clientX: 400, clientY: rowCenterY(0) })
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: -500, clientY: rowCenterY(0) })
+    })
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ duration: 1 }),
+        "visual-1"
+      )
+    })
+  })
+
   it("shows and repositions hover preview on empty slots", () => {
     renderEditMode()
     const gridContainer = setupGridGeometry()

@@ -334,6 +334,24 @@ const parseSpanScreens = (
   return { spanScreens: normalized, error: null }
 }
 
+const parseDuration = (
+  raw: unknown
+): { duration: number | null; error: string | null } => {
+  if (raw === undefined || raw === null || raw === "") {
+    return { duration: null, error: null }
+  }
+
+  const parsed = Number(raw)
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return {
+      duration: null,
+      error: "duration must be an integer of at least 1",
+    }
+  }
+
+  return { duration: parsed, error: null }
+}
+
 // Full validity check once `screen`/`cueType`/`screenCount` are known: must
 // be visual, include the cue's own screen, have no duplicates, and every
 // entry must be a valid screen number.
@@ -1389,6 +1407,13 @@ router.put(
       const { spanScreens, error: spanScreensError } = parseSpanScreens(
         req.body.spanScreens
       )
+      const { duration, error: durationError } = parseDuration(
+        req.body.duration
+      )
+
+      if (durationError) {
+        return res.status(400).json({ error: durationError })
+      }
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
@@ -1550,6 +1575,7 @@ router.put(
               name: trimmedCueName,
               screen: screen,
               ...(spanScreens ? { spanScreens } : {}),
+              ...(duration && cueType === "visual" ? { duration } : {}),
               file: hasMedia ? fileObject : null,
               color: color,
               loop: loop,
@@ -1881,6 +1907,14 @@ router.put(
       const { spanScreens, error: spanScreensError } = parseSpanScreens(
         req.body.spanScreens
       )
+      const durationProvided = req.body.duration !== undefined
+      const { duration, error: durationError } = parseDuration(
+        req.body.duration
+      )
+
+      if (durationError) {
+        return res.status(400).json({ error: durationError })
+      }
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
@@ -2014,6 +2048,9 @@ router.put(
         // invalidates any previous span rather than silently carrying it,
         // possibly stale, to the new screen.
         cue.spanScreens = undefined
+      }
+      if (durationProvided) {
+        cue.duration = duration && cueType === "visual" ? duration : undefined
       }
       cue.name = trimmedCueName
       cue.loop = loop

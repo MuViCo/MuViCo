@@ -75,6 +75,24 @@ describe("Screen", () => {
     })
   })
 
+  test("drops the frame part from the title when nothing is on the screen", async () => {
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={[]}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      expect(popup.document.title).toBe("Screen 1")
+    })
+  })
+
   test("sets window title when index is 4", async () => {
     const screenData = {
       file: {
