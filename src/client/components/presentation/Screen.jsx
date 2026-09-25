@@ -20,6 +20,8 @@ import { CacheProvider } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
+import CueText from "../utils/CueText"
+import { isTextCue } from "../utils/cueText"
 
 const mediaFillProps = {
   width: "100%",
@@ -89,6 +91,11 @@ const renderMedia = (cue, screenNumber, screenWidths) => {
   const { file, name, color, spanScreens } = cue
 
   if (!file) {
+    if (isTextCue(cue)) {
+      return (
+        <CueText text={cue.text} color={cue.textColor} size={cue.textSize} />
+      )
+    }
     return <Box bg={color} width="100%" height="100%" />
   }
 
@@ -139,7 +146,7 @@ const cueStackKey = (cueStack) =>
   normalizeCueStack(cueStack)
     .map(
       (cue) =>
-        `${cue?._id || ""}:${cue?.index ?? ""}:${cue?.screen ?? ""}:${cue?.layer ?? 0}:${cue?.file?.url || ""}:${cue?.name || ""}:${cue?.color || ""}:${normalizeCueOpacity(cue?.opacity)}`
+        `${cue?._id || ""}:${cue?.index ?? ""}:${cue?.screen ?? ""}:${cue?.layer ?? 0}:${cue?.file?.url || ""}:${cue?.name || ""}:${cue?.color || ""}:${cue?.text || ""}:${cue?.textColor || ""}:${cue?.textSize ?? ""}:${normalizeCueOpacity(cue?.opacity)}`
     )
     .join("|")
 

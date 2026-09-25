@@ -106,4 +106,58 @@ describe("createFormData", () => {
 
     expect(formData.get("mediaId")).toBeNull()
   })
+
+  test("appends the text fields of a text element", () => {
+    const formData = createFormData(
+      0,
+      "Intro",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      1,
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      { text: "La nuit est tombée", textColor: "#ffcc00", textSize: 12 }
+    )
+
+    expect(formData.get("text")).toBe("La nuit est tombée")
+    expect(formData.get("textColor")).toBe("#ffcc00")
+    expect(formData.get("textSize")).toBe("12")
+  })
+
+  test("an empty text is sent, so the server clears the text", () => {
+    const formData = createFormData(
+      0,
+      "Cue",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      0,
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      { text: "" }
+    )
+
+    expect(formData.get("text")).toBe("")
+    expect(formData.has("textColor")).toBe(false)
+    expect(formData.has("textSize")).toBe(false)
+  })
+
+  test("sends no text field at all when the cue says nothing about its text", () => {
+    const formData = createFormData(0, "Cue", 1, null)
+
+    expect(formData.has("text")).toBe(false)
+    expect(formData.has("textColor")).toBe(false)
+    expect(formData.has("textSize")).toBe(false)
+  })
 })

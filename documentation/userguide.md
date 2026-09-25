@@ -118,6 +118,8 @@ At the top, you can see the name of the presentation. Below it is a preview of t
 
 ![Colorpicker](./images/colorpicker.png "Colorpicker")
 
+**Text**: Type a text in the Text tab, choose its size (a percentage of the screen height, so it looks the same on every screen) and its color. The text is shown centered on the screen. To put it on top of an image or a color, place it on a layer above that element. Double-click a text element to change its text, size or color.
+
 **Media**: Upload an image or video.
 
 ![Mediapool](./images/mediapool.png "Mediapool")

@@ -70,6 +70,12 @@ import {
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import {
+  isTextCue,
+  normalizeTextColor,
+  textCellBackground,
+  textSnippet,
+} from "../utils/cueText"
 import CueContextMenu from "./CueContextMenu"
 import { useReadOnly } from "../utils/ReadOnlyContext"
 
@@ -102,6 +108,40 @@ const renderElementBasedOnIndex = (
   }
 }
 
+const TextCellFace = ({
+  cue,
+  borderRadius = "10px",
+  opacity = 1,
+}: {
+  cue: Cue
+  borderRadius?: string
+  opacity?: number
+}) => (
+  <Box
+    data-testid={`cue-text-cell-${cue._id}`}
+    width="100%"
+    height="100%"
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+    px={2}
+    overflow="hidden"
+    bg={textCellBackground(cue.textColor)}
+    borderRadius={borderRadius}
+    opacity={opacity}
+  >
+    <Text
+      noOfLines={2}
+      fontSize="xs"
+      fontWeight="bold"
+      textAlign="center"
+      color={normalizeTextColor(cue.textColor)}
+    >
+      {textSnippet(cue.text, 60)}
+    </Text>
+  </Box>
+)
+
 const renderMedia = (
   cue: Cue,
   cueIndex: number,
@@ -111,6 +151,10 @@ const renderMedia = (
 ) => {
   const visualOpacity =
     cue.cueType === "visual" ? normalizeCueOpacity(cue.opacity) : 1
+
+  if (cue.file == null && isTextCue(cue)) {
+    return <TextCellFace cue={cue} opacity={visualOpacity} />
+  }
 
   if (cue.file == null) {
     return (
@@ -778,6 +822,13 @@ const GridLayoutComponent = ({
                             }
                           />
                         )
+                      ) : isTextCue(cue) ? (
+                        <TextCellFace
+                          cue={cue}
+                          borderRadius={
+                            hasVisibleContinuation ? "10px 0 0 10px" : "10px"
+                          }
+                        />
                       ) : (
                         <Box
                           width="100%"
@@ -862,7 +913,11 @@ const GridLayoutComponent = ({
                             <Box
                               width="100%"
                               height="100%"
-                              bg={cue.color || "rgba(20, 24, 33, 0.72)"}
+                              bg={
+                                isTextCue(cue)
+                                  ? textCellBackground(cue.textColor)
+                                  : cue.color || "rgba(20, 24, 33, 0.72)"
+                              }
                               filter="saturate(50%) brightness(0.88)"
                             />
                             <Box
@@ -968,7 +1023,7 @@ const GridLayoutComponent = ({
                     />
                   )}
 
-                  {cue.name?.trim() && (
+                  {cue.name?.trim() && !isTextCue(cue) && (
                     <Tooltip
                       label={cue.name}
                       placement="top"

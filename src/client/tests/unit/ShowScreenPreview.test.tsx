@@ -170,4 +170,22 @@ describe("ShowScreenPreview", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open display 3" }))
     expect(onOpen).toHaveBeenCalledTimes(1)
   })
+
+  test("shows the text of a text element", () => {
+    render(
+      <ShowScreenPreview
+        screenNumber={1}
+        cues={[
+          makeCue({
+            _id: "cue-text",
+            name: "Intro",
+            text: "Night falls",
+            textColor: "#ffcc00",
+          }),
+        ]}
+      />
+    )
+
+    expect(screen.getByText("Night falls")).toHaveStyle({ color: "#ffcc00" })
+  })
 })

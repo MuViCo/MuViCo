@@ -184,10 +184,10 @@ describe("read-only editor dock", () => {
     window.localStorage.clear()
   })
 
-  test("the owner sees Colors, Media and Scores", () => {
+  test("the owner sees Colors, Text, Media and Scores", () => {
     renderDock(false)
 
-    expect(screen.getAllByRole("tab")).toHaveLength(3)
+    expect(screen.getAllByRole("tab")).toHaveLength(4)
   })
 
   test("a viewer only gets the Scores tab, opened by default", () => {
@@ -197,6 +197,7 @@ describe("read-only editor dock", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(1)
     expect(screen.getByRole("tab", { name: "Scores" })).toBeInTheDocument()
     expect(screen.queryByRole("tab", { name: "Media" })).toBeNull()
+    expect(screen.queryByRole("tab", { name: "Text" })).toBeNull()
     expect(screen.queryByTestId("cues-form")).toBeNull()
   })
 

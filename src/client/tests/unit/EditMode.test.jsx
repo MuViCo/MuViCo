@@ -895,6 +895,95 @@ describe("EditMode drag swapping", () => {
     )
   })
 
+  describe("text elements", () => {
+    const buildTextDragDataTransfer = (overrides = {}) => ({
+      files: [],
+      getData: jest.fn((type) =>
+        type === "application/json"
+          ? JSON.stringify({
+              type: "newCueFromForm",
+              elementType: "text",
+              cueName: "La nuit est tombée",
+              text: "La nuit est tombée",
+              textColor: "#ffcc00",
+              textSize: 12,
+              opacity: 1,
+              ...overrides,
+            })
+          : ""
+      ),
+    })
+
+    const dropOn = async (dataTransfer, clientY) => {
+      const gridContainer = setupGridGeometry()
+      const dropArea = screen.getByTestId("drop-area")
+
+      fireEvent.dragOver(gridContainer, {
+        dataTransfer,
+        clientX: 330,
+        clientY,
+      })
+
+      const dropEvent = createEvent.drop(dropArea)
+      for (const [key, value] of [
+        ["dataTransfer", dataTransfer],
+        ["clientX", 330],
+        ["clientY", clientY],
+      ]) {
+        Object.defineProperty(dropEvent, key, { value, configurable: true })
+      }
+
+      await act(async () => {
+        fireEvent(dropArea, dropEvent)
+      })
+    }
+
+    it("creates a text element with its text, color and size when dropped on a screen", async () => {
+      renderEditMode()
+
+      await dropOn(buildTextDragDataTransfer(), rowCenterY(0))
+
+      await waitFor(() => {
+        expect(createCue).toHaveBeenCalledWith(
+          "presentation-1",
+          expect.any(FormData)
+        )
+      })
+      const sent = createCue.mock.calls[0][1]
+      expect(sent.get("text")).toBe("La nuit est tombée")
+      expect(sent.get("textColor")).toBe("#ffcc00")
+      expect(sent.get("textSize")).toBe("12")
+      expect(sent.get("cueName")).toBe("La nuit est tombée")
+      expect(sent.has("image")).toBe(false)
+    })
+
+    it("falls back to the default color and size when the payload has none", async () => {
+      renderEditMode()
+
+      await dropOn(
+        buildTextDragDataTransfer({ textColor: undefined, textSize: "big" }),
+        rowCenterY(0)
+      )
+
+      await waitFor(() => expect(createCue).toHaveBeenCalled())
+      const sent = createCue.mock.calls[0][1]
+      expect(sent.get("textColor")).toBe("#ffffff")
+      expect(sent.get("textSize")).toBe("8")
+    })
+
+    it("does not accept a text element on the audio track", async () => {
+      renderEditMode()
+      const audioRowY = rowCenterY(3)
+
+      await dropOn(buildTextDragDataTransfer(), audioRowY)
+
+      expect(createCue).not.toHaveBeenCalled()
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Only images/videos on screen rows" })
+      )
+    })
+  })
+
   describe("opened through a share link (read-only)", () => {
     const renderReadOnly = (extraProps = {}) =>
       render(

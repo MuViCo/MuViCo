@@ -39,6 +39,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
+  Textarea,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
 } from "@chakra-ui/react"
 import { InfoOutlineIcon, AddIcon, SearchIcon } from "@chakra-ui/icons"
 import { useState, useEffect, useRef } from "react"
@@ -53,6 +58,15 @@ import {
   getAllowedMimeTypesForScreen,
 } from "../utils/fileTypeUtils"
 import mediaStore from "./mediaFileStore"
+import {
+  DEFAULT_TEXT_COLOR,
+  DEFAULT_TEXT_SIZE,
+  MAX_TEXT_LENGTH,
+  TEXT_SIZE_SLIDER_MAX,
+  TEXT_SIZE_SLIDER_MIN,
+  textCellBackground,
+  textSnippet,
+} from "../utils/cueText"
 import MediaPoolTile from "./MediaPoolTile"
 
 import type {
@@ -129,7 +143,7 @@ interface CuesFormProps {
   onUploadMedia?: (file: File) => Promise<unknown>
   onDeleteMedia?: (mediaId: string) => Promise<unknown>
   /** Which section to show. EditorDock owns the tab strip. */
-  activeTab?: "colors" | "media"
+  activeTab?: "colors" | "media" | "text"
 }
 
 const CuesForm = ({
@@ -160,6 +174,10 @@ const CuesForm = ({
   const [error, setError] = useState<string | null>(null)
   const [color, setColor] = useState<string | undefined>()
   const [selectedColor, setSelectedColor] = useState("#9244ff")
+  const [textContent, setTextContent] = useState("")
+  const [textColorValue, setTextColorValue] = useState(DEFAULT_TEXT_COLOR)
+  const [textSizeValue, setTextSizeValue] = useState(DEFAULT_TEXT_SIZE)
+  const trimmedText = textContent.trim()
   const presetColors = [
     "#000000",
     "#787878",
@@ -607,6 +625,119 @@ const CuesForm = ({
                     fontWeight="bold"
                     fontSize="sm"
                   >
+                    Drag to grid
+                  </Text>
+                </Box>
+              </VStack>
+            )}
+
+            {activeTab === "text" && (
+              <VStack spacing={3} align="stretch">
+                <FormHelperText color={mutedText} mt={0}>
+                  Type a text and drag it to the grid. Put it on a layer above
+                  an image or a color to show it on top.
+                </FormHelperText>
+
+                <Textarea
+                  data-testid="text-content"
+                  aria-label="Text to display"
+                  value={textContent}
+                  placeholder="Your text"
+                  rows={3}
+                  maxLength={MAX_TEXT_LENGTH}
+                  color={textColor}
+                  borderColor={inputBorderColor}
+                  _focus={{ borderColor: inputFocusColor }}
+                  _placeholder={{ color: mutedText }}
+                  onChange={(e) => setTextContent(e.target.value)}
+                />
+
+                <Box>
+                  <HStack justify="space-between" mb={1}>
+                    <Text fontSize="sm" color={textColor}>
+                      Text size
+                    </Text>
+                    <Text fontSize="sm" fontWeight="bold" color={textColor}>
+                      {textSizeValue}%
+                    </Text>
+                  </HStack>
+                  <Slider
+                    aria-label="Text size"
+                    min={TEXT_SIZE_SLIDER_MIN}
+                    max={TEXT_SIZE_SLIDER_MAX}
+                    step={1}
+                    value={textSizeValue}
+                    onChange={setTextSizeValue}
+                  >
+                    <SliderTrack>
+                      <SliderFilledTrack />
+                    </SliderTrack>
+                    <SliderThumb />
+                  </Slider>
+                  <Text fontSize="xs" color={mutedText} mt={1}>
+                    Percentage of the screen height.
+                  </Text>
+                </Box>
+
+                <Text fontSize="sm" color={textColor}>
+                  Text color
+                </Text>
+                <ColorPickerWithPresets
+                  color={textColorValue}
+                  onChange={setTextColorValue}
+                  presetColors={presetColors}
+                />
+
+                <Box
+                  className="droppable-text-element"
+                  data-testid="text-drag-handle"
+                  draggable={Boolean(trimmedText)}
+                  onDragStart={(e) => {
+                    if (!trimmedText) {
+                      e.preventDefault()
+                      return
+                    }
+                    suppressNativeDragGhost(e.dataTransfer)
+                    const dragData = {
+                      type: "newCueFromForm",
+                      cueName: textSnippet(trimmedText),
+                      text: trimmedText,
+                      textColor: textColorValue,
+                      textSize: textSizeValue,
+                      opacity: 1,
+                      elementType: "text",
+                    }
+
+                    mediaStore.setActiveDragData(dragData)
+
+                    e.dataTransfer.setData(
+                      "application/json",
+                      JSON.stringify(dragData)
+                    )
+                    e.dataTransfer.setData(
+                      "text/plain",
+                      JSON.stringify(dragData)
+                    )
+                  }}
+                  onDragEnd={() => mediaStore.clearActiveDragData()}
+                  p={3}
+                  mt={1}
+                  bg={textCellBackground(textColorValue)}
+                  borderRadius="md"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  cursor={trimmedText ? "grab" : "not-allowed"}
+                  opacity={trimmedText ? 1 : 0.5}
+                  _active={
+                    trimmedText
+                      ? { cursor: "grabbing", transform: "scale(0.98)" }
+                      : undefined
+                  }
+                  boxShadow="0 4px 12px rgba(0,0,0,0.2)"
+                  transition="all 0.1s"
+                >
+                  <Text color={textColorValue} fontWeight="bold" fontSize="sm">
                     Drag to grid
                   </Text>
                 </Box>

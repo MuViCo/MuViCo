@@ -43,13 +43,21 @@ describe("EditorDock", () => {
     window.localStorage.removeItem("editModeMediaPoolActiveTab")
   })
 
-  test("offers Colors, Media and Scores on a single row", () => {
+  test("offers Colors, Text, Media and Scores on a single row", () => {
     renderDock()
 
-    expect(screen.getAllByRole("tab")).toHaveLength(3)
+    expect(screen.getAllByRole("tab")).toHaveLength(4)
     expect(screen.getByRole("tab", { name: "Colors" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "Text" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Media" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Scores" })).toBeInTheDocument()
+  })
+
+  test("the Text tab drives the section CuesForm renders", () => {
+    renderDock()
+
+    fireEvent.click(screen.getByRole("tab", { name: "Text" }))
+    expect(screen.getByTestId("cues-form")).toHaveTextContent("text")
   })
 
   test("opens on Media and drives the section CuesForm renders", () => {

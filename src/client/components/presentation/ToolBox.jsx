@@ -25,27 +25,47 @@ import {
   SliderThumb,
   SliderTrack,
   Text,
+  Textarea,
 } from "@chakra-ui/react"
+import {
+  DEFAULT_TEXT_COLOR,
+  DEFAULT_TEXT_SIZE,
+  MAX_TEXT_LENGTH,
+  TEXT_SIZE_SLIDER_MAX,
+  TEXT_SIZE_SLIDER_MIN,
+  isTextCue,
+  normalizeTextColor,
+  normalizeTextSize,
+  textSnippet,
+} from "../utils/cueText"
 import {
   opacityFromPercent,
   opacityPercentFromCue,
 } from "../utils/cueOpacityUtils"
 
-const Toolbox = ({
-  isOpen,
-  onClose,
-  cue,
-  onSave,
-}) => {
+const Toolbox = ({ isOpen, onClose, cue, onSave }) => {
   const [cueName, setCueName] = useState("")
   const [opacityPercent, setOpacityPercent] = useState(100)
+  const [textValue, setTextValue] = useState("")
+  const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE)
+  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
+  const isText = isTextCue(cue)
 
   useEffect(() => {
     if (isOpen) {
-      setCueName(cue?.cueName || cue?.name || "")
+      setCueName(
+        cue?.cueName ||
+          cue?.name ||
+          (isTextCue(cue) ? textSnippet(cue.text) : "")
+      )
       setOpacityPercent(opacityPercentFromCue(cue))
+      setTextValue(cue?.text || "")
+      setTextSize(normalizeTextSize(cue?.textSize))
+      setTextColor(normalizeTextColor(cue?.textColor))
     }
   }, [cue, isOpen])
+
+  const trimmedText = textValue.trim()
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -55,11 +75,25 @@ const Toolbox = ({
       return
     }
 
+    if (isText && !trimmedText) {
+      return
+    }
+
+    const finalName =
+      isText && trimmedName === textSnippet(cue.text)
+        ? textSnippet(trimmedText)
+        : trimmedName
+
     await onSave({
       ...cue,
-      cueName: trimmedName,
-      name: trimmedName,
+      cueName: finalName,
+      name: finalName,
       opacity: opacityFromPercent(opacityPercent),
+      ...(isText && {
+        text: trimmedText,
+        textColor,
+        textSize,
+      }),
     })
     onClose()
   }
@@ -72,7 +106,9 @@ const Toolbox = ({
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Edit cue name</ModalHeader>
+        <ModalHeader>
+          {isText ? "Edit text element" : "Edit cue name"}
+        </ModalHeader>
         <ModalCloseButton />
         <form onSubmit={handleSubmit}>
           <ModalBody>
@@ -86,6 +122,63 @@ const Toolbox = ({
                 autoFocus
               />
             </FormControl>
+            {isText && (
+              <>
+                <FormControl mt={5} isRequired>
+                  <FormLabel>Text</FormLabel>
+                  <Textarea
+                    data-testid="toolbox-text"
+                    value={textValue}
+                    onChange={(event) => setTextValue(event.target.value)}
+                    rows={3}
+                    maxLength={MAX_TEXT_LENGTH}
+                  />
+                </FormControl>
+                <FormControl mt={5}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    mb={2}
+                  >
+                    <FormLabel mb={0}>Text size</FormLabel>
+                    <Text fontSize="sm" fontWeight="bold">
+                      {textSize}%
+                    </Text>
+                  </Box>
+                  <Slider
+                    aria-label="Text size"
+                    min={TEXT_SIZE_SLIDER_MIN}
+                    max={TEXT_SIZE_SLIDER_MAX}
+                    step={1}
+                    value={Math.min(
+                      TEXT_SIZE_SLIDER_MAX,
+                      Math.max(TEXT_SIZE_SLIDER_MIN, textSize)
+                    )}
+                    onChange={setTextSize}
+                  >
+                    <SliderTrack>
+                      <SliderFilledTrack />
+                    </SliderTrack>
+                    <SliderThumb />
+                  </Slider>
+                  <Text fontSize="xs" mt={1}>
+                    Percentage of the screen height.
+                  </Text>
+                </FormControl>
+                <FormControl mt={5}>
+                  <FormLabel>Text color</FormLabel>
+                  <Input
+                    data-testid="toolbox-text-color"
+                    type="color"
+                    value={textColor}
+                    onChange={(event) => setTextColor(event.target.value)}
+                    p={1}
+                    w="80px"
+                  />
+                </FormControl>
+              </>
+            )}
             {cue.cueType !== "audio" && (
               <FormControl mt={5}>
                 <Box
@@ -119,7 +212,12 @@ const Toolbox = ({
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button colorScheme="orange" type="submit" ml={3}>
+            <Button
+              colorScheme="orange"
+              type="submit"
+              ml={3}
+              isDisabled={isText && !trimmedText}
+            >
               Save
             </Button>
           </ModalFooter>

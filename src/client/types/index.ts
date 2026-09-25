@@ -67,6 +67,9 @@ export interface Cue {
    */
   spanScreens?: number[]
   duration?: number
+  text?: string
+  textColor?: string
+  textSize?: number
   color?: string
   file: CueFileMeta | null
   loop: boolean
@@ -333,6 +336,9 @@ export interface CueUpdateInput {
    */
   spanScreens?: number[]
   duration?: number | null
+  text?: string
+  textColor?: string
+  textSize?: number
 }
 
 export interface UploadScoreInput {
@@ -370,7 +376,7 @@ export interface MediaPoolItem {
 
 /* ------------------------------------------------------------ drag & drop -- */
 
-export type DragElementType = "color" | "media" | "sound"
+export type DragElementType = "color" | "media" | "sound" | "text"
 
 /**
  * Payload placed on the DataTransfer (and mirrored into mediaFileStore) when
@@ -393,6 +399,9 @@ export interface NewCueDragData {
   soundId?: string
   mimeType?: string
   previewUrl?: string
+  text?: string
+  textColor?: string
+  textSize?: number
 }
 
 /* -------------------------------------------------------- API payloads -- */
