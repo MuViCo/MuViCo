@@ -25,6 +25,7 @@ export interface ScoreMarkerOverlayProps {
   onPlace?: (x: number, y: number) => void
   onSelectMarker?: (marker: ScoreMarker) => void
   onMoveMarker?: (marker: ScoreMarker, x: number, y: number) => void
+  conflictedMarkerIds?: Set<string>
   highlightedMarkerId?: string | null
 }
 
@@ -33,6 +34,7 @@ interface ScoreMarkerPinProps {
   isHighlighted?: boolean
   isActive?: boolean
   isDragging?: boolean
+  isConflicted?: boolean
   draggable?: boolean
   onSelect?: (marker: ScoreMarker) => void
   onDragStart?: (marker: ScoreMarker, event: ReactMouseEvent) => void
@@ -43,6 +45,7 @@ export const ScoreMarkerPin = ({
   isHighlighted = false,
   isActive = false,
   isDragging = false,
+  isConflicted = false,
   draggable = false,
   onSelect,
   onDragStart,
@@ -63,7 +66,7 @@ export const ScoreMarkerPin = ({
           : "default"
     }
     zIndex={isHighlighted || isActive || isDragging ? 3 : 1}
-    title={`Frame ${marker.frameIndex}${onSelect ? " — click to edit, drag to move" : ""}`}
+    title={`Frame ${marker.frameIndex}${isConflicted ? " — conflict: another marker uses this frame" : ""}${onSelect ? " — click to edit, drag to move" : ""}`}
     data-marker-id={marker._id}
     data-testid="score-marker-pin"
     data-active={isActive}
@@ -92,7 +95,7 @@ export const ScoreMarkerPin = ({
       width="22px"
       height="22px"
       borderRadius="full"
-      bg={isActive ? "red.500" : "purple.500"}
+      bg={isActive ? "red.500" : isConflicted ? "orange.400" : "purple.500"}
       border="2px solid white"
       boxShadow="0 1px 4px rgba(0,0,0,0.4)"
       opacity={isDragging ? 0.8 : 1}
@@ -114,6 +117,7 @@ const ScoreMarkerOverlay = ({
   onPlace,
   onSelectMarker,
   onMoveMarker,
+  conflictedMarkerIds,
   highlightedMarkerId = null,
 }: ScoreMarkerOverlayProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -207,6 +211,7 @@ const ScoreMarkerOverlay = ({
               marker={displayMarker}
               isHighlighted={marker._id === highlightedMarkerId}
               isDragging={isDragging}
+              isConflicted={conflictedMarkerIds?.has(marker._id) ?? false}
               draggable={Boolean(onMoveMarker)}
               onSelect={onSelectMarker ? handleSelect : undefined}
               onDragStart={handleDragStart}

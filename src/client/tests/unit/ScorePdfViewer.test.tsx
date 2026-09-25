@@ -432,6 +432,109 @@ describe("ScorePdfViewer", () => {
       expect(createScoreMarker).not.toHaveBeenCalled()
     })
 
+    test("rejects placing a marker once every frame already has one, instead of duplicating the last frame", async () => {
+      mockIndexCount = 5
+      const score: ScoreDocument = {
+        ...baseScore,
+        markers: [
+          {
+            _id: "marker-1",
+            page: 1,
+            frameIndex: 4,
+            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
+          },
+        ],
+      }
+      renderViewer(score)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
+      const overlay = screen.getByTestId("score-marker-overlay")
+      stubOverlayRect(overlay)
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+
+      await waitFor(() =>
+        expect(mockShowToast).toHaveBeenCalledWith(
+          expect.objectContaining({ title: "No frame left" })
+        )
+      )
+      expect(createScoreMarker).not.toHaveBeenCalled()
+    })
+
+    test("shows two markers sharing a frame as conflicted, in orange", async () => {
+      const score: ScoreDocument = {
+        ...baseScore,
+        markers: [
+          {
+            _id: "marker-1",
+            page: 1,
+            frameIndex: 2,
+            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
+          },
+          {
+            _id: "marker-2",
+            page: 1,
+            frameIndex: 2,
+            rect: { x: 0.6, y: 0.6, width: 0, height: 0 },
+          },
+        ],
+      }
+      renderViewer(score)
+      await waitForPdfLoaded()
+
+      const pins = screen.getAllByTestId("score-marker-pin")
+      expect(pins).toHaveLength(2)
+      pins.forEach((pin) => {
+        expect(pin).toHaveAttribute(
+          "title",
+          expect.stringContaining("conflict")
+        )
+      })
+    })
+
+    test("warns, without blocking, when manually editing a marker onto an already-used frame", async () => {
+      const score: ScoreDocument = {
+        ...baseScore,
+        markers: [
+          {
+            _id: "marker-1",
+            page: 1,
+            frameIndex: 2,
+            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
+          },
+          {
+            _id: "marker-2",
+            page: 1,
+            frameIndex: 3,
+            rect: { x: 0.6, y: 0.6, width: 0, height: 0 },
+          },
+        ],
+      }
+      renderViewer(score)
+      await waitForPdfLoaded()
+
+      const pins = screen.getAllByTestId("score-marker-pin")
+      fireEvent.click(pins[1])
+      const form = await screen.findByTestId("marker-form")
+
+      fireEvent.change(form.querySelector('input[aria-label="Frame"]')!, {
+        target: { value: "2" },
+      })
+      expect(
+        await screen.findByTestId("marker-conflict-warning")
+      ).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+      await waitFor(() => {
+        expect(updateScoreMarker).toHaveBeenCalledWith(
+          "presentation-1",
+          "score-1",
+          "marker-2",
+          expect.objectContaining({ frameIndex: 2 })
+        )
+      })
+    })
+
     test("shows an error toast when placing a marker fails", async () => {
       mockDispatch.mockRejectedValueOnce(new Error("network down"))
       renderViewer(baseScore)
