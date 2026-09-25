@@ -11,7 +11,6 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
-  Select,
   Spinner,
   Text,
   VStack,
@@ -232,29 +231,34 @@ const PdfCanvas = ({
               data-testid="marker-form"
             >
               <HStack spacing={1}>
-                <Select
+                <Input
                   autoFocus
                   aria-label="Frame"
                   size="xs"
                   width="110px"
+                  type="number"
+                  min={0}
+                  max={indexCount - 1}
+                  list="marker-frame-options"
                   bg={markerSelectBg}
                   color={markerFormText}
                   borderColor={markerFormBorder}
                   value={markerFrameInput}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onMarkerFrameInputChange?.(e.target.value)
                   }
-                  onKeyDown={(e: ReactKeyboardEvent<HTMLSelectElement>) => {
+                  onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter") onConfirmMarker?.()
                     if (e.key === "Escape") onCancelMarker?.()
                   }}
-                >
+                />
+                <datalist id="marker-frame-options">
                   {Array.from({ length: indexCount }, (_, frameIndex) => (
                     <option key={frameIndex} value={frameIndex}>
-                      Frame {frameIndex}
+                      {`Frame ${frameIndex}`}
                     </option>
                   ))}
-                </Select>
+                </datalist>
                 <Button
                   size="xs"
                   colorScheme="purple"
@@ -600,8 +604,13 @@ const ScorePdfViewer = ({
   }
 
   const handlePlaceMarker = (x: number, y: number) => {
+    const usedFrames = (selectedScore?.markers ?? []).map((m) => m.frameIndex)
+    const nextFrame =
+      usedFrames.length === 0
+        ? 0
+        : clamp(Math.max(...usedFrames) + 1, 0, indexCount - 1)
     setMarkerForm({ mode: "placing", x, y })
-    setMarkerFrameInput("0")
+    setMarkerFrameInput(String(nextFrame))
   }
 
   const handleSelectMarker = (marker: ScoreMarker) => {
