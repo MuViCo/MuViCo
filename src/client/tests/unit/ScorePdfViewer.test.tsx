@@ -187,7 +187,7 @@ describe("ScorePdfViewer", () => {
   })
 
   describe("markers", () => {
-    test("places a marker immediately on click, with no confirmation step", async () => {
+    test("places a marker by clicking the score while in placing mode", async () => {
       renderViewer(baseScore)
       await waitForPdfLoaded()
 
@@ -196,43 +196,19 @@ describe("ScorePdfViewer", () => {
       stubOverlayRect(overlay)
       fireEvent.click(overlay, { clientX: 10, clientY: 10 })
 
+      const form = await screen.findByTestId("marker-form")
+      fireEvent.change(form.querySelector("select")!, {
+        target: { value: "3" },
+      })
+      fireEvent.click(screen.getByRole("button", { name: "Add" }))
+
       await waitFor(() => {
         expect(createScoreMarker).toHaveBeenCalledWith(
           "presentation-1",
           "score-1",
-          expect.objectContaining({ page: 1, frameIndex: 0 })
+          expect.objectContaining({ page: 1, frameIndex: 3 })
         )
         expect(mockDispatch).toHaveBeenCalledWith("create-thunk")
-      })
-      expect(screen.queryByTestId("marker-form")).not.toBeInTheDocument()
-    })
-
-    test("proposes the next unused frame when placing a new marker", async () => {
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
-      const overlay = screen.getByTestId("score-marker-overlay")
-      stubOverlayRect(overlay)
-      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
-
-      await waitFor(() => {
-        expect(createScoreMarker).toHaveBeenCalledWith(
-          "presentation-1",
-          "score-1",
-          expect.objectContaining({ frameIndex: 3 })
-        )
       })
     })
 
@@ -251,15 +227,13 @@ describe("ScorePdfViewer", () => {
       renderViewer(score)
       await waitForPdfLoaded()
 
-      fireEvent.click(
-        screen.getByTitle("Frame 2 — click to edit, drag to move")
-      )
+      fireEvent.click(screen.getByTitle("Frame 2 — click to edit"))
 
       const form = await screen.findByTestId("marker-form")
-      expect(form.querySelector('input[aria-label="Frame"]')).toHaveValue(2)
+      expect(form.querySelector("select")).toHaveValue("2")
       expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument()
 
-      fireEvent.change(form.querySelector('input[aria-label="Frame"]')!, {
+      fireEvent.change(form.querySelector("select")!, {
         target: { value: "4" },
       })
       fireEvent.click(screen.getByRole("button", { name: "Save" }))
@@ -272,78 +246,6 @@ describe("ScorePdfViewer", () => {
           expect.objectContaining({ frameIndex: 4 })
         )
       })
-    })
-
-    test("Escape cancels and Enter confirms the edit form", async () => {
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.5, y: 0.5, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      fireEvent.click(
-        screen.getByTitle("Frame 2 — click to edit, drag to move")
-      )
-      const form = await screen.findByTestId("marker-form")
-      fireEvent.keyDown(form.querySelector('input[aria-label="Frame"]')!, {
-        key: "Escape",
-      })
-      expect(screen.queryByTestId("marker-form")).not.toBeInTheDocument()
-
-      fireEvent.click(
-        screen.getByTitle("Frame 2 — click to edit, drag to move")
-      )
-      const form2 = await screen.findByTestId("marker-form")
-      fireEvent.keyDown(form2.querySelector('input[aria-label="Frame"]')!, {
-        key: "Enter",
-      })
-
-      await waitFor(() => expect(updateScoreMarker).toHaveBeenCalled())
-    })
-
-    test("dragging a marker moves it, without opening the edit form", async () => {
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      const overlay = screen.getByTestId("score-marker-overlay")
-      stubOverlayRect(overlay)
-      const pin = screen.getByTestId("score-marker-pin")
-
-      fireEvent.mouseDown(pin, { clientX: 60, clientY: 60 })
-      fireEvent.mouseMove(window, { clientX: 150, clientY: 180 })
-      fireEvent.mouseUp(window, { clientX: 150, clientY: 180 })
-
-      await waitFor(() => {
-        expect(updateScoreMarker).toHaveBeenCalledWith(
-          "presentation-1",
-          "score-1",
-          "marker-1",
-          expect.objectContaining({
-            frameIndex: 2,
-            rect: expect.objectContaining({ x: 0.5, y: 0.6 }),
-          })
-        )
-      })
-      expect(screen.queryByTestId("marker-form")).not.toBeInTheDocument()
     })
 
     test("deletes a marker from its edit form", async () => {
@@ -361,9 +263,7 @@ describe("ScorePdfViewer", () => {
       renderViewer(score)
       await waitForPdfLoaded()
 
-      fireEvent.click(
-        screen.getByTitle("Frame 2 — click to edit, drag to move")
-      )
+      fireEvent.click(screen.getByTitle("Frame 2 — click to edit"))
       await screen.findByTestId("marker-form")
       fireEvent.click(screen.getByRole("button", { name: "Delete" }))
 
@@ -414,6 +314,26 @@ describe("ScorePdfViewer", () => {
       )
     })
 
+    test("Enter confirms and Escape cancels from the frame select", async () => {
+      renderViewer(baseScore)
+      await waitForPdfLoaded()
+
+      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
+      const overlay = screen.getByTestId("score-marker-overlay")
+      stubOverlayRect(overlay)
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      const form = await screen.findByTestId("marker-form")
+
+      fireEvent.keyDown(form.querySelector("select")!, { key: "Escape" })
+      expect(screen.queryByTestId("marker-form")).not.toBeInTheDocument()
+
+      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      const form2 = await screen.findByTestId("marker-form")
+      fireEvent.keyDown(form2.querySelector("select")!, { key: "Enter" })
+
+      await waitFor(() => expect(createScoreMarker).toHaveBeenCalled())
+    })
+
     test("rejects placing a marker when the presentation has no frames", async () => {
       mockIndexCount = 0
       renderViewer(baseScore)
@@ -423,119 +343,18 @@ describe("ScorePdfViewer", () => {
       const overlay = screen.getByTestId("score-marker-overlay")
       stubOverlayRect(overlay)
       fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      await screen.findByTestId("marker-form")
+      fireEvent.click(screen.getByRole("button", { name: "Add" }))
 
       await waitFor(() =>
         expect(mockShowToast).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "No frames available" })
+          expect.objectContaining({ title: "Invalid frame number" })
         )
       )
       expect(createScoreMarker).not.toHaveBeenCalled()
     })
 
-    test("rejects placing a marker once every frame already has one, instead of duplicating the last frame", async () => {
-      mockIndexCount = 5
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 4,
-            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      fireEvent.click(screen.getByRole("button", { name: "Add marker" }))
-      const overlay = screen.getByTestId("score-marker-overlay")
-      stubOverlayRect(overlay)
-      fireEvent.click(overlay, { clientX: 10, clientY: 10 })
-
-      await waitFor(() =>
-        expect(mockShowToast).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "No frame left" })
-        )
-      )
-      expect(createScoreMarker).not.toHaveBeenCalled()
-    })
-
-    test("shows two markers sharing a frame as conflicted, in orange", async () => {
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
-          },
-          {
-            _id: "marker-2",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.6, y: 0.6, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      const pins = screen.getAllByTestId("score-marker-pin")
-      expect(pins).toHaveLength(2)
-      pins.forEach((pin) => {
-        expect(pin).toHaveAttribute(
-          "title",
-          expect.stringContaining("conflict")
-        )
-      })
-    })
-
-    test("warns, without blocking, when manually editing a marker onto an already-used frame", async () => {
-      const score: ScoreDocument = {
-        ...baseScore,
-        markers: [
-          {
-            _id: "marker-1",
-            page: 1,
-            frameIndex: 2,
-            rect: { x: 0.2, y: 0.2, width: 0, height: 0 },
-          },
-          {
-            _id: "marker-2",
-            page: 1,
-            frameIndex: 3,
-            rect: { x: 0.6, y: 0.6, width: 0, height: 0 },
-          },
-        ],
-      }
-      renderViewer(score)
-      await waitForPdfLoaded()
-
-      const pins = screen.getAllByTestId("score-marker-pin")
-      fireEvent.click(pins[1])
-      const form = await screen.findByTestId("marker-form")
-
-      fireEvent.change(form.querySelector('input[aria-label="Frame"]')!, {
-        target: { value: "2" },
-      })
-      expect(
-        await screen.findByTestId("marker-conflict-warning")
-      ).toBeInTheDocument()
-
-      fireEvent.click(screen.getByRole("button", { name: "Save" }))
-      await waitFor(() => {
-        expect(updateScoreMarker).toHaveBeenCalledWith(
-          "presentation-1",
-          "score-1",
-          "marker-2",
-          expect.objectContaining({ frameIndex: 2 })
-        )
-      })
-    })
-
-    test("shows an error toast when placing a marker fails", async () => {
+    test("shows an error toast when saving a marker fails", async () => {
       mockDispatch.mockRejectedValueOnce(new Error("network down"))
       renderViewer(baseScore)
       await waitForPdfLoaded()
@@ -544,6 +363,8 @@ describe("ScorePdfViewer", () => {
       const overlay = screen.getByTestId("score-marker-overlay")
       stubOverlayRect(overlay)
       fireEvent.click(overlay, { clientX: 10, clientY: 10 })
+      await screen.findByTestId("marker-form")
+      fireEvent.click(screen.getByRole("button", { name: "Add" }))
 
       await waitFor(() =>
         expect(mockShowToast).toHaveBeenCalledWith(
@@ -568,9 +389,7 @@ describe("ScorePdfViewer", () => {
       renderViewer(score)
       await waitForPdfLoaded()
 
-      fireEvent.click(
-        screen.getByTitle("Frame 2 — click to edit, drag to move")
-      )
+      fireEvent.click(screen.getByTitle("Frame 2 — click to edit"))
       await screen.findByTestId("marker-form")
       fireEvent.click(screen.getByRole("button", { name: "Delete" }))
 

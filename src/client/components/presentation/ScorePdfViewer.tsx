@@ -11,6 +11,7 @@ import {
   MenuButton,
   MenuItem,
   MenuList,
+  Select,
   Spinner,
   Text,
   VStack,
@@ -59,9 +60,10 @@ const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
 const getScoreUrl = (s: ScoreDocument) => s.file?.url ?? s.sourceUrl
 
-// Editing (or deleting) the frame of an already-placed marker. New markers
-// are created immediately on click, with no confirmation step.
-type MarkerFormState = { marker: ScoreMarker }
+// Either placing a new marker, or editing/deleting an existing one.
+type MarkerFormState =
+  | { mode: "placing"; x: number; y: number }
+  | { mode: "editing"; marker: ScoreMarker }
 
 /* -------------------------------------------------------------------------- */
 /*  PdfCanvas — main page canvas                                               */
@@ -74,15 +76,12 @@ interface PdfCanvasProps {
   background: string
   testId?: string
   markers?: ScoreMarker[]
-  conflictedMarkerIds?: Set<string>
   isPlacingMarker?: boolean
   onPlaceMarker?: (x: number, y: number) => void
   onSelectMarker?: (marker: ScoreMarker) => void
-  onMoveMarker?: (marker: ScoreMarker, x: number, y: number) => void
   onDeleteMarker?: (markerId: string) => void
   markerForm?: MarkerFormState | null
   markerFrameInput?: string
-  isFrameTaken?: (frameIndex: number, excludeMarkerId: string) => boolean
   indexCount?: number
   onMarkerFrameInputChange?: (value: string) => void
   onConfirmMarker?: () => void
@@ -98,15 +97,12 @@ const PdfCanvas = ({
   background,
   testId,
   markers = [],
-  conflictedMarkerIds,
   isPlacingMarker = false,
   onPlaceMarker,
   onSelectMarker,
-  onMoveMarker,
   onDeleteMarker,
   markerForm = null,
   markerFrameInput = "",
-  isFrameTaken,
   indexCount = 0,
   onMarkerFrameInputChange,
   onConfirmMarker,
@@ -206,21 +202,19 @@ const PdfCanvas = ({
           isPlacing={isPlacingMarker}
           onPlace={onPlaceMarker}
           onSelectMarker={onSelectMarker}
-          onMoveMarker={onMoveMarker}
-          conflictedMarkerIds={conflictedMarkerIds}
           highlightedMarkerId={highlightedMarkerId}
         />
       )}
       {markerForm &&
         (() => {
-          const pos = {
-            x: markerForm.marker.rect?.x ?? 0,
-            y: markerForm.marker.rect?.y ?? 0,
-          }
-          const frameNum = Number(markerFrameInput)
-          const hasConflict =
-            Number.isInteger(frameNum) &&
-            isFrameTaken?.(frameNum, markerForm.marker._id)
+          const pos =
+            markerForm.mode === "placing"
+              ? { x: markerForm.x, y: markerForm.y }
+              : {
+                  x: markerForm.marker.rect?.x ?? 0,
+                  y: markerForm.marker.rect?.y ?? 0,
+                }
+          const isEditing = markerForm.mode === "editing"
           return (
             <Box
               position="absolute"
@@ -238,63 +232,50 @@ const PdfCanvas = ({
               data-testid="marker-form"
             >
               <HStack spacing={1}>
-                <Input
+                <Select
                   autoFocus
                   aria-label="Frame"
                   size="xs"
                   width="110px"
-                  type="number"
-                  min={0}
-                  max={indexCount - 1}
-                  list="marker-frame-options"
                   bg={markerSelectBg}
                   color={markerFormText}
-                  borderColor={hasConflict ? "orange.400" : markerFormBorder}
+                  borderColor={markerFormBorder}
                   value={markerFrameInput}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                     onMarkerFrameInputChange?.(e.target.value)
                   }
-                  onKeyDown={(e: ReactKeyboardEvent<HTMLInputElement>) => {
+                  onKeyDown={(e: ReactKeyboardEvent<HTMLSelectElement>) => {
                     if (e.key === "Enter") onConfirmMarker?.()
                     if (e.key === "Escape") onCancelMarker?.()
                   }}
-                />
-                <datalist id="marker-frame-options">
+                >
                   {Array.from({ length: indexCount }, (_, frameIndex) => (
                     <option key={frameIndex} value={frameIndex}>
-                      {`Frame ${frameIndex}`}
+                      Frame {frameIndex}
                     </option>
                   ))}
-                </datalist>
+                </Select>
                 <Button
                   size="xs"
                   colorScheme="purple"
                   onClick={onConfirmMarker}
                 >
-                  Save
+                  {isEditing ? "Save" : "Add"}
                 </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  colorScheme="red"
-                  onClick={() => onDeleteMarker?.(markerForm.marker._id)}
-                >
-                  Delete
-                </Button>
+                {isEditing && (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    colorScheme="red"
+                    onClick={() => onDeleteMarker?.(markerForm.marker._id)}
+                  >
+                    Delete
+                  </Button>
+                )}
                 <Button size="xs" variant="ghost" onClick={onCancelMarker}>
                   Cancel
                 </Button>
               </HStack>
-              {hasConflict && (
-                <Text
-                  fontSize="10px"
-                  color="orange.400"
-                  mt={1}
-                  data-testid="marker-conflict-warning"
-                >
-                  Frame already used by another marker
-                </Text>
-              )}
             </Box>
           )
         })()}
@@ -590,19 +571,6 @@ const ScorePdfViewer = ({
     [selectedScore]
   )
 
-  // Markers that share a frame with another marker — flagged, never blocked.
-  const conflictedMarkerIds = useMemo(() => {
-    const countByFrame = new Map<number, number>()
-    for (const m of selectedScore?.markers ?? []) {
-      countByFrame.set(m.frameIndex, (countByFrame.get(m.frameIndex) ?? 0) + 1)
-    }
-    return new Set(
-      (selectedScore?.markers ?? [])
-        .filter((m) => (countByFrame.get(m.frameIndex) ?? 0) > 1)
-        .map((m) => m._id)
-    )
-  }, [selectedScore])
-
   // Clears the ping a few seconds after a "jump to marker" click.
   useEffect(() => {
     if (!highlightedMarkerId) return
@@ -631,75 +599,15 @@ const ScorePdfViewer = ({
     setHighlightedMarkerId(marker._id)
   }
 
-  const handlePlaceMarker = async (x: number, y: number) => {
-    if (!selectedScore) return
-    if (indexCount <= 0) {
-      showToast({
-        title: "No frames available",
-        description: "Add a frame to the presentation before placing markers.",
-        status: "warning",
-      })
-      return
-    }
-    const usedFrames = selectedScore.markers.map((m) => m.frameIndex)
-    const nextFrame = usedFrames.length === 0 ? 0 : Math.max(...usedFrames) + 1
-    if (nextFrame >= indexCount) {
-      showToast({
-        title: "No frame left",
-        description: "Every frame already has a marker.",
-        status: "warning",
-      })
-      return
-    }
-    try {
-      await dispatch(
-        createScoreMarker(presentationId, selectedScore._id, {
-          page: pageNumber,
-          frameIndex: nextFrame,
-          rect: { x, y, width: 0, height: 0 },
-        })
-      )
-    } catch (error) {
-      showToast({
-        title: "Couldn't save marker",
-        description: error instanceof Error ? error.message : undefined,
-        status: "error",
-      })
-    }
+  const handlePlaceMarker = (x: number, y: number) => {
+    setMarkerForm({ mode: "placing", x, y })
+    setMarkerFrameInput("0")
   }
-
-  const isFrameTaken = (frameIndex: number, excludeMarkerId: string) =>
-    (selectedScore?.markers ?? []).some(
-      (m) => m._id !== excludeMarkerId && m.frameIndex === frameIndex
-    )
 
   const handleSelectMarker = (marker: ScoreMarker) => {
-    setMarkerForm({ marker })
+    setMarkerForm({ mode: "editing", marker })
     setMarkerFrameInput(String(marker.frameIndex))
     setHighlightedMarkerId(null)
-  }
-
-  const handleMoveMarker = async (
-    marker: ScoreMarker,
-    x: number,
-    y: number
-  ) => {
-    if (!selectedScore) return
-    try {
-      await dispatch(
-        updateScoreMarker(presentationId, selectedScore._id, marker._id, {
-          page: marker.page,
-          frameIndex: marker.frameIndex,
-          rect: { x, y, width: 0, height: 0 },
-        })
-      )
-    } catch (error) {
-      showToast({
-        title: "Couldn't move marker",
-        description: error instanceof Error ? error.message : undefined,
-        status: "error",
-      })
-    }
   }
 
   const handleCancelMarker = () => {
@@ -724,18 +632,28 @@ const ScorePdfViewer = ({
     }
 
     try {
-      await dispatch(
-        updateScoreMarker(
-          presentationId,
-          selectedScore._id,
-          markerForm.marker._id,
-          {
-            page: markerForm.marker.page,
+      if (markerForm.mode === "placing") {
+        await dispatch(
+          createScoreMarker(presentationId, selectedScore._id, {
+            page: pageNumber,
             frameIndex,
-            rect: markerForm.marker.rect,
-          }
+            rect: { x: markerForm.x, y: markerForm.y, width: 0, height: 0 },
+          })
         )
-      )
+      } else {
+        await dispatch(
+          updateScoreMarker(
+            presentationId,
+            selectedScore._id,
+            markerForm.marker._id,
+            {
+              page: markerForm.marker.page,
+              frameIndex,
+              rect: markerForm.marker.rect,
+            }
+          )
+        )
+      }
       setMarkerForm(null)
       setMarkerFrameInput("")
     } catch (error) {
@@ -1084,16 +1002,13 @@ const ScorePdfViewer = ({
               background="#ffffff"
               testId="score-pdf-viewer"
               markers={currentPageMarkers}
-              conflictedMarkerIds={conflictedMarkerIds}
               isPlacingMarker={isPlacingMarker}
               onPlaceMarker={readOnly ? undefined : handlePlaceMarker}
               onSelectMarker={readOnly ? undefined : handleSelectMarker}
-              onMoveMarker={readOnly ? undefined : handleMoveMarker}
               onDeleteMarker={readOnly ? undefined : handleDeleteMarker}
               readOnly={readOnly}
               markerForm={markerForm}
               markerFrameInput={markerFrameInput}
-              isFrameTaken={isFrameTaken}
               indexCount={indexCount}
               onMarkerFrameInputChange={setMarkerFrameInput}
               onConfirmMarker={handleConfirmMarker}
