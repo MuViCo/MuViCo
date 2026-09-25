@@ -70,6 +70,7 @@ export const ScoreMarkerPin = ({
     onMouseDown={
       draggable
         ? (event) => {
+            event.preventDefault()
             event.stopPropagation()
             onDragStart?.(marker, event)
           }
@@ -189,6 +190,7 @@ const ScoreMarkerOverlay = ({
       onClick={handleClick}
       cursor={isPlacing ? "crosshair" : "default"}
       pointerEvents={isPlacing ? "auto" : "none"}
+      userSelect={draggingId ? "none" : undefined}
       data-testid="score-marker-overlay"
     >
       {markers
