@@ -96,6 +96,8 @@ export interface PresentationAttrs {
   storage: StorageBackend
   screenCount: number
   indexCount: number
+  outputAspectRatio?: string
+  screenAspectRatios?: Map<string, string>
   lastUsed?: Date
   shareToken?: string
   cues: Cue[]

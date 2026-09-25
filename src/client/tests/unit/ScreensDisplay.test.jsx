@@ -9,6 +9,34 @@ import "@testing-library/jest-dom"
 import { ScreensDisplay } from "../../components/presentation/ScreensDisplay"
 
 describe("ScreensDisplay", () => {
+  test("shows each screen's own shape and reports a change for that screen", () => {
+    const onScreenAspectRatioChange = jest.fn()
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={[]}
+        outputAspectRatio="16:9"
+        screenAspectRatios={{ 2: "4:3" }}
+        onScreenAspectRatioChange={onScreenAspectRatioChange}
+      />
+    )
+
+    expect(screen.getByTestId("screen-shape-1")).toHaveValue("16:9")
+    expect(screen.getByTestId("screen-shape-2")).toHaveValue("4:3")
+
+    fireEvent.change(screen.getByTestId("screen-shape-1"), {
+      target: { value: "21:9" },
+    })
+
+    expect(onScreenAspectRatioChange).toHaveBeenCalledWith(1, "21:9")
+  })
+
+  test("hides the shape selector when no handler is given", () => {
+    render(<ScreensDisplay screenCount={2} cues={[]} />)
+
+    expect(screen.queryByTestId("screen-shape-1")).not.toBeInTheDocument()
+  })
+
   test("renders one open button per screen", () => {
     render(
       <ScreensDisplay

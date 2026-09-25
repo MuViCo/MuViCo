@@ -6,7 +6,11 @@
 import { createAsyncThunk } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 
-import type { SaveIndexCountResponse, SaveScreenCountResponse } from "../types"
+import type {
+  SaveIndexCountResponse,
+  SaveOutputAspectRatioResponse,
+  SaveScreenCountResponse,
+} from "../types"
 
 export const saveIndexCount = createAsyncThunk<
   SaveIndexCountResponse,
@@ -21,3 +25,16 @@ export const saveScreenCount = createAsyncThunk<
 >("presentation/saveScreenCount", async ({ id, screenCount }) => {
   return await presentationService.saveScreenCountApi(id, screenCount)
 })
+
+export const saveOutputAspectRatio = createAsyncThunk<
+  SaveOutputAspectRatioResponse,
+  { id: string; outputAspectRatio: string; screen?: number }
+>(
+  "presentation/saveOutputAspectRatio",
+  async ({ id, outputAspectRatio, screen }) =>
+    await presentationService.saveOutputAspectRatioApi(
+      id,
+      outputAspectRatio,
+      screen
+    )
+)

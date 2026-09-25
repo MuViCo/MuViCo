@@ -18,6 +18,7 @@ import type {
   Presentation,
   SaveIndexCountResponse,
   SaveScreenCountResponse,
+  SaveOutputAspectRatioResponse,
   ShiftIndexesResponse,
   ScoreDocument,
   ScoreMarker,
@@ -319,6 +320,25 @@ const saveScreenCountApi = async (
   return response.data
 }
 
+const saveOutputAspectRatioApi = async (
+  id: string,
+  outputAspectRatio: string,
+  screen?: number
+): Promise<SaveOutputAspectRatioResponse> => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.put<SaveOutputAspectRatioResponse>(
+    `${baseUrl}${id}/outputAspectRatio`,
+    { outputAspectRatio, screen },
+    config
+  )
+  return response.data
+}
+
 const shiftIndexes = async (
   id: string,
   startIndex: number,
@@ -389,6 +409,7 @@ export default {
   updateCue,
   saveIndexCountApi,
   saveScreenCountApi,
+  saveOutputAspectRatioApi,
   shiftIndexes,
   updatePresentationName,
   swapCues,

@@ -10,6 +10,9 @@ import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
+import { saveOutputAspectRatio } from "../../redux/presentationThunks"
+
+let lastScreensDisplayProps = null
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -20,6 +23,10 @@ jest.mock("../../redux/presentationReducer", () => ({
   fetchPresentationInfo: jest.fn(() => ({
     type: "MOCK_FETCH_PRESENTATION_INFO",
   })),
+}))
+
+jest.mock("../../redux/presentationThunks", () => ({
+  saveOutputAspectRatio: jest.fn(() => ({ type: "MOCK_SAVE_RATIO" })),
 }))
 
 jest.mock("../../components/presentation/EditMode", () => {
@@ -41,7 +48,8 @@ jest.mock("../../components/presentation/PresentationTitle", () => {
 })
 
 jest.mock("../../components/presentation/ScreensDisplay", () => ({
-  ScreensDisplay: function MockScreensDisplay() {
+  ScreensDisplay: function MockScreensDisplay(props) {
+    lastScreensDisplayProps = props
     return <div data-testid="mock-screens-display" />
   },
 }))
@@ -136,6 +144,72 @@ describe("EditModeContainer transition settings", () => {
     expect(
       screen.queryByRole("button", { name: "Share" })
     ).not.toBeInTheDocument()
+  })
+
+  test("offers the declared output shape and saves the pick", async () => {
+    const dispatch = jest.fn()
+    useDispatch.mockReturnValue(dispatch)
+    useSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+          outputAspectRatio: "4:3",
+        },
+      })
+    )
+
+    render(<EditModeContainer {...baseProps} />)
+    fireEvent.click(screen.getByLabelText("Presentation Settings"))
+
+    const select = await screen.findByTestId("output-aspect-ratio-select")
+    expect(select).toHaveValue("4:3")
+
+    fireEvent.change(select, { target: { value: "21:9" } })
+
+    await waitFor(() => {
+      expect(saveOutputAspectRatio).toHaveBeenCalledWith({
+        id: "presentation-1",
+        outputAspectRatio: "21:9",
+      })
+    })
+  })
+
+  test("the tile selector saves a shape for that screen alone", async () => {
+    render(<EditModeContainer {...baseProps} />)
+
+    lastScreensDisplayProps.onScreenAspectRatioChange(2, "4:3")
+
+    await waitFor(() => {
+      expect(saveOutputAspectRatio).toHaveBeenCalledWith({
+        id: "presentation-1",
+        outputAspectRatio: "4:3",
+        screen: 2,
+      })
+    })
+  })
+
+  test("the popover selector applies to every screen", async () => {
+    render(<EditModeContainer {...baseProps} />)
+    fireEvent.click(screen.getByLabelText("Presentation Settings"))
+
+    const select = await screen.findByTestId("output-aspect-ratio-select")
+    fireEvent.change(select, { target: { value: "1:1" } })
+
+    await waitFor(() => {
+      expect(saveOutputAspectRatio).toHaveBeenCalledWith({
+        id: "presentation-1",
+        outputAspectRatio: "1:1",
+      })
+    })
+  })
+
+  test("falls back to 16:9 when the presentation declares nothing", async () => {
+    render(<EditModeContainer {...baseProps} />)
+    fireEvent.click(screen.getByLabelText("Presentation Settings"))
+
+    const select = await screen.findByTestId("output-aspect-ratio-select")
+    expect(select).toHaveValue("16:9")
   })
 
   test("renders a Presentation Settings button", () => {

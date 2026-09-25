@@ -1054,6 +1054,99 @@ describe("test presentation", () => {
     })
   })
 
+  describe("PUT /api/presentation/:id/outputAspectRatio", () => {
+    beforeEach(async () => {
+      const user = await User.findOne({ username: "testuser" })
+      if (!user) {
+        throw new Error("Test user not found in aspect ratio tests")
+      }
+
+      const presentation = new Presentation({
+        name: "Aspect Ratio Test Presentation",
+        user: user._id,
+        screenCount: 1,
+      })
+      await presentation.save()
+      testPresentationId = presentation._id
+    })
+
+    test("Should default to 16:9 when never set", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      expect(presentation.outputAspectRatio).toBe("16:9")
+    })
+
+    test("Should store a valid ratio", async () => {
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "4:3" })
+        .expect(200)
+
+      expect(response.body.outputAspectRatio).toBe("4:3")
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.outputAspectRatio).toBe("4:3")
+    })
+
+    test("Should store a per-screen override without touching the fallback", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "4:3", screen: 1 })
+        .expect(200)
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.outputAspectRatio).toBe("16:9")
+      expect(updated.screenAspectRatios.get("1")).toBe("4:3")
+    })
+
+    test("Should clear per-screen overrides when applying to all", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "4:3", screen: 1 })
+        .expect(200)
+
+      const response = await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "21:9" })
+        .expect(200)
+
+      expect(response.body.outputAspectRatio).toBe("21:9")
+      expect(response.body.screenAspectRatios).toEqual({})
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.screenAspectRatios).toBeUndefined()
+    })
+
+    test("Should reject a screen number outside the presentation", async () => {
+      for (const screen of [0, 2, -1, 1.5, "x"]) {
+        await api
+          .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+          .set("Authorization", authHeader)
+          .send({ outputAspectRatio: "4:3", screen })
+          .expect(400)
+      }
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.screenAspectRatios).toBeUndefined()
+    })
+
+    test("Should reject a malformed ratio and leave the stored one alone", async () => {
+      for (const outputAspectRatio of ["16/9", "0:9", "16:0", "-16:9", 1.77]) {
+        await api
+          .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+          .set("Authorization", authHeader)
+          .send({ outputAspectRatio })
+          .expect(400)
+      }
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.outputAspectRatio).toBe("16:9")
+    })
+  })
+
   describe("PUT /api/presentation/:id/screenCount", () => {
     beforeEach(async () => {
       const user = await User.findOne({ username: "testuser" })
@@ -1095,6 +1188,32 @@ describe("test presentation", () => {
 
       // Check that the presentation has the same number of cues (no automatic new cues added)
       expect(updatedPresentation.cues.length).toBe(6)
+    })
+
+    test("Should drop shapes declared for screens that no longer exist", async () => {
+      await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "4:3", screen: 1 })
+        .expect(200)
+      await api
+        .put(`/api/presentation/${testPresentationId}/outputAspectRatio`)
+        .set("Authorization", authHeader)
+        .send({ outputAspectRatio: "1:1", screen: 3 })
+        .expect(200)
+
+      await api
+        .put(`/api/presentation/${testPresentationId}/screenCount`)
+        .set("Authorization", authHeader)
+        .send({ screenCount: 2 })
+        .expect(200)
+
+      const updated = await Presentation.findById(testPresentationId)
+      expect(updated.screenAspectRatios.get("1")).toBe("4:3")
+      expect(updated.screenAspectRatios.get("3")).toBeUndefined()
+
+      updated.name = "Renamed after shrinking"
+      await expect(updated.save()).resolves.toBeDefined()
     })
 
     test("Should decrease screen count and remove cues from removed screens", async () => {

@@ -19,6 +19,11 @@ import {
   getCueTypeFromScreen,
   getMaxLayers,
 } from "../utils/cueType"
+import {
+  DEFAULT_OUTPUT_ASPECT_RATIO,
+  isValidAspectRatio,
+} from "../../constants.js"
+
 import type { CueType, PresentationAttrs } from "../types"
 
 interface NormalizableCue {
@@ -70,6 +75,7 @@ const normalizeCueOpacity = (opacity: unknown, repairInvalid: boolean) => {
 interface NormalizablePresentation {
   screenCount?: unknown
   indexCount?: unknown
+  outputAspectRatio?: unknown
   cues?: unknown
   [key: string]: unknown
 }
@@ -84,6 +90,11 @@ const normalizePresentationCues = (
   const screenCount = Number(presentationObject.screenCount) || 1
   presentationObject.screenCount = screenCount
   presentationObject.indexCount = Number(presentationObject.indexCount) || 5
+  presentationObject.outputAspectRatio = isValidAspectRatio(
+    presentationObject.outputAspectRatio
+  )
+    ? presentationObject.outputAspectRatio
+    : DEFAULT_OUTPUT_ASPECT_RATIO
   const cues = Array.isArray(presentationObject.cues)
     ? (presentationObject.cues as NormalizableCue[])
     : []
@@ -165,6 +176,19 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
         validator: Number.isInteger,
         message: "screenCount must be an integer",
       },
+    },
+    outputAspectRatio: {
+      type: String,
+      default: DEFAULT_OUTPUT_ASPECT_RATIO,
+      validate: {
+        validator: (v: unknown) => v === undefined || isValidAspectRatio(v),
+        message: "outputAspectRatio must look like W:H",
+      },
+    },
+    screenAspectRatios: {
+      type: Map,
+      of: String,
+      default: undefined,
     },
 
     // Number of index positions (1-101) for the cue timeline
@@ -409,6 +433,28 @@ presentationSchema.pre("save", function (next) {
       typeof mongoose.Error.ValidationError
     >[0]
   )
+
+  if (this.screenAspectRatios) {
+    for (const [screenKey, ratio] of this.screenAspectRatios.entries()) {
+      const screenNumber = Number(screenKey)
+      const isValidEntry =
+        Number.isInteger(screenNumber) &&
+        screenNumber >= 1 &&
+        screenNumber <= this.screenCount &&
+        isValidAspectRatio(ratio)
+
+      if (!isValidEntry) {
+        validationError.addError(
+          "screenAspectRatios",
+          new mongoose.Error.ValidatorError({
+            message: `screenAspectRatios entry ${screenKey}:${ratio} is invalid for screenCount ${this.screenCount}`,
+            path: "screenAspectRatios",
+            value: ratio,
+          })
+        )
+      }
+    }
+  }
 
   for (const cue of this.cues) {
     if (cue.index < 0 || cue.index >= this.indexCount) {
