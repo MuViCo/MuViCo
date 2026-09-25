@@ -620,7 +620,8 @@ export const updatePresentation =
           text: updatedCueData.text,
           textColor: updatedCueData.textColor,
           textSize: updatedCueData.textSize,
-        }
+        },
+        updatedCueData.frame
       )
       // TODO(ts): both cueId sources are optional, so this is undefined when
       // neither is supplied and the request URL ends in "/undefined". Every

@@ -7,6 +7,7 @@ import {
   Menu,
   MenuButton,
   MenuDivider,
+  MenuGroup,
   MenuItem,
   MenuList,
   Portal,
@@ -23,6 +24,9 @@ import {
   TimeIcon,
 } from "@chakra-ui/icons"
 
+import { CUE_FRAME_PRESETS } from "../utils/cueFrame"
+
+import type { CueFrame } from "../utils/cueFrame"
 import type { Cue } from "../../types"
 
 export interface CueContextMenuState {
@@ -41,6 +45,7 @@ interface CueContextMenuProps {
   onToggleLoop: (cue: Cue) => void | Promise<void>
   onToggleContinuePlayback: (cue: Cue) => void | Promise<void>
   onOpenMultiScreen: (cue: Cue) => void
+  onSetCueFrame?: (cue: Cue, frame: CueFrame) => void
 }
 
 const CueContextMenu = ({
@@ -52,6 +57,7 @@ const CueContextMenu = ({
   onToggleLoop,
   onToggleContinuePlayback,
   onOpenMultiScreen,
+  onSetCueFrame,
 }: CueContextMenuProps) => {
   const menuListRef = useRef<HTMLDivElement>(null)
   const menuBg = useColorModeValue("white", "#18111f")
@@ -185,6 +191,29 @@ const CueContextMenu = ({
             >
               Span across screens
             </MenuItem>
+          )}
+
+          {onSetCueFrame && cue.cueType === "visual" && (
+            <MenuGroup title="Position on screen" fontSize="xs" marginX={3}>
+              {CUE_FRAME_PRESETS.map((preset) => (
+                <MenuItem
+                  key={preset.label}
+                  minHeight="32px"
+                  paddingX={3}
+                  paddingY={1}
+                  bg="transparent"
+                  borderRadius="md"
+                  fontSize="sm"
+                  _focus={itemHover}
+                  _hover={itemHover}
+                  _active={{ bg: itemActiveBg }}
+                  aria-label={`${preset.label} position for ${cue.name}`}
+                  onClick={() => onSetCueFrame(cue, preset.frame)}
+                >
+                  {preset.label}
+                </MenuItem>
+              ))}
+            </MenuGroup>
           )}
 
           {cue.file != null && cue.cueType === "audio" && (

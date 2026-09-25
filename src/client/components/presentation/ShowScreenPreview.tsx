@@ -3,6 +3,7 @@ import { useState } from "react"
 import type { SyntheticEvent } from "react"
 import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import { cueFrameStyle } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
   screenWidthMapFromRatios,
@@ -210,7 +211,7 @@ const ShowScreenPreview = ({
                 <Box
                   key={cue._id}
                   position="absolute"
-                  inset={0}
+                  {...cueFrameStyle(cue)}
                   zIndex={100 - Number(cue.layer ?? index)}
                   opacity={normalizeCueOpacity(cue.opacity)}
                   overflow="hidden"

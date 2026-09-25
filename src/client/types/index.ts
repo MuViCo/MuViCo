@@ -66,6 +66,7 @@ export interface Cue {
    * spans more than one screen -- absent, not an empty array, means "no span".
    */
   spanScreens?: number[]
+  frame?: { x: number; y: number; width: number; height: number }
   duration?: number
   text?: string
   textColor?: string
@@ -339,6 +340,7 @@ export interface CueUpdateInput {
   text?: string
   textColor?: string
   textSize?: number
+  frame?: { x: number; y: number; width: number; height: number } | null
 }
 
 export interface UploadScoreInput {

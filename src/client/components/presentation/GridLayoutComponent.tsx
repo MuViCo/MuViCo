@@ -41,6 +41,7 @@ interface GridLayoutComponentProps {
   setIsToolboxOpen: (open: boolean) => void
   setIsMultiScreenModalOpen: (open: boolean) => void
   onCueResizeStart?: (cue: Cue, event: MouseEvent) => void
+  onSetCueFrame?: (cue: Cue, frame: CueFrame) => void
   /** "screen:layer" (and "screen:*" for a collapsed group) -> row index. */
   screenLayerRowIndex?: Record<string, number>
   indexCount: number
@@ -80,6 +81,7 @@ import CueContextMenu from "./CueContextMenu"
 import { useReadOnly } from "../utils/ReadOnlyContext"
 
 import type { CueContextMenuState } from "./CueContextMenu"
+import type { CueFrame } from "../utils/cueFrame"
 
 const renderElementBasedOnIndex = (
   currentIndex: number,
@@ -236,6 +238,7 @@ const GridLayoutComponent = ({
   setIsToolboxOpen,
   setIsMultiScreenModalOpen,
   onCueResizeStart,
+  onSetCueFrame,
   screenLayerRowIndex = {},
   indexCount,
   setShowAlert,
@@ -1072,6 +1075,7 @@ const GridLayoutComponent = ({
         onToggleLoop={handleLoopToggle}
         onToggleContinuePlayback={handleContinuePlaybackToggle}
         onOpenMultiScreen={(cue) => handleOpenMultiScreen(cue._id)}
+        onSetCueFrame={onSetCueFrame}
       />
       <Dialog
         isOpen={isDialogOpen}

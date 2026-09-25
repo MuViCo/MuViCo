@@ -22,6 +22,8 @@ import {
   timelineRowsTopOffset,
 } from "./timelineMetrics"
 import { occupiedScreens } from "../utils/cueScreenSpanUtils"
+import { isFullFrame } from "../utils/cueFrame"
+import type { CueFrame } from "../utils/cueFrame"
 import { laneFocusLayout, laneKey } from "../utils/laneFocus"
 import { keyframes } from "@emotion/react"
 
@@ -1502,6 +1504,19 @@ const EditMode = ({
     [cueMaxSpanMap, cueVisualSpanMap, readOnly, columnWidth, rowHeight, gap]
   )
 
+  const handleSetCueFrame = useCallback(
+    async (cue: Cue, frame: CueFrame) => {
+      if (readOnly) return
+      await dispatchUpdateCue(cue._id, {
+        ...cue,
+        cueName: cue.name,
+        frame: isFullFrame(frame) ? null : frame,
+      })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [readOnly]
+  )
+
   const screenLayerRowIndex = useMemo(() => {
     const map: Record<string, number> = {}
     rowModel.rows.forEach((row, index) => {
@@ -2408,6 +2423,7 @@ const EditMode = ({
                     setIsToolboxOpen={setIsToolboxOpen}
                     setIsMultiScreenModalOpen={setIsMultiScreenModalOpen}
                     onCueResizeStart={handleCueResizeStart}
+                    onSetCueFrame={handleSetCueFrame}
                     screenLayerRowIndex={screenLayerRowIndex}
                     indexCount={indexCount}
                     setShowAlert={setShowAlert}

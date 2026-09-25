@@ -22,6 +22,8 @@ import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
+import { parseAspectRatio } from "../../../constants.js"
+import { cueFrameStyle } from "../utils/cueFrame"
 
 const mediaFillProps = {
   width: "100%",
@@ -161,7 +163,7 @@ const renderCueStack = (cueStack, screenNumber, screenWidths) => {
     <Box
       key={`${cue._id || cue.name || "cue"}-${cue.index ?? "idx"}-${cue.screen ?? "screen"}-${cue.layer ?? index}-${index}`}
       position="absolute"
-      inset="0"
+      {...cueFrameStyle(cue)}
       zIndex={100 - Number(cue.layer ?? 0)}
       opacity={normalizeCueOpacity(cue.opacity)}
       display="flex"
@@ -182,6 +184,7 @@ const ScreenContent = ({
   transitionType,
   screenWidths,
   isBlackout,
+  outputAspectRatio,
 }) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
   const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
@@ -227,11 +230,42 @@ const ScreenContent = ({
         )}
       </Box>
 
-      {/* Animates out previous cue media, if any */}
-      {previousScreenData && (
+      <Box
+        data-testid="screen-stage"
+        position="absolute"
+        inset="0"
+        margin="auto"
+        width="100%"
+        height="100%"
+        maxWidth="100%"
+        maxHeight="100%"
+        overflow="hidden"
+        sx={{ aspectRatio: String(parseAspectRatio(outputAspectRatio)) }}
+      >
+        {/* Animates out previous cue media, if any */}
+        {previousScreenData && (
+          <Box
+            key={`previous-${cueStackKey(previousScreenData)}`}
+            data-testid="outgoing-cue-layer"
+            flex="1"
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            position="absolute"
+            inset="0"
+            width="100%"
+            height="100%"
+            zIndex={1}
+            animation={animStyle(exitAnim)}
+          >
+            {renderCueStack(previousScreenData, screenNumber, screenWidths)}
+          </Box>
+        )}
+
+        {/* Animates in current cue media */}
         <Box
-          key={`previous-${cueStackKey(previousScreenData)}`}
-          data-testid="outgoing-cue-layer"
+          key={`current-${cueStackKey(currentScreenData)}`}
+          data-testid="incoming-cue-layer"
           flex="1"
           display="flex"
           justifyContent="center"
@@ -241,29 +275,11 @@ const ScreenContent = ({
           width="100%"
           height="100%"
           zIndex={1}
-          animation={animStyle(exitAnim)}
+          color="white"
+          animation={animStyle(enterAnim)}
         >
-          {renderCueStack(previousScreenData, screenNumber, screenWidths)}
+          {renderCueStack(currentScreenData, screenNumber, screenWidths)}
         </Box>
-      )}
-
-      {/* Animates in current cue media */}
-      <Box
-        key={`current-${cueStackKey(currentScreenData)}`}
-        data-testid="incoming-cue-layer"
-        flex="1"
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        position="absolute"
-        inset="0"
-        width="100%"
-        height="100%"
-        zIndex={1}
-        color="white"
-        animation={animStyle(enterAnim)}
-      >
-        {renderCueStack(currentScreenData, screenNumber, screenWidths)}
       </Box>
       {isBlackout && (
         <Box
@@ -287,6 +303,7 @@ const Screen = ({
   screenWidths,
   onWidthChange,
   isBlackout = false,
+  outputAspectRatio,
 }) => {
   const windowRef = useRef(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -501,6 +518,7 @@ const Screen = ({
             transitionType={transitionType}
             screenWidths={screenWidths}
             isBlackout={isBlackout}
+            outputAspectRatio={outputAspectRatio}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body

@@ -75,6 +75,28 @@ describe("Screen", () => {
     })
   })
 
+  test("letterboxes the content to the screen's declared ratio", async () => {
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={[]}
+          isVisible={true}
+          onClose={() => {}}
+          outputAspectRatio="4:3"
+        />
+      )
+    })
+
+    await waitFor(() => {
+      const popup = window.open.mock.results.at(-1).value
+      const stage = popup.document.body.querySelector(
+        '[data-testid="screen-stage"]'
+      )
+      expect(stage).not.toBeNull()
+    })
+  })
+
   test("drops the frame part from the title when nothing is on the screen", async () => {
     await act(async () => {
       render(

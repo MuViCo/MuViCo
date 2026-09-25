@@ -21,8 +21,14 @@ import { laneScreenFromKey } from "../utils/laneFocus"
 
 import type { Dispatch, SetStateAction } from "react"
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
-import { fetchPresentationInfo } from "../../redux/presentationReducer"
+import {
+  fetchPresentationInfo,
+  updatePresentation,
+} from "../../redux/presentationReducer"
 import { saveOutputAspectRatio } from "../../redux/presentationThunks"
+import { isFullFrame } from "../utils/cueFrame"
+
+import type { CueFrame } from "../utils/cueFrame"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import ClickablePopover from "../utils/ClickablePopover"
 import EditMode from "./EditMode"
@@ -43,6 +49,7 @@ import { ScreensDisplay } from "./ScreensDisplay"
 import {
   DEFAULT_OUTPUT_ASPECT_RATIO,
   OUTPUT_ASPECT_RATIO_OPTIONS,
+  resolveScreenAspectRatio,
 } from "../../../constants.js"
 import ShowMode from "./ShowMode"
 import {
@@ -102,6 +109,7 @@ interface EditorLayoutProps
   outputAspectRatio: string
   screenAspectRatios: Record<string, string>
   onScreenAspectRatioChange: (screen: number, ratio: string) => void
+  onSetCueFrame: (cue: Cue, frame: CueFrame) => void
   screens: Record<string, boolean>
   toggleScreenVisibility: (screenNumber: number) => void
   toggleAllScreens: () => void
@@ -136,6 +144,7 @@ function EditorLayout(props: EditorLayoutProps) {
     outputAspectRatio,
     screenAspectRatios,
     onScreenAspectRatioChange,
+    onSetCueFrame,
     onOutputAspectRatioChange,
     cues,
     isToolboxOpen,
@@ -335,6 +344,7 @@ function EditorLayout(props: EditorLayoutProps) {
           onScreenAspectRatioChange={
             readOnly ? undefined : onScreenAspectRatioChange
           }
+          onSetCueFrame={readOnly ? undefined : onSetCueFrame}
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
@@ -494,6 +504,22 @@ const EditModeContainer = ({
   const handleOutputAspectRatioChange = useCallback(
     (ratio: string) => {
       void dispatch(saveOutputAspectRatio({ id, outputAspectRatio: ratio }))
+    },
+    [dispatch, id]
+  )
+  const handleSetCueFrame = useCallback(
+    (cue: Cue, frame: CueFrame) => {
+      void dispatch(
+        updatePresentation(
+          id,
+          {
+            ...cue,
+            cueName: cue.name,
+            frame: isFullFrame(frame) ? null : frame,
+          },
+          cue._id
+        )
+      )
     },
     [dispatch, id]
   )
@@ -824,6 +850,7 @@ const EditModeContainer = ({
           outputAspectRatio={outputAspectRatio}
           screenAspectRatios={screenAspectRatios}
           onScreenAspectRatioChange={handleScreenAspectRatioChange}
+          onSetCueFrame={handleSetCueFrame}
           onOutputAspectRatioChange={handleOutputAspectRatioChange}
           scores={presentation.scores}
           focusedLaneKey={focusedLaneKey}
@@ -895,6 +922,11 @@ const EditModeContainer = ({
             screenWidths={screenWidths}
             onWidthChange={handleScreenWidthChange}
             isBlackout={isBlackout}
+            outputAspectRatio={resolveScreenAspectRatio(
+              screenAspectRatios,
+              sourceScreen,
+              outputAspectRatio
+            )}
           />
         )
       })}
