@@ -16,10 +16,11 @@ import { removeMedia, uploadMedia } from "../../redux/presentationReducer"
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
 import { useReadOnly } from "../utils/ReadOnlyContext"
 
-type DockTab = "colors" | "media" | "scores"
+type DockTab = "colors" | "text" | "media" | "scores"
 
 const DOCK_TABS: { id: DockTab; label: string }[] = [
   { id: "colors", label: "Colors" },
+  { id: "text", label: "Text" },
   { id: "media", label: "Media" },
   { id: "scores", label: "Scores" },
 ]

@@ -27,6 +27,8 @@ import {
   parseAspectRatio,
   resolveScreenAspectRatio,
 } from "../../../constants.js"
+import CueText from "../utils/CueText"
+import { isTextCue } from "../utils/cueText"
 
 import type { Cue, CueFileMeta } from "../../types"
 
@@ -238,6 +240,12 @@ export const ScreensDisplay = ({
   }
 
   const renderCuePreview = (cue: Cue, screenNumber: number) => {
+    if (isTextCue(cue)) {
+      return (
+        <CueText text={cue.text!} color={cue.textColor} size={cue.textSize} />
+      )
+    }
+
     if (cue?.file?.url) {
       if (isImageFile(cue.file)) {
         if (cue.spanScreens?.length && cue.spanScreens.length > 1) {

@@ -1099,4 +1099,83 @@ describe("Screen", () => {
       })
     })
   })
+
+  test("renders the text of a text element in the popup, without a background", async () => {
+    const screenData = {
+      file: null,
+      color: "#000000",
+      text: "La nuit est tombée",
+      textColor: "#ffcc00",
+      textSize: 10,
+      index: 0,
+      name: "Intro",
+      screen: 1,
+      _id: "id-text",
+      loop: false,
+    }
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    const text = await within(popup.document.body).findByText(
+      "La nuit est tombée"
+    )
+    expect(text).toHaveStyle({ color: "#ffcc00" })
+    expect(text.style.getPropertyValue("--cue-text-size")).toBe("10")
+  })
+
+  test("shows a text element over the element below it on another layer", async () => {
+    const stack = [
+      {
+        file: null,
+        color: "#0a1a3a",
+        index: 0,
+        name: "night",
+        screen: 1,
+        layer: 1,
+        _id: "id-background",
+      },
+      {
+        file: null,
+        color: "#000000",
+        text: "Night has fallen",
+        index: 0,
+        name: "Intro",
+        screen: 1,
+        layer: 0,
+        _id: "id-text",
+      },
+    ]
+
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={stack}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = window.open.mock.results.at(-1).value
+    await waitFor(() => {
+      expect(
+        within(popup.document.body).getByText("Night has fallen")
+      ).toBeTruthy()
+    })
+    const layers = popup.document.body.querySelectorAll(
+      '[data-testid="incoming-cue-layer"] > div'
+    )
+    expect(layers).toHaveLength(2)
+  })
 })

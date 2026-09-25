@@ -38,7 +38,8 @@ export const createFormData = (
   // FormData serialises to "[object Object]", which is exactly the trap the
   // note on CueUpdateInput.file describes.
   mediaId?: string,
-  duration?: number | null
+  duration?: number | null,
+  textFields?: { text?: string; textColor?: string; textSize?: number }
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -78,6 +79,15 @@ export const createFormData = (
   }
   if (mediaId) {
     formData.append("mediaId", mediaId)
+  }
+  if (textFields?.text !== undefined) {
+    formData.append("text", textFields.text)
+  }
+  if (textFields?.textColor) {
+    formData.append("textColor", textFields.textColor)
+  }
+  if (textFields?.textSize !== undefined) {
+    formData.append("textSize", String(textFields.textSize))
   }
 
   return formData

@@ -444,4 +444,143 @@ describe("CuesForm", () => {
       expect(onClose).toHaveBeenCalled()
     })
   })
+
+  describe("Text tab", () => {
+    const dragPayload = () => {
+      const handle = screen.getByTestId("text-drag-handle")
+      const dataTransfer = createDataTransfer()
+      fireEvent.dragStart(handle, { dataTransfer })
+      const call = dataTransfer.setData.mock.calls.find(
+        ([mimeType]) => mimeType === "application/json"
+      )
+      return call ? JSON.parse(call[1]) : null
+    }
+
+    test("shows the text form", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      expect(screen.getByLabelText("Text to display")).toBeInTheDocument()
+      expect(screen.getByRole("slider", { name: "Text size" })).toBeVisible()
+      expect(screen.queryByLabelText("Search media")).toBeNull()
+    })
+
+    test("cannot be dragged until there is a text", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      const handle = screen.getByTestId("text-drag-handle")
+      expect(handle).toHaveAttribute("draggable", "false")
+      expect(within(handle).getByText("Drag to grid")).toBeInTheDocument()
+      expect(dragPayload()).toBeNull()
+    })
+
+    test("the button always just says Drag to grid, whatever the text", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "Night falls" },
+      })
+
+      expect(screen.getByTestId("text-drag-handle")).toHaveTextContent(
+        /^Drag to grid$/
+      )
+    })
+
+    test("can be dragged once a text is typed", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "Night falls" },
+      })
+
+      expect(screen.getByTestId("text-drag-handle")).toHaveAttribute(
+        "draggable",
+        "true"
+      )
+    })
+
+    test("drags the text with its size and color", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "  Peter Grimes is alone  " },
+      })
+      fireEvent.keyDown(screen.getByRole("slider", { name: "Text size" }), {
+        key: "ArrowRight",
+      })
+
+      const payload = dragPayload()
+
+      expect(payload.type).toBe("newCueFromForm")
+      expect(payload.elementType).toBe("text")
+      expect(payload.text).toBe("Peter Grimes is alone")
+      expect(payload.cueName).toBe("Peter Grimes is alone")
+      expect(payload.textColor).toBe("#ffffff")
+      expect(payload.textSize).toBe(9)
+    })
+
+    test("names the element after the first line of the text", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "first line\nsecond line" },
+      })
+
+      expect(dragPayload().cueName).toBe("first line")
+    })
+
+    test("forgets the dragged text when the drag ends", () => {
+      renderCuesForm({ activeTab: "text" })
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "Night falls" },
+      })
+      const handle = screen.getByTestId("text-drag-handle")
+
+      fireEvent.dragStart(handle, { dataTransfer: createDataTransfer() })
+      expect(mediaStore.getActiveDragData()).not.toBeNull()
+
+      fireEvent.dragEnd(handle)
+      expect(mediaStore.getActiveDragData()).toBeNull()
+    })
+
+    test("limits the length of the text", () => {
+      renderCuesForm({ activeTab: "text" })
+
+      expect(screen.getByLabelText("Text to display")).toHaveAttribute(
+        "maxlength",
+        "500"
+      )
+    })
+
+    test("keeps the typed text when switching to another tab and back", () => {
+      const { rerender } = renderCuesForm({ activeTab: "text" })
+      fireEvent.change(screen.getByLabelText("Text to display"), {
+        target: { value: "still here" },
+      })
+
+      rerender(
+        <MemoryRouter>
+          <CuesForm
+            cues={[]}
+            screenCount={4}
+            indexCount={5}
+            mediaLibrary={[]}
+            activeTab="colors"
+          />
+        </MemoryRouter>
+      )
+      rerender(
+        <MemoryRouter>
+          <CuesForm
+            cues={[]}
+            screenCount={4}
+            indexCount={5}
+            mediaLibrary={[]}
+            activeTab="text"
+          />
+        </MemoryRouter>
+      )
+
+      expect(screen.getByLabelText("Text to display")).toHaveValue("still here")
+    })
+  })
 })

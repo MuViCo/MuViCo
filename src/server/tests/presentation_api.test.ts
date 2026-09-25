@@ -1508,6 +1508,239 @@ describe("test presentation", () => {
     })
   })
 
+  describe("Text elements", () => {
+    const textUrl = () => `/api/presentation/${testPresentationId}`
+
+    const createTextCue = (fields: Record<string, string | number> = {}) => {
+      let request = api.put(textUrl()).set("Authorization", authHeader)
+      for (const [key, value] of Object.entries({
+        index: 0,
+        cueName: "",
+        screen: 1,
+        text: "La nuit est tombée",
+        textColor: "#ffcc00",
+        textSize: 12,
+        ...fields,
+      })) {
+        request = request.field(key, value)
+      }
+      return request
+    }
+
+    const cueAt = (body: any, index: number, screen: number) =>
+      body.cues.find((cue: any) => cue.index === index && cue.screen === screen)
+
+    test("creates a text element with its color and size", async () => {
+      const response = await createTextCue().expect(200)
+
+      const cue = cueAt(response.body, 0, 1)
+      expect(cue.text).toBe("La nuit est tombée")
+      expect(cue.textColor).toBe("#ffcc00")
+      expect(cue.textSize).toBe(12)
+      expect(cue.cueType).toBe("visual")
+    })
+
+    test("keeps line breaks and trims the ends of the text", async () => {
+      const response = await createTextCue({ text: "  line 1\nline 2  " })
+
+      expect(cueAt(response.body, 0, 1).text).toBe("line 1\nline 2")
+    })
+
+    test("a blank text creates a plain color element", async () => {
+      const response = await createTextCue({ text: "   " }).expect(200)
+
+      const cue = cueAt(response.body, 0, 1)
+      expect(cue.text).toBeUndefined()
+      expect(cue.textColor).toBeUndefined()
+    })
+
+    test("the text is still there when the presentation is read again", async () => {
+      await createTextCue().expect(200)
+
+      const response = await api
+        .get(textUrl())
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      expect(cueAt(response.body, 0, 1).text).toBe("La nuit est tombée")
+    })
+
+    test("refuses text together with a media file", async () => {
+      const response = await api
+        .put(textUrl())
+        .set("Authorization", authHeader)
+        .attach("image", mockImageBuffer, "mock_image.png")
+        .field("index", 0)
+        .field("cueName", "image")
+        .field("screen", 1)
+        .field("text", "hello")
+        .expect(400)
+
+      expect(response.body.error).toMatch(/Text is only allowed/)
+    })
+
+    test("refuses text on the audio row", async () => {
+      const audioRow = 5
+      const response = await createTextCue({ screen: audioRow }).expect(400)
+
+      expect(response.body.error).toMatch(/Text is only allowed/)
+    })
+
+    test("refuses a text sent more than once", async () => {
+      const response = await api
+        .put(textUrl())
+        .set("Authorization", authHeader)
+        .field("index", 0)
+        .field("cueName", "")
+        .field("screen", 1)
+        .field("text", "one")
+        .field("text", "two")
+        .expect(400)
+
+      expect(response.body.error).toMatch(/text must be a string/)
+    })
+
+    test("the model refuses text on an audio element", async () => {
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.cues.push({
+        cueType: "audio",
+        index: 0,
+        name: "sound",
+        screen: presentation.screenCount + 1,
+        text: "not allowed here",
+      })
+
+      await expect(presentation.save()).rejects.toThrow(/Text is only allowed/)
+    })
+
+    test.each([
+      ["a text that is too long", { text: "a".repeat(501) }, /at most 500/],
+      ["a color that is not hex", { textColor: "yellow" }, /textColor/],
+      ["a size of zero", { textSize: 0 }, /textSize/],
+      ["a size above the maximum", { textSize: 101 }, /textSize/],
+      ["a size that is not a number", { textSize: "big" }, /textSize/],
+    ])("refuses %s", async (_label, fields, message) => {
+      const response = await createTextCue(fields).expect(400)
+
+      expect(response.body.error).toMatch(message)
+    })
+
+    describe("editing an existing text element", () => {
+      let textCueId: any
+
+      beforeEach(async () => {
+        const created = await createTextCue().expect(200)
+        textCueId = cueAt(created.body, 0, 1)._id
+      })
+
+      const updateTextCue = (fields: Record<string, string | number> = {}) => {
+        let request = api
+          .put(`${textUrl()}/${textCueId}`)
+          .set("Authorization", authHeader)
+          .field("index", 0)
+          .field("cueName", "")
+          .field("screen", 1)
+          .field("image", "null")
+        for (const [key, value] of Object.entries(fields)) {
+          request = request.field(key, value)
+        }
+        return request
+      }
+
+      test("changes the text and keeps the color and size it had", async () => {
+        const response = await updateTextCue({ text: "Peter Grimes" }).expect(
+          200
+        )
+
+        expect(response.body.text).toBe("Peter Grimes")
+        expect(response.body.textColor).toBe("#ffcc00")
+        expect(response.body.textSize).toBe(12)
+      })
+
+      test("changes the color and the size", async () => {
+        const response = await updateTextCue({
+          text: "La nuit est tombée",
+          textColor: "#112233",
+          textSize: 30,
+        }).expect(200)
+
+        expect(response.body.textColor).toBe("#112233")
+        expect(response.body.textSize).toBe(30)
+      })
+
+      test("moving the element leaves its text alone", async () => {
+        const response = await api
+          .put(`${textUrl()}/${textCueId}`)
+          .set("Authorization", authHeader)
+          .field("index", 2)
+          .field("cueName", "")
+          .field("screen", 1)
+          .field("image", "null")
+          .expect(200)
+
+        expect(response.body.index).toBe(2)
+        expect(response.body.text).toBe("La nuit est tombée")
+        expect(response.body.textSize).toBe(12)
+      })
+
+      test("an explicit empty text turns it back into a plain element", async () => {
+        const response = await updateTextCue({ text: "" }).expect(200)
+
+        expect(response.body.text).toBeUndefined()
+        expect(response.body.textColor).toBeUndefined()
+        expect(response.body.textSize).toBeUndefined()
+      })
+
+      test("uploading a file onto it replaces the text", async () => {
+        const response = await api
+          .put(`${textUrl()}/${textCueId}`)
+          .set("Authorization", authHeader)
+          .attach("image", mockImageBuffer, "mock_image.png")
+          .field("index", 0)
+          .field("cueName", "now an image")
+          .field("screen", 1)
+          .expect(200)
+
+        expect(response.body.text).toBeUndefined()
+        expect(response.body.file).toBeTruthy()
+      })
+
+      test("refuses moving it onto the audio row", async () => {
+        const response = await api
+          .put(`${textUrl()}/${textCueId}`)
+          .set("Authorization", authHeader)
+          .field("index", 0)
+          .field("cueName", "a name, so only the text is at fault")
+          .field("screen", 5)
+          .field("image", "null")
+          .expect(400)
+
+        expect(response.body.error).toMatch(/Text is only allowed/)
+      })
+
+      test("refuses invalid text fields on update", async () => {
+        await updateTextCue({ textSize: 500 }).expect(400)
+        await updateTextCue({ textColor: "nope" }).expect(400)
+      })
+    })
+
+    test("refuses adding text to an element that keeps its image", async () => {
+      const created = await createCue(0, "photo", 1)
+      const imageCueId = cueAt(created.body, 0, 1)._id
+
+      const response = await api
+        .put(`${textUrl()}/${imageCueId}`)
+        .set("Authorization", authHeader)
+        .field("index", 0)
+        .field("cueName", "photo")
+        .field("screen", 1)
+        .field("text", "caption")
+        .expect(400)
+
+      expect(response.body.error).toMatch(/Text is only allowed/)
+    })
+  })
+
   describe("Read-only sharing", () => {
     let viewerAuthHeader: any
 

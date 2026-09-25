@@ -996,4 +996,96 @@ describe("GridLayoutComponent", () => {
       )
     })
   })
+
+  it("shows a text element in its cell as a snippet of its text", () => {
+    const cues = [
+      {
+        _id: "text-1",
+        index: 0,
+        screen: 1,
+        name: "Intro",
+        color: "#000000",
+        cueType: "visual",
+        file: null,
+        text: "La nuit est tombée sur le village de pêcheurs.",
+        textColor: "#ffffff",
+        textSize: 10,
+      },
+    ]
+
+    renderGrid(cues, [{ i: "text-1", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.getByTestId("cue-text-cell-text-1")).toBeInTheDocument()
+    expect(
+      screen.getByText("La nuit est tombée sur le village de pêcheurs.")
+    ).toBeInTheDocument()
+  })
+
+  it("shows only the first line of a long text in its cell", () => {
+    const cues = [
+      {
+        _id: "text-2",
+        index: 0,
+        screen: 1,
+        name: "Intro",
+        cueType: "visual",
+        file: null,
+        text: "first line\nsecond line",
+      },
+    ]
+
+    renderGrid(cues, [{ i: "text-2", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.getByText("first line")).toBeInTheDocument()
+    expect(screen.queryByText(/second line/)).toBeNull()
+  })
+
+  it("keeps drawing an ordinary color element as a plain colored cell", () => {
+    const cues = [
+      {
+        _id: "color-1",
+        index: 0,
+        screen: 1,
+        name: "Blue",
+        color: "#0000ff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [{ i: "color-1", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.queryByTestId("cue-text-cell-color-1")).toBeNull()
+  })
+
+  it("does not draw the name label over a text element, its text is the label", () => {
+    const cues = [
+      {
+        _id: "text-3",
+        index: 0,
+        screen: 1,
+        name: "La nuit est tombée",
+        cueType: "visual",
+        file: null,
+        text: "La nuit est tombée",
+      },
+      {
+        _id: "color-2",
+        index: 1,
+        screen: 1,
+        name: "Blue",
+        color: "#0000ff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "text-3", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "color-2", x: 1, y: 0, w: 1, h: 1, static: false },
+    ])
+
+    expect(screen.queryByTestId("cue-label-text-3")).toBeNull()
+    expect(screen.getByTestId("cue-label-color-2")).toBeInTheDocument()
+  })
 })

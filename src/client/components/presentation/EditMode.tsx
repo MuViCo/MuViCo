@@ -136,6 +136,7 @@ import {
   planVisualLayerRemoval,
 } from "../utils/screenRowModel"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import { normalizeTextColor, normalizeTextSize } from "../utils/cueText"
 import mediaStore from "./mediaFileStore"
 import { useReadOnly } from "../utils/ReadOnlyContext"
 
@@ -700,6 +701,14 @@ const EditMode = ({
       }
     }
 
+    if (dragData.elementType === "text") {
+      return {
+        name: cueName,
+        color: "rgba(32,32,32,0.9)",
+        imageUrl: "",
+      }
+    }
+
     if (dragData.elementType === "media") {
       const mimeType = dragData.mimeType || ""
       const isImagePreview =
@@ -1125,6 +1134,9 @@ const EditMode = ({
       file: fileObj,
       fileName: copiedCue.file?.name || null,
       color: copiedCue.color,
+      text: copiedCue.text,
+      textColor: copiedCue.textColor,
+      textSize: copiedCue.textSize,
       loop: copiedCue.loop,
       continuePlayback: Boolean(copiedCue.continuePlayback),
       opacity: normalizeCueOpacity(copiedCue.opacity),
@@ -1522,6 +1534,9 @@ const EditMode = ({
       color,
       opacity = 1,
       mediaId,
+      text,
+      textColor,
+      textSize,
     } = cueData
 
     //Check if cue with same index and screen already exists
@@ -1551,7 +1566,8 @@ const EditMode = ({
       continuePlayback,
       undefined,
       mediaId,
-      NEW_CUE_DURATION
+      NEW_CUE_DURATION,
+      { text, textColor, textSize }
     )
 
     // Focus follows the placement intent, not the request: the lane the user
@@ -1590,6 +1606,7 @@ const EditMode = ({
         ...newCueData,
         _id: existingCue._id,
         cueName: newCueData.cueName,
+        text: newCueData.text ?? "",
       }
 
       await dispatchUpdateCue(existingCue._id, updatedCueData)
@@ -1692,6 +1709,9 @@ const EditMode = ({
       opacity: normalizeCueOpacity(updatedCue.opacity ?? existingCue.opacity),
       file: fileObj,
       fileName: updatedCue.fileName,
+      text: updatedCue.text ?? "",
+      textColor: updatedCue.textColor,
+      textSize: updatedCue.textSize,
     }
   }
 
@@ -1878,6 +1898,7 @@ const EditMode = ({
       layer: target.layer,
       file: file,
       opacity: normalizeCueOpacity(existingCue.opacity),
+      text: "",
     }
 
     await dispatchUpdateCue(existingCue._id, updatedCue)
@@ -1932,7 +1953,33 @@ const EditMode = ({
       const targetLane = laneAt(rowModel.rows, yIndex)
       const target = laneScreenLayer(yIndex)
 
-      // Handle different element types from the three boxes
+      if (dragData.elementType === "text") {
+        if (
+          !isRowInsideGrid(xIndex, yIndex) ||
+          !laneAcceptsCueType(targetLane, "visual")
+        ) {
+          showToast({
+            title: "Only images/videos on screen rows",
+            description: "Drag visual elements to screen rows.",
+            status: "error",
+          })
+          return
+        }
+
+        await addCue({
+          index: xIndex,
+          cueName: colorCueName,
+          screen: target.screen,
+          layer: target.layer,
+          file: null,
+          text: dragData.text,
+          textColor: normalizeTextColor(dragData.textColor),
+          textSize: normalizeTextSize(dragData.textSize),
+          opacity: normalizeCueOpacity(dragData.opacity),
+        })
+        return
+      }
+
       if (dragData.elementType === "color") {
         if (
           !isRowInsideGrid(xIndex, yIndex) ||

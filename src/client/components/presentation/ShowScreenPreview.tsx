@@ -11,6 +11,8 @@ import {
   parseAspectRatio,
   resolveScreenAspectRatio,
 } from "../../../constants.js"
+import CueText from "../utils/CueText"
+import { isTextCue } from "../utils/cueText"
 import type { Cue } from "../../types"
 
 interface ShowScreenPreviewProps {
@@ -120,8 +122,14 @@ const CueMedia = ({
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
 }) => {
-  if (!cue.file)
+  if (!cue.file) {
+    if (isTextCue(cue)) {
+      return (
+        <CueText text={cue.text!} color={cue.textColor} size={cue.textSize} />
+      )
+    }
     return <Box position="absolute" inset={0} bg={cue.color ?? "#000"} />
+  }
   if (isImageFile(cue.file)) {
     if ((cue.spanScreens?.length ?? 0) > 1) {
       return renderSpannedImage(

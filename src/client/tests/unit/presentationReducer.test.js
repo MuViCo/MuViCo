@@ -835,6 +835,55 @@ describe("presentationReducer asynchronous actions", () => {
     })
   })
 
+  test("updatePresentation sends the text fields of a text element", async () => {
+    const store = makeStore()
+    store.dispatch(
+      setPresentationInfo({
+        id: "123",
+        name: "P",
+        screenCount: 2,
+        indexCount: 5,
+        cues: [{ _id: 1, name: "Intro", index: 0, screen: 1 }],
+      })
+    )
+    const edited = {
+      cueName: "Intro",
+      index: 0,
+      screen: 1,
+      text: "Peter Grimes",
+      textColor: "#112233",
+      textSize: 20,
+    }
+    presentationService.updateCue.mockResolvedValue({ _id: 1, ...edited })
+
+    await store.dispatch(updatePresentation("123", edited, 1))
+
+    const sent = presentationService.updateCue.mock.calls.at(-1)[2]
+    expect(sent.get("text")).toBe("Peter Grimes")
+    expect(sent.get("textColor")).toBe("#112233")
+    expect(sent.get("textSize")).toBe("20")
+  })
+
+  test("updatePresentation says nothing about the text when the cue has none", async () => {
+    const store = makeStore()
+    store.dispatch(
+      setPresentationInfo({
+        id: "123",
+        name: "P",
+        screenCount: 2,
+        indexCount: 5,
+        cues: [{ _id: 1, name: "Photo", index: 0, screen: 1 }],
+      })
+    )
+    const edited = { cueName: "Photo", index: 1, screen: 1 }
+    presentationService.updateCue.mockResolvedValue({ _id: 1, ...edited })
+
+    await store.dispatch(updatePresentation("123", edited, 1))
+
+    const sent = presentationService.updateCue.mock.calls.at(-1)[2]
+    expect(sent.has("text")).toBe(false)
+  })
+
   it("should copy cue with file over cue without file", async () => {
     const store = makeStore()
     const sourceFile = new File(["image-binary"], "source.png", {

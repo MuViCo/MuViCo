@@ -300,6 +300,13 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
             message: "duration must be an integer",
           },
         },
+        text: { type: String, default: undefined, maxlength: 500 },
+        textColor: {
+          type: String,
+          default: undefined,
+          match: /^#([0-9A-F]{3}){1,2}$/i,
+        },
+        textSize: { type: Number, default: undefined, min: 1, max: 100 },
       },
     ],
     // Presentation-scoped media library (the editor's "media pool"). Entries
@@ -518,6 +525,21 @@ presentationSchema.pre("save", function (next) {
           value: layer,
         })
       )
+    }
+
+    if (cue.text) {
+      const hasStoredFile = Boolean(cue.file?.id || cue.file?.name)
+      if (cue.cueType !== "visual" || hasStoredFile) {
+        validationError.addError(
+          "cues.text",
+          new mongoose.Error.ValidatorError({
+            message:
+              "Text is only allowed on a visual cue without a media file",
+            path: "cues.text",
+            value: cue.text,
+          })
+        )
+      }
     }
 
     if (cue.duration !== undefined) {

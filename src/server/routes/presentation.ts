@@ -353,6 +353,63 @@ const parseDuration = (
   return { duration: parsed, error: null }
 }
 
+const MAX_CUE_TEXT_LENGTH = 500
+const MIN_TEXT_SIZE = 1
+const MAX_TEXT_SIZE = 100
+const HEX_COLOR = /^#([0-9A-F]{3}){1,2}$/i
+
+const parseCueText = (
+  body: Record<string, unknown>
+): {
+  provided: boolean
+  text: string | undefined
+  textColor: string | undefined
+  textSize: number | undefined
+  error: string | null
+} => {
+  const fail = (error: string) => ({
+    provided: true,
+    text: undefined,
+    textColor: undefined,
+    textSize: undefined,
+    error,
+  })
+  const provided = body.text !== undefined
+
+  if (provided && typeof body.text !== "string") {
+    return fail("text must be a string")
+  }
+  const text = typeof body.text === "string" ? body.text.trim() : undefined
+  if (text && text.length > MAX_CUE_TEXT_LENGTH) {
+    return fail(`text must be at most ${MAX_CUE_TEXT_LENGTH} characters long`)
+  }
+
+  let textColor: string | undefined
+  if (body.textColor !== undefined && body.textColor !== "") {
+    if (typeof body.textColor !== "string" || !HEX_COLOR.test(body.textColor)) {
+      return fail("textColor must be a hex color like #ffffff")
+    }
+    textColor = body.textColor
+  }
+
+  let textSize: number | undefined
+  if (body.textSize !== undefined && body.textSize !== "") {
+    const parsed = Number(body.textSize)
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < MIN_TEXT_SIZE ||
+      parsed > MAX_TEXT_SIZE
+    ) {
+      return fail(
+        `textSize must be a number between ${MIN_TEXT_SIZE} and ${MAX_TEXT_SIZE}`
+      )
+    }
+    textSize = parsed
+  }
+
+  return { provided, text: text || undefined, textColor, textSize, error: null }
+}
+
 // Full validity check once `screen`/`cueType`/`screenCount` are known: must
 // be visual, include the cue's own screen, have no duplicates, and every
 // entry must be a valid screen number.
@@ -1476,9 +1533,14 @@ router.put(
       const { duration, error: durationError } = parseDuration(
         req.body.duration
       )
+      const cueText = parseCueText(req.body)
 
       if (durationError) {
         return res.status(400).json({ error: durationError })
+      }
+
+      if (cueText.error) {
+        return res.status(400).json({ error: cueText.error })
       }
 
       if (!id || isNaN(index) || isNaN(screen)) {
@@ -1551,6 +1613,13 @@ router.put(
       }
 
       const cueType = getCueTypeFromScreen(screen, presentation!.screenCount)
+
+      if (cueText.text && (cueType !== "visual" || hasMedia)) {
+        return res.status(400).json({
+          error:
+            "Text is only allowed on a visual element without a media file.",
+        })
+      }
 
       if (cueType === "audio") {
         if (hasMedia && !isAudioMimeType(mediaMimeType)) {
@@ -1642,6 +1711,13 @@ router.put(
               screen: screen,
               ...(spanScreens ? { spanScreens } : {}),
               ...(duration && cueType === "visual" ? { duration } : {}),
+              ...(cueText.text
+                ? {
+                    text: cueText.text,
+                    ...(cueText.textColor && { textColor: cueText.textColor }),
+                    ...(cueText.textSize && { textSize: cueText.textSize }),
+                  }
+                : {}),
               file: hasMedia ? fileObject : null,
               color: color,
               loop: loop,
@@ -1977,9 +2053,14 @@ router.put(
       const { duration, error: durationError } = parseDuration(
         req.body.duration
       )
+      const cueText = parseCueText(req.body)
 
       if (durationError) {
         return res.status(400).json({ error: durationError })
+      }
+
+      if (cueText.error) {
+        return res.status(400).json({ error: cueText.error })
       }
 
       if (!id || isNaN(index) || isNaN(screen)) {
@@ -2057,6 +2138,18 @@ router.put(
           .json({ error: "Cue name must be between 1 and 100 characters long" })
       }
 
+      const nextText = cueText.provided
+        ? cueText.text
+        : file
+          ? undefined
+          : cue.text || undefined
+      if (nextText && (cueType !== "visual" || willHaveFileAfterUpdate)) {
+        return res.status(400).json({
+          error:
+            "Text is only allowed on a visual element without a media file.",
+        })
+      }
+
       if (
         spanScreens &&
         !isValidSpanScreens(
@@ -2119,6 +2212,11 @@ router.put(
         cue.duration = duration && cueType === "visual" ? duration : undefined
       }
       cue.name = trimmedCueName
+      cue.text = nextText
+      cue.textColor = nextText
+        ? (cueText.textColor ?? cue.textColor)
+        : undefined
+      cue.textSize = nextText ? (cueText.textSize ?? cue.textSize) : undefined
       cue.loop = loop
       cue.continuePlayback =
         cueType === "audio"

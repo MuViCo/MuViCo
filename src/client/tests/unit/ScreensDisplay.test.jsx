@@ -331,4 +331,33 @@ describe("ScreensDisplay", () => {
     expect(positions[0]).toBe("0% 50%")
     expect(positions[1]).toBe("100% 50%")
   })
+
+  test("renders a text element on its screen preview", () => {
+    const cues = [
+      {
+        _id: "cue-text",
+        name: "Intro",
+        index: 0,
+        screen: 1,
+        file: null,
+        text: "La nuit est tombée",
+        textColor: "#ffcc00",
+        textSize: 10,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false }}
+      />
+    )
+
+    expect(screen.getByText("La nuit est tombée")).toHaveStyle({
+      color: "#ffcc00",
+    })
+  })
 })

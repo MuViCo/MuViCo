@@ -72,7 +72,7 @@ const cueStackKey = (cues: Cue[]) =>
   cues
     .map(
       (cue) =>
-        `${cue._id}:${cue.index}:${cue.layer}:${cue.opacity}:${cue.file?.url ?? cue.color}`
+        `${cue._id}:${cue.index}:${cue.layer}:${cue.opacity}:${cue.file?.url ?? cue.color}:${cue.text ?? ""}:${cue.textColor ?? ""}:${cue.textSize ?? ""}`
     )
     .join("|")
 
