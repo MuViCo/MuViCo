@@ -4,7 +4,8 @@ import { createRef } from "react"
 
 import ScreenLayerFrame from "../../components/presentation/ScreenLayerFrame"
 
-const renderFrame = (onCommit = jest.fn()) => {
+const renderFrame = (onCommit = jest.fn(), isSelected = true) => {
+  const onSelect = jest.fn()
   const stageRef = createRef<HTMLElement>()
   const { container } = render(
     <div
@@ -17,6 +18,8 @@ const renderFrame = (onCommit = jest.fn()) => {
         zIndex={10}
         opacity={1}
         label="Banner"
+        isSelected={isSelected}
+        onSelect={onSelect}
         onCommit={onCommit}
       >
         <div data-testid="media" />
@@ -28,7 +31,7 @@ const renderFrame = (onCommit = jest.fn()) => {
   stage.getBoundingClientRect = () =>
     ({ left: 0, top: 0, width: 200, height: 100 }) as DOMRect
 
-  return { onCommit }
+  return { onCommit, onSelect }
 }
 
 describe("ScreenLayerFrame", () => {
@@ -100,5 +103,24 @@ describe("ScreenLayerFrame", () => {
     })
 
     expect(onCommit).not.toHaveBeenCalled()
+  })
+
+  test("shows the resize handles only for the selected layer", () => {
+    renderFrame(jest.fn(), false)
+
+    expect(
+      screen.queryByTestId("layer-handle-Banner-se")
+    ).not.toBeInTheDocument()
+  })
+
+  test("selects the layer as soon as it is grabbed", () => {
+    const { onSelect } = renderFrame(jest.fn(), false)
+
+    fireEvent.mouseDown(screen.getByTestId("layer-frame-Banner"), {
+      clientX: 0,
+      clientY: 0,
+    })
+
+    expect(onSelect).toHaveBeenCalled()
   })
 })

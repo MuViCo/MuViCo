@@ -38,6 +38,8 @@ interface ScreenLayerFrameProps {
   zIndex: number
   opacity: number
   label: string
+  isSelected: boolean
+  onSelect: () => void
   onCommit: (frame: CueFrame) => void
   children: ReactNode
 }
@@ -48,6 +50,8 @@ const ScreenLayerFrame = ({
   zIndex,
   opacity,
   label,
+  isSelected,
+  onSelect,
   onCommit,
   children,
 }: ScreenLayerFrameProps) => {
@@ -129,30 +133,35 @@ const ScreenLayerFrame = ({
         opacity,
         overflow: "hidden",
         cursor: "move",
-        outline: draftFrame ? "2px solid #BD5BFF" : undefined,
+        outline: isSelected ? "2px solid #BD5BFF" : undefined,
+        outlineOffset: "-2px",
       }}
-      onMouseDown={(event) => startGesture(event, null)}
+      onMouseDown={(event) => {
+        onSelect()
+        startGesture(event, null)
+      }}
     >
       {children}
-      {HANDLES.map(({ handle, cursor, style }) => (
-        <div
-          key={handle}
-          data-testid={`layer-handle-${label}-${handle}`}
-          aria-label={`Resize ${label} ${handle}`}
-          onMouseDown={(event) => startGesture(event, handle)}
-          style={{
-            position: "absolute",
-            ...style,
-            width: "10px",
-            height: "10px",
-            cursor,
-            borderRadius: "2px",
-            background: "#BD5BFF",
-            border: "1px solid rgba(255,255,255,0.8)",
-            zIndex: 10,
-          }}
-        />
-      ))}
+      {isSelected &&
+        HANDLES.map(({ handle, cursor, style }) => (
+          <div
+            key={handle}
+            data-testid={`layer-handle-${label}-${handle}`}
+            aria-label={`Resize ${label} ${handle}`}
+            onMouseDown={(event) => startGesture(event, handle)}
+            style={{
+              position: "absolute",
+              ...style,
+              width: "10px",
+              height: "10px",
+              cursor,
+              borderRadius: "2px",
+              background: "#BD5BFF",
+              border: "1px solid rgba(255,255,255,0.8)",
+              zIndex: 10,
+            }}
+          />
+        ))}
     </div>
   )
 }

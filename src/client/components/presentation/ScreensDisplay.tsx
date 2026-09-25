@@ -127,6 +127,8 @@ export interface ScreensDisplayProps {
   screenAspectRatios?: Record<string, string>
   onScreenAspectRatioChange?: (screenNumber: number, ratio: string) => void
   onSetCueFrame?: (cue: Cue, frame: CueFrame) => void
+  focusedLaneKey?: string | null
+  onFocusLane?: (laneKey: string) => void
 }
 
 const sortByLayerPriority = (cues: Cue[]): Cue[] =>
@@ -149,6 +151,8 @@ export const ScreensDisplay = ({
   screenAspectRatios,
   onScreenAspectRatioChange,
   onSetCueFrame,
+  focusedLaneKey = null,
+  onFocusLane,
 }: ScreensDisplayProps) => {
   const tileAspectRatioFor = (screenNumber: number) =>
     parseAspectRatio(
@@ -469,6 +473,15 @@ export const ScreensDisplay = ({
                     zIndex={5 + (100 - Number(cue.layer ?? 0))}
                     opacity={normalizeCueOpacity(cue.opacity)}
                     label={cue.name}
+                    isSelected={
+                      focusedLaneKey ===
+                      `screen-${screenNumber}:${Number(cue.layer ?? 0)}`
+                    }
+                    onSelect={() =>
+                      onFocusLane?.(
+                        `screen-${screenNumber}:${Number(cue.layer ?? 0)}`
+                      )
+                    }
                     onCommit={(frame) => onSetCueFrame(cue, frame)}
                   >
                     {renderCuePreview(cue, screenNumber)}

@@ -345,6 +345,8 @@ function EditorLayout(props: EditorLayoutProps) {
             readOnly ? undefined : onScreenAspectRatioChange
           }
           onSetCueFrame={readOnly ? undefined : onSetCueFrame}
+          focusedLaneKey={focusedLaneKey}
+          onFocusLane={onFocusLane}
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
