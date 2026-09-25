@@ -59,10 +59,9 @@ const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
 const getScoreUrl = (s: ScoreDocument) => s.file?.url ?? s.sourceUrl
 
-// Either placing a new marker, or editing/deleting an existing one.
-type MarkerFormState =
-  | { mode: "placing"; x: number; y: number }
-  | { mode: "editing"; marker: ScoreMarker }
+// Editing (or deleting) the frame of an already-placed marker. New markers
+// are created immediately on click, with no confirmation step.
+type MarkerFormState = { marker: ScoreMarker }
 
 /* -------------------------------------------------------------------------- */
 /*  PdfCanvas — main page canvas                                               */
@@ -78,6 +77,7 @@ interface PdfCanvasProps {
   isPlacingMarker?: boolean
   onPlaceMarker?: (x: number, y: number) => void
   onSelectMarker?: (marker: ScoreMarker) => void
+  onMoveMarker?: (marker: ScoreMarker, x: number, y: number) => void
   onDeleteMarker?: (markerId: string) => void
   markerForm?: MarkerFormState | null
   markerFrameInput?: string
@@ -99,6 +99,7 @@ const PdfCanvas = ({
   isPlacingMarker = false,
   onPlaceMarker,
   onSelectMarker,
+  onMoveMarker,
   onDeleteMarker,
   markerForm = null,
   markerFrameInput = "",
@@ -201,19 +202,16 @@ const PdfCanvas = ({
           isPlacing={isPlacingMarker}
           onPlace={onPlaceMarker}
           onSelectMarker={onSelectMarker}
+          onMoveMarker={onMoveMarker}
           highlightedMarkerId={highlightedMarkerId}
         />
       )}
       {markerForm &&
         (() => {
-          const pos =
-            markerForm.mode === "placing"
-              ? { x: markerForm.x, y: markerForm.y }
-              : {
-                  x: markerForm.marker.rect?.x ?? 0,
-                  y: markerForm.marker.rect?.y ?? 0,
-                }
-          const isEditing = markerForm.mode === "editing"
+          const pos = {
+            x: markerForm.marker.rect?.x ?? 0,
+            y: markerForm.marker.rect?.y ?? 0,
+          }
           return (
             <Box
               position="absolute"
@@ -264,18 +262,16 @@ const PdfCanvas = ({
                   colorScheme="purple"
                   onClick={onConfirmMarker}
                 >
-                  {isEditing ? "Save" : "Add"}
+                  Save
                 </Button>
-                {isEditing && (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    colorScheme="red"
-                    onClick={() => onDeleteMarker?.(markerForm.marker._id)}
-                  >
-                    Delete
-                  </Button>
-                )}
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorScheme="red"
+                  onClick={() => onDeleteMarker?.(markerForm.marker._id)}
+                >
+                  Delete
+                </Button>
                 <Button size="xs" variant="ghost" onClick={onCancelMarker}>
                   Cancel
                 </Button>
@@ -603,20 +599,65 @@ const ScorePdfViewer = ({
     setHighlightedMarkerId(marker._id)
   }
 
-  const handlePlaceMarker = (x: number, y: number) => {
-    const usedFrames = (selectedScore?.markers ?? []).map((m) => m.frameIndex)
+  const handlePlaceMarker = async (x: number, y: number) => {
+    if (!selectedScore) return
+    if (indexCount <= 0) {
+      showToast({
+        title: "No frames available",
+        description: "Add a frame to the presentation before placing markers.",
+        status: "warning",
+      })
+      return
+    }
+    const usedFrames = selectedScore.markers.map((m) => m.frameIndex)
     const nextFrame =
       usedFrames.length === 0
         ? 0
         : clamp(Math.max(...usedFrames) + 1, 0, indexCount - 1)
-    setMarkerForm({ mode: "placing", x, y })
-    setMarkerFrameInput(String(nextFrame))
+    try {
+      await dispatch(
+        createScoreMarker(presentationId, selectedScore._id, {
+          page: pageNumber,
+          frameIndex: nextFrame,
+          rect: { x, y, width: 0, height: 0 },
+        })
+      )
+    } catch (error) {
+      showToast({
+        title: "Couldn't save marker",
+        description: error instanceof Error ? error.message : undefined,
+        status: "error",
+      })
+    }
   }
 
   const handleSelectMarker = (marker: ScoreMarker) => {
-    setMarkerForm({ mode: "editing", marker })
+    setMarkerForm({ marker })
     setMarkerFrameInput(String(marker.frameIndex))
     setHighlightedMarkerId(null)
+  }
+
+  const handleMoveMarker = async (
+    marker: ScoreMarker,
+    x: number,
+    y: number
+  ) => {
+    if (!selectedScore) return
+    try {
+      await dispatch(
+        updateScoreMarker(presentationId, selectedScore._id, marker._id, {
+          page: marker.page,
+          frameIndex: marker.frameIndex,
+          rect: { x, y, width: 0, height: 0 },
+        })
+      )
+    } catch (error) {
+      showToast({
+        title: "Couldn't move marker",
+        description: error instanceof Error ? error.message : undefined,
+        status: "error",
+      })
+    }
   }
 
   const handleCancelMarker = () => {
@@ -641,28 +682,18 @@ const ScorePdfViewer = ({
     }
 
     try {
-      if (markerForm.mode === "placing") {
-        await dispatch(
-          createScoreMarker(presentationId, selectedScore._id, {
-            page: pageNumber,
+      await dispatch(
+        updateScoreMarker(
+          presentationId,
+          selectedScore._id,
+          markerForm.marker._id,
+          {
+            page: markerForm.marker.page,
             frameIndex,
-            rect: { x: markerForm.x, y: markerForm.y, width: 0, height: 0 },
-          })
+            rect: markerForm.marker.rect,
+          }
         )
-      } else {
-        await dispatch(
-          updateScoreMarker(
-            presentationId,
-            selectedScore._id,
-            markerForm.marker._id,
-            {
-              page: markerForm.marker.page,
-              frameIndex,
-              rect: markerForm.marker.rect,
-            }
-          )
-        )
-      }
+      )
       setMarkerForm(null)
       setMarkerFrameInput("")
     } catch (error) {
@@ -1014,6 +1045,7 @@ const ScorePdfViewer = ({
               isPlacingMarker={isPlacingMarker}
               onPlaceMarker={readOnly ? undefined : handlePlaceMarker}
               onSelectMarker={readOnly ? undefined : handleSelectMarker}
+              onMoveMarker={readOnly ? undefined : handleMoveMarker}
               onDeleteMarker={readOnly ? undefined : handleDeleteMarker}
               readOnly={readOnly}
               markerForm={markerForm}
