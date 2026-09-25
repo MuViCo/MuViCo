@@ -137,6 +137,8 @@ export interface Presentation {
   storage: StorageBackend
   screenCount: number
   indexCount: number
+  outputAspectRatio?: string
+  screenAspectRatios?: Record<string, string>
   /** ISO date string. */
   lastUsed: string
   shareToken?: string
@@ -423,6 +425,11 @@ export interface SaveIndexCountResponse {
 export interface SaveScreenCountResponse {
   screenCount: number
   removedCuesCount: number
+}
+
+export interface SaveOutputAspectRatioResponse {
+  outputAspectRatio: string
+  screenAspectRatios: Record<string, string>
 }
 
 /** PUT /api/presentation/:id/name */

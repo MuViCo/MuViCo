@@ -39,6 +39,8 @@ interface AudioTrack {
 interface ShowModeProps {
   presentationName: string
   screenCount: number
+  outputAspectRatio?: string
+  screenAspectRatios?: Record<string, string>
   scores: ScoreDocument[]
   cueIndex: number
   indexCount: number
@@ -144,6 +146,8 @@ const ShowScreenWall = ({
   cueIndex,
   getActiveCuesForScreen,
   onToggleScreen,
+  outputAspectRatio,
+  screenAspectRatios,
 }: Pick<
   ShowModeProps,
   | "screenCount"
@@ -151,6 +155,8 @@ const ShowScreenWall = ({
   | "cueIndex"
   | "getActiveCuesForScreen"
   | "onToggleScreen"
+  | "outputAspectRatio"
+  | "screenAspectRatios"
 >) => (
   <Box className="show-screen-wall">
     {Array.from({ length: screenCount }, (_, index) => {
@@ -162,6 +168,8 @@ const ShowScreenWall = ({
           cues={getActiveCuesForScreen(screenNumber, cueIndex)}
           isOnline={Boolean(screens[screenNumber])}
           onOpen={() => onToggleScreen(screenNumber)}
+          outputAspectRatio={outputAspectRatio}
+          screenAspectRatios={screenAspectRatios}
         />
       )
     })}
@@ -252,6 +260,8 @@ const ShowTransport = ({
 const ShowMode = ({
   presentationName,
   screenCount,
+  outputAspectRatio,
+  screenAspectRatios,
   scores,
   cueIndex,
   indexCount,
@@ -428,6 +438,8 @@ const ShowMode = ({
                       cues={getActiveCuesForScreen(screenNumber, cueIndex)}
                       label={`Screen ${screenNumber}`}
                       compact
+                      outputAspectRatio={outputAspectRatio}
+                      screenAspectRatios={screenAspectRatios}
                     />
                   )
                 }
@@ -438,6 +450,8 @@ const ShowMode = ({
               cues={getActiveCuesForScreen(1, nextIndex)}
               label={`NEXT · Frame ${nextIndex}`}
               compact
+              outputAspectRatio={outputAspectRatio}
+              screenAspectRatios={screenAspectRatios}
             />
             <ShowCueList
               cueIndex={cueIndex}
@@ -457,6 +471,8 @@ const ShowMode = ({
               cueIndex={cueIndex}
               getActiveCuesForScreen={getActiveCuesForScreen}
               onToggleScreen={onToggleScreen}
+              outputAspectRatio={outputAspectRatio}
+              screenAspectRatios={screenAspectRatios}
             />
             <ShowTransport
               cueIndex={cueIndex}
@@ -517,6 +533,8 @@ const ShowMode = ({
                 cueIndex={cueIndex}
                 getActiveCuesForScreen={getActiveCuesForScreen}
                 onToggleScreen={onToggleScreen}
+                outputAspectRatio={outputAspectRatio}
+                screenAspectRatios={screenAspectRatios}
               />
             )}
           </Box>

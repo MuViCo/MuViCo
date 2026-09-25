@@ -37,6 +37,8 @@ const renderButton = (shareToken: string | null = null) => {
         name: "Show",
         screenCount: 1,
         indexCount: 5,
+        outputAspectRatio: "16:9",
+        screenAspectRatios: {},
         shareToken,
         pendingSaves: 0,
       },

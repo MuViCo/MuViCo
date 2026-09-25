@@ -667,7 +667,6 @@
 
 .show-screen-preview-compact {
   flex: 0 0 auto;
-  aspect-ratio: 16 / 9;
 }
 
 .show-screen-preview-compact .show-screen-preview-header {

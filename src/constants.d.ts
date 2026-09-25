@@ -26,3 +26,16 @@ export declare const usernameConsecutiveSpecialsRegex: RegExp
 
 /* bcrypt salt rounds */
 export declare const saltRounds: number
+export declare const DEFAULT_OUTPUT_ASPECT_RATIO: string
+export declare const OUTPUT_ASPECT_RATIO_OPTIONS: ReadonlyArray<{
+  value: string
+  label: string
+}>
+export declare const aspectRatioRegex: RegExp
+export declare const isValidAspectRatio: (value: unknown) => boolean
+export declare const parseAspectRatio: (value: unknown) => number
+export declare const resolveScreenAspectRatio: (
+  screenAspectRatios: Record<string, string> | null | undefined,
+  screenNumber: number | string,
+  fallback?: string | null
+) => string

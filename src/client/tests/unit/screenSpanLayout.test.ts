@@ -1,5 +1,6 @@
 import {
   computeScreenSpanLayout,
+  screenWidthMapFromRatios,
   DEFAULT_SCREEN_WIDTH,
 } from "../../components/utils/screenSpanLayout"
 
@@ -39,5 +40,36 @@ describe("computeScreenSpanLayout", () => {
 
     expect(layout.canvasWidth).toBe(1600)
     expect(layout.canvasHeight).toBeCloseTo(1200)
+  })
+})
+
+describe("screenWidthMapFromRatios", () => {
+  test("widens a screen in proportion to its own ratio", () => {
+    const widths = screenWidthMapFromRatios([1, 2], { "2": "4:3" }, "16:9")
+
+    expect(widths[1]).toBeCloseTo(16 / 9)
+    expect(widths[2]).toBeCloseTo(4 / 3)
+    expect(widths[1]).toBeGreaterThan(widths[2])
+  })
+
+  test("gives equal widths when every screen shares a ratio", () => {
+    const widths = screenWidthMapFromRatios([1, 2, 3], {}, "16:9")
+
+    expect(widths[1]).toBeCloseTo(widths[2])
+    expect(widths[2]).toBeCloseTo(widths[3])
+  })
+
+  test("offsets follow the uneven widths", () => {
+    const spanScreens = [1, 2]
+    const widths = screenWidthMapFromRatios(spanScreens, { "1": "4:3" }, "16:9")
+    const { offsets, canvasWidth } = computeScreenSpanLayout(
+      spanScreens,
+      widths,
+      2
+    )
+
+    expect(offsets[1]).toBe(0)
+    expect(offsets[2]).toBeCloseTo(4 / 3)
+    expect(canvasWidth).toBeCloseTo(4 / 3 + 16 / 9)
   })
 })

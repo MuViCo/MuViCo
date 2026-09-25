@@ -3,28 +3,51 @@ import { useState } from "react"
 import type { SyntheticEvent } from "react"
 import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
-import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
+import {
+  computeScreenSpanLayout,
+  screenWidthMapFromRatios,
+} from "../utils/screenSpanLayout"
+import {
+  parseAspectRatio,
+  resolveScreenAspectRatio,
+} from "../../../constants.js"
 import type { Cue } from "../../types"
 
 interface ShowScreenPreviewProps {
   screenNumber: number
   cues: Cue[]
+  screenAspectRatios?: Record<string, string>
+  outputAspectRatio?: string
   isOnline?: boolean
   compact?: boolean
   label?: string
   onOpen?: () => void
 }
 
-const renderSpannedImage = (cue: Cue, screenNumber: number) => (
-  <SpannedPreview cue={cue} screenNumber={screenNumber} />
+const renderSpannedImage = (
+  cue: Cue,
+  screenNumber: number,
+  screenAspectRatios?: Record<string, string>,
+  outputAspectRatio?: string
+) => (
+  <SpannedPreview
+    cue={cue}
+    screenNumber={screenNumber}
+    screenAspectRatios={screenAspectRatios}
+    outputAspectRatio={outputAspectRatio}
+  />
 )
 
 const SpannedPreview = ({
   cue,
   screenNumber,
+  screenAspectRatios,
+  outputAspectRatio,
 }: {
   cue: Cue
   screenNumber: number
+  screenAspectRatios?: Record<string, string>
+  outputAspectRatio?: string
 }) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
   const spanScreens = cue.spanScreens ?? [screenNumber]
@@ -55,16 +78,21 @@ const SpannedPreview = ({
     )
   }
 
-  const { canvasWidth, canvasHeight } = computeScreenSpanLayout(
+  const widthMap = screenWidthMapFromRatios(
     orderedScreens,
-    {},
+    screenAspectRatios,
+    outputAspectRatio
+  )
+  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+    orderedScreens,
+    widthMap,
     aspectRatio
   )
-  const tileWidth = canvasWidth / orderedScreens.length
-  const tileHeight = tileWidth / (16 / 9)
+  const tileWidth = widthMap[screenNumber]
+  const tileHeight = 1
   const x =
-    orderedScreens.length > 1
-      ? (position / (orderedScreens.length - 1)) * 100
+    canvasWidth > tileWidth
+      ? (offsets[screenNumber] / (canvasWidth - tileWidth)) * 100
       : 0
 
   return (
@@ -84,15 +112,24 @@ const SpannedPreview = ({
 const CueMedia = ({
   cue,
   screenNumber,
+  screenAspectRatios,
+  outputAspectRatio,
 }: {
   cue: Cue
   screenNumber: number
+  screenAspectRatios?: Record<string, string>
+  outputAspectRatio?: string
 }) => {
   if (!cue.file)
     return <Box position="absolute" inset={0} bg={cue.color ?? "#000"} />
   if (isImageFile(cue.file)) {
     if ((cue.spanScreens?.length ?? 0) > 1) {
-      return renderSpannedImage(cue, screenNumber)
+      return renderSpannedImage(
+        cue,
+        screenNumber,
+        screenAspectRatios,
+        outputAspectRatio
+      )
     }
     return (
       <img src={cue.file.url} alt={cue.name} className="show-preview-media" />
@@ -120,13 +157,23 @@ const ShowScreenPreview = ({
   compact = false,
   label,
   onOpen,
+  screenAspectRatios,
+  outputAspectRatio,
 }: ShowScreenPreviewProps) => {
   const visibleNames = cues.map((cue) => cue.name).filter(Boolean)
+  const tileAspectRatio = parseAspectRatio(
+    resolveScreenAspectRatio(
+      screenAspectRatios,
+      screenNumber,
+      outputAspectRatio
+    )
+  )
 
   return (
     <Box
       className={`show-screen-preview ${compact ? "show-screen-preview-compact" : ""} ${isOnline ? "" : "show-screen-preview-offline"}`}
       data-testid={`show-screen-${screenNumber}`}
+      style={{ aspectRatio: String(tileAspectRatio) }}
     >
       <Box className="show-screen-preview-header">
         <Text as="span">{label ?? `Screen ${screenNumber}`}</Text>
@@ -160,7 +207,12 @@ const ShowScreenPreview = ({
                   opacity={normalizeCueOpacity(cue.opacity)}
                   overflow="hidden"
                 >
-                  <CueMedia cue={cue} screenNumber={screenNumber} />
+                  <CueMedia
+                    cue={cue}
+                    screenNumber={screenNumber}
+                    screenAspectRatios={screenAspectRatios}
+                    outputAspectRatio={outputAspectRatio}
+                  />
                 </Box>
               ))
             : null}

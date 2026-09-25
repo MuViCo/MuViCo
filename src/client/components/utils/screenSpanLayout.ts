@@ -11,6 +11,11 @@
  * DEFAULT_SCREEN_WIDTH if none are.
  */
 
+import {
+  parseAspectRatio,
+  resolveScreenAspectRatio,
+} from "../../../constants.js"
+
 export const DEFAULT_SCREEN_WIDTH = 800
 
 export interface ScreenSpanLayout {
@@ -71,3 +76,17 @@ export const computeScreenSpanLayout = (
 
   return { canvasWidth, canvasHeight, offsets }
 }
+
+export const screenWidthMapFromRatios = (
+  spanScreens: number[],
+  screenAspectRatios: Record<string, string> | null | undefined,
+  fallback?: string | null
+): Record<number, number> =>
+  Object.fromEntries(
+    spanScreens.map((screenNumber) => [
+      screenNumber,
+      parseAspectRatio(
+        resolveScreenAspectRatio(screenAspectRatios, screenNumber, fallback)
+      ),
+    ])
+  )

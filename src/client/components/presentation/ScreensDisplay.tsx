@@ -8,7 +8,7 @@
  * - Determines the current cue for each screen based on the cue index and the visual span of each cue
  */
 
-import { Button } from "@chakra-ui/react"
+import { Button, Select } from "@chakra-ui/react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import { usePrefersReducedMotion } from "@chakra-ui/react"
@@ -18,27 +18,32 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
-import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
+import {
+  computeScreenSpanLayout,
+  screenWidthMapFromRatios,
+} from "../utils/screenSpanLayout"
+import {
+  OUTPUT_ASPECT_RATIO_OPTIONS,
+  parseAspectRatio,
+  resolveScreenAspectRatio,
+} from "../../../constants.js"
 
 import type { Cue, CueFileMeta } from "../../types"
-
-// Preview tiles are all the same size (height: 100%, aspectRatio: 16/9), so
-// -- unlike the real popups, which can be any size the user drags them to --
-// every spanned screen can be assumed equal-width here. That lets the crop
-// be expressed as plain CSS percentages of this tile's own box, with no
-// measurement needed.
-const TILE_ASPECT_RATIO = 16 / 9
 
 const SpannedTilePreview = ({
   imageSrc,
   name,
   spanScreens,
   screenNumber,
+  screenAspectRatios,
+  outputAspectRatio,
 }: {
   imageSrc: string
   name: string
   spanScreens: number[]
   screenNumber: number
+  screenAspectRatios?: Record<string, string>
+  outputAspectRatio?: string
 }) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
 
@@ -67,27 +72,23 @@ const SpannedTilePreview = ({
     )
   }
 
-  // Equal-width fallback (empty widthMap) is exactly right here: every tile
-  // genuinely is the same width, unlike real popups.
-  const { canvasWidth, canvasHeight } = computeScreenSpanLayout(
+  const widthMap = screenWidthMapFromRatios(
     spanScreens,
-    {},
+    screenAspectRatios,
+    outputAspectRatio
+  )
+  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+    spanScreens,
+    widthMap,
     aspectRatio
   )
-  const screenCount = spanScreens.length
-  const tileWidth = canvasWidth / screenCount
-  const tileHeight = tileWidth / TILE_ASPECT_RATIO
-  const orderedScreens = [...spanScreens].sort((a, b) => a - b)
-  const position = orderedScreens.indexOf(screenNumber)
+  const tileWidth = widthMap[screenNumber]
+  const tileHeight = 1
 
-  // CSS background-position percentages don't scale linearly with pixel
-  // offset -- X% means "align the point X% across the image with the point
-  // X% across the box", i.e. positionPx = (boxSize - bgSize) * (X/100).
-  // Solving that for the desired positionPx (-position * tileWidth) gives
-  // this fraction; it happens to simplify to the screen's plain fractional
-  // position across the span (0% for the first screen, 100% for the last).
   const backgroundPositionXPercent =
-    screenCount > 1 ? (position / (screenCount - 1)) * 100 : 0
+    canvasWidth > tileWidth
+      ? (offsets[screenNumber] / (canvasWidth - tileWidth)) * 100
+      : 0
 
   return (
     <div
@@ -116,6 +117,9 @@ export interface ScreensDisplayProps {
   toggleScreenVisibility?: (screenNumber: number) => void
   /** Screen whose lane currently has focus in the timeline, or null. */
   focusedScreen?: number | null
+  outputAspectRatio?: string
+  screenAspectRatios?: Record<string, string>
+  onScreenAspectRatioChange?: (screenNumber: number, ratio: string) => void
 }
 
 const sortByLayerPriority = (cues: Cue[]): Cue[] =>
@@ -134,7 +138,18 @@ export const ScreensDisplay = ({
   screens = {},
   toggleScreenVisibility = () => {},
   focusedScreen = null,
+  outputAspectRatio,
+  screenAspectRatios,
+  onScreenAspectRatioChange,
 }: ScreensDisplayProps) => {
+  const tileAspectRatioFor = (screenNumber: number) =>
+    parseAspectRatio(
+      resolveScreenAspectRatio(
+        screenAspectRatios,
+        screenNumber,
+        outputAspectRatio
+      )
+    )
   const stripRef = useRef<HTMLDivElement | null>(null)
   const tileRefs = useRef<Record<number, HTMLDivElement | null>>({})
   const lastScrolledRef = useRef<number | null>(null)
@@ -232,6 +247,8 @@ export const ScreensDisplay = ({
               name={cue.name}
               spanScreens={cue.spanScreens}
               screenNumber={screenNumber}
+              screenAspectRatios={screenAspectRatios}
+              outputAspectRatio={outputAspectRatio}
             />
           )
         }
@@ -347,7 +364,7 @@ export const ScreensDisplay = ({
               color: "white",
               overflow: "hidden",
               position: "relative",
-              aspectRatio: "16/9",
+              aspectRatio: String(tileAspectRatioFor(screenNumber)),
               borderRadius: "6px",
               // outline, not border: it is outside layout, so highlighting a
               // tile cannot reflow the strip mid-scroll or shift the absolutely
@@ -385,6 +402,47 @@ export const ScreensDisplay = ({
             >
               {screens[screenNumber] ? "Close" : "Open"}
             </Button>
+            {onScreenAspectRatioChange && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "10px",
+                  right: "10px",
+                  zIndex: 200,
+                  width: "76px",
+                }}
+              >
+                <Select
+                  size="xs"
+                  aria-label={`Shape of screen ${screenNumber}`}
+                  data-testid={`screen-shape-${screenNumber}`}
+                  value={resolveScreenAspectRatio(
+                    screenAspectRatios,
+                    screenNumber,
+                    outputAspectRatio
+                  )}
+                  onChange={(event) =>
+                    onScreenAspectRatioChange(screenNumber, event.target.value)
+                  }
+                  bg="blackAlpha.700"
+                  color="white"
+                  borderColor="whiteAlpha.400"
+                  borderRadius="6px"
+                  _hover={{ borderColor: "whiteAlpha.600" }}
+                  sx={{
+                    "& option": { background: "#1b1420", color: "#f0e4ff" },
+                  }}
+                >
+                  {OUTPUT_ASPECT_RATIO_OPTIONS.map(
+                    (option: { value: string; label: string }) => (
+                      <option key={option.value} value={option.value}>
+                        {option.value}
+                      </option>
+                    )
+                  )}
+                </Select>
+              </div>
+            )}
             {screenStack.length > 0 ? (
               screenStack.map((cue) => (
                 <div

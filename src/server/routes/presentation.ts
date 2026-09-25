@@ -39,6 +39,7 @@ import {
   isAllowedMimeType,
 } from "../utils/cueType"
 import * as logger from "../utils/logger"
+import { isValidAspectRatio } from "../../constants.js"
 import type {
   Cue,
   CueFile,
@@ -958,11 +959,76 @@ router.put(
       // Must be presentation.save(), not a query-style update, since it
       // triggers the pre("validate") hook the audio-row repositioning depends on.
       presentation!.screenCount = newScreenCount
+
+      if (presentation!.screenAspectRatios) {
+        for (const screenKey of [...presentation!.screenAspectRatios.keys()]) {
+          if (Number(screenKey) > newScreenCount) {
+            presentation!.screenAspectRatios.delete(screenKey)
+          }
+        }
+        if (presentation!.screenAspectRatios.size === 0) {
+          presentation!.screenAspectRatios = undefined
+        }
+      }
+
       await presentation!.save()
 
       res.json({
         screenCount: presentation!.screenCount,
         removedCuesCount: removedCuesCount,
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.put(
+  "/:id/outputAspectRatio",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { outputAspectRatio, screen } = req.body
+
+      if (!isValidAspectRatio(outputAspectRatio)) {
+        return res
+          .status(400)
+          .json({ error: "outputAspectRatio must look like W:H" })
+      }
+
+      if (screen === undefined || screen === null || screen === "") {
+        presentation!.outputAspectRatio = outputAspectRatio
+        presentation!.screenAspectRatios = undefined
+      } else {
+        const screenNumber = Number(screen)
+        if (
+          !Number.isInteger(screenNumber) ||
+          screenNumber < 1 ||
+          screenNumber > presentation!.screenCount
+        ) {
+          return res.status(400).json({
+            error: `screen must be an integer between 1 and ${presentation!.screenCount}`,
+          })
+        }
+
+        if (!presentation!.screenAspectRatios) {
+          presentation!.screenAspectRatios = new Map<string, string>()
+        }
+        presentation!.screenAspectRatios.set(
+          String(screenNumber),
+          outputAspectRatio
+        )
+      }
+
+      await presentation!.save()
+
+      res.json({
+        outputAspectRatio: presentation!.outputAspectRatio,
+        screenAspectRatios: presentation!.screenAspectRatios
+          ? Object.fromEntries(presentation!.screenAspectRatios)
+          : {},
       })
     } catch (err) {
       next(err)

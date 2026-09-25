@@ -5,7 +5,15 @@
  * The component uses react-grid-layout for responsive layout and Chakra UI for styling.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Box, Button, FormLabel, HStack, Icon, Select } from "@chakra-ui/react"
+import {
+  Box,
+  Button,
+  FormLabel,
+  HStack,
+  Icon,
+  Select,
+  Text,
+} from "@chakra-ui/react"
 import { FiPlay } from "react-icons/fi"
 import "react-grid-layout/css/styles.css"
 import { useAppDispatch, useAppSelector } from "../../redux/hooks"
@@ -14,6 +22,7 @@ import { laneScreenFromKey } from "../utils/laneFocus"
 import type { Dispatch, SetStateAction } from "react"
 import type { Cue, CueUpdateInput, ScoreDocument } from "../../types"
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
+import { saveOutputAspectRatio } from "../../redux/presentationThunks"
 import settingsIcon from "../../public/icons/Presentationsettings.svg"
 import ClickablePopover from "../utils/ClickablePopover"
 import EditMode from "./EditMode"
@@ -31,6 +40,10 @@ import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
+import {
+  DEFAULT_OUTPUT_ASPECT_RATIO,
+  OUTPUT_ASPECT_RATIO_OPTIONS,
+} from "../../../constants.js"
 import ShowMode from "./ShowMode"
 import {
   buildCueVisualSpanMap,
@@ -86,6 +99,9 @@ interface EditorLayoutProps
   extends Omit<EditModeContainerProps, "setCueIndex"> {
   presentationName: string
   screenCount: number
+  outputAspectRatio: string
+  screenAspectRatios: Record<string, string>
+  onScreenAspectRatioChange: (screen: number, ratio: string) => void
   screens: Record<string, boolean>
   toggleScreenVisibility: (screenNumber: number) => void
   toggleAllScreens: () => void
@@ -104,6 +120,7 @@ interface EditorLayoutProps
   panelBorderColor: string
   focusedLaneKey: string | null
   focusedScreen: number | null
+  onOutputAspectRatioChange: (ratio: string) => void
   onFocusLane: (laneKey: string | null) => void
   onSelectFrame: (index: number) => void
   onEnterShow: () => void
@@ -116,6 +133,10 @@ function EditorLayout(props: EditorLayoutProps) {
     id,
     presentationName,
     screenCount,
+    outputAspectRatio,
+    screenAspectRatios,
+    onScreenAspectRatioChange,
+    onOutputAspectRatioChange,
     cues,
     isToolboxOpen,
     setIsToolboxOpen,
@@ -228,6 +249,35 @@ function EditorLayout(props: EditorLayoutProps) {
                   <option value="zoom">Zoom</option>
                   <option value="none">None</option>
                 </Select>
+
+                <FormLabel
+                  htmlFor="output-aspect-ratio-select"
+                  mt={4}
+                  mb={2}
+                  fontWeight={700}
+                >
+                  Output shape, all screens:
+                </FormLabel>
+                <Select
+                  id="output-aspect-ratio-select"
+                  data-testid="output-aspect-ratio-select"
+                  value={outputAspectRatio}
+                  isDisabled={readOnly}
+                  onChange={(e) => onOutputAspectRatioChange(e.target.value)}
+                >
+                  {OUTPUT_ASPECT_RATIO_OPTIONS.map(
+                    (option: { value: string; label: string }) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    )
+                  )}
+                </Select>
+                <Text fontSize="xs" mt={2} opacity={0.75}>
+                  The shape of your projectors. Picking here applies it to every
+                  screen and clears any per-screen choice. To set one screen on
+                  its own, use the selector on its preview tile.
+                </Text>
               </Box>
             }
           >
@@ -280,6 +330,11 @@ function EditorLayout(props: EditorLayoutProps) {
           screens={screens}
           toggleScreenVisibility={toggleScreenVisibility}
           focusedScreen={focusedScreen}
+          outputAspectRatio={outputAspectRatio}
+          screenAspectRatios={screenAspectRatios}
+          onScreenAspectRatioChange={
+            readOnly ? undefined : onScreenAspectRatioChange
+          }
         />
 
         <div id="screen_resize_handle" className="resize_handle"></div>
@@ -433,6 +488,23 @@ const EditModeContainer = ({
   const presentation = useAppSelector((state) => state.presentation)
   const presentationName = presentation?.name
   const screenCount = presentation?.screenCount
+  const outputAspectRatio =
+    presentation?.outputAspectRatio ?? DEFAULT_OUTPUT_ASPECT_RATIO
+  const screenAspectRatios = presentation?.screenAspectRatios ?? {}
+  const handleOutputAspectRatioChange = useCallback(
+    (ratio: string) => {
+      void dispatch(saveOutputAspectRatio({ id, outputAspectRatio: ratio }))
+    },
+    [dispatch, id]
+  )
+  const handleScreenAspectRatioChange = useCallback(
+    (screen: number, ratio: string) => {
+      void dispatch(
+        saveOutputAspectRatio({ id, outputAspectRatio: ratio, screen })
+      )
+    },
+    [dispatch, id]
+  )
 
   /**
    * Which timeline lane is focused, as a stable "group:layer" key.
@@ -722,6 +794,8 @@ const EditModeContainer = ({
         <ShowMode
           presentationName={presentationName}
           screenCount={screenCount ?? 1}
+          outputAspectRatio={outputAspectRatio}
+          screenAspectRatios={screenAspectRatios}
           scores={presentation.scores}
           cueIndex={cueIndex}
           indexCount={indexCount}
@@ -747,6 +821,10 @@ const EditModeContainer = ({
           id={id}
           presentationName={presentationName}
           screenCount={screenCount ?? 1}
+          outputAspectRatio={outputAspectRatio}
+          screenAspectRatios={screenAspectRatios}
+          onScreenAspectRatioChange={handleScreenAspectRatioChange}
+          onOutputAspectRatioChange={handleOutputAspectRatioChange}
           scores={presentation.scores}
           focusedLaneKey={focusedLaneKey}
           focusedScreen={focusedScreen}

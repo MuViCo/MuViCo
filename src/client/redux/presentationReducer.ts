@@ -8,7 +8,12 @@
 import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
-import { saveIndexCount, saveScreenCount } from "./presentationThunks"
+import {
+  saveIndexCount,
+  saveOutputAspectRatio,
+  saveScreenCount,
+} from "./presentationThunks"
+import { DEFAULT_OUTPUT_ASPECT_RATIO } from "../../constants.js"
 
 import type {
   PayloadAction,
@@ -45,6 +50,8 @@ export interface PresentationState {
   screenCount: number | null
   name: string
   indexCount: number
+  outputAspectRatio: string
+  screenAspectRatios: Record<string, string>
   shareToken: string | null
   pendingSaves: number
 }
@@ -68,6 +75,8 @@ const initialState: PresentationState = {
   name: "",
   screenCount: null,
   indexCount: 5,
+  outputAspectRatio: DEFAULT_OUTPUT_ASPECT_RATIO,
+  screenAspectRatios: {},
   shareToken: null,
   pendingSaves: 0,
 }
@@ -86,6 +95,9 @@ const presentationSlice = createSlice({
       state.name = action.payload.name
       state.screenCount = action.payload.screenCount
       state.indexCount = action.payload.indexCount
+      state.outputAspectRatio =
+        action.payload.outputAspectRatio ?? DEFAULT_OUTPUT_ASPECT_RATIO
+      state.screenAspectRatios = action.payload.screenAspectRatios ?? {}
       state.shareToken = action.payload.shareToken ?? null
     },
     setShareToken(state, action: PayloadAction<string | null>) {
@@ -167,6 +179,8 @@ const presentationSlice = createSlice({
       state.name = initialState.name
       state.screenCount = initialState.screenCount
       state.indexCount = initialState.indexCount
+      state.outputAspectRatio = initialState.outputAspectRatio
+      state.screenAspectRatios = initialState.screenAspectRatios
       state.shareToken = initialState.shareToken
       state.pendingSaves = initialState.pendingSaves
     },
@@ -212,6 +226,19 @@ const presentationSlice = createSlice({
         state.cues = state.cues.filter((cue) => cue.index < newIndexCount)
       })
       .addCase(saveIndexCount.rejected, (state) => {
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
+      })
+      .addCase(saveOutputAspectRatio.pending, (state) => {
+        state.pendingSaves += 1
+      })
+      .addCase(saveOutputAspectRatio.fulfilled, (state, action) => {
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
+        if (action.payload.outputAspectRatio) {
+          state.outputAspectRatio = action.payload.outputAspectRatio
+        }
+        state.screenAspectRatios = action.payload.screenAspectRatios ?? {}
+      })
+      .addCase(saveOutputAspectRatio.rejected, (state) => {
         state.pendingSaves = Math.max(0, state.pendingSaves - 1)
       })
       .addCase(saveScreenCount.pending, (state) => {
