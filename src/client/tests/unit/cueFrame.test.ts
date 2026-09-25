@@ -1,5 +1,7 @@
 import {
+  CUE_FRAME_GRID,
   CUE_FRAME_PRESETS,
+  framesAreEqual,
   FULL_FRAME,
   isFullFrame,
   MIN_FRAME_SIZE,
@@ -61,15 +63,51 @@ describe("CUE_FRAME_PRESETS", () => {
     })
   })
 
-  test("the halves tile the screen without overlapping", () => {
+  test("the nine anchors are half-size and stay on screen", () => {
+    CUE_FRAME_GRID.flat().forEach(({ frame }) => {
+      expect(frame.width).toBeCloseTo(0.5)
+      expect(frame.height).toBeCloseTo(0.5)
+      expect(frame.x + frame.width).toBeLessThanOrEqual(1)
+      expect(frame.y + frame.height).toBeLessThanOrEqual(1)
+    })
+  })
+
+  test("the corners sit flush and the centre is centred", () => {
     const byLabel = Object.fromEntries(
       CUE_FRAME_PRESETS.map((preset) => [preset.label, preset.frame])
     )
 
-    expect(byLabel["Left half"].width + byLabel["Right half"].width).toBe(1)
-    expect(byLabel["Right half"].x).toBe(byLabel["Left half"].width)
-    expect(byLabel["Top half"].height + byLabel["Bottom half"].height).toBe(1)
-    expect(byLabel["Bottom half"].y).toBe(byLabel["Top half"].height)
+    expect(byLabel["Top left"]).toMatchObject({ x: 0, y: 0 })
+    expect(byLabel["Bottom right"]).toMatchObject({ x: 0.5, y: 0.5 })
+    expect(byLabel["Centre"]).toMatchObject({ x: 0.25, y: 0.25 })
+  })
+
+  test("the grid is three rows of three, all distinct", () => {
+    expect(CUE_FRAME_GRID).toHaveLength(3)
+    CUE_FRAME_GRID.forEach((row) => expect(row).toHaveLength(3))
+
+    const keys = CUE_FRAME_GRID.flat().map(
+      ({ frame }) => `${frame.x},${frame.y},${frame.width},${frame.height}`
+    )
+    expect(new Set(keys).size).toBe(9)
+  })
+
+  test("the four corners tile the screen exactly", () => {
+    const byLabel = Object.fromEntries(
+      CUE_FRAME_PRESETS.map((preset) => [preset.label, preset.frame])
+    )
+    const corners = [
+      "Top left",
+      "Top right",
+      "Bottom left",
+      "Bottom right",
+    ].map((label) => byLabel[label])
+
+    const area = corners.reduce(
+      (sum, frame) => sum + frame.width * frame.height,
+      0
+    )
+    expect(area).toBeCloseTo(1)
   })
 
   test("only Full counts as the whole screen", () => {

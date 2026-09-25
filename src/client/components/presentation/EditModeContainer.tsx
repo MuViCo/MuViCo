@@ -418,6 +418,7 @@ function EditorLayout(props: EditorLayoutProps) {
                   isAutoplaying={isAutoplaying}
                   autoplayInterval={autoplayInterval}
                   onSelectFrame={onSelectFrame}
+                  outputAspectRatio={outputAspectRatio}
                 />
               </div>
               <div id="timeline_resize_handle" className="resize_handle"></div>

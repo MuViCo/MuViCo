@@ -56,17 +56,33 @@ export const cueFrameStyle = (
   }
 }
 
+const HALF = 0.5
+
+export const CUE_FRAME_GRID: ReadonlyArray<
+  ReadonlyArray<{ label: string; frame: CueFrame }>
+> = [0, 1, 2].map((rowIndex) =>
+  [0, 1, 2].map((columnIndex) => ({
+    label: [
+      ["Top left", "Top", "Top right"],
+      ["Left", "Centre", "Right"],
+      ["Bottom left", "Bottom", "Bottom right"],
+    ][rowIndex][columnIndex],
+    frame: {
+      x: (columnIndex * (1 - HALF)) / 2,
+      y: (rowIndex * (1 - HALF)) / 2,
+      width: HALF,
+      height: HALF,
+    },
+  }))
+)
+
 export const CUE_FRAME_PRESETS: ReadonlyArray<{
   label: string
   frame: CueFrame
-}> = [
-  { label: "Full", frame: FULL_FRAME },
-  { label: "Left half", frame: { x: 0, y: 0, width: 0.5, height: 1 } },
-  { label: "Right half", frame: { x: 0.5, y: 0, width: 0.5, height: 1 } },
-  { label: "Top half", frame: { x: 0, y: 0, width: 1, height: 0.5 } },
-  { label: "Bottom half", frame: { x: 0, y: 0.5, width: 1, height: 0.5 } },
-  { label: "Centre", frame: { x: 0.25, y: 0.25, width: 0.5, height: 0.5 } },
-]
+}> = [{ label: "Full", frame: FULL_FRAME }, ...CUE_FRAME_GRID.flat()]
+
+export const framesAreEqual = (a: CueFrame, b: CueFrame): boolean =>
+  a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
 
 export const isFullFrame = (
   frame: Partial<CueFrame> | null | undefined

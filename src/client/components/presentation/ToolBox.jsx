@@ -42,10 +42,14 @@ import {
   opacityFromPercent,
   opacityPercentFromCue,
 } from "../utils/cueOpacityUtils"
+import { FULL_FRAME, isFullFrame, normalizeCueFrame } from "../utils/cueFrame"
+import { parseAspectRatio } from "../../../constants.js"
+import CueFramePicker from "./CueFramePicker"
 
-const Toolbox = ({ isOpen, onClose, cue, onSave }) => {
+const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
   const [cueName, setCueName] = useState("")
   const [opacityPercent, setOpacityPercent] = useState(100)
+  const [frame, setFrame] = useState(FULL_FRAME)
   const [textValue, setTextValue] = useState("")
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE)
   const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
@@ -59,6 +63,7 @@ const Toolbox = ({ isOpen, onClose, cue, onSave }) => {
           (isTextCue(cue) ? textSnippet(cue.text) : "")
       )
       setOpacityPercent(opacityPercentFromCue(cue))
+      setFrame(normalizeCueFrame(cue?.frame))
       setTextValue(cue?.text || "")
       setTextSize(normalizeTextSize(cue?.textSize))
       setTextColor(normalizeTextColor(cue?.textColor))
@@ -94,6 +99,7 @@ const Toolbox = ({ isOpen, onClose, cue, onSave }) => {
         textColor,
         textSize,
       }),
+      frame: isFullFrame(frame) ? null : frame,
     })
     onClose()
   }
@@ -178,6 +184,16 @@ const Toolbox = ({ isOpen, onClose, cue, onSave }) => {
                   />
                 </FormControl>
               </>
+            )}
+            {cue.cueType !== "audio" && (
+              <FormControl mt={5}>
+                <FormLabel mb={2}>Position on screen</FormLabel>
+                <CueFramePicker
+                  value={frame}
+                  aspectRatio={parseAspectRatio(outputAspectRatio)}
+                  onChange={setFrame}
+                />
+              </FormControl>
             )}
             {cue.cueType !== "audio" && (
               <FormControl mt={5}>
