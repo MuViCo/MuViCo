@@ -290,6 +290,16 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
             message: "layer must be an integer",
           },
         },
+        frame: {
+          type: {
+            x: { type: Number, required: true },
+            y: { type: Number, required: true },
+            width: { type: Number, required: true },
+            height: { type: Number, required: true },
+          },
+          default: undefined,
+          _id: false,
+        },
         duration: {
           type: Number,
           default: undefined,
@@ -537,6 +547,31 @@ presentationSchema.pre("save", function (next) {
               "Text is only allowed on a visual cue without a media file",
             path: "cues.text",
             value: cue.text,
+          })
+        )
+      }
+    }
+
+    if (cue.frame !== undefined) {
+      const { x, y, width, height } = cue.frame || {}
+      const within01 = (v: unknown) =>
+        typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1
+      const isValidFrame =
+        cue.cueType === "visual" &&
+        within01(x) &&
+        within01(y) &&
+        within01(width) &&
+        within01(height) &&
+        width > 0 &&
+        height > 0
+
+      if (!isValidFrame) {
+        validationError.addError(
+          "cues.frame",
+          new mongoose.Error.ValidatorError({
+            message: `Cue frame ${JSON.stringify(cue.frame)} is invalid for cueType ${cue.cueType}`,
+            path: "cues.frame",
+            value: cue.frame,
           })
         )
       }

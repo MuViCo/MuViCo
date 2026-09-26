@@ -43,6 +43,7 @@ import { isValidAspectRatio } from "../../constants.js"
 import type {
   Cue,
   CueFile,
+  CueFrame,
   CueType,
   PresentationDocument,
   Score,
@@ -333,6 +334,54 @@ const parseSpanScreens = (
   }
 
   return { spanScreens: normalized, error: null }
+}
+
+const parseFrame = (
+  raw: unknown
+): { frame: CueFrame | null; error: string | null } => {
+  if (raw === undefined || raw === null || raw === "") {
+    return { frame: null, error: null }
+  }
+
+  let parsed
+  try {
+    parsed = JSON.parse(raw as string)
+  } catch {
+    return { frame: null, error: "frame must be valid JSON" }
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    return { frame: null, error: "frame must be an object" }
+  }
+
+  const { x, y, width, height } = parsed as Record<string, unknown>
+  const within01 = (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1
+
+  if (
+    !within01(x) ||
+    !within01(y) ||
+    !within01(width) ||
+    !within01(height) ||
+    (width as number) <= 0 ||
+    (height as number) <= 0
+  ) {
+    return {
+      frame: null,
+      error:
+        "frame x/y/width/height must be between 0 and 1, with a positive size",
+    }
+  }
+
+  return {
+    frame: {
+      x: x as number,
+      y: y as number,
+      width: width as number,
+      height: height as number,
+    },
+    error: null,
+  }
 }
 
 const parseDuration = (
@@ -1534,9 +1583,10 @@ router.put(
         req.body.duration
       )
       const cueText = parseCueText(req.body)
+      const { frame, error: frameError } = parseFrame(req.body.frame)
 
-      if (durationError) {
-        return res.status(400).json({ error: durationError })
+      if (durationError || frameError) {
+        return res.status(400).json({ error: durationError || frameError })
       }
 
       if (cueText.error) {
@@ -1718,6 +1768,7 @@ router.put(
                     ...(cueText.textSize && { textSize: cueText.textSize }),
                   }
                 : {}),
+              ...(frame && cueType === "visual" ? { frame } : {}),
               file: hasMedia ? fileObject : null,
               color: color,
               loop: loop,
@@ -2054,9 +2105,11 @@ router.put(
         req.body.duration
       )
       const cueText = parseCueText(req.body)
+      const frameProvided = req.body.frame !== undefined
+      const { frame, error: frameError } = parseFrame(req.body.frame)
 
-      if (durationError) {
-        return res.status(400).json({ error: durationError })
+      if (durationError || frameError) {
+        return res.status(400).json({ error: durationError || frameError })
       }
 
       if (cueText.error) {
@@ -2207,6 +2260,9 @@ router.put(
         // invalidates any previous span rather than silently carrying it,
         // possibly stale, to the new screen.
         cue.spanScreens = undefined
+      }
+      if (frameProvided) {
+        cue.frame = frame && cueType === "visual" ? frame : undefined
       }
       if (durationProvided) {
         cue.duration = duration && cueType === "visual" ? duration : undefined

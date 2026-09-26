@@ -67,6 +67,7 @@ describe("ToolBox Component", () => {
         cueName: "Updated Name",
         name: "Updated Name",
         opacity: 1,
+        frame: null,
       })
     })
     expect(mockOnClose).toHaveBeenCalledTimes(1)

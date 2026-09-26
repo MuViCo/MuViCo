@@ -31,6 +31,81 @@ describe("ScreensDisplay", () => {
     expect(onScreenAspectRatioChange).toHaveBeenCalledWith(1, "21:9")
   })
 
+  test("only the focused lane's layer gets resize handles", () => {
+    const cues = [
+      {
+        _id: "cue-l1",
+        cueType: "visual",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "Backdrop",
+        color: "#000000",
+        file: { type: "image/png", url: "https://example.com/a.png" },
+        opacity: 1,
+      },
+      {
+        _id: "cue-l2",
+        cueType: "visual",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        name: "Overlay",
+        color: "#000000",
+        file: { type: "image/png", url: "https://example.com/b.png" },
+        opacity: 1,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={1}
+        cues={cues}
+        indexCount={1}
+        onSetCueFrame={jest.fn()}
+        focusedLaneKey="screen-1:1"
+        onFocusLane={jest.fn()}
+      />
+    )
+
+    expect(screen.getByTestId("layer-handle-Overlay-se")).toBeInTheDocument()
+    expect(
+      screen.queryByTestId("layer-handle-Backdrop-se")
+    ).not.toBeInTheDocument()
+  })
+
+  test("clicking a layer focuses its lane", () => {
+    const onFocusLane = jest.fn()
+    const cues = [
+      {
+        _id: "cue-l2",
+        cueType: "visual",
+        index: 0,
+        screen: 2,
+        layer: 1,
+        name: "Overlay",
+        color: "#000000",
+        file: { type: "image/png", url: "https://example.com/b.png" },
+        opacity: 1,
+      },
+    ]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        indexCount={1}
+        onSetCueFrame={jest.fn()}
+        focusedLaneKey={null}
+        onFocusLane={onFocusLane}
+      />
+    )
+
+    fireEvent.mouseDown(screen.getByTestId("layer-frame-Overlay"))
+
+    expect(onFocusLane).toHaveBeenCalledWith("screen-2:1")
+  })
+
   test("hides the shape selector when no handler is given", () => {
     render(<ScreensDisplay screenCount={2} cues={[]} />)
 

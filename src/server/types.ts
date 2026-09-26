@@ -27,6 +27,7 @@ export interface Cue {
   name: string
   screen: number
   spanScreens?: number[]
+  frame?: CueFrame
   duration?: number
   text?: string
   textColor?: string
@@ -91,6 +92,13 @@ export interface Score {
 }
 
 export type StorageBackend = "aws" | "googleDrive"
+
+export interface CueFrame {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export interface PresentationAttrs {
   name: string

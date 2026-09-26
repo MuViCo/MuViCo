@@ -18,6 +18,10 @@ import {
 } from "../utils/cueVisualSpanUtils"
 import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
+import { cueFrameStyle } from "../utils/cueFrame"
+import ScreenLayerFrame from "./ScreenLayerFrame"
+
+import type { CueFrame } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
   screenWidthMapFromRatios,
@@ -122,6 +126,9 @@ export interface ScreensDisplayProps {
   outputAspectRatio?: string
   screenAspectRatios?: Record<string, string>
   onScreenAspectRatioChange?: (screenNumber: number, ratio: string) => void
+  onSetCueFrame?: (cue: Cue, frame: CueFrame) => void
+  focusedLaneKey?: string | null
+  onFocusLane?: (laneKey: string) => void
 }
 
 const sortByLayerPriority = (cues: Cue[]): Cue[] =>
@@ -143,6 +150,9 @@ export const ScreensDisplay = ({
   outputAspectRatio,
   screenAspectRatios,
   onScreenAspectRatioChange,
+  onSetCueFrame,
+  focusedLaneKey = null,
+  onFocusLane,
 }: ScreensDisplayProps) => {
   const tileAspectRatioFor = (screenNumber: number) =>
     parseAspectRatio(
@@ -452,19 +462,45 @@ export const ScreensDisplay = ({
               </div>
             )}
             {screenStack.length > 0 ? (
-              screenStack.map((cue) => (
-                <div
-                  key={cue._id}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 5 + (100 - Number(cue.layer ?? 0)),
-                    opacity: normalizeCueOpacity(cue.opacity),
-                  }}
-                >
-                  {renderCuePreview(cue, screenNumber)}
-                </div>
-              ))
+              screenStack.map((cue) =>
+                onSetCueFrame ? (
+                  <ScreenLayerFrame
+                    key={cue._id}
+                    frame={cue.frame}
+                    stageRef={{
+                      current: tileRefs.current[screenNumber] ?? null,
+                    }}
+                    zIndex={5 + (100 - Number(cue.layer ?? 0))}
+                    opacity={normalizeCueOpacity(cue.opacity)}
+                    label={cue.name}
+                    isSelected={
+                      focusedLaneKey ===
+                      `screen-${screenNumber}:${Number(cue.layer ?? 0)}`
+                    }
+                    onSelect={() =>
+                      onFocusLane?.(
+                        `screen-${screenNumber}:${Number(cue.layer ?? 0)}`
+                      )
+                    }
+                    onCommit={(frame) => onSetCueFrame(cue, frame)}
+                  >
+                    {renderCuePreview(cue, screenNumber)}
+                  </ScreenLayerFrame>
+                ) : (
+                  <div
+                    key={cue._id}
+                    style={{
+                      position: "absolute",
+                      ...cueFrameStyle(cue),
+                      zIndex: 5 + (100 - Number(cue.layer ?? 0)),
+                      opacity: normalizeCueOpacity(cue.opacity),
+                      overflow: "hidden",
+                    }}
+                  >
+                    {renderCuePreview(cue, screenNumber)}
+                  </div>
+                )
+              )
             ) : (
               <div
                 style={{

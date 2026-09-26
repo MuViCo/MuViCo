@@ -65,6 +65,7 @@ interface EditModeProps {
   indexCount: number
   /** Stable "group:layer" key of the focused lane, or null. */
   focusedLaneKey?: string | null
+  outputAspectRatio?: string
   onFocusLane?: (laneKey: string | null) => void
   isAutoplaying?: boolean
   /** Seconds a frame is held during autoplay. */
@@ -166,6 +167,7 @@ const EditMode = ({
   // Defaults so the suites that render EditMode with plain props keep working.
   // A no-op rather than a local useState: several of those tests fire mouseUp
   // outside act(), and a state update there would warn.
+  outputAspectRatio,
   focusedLaneKey = null,
   onFocusLane = () => {},
   isAutoplaying = false,
@@ -2703,6 +2705,7 @@ const EditMode = ({
               setSelectedCue(null)
               setIsToolboxOpen(false)
             }}
+            outputAspectRatio={outputAspectRatio}
           />
           <MultiScreenModal
             isOpen={isMultiScreenModalOpen}

@@ -39,7 +39,8 @@ export const createFormData = (
   // note on CueUpdateInput.file describes.
   mediaId?: string,
   duration?: number | null,
-  textFields?: { text?: string; textColor?: string; textSize?: number }
+  textFields?: { text?: string; textColor?: string; textSize?: number },
+  frame?: { x: number; y: number; width: number; height: number } | null
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -76,6 +77,9 @@ export const createFormData = (
   }
   if (duration !== undefined) {
     formData.append("duration", duration === null ? "" : String(duration))
+  }
+  if (frame !== undefined) {
+    formData.append("frame", frame === null ? "" : JSON.stringify(frame))
   }
   if (mediaId) {
     formData.append("mediaId", mediaId)
