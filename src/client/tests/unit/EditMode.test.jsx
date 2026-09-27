@@ -1153,10 +1153,11 @@ describe("EditMode drag swapping", () => {
     const gridContainer = setupGridGeometry()
     const dropArea = screen.getByTestId("drop-area")
     const dataTransfer = buildPoolEmptyNameColorDragDataTransfer()
+    const clientX = 240
 
     fireEvent.dragOver(gridContainer, {
       dataTransfer,
-      clientX: 170,
+      clientX,
       clientY: rowCenterY(0),
     })
 
@@ -1166,7 +1167,7 @@ describe("EditMode drag swapping", () => {
       configurable: true,
     })
     Object.defineProperty(dropEvent, "clientX", {
-      value: 170,
+      value: clientX,
       configurable: true,
     })
     Object.defineProperty(dropEvent, "clientY", {
@@ -1883,6 +1884,178 @@ describe("EditMode drag swapping", () => {
       })
       expect(updatePresentation).not.toHaveBeenCalled()
       expect(fetchPresentationInfo).toHaveBeenCalledWith("presentation-1")
+    })
+  })
+
+  describe("inserting an element between two existing ones", () => {
+    const cellWidthWithGap = TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap
+    const leftEdgeX = (index) => index * cellWidthWithGap + 10
+    const centerX = (index) =>
+      index * cellWidthWithGap + TIMELINE_METRICS.columnWidth / 2
+
+    const dropColorAt = async (clientX) => {
+      const gridContainer = setupGridGeometry()
+      const dropArea = screen.getByTestId("drop-area")
+      const dataTransfer = buildPoolColorDragDataTransfer()
+
+      fireEvent.dragOver(gridContainer, {
+        dataTransfer,
+        clientX,
+        clientY: rowCenterY(0),
+      })
+
+      const dropEvent = createEvent.drop(dropArea)
+      for (const [key, value] of [
+        ["dataTransfer", dataTransfer],
+        ["clientX", clientX],
+        ["clientY", rowCenterY(0)],
+      ]) {
+        Object.defineProperty(dropEvent, key, { value, configurable: true })
+      }
+
+      await act(async () => {
+        fireEvent(dropArea, dropEvent)
+      })
+    }
+
+    const dragOver = (gridContainer, dataTransfer, clientX) => {
+      const dragOverEvent = createEvent.dragOver(gridContainer)
+      for (const [key, value] of [
+        ["dataTransfer", dataTransfer],
+        ["clientX", clientX],
+        ["clientY", rowCenterY(0)],
+      ]) {
+        Object.defineProperty(dragOverEvent, key, { value, configurable: true })
+      }
+      fireEvent(gridContainer, dragOverEvent)
+    }
+
+    it("shows an insertion line while dragging over the left edge of an occupied cell", () => {
+      renderEditMode(cues, 3)
+      const gridContainer = setupGridGeometry()
+      const dataTransfer = buildPoolColorDragDataTransfer()
+
+      dragOver(gridContainer, dataTransfer, leftEdgeX(1))
+
+      expect(screen.getByTestId("insert-before-indicator")).toBeInTheDocument()
+    })
+
+    it("shows no insertion line over an empty cell or the middle of an occupied one", () => {
+      renderEditMode(cues, 3)
+      const gridContainer = setupGridGeometry()
+      const dataTransfer = buildPoolColorDragDataTransfer()
+
+      dragOver(gridContainer, dataTransfer, leftEdgeX(2))
+      expect(screen.queryByTestId("insert-before-indicator")).toBeNull()
+
+      dragOver(gridContainer, dataTransfer, centerX(1))
+      expect(screen.queryByTestId("insert-before-indicator")).toBeNull()
+    })
+
+    it("hides the insertion line once the pointer leaves the grid", () => {
+      renderEditMode(cues, 3)
+      const gridContainer = setupGridGeometry()
+      const dataTransfer = buildPoolColorDragDataTransfer()
+
+      dragOver(gridContainer, dataTransfer, leftEdgeX(1))
+      expect(screen.getByTestId("insert-before-indicator")).toBeInTheDocument()
+
+      fireEvent.dragLeave(gridContainer, { clientX: -100, clientY: -100 })
+
+      expect(screen.queryByTestId("insert-before-indicator")).toBeNull()
+    })
+
+    it("shifts the occupied cell and everything after it, then places the new element in the gap", async () => {
+      renderEditMode(cues, 3)
+
+      await dropColorAt(leftEdgeX(1))
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "right"
+        )
+      })
+      const sent = createCue.mock.calls.at(-1)[1]
+      expect(sent.get("index")).toBe("1")
+      expect(sent.get("color")).toBe("#ff8800")
+      expect(incrementIndexCount).toHaveBeenCalledTimes(1)
+    })
+
+    it("drops straight into an empty cell without shifting anything, even near its left edge", async () => {
+      renderEditMode(cues, 3)
+
+      await dropColorAt(leftEdgeX(2))
+
+      await waitFor(() => expect(createCue).toHaveBeenCalled())
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+      const sent = createCue.mock.calls.at(-1)[1]
+      expect(sent.get("index")).toBe("2")
+    })
+
+    it("still offers to replace, rather than insert, when dropped in the middle of the cell", async () => {
+      renderEditMode(cues, 3)
+
+      await dropColorAt(centerX(1))
+
+      expect(
+        await screen.findByTestId("confirm-dialog-confirm")
+      ).toBeInTheDocument()
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+    })
+
+    it("inserts before the very first frame when dropped at its left edge", async () => {
+      renderEditMode(cues, 3)
+
+      await dropColorAt(leftEdgeX(0))
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          -1,
+          "right"
+        )
+      })
+      const sent = createCue.mock.calls.at(-1)[1]
+      expect(sent.get("index")).toBe("0")
+    })
+
+    it("shifts to make room for a dropped file too", async () => {
+      renderEditMode(cues, 3)
+      const gridContainer = setupGridGeometry()
+      const dropArea = screen.getByTestId("drop-area")
+      const file = new File(["data"], "photo.png", { type: "image/png" })
+      const dataTransfer = { files: [file], getData: () => "" }
+      const clientX = leftEdgeX(1)
+
+      fireEvent.dragOver(gridContainer, {
+        dataTransfer,
+        clientX,
+        clientY: rowCenterY(0),
+      })
+
+      const dropEvent = createEvent.drop(dropArea)
+      for (const [key, value] of [
+        ["dataTransfer", dataTransfer],
+        ["clientX", clientX],
+        ["clientY", rowCenterY(0)],
+      ]) {
+        Object.defineProperty(dropEvent, key, { value, configurable: true })
+      }
+
+      await act(async () => {
+        fireEvent(dropArea, dropEvent)
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "right"
+        )
+      })
+      expect(screen.queryByTestId("confirm-dialog-confirm")).toBeNull()
     })
   })
 })
