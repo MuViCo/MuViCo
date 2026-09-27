@@ -3,18 +3,27 @@ import React, { useEffect, useRef } from "react"
 const CueAudioPlayer = ({
   src,
   loop,
-  isAutoplaying,
+  shouldAutoPlay,
   continuePlayback,
   allowContinuousAudio,
+  playRequestToken,
 }) => {
   const audioRef = useRef(null)
   const hasStartedRef = useRef(false)
+  const lastPlayRequestRef = useRef(undefined)
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
-    if (!isAutoplaying || !src) {
+    const isFreshPlayRequest =
+      playRequestToken !== undefined &&
+      playRequestToken !== lastPlayRequestRef.current
+    lastPlayRequestRef.current = playRequestToken
+
+    const shouldPlayNow = Boolean(src) && (shouldAutoPlay || isFreshPlayRequest)
+
+    if (!shouldPlayNow) {
       if (
         (loop || continuePlayback) &&
         allowContinuousAudio &&
@@ -29,7 +38,14 @@ const CueAudioPlayer = ({
     const playPromise = audio.play()
     hasStartedRef.current = true
     if (playPromise?.catch) playPromise.catch(() => {})
-  }, [src, loop, isAutoplaying, continuePlayback, allowContinuousAudio])
+  }, [
+    src,
+    loop,
+    shouldAutoPlay,
+    continuePlayback,
+    allowContinuousAudio,
+    playRequestToken,
+  ])
 
   if (!src) return null
   return (
@@ -37,15 +53,25 @@ const CueAudioPlayer = ({
   )
 }
 
-const CueAudioPlayers = ({ tracks, isAutoplaying, allowContinuousAudio }) =>
+const CueAudioPlayers = ({
+  tracks,
+  shouldAutoPlay,
+  allowContinuousAudio,
+  playRequest,
+}) =>
   tracks.map((track, trackIndex) => (
     <CueAudioPlayer
       key={track.id || `${track.src}-${trackIndex}`}
       src={track.src}
       loop={Boolean(track.loop)}
-      isAutoplaying={isAutoplaying}
+      shouldAutoPlay={shouldAutoPlay}
       continuePlayback={Boolean(track.continuePlayback)}
       allowContinuousAudio={allowContinuousAudio}
+      playRequestToken={
+        playRequest && playRequest.trackId === track.id
+          ? playRequest.token
+          : undefined
+      }
     />
   ))
 

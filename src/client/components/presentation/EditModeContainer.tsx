@@ -573,6 +573,14 @@ const EditModeContainer = ({
   const [autoplayInterval, setAutoplayInterval] = useState(5)
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
   const [isBlackout, setIsBlackout] = useState(false)
+  const [isAudioArmed, setIsAudioArmed] = useState(false)
+  const [audioAdvanceMode, setAudioAdvanceMode] = useState<"auto" | "manual">(
+    "auto"
+  )
+  const [audioPlayRequest, setAudioPlayRequest] = useState<{
+    trackId: string
+    token: number
+  } | null>(null)
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
@@ -798,7 +806,11 @@ const EditModeContainer = ({
   }, [])
 
   useEffect(() => {
-    if (!isShowMode) setIsBlackout(false)
+    if (!isShowMode) {
+      setIsBlackout(false)
+      setIsAudioArmed(false)
+      setAudioPlayRequest(null)
+    }
   }, [isShowMode])
 
   useEffect(() => {
@@ -833,12 +845,27 @@ const EditModeContainer = ({
           autoplayInterval={autoplayInterval}
           isAutoplaying={isAutoplaying}
           isBlackout={isBlackout}
+          isAudioArmed={isAudioArmed}
+          audioAdvanceMode={audioAdvanceMode}
           getActiveCuesForScreen={getActiveCuesForScreen}
           onSetCueIndex={setCueIndex}
           onPrevious={() => updateCue("Previous")}
           onNext={() => updateCue("Next")}
           onToggleAutoplay={toggleAutoplay}
           onToggleBlackout={() => setIsBlackout((active) => !active)}
+          onToggleAudioArmed={() => setIsAudioArmed((armed) => !armed)}
+          onToggleAudioAdvanceMode={() =>
+            setAudioAdvanceMode((mode) => (mode === "auto" ? "manual" : "auto"))
+          }
+          onRequestTrackPlay={(trackId: string) =>
+            setAudioPlayRequest((previous) => ({
+              trackId,
+              token:
+                (previous && previous.trackId === trackId
+                  ? previous.token
+                  : 0) + 1,
+            }))
+          }
           onToggleScreen={toggleScreenVisibility}
           onExit={() => {
             setIsBlackout(false)
@@ -896,8 +923,13 @@ const EditModeContainer = ({
 
       <CueAudioPlayers
         tracks={currentAudioTracks}
-        isAutoplaying={isAutoplaying}
+        shouldAutoPlay={
+          isShowMode
+            ? isAudioArmed && audioAdvanceMode === "auto"
+            : isAutoplaying
+        }
         allowContinuousAudio={autoplayEnded}
+        playRequest={isShowMode ? audioPlayRequest : null}
       />
 
       <TutorialGuide

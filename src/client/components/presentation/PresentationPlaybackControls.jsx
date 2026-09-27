@@ -250,7 +250,7 @@ const PresentationPlaybackControls = ({
       {renderAudioPlayers && (
         <CueAudioPlayers
           tracks={resolvedAudioTracks}
-          isAutoplaying={isAutoplaying}
+          shouldAutoPlay={isAutoplaying}
           allowContinuousAudio={allowContinuousAudio}
         />
       )}

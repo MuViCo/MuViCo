@@ -47,6 +47,8 @@ const renderShowMode = (overrides = {}) => {
     autoplayInterval: 5,
     isAutoplaying: false,
     isBlackout: false,
+    isAudioArmed: false,
+    audioAdvanceMode: "auto" as const,
     getActiveCuesForScreen: jest.fn((screenNumber, index) =>
       screenNumber === 1 && index === 0 ? cues : []
     ),
@@ -55,6 +57,9 @@ const renderShowMode = (overrides = {}) => {
     onNext: jest.fn(),
     onToggleAutoplay: jest.fn(),
     onToggleBlackout: jest.fn(),
+    onToggleAudioArmed: jest.fn(),
+    onToggleAudioAdvanceMode: jest.fn(),
+    onRequestTrackPlay: jest.fn(),
     onToggleScreen: jest.fn(),
     onExit: jest.fn(),
     ...overrides,
@@ -207,5 +212,160 @@ describe("ShowMode", () => {
     fireEvent.click(screen.getByRole("button", { name: "Expand" }))
 
     expect(screen.getByTestId("show-score")).toBeInTheDocument()
+  })
+
+  test("shows both audio controls, off and auto by default", () => {
+    renderShowMode()
+
+    expect(screen.getByRole("button", { name: "Audio off" })).toHaveAttribute(
+      "data-active",
+      "false"
+    )
+    expect(
+      screen.getByRole("button", { name: "Audio: Auto" })
+    ).toBeInTheDocument()
+  })
+
+  test("toggles arming the audio system", () => {
+    const props = renderShowMode()
+
+    fireEvent.click(screen.getByRole("button", { name: "Audio off" }))
+
+    expect(props.onToggleAudioArmed).toHaveBeenCalledTimes(1)
+  })
+
+  test("toggles the audio advance mode", () => {
+    const props = renderShowMode()
+
+    fireEvent.click(screen.getByRole("button", { name: "Audio: Auto" }))
+
+    expect(props.onToggleAudioAdvanceMode).toHaveBeenCalledTimes(1)
+  })
+
+  test("shows the armed state and manual label once set", () => {
+    renderShowMode({ isAudioArmed: true, audioAdvanceMode: "manual" })
+
+    expect(screen.getByRole("button", { name: "Audio on" })).toHaveAttribute(
+      "data-active",
+      "true"
+    )
+    expect(
+      screen.getByRole("button", { name: "Audio: Manual" })
+    ).toBeInTheDocument()
+  })
+
+  test("gives no way to manually play a track before the system is armed", () => {
+    renderShowMode({
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    expect(screen.getByText("Not started yet")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Play Background music" })
+    ).not.toBeInTheDocument()
+  })
+
+  test("gives no manual play button in auto mode either", () => {
+    renderShowMode({
+      isAudioArmed: true,
+      audioAdvanceMode: "auto",
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    expect(screen.queryByText("Not started yet")).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Play Background music" })
+    ).not.toBeInTheDocument()
+  })
+
+  test("offers a manual play button per track once armed and in manual mode", () => {
+    const props = renderShowMode({
+      isAudioArmed: true,
+      audioAdvanceMode: "manual",
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play Background music" })
+    )
+
+    expect(props.onRequestTrackPlay).toHaveBeenCalledWith("audio-1")
+  })
+
+  test("offers one manual play button per active track", () => {
+    renderShowMode({
+      isAudioArmed: true,
+      audioAdvanceMode: "manual",
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Click track",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+        {
+          id: "audio-2",
+          name: "Backing track",
+          layer: 1,
+          loop: true,
+          continuePlayback: true,
+        },
+      ],
+    })
+
+    expect(
+      screen.getByRole("button", { name: "Play Click track" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Play Backing track" })
+    ).toBeInTheDocument()
+  })
+
+  test("keeps the audio controls available from the control room too", () => {
+    const props = renderShowMode({
+      isAudioArmed: true,
+      audioAdvanceMode: "manual",
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /Control room/ }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Play Background music" })
+    )
+
+    expect(props.onRequestTrackPlay).toHaveBeenCalledWith("audio-1")
   })
 })
