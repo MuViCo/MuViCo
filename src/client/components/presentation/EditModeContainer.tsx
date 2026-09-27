@@ -577,10 +577,9 @@ const EditModeContainer = ({
   const [audioAdvanceMode, setAudioAdvanceMode] = useState<"auto" | "manual">(
     "auto"
   )
-  const [audioPlayRequest, setAudioPlayRequest] = useState<{
-    trackId: string
-    token: number
-  } | null>(null)
+  const [manuallyPlayingTrackIds, setManuallyPlayingTrackIds] = useState<
+    Record<string, boolean>
+  >({})
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioPreloadedUrlsRef = useRef(new Set())
   const cueIndexRef = useRef(cueIndex)
@@ -809,7 +808,7 @@ const EditModeContainer = ({
     if (!isShowMode) {
       setIsBlackout(false)
       setIsAudioArmed(false)
-      setAudioPlayRequest(null)
+      setManuallyPlayingTrackIds({})
     }
   }, [isShowMode])
 
@@ -847,6 +846,7 @@ const EditModeContainer = ({
           isBlackout={isBlackout}
           isAudioArmed={isAudioArmed}
           audioAdvanceMode={audioAdvanceMode}
+          playingTrackIds={manuallyPlayingTrackIds}
           getActiveCuesForScreen={getActiveCuesForScreen}
           onSetCueIndex={setCueIndex}
           onPrevious={() => updateCue("Previous")}
@@ -857,13 +857,10 @@ const EditModeContainer = ({
           onToggleAudioAdvanceMode={() =>
             setAudioAdvanceMode((mode) => (mode === "auto" ? "manual" : "auto"))
           }
-          onRequestTrackPlay={(trackId: string) =>
-            setAudioPlayRequest((previous) => ({
-              trackId,
-              token:
-                (previous && previous.trackId === trackId
-                  ? previous.token
-                  : 0) + 1,
+          onToggleTrackPlay={(trackId: string) =>
+            setManuallyPlayingTrackIds((previous) => ({
+              ...previous,
+              [trackId]: !previous[trackId],
             }))
           }
           onToggleScreen={toggleScreenVisibility}
@@ -929,7 +926,9 @@ const EditModeContainer = ({
             : isAutoplaying
         }
         allowContinuousAudio={autoplayEnded}
-        playRequest={isShowMode ? audioPlayRequest : null}
+        manuallyPlayingTrackIds={
+          isShowMode ? manuallyPlayingTrackIds : undefined
+        }
       />
 
       <TutorialGuide

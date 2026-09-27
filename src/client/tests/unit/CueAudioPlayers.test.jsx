@@ -103,36 +103,36 @@ describe("CueAudioPlayers", () => {
     expect(pauseSpy).not.toHaveBeenCalled()
   })
 
-  test("does not manually start a track that has no play request", () => {
+  test("does not manually start a track that is not in the manually-playing set", () => {
     render(
       <CueAudioPlayers
         tracks={[track()]}
         shouldAutoPlay={false}
-        playRequest={{ trackId: "some-other-track", token: 1 }}
+        manuallyPlayingTrackIds={{ "some-other-track": true }}
       />
     )
 
     expect(playSpy).not.toHaveBeenCalled()
   })
 
-  test("plays a track when it is manually requested, even with auto-play off", () => {
+  test("plays a track that is manually toggled on, even with auto-play off", () => {
     render(
       <CueAudioPlayers
         tracks={[track()]}
         shouldAutoPlay={false}
-        playRequest={{ trackId: "track-1", token: 1 }}
+        manuallyPlayingTrackIds={{ "track-1": true }}
       />
     )
 
     expect(playSpy).toHaveBeenCalledTimes(1)
   })
 
-  test("plays again when the same track is manually requested a second time", () => {
+  test("pauses a manually playing track when it is toggled off", () => {
     const { rerender } = render(
       <CueAudioPlayers
         tracks={[track()]}
         shouldAutoPlay={false}
-        playRequest={{ trackId: "track-1", token: 1 }}
+        manuallyPlayingTrackIds={{ "track-1": true }}
       />
     )
     expect(playSpy).toHaveBeenCalledTimes(1)
@@ -141,47 +141,98 @@ describe("CueAudioPlayers", () => {
       <CueAudioPlayers
         tracks={[track()]}
         shouldAutoPlay={false}
-        playRequest={{ trackId: "track-1", token: 2 }}
+        manuallyPlayingTrackIds={{ "track-1": false }}
+      />
+    )
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
+
+  test("toggling a track back on plays it again", () => {
+    const { rerender } = render(
+      <CueAudioPlayers
+        tracks={[track()]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ "track-1": true }}
+      />
+    )
+    rerender(
+      <CueAudioPlayers
+        tracks={[track()]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ "track-1": false }}
+      />
+    )
+    expect(playSpy).toHaveBeenCalledTimes(1)
+
+    rerender(
+      <CueAudioPlayers
+        tracks={[track()]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ "track-1": true }}
       />
     )
 
     expect(playSpy).toHaveBeenCalledTimes(2)
   })
 
-  test("a repeated render with the same request token does not replay the track", () => {
-    const { rerender } = render(
-      <CueAudioPlayers
-        tracks={[track()]}
-        shouldAutoPlay={false}
-        playRequest={{ trackId: "track-1", token: 1 }}
-      />
-    )
-    expect(playSpy).toHaveBeenCalledTimes(1)
-
-    rerender(
-      <CueAudioPlayers
-        tracks={[track({ loop: true })]}
-        shouldAutoPlay={false}
-        playRequest={{ trackId: "track-1", token: 1 }}
-      />
-    )
-
-    expect(playSpy).toHaveBeenCalledTimes(1)
-  })
-
-  test("a request for a different track does not start this one", () => {
+  test("a different track being manually on does not start this one", () => {
     render(
       <CueAudioPlayers
         tracks={[track({ id: "a" }), track({ id: "b" })]}
         shouldAutoPlay={false}
-        playRequest={{ trackId: "b", token: 1 }}
+        manuallyPlayingTrackIds={{ b: true }}
       />
     )
 
     expect(playSpy).toHaveBeenCalledTimes(1)
   })
 
-  test("does not crash for a track with no id when there is no play request", () => {
+  test("manually playing a second track does not pause a track already playing", () => {
+    const { rerender } = render(
+      <CueAudioPlayers
+        tracks={[track({ id: "a" }), track({ id: "b" })]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ a: true }}
+      />
+    )
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    const pauseCallsBeforeSecondRequest = pauseSpy.mock.calls.length
+
+    rerender(
+      <CueAudioPlayers
+        tracks={[track({ id: "a" }), track({ id: "b" })]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ a: true, b: true }}
+      />
+    )
+
+    expect(playSpy).toHaveBeenCalledTimes(2)
+    expect(pauseSpy.mock.calls.length).toBe(pauseCallsBeforeSecondRequest)
+  })
+
+  test("pausing one track does not stop another that is still manually on", () => {
+    const { rerender } = render(
+      <CueAudioPlayers
+        tracks={[track({ id: "a" }), track({ id: "b" })]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ a: true, b: true }}
+      />
+    )
+    expect(playSpy).toHaveBeenCalledTimes(2)
+
+    rerender(
+      <CueAudioPlayers
+        tracks={[track({ id: "a" }), track({ id: "b" })]}
+        shouldAutoPlay={false}
+        manuallyPlayingTrackIds={{ a: false, b: true }}
+      />
+    )
+
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+  })
+
+  test("does not crash for a track with no id when nothing is manually playing", () => {
     expect(() =>
       render(
         <CueAudioPlayers

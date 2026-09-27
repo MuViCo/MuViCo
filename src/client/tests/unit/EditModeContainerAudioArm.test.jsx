@@ -70,7 +70,9 @@ jest.mock("../../components/presentation/CueAudioPlayers", () => (props) => (
   <div
     data-testid="mock-cue-audio-players"
     data-should-auto-play={String(props.shouldAutoPlay)}
-    data-play-request={JSON.stringify(props.playRequest)}
+    data-manually-playing={JSON.stringify(
+      props.manuallyPlayingTrackIds ?? null
+    )}
   />
 ))
 
@@ -80,8 +82,11 @@ jest.mock("../../components/presentation/ShowMode", () => (props) => (
     <span data-testid="audio-advance-mode">{props.audioAdvanceMode}</span>
     <button onClick={props.onToggleAudioArmed}>toggle-armed</button>
     <button onClick={props.onToggleAudioAdvanceMode}>toggle-mode</button>
-    <button onClick={() => props.onRequestTrackPlay("track-1")}>
-      request-play
+    <button onClick={() => props.onToggleTrackPlay("track-1")}>
+      toggle-play
+    </button>
+    <button onClick={() => props.onToggleTrackPlay("track-2")}>
+      toggle-play-2
     </button>
     <button onClick={props.onExit}>exit-show</button>
   </div>
@@ -160,26 +165,38 @@ describe("EditModeContainer audio arm and advance mode", () => {
     )
   })
 
-  test("a manual play request reaches CueAudioPlayers with an increasing token", () => {
+  test("toggling a track's play state flips it on then off", () => {
     render(<EditModeContainer {...baseProps} isShowMode />)
 
-    fireEvent.click(screen.getByText("request-play"))
+    fireEvent.click(screen.getByText("toggle-play"))
     expect(screen.getByTestId("mock-cue-audio-players")).toHaveAttribute(
-      "data-play-request",
-      JSON.stringify({ trackId: "track-1", token: 1 })
+      "data-manually-playing",
+      JSON.stringify({ "track-1": true })
     )
 
-    fireEvent.click(screen.getByText("request-play"))
+    fireEvent.click(screen.getByText("toggle-play"))
     expect(screen.getByTestId("mock-cue-audio-players")).toHaveAttribute(
-      "data-play-request",
-      JSON.stringify({ trackId: "track-1", token: 2 })
+      "data-manually-playing",
+      JSON.stringify({ "track-1": false })
     )
   })
 
-  test("leaving Show mode disarms audio and clears any pending play request", () => {
+  test("toggling a second track keeps the first track's state intact", () => {
+    render(<EditModeContainer {...baseProps} isShowMode />)
+
+    fireEvent.click(screen.getByText("toggle-play"))
+    fireEvent.click(screen.getByText("toggle-play-2"))
+
+    expect(screen.getByTestId("mock-cue-audio-players")).toHaveAttribute(
+      "data-manually-playing",
+      JSON.stringify({ "track-1": true, "track-2": true })
+    )
+  })
+
+  test("leaving Show mode disarms audio and clears any manually-playing tracks", () => {
     const { rerender } = render(<EditModeContainer {...baseProps} isShowMode />)
     fireEvent.click(screen.getByText("toggle-armed"))
-    fireEvent.click(screen.getByText("request-play"))
+    fireEvent.click(screen.getByText("toggle-play"))
     expect(screen.getByTestId("is-audio-armed")).toHaveTextContent("true")
 
     rerender(<EditModeContainer {...baseProps} isShowMode={false} />)
@@ -187,8 +204,8 @@ describe("EditModeContainer audio arm and advance mode", () => {
 
     expect(screen.getByTestId("is-audio-armed")).toHaveTextContent("false")
     expect(screen.getByTestId("mock-cue-audio-players")).toHaveAttribute(
-      "data-play-request",
-      "null"
+      "data-manually-playing",
+      JSON.stringify({})
     )
   })
 
@@ -217,15 +234,15 @@ describe("EditModeContainer audio arm and advance mode", () => {
     )
   })
 
-  test("edit mode never receives a play request even if one was made earlier in Show mode", () => {
+  test("edit mode never receives the manually-playing tracks even if some were toggled on in Show mode", () => {
     const { rerender } = render(<EditModeContainer {...baseProps} isShowMode />)
-    fireEvent.click(screen.getByText("request-play"))
+    fireEvent.click(screen.getByText("toggle-play"))
 
     rerender(<EditModeContainer {...baseProps} isShowMode={false} />)
 
     expect(screen.getByTestId("mock-cue-audio-players")).toHaveAttribute(
-      "data-play-request",
-      "null"
+      "data-manually-playing",
+      JSON.stringify(null)
     )
   })
 })

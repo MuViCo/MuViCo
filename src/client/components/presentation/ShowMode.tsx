@@ -14,6 +14,7 @@ import {
   FiChevronDown,
   FiGrid,
   FiMonitor,
+  FiPause,
   FiPlay,
   FiSkipBack,
 } from "react-icons/fi"
@@ -52,6 +53,7 @@ interface ShowModeProps {
   isBlackout: boolean
   isAudioArmed: boolean
   audioAdvanceMode: "auto" | "manual"
+  playingTrackIds: Record<string, boolean>
   getActiveCuesForScreen: (screenNumber: number, index: number) => Cue[]
   onSetCueIndex: Dispatch<SetStateAction<number>>
   onPrevious: () => void
@@ -60,7 +62,7 @@ interface ShowModeProps {
   onToggleBlackout: () => void
   onToggleAudioArmed: () => void
   onToggleAudioAdvanceMode: () => void
-  onRequestTrackPlay: (trackId: string) => void
+  onToggleTrackPlay: (trackId: string) => void
   onToggleScreen: (screenNumber: number) => void
   onExit: () => void
 }
@@ -127,12 +129,14 @@ const ShowAudioStrip = ({
   tracks,
   isAudioArmed,
   audioAdvanceMode,
-  onPlayTrack,
+  playingTrackIds,
+  onToggleTrackPlay,
 }: {
   tracks: AudioTrack[]
   isAudioArmed: boolean
   audioAdvanceMode: "auto" | "manual"
-  onPlayTrack: (trackId: string) => void
+  playingTrackIds: Record<string, boolean>
+  onToggleTrackPlay: (trackId: string) => void
 }) => (
   <Box className="show-audio-strip" aria-label="Active audio tracks">
     <Text className="show-section-label">Audio</Text>
@@ -140,29 +144,33 @@ const ShowAudioStrip = ({
       <Text className="show-muted">Not started yet</Text>
     )}
     {tracks.length ? (
-      tracks.map((track) => (
-        <Box key={track.id} className="show-audio-track">
-          <Box className="show-audio-meter">
-            <Box />
-            <Box />
-            <Box />
-            <Box />
+      tracks.map((track) => {
+        const isPlaying = Boolean(playingTrackIds[track.id])
+        return (
+          <Box key={track.id} className="show-audio-track">
+            <Box className="show-audio-meter">
+              <Box />
+              <Box />
+              <Box />
+              <Box />
+            </Box>
+            <Text title={track.name}>{track.name}</Text>
+            <Text as="span">A{track.layer + 1}</Text>
+            {track.loop && <Text as="span">Loop</Text>}
+            {isAudioArmed && audioAdvanceMode === "manual" && (
+              <Button
+                size="xs"
+                className="show-audio-play"
+                data-active={isPlaying}
+                aria-label={`${isPlaying ? "Pause" : "Play"} ${track.name}`}
+                onClick={() => onToggleTrackPlay(track.id)}
+              >
+                <Icon as={isPlaying ? FiPause : FiPlay} />
+              </Button>
+            )}
           </Box>
-          <Text title={track.name}>{track.name}</Text>
-          <Text as="span">A{track.layer + 1}</Text>
-          {track.loop && <Text as="span">Loop</Text>}
-          {isAudioArmed && audioAdvanceMode === "manual" && (
-            <Button
-              size="xs"
-              className="show-audio-play"
-              aria-label={`Play ${track.name}`}
-              onClick={() => onPlayTrack(track.id)}
-            >
-              <Icon as={FiPlay} />
-            </Button>
-          )}
-        </Box>
-      ))
+        )
+      })
     ) : (
       <Text className="show-muted">No active audio</Text>
     )}
@@ -323,6 +331,7 @@ const ShowMode = ({
   isBlackout,
   isAudioArmed,
   audioAdvanceMode,
+  playingTrackIds,
   getActiveCuesForScreen,
   onSetCueIndex,
   onPrevious,
@@ -331,7 +340,7 @@ const ShowMode = ({
   onToggleBlackout,
   onToggleAudioArmed,
   onToggleAudioAdvanceMode,
-  onRequestTrackPlay,
+  onToggleTrackPlay,
   onToggleScreen,
   onExit,
 }: ShowModeProps) => {
@@ -523,7 +532,8 @@ const ShowMode = ({
               tracks={audioTracks}
               isAudioArmed={isAudioArmed}
               audioAdvanceMode={audioAdvanceMode}
-              onPlayTrack={onRequestTrackPlay}
+              playingTrackIds={playingTrackIds}
+              onToggleTrackPlay={onToggleTrackPlay}
             />
           </Box>
         </Box>
@@ -561,7 +571,8 @@ const ShowMode = ({
               tracks={audioTracks}
               isAudioArmed={isAudioArmed}
               audioAdvanceMode={audioAdvanceMode}
-              onPlayTrack={onRequestTrackPlay}
+              playingTrackIds={playingTrackIds}
+              onToggleTrackPlay={onToggleTrackPlay}
             />
           </Box>
           <Box className="show-control-score">

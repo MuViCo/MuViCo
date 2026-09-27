@@ -49,6 +49,7 @@ const renderShowMode = (overrides = {}) => {
     isBlackout: false,
     isAudioArmed: false,
     audioAdvanceMode: "auto" as const,
+    playingTrackIds: {},
     getActiveCuesForScreen: jest.fn((screenNumber, index) =>
       screenNumber === 1 && index === 0 ? cues : []
     ),
@@ -59,7 +60,7 @@ const renderShowMode = (overrides = {}) => {
     onToggleBlackout: jest.fn(),
     onToggleAudioArmed: jest.fn(),
     onToggleAudioAdvanceMode: jest.fn(),
-    onRequestTrackPlay: jest.fn(),
+    onToggleTrackPlay: jest.fn(),
     onToggleScreen: jest.fn(),
     onExit: jest.fn(),
     ...overrides,
@@ -313,7 +314,35 @@ describe("ShowMode", () => {
       screen.getByRole("button", { name: "Play Background music" })
     )
 
-    expect(props.onRequestTrackPlay).toHaveBeenCalledWith("audio-1")
+    expect(props.onToggleTrackPlay).toHaveBeenCalledWith("audio-1")
+  })
+
+  test("shows a pause button once a track is manually playing", () => {
+    const props = renderShowMode({
+      isAudioArmed: true,
+      audioAdvanceMode: "manual",
+      playingTrackIds: { "audio-1": true },
+      audioTracks: [
+        {
+          id: "audio-1",
+          name: "Background music",
+          layer: 0,
+          loop: false,
+          continuePlayback: false,
+        },
+      ],
+    })
+
+    const pauseButton = screen.getByRole("button", {
+      name: "Pause Background music",
+    })
+    expect(
+      screen.queryByRole("button", { name: "Play Background music" })
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(pauseButton)
+
+    expect(props.onToggleTrackPlay).toHaveBeenCalledWith("audio-1")
   })
 
   test("offers one manual play button per active track", () => {
@@ -366,6 +395,6 @@ describe("ShowMode", () => {
       screen.getByRole("button", { name: "Play Background music" })
     )
 
-    expect(props.onRequestTrackPlay).toHaveBeenCalledWith("audio-1")
+    expect(props.onToggleTrackPlay).toHaveBeenCalledWith("audio-1")
   })
 })
