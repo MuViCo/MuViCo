@@ -79,6 +79,7 @@ interface EditModeProps {
  * safe -- and `closest` on a non-element would already throw today.
  */
 const NEW_CUE_DURATION = 1
+const INSERT_ZONE_FRACTION = 0.3
 
 const targetElement = (event: { target: EventTarget | null }): HTMLElement =>
   event.target as HTMLElement
@@ -87,6 +88,7 @@ const targetElement = (event: { target: EventTarget | null }): HTMLElement =>
 interface GridCell {
   xIndex: number
   yIndex: number
+  xWithinCell: number
 }
 import {
   updatePresentation,
@@ -236,6 +238,9 @@ const EditMode = ({
   const [dragCursorMode, setDragCursorMode] = useState("default")
   const [isCopied, setIsCopied] = useState(false)
   const [copiedCue, setCopiedCue] = useState<Cue | null>(null)
+  const [insertBeforeIndex, setInsertBeforeIndex] = useState<number | null>(
+    null
+  )
   const {
     previewCueSpanOverrides,
     clearExternalDragPreview,
@@ -572,6 +577,15 @@ const EditMode = ({
   // Get cue at grid position (including ones spanning multiple cells)
   const getCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find((cue) => cueOccupiesSlot(cue, xIndex, yIndex))
+
+  const isDropInInsertZone = (
+    xIndex: number,
+    yIndex: number,
+    xWithinCell: number
+  ) =>
+    isRowInsideGrid(xIndex, yIndex) &&
+    xWithinCell < columnWidth * INSERT_ZONE_FRACTION &&
+    Boolean(getAnchorCueAtPosition(xIndex, yIndex))
 
   // Get cue at grid position (only anchor cell - first cell of the cue)
   const getAnchorCueAtPosition = (xIndex: number, yIndex: number) =>
@@ -1398,12 +1412,22 @@ const EditMode = ({
 
     const dragData = getDragDataFromDataTransfer(event.dataTransfer)
     latestGridDragDataRef.current = dragData
-    latestGridDragCellRef.current = getPosition(
+    const hoveredCell = getPosition(
       event,
       containerRef,
       columnWidth,
       rowHeight,
       gap
+    )
+    latestGridDragCellRef.current = hoveredCell
+    setInsertBeforeIndex(
+      isDropInInsertZone(
+        hoveredCell.xIndex,
+        hoveredCell.yIndex,
+        hoveredCell.xWithinCell
+      )
+        ? hoveredCell.xIndex
+        : null
     )
     const dragCueType = getCueTypeFromDragData(dragData)
     if (!dragCueType) {
@@ -1432,6 +1456,7 @@ const EditMode = ({
     if (!pointerInsideGrid) {
       latestGridDragDataRef.current = null
       latestGridDragCellRef.current = null
+      setInsertBeforeIndex(null)
       clearExternalPlacementPreview()
     }
   }
@@ -1524,7 +1549,10 @@ const EditMode = ({
   )
 
   // Add a new cue - checks for conflicts and saves to backend
-  const addCue = async (cueData: CueUpdateInput) => {
+  const addCue = async (
+    cueData: CueUpdateInput,
+    { skipConflictCheck = false }: { skipConflictCheck?: boolean } = {}
+  ) => {
     const {
       index,
       cueName,
@@ -1541,18 +1569,19 @@ const EditMode = ({
       textSize,
     } = cueData
 
-    //Check if cue with same index and screen already exists
-    const existingCue = getRowCueConflict(
-      index,
-      screen,
-      layer,
-      null,
-      cueData.spanScreens ?? null
-    )
+    if (!skipConflictCheck) {
+      const existingCue = getRowCueConflict(
+        index,
+        screen,
+        layer,
+        null,
+        cueData.spanScreens ?? null
+      )
 
-    if (existingCue) {
-      await handleCueExists(existingCue, cueData)
-      return
+      if (existingCue) {
+        await handleCueExists(existingCue, cueData)
+        return
+      }
     }
 
     const formData = createFormData(
@@ -1834,8 +1863,9 @@ const EditMode = ({
 
     const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
+    const xWithinCell = absoluteDropX - xIndex * cellWidthWithGap
 
-    return { xIndex, yIndex }
+    return { xIndex, yIndex, xWithinCell }
   }
 
   // Handle swapping elements when dragging one to another's position
@@ -1948,7 +1978,23 @@ const EditMode = ({
     const yIndex = Number.isFinite(dropCell.yIndex)
       ? dropCell.yIndex
       : (fallbackDropCell?.yIndex ?? NaN)
+    const xWithinCell = Number.isFinite(dropCell.xWithinCell)
+      ? dropCell.xWithinCell
+      : (fallbackDropCell?.xWithinCell ?? 0)
     latestGridDragCellRef.current = null
+    setInsertBeforeIndex(null)
+
+    const shouldInsertBeforeDrop = isDropInInsertZone(
+      xIndex,
+      yIndex,
+      xWithinCell
+    )
+    const placeCue = async (cueData: CueUpdateInput) => {
+      if (shouldInsertBeforeDrop) {
+        await handleAddIndex(xIndex - 1)
+      }
+      await addCue(cueData, { skipConflictCheck: shouldInsertBeforeDrop })
+    }
 
     if (dragData && dragData.type === "newCueFromForm") {
       const colorCueName = (dragData.cueName || "").trim()
@@ -1968,7 +2014,7 @@ const EditMode = ({
           return
         }
 
-        await addCue({
+        await placeCue({
           index: xIndex,
           cueName: colorCueName,
           screen: target.screen,
@@ -2006,7 +2052,7 @@ const EditMode = ({
           opacity: normalizeCueOpacity(dragData.opacity),
         }
 
-        await addCue(dataToSave)
+        await placeCue(dataToSave)
         return
       } else if (
         dragData.elementType === "media" ||
@@ -2056,7 +2102,7 @@ const EditMode = ({
           opacity: 1,
         }
 
-        await addCue(dataToSave)
+        await placeCue(dataToSave)
         return
       }
 
@@ -2071,7 +2117,7 @@ const EditMode = ({
         opacity: normalizeCueOpacity(dragData.opacity),
       }
 
-      await addCue(dataToSave)
+      await placeCue(dataToSave)
       return
     }
 
@@ -2107,7 +2153,7 @@ const EditMode = ({
       return
     }
 
-    if (anchorCueExists(xIndex, yIndex)) {
+    if (anchorCueExists(xIndex, yIndex) && !shouldInsertBeforeDrop) {
       setConfirmMessage(
         `Index ${xIndex} element already exists on ${rowLabelForCue({ cueType: fileCueType, ...target })}. Do you want to replace it?`
       )
@@ -2117,6 +2163,11 @@ const EditMode = ({
       setIsConfirmOpen(true)
       return
     }
+
+    if (shouldInsertBeforeDrop) {
+      await handleAddIndex(xIndex - 1)
+    }
+
     const formData = createFormData(
       xIndex,
       file.name,
@@ -2371,6 +2422,20 @@ const EditMode = ({
                       : undefined
                   }
                 />
+                {insertBeforeIndex !== null && (
+                  <Box
+                    data-testid="insert-before-indicator"
+                    position="absolute"
+                    top={`${frameHeaderHeight}px`}
+                    bottom={0}
+                    left={`${columnLeft(insertBeforeIndex)}px`}
+                    width="3px"
+                    bg="#34d399"
+                    boxShadow="0 0 10px rgba(52, 211, 153, 0.85)"
+                    pointerEvents="none"
+                    zIndex={9}
+                  />
+                )}
                 {audioStartRow > 0 && (
                   <Box
                     data-testid="audio-section-divider"
