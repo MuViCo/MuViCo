@@ -7,14 +7,15 @@ import React from "react"
 import { render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { useSelector } from "react-redux"
+const mockedUseSelector = jest.mocked(useSelector)
 import StatusTooltip from "../../components/presentation/StatusToolTip"
 
 jest.mock("react-redux", () => ({
   useSelector: jest.fn(),
 }))
 
-const renderWithPendingSaves = (pendingSaves) => {
-  useSelector.mockImplementation((selector) =>
+const renderWithPendingSaves = (pendingSaves: number) => {
+  mockedUseSelector.mockImplementation((selector) =>
     selector({ presentation: { pendingSaves } })
   )
   return render(<StatusTooltip />)
@@ -33,13 +34,13 @@ describe("StatusTooltip", () => {
     expect(screen.getByText("Loading...")).toBeInTheDocument()
 
     // One of the two overlapping saves finishing should not flip to "saved".
-    useSelector.mockImplementation((selector) =>
+    mockedUseSelector.mockImplementation((selector) =>
       selector({ presentation: { pendingSaves: 1 } })
     )
     rerender(<StatusTooltip />)
     expect(screen.getByText("Loading...")).toBeInTheDocument()
 
-    useSelector.mockImplementation((selector) =>
+    mockedUseSelector.mockImplementation((selector) =>
       selector({ presentation: { pendingSaves: 0 } })
     )
     rerender(<StatusTooltip />)

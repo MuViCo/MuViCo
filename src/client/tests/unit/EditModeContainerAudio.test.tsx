@@ -11,6 +11,9 @@ import { render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
+import type { Cue } from "../../types"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -66,7 +69,11 @@ jest.mock("../../components/utils/keyboardHandler", () => {
 })
 
 jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
-  return function MockPresentationPlaybackControls(props) {
+  return function MockPresentationPlaybackControls(props: {
+    audioSourceURL?: string
+    audioLoop?: boolean
+    audioTracks?: { src: string; continuePlayback?: boolean }[]
+  }) {
     return (
       <div
         data-testid="mock-playback-controls"
@@ -92,26 +99,28 @@ jest.mock("../../components/utils/ResizeElement", () =>
 
 describe("EditModeContainer audio loop wiring", () => {
   const dispatchMock = jest.fn()
-  let loadSpy
+  let loadSpy: jest.SpyInstance
 
   // Audio row is screenCount + 1, so with screenCount 2 the audio row is 3.
-  const makeCues = (loop) => [
-    {
-      _id: "cue-audio",
-      index: 0,
-      screen: 3,
-      name: "Background music",
-      cueType: "audio",
-      file: { type: "audio/mpeg", url: "https://example.com/track.mp3" },
-      loop,
-    },
-  ]
+  const makeCues = (loop: boolean) =>
+    [
+      {
+        _id: "cue-audio",
+        index: 0,
+        screen: 3,
+        name: "Background music",
+        cueType: "audio",
+        file: { type: "audio/mpeg", url: "https://example.com/track.mp3" },
+        loop,
+      },
+    ] as Cue[]
 
   const baseProps = {
     id: "presentation-1",
     isToolboxOpen: false,
     setIsToolboxOpen: jest.fn(),
     transitionType: "none",
+    onTransitionChange: jest.fn(),
     cueIndex: 0,
     setCueIndex: jest.fn(),
     isAudioMuted: false,
@@ -130,8 +139,8 @@ describe("EditModeContainer audio loop wiring", () => {
     loadSpy = jest
       .spyOn(window.HTMLMediaElement.prototype, "load")
       .mockImplementation(() => {})
-    useDispatch.mockReturnValue(dispatchMock)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -191,7 +200,7 @@ describe("EditModeContainer audio loop wiring", () => {
         loop: false,
         continuePlayback: false,
       },
-    ]
+    ] as Cue[]
 
     render(<EditModeContainer {...baseProps} cues={cues} />)
 

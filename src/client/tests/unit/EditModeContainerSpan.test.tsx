@@ -9,6 +9,9 @@ import { render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
+import type { Cue } from "../../types"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -46,7 +49,13 @@ jest.mock("../../components/presentation/ScreensDisplay", () => ({
 }))
 
 jest.mock("../../components/presentation/Screen", () => {
-  return function MockScreen({ screenNumber, screenData }) {
+  return function MockScreen({
+    screenNumber,
+    screenData,
+  }: {
+    screenNumber: string
+    screenData: Cue[] | Cue | null | undefined
+  }) {
     const cueIds = (Array.isArray(screenData) ? screenData : [])
       .map((cue) => cue._id)
       .join("|")
@@ -92,12 +101,12 @@ describe("EditModeContainer spanScreens screen matching", () => {
     cueType: "visual",
     file: { type: "image/png", url: "https://example.com/wide.png" },
     spanScreens: [1, 2, 3],
-  }
+  } as Cue
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(dispatchMock)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -112,6 +121,7 @@ describe("EditModeContainer spanScreens screen matching", () => {
     isToolboxOpen: false,
     setIsToolboxOpen: jest.fn(),
     transitionType: "none",
+    onTransitionChange: jest.fn(),
     cueIndex: 0,
     setCueIndex: jest.fn(),
     isAudioMuted: false,

@@ -13,6 +13,9 @@ import { render, screen, fireEvent, act } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
+import type { Cue } from "../../types"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -50,7 +53,13 @@ jest.mock("../../components/presentation/ScreensDisplay", () => ({
 }))
 
 jest.mock("../../components/presentation/Screen", () => {
-  return function MockScreen({ screenNumber, isVisible }) {
+  return function MockScreen({
+    screenNumber,
+    isVisible,
+  }: {
+    screenNumber: string
+    isVisible: boolean
+  }) {
     return (
       <div
         data-testid={`mock-screen-${screenNumber}`}
@@ -73,7 +82,9 @@ jest.mock("../../components/utils/keyboardHandler", () => {
 })
 
 jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
-  return function MockPresentationPlaybackControls(props) {
+  return function MockPresentationPlaybackControls(props: {
+    toggleAllScreens: () => void
+  }) {
     return (
       <div data-testid="mock-playback-controls">
         <button type="button" onClick={props.toggleAllScreens}>
@@ -93,32 +104,34 @@ jest.mock("../../components/utils/ResizeElement", () =>
 describe("EditModeContainer screen visibility across cue edits", () => {
   const dispatchMock = jest.fn()
 
-  const makeCues = (screen2Name) => [
-    {
-      _id: "cue-1",
-      index: 0,
-      screen: 1,
-      name: "Cue 1",
-      cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/cue-1.png" },
-      loop: false,
-    },
-    {
-      _id: "cue-2",
-      index: 9,
-      screen: 2,
-      name: screen2Name,
-      cueType: "visual",
-      file: { type: "image/png", url: "https://example.com/cue-2.png" },
-      loop: false,
-    },
-  ]
+  const makeCues = (screen2Name: string) =>
+    [
+      {
+        _id: "cue-1",
+        index: 0,
+        screen: 1,
+        name: "Cue 1",
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/cue-1.png" },
+        loop: false,
+      },
+      {
+        _id: "cue-2",
+        index: 9,
+        screen: 2,
+        name: screen2Name,
+        cueType: "visual",
+        file: { type: "image/png", url: "https://example.com/cue-2.png" },
+        loop: false,
+      },
+    ] as Cue[]
 
   const baseProps = {
     id: "presentation-1",
     isToolboxOpen: false,
     setIsToolboxOpen: jest.fn(),
     transitionType: "none",
+    onTransitionChange: jest.fn(),
     cueIndex: 0,
     setCueIndex: jest.fn(),
     isAudioMuted: false,
@@ -134,8 +147,8 @@ describe("EditModeContainer screen visibility across cue edits", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(dispatchMock)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -151,8 +164,11 @@ describe("EditModeContainer screen visibility across cue edits", () => {
   // via the "Open all screens" control, then applies `applyEdit` to simulate
   // a cue mutation (rename, drag to another frame, drag to another screen...)
   // and hands back helpers to inspect the resulting screen visibility.
-  const renderWithCueEdit = (initialCues, applyEdit) => {
-    let setCuesRef
+  const renderWithCueEdit = (
+    initialCues: Cue[],
+    applyEdit: (prevCues: Cue[]) => Cue[]
+  ) => {
+    let setCuesRef: React.Dispatch<React.SetStateAction<Cue[]>>
     function Harness() {
       const [cues, setCues] = React.useState(initialCues)
       setCuesRef = setCues

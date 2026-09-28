@@ -11,6 +11,9 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
+import type { Cue } from "../../types"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 
 jest.mock("react-redux", () => ({
@@ -67,7 +70,13 @@ jest.mock("../../components/utils/keyboardHandler", () => {
 })
 
 jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
-  return function MockPresentationPlaybackControls(props) {
+  return function MockPresentationPlaybackControls(props: {
+    cueIndex: number
+    toggleAutoplay: () => void
+    isAutoplaying: boolean
+    autoplayInterval: number
+    toggleAutoplayInterval: (value: string) => void
+  }) {
     return (
       <div data-testid="mock-playback-controls">
         <span data-testid="mock-cue-index">{props.cueIndex}</span>
@@ -85,7 +94,13 @@ jest.mock("../../components/presentation/PresentationPlaybackControls", () => {
 })
 jest.mock("../../components/presentation/CueAudioPlayers", () => () => null)
 jest.mock("../../components/presentation/ShowMode", () => {
-  return function MockShowMode(props) {
+  return function MockShowMode(props: {
+    isBlackout: boolean
+    onPrevious: () => void
+    onNext: () => void
+    onToggleBlackout: () => void
+    onExit: () => void
+  }) {
     return (
       <div data-testid="mock-show-mode">
         <span data-testid="mock-blackout">{String(props.isBlackout)}</span>
@@ -124,7 +139,7 @@ describe("EditModeContainer playback behavior", () => {
       file: { type: "image/png", url: "https://example.com/cue-1.png" },
       loop: false,
     },
-  ]
+  ] as Cue[]
 
   const baseProps = {
     id: "presentation-1",
@@ -132,6 +147,7 @@ describe("EditModeContainer playback behavior", () => {
     isToolboxOpen: false,
     setIsToolboxOpen: jest.fn(),
     transitionType: "none",
+    onTransitionChange: jest.fn(),
     cueIndex: 0,
     setCueIndex: jest.fn(),
     isAudioMuted: false,
@@ -147,8 +163,8 @@ describe("EditModeContainer playback behavior", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(dispatchMock)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -172,7 +188,9 @@ describe("EditModeContainer playback behavior", () => {
         cueIndexRef.current = cueIndex
       }, [cueIndex])
 
-      const setCueIndex = (nextValue) => {
+      const setCueIndex = (
+        nextValue: number | ((previousCueIndex: number) => number)
+      ) => {
         setCueIndexSpy(nextValue)
         setCueIndexState((previousCueIndex) =>
           typeof nextValue === "function"

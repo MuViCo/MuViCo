@@ -9,10 +9,17 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import EditModeContainer from "../../components/presentation/EditModeContainer"
 import { useDispatch, useSelector } from "react-redux"
+import type { Cue } from "../../types"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 import { fetchPresentationInfo } from "../../redux/presentationReducer"
 import { saveOutputAspectRatio } from "../../redux/presentationThunks"
 
-let lastScreensDisplayProps = null
+interface ScreensDisplayMockProps {
+  onScreenAspectRatioChange: (screen: number, aspectRatio: string) => void
+}
+
+let lastScreensDisplayProps: ScreensDisplayMockProps | null = null
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -48,7 +55,7 @@ jest.mock("../../components/presentation/PresentationTitle", () => {
 })
 
 jest.mock("../../components/presentation/ScreensDisplay", () => ({
-  ScreensDisplay: function MockScreensDisplay(props) {
+  ScreensDisplay: function MockScreensDisplay(props: ScreensDisplayMockProps) {
     lastScreensDisplayProps = props
     return <div data-testid="mock-screens-display" />
   },
@@ -95,7 +102,7 @@ describe("EditModeContainer transition settings", () => {
       file: { type: "image/png", url: "https://example.com/cue-1.png" },
       loop: false,
     },
-  ]
+  ] as Cue[]
 
   const baseProps = {
     id: "presentation-1",
@@ -119,8 +126,8 @@ describe("EditModeContainer transition settings", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(jest.fn())
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(jest.fn())
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -148,8 +155,8 @@ describe("EditModeContainer transition settings", () => {
 
   test("offers the declared output shape and saves the pick", async () => {
     const dispatch = jest.fn()
-    useDispatch.mockReturnValue(dispatch)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(dispatch)
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           name: "Test presentation",
@@ -178,7 +185,7 @@ describe("EditModeContainer transition settings", () => {
   test("the tile selector saves a shape for that screen alone", async () => {
     render(<EditModeContainer {...baseProps} />)
 
-    lastScreensDisplayProps.onScreenAspectRatioChange(2, "4:3")
+    lastScreensDisplayProps?.onScreenAspectRatioChange(2, "4:3")
 
     await waitFor(() => {
       expect(saveOutputAspectRatio).toHaveBeenCalledWith({
@@ -238,7 +245,9 @@ describe("EditModeContainer transition settings", () => {
       expect(screen.getByTestId("transition-type-select")).toBeVisible()
     })
 
-    const select = screen.getByTestId("transition-type-select")
+    const select = screen.getByTestId(
+      "transition-type-select"
+    ) as HTMLSelectElement
     const optionValues = Array.from(select.options).map(
       (option) => option.value
     )
@@ -261,7 +270,9 @@ describe("EditModeContainer transition settings", () => {
       expect(screen.getByTestId("transition-type-select")).toBeVisible()
     })
 
-    expect(screen.getByTestId("transition-type-select").value).toBe("zoom")
+    expect(
+      (screen.getByTestId("transition-type-select") as HTMLSelectElement).value
+    ).toBe("zoom")
   })
 
   test("changing the select calls onTransitionChange with the new value", async () => {
