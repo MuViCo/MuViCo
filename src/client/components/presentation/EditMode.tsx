@@ -587,6 +587,14 @@ const EditMode = ({
     xWithinCell < columnWidth * INSERT_ZONE_FRACTION &&
     Boolean(getAnchorCueAtPosition(xIndex, yIndex))
 
+  const isInternalDropInInsertZone = (cell: GridCell) => {
+    if (!isDropInInsertZone(cell.xIndex, cell.yIndex, cell.xWithinCell)) {
+      return false
+    }
+    const anchor = getAnchorCueAtPosition(cell.xIndex, cell.yIndex)
+    return Boolean(anchor) && anchor !== selectedCue
+  }
+
   // Get cue at grid position (only anchor cell - first cell of the cue)
   const getAnchorCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find(
@@ -778,7 +786,10 @@ const EditMode = ({
   }
 
   // Add a new frame at specified index - shifts existing cues to the right
-  const handleAddIndex = async (index: number) => {
+  const handleAddIndex = async (
+    index: number,
+    { silent = false }: { silent?: boolean } = {}
+  ) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
@@ -793,7 +804,7 @@ const EditMode = ({
           await dispatch(shiftPresentationIndexes(id, index, "right"))
         }
 
-        if (cuesAfter.length > 0) {
+        if (cuesAfter.length > 0 && !silent) {
           showToast({
             title: "Frame added in between",
             description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesAfter.length} element(s) forward.`,
@@ -856,15 +867,20 @@ const EditMode = ({
   // `index` left by one (only if any exist), then shrinks the index count.
   // Returns null and shows an error toast if the shift fails, so callers can
   // skip their own success toast; otherwise returns how many cues moved.
-  const shiftAndRemoveIndex = async (index: number) => {
-    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+  const shiftAndRemoveIndex = async (
+    index: number,
+    overrides: { movedCount?: number; nextIndexCount?: number } = {}
+  ) => {
+    const movedCount =
+      overrides.movedCount ??
+      cues.filter((cue) => Number(cue.index) > Number(index)).length
 
     try {
-      if (cuesAfter.length > 0) {
+      if (movedCount > 0) {
         await dispatch(shiftPresentationIndexes(id, index, "left"))
       }
-      await performRemoveIndex(indexCount - 1)
-      return cuesAfter.length
+      await performRemoveIndex(overrides.nextIndexCount ?? indexCount - 1)
+      return movedCount
     } catch (error) {
       console.error("Error shifting cues when removing index:", error)
       showToast({
@@ -1223,6 +1239,17 @@ const EditMode = ({
 
       scheduleDragPreviewFromEvent(event)
 
+      const hoveredCell = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
+      setInsertBeforeIndex(
+        isInternalDropInInsertZone(hoveredCell) ? hoveredCell.xIndex : null
+      )
+
       hideHoverPreview()
       return
     }
@@ -1281,13 +1308,16 @@ const EditMode = ({
           ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
-    const { xIndex, yIndex } = getPosition(
+    const dropCell = getPosition(
       event,
       containerRef,
       columnWidth,
       rowHeight,
       gap
     )
+    const { xIndex, yIndex } = dropCell
+    const shouldInsertBeforeDrop = isInternalDropInInsertZone(dropCell)
+    setInsertBeforeIndex(null)
 
     if (wasDragging && selectedCue) {
       if (!didDragMove) {
@@ -1299,7 +1329,7 @@ const EditMode = ({
       }
 
       const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
-      if (targetCue && selectedCue !== targetCue) {
+      if (targetCue && selectedCue !== targetCue && !shouldInsertBeforeDrop) {
         commitLaneFocusFromEvent(event)
         await handleElementPositionChange(selectedCue, targetCue)
         clearInternalDragSpanPreview()
@@ -1307,6 +1337,7 @@ const EditMode = ({
       }
 
       const moveToSamePosition =
+        !shouldInsertBeforeDrop &&
         Number(selectedCue.index) === Number(xIndex) &&
         cueRowOf(selectedCue) === Number(yIndex)
 
@@ -1355,7 +1386,58 @@ const EditMode = ({
       const losesSpan = !keepsSpan && (selectedCue.spanScreens?.length ?? 0) > 1
 
       setSelectedCue(null)
-      await dispatchUpdateCue(selectedCue._id, movedCue)
+
+      if (shouldInsertBeforeDrop) {
+        const sourceIndex = Number(selectedCue.index)
+        const sameLane = cueRowOf(selectedCue) === Number(yIndex)
+
+        if (sameLane) {
+          const landingIndex = sourceIndex < xIndex ? xIndex - 1 : xIndex
+          if (landingIndex !== sourceIndex) {
+            await dispatch(
+              shiftPresentationIndexes(
+                id,
+                sourceIndex < xIndex ? sourceIndex : xIndex - 1,
+                sourceIndex < xIndex ? "left" : "right",
+                {
+                  endIndex: sourceIndex < xIndex ? xIndex - 1 : sourceIndex - 1,
+                  screen: Number(target.screen),
+                  layer: Number(target.layer),
+                }
+              )
+            )
+            await dispatchUpdateCue(selectedCue._id, {
+              ...movedCue,
+              index: landingIndex,
+            })
+          }
+        } else {
+          const laneCues = cues.filter(
+            (cue) =>
+              Number(cue.screen) === Number(target.screen) &&
+              Number(cue.layer ?? 0) === Number(target.layer)
+          )
+          const lastLaneIndex = laneCues.reduce(
+            (highest, cue) => Math.max(highest, Number(cue.index)),
+            -1
+          )
+
+          if (lastLaneIndex >= indexCount - 1) {
+            dispatch(incrementIndexCount())
+            await dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+          }
+
+          await dispatch(
+            shiftPresentationIndexes(id, xIndex - 1, "right", {
+              screen: Number(target.screen),
+              layer: Number(target.layer),
+            })
+          )
+          await dispatchUpdateCue(selectedCue._id, movedCue)
+        }
+      } else {
+        await dispatchUpdateCue(selectedCue._id, movedCue)
+      }
       if (losesSpan) {
         showToast({
           title: "Span cleared",
