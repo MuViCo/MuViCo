@@ -300,7 +300,7 @@ describe("EditMode drag swapping", () => {
     fireEvent.click(screen.getByTestId("trigger-drag-stop"))
 
     fireEvent.mouseUp(gridContainer, {
-      clientX: 170,
+      clientX: 250,
       clientY: rowCenterY(0),
     })
 
@@ -1929,6 +1929,66 @@ describe("EditMode drag swapping", () => {
       }
       fireEvent(gridContainer, dragOverEvent)
     }
+
+    const dragExistingCueTo = async (cueTestId, clientX) => {
+      const gridContainer = setupGridGeometry()
+
+      fireEvent.mouseDown(screen.getByTestId(cueTestId), {
+        clientX: 10,
+        clientY: rowCenterY(0),
+      })
+      fireEvent.mouseMove(gridContainer, {
+        clientX,
+        clientY: rowCenterY(0),
+      })
+
+      return { gridContainer }
+    }
+
+    it("shows an insertion line while dragging an existing cue over a left edge", async () => {
+      renderEditMode(cues, 3)
+
+      await dragExistingCueTo("cue-Visual cue 1", leftEdgeX(1))
+
+      expect(screen.getByTestId("insert-before-indicator")).toBeInTheDocument()
+    })
+
+    it("shows no insertion line over the middle of an occupied cell", async () => {
+      renderEditMode(cues, 3)
+
+      await dragExistingCueTo("cue-Visual cue 1", centerX(1))
+
+      expect(screen.queryByTestId("insert-before-indicator")).toBeNull()
+    })
+
+    it("inserts a frame and moves the cue there instead of swapping", async () => {
+      renderEditMode(cues, 3)
+      const { gridContainer } = await dragExistingCueTo(
+        "cue-Visual cue 1",
+        leftEdgeX(1)
+      )
+
+      await act(async () => {
+        fireEvent.mouseUp(gridContainer, {
+          clientX: leftEdgeX(1),
+          clientY: rowCenterY(0),
+        })
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "right"
+        )
+      })
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ index: 1 }),
+        "visual-1"
+      )
+      expect(swapCues).not.toHaveBeenCalled()
+    })
 
     it("shows an insertion line while dragging over the left edge of an occupied cell", () => {
       renderEditMode(cues, 3)

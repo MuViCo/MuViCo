@@ -587,6 +587,14 @@ const EditMode = ({
     xWithinCell < columnWidth * INSERT_ZONE_FRACTION &&
     Boolean(getAnchorCueAtPosition(xIndex, yIndex))
 
+  const isInternalDropInInsertZone = (cell: GridCell) => {
+    if (!isDropInInsertZone(cell.xIndex, cell.yIndex, cell.xWithinCell)) {
+      return false
+    }
+    const anchor = getAnchorCueAtPosition(cell.xIndex, cell.yIndex)
+    return Boolean(anchor) && anchor !== selectedCue
+  }
+
   // Get cue at grid position (only anchor cell - first cell of the cue)
   const getAnchorCueAtPosition = (xIndex: number, yIndex: number) =>
     gridCues.find(
@@ -1223,6 +1231,17 @@ const EditMode = ({
 
       scheduleDragPreviewFromEvent(event)
 
+      const hoveredCell = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
+      setInsertBeforeIndex(
+        isInternalDropInInsertZone(hoveredCell) ? hoveredCell.xIndex : null
+      )
+
       hideHoverPreview()
       return
     }
@@ -1281,13 +1300,16 @@ const EditMode = ({
           ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
-    const { xIndex, yIndex } = getPosition(
+    const dropCell = getPosition(
       event,
       containerRef,
       columnWidth,
       rowHeight,
       gap
     )
+    const { xIndex, yIndex } = dropCell
+    const shouldInsertBeforeDrop = isInternalDropInInsertZone(dropCell)
+    setInsertBeforeIndex(null)
 
     if (wasDragging && selectedCue) {
       if (!didDragMove) {
@@ -1299,7 +1321,7 @@ const EditMode = ({
       }
 
       const targetCue = getAnchorCueAtPosition(xIndex, yIndex)
-      if (targetCue && selectedCue !== targetCue) {
+      if (targetCue && selectedCue !== targetCue && !shouldInsertBeforeDrop) {
         commitLaneFocusFromEvent(event)
         await handleElementPositionChange(selectedCue, targetCue)
         clearInternalDragSpanPreview()
@@ -1307,6 +1329,7 @@ const EditMode = ({
       }
 
       const moveToSamePosition =
+        !shouldInsertBeforeDrop &&
         Number(selectedCue.index) === Number(xIndex) &&
         cueRowOf(selectedCue) === Number(yIndex)
 
@@ -1355,6 +1378,9 @@ const EditMode = ({
       const losesSpan = !keepsSpan && (selectedCue.spanScreens?.length ?? 0) > 1
 
       setSelectedCue(null)
+      if (shouldInsertBeforeDrop) {
+        await handleAddIndex(xIndex - 1)
+      }
       await dispatchUpdateCue(selectedCue._id, movedCue)
       if (losesSpan) {
         showToast({
