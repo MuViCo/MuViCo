@@ -16,10 +16,13 @@ import {
 import "@testing-library/jest-dom"
 import { MemoryRouter } from "react-router-dom"
 import TutorialGuide from "../../components/tutorial/TutorialGuide"
+import type { ReactElement } from "react"
 
 // Helper to render with router context
-const renderWithRouter = (ui, { route = "/home" } = {}) =>
-  render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
+const renderWithRouter = (
+  ui: ReactElement,
+  { route = "/home" }: { route?: string } = {}
+) => render(<MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>)
 
 describe("TutorialGuide", () => {
   beforeEach(() => {
@@ -139,7 +142,7 @@ describe("TutorialGuide", () => {
       height: 30,
       right: 0,
       bottom: 0,
-    })
+    } as DOMRect)
 
     const steps = [
       {
@@ -256,7 +259,7 @@ describe("TutorialGuide", () => {
       height: 20,
       right: 0,
       bottom: 0,
-    }
+    } as DOMRect
     jest.spyOn(btn, "getBoundingClientRect").mockReturnValue(fakeRect)
 
     // set a narrow viewport
@@ -315,7 +318,7 @@ describe("TutorialGuide", () => {
       height: 40,
       right: 0,
       bottom: 0,
-    })
+    } as DOMRect)
 
     const steps = [
       { id: "t", selector: "#edge-target", title: "Edge", description: "d" },
@@ -358,7 +361,7 @@ describe("TutorialGuide", () => {
       height: 300,
       right: 0,
       bottom: 0,
-    })
+    } as DOMRect)
 
     const steps = [
       { id: "t", selector: "#wide-target", title: "Wide", description: "d" },
@@ -392,7 +395,7 @@ describe("TutorialGuide", () => {
       height: 10,
       right: 0,
       bottom: 0,
-    })
+    } as DOMRect)
 
     const steps = [
       {

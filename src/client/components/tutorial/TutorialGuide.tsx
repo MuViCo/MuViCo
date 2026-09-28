@@ -9,7 +9,7 @@ interface TutorialGuideProps {
   steps?: TutorialStep[]
   isOpen?: boolean
   onClose?: () => void
-  storageKey: string
+  storageKey?: string
 }
 
 /**
