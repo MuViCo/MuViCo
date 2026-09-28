@@ -7,8 +7,15 @@ import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import PresentationPlaybackControls from "../../components/presentation/PresentationPlaybackControls"
+import type { ComponentProps } from "react"
 
-const renderControls = (overrideProps = {}) => {
+type PresentationPlaybackControlsProps = ComponentProps<
+  typeof PresentationPlaybackControls
+>
+
+const renderControls = (
+  overrideProps: Partial<PresentationPlaybackControlsProps> = {}
+) => {
   const props = {
     screens: { 1: false, 2: false },
     toggleAllScreens: jest.fn(),
@@ -27,8 +34,8 @@ const renderControls = (overrideProps = {}) => {
 }
 
 describe("PresentationPlaybackControls", () => {
-  let playSpy
-  let pauseSpy
+  let playSpy: jest.SpyInstance
+  let pauseSpy: jest.SpyInstance
 
   beforeEach(() => {
     playSpy = jest

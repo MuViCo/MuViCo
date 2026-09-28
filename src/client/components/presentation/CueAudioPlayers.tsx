@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react"
 
 export interface AudioTrack {
-  id: string
+  id?: string
   src: string
   loop: boolean
-  continuePlayback: boolean
+  continuePlayback?: boolean
   layer?: number
   name?: string
 }
