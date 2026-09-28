@@ -682,7 +682,8 @@ export const shiftPresentationIndexes =
   (
     presentationId: string,
     startIndex: number,
-    direction: "left" | "right"
+    direction: "left" | "right",
+    scope: { endIndex?: number; screen?: number; layer?: number } = {}
   ): AppThunk<ShiftIndexesResponse> =>
   async (dispatch) => {
     dispatch(beginSave())
@@ -690,7 +691,8 @@ export const shiftPresentationIndexes =
       const result = await presentationService.shiftIndexes(
         presentationId,
         startIndex,
-        direction
+        direction,
+        scope
       )
       await dispatch(fetchPresentationInfo(presentationId))
       return result

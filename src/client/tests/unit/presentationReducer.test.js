@@ -1284,7 +1284,8 @@ describe("presentationReducer asynchronous actions", () => {
     expect(presentationService.shiftIndexes).toHaveBeenCalledWith(
       "123",
       0,
-      "right"
+      "right",
+      {}
     )
     expect(store.getState().presentation.cues).toEqual(shiftedCues)
   })
@@ -1326,7 +1327,8 @@ describe("presentationReducer asynchronous actions", () => {
     expect(presentationService.shiftIndexes).toHaveBeenCalledWith(
       "123",
       1,
-      "left"
+      "left",
+      {}
     )
     expect(store.getState().presentation.cues).toEqual(shiftedCues)
   })

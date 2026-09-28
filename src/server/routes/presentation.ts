@@ -1849,7 +1849,7 @@ router.put(
   async (req, res, next) => {
     try {
       const { presentation } = req
-      const { startIndex, direction } = req.body
+      const { startIndex, direction, endIndex, screen, layer } = req.body
 
       if (
         typeof startIndex !== "number" ||
@@ -1858,9 +1858,26 @@ router.put(
         return res.status(400).json({ error: "Invalid parameters" })
       }
 
+      if (endIndex !== undefined && typeof endIndex !== "number") {
+        return res.status(400).json({ error: "endIndex must be a number" })
+      }
+
+      if (screen !== undefined && typeof screen !== "number") {
+        return res.status(400).json({ error: "screen must be a number" })
+      }
+
+      if (layer !== undefined && typeof layer !== "number") {
+        return res.status(400).json({ error: "layer must be a number" })
+      }
+
+      const inScope = (cue: Cue) =>
+        (endIndex === undefined || Number(cue.index) <= endIndex) &&
+        (screen === undefined || Number(cue.screen) === screen) &&
+        (layer === undefined || Number(cue.layer ?? 0) === layer)
+
       let modified = false
       for (const cue of presentation!.cues) {
-        if (cue.index > startIndex) {
+        if (cue.index > startIndex && inScope(cue)) {
           if (direction === "left") {
             cue.index = Number(cue.index) - 1
             modified = true

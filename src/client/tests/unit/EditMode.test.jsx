@@ -1961,7 +1961,7 @@ describe("EditMode drag swapping", () => {
       expect(screen.queryByTestId("insert-before-indicator")).toBeNull()
     })
 
-    it("inserts a frame and moves the cue there instead of swapping", async () => {
+    it("does not swap when dropped on a left edge", async () => {
       renderEditMode(cues, 3)
       const { gridContainer } = await dragExistingCueTo(
         "cue-Visual cue 1",
@@ -1975,131 +1975,15 @@ describe("EditMode drag swapping", () => {
         })
       })
 
-      await waitFor(() => {
-        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
-          "presentation-1",
-          0,
-          "right"
-        )
-      })
-      expect(updatePresentation).toHaveBeenCalledWith(
-        "presentation-1",
-        expect.objectContaining({ index: 1 }),
-        "visual-1"
-      )
       expect(swapCues).not.toHaveBeenCalled()
     })
 
-    it("closes the frame the cue left behind when moving it forward", async () => {
-      const threeCues = [
-        { ...cues[0], _id: "a", index: 0, name: "A" },
-        { ...cues[1], _id: "b", index: 1, name: "B" },
-        { ...cues[1], _id: "c", index: 2, name: "C" },
-      ]
-      useSelector.mockImplementation((selector) =>
-        selector({
-          presentation: {
-            cues: threeCues,
-            name: "Test presentation",
-            screenCount: 2,
-            indexCount: 3,
-          },
-        })
+    it("does nothing when the element is already in that position", async () => {
+      renderEditMode(cues, 3)
+      const { gridContainer } = await dragExistingCueTo(
+        "cue-Visual cue 1",
+        leftEdgeX(1)
       )
-      renderEditMode(threeCues, 3)
-      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(2))
-
-      await act(async () => {
-        fireEvent.mouseUp(gridContainer, {
-          clientX: leftEdgeX(2),
-          clientY: rowCenterY(0),
-        })
-      })
-
-      await waitFor(() => {
-        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
-          "presentation-1",
-          1,
-          "right"
-        )
-      })
-      expect(shiftPresentationIndexes).toHaveBeenCalledWith(
-        "presentation-1",
-        0,
-        "left"
-      )
-      expect(saveIndexCount).toHaveBeenLastCalledWith({
-        id: "presentation-1",
-        indexCount: 3,
-      })
-    })
-
-    it("closes frame 0 even though audio tracks are anchored on it", async () => {
-      const withAudio = [
-        { ...cues[0], _id: "a", index: 0, name: "A", screen: 1 },
-        {
-          _id: "aud",
-          index: 0,
-          screen: 3,
-          layer: 0,
-          name: "Track",
-          cueType: "audio",
-          file: { type: "audio/mpeg", url: "https://example.com/t.mp3" },
-        },
-        { ...cues[1], _id: "b", index: 1, name: "B" },
-        { ...cues[1], _id: "c", index: 2, name: "C" },
-      ]
-      useSelector.mockImplementation((selector) =>
-        selector({
-          presentation: {
-            cues: withAudio,
-            name: "Test presentation",
-            screenCount: 2,
-            indexCount: 3,
-          },
-        })
-      )
-      renderEditMode(withAudio, 3)
-      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(2))
-
-      await act(async () => {
-        fireEvent.mouseUp(gridContainer, {
-          clientX: leftEdgeX(2),
-          clientY: rowCenterY(0),
-        })
-      })
-
-      await waitFor(() => {
-        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
-          "presentation-1",
-          0,
-          "left"
-        )
-      })
-      expect(saveIndexCount).toHaveBeenLastCalledWith({
-        id: "presentation-1",
-        indexCount: 3,
-      })
-    })
-
-    it("keeps the source frame when another element still sits on it", async () => {
-      const sharedFrameCues = [
-        { ...cues[0], _id: "a", index: 0, name: "A", screen: 1 },
-        { ...cues[0], _id: "a2", index: 0, name: "A2", screen: 2 },
-        { ...cues[1], _id: "b", index: 1, name: "B" },
-      ]
-      useSelector.mockImplementation((selector) =>
-        selector({
-          presentation: {
-            cues: sharedFrameCues,
-            name: "Test presentation",
-            screenCount: 2,
-            indexCount: 3,
-          },
-        })
-      )
-      renderEditMode(sharedFrameCues, 3)
-      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(1))
 
       await act(async () => {
         fireEvent.mouseUp(gridContainer, {
@@ -2108,14 +1992,94 @@ describe("EditMode drag swapping", () => {
         })
       })
 
-      await waitFor(() => {
-        expect(updatePresentation).toHaveBeenCalled()
-      })
-      expect(shiftPresentationIndexes).not.toHaveBeenCalledWith(
-        "presentation-1",
-        expect.anything(),
-        "left"
+      expect(shiftPresentationIndexes).not.toHaveBeenCalled()
+      expect(updatePresentation).not.toHaveBeenCalled()
+    })
+
+    const threeOnOneLane = () => {
+      const laneCues = [
+        { ...cues[0], _id: "a", index: 0, name: "A", screen: 1, layer: 0 },
+        { ...cues[0], _id: "b", index: 1, name: "B", screen: 1, layer: 0 },
+        { ...cues[0], _id: "c", index: 2, name: "C", screen: 1, layer: 0 },
+        {
+          ...cues[0],
+          _id: "other",
+          index: 2,
+          name: "Other",
+          screen: 2,
+          layer: 0,
+        },
+      ]
+      useSelector.mockImplementation((selector) =>
+        selector({
+          presentation: {
+            cues: laneCues,
+            name: "Test presentation",
+            screenCount: 2,
+            indexCount: 3,
+          },
+        })
       )
+      renderEditMode(laneCues, 3)
+      return laneCues
+    }
+
+    it("reorders within the lane instead of shifting the whole presentation", async () => {
+      threeOnOneLane()
+      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(2))
+
+      await act(async () => {
+        fireEvent.mouseUp(gridContainer, {
+          clientX: leftEdgeX(2),
+          clientY: rowCenterY(0),
+        })
+      })
+
+      await waitFor(() => {
+        expect(shiftPresentationIndexes).toHaveBeenCalledWith(
+          "presentation-1",
+          0,
+          "left",
+          { endIndex: 1, screen: 1, layer: 0 }
+        )
+      })
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({ index: 1 }),
+        "a"
+      )
+    })
+
+    it("never changes the frame count when reordering in place", async () => {
+      threeOnOneLane()
+      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(2))
+
+      await act(async () => {
+        fireEvent.mouseUp(gridContainer, {
+          clientX: leftEdgeX(2),
+          clientY: rowCenterY(0),
+        })
+      })
+
+      await waitFor(() => expect(updatePresentation).toHaveBeenCalled())
+      expect(saveIndexCount).not.toHaveBeenCalled()
+    })
+
+    it("scopes the shift to the dragged element's own screen and layer", async () => {
+      threeOnOneLane()
+      const { gridContainer } = await dragExistingCueTo("cue-A", leftEdgeX(2))
+
+      await act(async () => {
+        fireEvent.mouseUp(gridContainer, {
+          clientX: leftEdgeX(2),
+          clientY: rowCenterY(0),
+        })
+      })
+
+      await waitFor(() => expect(shiftPresentationIndexes).toHaveBeenCalled())
+      shiftPresentationIndexes.mock.calls.forEach((call) => {
+        expect(call[3]).toMatchObject({ screen: 1, layer: 0 })
+      })
     })
 
     it("shows an insertion line while dragging over the left edge of an occupied cell", () => {

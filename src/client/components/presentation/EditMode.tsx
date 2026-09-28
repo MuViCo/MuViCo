@@ -1389,32 +1389,51 @@ const EditMode = ({
 
       if (shouldInsertBeforeDrop) {
         const sourceIndex = Number(selectedCue.index)
-        const vacatesSourceFrame = !cues.some(
-          (cue) =>
-            cue._id !== selectedCue._id &&
-            cue.cueType !== "audio" &&
-            Number(cue.index) === sourceIndex
-        )
+        const sameLane = cueRowOf(selectedCue) === Number(yIndex)
 
-        await handleAddIndex(xIndex - 1, { silent: true })
-        await dispatchUpdateCue(selectedCue._id, movedCue)
+        if (sameLane) {
+          const landingIndex = sourceIndex < xIndex ? xIndex - 1 : xIndex
+          if (landingIndex !== sourceIndex) {
+            await dispatch(
+              shiftPresentationIndexes(
+                id,
+                sourceIndex < xIndex ? sourceIndex : xIndex - 1,
+                sourceIndex < xIndex ? "left" : "right",
+                {
+                  endIndex: sourceIndex < xIndex ? xIndex - 1 : sourceIndex - 1,
+                  screen: Number(target.screen),
+                  layer: Number(target.layer),
+                }
+              )
+            )
+            await dispatchUpdateCue(selectedCue._id, {
+              ...movedCue,
+              index: landingIndex,
+            })
+          }
+        } else {
+          const laneCues = cues.filter(
+            (cue) =>
+              Number(cue.screen) === Number(target.screen) &&
+              Number(cue.layer ?? 0) === Number(target.layer)
+          )
+          const lastLaneIndex = laneCues.reduce(
+            (highest, cue) => Math.max(highest, Number(cue.index)),
+            -1
+          )
 
-        if (vacatesSourceFrame) {
-          const vacatedIndex =
-            sourceIndex >= xIndex ? sourceIndex + 1 : sourceIndex
-          const movedCount = cues.filter((cue) => {
-            if (cue._id === selectedCue._id) return xIndex > vacatedIndex
-            const shifted =
-              Number(cue.index) >= xIndex
-                ? Number(cue.index) + 1
-                : Number(cue.index)
-            return shifted > vacatedIndex
-          }).length
+          if (lastLaneIndex >= indexCount - 1) {
+            dispatch(incrementIndexCount())
+            await dispatch(saveIndexCount({ id, indexCount: indexCount + 1 }))
+          }
 
-          await shiftAndRemoveIndex(vacatedIndex, {
-            movedCount,
-            nextIndexCount: indexCount,
-          })
+          await dispatch(
+            shiftPresentationIndexes(id, xIndex - 1, "right", {
+              screen: Number(target.screen),
+              layer: Number(target.layer),
+            })
+          )
+          await dispatchUpdateCue(selectedCue._id, movedCue)
         }
       } else {
         await dispatchUpdateCue(selectedCue._id, movedCue)

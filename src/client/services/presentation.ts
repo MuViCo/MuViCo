@@ -342,7 +342,8 @@ const saveOutputAspectRatioApi = async (
 const shiftIndexes = async (
   id: string,
   startIndex: number,
-  direction: "left" | "right"
+  direction: "left" | "right",
+  scope: { endIndex?: number; screen?: number; layer?: number } = {}
 ): Promise<ShiftIndexesResponse> => {
   const config = {
     headers: {
@@ -350,7 +351,7 @@ const shiftIndexes = async (
       Authorization: `bearer ${getToken()}`,
     },
   }
-  const body = { startIndex, direction }
+  const body = { startIndex, direction, ...scope }
   const response = await axios.put<ShiftIndexesResponse>(
     `${baseUrl}${id}/shiftIndexes`,
     body,
