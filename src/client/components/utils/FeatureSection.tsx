@@ -10,7 +10,7 @@ import type { ElementType } from "react"
 import type { FeatureSection as FeatureSectionData } from "../../types"
 
 interface FeatureSectionProps {
-  title: string
+  title?: string
   data: FeatureSectionData[]
   listAs?: ElementType
   listStyleType?: string

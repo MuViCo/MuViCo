@@ -10,17 +10,25 @@ import {
   fetchPresentationInfo,
   fetchSharedPresentationInfo,
 } from "../../redux/presentationReducer"
-import { useDispatch, useSelector } from "react-redux"
+import { useAppDispatch, useAppSelector } from "../../redux/hooks"
 
 import EditModeContainer from "./EditModeContainer"
 import useDeletePresentation from "../utils/useDeletePresentation"
 import { useCustomToast } from "../utils/toastUtils"
+import type { AuthUser } from "../../types"
 
-const PresentationPage = ({ user, shared = false }) => {
+interface PresentationPageProps {
+  user?: AuthUser | null
+  shared?: boolean
+}
+
+const PresentationPage = ({ shared = false }: PresentationPageProps) => {
+  // useParams types every param as optional; this route only renders under
+  // /presentation/:id or /shared/:token, so the relevant one is always present.
   const { id: routeId, token } = useParams()
-  const id = shared ? token : routeId
+  const id = (shared ? token : routeId) as string
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const location = useLocation()
   const [cueIndex, setCueIndex] = useState(0)
@@ -39,7 +47,7 @@ const PresentationPage = ({ user, shared = false }) => {
 
   useEffect(() => {
     if (!shared) return
-    dispatch(fetchSharedPresentationInfo(token)).catch((error) => {
+    dispatch(fetchSharedPresentationInfo(token as string)).catch((error) => {
       showToast({
         status: "error",
         title: "Presentation unavailable",
@@ -65,7 +73,7 @@ const PresentationPage = ({ user, shared = false }) => {
     }
   }, [id])
 
-  const handleTransitionChange = (value) => {
+  const handleTransitionChange = (value: string) => {
     setTransitionType(value)
     try {
       localStorage.setItem(`presentation-${id}-transition`, value)
@@ -74,16 +82,15 @@ const PresentationPage = ({ user, shared = false }) => {
     }
   }
 
-  const presentationInfo = useSelector((state) => state.presentation.cues)
-  const presentationName = useSelector((state) => state.presentation.name)
-  const indexCount = useSelector((state) => state.presentation.indexCount)
+  const presentationInfo = useAppSelector((state) => state.presentation.cues)
+  const indexCount = useAppSelector((state) => state.presentation.indexCount)
   const isShowMode = location.pathname.endsWith("/show")
 
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
   }
 
-  const updateCue = (direction) => {
+  const updateCue = (direction: "Next" | "Previous") => {
     if (direction === "Next") {
       setCueIndex((prevCueIndex) => Math.min(indexCount - 1, prevCueIndex + 1))
     } else {
@@ -93,13 +100,10 @@ const PresentationPage = ({ user, shared = false }) => {
 
   return (
     <EditModeContainer
-      className="presentation-page"
       id={id}
       cues={presentationInfo}
       isToolboxOpen={isToolboxOpen}
       setIsToolboxOpen={setIsToolboxOpen}
-      isTransitionMenuOpen={isTransitionMenuOpen}
-      setIsTransitionMenuOpen={setIsTransitionMenuOpen}
       transitionType={transitionType}
       onTransitionChange={handleTransitionChange}
       cueIndex={cueIndex}

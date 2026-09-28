@@ -1,8 +1,8 @@
 /*
-* Component for rendering the presentation manual, providing guidance on how to use the edit and show mode.
-* The manual is organized into sections using an accordion component, with each section covering different aspects of the presentation editor and show mode features.
-* The manual also includes a button to restart the tutorial by clearing the relevant local storage item and reloading the page.
-*/
+ * Component for rendering the presentation manual, providing guidance on how to use the edit and show mode.
+ * The manual is organized into sections using an accordion component, with each section covering different aspects of the presentation editor and show mode features.
+ * The manual also includes a button to restart the tutorial by clearing the relevant local storage item and reloading the page.
+ */
 import {
   Text,
   Accordion,
@@ -29,8 +29,8 @@ const PresentationManual = () => {
       <Text mb={4}>
         Welcome to the user manual. This modal provides guidance on how to use
         the editor.
-        <br/>
-        <br/>
+        <br />
+        <br />
         <Button
           onClick={(e) => {
             e.preventDefault()
@@ -110,14 +110,11 @@ const PresentationManual = () => {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-            <FeatureSection
-              data={screenAndPlaybackData}
-            />
+            <FeatureSection data={screenAndPlaybackData} />
           </AccordionPanel>
         </AccordionItem>
       </Accordion>
     </>
-
   )
 }
 

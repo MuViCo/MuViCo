@@ -4,20 +4,28 @@
  * On cancel, reverts to original name and hides input field.
  */
 
-import React, { useState, useEffect } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useState, useEffect } from "react"
 import { Box, IconButton, Input, Button } from "@chakra-ui/react"
 import { EditIcon } from "@chakra-ui/icons"
 import { updatePresentationName } from "../../redux/presentationReducer"
 import { useCustomToast } from "../utils/toastUtils"
 import { useReadOnly } from "../utils/ReadOnlyContext"
+import { useAppDispatch } from "../../redux/hooks"
 
-const PresentationTitle = ({ id, presentationName }) => {
+interface PresentationTitleProps {
+  id: string
+  presentationName: string
+}
+
+const PresentationTitle = ({
+  id,
+  presentationName,
+}: PresentationTitleProps) => {
   const [isEditingPresentationName, setIsEditingPresentationName] =
     useState(false)
   const [newPresentationName, setNewPresentationName] = useState("")
   const showToast = useCustomToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const readOnly = useReadOnly()
 
   useEffect(() => {

@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState } from "react"
+import type { FormEvent } from "react"
 import {
   Button,
   Checkbox,
@@ -25,6 +26,17 @@ import {
 } from "@chakra-ui/react"
 
 import { occupiedScreens } from "../utils/cueScreenSpanUtils"
+import type { Cue, CueUpdateInput } from "../../types"
+
+interface MultiScreenModalProps {
+  isOpen: boolean
+  onClose: () => void
+  cue: Cue | null
+  screenCount: number
+  cues: Cue[]
+  hasLaneForLayer?: (screenNumber: number, layer: number) => boolean
+  onSave?: (updatedCue: CueUpdateInput) => Promise<void> | void
+}
 
 const MultiScreenModal = ({
   isOpen,
@@ -34,13 +46,15 @@ const MultiScreenModal = ({
   cues,
   hasLaneForLayer,
   onSave,
-}) => {
-  const [selectedScreens, setSelectedScreens] = useState([])
+}: MultiScreenModalProps) => {
+  const [selectedScreens, setSelectedScreens] = useState<number[]>([])
 
   useEffect(() => {
     if (isOpen && cue) {
       const initial =
-        cue.spanScreens?.length > 1 ? cue.spanScreens : [cue.screen]
+        (cue.spanScreens?.length ?? 0) > 1
+          ? (cue.spanScreens as number[])
+          : [cue.screen]
       setSelectedScreens(initial)
     }
   }, [isOpen, cue])
@@ -52,7 +66,7 @@ const MultiScreenModal = ({
   const layer = Number(cue.layer ?? 0)
   const layerLabel = `L${layer + 1}`
 
-  const conflictOnScreen = (screenNumber) =>
+  const conflictOnScreen = (screenNumber: number) =>
     (cues || []).find(
       (other) =>
         other._id !== cue._id &&
@@ -62,7 +76,7 @@ const MultiScreenModal = ({
         occupiedScreens(other).includes(screenNumber)
     )
 
-  const handleChange = (values) => {
+  const handleChange = (values: (string | number)[]) => {
     const asNumbers = values.map(Number)
     // The cue's own screen is where it lives in the grid; it can't be
     // unchecked out of its own span.
@@ -72,7 +86,7 @@ const MultiScreenModal = ({
     setSelectedScreens(asNumbers)
   }
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (!onSave) {
       return
