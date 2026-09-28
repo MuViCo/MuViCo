@@ -1,9 +1,8 @@
 /*
-* Component for rendering a Google Sign-In button that allows users to authenticate with their Google account and grant access to their Google Drive files.
-* The component uses Firebase Authentication to handle the sign-in process and retrieves an access token for the Google Drive API, which is then sent to the backend for further processing.
+ * Component for rendering a Google Sign-In button that allows users to authenticate with their Google account and grant access to their Google Drive files.
+ * The component uses Firebase Authentication to handle the sign-in process and retrieves an access token for the Google Drive API, which is then sent to the backend for further processing.
  */
-import React from "react"
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import {
   Button,
   Box,
@@ -17,8 +16,13 @@ import { QuestionIcon } from "@chakra-ui/icons"
 import axios from "axios"
 
 import { auth } from "../utils/firebase"
+import type { AuthUser } from "../../types"
 
-const GoogleSignInButton = ({ onLogin }) => {
+interface GoogleSignInButtonProps {
+  onLogin: (user: AuthUser) => void
+}
+
+const GoogleSignInButton = ({ onLogin }: GoogleSignInButtonProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   const handleGoogleSignIn = async () => {
@@ -31,10 +35,10 @@ const GoogleSignInButton = ({ onLogin }) => {
       const result = await signInWithPopup(auth, provider)
 
       const credential = GoogleAuthProvider.credentialFromResult(result)
-      const driveAccessToken = credential.accessToken
+      const driveAccessToken = credential?.accessToken
 
       const idToken = await result.user.getIdToken(true)
-      const response = await axios.post(
+      const response = await axios.post<AuthUser>(
         "/api/login/firebase",
         { driveAccessToken },
         {
@@ -101,6 +105,7 @@ const GoogleSignInButton = ({ onLogin }) => {
         </Button>
 
         <IconButton
+          aria-label="Learn about sign-in storage options"
           icon={<QuestionIcon />}
           variant="ghost"
           size="lg"

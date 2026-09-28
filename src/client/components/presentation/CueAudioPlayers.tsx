@@ -1,4 +1,21 @@
-import React, { useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
+
+export interface AudioTrack {
+  id: string
+  src: string
+  loop: boolean
+  continuePlayback: boolean
+  layer?: number
+  name?: string
+}
+
+interface CueAudioPlayerProps {
+  src: string
+  loop: boolean
+  shouldPlay: boolean
+  continuePlayback: boolean
+  allowContinuousAudio: boolean
+}
 
 const CueAudioPlayer = ({
   src,
@@ -6,8 +23,8 @@ const CueAudioPlayer = ({
   shouldPlay,
   continuePlayback,
   allowContinuousAudio,
-}) => {
-  const audioRef = useRef(null)
+}: CueAudioPlayerProps) => {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const hasStartedRef = useRef(false)
 
   useEffect(() => {
@@ -37,12 +54,19 @@ const CueAudioPlayer = ({
   )
 }
 
+interface CueAudioPlayersProps {
+  tracks: AudioTrack[]
+  shouldAutoPlay: boolean
+  allowContinuousAudio: boolean
+  manuallyPlayingTrackIds?: Record<string, boolean>
+}
+
 const CueAudioPlayers = ({
   tracks,
   shouldAutoPlay,
   allowContinuousAudio,
   manuallyPlayingTrackIds,
-}) =>
+}: CueAudioPlayersProps) =>
   tracks.map((track, trackIndex) => (
     <CueAudioPlayer
       key={track.id || `${track.src}-${trackIndex}`}

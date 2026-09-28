@@ -1,4 +1,3 @@
-import React from "react"
 import {
   Modal,
   ModalOverlay,
@@ -11,7 +10,12 @@ import {
   Text,
 } from "@chakra-ui/react"
 
-const SignInInfoModal = ({ isOpen, onClose }) => (
+interface SignInInfoModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+const SignInInfoModal = ({ isOpen, onClose }: SignInInfoModalProps) => (
   <Modal isCentered isOpen={isOpen} onClose={onClose} size="2xl">
     <ModalOverlay
       bg="none"

@@ -1,19 +1,23 @@
-import React, { useEffect, useRef, useState } from "react"
-import { useSelector } from "react-redux"
+import { useEffect, useRef, useState } from "react"
 import { Box, Tooltip, Spinner } from "@chakra-ui/react"
 import { CheckIcon } from "@chakra-ui/icons"
+import { useAppSelector } from "../../redux/hooks"
 
 // How long the "saved" checkmark stays visible before fading out, so it
 // doesn't linger as noise once nothing is happening.
 const SAVED_FADE_DELAY_MS = 2000
 
 const StatusTooltip = () => {
-  const pendingSaves = useSelector((state) => state.presentation.pendingSaves)
+  const pendingSaves = useAppSelector(
+    (state) => state.presentation.pendingSaves
+  )
   const status = pendingSaves > 0 ? "loading" : "saved"
   // Starts hidden, not visible: on mount there's no save to report yet, so
   // there's nothing to show until the first "loading" transition reveals it.
   const [visible, setVisible] = useState(false)
-  const fadeTimerRef = useRef(null)
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  )
 
   useEffect(() => {
     clearTimeout(fadeTimerRef.current)

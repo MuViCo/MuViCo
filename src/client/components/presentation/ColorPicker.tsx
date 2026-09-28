@@ -8,7 +8,17 @@
 import { HexColorPicker, HexColorInput } from "react-colorful"
 import { Box } from "@chakra-ui/react"
 
-export const ColorPickerWithPresets = ({ color, onChange, presetColors }) => {
+interface ColorPickerWithPresetsProps {
+  color: string
+  onChange: (color: string) => void
+  presetColors: string[]
+}
+
+export const ColorPickerWithPresets = ({
+  color,
+  onChange,
+  presetColors,
+}: ColorPickerWithPresetsProps) => {
   return (
     <Box
       className="picker"
