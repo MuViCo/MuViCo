@@ -7,6 +7,7 @@ import React from "react"
 import { render, screen, fireEvent } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { ScreensDisplay } from "../../components/presentation/ScreensDisplay"
+import type { Cue } from "../../types"
 
 describe("ScreensDisplay", () => {
   test("shows each screen's own shape and reports a change for that screen", () => {
@@ -55,7 +56,7 @@ describe("ScreensDisplay", () => {
         file: { type: "image/png", url: "https://example.com/b.png" },
         opacity: 1,
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -88,7 +89,7 @@ describe("ScreensDisplay", () => {
         file: { type: "image/png", url: "https://example.com/b.png" },
         opacity: 1,
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -186,7 +187,7 @@ describe("ScreensDisplay", () => {
         screen: 1,
         file: { url: "https://example.com/image.jpg", type: "image/jpeg" },
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -210,7 +211,7 @@ describe("ScreensDisplay", () => {
         screen: 1,
         file: { url: "https://example.com/video.mp4", type: "video/mp4" },
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -239,7 +240,7 @@ describe("ScreensDisplay", () => {
           type: "application/pdf",
         },
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -264,7 +265,7 @@ describe("ScreensDisplay", () => {
         color: "#ff00ff",
         file: null,
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -291,7 +292,7 @@ describe("ScreensDisplay", () => {
         screen: 1,
         file: null,
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -336,7 +337,7 @@ describe("ScreensDisplay", () => {
         layer: 2,
         file: { url: "https://example.com/top.png", type: "image/png" },
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -365,7 +366,7 @@ describe("ScreensDisplay", () => {
         spanScreens: [1, 2],
         file: { url: "https://example.com/wide.png", type: "image/png" },
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
@@ -399,7 +400,7 @@ describe("ScreensDisplay", () => {
     expect(croppedTiles).toHaveLength(2)
     const positions = croppedTiles.map(
       (tile) =>
-        tile.getAttribute("style").match(/background-position: ([^;]+)/)[1]
+        tile.getAttribute("style")?.match(/background-position: ([^;]+)/)?.[1]
     )
     // Screen 1 is the first (leftmost) slice, screen 2 the last -- their
     // crops must differ, not show the same full image twice.
@@ -419,7 +420,7 @@ describe("ScreensDisplay", () => {
         textColor: "#ffcc00",
         textSize: 10,
       },
-    ]
+    ] as Cue[]
 
     render(
       <ScreensDisplay
