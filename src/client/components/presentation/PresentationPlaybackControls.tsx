@@ -9,7 +9,6 @@
  * - Autoplay instructions popover
  * - Audio player (if audio source URL is provided)
  */
-import React from "react"
 import ClickablePopover from "../utils/ClickablePopover"
 
 import {
@@ -30,9 +29,18 @@ import pausebutton from "../../public/icons/pausebutton.svg"
 import playbutton from "../../public/icons/playbutton.svg"
 import { SpeakerIcon } from "../../lib/icons"
 import CueAudioPlayers from "./CueAudioPlayers"
+import type { AudioTrack } from "./CueAudioPlayers"
+
+interface AutoplayControlsProps {
+  toggleAutoplay: () => void
+  isAutoplaying: boolean
+}
 
 // autoplay controls component used in both presentation navigation and autoplay
-const AutoplayControls = ({ toggleAutoplay, isAutoplaying }) => {
+const AutoplayControls = ({
+  toggleAutoplay,
+  isAutoplaying,
+}: AutoplayControlsProps) => {
   return (
     <Box display="flex" alignItems="center">
       <IconButton
@@ -54,8 +62,16 @@ const AutoplayControls = ({ toggleAutoplay, isAutoplaying }) => {
   )
 }
 
+interface AutoplayIntervalProps {
+  autoplayInterval: number
+  toggleAutoplayInterval: (value: string) => void
+}
+
 // Component for adjusting autoplay interval (seconds per frame)
-const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
+const AutoplayInterval = ({
+  autoplayInterval,
+  toggleAutoplayInterval,
+}: AutoplayIntervalProps) => (
   <Box className="transport-interval" display="flex" alignItems="center">
     <Text className="transport-label">Auto</Text>
     <NumberInput
@@ -77,8 +93,16 @@ const AutoplayInterval = ({ autoplayInterval, toggleAutoplayInterval }) => (
   </Box>
 )
 
+interface ScreenToggleButtonsProps {
+  screens: Record<string, boolean>
+  toggleAllScreens: () => void
+}
+
 // Component for toggling all screens open/closed
-const ScreenToggleButtons = ({ screens, toggleAllScreens }) => {
+const ScreenToggleButtons = ({
+  screens,
+  toggleAllScreens,
+}: ScreenToggleButtonsProps) => {
   const allScreenNumbers = Object.keys(screens)
 
   const hasOpenScreen = allScreenNumbers.some(
@@ -107,8 +131,18 @@ const ScreenToggleButtons = ({ screens, toggleAllScreens }) => {
   )
 }
 
+type UpdateCue = (direction: "Next" | "Previous") => void
+
+interface CueNavigationPreviousProps {
+  cueIndex: number
+  updateCue: UpdateCue
+}
+
 // Component for cue navigation buttons (previous/next)
-const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
+const CueNavigationPrevious = ({
+  cueIndex,
+  updateCue,
+}: CueNavigationPreviousProps) => (
   <IconButton
     aria-label="Previous Cue"
     icon={<ArrowBackIcon boxSize={5} />}
@@ -118,8 +152,18 @@ const CueNavigationPrevious = ({ cueIndex, updateCue }) => (
   />
 )
 
+interface CueNavigationNextProps {
+  cueIndex: number
+  updateCue: UpdateCue
+  indexCount: number
+}
+
 // Component for cue navigation buttons (previous/next)
-const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
+const CueNavigationNext = ({
+  cueIndex,
+  updateCue,
+  indexCount,
+}: CueNavigationNextProps) => (
   <IconButton
     aria-label="Next Cue"
     icon={<ArrowForwardIcon boxSize={5} />}
@@ -129,7 +173,7 @@ const CueNavigationNext = ({ cueIndex, updateCue, indexCount }) => (
   />
 )
 
-const getTrackLabel = (track, index) => {
+const getTrackLabel = (track: AudioTrack, index: number) => {
   if (track.name) return track.name
   const sourceName = String(track.src || "")
     .split("?")[0]
@@ -138,7 +182,12 @@ const getTrackLabel = (track, index) => {
   return sourceName || `Audio ${index + 1}`
 }
 
-const AudioTrackStatus = ({ tracks, isAutoplaying }) => {
+interface AudioTrackStatusProps {
+  tracks: AudioTrack[]
+  isAutoplaying: boolean
+}
+
+const AudioTrackStatus = ({ tracks, isAutoplaying }: AudioTrackStatusProps) => {
   if (tracks.length === 0) return null
 
   return (
@@ -171,6 +220,23 @@ const AudioTrackStatus = ({ tracks, isAutoplaying }) => {
   )
 }
 
+interface PresentationPlaybackControlsProps {
+  screens: Record<string, boolean>
+  toggleAllScreens: () => void
+  cueIndex: number
+  updateCue: UpdateCue
+  indexCount: number
+  autoplayInterval: number
+  toggleAutoplay: () => void
+  isAutoplaying: boolean
+  toggleAutoplayInterval: (value: string) => void
+  audioSourceURL?: string
+  audioLoop?: boolean
+  audioTracks?: AudioTrack[]
+  allowContinuousAudio?: boolean
+  renderAudioPlayers?: boolean
+}
+
 // Shared playback controls for presentation navigation and autoplay.
 const PresentationPlaybackControls = ({
   screens,
@@ -187,7 +253,7 @@ const PresentationPlaybackControls = ({
   audioTracks = [],
   allowContinuousAudio = false,
   renderAudioPlayers = true,
-}) => {
+}: PresentationPlaybackControlsProps) => {
   const resolvedAudioTracks =
     audioTracks.length > 0
       ? audioTracks
