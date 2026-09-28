@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react"
 const CueAudioPlayer = ({
   src,
   loop,
-  isAutoplaying,
+  shouldPlay,
   continuePlayback,
   allowContinuousAudio,
 }) => {
@@ -14,7 +14,7 @@ const CueAudioPlayer = ({
     const audio = audioRef.current
     if (!audio) return
 
-    if (!isAutoplaying || !src) {
+    if (!shouldPlay) {
       if (
         (loop || continuePlayback) &&
         allowContinuousAudio &&
@@ -29,7 +29,7 @@ const CueAudioPlayer = ({
     const playPromise = audio.play()
     hasStartedRef.current = true
     if (playPromise?.catch) playPromise.catch(() => {})
-  }, [src, loop, isAutoplaying, continuePlayback, allowContinuousAudio])
+  }, [src, loop, shouldPlay, continuePlayback, allowContinuousAudio])
 
   if (!src) return null
   return (
@@ -37,13 +37,21 @@ const CueAudioPlayer = ({
   )
 }
 
-const CueAudioPlayers = ({ tracks, isAutoplaying, allowContinuousAudio }) =>
+const CueAudioPlayers = ({
+  tracks,
+  shouldAutoPlay,
+  allowContinuousAudio,
+  manuallyPlayingTrackIds,
+}) =>
   tracks.map((track, trackIndex) => (
     <CueAudioPlayer
       key={track.id || `${track.src}-${trackIndex}`}
       src={track.src}
       loop={Boolean(track.loop)}
-      isAutoplaying={isAutoplaying}
+      shouldPlay={
+        Boolean(track.src) &&
+        (shouldAutoPlay || Boolean(manuallyPlayingTrackIds?.[track.id]))
+      }
       continuePlayback={Boolean(track.continuePlayback)}
       allowContinuousAudio={allowContinuousAudio}
     />
