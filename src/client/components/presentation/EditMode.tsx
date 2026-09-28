@@ -786,7 +786,10 @@ const EditMode = ({
   }
 
   // Add a new frame at specified index - shifts existing cues to the right
-  const handleAddIndex = async (index: number) => {
+  const handleAddIndex = async (
+    index: number,
+    { silent = false }: { silent?: boolean } = {}
+  ) => {
     const originalIndexCount = indexCount
     const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
 
@@ -801,7 +804,7 @@ const EditMode = ({
           await dispatch(shiftPresentationIndexes(id, index, "right"))
         }
 
-        if (cuesAfter.length > 0) {
+        if (cuesAfter.length > 0 && !silent) {
           showToast({
             title: "Frame added in between",
             description: `Added a new frame after ${index === 0 ? "Starting Frame" : `Frame ${index}`}. Moved ${cuesAfter.length} element(s) forward.`,
@@ -864,15 +867,20 @@ const EditMode = ({
   // `index` left by one (only if any exist), then shrinks the index count.
   // Returns null and shows an error toast if the shift fails, so callers can
   // skip their own success toast; otherwise returns how many cues moved.
-  const shiftAndRemoveIndex = async (index: number) => {
-    const cuesAfter = cues.filter((cue) => Number(cue.index) > Number(index))
+  const shiftAndRemoveIndex = async (
+    index: number,
+    overrides: { movedCount?: number; nextIndexCount?: number } = {}
+  ) => {
+    const movedCount =
+      overrides.movedCount ??
+      cues.filter((cue) => Number(cue.index) > Number(index)).length
 
     try {
-      if (cuesAfter.length > 0) {
+      if (movedCount > 0) {
         await dispatch(shiftPresentationIndexes(id, index, "left"))
       }
-      await performRemoveIndex(indexCount - 1)
-      return cuesAfter.length
+      await performRemoveIndex(overrides.nextIndexCount ?? indexCount - 1)
+      return movedCount
     } catch (error) {
       console.error("Error shifting cues when removing index:", error)
       showToast({
@@ -1378,10 +1386,39 @@ const EditMode = ({
       const losesSpan = !keepsSpan && (selectedCue.spanScreens?.length ?? 0) > 1
 
       setSelectedCue(null)
+
       if (shouldInsertBeforeDrop) {
-        await handleAddIndex(xIndex - 1)
+        const sourceIndex = Number(selectedCue.index)
+        const vacatesSourceFrame = !cues.some(
+          (cue) =>
+            cue._id !== selectedCue._id &&
+            cue.cueType !== "audio" &&
+            Number(cue.index) === sourceIndex
+        )
+
+        await handleAddIndex(xIndex - 1, { silent: true })
+        await dispatchUpdateCue(selectedCue._id, movedCue)
+
+        if (vacatesSourceFrame) {
+          const vacatedIndex =
+            sourceIndex >= xIndex ? sourceIndex + 1 : sourceIndex
+          const movedCount = cues.filter((cue) => {
+            if (cue._id === selectedCue._id) return xIndex > vacatedIndex
+            const shifted =
+              Number(cue.index) >= xIndex
+                ? Number(cue.index) + 1
+                : Number(cue.index)
+            return shifted > vacatedIndex
+          }).length
+
+          await shiftAndRemoveIndex(vacatedIndex, {
+            movedCount,
+            nextIndexCount: indexCount,
+          })
+        }
+      } else {
+        await dispatchUpdateCue(selectedCue._id, movedCue)
       }
-      await dispatchUpdateCue(selectedCue._id, movedCue)
       if (losesSpan) {
         showToast({
           title: "Span cleared",
