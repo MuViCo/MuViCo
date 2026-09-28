@@ -14,12 +14,18 @@ import "@testing-library/jest-dom"
 import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"
 import { useDispatch } from "react-redux"
 import { removeCue, updatePresentation } from "../../redux/presentationReducer"
+import type { Cue } from "../../types"
+import type { Layout } from "react-grid-layout"
+import type { ReactNode } from "react"
 
+const mockedUseDispatch = jest.mocked(useDispatch)
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
-const mockGridLayout = jest.fn(({ children }) => (
-  <div data-testid="mock-grid-layout">{children}</div>
-))
+const mockGridLayout = jest.fn(
+  ({ children }: { children: ReactNode } & Record<string, unknown>) => (
+    <div data-testid="mock-grid-layout">{children}</div>
+  )
+)
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -35,7 +41,9 @@ jest.mock("../../components/utils/toastUtils", () => ({
 }))
 
 jest.mock("react-grid-layout", () => {
-  return function MockGridLayout(props) {
+  return function MockGridLayout(
+    props: { children: ReactNode } & Record<string, unknown>
+  ) {
     return mockGridLayout(props)
   }
 })
@@ -57,14 +65,19 @@ describe("GridLayoutComponent", () => {
     setShowAlert: jest.fn(),
     setAlertData: jest.fn(),
     screenCount: 8,
+    setIsMultiScreenModalOpen: jest.fn(),
   }
 
-  const renderGrid = (cues, layout, extraProps = {}) => {
+  const renderGrid = (
+    cues: Record<string, unknown>[],
+    layout: Layout[],
+    extraProps: Record<string, unknown> = {}
+  ) => {
     return render(
       <GridLayoutComponent
         {...baseProps}
         {...extraProps}
-        cues={cues}
+        cues={cues as unknown as Cue[]}
         layout={layout}
       />
     )
@@ -72,7 +85,9 @@ describe("GridLayoutComponent", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(mockDispatch)
+    mockedUseDispatch.mockReturnValue(
+      mockDispatch as unknown as ReturnType<typeof useDispatch>
+    )
   })
 
   it("renders background cells for empty rows", () => {
@@ -85,7 +100,9 @@ describe("GridLayoutComponent", () => {
     const firstCallProps = mockGridLayout.mock.calls[0][0]
     expect(firstCallProps.width).toBe(470)
     expect(firstCallProps.maxRows).toBe(2)
-    expect(firstCallProps.style.minHeight).toBe("210px")
+    expect((firstCallProps.style as { minHeight: string }).minHeight).toBe(
+      "210px"
+    )
   })
 
   it("does not wire deprecated onDragStop behavior", () => {
@@ -146,7 +163,7 @@ describe("GridLayoutComponent", () => {
 
     const cueContent = document.querySelector(
       '[data-cue-content-id="visual-context"]'
-    )
+    ) as Element
     const contextMenuEvent = createEvent.contextMenu(cueContent, {
       clientX: 124,
       clientY: 236,
@@ -197,7 +214,9 @@ describe("GridLayoutComponent", () => {
     })
 
     fireEvent.contextMenu(
-      document.querySelector('[data-cue-content-id="visual-copying"]'),
+      document.querySelector(
+        '[data-cue-content-id="visual-copying"]'
+      ) as Element,
       { clientX: 10, clientY: 20 }
     )
 
@@ -279,7 +298,7 @@ describe("GridLayoutComponent", () => {
     rerender(
       <GridLayoutComponent
         {...baseProps}
-        cues={cues}
+        cues={cues as unknown as Cue[]}
         layout={layout}
         isDragging={true}
         draggingCueId="visual-1"
@@ -334,7 +353,7 @@ describe("GridLayoutComponent", () => {
     rerender(
       <GridLayoutComponent
         {...baseProps}
-        cues={cues}
+        cues={cues as unknown as Cue[]}
         layout={layout}
         previewCueSpanOverrides={{ "visual-1": 1 }}
       />
