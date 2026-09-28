@@ -2125,6 +2125,68 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
     testPresentationId = presentation._id
   })
 
+  test("Should shift only the named lane when a scope is given", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.cues.push({
+      cueType: "visual",
+      index: 2,
+      name: "Other screen",
+      screen: 2,
+    })
+    await presentation.save()
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right", screen: 1, layer: 0 })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    const onOtherScreen = updated.cues.find((cue: any) => cue.screen === 2)
+    expect(onOtherScreen.index).toBe(2)
+    expect(
+      updated.cues
+        .filter((cue: any) => cue.screen === 1)
+        .map((cue: any) => cue.index)
+    ).toEqual([0, 3, 5])
+  })
+
+  test("Should stop shifting at endIndex", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right", endIndex: 2 })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(
+      updated.cues
+        .map((cue: any) => cue.index)
+        .sort((a: number, b: number) => a - b)
+    ).toEqual([0, 3, 4])
+  })
+
+  test("Should reject a scope that is not numeric", async () => {
+    for (const body of [
+      { startIndex: 0, direction: "right", endIndex: "2" },
+      { startIndex: 0, direction: "right", screen: "1" },
+      { startIndex: 0, direction: "right", layer: "0" },
+    ]) {
+      await api
+        .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+        .set("Authorization", authHeader)
+        .send(body)
+        .expect(400)
+    }
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(
+      updated.cues
+        .map((cue: any) => cue.index)
+        .sort((a: number, b: number) => a - b)
+    ).toEqual([0, 2, 4])
+  })
+
   test("Should shift indices right successfully", async () => {
     const response = await api
       .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
