@@ -8,10 +8,44 @@
  * - Provides functions to show/hide previews, update preview positions, and clear previews when drag ends
  */
 
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, type RefObject } from "react"
 import { laneAcceptsCueType } from "../utils/screenRowModel"
+import type { Cue, CueType, Lane } from "../../types"
+import type { SpanOverrideMap } from "./editModeDragHelpers"
 
-const isRowIndexInsideGrid = ({ xIndex, yIndex, indexCount, rowCount }) =>
+/** clientX/clientY is all this hook needs from a pointer-producing DOM event. */
+type PointerLikeEvent = { clientX: number; clientY: number }
+
+type PointerPosition = { x: number; y: number }
+
+type PreviewCell = { xIndex: number; yIndex: number }
+
+type ExternalPreviewCell = PreviewCell & { isValidDropCell: boolean }
+
+type CursorPreview = { name?: string; imageUrl?: string; color?: string }
+
+type ExternalPreviewInput = {
+  pointerPosition: PointerPosition
+  cueType?: CueType | string
+  draggedCueId?: string | null
+  idleCursor: string
+  isHeaderCell: boolean
+  isBlockedCell?: (xIndex: number, yIndex: number) => boolean
+  cursorPreview?: CursorPreview | null
+  enableContinuationPreview: boolean
+}
+
+const isRowIndexInsideGrid = ({
+  xIndex,
+  yIndex,
+  indexCount,
+  rowCount,
+}: {
+  xIndex: number
+  yIndex: number
+  indexCount: number
+  rowCount: number
+}) =>
   Number(xIndex) >= 0 &&
   Number(xIndex) < Number(indexCount) &&
   Number(yIndex) >= 0 &&
@@ -32,6 +66,21 @@ const applyPlacementPreviewStyles = ({
   validBg,
   invalidBg,
   setValidityAttribute = false,
+}: {
+  previewElement: HTMLElement | null
+  xIndex: number
+  yIndex: number
+  columnWidth: number
+  rowHeight: number
+  gap: number
+  rowGap: number
+  yTopOffset?: number
+  isValidDropCell: boolean
+  validBorder: string
+  invalidBorder: string
+  validBg: string
+  invalidBg: string
+  setValidityAttribute?: boolean
 }) => {
   if (!previewElement) {
     return
@@ -76,34 +125,63 @@ const useEditModeDragPreviewController = ({
   dragPreviewInvalidBorder,
   dragPreviewValidBg,
   dragPreviewInvalidBg,
+}: {
+  containerRef: RefObject<HTMLElement | null>
+  columnWidth: number
+  rowHeight: number
+  headerRowHeight?: number
+  gap: number
+  rowGap: number
+  indexCount: number
+  rows: Lane[]
+  rowCount: number
+  cueRowIndex: Record<string, number>
+  selectedCue: Cue | null
+  setDragCursorMode: (mode: string) => void
+  clearExternalDragPreview: () => void
+  clearInternalDragSpanPreview: () => void
+  setExternalDragSpanOverridesIfChanged: (overrides?: SpanOverrideMap) => void
+  setInternalDragSpanOverridesIfChanged: (overrides?: SpanOverrideMap) => void
+  getContinuationPreviewSpanOverrides: (
+    xIndex: number,
+    yIndex: number,
+    cueType?: string,
+    draggedCueId?: string | null
+  ) => SpanOverrideMap
+  dragPreviewValidBorder: string
+  dragPreviewInvalidBorder: string
+  dragPreviewValidBg: string
+  dragPreviewInvalidBg: string
 }) => {
   // Refs for internal drag preview (dragging existing cues)
-  const hoverPreviewRef = useRef(null)
-  const hoverCellRef = useRef(null)
-  const dragCursorPreviewRef = useRef(null)
-  const dragPlacementPreviewRef = useRef(null)
-  const dragCursorPositionRef = useRef(null)
-  const dragLatestPointerRef = useRef(null)
-  const dragPreviewFrameRef = useRef(null)
-  const dragPreviewCellRef = useRef(null)
+  const hoverPreviewRef = useRef<HTMLDivElement | null>(null)
+  const hoverCellRef = useRef<string | null>(null)
+  const dragCursorPreviewRef = useRef<HTMLDivElement | null>(null)
+  const dragPlacementPreviewRef = useRef<HTMLDivElement | null>(null)
+  const dragCursorPositionRef = useRef<PointerPosition | null>(null)
+  const dragLatestPointerRef = useRef<PointerPosition | null>(null)
+  const dragPreviewFrameRef = useRef<number | null>(null)
+  const dragPreviewCellRef = useRef<PreviewCell | null>(null)
   const dragPlacementLockedToAnchorRef = useRef(false)
 
   const timelineRowsTopOffset = (headerRowHeight ?? 0) + rowGap
 
   // Refs for external drag preview (dragging from media pool)
-  const externalPlacementPreviewRef = useRef(null)
-  const externalCursorPreviewRef = useRef(null)
-  const externalCursorSurfaceRef = useRef(null)
-  const externalCursorImageRef = useRef(null)
-  const externalCursorLabelRef = useRef(null)
+  const externalPlacementPreviewRef = useRef<HTMLDivElement | null>(null)
+  const externalCursorPreviewRef = useRef<HTMLDivElement | null>(null)
+  const externalCursorSurfaceRef = useRef<HTMLDivElement | null>(null)
+  const externalCursorImageRef = useRef<HTMLImageElement | null>(null)
+  const externalCursorLabelRef = useRef<HTMLDivElement | null>(null)
   const externalCursorContentRef = useRef({
     name: "",
     imageUrl: "",
     color: "rgba(32,32,32,0.9)",
   })
-  const externalLatestPreviewInputRef = useRef(null)
-  const externalPreviewFrameRef = useRef(null)
-  const externalPreviewCellRef = useRef(null)
+  const externalLatestPreviewInputRef = useRef<ExternalPreviewInput | null>(
+    null
+  )
+  const externalPreviewFrameRef = useRef<number | null>(null)
+  const externalPreviewCellRef = useRef<ExternalPreviewCell | null>(null)
 
   const hideHoverPreview = useCallback(() => {
     hoverCellRef.current = null
@@ -113,7 +191,7 @@ const useEditModeDragPreviewController = ({
     }
   }, [])
 
-  const showHoverPreview = (xIndex, yIndex) => {
+  const showHoverPreview = (xIndex: number, yIndex: number) => {
     if (!hoverPreviewRef.current) {
       return
     }
@@ -129,7 +207,7 @@ const useEditModeDragPreviewController = ({
     hoverPreviewRef.current.style.top = `${timelineRowsTopOffset + yIndex * (rowHeight + rowGap)}px`
   }
 
-  const updateDragPreviewCell = (nextCell) => {
+  const updateDragPreviewCell = (nextCell: PreviewCell | null) => {
     const previousCell = dragPreviewCellRef.current
     const sameCell =
       (!previousCell && !nextCell) ||
@@ -146,14 +224,18 @@ const useEditModeDragPreviewController = ({
     return true
   }
 
-  const getPointerPosition = (event) => {
+  const getPointerPosition = (event: PointerLikeEvent): PointerPosition => {
     const containerRect = containerRef.current?.getBoundingClientRect()
     return {
       x: containerRect
-        ? event.clientX - containerRect.left + containerRef.current.scrollLeft
+        ? event.clientX -
+          containerRect.left +
+          (containerRef.current?.scrollLeft ?? 0)
         : event.clientX,
       y: containerRect
-        ? event.clientY - containerRect.top + containerRef.current.scrollTop
+        ? event.clientY -
+          containerRect.top +
+          (containerRef.current?.scrollTop ?? 0)
         : event.clientY,
     }
   }
@@ -197,7 +279,7 @@ const useEditModeDragPreviewController = ({
   }
 
   const applyDragPreviewFromPointer = useCallback(
-    (pointerPosition) => {
+    (pointerPosition: PointerPosition | null) => {
       if (!pointerPosition) {
         return
       }
@@ -216,12 +298,14 @@ const useEditModeDragPreviewController = ({
       const lockPlacementToAnchor = Boolean(
         dragPlacementLockedToAnchorRef.current && selectedCue
       )
-      const xIndex = lockPlacementToAnchor
-        ? Number(selectedCue.index)
-        : pointerXIndex
-      const yIndex = lockPlacementToAnchor
-        ? Number(cueRowIndex?.[selectedCue._id] ?? 0)
-        : pointerYIndex
+      const xIndex =
+        lockPlacementToAnchor && selectedCue
+          ? Number(selectedCue.index)
+          : pointerXIndex
+      const yIndex =
+        lockPlacementToAnchor && selectedCue
+          ? Number(cueRowIndex?.[selectedCue._id] ?? 0)
+          : pointerYIndex
 
       if (!selectedCue) {
         setDragCursorMode("grabbing")
@@ -316,13 +400,13 @@ const useEditModeDragPreviewController = ({
     }
   }
 
-  const primeDragPreviewFromEvent = (event) => {
+  const primeDragPreviewFromEvent = (event: PointerLikeEvent) => {
     const pointerPosition = getPointerPosition(event)
     dragLatestPointerRef.current = pointerPosition
     applyDragPreviewFromPointer(pointerPosition)
   }
 
-  const scheduleDragPreviewFromEvent = (event) => {
+  const scheduleDragPreviewFromEvent = (event: PointerLikeEvent) => {
     dragLatestPointerRef.current = getPointerPosition(event)
 
     if (dragPreviewFrameRef.current) {
@@ -340,7 +424,7 @@ const useEditModeDragPreviewController = ({
     dragCursorPositionRef.current = null
   }
 
-  const updateExternalPreviewCell = (nextCell) => {
+  const updateExternalPreviewCell = (nextCell: ExternalPreviewCell | null) => {
     const previousCell = externalPreviewCellRef.current
     const sameCell =
       (!previousCell && !nextCell) ||
@@ -369,7 +453,7 @@ const useEditModeDragPreviewController = ({
   }, [clearExternalDragPreview])
 
   const applyExternalPreviewFromInput = useCallback(
-    (input) => {
+    (input: ExternalPreviewInput | null) => {
       const idleCursor = input?.idleCursor || "copy"
 
       if (!input || !input.cueType || !containerRef.current) {
@@ -521,7 +605,18 @@ const useEditModeDragPreviewController = ({
     ]
   )
 
-  const scheduleExternalPreviewFromEvent = (event, options = {}) => {
+  const scheduleExternalPreviewFromEvent = (
+    event: PointerLikeEvent,
+    options: {
+      cueType?: CueType | string
+      draggedCueId?: string | null
+      idleCursor?: string
+      isHeaderCell?: boolean
+      isBlockedCell?: (xIndex: number, yIndex: number) => boolean
+      cursorPreview?: CursorPreview | null
+      enableContinuationPreview?: boolean
+    } = {}
+  ) => {
     externalLatestPreviewInputRef.current = {
       pointerPosition: getPointerPosition(event),
       cueType: options.cueType,
@@ -543,7 +638,7 @@ const useEditModeDragPreviewController = ({
     })
   }
 
-  const setDragPlacementLockedToAnchor = (isLocked) => {
+  const setDragPlacementLockedToAnchor = (isLocked: boolean) => {
     dragPlacementLockedToAnchorRef.current = Boolean(isLocked)
   }
 

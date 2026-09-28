@@ -9,18 +9,30 @@
  */
 
 import { useMemo, useRef, useState } from "react"
-import { areSpanOverrideMapsEqual } from "./editModeDragHelpers"
+import {
+  areSpanOverrideMapsEqual,
+  type SpanOverrideMap,
+} from "./editModeDragHelpers"
 
 const useEditModeDragPreviewState = () => {
-  const [internalDragSpanOverrides, setInternalDragSpanOverrides] = useState({})
-  const [externalDragSpanOverrides, setExternalDragSpanOverrides] = useState({})
+  const [internalDragSpanOverrides, setInternalDragSpanOverrides] =
+    useState<SpanOverrideMap>({})
+  const [externalDragSpanOverrides, setExternalDragSpanOverrides] =
+    useState<SpanOverrideMap>({})
 
-  const internalDragSpanOverridesRef = useRef({})
-  const externalDragSpanOverridesRef = useRef({})
+  const internalDragSpanOverridesRef = useRef<SpanOverrideMap>({})
+  const externalDragSpanOverridesRef = useRef<SpanOverrideMap>({})
 
-  const setInternalDragSpanOverridesIfChanged = (nextOverrides) => {
+  const setInternalDragSpanOverridesIfChanged = (
+    nextOverrides?: SpanOverrideMap
+  ) => {
     const normalizedOverrides = nextOverrides || {}
-    if (areSpanOverrideMapsEqual(internalDragSpanOverridesRef.current, normalizedOverrides)) {
+    if (
+      areSpanOverrideMapsEqual(
+        internalDragSpanOverridesRef.current,
+        normalizedOverrides
+      )
+    ) {
       return
     }
 
@@ -28,9 +40,16 @@ const useEditModeDragPreviewState = () => {
     setInternalDragSpanOverrides(normalizedOverrides)
   }
 
-  const setExternalDragSpanOverridesIfChanged = (nextOverrides) => {
+  const setExternalDragSpanOverridesIfChanged = (
+    nextOverrides?: SpanOverrideMap
+  ) => {
     const normalizedOverrides = nextOverrides || {}
-    if (areSpanOverrideMapsEqual(externalDragSpanOverridesRef.current, normalizedOverrides)) {
+    if (
+      areSpanOverrideMapsEqual(
+        externalDragSpanOverridesRef.current,
+        normalizedOverrides
+      )
+    ) {
       return
     }
 
@@ -46,10 +65,13 @@ const useEditModeDragPreviewState = () => {
     setExternalDragSpanOverridesIfChanged({})
   }
 
-  const previewCueSpanOverrides = useMemo(() => ({
-    ...externalDragSpanOverrides,
-    ...internalDragSpanOverrides,
-  }), [externalDragSpanOverrides, internalDragSpanOverrides])
+  const previewCueSpanOverrides = useMemo(
+    () => ({
+      ...externalDragSpanOverrides,
+      ...internalDragSpanOverrides,
+    }),
+    [externalDragSpanOverrides, internalDragSpanOverrides]
+  )
 
   return {
     previewCueSpanOverrides,
