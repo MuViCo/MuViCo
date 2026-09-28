@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from "react"
+import type { FormEvent } from "react"
 import {
   Button,
   Box,
@@ -52,13 +53,29 @@ import {
   opacityPercentFromCue,
 } from "../utils/cueOpacityUtils"
 import { FULL_FRAME, isFullFrame, normalizeCueFrame } from "../utils/cueFrame"
+import type { CueFrame } from "../utils/cueFrame"
 import { parseAspectRatio } from "../../../constants.js"
 import CueFramePicker from "./CueFramePicker"
+import type { Cue, CueUpdateInput } from "../../types"
 
-const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
+interface ToolboxProps {
+  isOpen: boolean
+  onClose: () => void
+  cue: Cue | null
+  onSave?: (updatedCue: CueUpdateInput) => Promise<void> | void
+  outputAspectRatio?: string
+}
+
+const Toolbox = ({
+  isOpen,
+  onClose,
+  cue,
+  onSave,
+  outputAspectRatio,
+}: ToolboxProps) => {
   const [cueName, setCueName] = useState("")
   const [opacityPercent, setOpacityPercent] = useState(100)
-  const [frame, setFrame] = useState(FULL_FRAME)
+  const [frame, setFrame] = useState<CueFrame>(FULL_FRAME)
   const [textValue, setTextValue] = useState("")
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE)
   const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
@@ -71,11 +88,7 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setCueName(
-        cue?.cueName ||
-          cue?.name ||
-          (isTextCue(cue) ? textSnippet(cue.text) : "")
-      )
+      setCueName(cue?.name || (isTextCue(cue) ? textSnippet(cue?.text) : ""))
       setOpacityPercent(opacityPercentFromCue(cue))
       setFrame(normalizeCueFrame(cue?.frame))
       setTextValue(cue?.text || "")
@@ -89,7 +102,7 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
 
   const trimmedText = textValue.trim()
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
 
     const trimmedName = cueName.trim()
@@ -109,7 +122,6 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
     await onSave({
       ...cue,
       cueName: finalName,
-      name: finalName,
       opacity: opacityFromPercent(opacityPercent),
       ...(isText && {
         text: trimmedText,
