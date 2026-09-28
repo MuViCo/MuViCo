@@ -1871,6 +1871,20 @@ router.put(
         }
       }
 
+      for (const score of presentation!.scores || []) {
+        for (const marker of score.markers || []) {
+          if (Number(marker.frameIndex) > startIndex) {
+            if (direction === "left") {
+              marker.frameIndex = Number(marker.frameIndex) - 1
+              modified = true
+            } else if (direction === "right") {
+              marker.frameIndex = Number(marker.frameIndex) + 1
+              modified = true
+            }
+          }
+        }
+      }
+
       if (modified) {
         await presentation!.save({ validateModifiedOnly: true })
       }
