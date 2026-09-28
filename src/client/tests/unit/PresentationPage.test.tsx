@@ -9,11 +9,18 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import PresentationPage from "../../components/presentation/index"
 import { useDispatch, useSelector } from "react-redux"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 import { useLocation, useParams, useNavigate } from "react-router-dom"
+import type { Location as RouterLocation } from "react-router-dom"
+const mockedUseParams = jest.mocked(useParams)
+const mockedUseNavigate = jest.mocked(useNavigate)
+const mockedUseLocation = jest.mocked(useLocation)
 import {
   fetchPresentationInfo,
   fetchSharedPresentationInfo,
 } from "../../redux/presentationReducer"
+import type { AuthUser } from "../../types"
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -47,7 +54,14 @@ jest.mock("../../components/utils/useDeletePresentation", () => {
 })
 
 jest.mock("../../components/presentation/EditModeContainer", () => {
-  return function MockEditModeContainer(props) {
+  return function MockEditModeContainer(props: {
+    transitionType: string
+    isShowMode?: boolean
+    sharedToken?: string
+    onTransitionChange: (value: string) => void
+    onEnterShow?: () => void
+    onExitShow?: () => void
+  }) {
     return (
       <div>
         <span data-testid="transition-type">{props.transitionType}</span>
@@ -74,11 +88,15 @@ describe("PresentationPage transition preference", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     window.localStorage.clear()
-    useParams.mockReturnValue({ id: "presentation-1" })
-    useNavigate.mockReturnValue(jest.fn())
-    useLocation.mockReturnValue({ pathname: "/presentation/presentation-1" })
-    useDispatch.mockReturnValue(jest.fn())
-    useSelector.mockImplementation((selector) =>
+    mockedUseParams.mockReturnValue({ id: "presentation-1" } as ReturnType<
+      typeof useParams
+    >)
+    mockedUseNavigate.mockReturnValue(jest.fn())
+    mockedUseLocation.mockReturnValue({
+      pathname: "/presentation/presentation-1",
+    } as RouterLocation)
+    mockedUseDispatch.mockReturnValue(jest.fn())
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: [],
@@ -90,7 +108,7 @@ describe("PresentationPage transition preference", () => {
   })
 
   test("defaults to fade when nothing is stored", () => {
-    render(<PresentationPage user={{}} />)
+    render(<PresentationPage user={{} as AuthUser} />)
 
     expect(screen.getByTestId("transition-type").textContent).toBe("fade")
   })
@@ -101,13 +119,13 @@ describe("PresentationPage transition preference", () => {
       "zoom"
     )
 
-    render(<PresentationPage user={{}} />)
+    render(<PresentationPage user={{} as AuthUser} />)
 
     expect(screen.getByTestId("transition-type").textContent).toBe("zoom")
   })
 
   test("persists the new transition choice to localStorage when changed", () => {
-    render(<PresentationPage user={{}} />)
+    render(<PresentationPage user={{} as AuthUser} />)
 
     fireEvent.click(screen.getByText("change-transition"))
 
@@ -118,20 +136,20 @@ describe("PresentationPage transition preference", () => {
   })
 
   test("passes show mode state from the route", () => {
-    useLocation.mockReturnValue({
+    mockedUseLocation.mockReturnValue({
       pathname: "/presentation/presentation-1/show",
-    })
+    } as RouterLocation)
 
-    render(<PresentationPage user={{}} />)
+    render(<PresentationPage user={{} as AuthUser} />)
 
     expect(screen.getByTestId("show-mode-route")).toHaveTextContent("true")
   })
 
   test("navigates between edit and show routes", () => {
     const navigate = jest.fn()
-    useNavigate.mockReturnValue(navigate)
+    mockedUseNavigate.mockReturnValue(navigate)
 
-    render(<PresentationPage user={{}} />)
+    render(<PresentationPage user={{} as AuthUser} />)
 
     fireEvent.click(screen.getByText("enter-show"))
     fireEvent.click(screen.getByText("exit-show"))
@@ -145,21 +163,28 @@ describe("PresentationPage transition preference", () => {
 })
 
 describe("PresentationPage through a share link", () => {
-  const renderShared = ({ rejects, pathname = "/shared/tok-abc" } = {}) => {
+  const renderShared = ({
+    rejects,
+    pathname = "/shared/tok-abc",
+  }: { rejects?: string; pathname?: string } = {}) => {
     const navigate = jest.fn()
     const dispatch = jest.fn(() =>
       rejects ? Promise.reject(new Error(rejects)) : Promise.resolve()
     )
-    useParams.mockReturnValue({ token: "tok-abc" })
-    useNavigate.mockReturnValue(navigate)
-    useLocation.mockReturnValue({ pathname })
-    useDispatch.mockReturnValue(dispatch)
-    useSelector.mockImplementation((selector) =>
+    mockedUseParams.mockReturnValue({
+      token: "tok-abc",
+    } as ReturnType<typeof useParams>)
+    mockedUseNavigate.mockReturnValue(navigate)
+    mockedUseLocation.mockReturnValue({ pathname } as RouterLocation)
+    mockedUseDispatch.mockReturnValue(
+      dispatch as unknown as ReturnType<typeof useDispatch>
+    )
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: { cues: [], name: "Shared show", indexCount: 0 },
       })
     )
-    render(<PresentationPage user={{}} shared />)
+    render(<PresentationPage user={{} as AuthUser} shared />)
     return { navigate, dispatch }
   }
 
