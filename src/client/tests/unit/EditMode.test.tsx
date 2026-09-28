@@ -12,7 +12,10 @@ import {
   waitFor,
 } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import type { ReactNode, ComponentProps } from "react"
 import EditMode from "../../components/presentation/EditMode"
+
+type EditModeProps = ComponentProps<typeof EditMode>
 import { ReadOnlyProvider } from "../../components/utils/ReadOnlyContext"
 import {
   TIMELINE_METRICS,
@@ -27,11 +30,13 @@ import {
  * geometry: these are pointer inputs chosen to land on a given row, not
  * assertions about pixel values.
  */
-const rowCenterY = (rowIndex) =>
+const rowCenterY = (rowIndex: number) =>
   timelineRowsTopOffset() +
   rowIndex * (TIMELINE_METRICS.rowHeight + TIMELINE_METRICS.rowGap) +
   TIMELINE_METRICS.rowHeight / 2
 import { useDispatch, useSelector } from "react-redux"
+const mockedUseSelector = jest.mocked(useSelector)
+const mockedUseDispatch = jest.mocked(useDispatch)
 import {
   createCue,
   swapCues,
@@ -47,10 +52,15 @@ import {
   saveIndexCount,
   saveScreenCount,
 } from "../../redux/presentationThunks"
+import type { Cue } from "../../types"
 
-const mockDispatch = jest.fn(() => Promise.resolve({}))
+const mockedCreateCue = jest.mocked(createCue)
+
+const mockDispatch = jest.fn((_action?: { type?: string }) =>
+  Promise.resolve({})
+)
 const mockShowToast = jest.fn()
-let mockDragScenario = null
+let mockDragScenario: string | null = null
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -106,7 +116,15 @@ jest.mock("../../components/utils/CustomAlert", () => {
 })
 
 jest.mock("../../components/utils/AlertDialog", () => {
-  return function MockAlertDialog({ isOpen, onConfirm, message }) {
+  return function MockAlertDialog({
+    isOpen,
+    onConfirm,
+    message,
+  }: {
+    isOpen: boolean
+    onConfirm?: () => void
+    message?: string
+  }) {
     if (!isOpen) {
       return null
     }
@@ -138,8 +156,24 @@ jest.mock("../../services/presentation", () => ({
 jest.mock("react-grid-layout", () => {
   const mockReact = require("react")
 
-  return function MockGridLayout({ children, onDragStop }) {
-    const scenarios = {
+  return function MockGridLayout({
+    children,
+    onDragStop,
+  }: {
+    children: ReactNode
+    onDragStop?: (
+      layout: unknown[],
+      oldItem: { i: string; x: number; y: number },
+      newItem: { i: string; x: number; y: number }
+    ) => void
+  }) {
+    const scenarios: Record<
+      string,
+      {
+        oldItem: { i: string; x: number; y: number }
+        newItem: { i: string; x: number; y: number }
+      }
+    > = {
       visualSwapVisual: {
         oldItem: { i: "visual-1", x: 0, y: 0 },
         newItem: { i: "visual-1", x: 1, y: 0 },
@@ -147,7 +181,7 @@ jest.mock("react-grid-layout", () => {
     }
 
     const runScenario = () => {
-      const scenario = scenarios[mockDragScenario]
+      const scenario = mockDragScenario ? scenarios[mockDragScenario] : null
       if (!scenario) {
         return
       }
@@ -166,7 +200,7 @@ jest.mock("react-grid-layout", () => {
         >
           trigger
         </button>
-        {mockReact.Children.map(children, (child) => (
+        {mockReact.Children.map(children, (child: ReactNode) => (
           <div className="react-grid-item">{child}</div>
         ))}
       </div>
@@ -202,12 +236,12 @@ describe("EditMode drag swapping", () => {
         name: "2.png",
       },
     },
-  ]
+  ] as Cue[]
 
   const renderEditMode = (
-    customCues = cues,
+    customCues: Cue[] = cues,
     customIndexCount = 3,
-    extraProps = {}
+    extraProps: Partial<EditModeProps> = {}
   ) => {
     return render(
       <EditMode
@@ -230,14 +264,17 @@ describe("EditMode drag swapping", () => {
       configurable: true,
       value: 0,
     })
-    gridContainer.getBoundingClientRect = jest.fn(() => ({
-      left: 0,
-      top: 0,
-      right: 480,
-      bottom: 440,
-      width: 480,
-      height: 440,
-    }))
+    gridContainer.getBoundingClientRect = jest.fn(
+      () =>
+        ({
+          left: 0,
+          top: 0,
+          right: 480,
+          bottom: 440,
+          width: 480,
+          height: 440,
+        }) as DOMRect
+    )
 
     return gridContainer
   }
@@ -276,8 +313,10 @@ describe("EditMode drag swapping", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(mockDispatch)
-    useSelector.mockImplementation((selector) =>
+    mockedUseDispatch.mockReturnValue(
+      mockDispatch as unknown as ReturnType<typeof useDispatch>
+    )
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues,
@@ -360,7 +399,7 @@ describe("EditMode drag swapping", () => {
         cueType: "visual",
         file: null,
       },
-    ]
+    ] as Cue[]
 
     renderEditMode(layeredCues)
 
@@ -429,9 +468,9 @@ describe("EditMode drag swapping", () => {
           name: "2.png",
         },
       },
-    ]
+    ] as Cue[]
 
-    useSelector.mockImplementation((selector) =>
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: cuesWithContinuation,
@@ -490,9 +529,9 @@ describe("EditMode drag swapping", () => {
           name: "1.png",
         },
       },
-    ]
+    ] as Cue[]
 
-    useSelector.mockImplementation((selector) =>
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: spanningCues,
@@ -544,9 +583,9 @@ describe("EditMode drag swapping", () => {
           name: "1.png",
         },
       },
-    ]
+    ] as Cue[]
 
-    useSelector.mockImplementation((selector) =>
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: spanningCues,
@@ -581,9 +620,9 @@ describe("EditMode drag swapping", () => {
     })
   })
 
-  const renderLoneCue = (overrides = {}) => {
-    const loneCue = [{ ...cues[0], layer: 0, ...overrides }]
-    useSelector.mockImplementation((selector) =>
+  const renderLoneCue = (overrides: Partial<Cue> = {}) => {
+    const loneCue = [{ ...cues[0], layer: 0, ...overrides }] as Cue[]
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: loneCue,
@@ -615,7 +654,7 @@ describe("EditMode drag swapping", () => {
       ["dataTransfer", dataTransfer],
       ["clientX", 330],
       ["clientY", rowCenterY(0)],
-    ]) {
+    ] as [string, unknown][]) {
       Object.defineProperty(dropEvent, key, { value, configurable: true })
     }
 
@@ -626,7 +665,7 @@ describe("EditMode drag swapping", () => {
     await waitFor(() => {
       expect(createCue).toHaveBeenCalled()
     })
-    const formData = createCue.mock.calls.at(-1)[1]
+    const formData = mockedCreateCue.mock.calls.at(-1)![1]
     expect(formData.get("duration")).toBe("1")
   })
 
@@ -946,7 +985,10 @@ describe("EditMode drag swapping", () => {
       ),
     })
 
-    const dropOn = async (dataTransfer, clientY) => {
+    const dropOn = async (
+      dataTransfer: Record<string, unknown>,
+      clientY: number
+    ) => {
       const gridContainer = setupGridGeometry()
       const dropArea = screen.getByTestId("drop-area")
 
@@ -961,7 +1003,7 @@ describe("EditMode drag swapping", () => {
         ["dataTransfer", dataTransfer],
         ["clientX", 330],
         ["clientY", clientY],
-      ]) {
+      ] as [string, unknown][]) {
         Object.defineProperty(dropEvent, key, { value, configurable: true })
       }
 
@@ -981,7 +1023,7 @@ describe("EditMode drag swapping", () => {
           expect.any(FormData)
         )
       })
-      const sent = createCue.mock.calls[0][1]
+      const sent = mockedCreateCue.mock.calls[0][1]
       expect(sent.get("text")).toBe("La nuit est tombée")
       expect(sent.get("textColor")).toBe("#ffcc00")
       expect(sent.get("textSize")).toBe("12")
@@ -998,7 +1040,7 @@ describe("EditMode drag swapping", () => {
       )
 
       await waitFor(() => expect(createCue).toHaveBeenCalled())
-      const sent = createCue.mock.calls[0][1]
+      const sent = mockedCreateCue.mock.calls[0][1]
       expect(sent.get("textColor")).toBe("#ffffff")
       expect(sent.get("textSize")).toBe("8")
     })
@@ -1077,7 +1119,7 @@ describe("EditMode drag swapping", () => {
         ["dataTransfer", dataTransfer],
         ["clientX", 330],
         ["clientY", rowCenterY(0)],
-      ]) {
+      ] as [string, unknown][]) {
         Object.defineProperty(dropEvent, key, { value, configurable: true })
       }
 
@@ -1108,7 +1150,7 @@ describe("EditMode drag swapping", () => {
       ["dataTransfer", dataTransfer],
       ["clientX", 330],
       ["clientY", rowCenterY(0)],
-    ]) {
+    ] as [string, unknown][]) {
       Object.defineProperty(dropEvent, key, { value, configurable: true })
     }
 
@@ -1329,7 +1371,7 @@ describe("EditMode drag swapping", () => {
     const originalFetch = global.fetch
     global.fetch = jest.fn(async () => ({
       blob: async () => new Blob(["test"], { type: "image/png" }),
-    }))
+    })) as unknown as typeof global.fetch
 
     try {
       fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
@@ -1393,7 +1435,7 @@ describe("EditMode drag swapping", () => {
           name: "video-1.mp4",
         },
       },
-    ]
+    ] as Cue[]
 
     renderEditMode(videoCues, 2)
     setupGridGeometry()
@@ -1524,19 +1566,28 @@ describe("EditMode drag swapping", () => {
   })
 
   describe("frame index add/remove shifting", () => {
-    const buildCue = ({ id, index, screen = 1 }) => ({
-      _id: id,
+    const buildCue = ({
+      id,
       index,
-      screen,
-      name: `Cue ${id}`,
-      color: "#ffffff",
-      cueType: "visual",
-      file: {
-        type: "image/png",
-        url: `https://example.com/${id}.png`,
-        name: `${id}.png`,
-      },
-    })
+      screen = 1,
+    }: {
+      id: string
+      index: number
+      screen?: number
+    }) =>
+      ({
+        _id: id,
+        index,
+        screen,
+        name: `Cue ${id}`,
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: `https://example.com/${id}.png`,
+          name: `${id}.png`,
+        },
+      }) as Cue
 
     beforeEach(() => {
       // jest.clearAllMocks() (outer beforeEach) clears call history but not a
@@ -1545,8 +1596,8 @@ describe("EditMode drag swapping", () => {
       mockDispatch.mockImplementation(() => Promise.resolve({}))
     })
 
-    const renderWithFrames = (customCues, customIndexCount) => {
-      useSelector.mockImplementation((selector) =>
+    const renderWithFrames = (customCues: Cue[], customIndexCount: number) => {
+      mockedUseSelector.mockImplementation((selector) =>
         selector({
           presentation: {
             cues: customCues,
@@ -1870,14 +1921,17 @@ describe("EditMode drag swapping", () => {
         url: "https://example.com/audio-1.mp3",
         name: "audio-1.mp3",
       },
-    }
+    } as Cue
 
     beforeEach(() => {
       mockDispatch.mockImplementation(() => Promise.resolve({}))
     })
 
-    const renderWithScreenCount = (customCues, customScreenCount) => {
-      useSelector.mockImplementation((selector) =>
+    const renderWithScreenCount = (
+      customCues: Cue[],
+      customScreenCount: number
+    ) => {
+      mockedUseSelector.mockImplementation((selector) =>
         selector({
           presentation: {
             cues: customCues,
@@ -1921,11 +1975,11 @@ describe("EditMode drag swapping", () => {
 
   describe("inserting an element between two existing ones", () => {
     const cellWidthWithGap = TIMELINE_METRICS.columnWidth + TIMELINE_METRICS.gap
-    const leftEdgeX = (index) => index * cellWidthWithGap + 10
-    const centerX = (index) =>
+    const leftEdgeX = (index: number) => index * cellWidthWithGap + 10
+    const centerX = (index: number) =>
       index * cellWidthWithGap + TIMELINE_METRICS.columnWidth / 2
 
-    const dropColorAt = async (clientX) => {
+    const dropColorAt = async (clientX: number) => {
       const gridContainer = setupGridGeometry()
       const dropArea = screen.getByTestId("drop-area")
       const dataTransfer = buildPoolColorDragDataTransfer()
@@ -1941,7 +1995,7 @@ describe("EditMode drag swapping", () => {
         ["dataTransfer", dataTransfer],
         ["clientX", clientX],
         ["clientY", rowCenterY(0)],
-      ]) {
+      ] as [string, unknown][]) {
         Object.defineProperty(dropEvent, key, { value, configurable: true })
       }
 
@@ -1950,13 +2004,17 @@ describe("EditMode drag swapping", () => {
       })
     }
 
-    const dragOver = (gridContainer, dataTransfer, clientX) => {
+    const dragOver = (
+      gridContainer: Element,
+      dataTransfer: Record<string, unknown>,
+      clientX: number
+    ) => {
       const dragOverEvent = createEvent.dragOver(gridContainer)
       for (const [key, value] of [
         ["dataTransfer", dataTransfer],
         ["clientX", clientX],
         ["clientY", rowCenterY(0)],
-      ]) {
+      ] as [string, unknown][]) {
         Object.defineProperty(dragOverEvent, key, { value, configurable: true })
       }
       fireEvent(gridContainer, dragOverEvent)
@@ -2254,7 +2312,7 @@ describe("EditMode drag swapping", () => {
           "right"
         )
       })
-      const sent = createCue.mock.calls.at(-1)[1]
+      const sent = mockedCreateCue.mock.calls.at(-1)![1]
       expect(sent.get("index")).toBe("1")
       expect(sent.get("color")).toBe("#ff8800")
       expect(incrementIndexCount).toHaveBeenCalledTimes(1)
@@ -2267,7 +2325,7 @@ describe("EditMode drag swapping", () => {
 
       await waitFor(() => expect(createCue).toHaveBeenCalled())
       expect(shiftPresentationIndexes).not.toHaveBeenCalled()
-      const sent = createCue.mock.calls.at(-1)[1]
+      const sent = mockedCreateCue.mock.calls.at(-1)![1]
       expect(sent.get("index")).toBe("2")
     })
 
@@ -2294,7 +2352,7 @@ describe("EditMode drag swapping", () => {
           "right"
         )
       })
-      const sent = createCue.mock.calls.at(-1)[1]
+      const sent = mockedCreateCue.mock.calls.at(-1)![1]
       expect(sent.get("index")).toBe("0")
     })
 
@@ -2317,7 +2375,7 @@ describe("EditMode drag swapping", () => {
         ["dataTransfer", dataTransfer],
         ["clientX", clientX],
         ["clientY", rowCenterY(0)],
-      ]) {
+      ] as [string, unknown][]) {
         Object.defineProperty(dropEvent, key, { value, configurable: true })
       }
 
@@ -2338,8 +2396,8 @@ describe("EditMode drag swapping", () => {
 })
 
 describe("EditMode layer and audio track management", () => {
-  const renderWithCues = (customCues, screenCount = 2) => {
-    useSelector.mockImplementation((selector) =>
+  const renderWithCues = (customCues: Cue[], screenCount = 2) => {
+    mockedUseSelector.mockImplementation((selector) =>
       selector({
         presentation: {
           cues: customCues,
@@ -2365,7 +2423,9 @@ describe("EditMode layer and audio track management", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useDispatch.mockReturnValue(mockDispatch)
+    mockedUseDispatch.mockReturnValue(
+      mockDispatch as unknown as ReturnType<typeof useDispatch>
+    )
     mockDragScenario = null
   })
 
@@ -2381,7 +2441,7 @@ describe("EditMode layer and audio track management", () => {
         cueType: "visual",
         file: null,
       },
-    ]
+    ] as Cue[]
 
     renderWithCues(cues)
 
@@ -2438,7 +2498,7 @@ describe("EditMode layer and audio track management", () => {
         cueType: "visual",
         file: null,
       },
-    ]
+    ] as Cue[]
 
     renderWithCues(cues)
 
@@ -2495,7 +2555,7 @@ describe("EditMode layer and audio track management", () => {
         cueType: "visual",
         file: null,
       },
-    ]
+    ] as Cue[]
 
     mockDispatch.mockImplementationOnce(() =>
       Promise.reject(new Error("remove failed"))
@@ -2575,7 +2635,7 @@ describe("EditMode layer and audio track management", () => {
         cueType: "visual",
         file: { url: "https://example.com/preview.mp4", type: "video/mp4" },
       },
-    ]
+    ] as Cue[]
 
     renderWithCues(cues)
 
