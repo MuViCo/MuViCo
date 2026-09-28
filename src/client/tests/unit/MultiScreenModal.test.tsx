@@ -7,6 +7,7 @@ import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import MultiScreenModal from "../../components/presentation/MultiScreenModal"
+import type { Cue } from "../../types"
 
 describe("MultiScreenModal", () => {
   const cue = {
@@ -16,7 +17,7 @@ describe("MultiScreenModal", () => {
     name: "Banner",
     cueType: "visual",
     file: { type: "image/png", url: "https://example.com/banner.png" },
-  }
+  } as Cue
 
   test("renders nothing when closed", () => {
     render(
@@ -68,7 +69,7 @@ describe("MultiScreenModal", () => {
         name: "Sunset",
         cueType: "visual",
       },
-    ]
+    ] as Cue[]
 
     render(
       <MultiScreenModal
@@ -101,7 +102,7 @@ describe("MultiScreenModal", () => {
         cueType: "visual",
         spanScreens: [1, 4],
       },
-    ]
+    ] as Cue[]
 
     render(
       <MultiScreenModal
@@ -128,7 +129,7 @@ describe("MultiScreenModal", () => {
         cue={layeredCue}
         screenCount={3}
         cues={[layeredCue]}
-        hasLaneForLayer={(screenNumber) => screenNumber !== 3}
+        hasLaneForLayer={(screenNumber: number) => screenNumber !== 3}
         onSave={jest.fn()}
         onClose={jest.fn()}
       />

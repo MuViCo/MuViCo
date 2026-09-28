@@ -5,12 +5,13 @@
 
 import React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
-import Toolbox from "../../components/presentation/ToolBox.jsx"
+import Toolbox from "../../components/presentation/ToolBox"
 import "@testing-library/jest-dom"
+import type { Cue } from "../../types"
 
 describe("ToolBox Component", () => {
   const mockOnClose = jest.fn()
-  const cue = { _id: "cue-1", name: "Test cue" }
+  const cue = { _id: "cue-1", name: "Test cue" } as Cue
   const mockOnSave = jest.fn()
 
   beforeEach(() => {
@@ -80,7 +81,7 @@ describe("ToolBox Component", () => {
       <Toolbox
         isOpen
         onClose={mockOnClose}
-        cue={{ ...cue, cueType: "visual", opacity: 0.6 }}
+        cue={{ ...cue, cueType: "visual", opacity: 0.6 } as Cue}
         onSave={mockOnSave}
       />
     )
@@ -119,14 +120,14 @@ describe("ToolBox Component", () => {
       textColor: "#ffcc00",
       textSize: 12,
       opacity: 1,
-    }
+    } as Cue
 
-    const renderTextToolbox = (cueOverrides = {}) =>
+    const renderTextToolbox = (cueOverrides: Partial<Cue> = {}) =>
       render(
         <Toolbox
           isOpen
           onClose={mockOnClose}
-          cue={{ ...textCue, ...cueOverrides }}
+          cue={{ ...textCue, ...cueOverrides } as Cue}
           onSave={mockOnSave}
         />
       )
@@ -225,7 +226,7 @@ describe("ToolBox Component", () => {
         <Toolbox
           isOpen
           onClose={mockOnClose}
-          cue={{ _id: "c", name: "photo", cueType: "visual" }}
+          cue={{ _id: "c", name: "photo", cueType: "visual" } as Cue}
           onSave={mockOnSave}
         />
       )
@@ -301,7 +302,9 @@ describe("ToolBox Component", () => {
       fireEvent.change(screen.getByTestId("toolbox-text"), {
         target: { value: "" },
       })
-      fireEvent.submit(screen.getByTestId("toolbox-text").closest("form"))
+      fireEvent.submit(
+        screen.getByTestId("toolbox-text").closest("form") as Element
+      )
 
       expect(mockOnSave).not.toHaveBeenCalled()
       expect(mockOnClose).not.toHaveBeenCalled()
@@ -320,7 +323,7 @@ describe("ToolBox Component", () => {
     })
 
     it("names an unnamed text element after its text", () => {
-      renderTextToolbox({ name: "", cueName: undefined })
+      renderTextToolbox({ name: "" })
 
       expect(screen.getByPlaceholderText("Cue name")).toHaveValue(
         "La nuit est tombée"

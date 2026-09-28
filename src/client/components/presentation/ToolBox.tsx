@@ -122,6 +122,7 @@ const Toolbox = ({
     await onSave({
       ...cue,
       cueName: finalName,
+      name: finalName,
       opacity: opacityFromPercent(opacityPercent),
       ...(isText && {
         text: trimmedText,

@@ -33,7 +33,7 @@ interface MultiScreenModalProps {
   onClose: () => void
   cue: Cue | null
   screenCount: number
-  cues: Cue[]
+  cues?: Cue[]
   hasLaneForLayer?: (screenNumber: number, layer: number) => boolean
   onSave?: (updatedCue: CueUpdateInput) => Promise<void> | void
 }

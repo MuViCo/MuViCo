@@ -323,6 +323,12 @@ export interface CueUpdateInput {
   cueId?: string
   /** Present on the create path, which builds the payload from a lane. */
   cueType?: CueType
+  /**
+   * TODO(ts): ToolBox sends this alongside `cueName` for backward
+   * compatibility, but no server route reads it -- only `cueName` updates the
+   * stored name. Harmless, kept to avoid a behaviour change.
+   */
+  name?: string
   fileName?: string | null
   color?: string
   loop?: boolean
