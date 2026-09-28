@@ -14,6 +14,10 @@ import {
 } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import { MemoryRouter } from "react-router-dom"
+import type { ComponentProps } from "react"
+import type { Cue } from "../../types"
+
+type CuesFormProps = ComponentProps<typeof CuesForm>
 
 // A stored library entry, as GET /api/presentation/:id returns it: `url` is a
 // presigned URL, not a blob:, which is why the pool survives a reload.
@@ -25,7 +29,7 @@ const mediaItem = (overrides = {}) => ({
   ...overrides,
 })
 
-const renderCuesForm = (props = {}) => {
+const renderCuesForm = (props: Partial<CuesFormProps> = {}) => {
   const defaults = {
     addCue: jest.fn(),
     updateCue: jest.fn(),
@@ -59,8 +63,10 @@ const createDataTransfer = () => ({
 })
 
 // The delete button only exists while the tile is hovered.
-const clickRemoveOn = (name) => {
-  const tile = screen.getByText(name).closest("[draggable='true']")
+const clickRemoveOn = (name: string) => {
+  const tile = screen
+    .getByText(name)
+    .closest("[draggable='true']") as HTMLElement
   fireEvent.mouseEnter(tile)
   fireEvent.click(within(tile).getByRole("button", { name: `Remove ${name}` }))
   return tile
@@ -104,7 +110,7 @@ describe("CuesForm", () => {
         index: 0,
         screen: 1,
         file: { name: "example.png", type: "image/png" },
-      },
+      } as Cue,
     })
 
     expect(screen.getByTestId("cue-name")).toHaveValue("Existing cue")
@@ -209,7 +215,7 @@ describe("CuesForm", () => {
   test("uploads picked media to the library instead of keeping it in memory", async () => {
     const { onUploadMedia } = renderCuesForm()
 
-    const mediaInput = document.getElementById("media-upload")
+    const mediaInput = document.getElementById("media-upload") as HTMLElement
     const imageFile = new File(["img"], "photo.png", { type: "image/png" })
     fireEvent.change(mediaInput, { target: { files: [imageFile] } })
 
@@ -221,7 +227,7 @@ describe("CuesForm", () => {
   test("filters invalid files from media uploads", async () => {
     const { onUploadMedia } = renderCuesForm()
 
-    const mediaInput = document.getElementById("media-upload")
+    const mediaInput = document.getElementById("media-upload") as HTMLElement
     const imageFile = new File(["img"], "photo.png", { type: "image/png" })
     const audioFile = new File(["audio"], "sound.mp3", { type: "audio/mpeg" })
     const pdfFile = new File(["pdf"], "doc.pdf", { type: "application/pdf" })
@@ -274,7 +280,7 @@ describe("CuesForm", () => {
         { _id: "cue-1", file: { id: "media-1" } },
         { _id: "cue-2", file: { id: "media-1" } },
         { _id: "cue-3", file: { id: "other" } },
-      ],
+      ] as Cue[],
     })
 
     clickRemoveOn("photo.png")
@@ -291,7 +297,9 @@ describe("CuesForm", () => {
       mediaLibrary: [mediaItem({ id: "media-9", name: "clip.png" })],
     })
 
-    const card = screen.getByText("clip.png").closest("[draggable='true']")
+    const card = screen
+      .getByText("clip.png")
+      .closest("[draggable='true']") as Element
     const dataTransfer = createDataTransfer()
 
     fireEvent.dragStart(card, { dataTransfer })
@@ -323,7 +331,7 @@ describe("CuesForm", () => {
 
     const soundItem = screen
       .getByText("sound.wav")
-      .closest("[draggable='true']")
+      .closest("[draggable='true']") as Element
 
     const dataTransfer = createDataTransfer()
     fireEvent.dragStart(soundItem, { dataTransfer })
@@ -348,7 +356,7 @@ describe("CuesForm", () => {
   test("accepts audio through the same input as images and videos", async () => {
     const { onUploadMedia } = renderCuesForm()
 
-    const soundInput = document.getElementById("media-upload")
+    const soundInput = document.getElementById("media-upload") as HTMLElement
     const audioFile = new File(["audio"], "sound.wav", { type: "audio/wav" })
     const imageFile = new File(["img"], "photo.png", { type: "image/png" })
 
@@ -370,7 +378,7 @@ describe("CuesForm", () => {
 
     const colorDragElement = screen
       .getByText("Drag to grid")
-      .closest("[draggable='true']")
+      .closest("[draggable='true']") as Element
     const dataTransfer = createDataTransfer()
 
     fireEvent.dragStart(colorDragElement, { dataTransfer })
@@ -394,7 +402,7 @@ describe("CuesForm", () => {
   test("submits add mode form and calls addCue with current values", () => {
     const { addCue, onClose } = renderCuesForm({ activeTab: "colors" })
 
-    const form = screen.getByTestId("cue-name").closest("form")
+    const form = screen.getByTestId("cue-name").closest("form") as Element
     fireEvent.submit(form)
 
     expect(addCue).toHaveBeenCalledWith(
@@ -425,10 +433,10 @@ describe("CuesForm", () => {
           type: "image/png",
           url: "https://example.com/existing.png",
         },
-      },
+      } as Cue,
     })
 
-    const form = screen.getByTestId("cue-name").closest("form")
+    const form = screen.getByTestId("cue-name").closest("form") as Element
     fireEvent.submit(form)
 
     await waitFor(() => {
