@@ -11,12 +11,15 @@
  * - Cleans up resources and event listeners when the screen is closed or unmounted.
  */
 
-import React, { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import type { SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, Text } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
+import type { EmotionCache } from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
+import type { Keyframes } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
@@ -24,28 +27,37 @@ import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { parseAspectRatio } from "../../../constants.js"
 import { cueFrameStyle } from "../utils/cueFrame"
+import type { Cue } from "../../types"
 
 const mediaFillProps = {
   width: "100%",
   height: "100%",
   objectFit: "contain",
-}
+} as const
 
 // An image cue that spans several screens. Renders the normal full-bleed
 // "contain" image until the image's natural size is known (a hidden probe
 // <img> reports it via onLoad), then switches to a cropped slice of the
 // full multi-screen canvas -- see screenSpanLayout.ts for the geometry.
+interface SpannedImageProps {
+  imageSrc: string
+  name?: string
+  spanScreens: number[]
+  screenNumber: string
+  screenWidths?: Record<number, number>
+}
+
 const SpannedImage = ({
   imageSrc,
   name,
   spanScreens,
   screenNumber,
   screenWidths,
-}) => {
-  const [aspectRatio, setAspectRatio] = useState(null)
+}: SpannedImageProps) => {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
 
-  const handleProbeLoad = (event) => {
-    const { naturalWidth, naturalHeight } = event.target
+  const handleProbeLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = event.currentTarget
     if (naturalWidth > 0 && naturalHeight > 0) {
       setAspectRatio(naturalWidth / naturalHeight)
     }
@@ -89,14 +101,18 @@ const SpannedImage = ({
   )
 }
 
-const renderMedia = (cue, screenNumber, screenWidths) => {
+const renderMedia = (
+  cue: Cue,
+  screenNumber: string,
+  screenWidths?: Record<number, number>
+) => {
   const { file, name, color, spanScreens } = cue
 
   if (!file) {
     if (isTextCue(cue)) {
       return (
         <CueText
-          text={cue.text}
+          text={cue.text as string}
           color={cue.textColor}
           size={cue.textSize}
           effect={cue.textEffect}
@@ -111,12 +127,12 @@ const renderMedia = (cue, screenNumber, screenWidths) => {
   if (isType.image(file)) {
     const imageSrc = file.url || `/${file.name}`
 
-    if (spanScreens?.length > 1) {
+    if ((spanScreens?.length ?? 0) > 1) {
       return (
         <SpannedImage
           imageSrc={imageSrc}
           name={name}
-          spanScreens={spanScreens}
+          spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
           screenWidths={screenWidths}
         />
@@ -143,7 +159,9 @@ const renderMedia = (cue, screenNumber, screenWidths) => {
   // return <Text>Unsupported media type.</Text>
 }
 
-const normalizeCueStack = (screenData) => {
+type CueStack = Cue[] | Cue | null | undefined
+
+const normalizeCueStack = (screenData: CueStack): Cue[] => {
   if (Array.isArray(screenData)) {
     return screenData
   }
@@ -151,7 +169,7 @@ const normalizeCueStack = (screenData) => {
   return screenData ? [screenData] : []
 }
 
-const cueStackKey = (cueStack) =>
+const cueStackKey = (cueStack: CueStack) =>
   normalizeCueStack(cueStack)
     .map(
       (cue) =>
@@ -159,7 +177,11 @@ const cueStackKey = (cueStack) =>
     )
     .join("|")
 
-const renderCueStack = (cueStack, screenNumber, screenWidths) => {
+const renderCueStack = (
+  cueStack: CueStack,
+  screenNumber: string,
+  screenWidths?: Record<number, number>
+) => {
   const normalizedStack = normalizeCueStack(cueStack)
 
   if (normalizedStack.length === 0) {
@@ -183,6 +205,17 @@ const renderCueStack = (cueStack, screenNumber, screenWidths) => {
   ))
 }
 
+interface ScreenContentProps {
+  screenNumber: string
+  currentScreenData: CueStack
+  previousScreenData: CueStack
+  showText: boolean
+  transitionType: string
+  screenWidths?: Record<number, number>
+  isBlackout?: boolean
+  outputAspectRatio?: string
+}
+
 const ScreenContent = ({
   screenNumber,
   currentScreenData,
@@ -192,9 +225,10 @@ const ScreenContent = ({
   screenWidths,
   isBlackout,
   outputAspectRatio,
-}) => {
+}: ScreenContentProps) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
-  const animStyle = (kf) => (kf ? `${kf} 500ms ease-in-out forwards` : "none")
+  const animStyle = (kf: Keyframes | null) =>
+    kf ? `${kf} 500ms ease-in-out forwards` : "none"
   const currentCueStack = normalizeCueStack(currentScreenData)
   const currentCueNames = currentCueStack.map((cue) => cue.name).filter(Boolean)
 
@@ -301,6 +335,18 @@ const ScreenContent = ({
   )
 }
 
+interface ScreenProps {
+  screenNumber: string
+  screenData: CueStack
+  isVisible: boolean
+  onClose: (screenNumber: string) => void
+  transitionType: string
+  screenWidths?: Record<number, number>
+  onWidthChange?: (screenNumber: number, width: number) => void
+  isBlackout?: boolean
+  outputAspectRatio?: string
+}
+
 const Screen = ({
   screenNumber,
   screenData,
@@ -311,13 +357,15 @@ const Screen = ({
   onWidthChange,
   isBlackout = false,
   outputAspectRatio,
-}) => {
-  const windowRef = useRef(null)
+}: ScreenProps) => {
+  const windowRef = useRef<Window | null>(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
-  const [currentScreenData, setCurrentScreenData] = useState(null)
-  const [previousScreenData, setPreviousScreenData] = useState(null)
+  const [currentScreenData, setCurrentScreenData] = useState<Cue[] | null>(null)
+  const [previousScreenData, setPreviousScreenData] = useState<Cue[] | null>(
+    null
+  )
   const [showText, setShowText] = useState(false)
-  const [emotionCache, setEmotionCache] = useState(null)
+  const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
   // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
@@ -484,20 +532,22 @@ const Screen = ({
         : firstCue.index === 0
           ? "Starting Frame"
           : `Frame ${firstCue.index}`
-    windowRef.current.document.title = frameLabel
-      ? `Screen ${screenNumber} • ${frameLabel}`
-      : `Screen ${screenNumber}`
+    if (windowRef.current) {
+      windowRef.current.document.title = frameLabel
+        ? `Screen ${screenNumber} • ${frameLabel}`
+        : `Screen ${screenNumber}`
+    }
   }, [screenData, currentScreenData, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Shift") {
         setShowText(true)
       }
     }
 
-    const handleKeyUp = (event) => {
+    const handleKeyUp = (event: KeyboardEvent) => {
       if (event.key === "Shift") {
         setShowText(false)
       }

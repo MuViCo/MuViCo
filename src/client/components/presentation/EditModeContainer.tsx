@@ -679,7 +679,7 @@ const EditModeContainer = ({
   const isCurrentCueAudio = currentAudioTracks.length > 0
   const currentAudioLoop = Boolean(currentAudioCue.loop)
 
-  const handleScreenClose = useCallback((screenNumber: number) => {
+  const handleScreenClose = useCallback((screenNumber: string) => {
     setScreens((prev) => ({
       ...prev,
       [screenNumber]: false,
