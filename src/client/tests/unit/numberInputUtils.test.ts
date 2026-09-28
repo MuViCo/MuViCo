@@ -7,11 +7,12 @@ import {
   validateAndSetNumber,
   getNextAvailableIndex,
 } from "../../components/utils/numberInputUtils"
+import type { Cue } from "../../types"
 
 describe("handleNumericInputChange", () => {
   test("should only accept numeric values", () => {
-    let state = ""
-    const setState = (newState) => {
+    let state: number | "" = ""
+    const setState = (newState: number | "") => {
       state = newState
     }
 
@@ -32,7 +33,7 @@ describe("handleNumericInputChange", () => {
 describe("validateAndSetNumber", () => {
   test("should ensure input is within bounds", () => {
     let state = 5
-    const setState = (newState) => {
+    const setState = (newState: number) => {
       state = newState
     }
 
@@ -66,7 +67,7 @@ describe("getNextAvailableIndex", () => {
       { screen: 1, index: 1 },
       { screen: 1, index: 2 },
       { screen: 2, index: 0 },
-    ]
+    ] as Cue[]
 
     expect(getNextAvailableIndex(1, cues)).toBe(3)
     expect(getNextAvailableIndex(2, cues)).toBe(1)
@@ -77,7 +78,7 @@ describe("getNextAvailableIndex", () => {
       { screen: 1, index: 0 },
       { screen: 1, index: 2 },
       { screen: 1, index: 3 },
-    ]
+    ] as Cue[]
 
     expect(getNextAvailableIndex(1, cues)).toBe(1)
   })

@@ -24,13 +24,13 @@ should be excluded from this test by adding them to the excludeSelectors array.
 */
 
 // Helper to search files under src for a given regex
-function searchRepoForPattern(regex) {
+function searchRepoForPattern(regex: RegExp) {
   const root = path.resolve(__dirname, "..", "..", "..", "..") // project root
   const src = path.join(root, "src")
   const exts = [".js", ".jsx", ".ts", ".tsx", ".html"]
 
-  const files = []
-  function walk(dir) {
+  const files: string[] = []
+  function walk(dir: string) {
     const entries = fs.readdirSync(dir, { withFileTypes: true })
     for (const ent of entries) {
       const p = path.join(dir, ent.name)
@@ -51,9 +51,9 @@ function searchRepoForPattern(regex) {
   return false
 }
 
-function normalizeSelectorToPatterns(selector) {
+function normalizeSelectorToPatterns(selector: string | undefined) {
   if (!selector) return []
-  const escape = (s) => s.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
+  const escape = (s: string) => s.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")
   if (selector.startsWith("#")) {
     const name = escape(selector.slice(1))
     return [

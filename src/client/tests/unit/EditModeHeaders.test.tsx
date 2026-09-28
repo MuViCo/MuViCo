@@ -6,10 +6,13 @@ import {
   RowHeaders,
 } from "../../components/presentation/EditModeHeaders"
 import { buildRowModel } from "../../components/utils/screenRowModel"
+import type { Cue } from "../../types"
 
 describe("EditModeHeaders RowHeaders", () => {
   const screenCount = 2
-  const cues = [{ _id: "c1", cueType: "visual", screen: 1, layer: 1, index: 0 }]
+  const cues = [
+    { _id: "c1", cueType: "visual", screen: 1, layer: 1, index: 0 },
+  ] as Cue[]
   const rowModel = buildRowModel(screenCount, cues, {})
 
   const renderRowHeaders = (overrides = {}) => {
@@ -18,6 +21,8 @@ describe("EditModeHeaders RowHeaders", () => {
         toggleAudioMute: jest.fn(),
         increaseScreenCount: jest.fn(),
         decreaseScreenCount: jest.fn(),
+        addIndex: jest.fn(),
+        removeIndex: jest.fn(),
       },
     }
     const props = {
@@ -246,7 +251,13 @@ describe("EditModeHeaders RowHeaders", () => {
 describe("EditModeHeaders ColumnHeaders", () => {
   const renderColumnHeaders = (overrides = {}) => {
     const headerActionsRef = {
-      current: { addIndex: jest.fn(), removeIndex: jest.fn() },
+      current: {
+        addIndex: jest.fn(),
+        removeIndex: jest.fn(),
+        increaseScreenCount: jest.fn(),
+        decreaseScreenCount: jest.fn(),
+        toggleAudioMute: jest.fn(),
+      },
     }
     const props = {
       xLabels: ["0", "1", "2"],
@@ -269,7 +280,7 @@ describe("EditModeHeaders ColumnHeaders", () => {
   test("adds a frame after the last one", () => {
     const { headerActionsRef } = renderColumnHeaders()
 
-    fireEvent.click(screen.getAllByLabelText("Add Frame").at(-1))
+    fireEvent.click(screen.getAllByLabelText("Add Frame").at(-1) as Element)
 
     expect(headerActionsRef.current.addIndex).toHaveBeenCalledWith(2)
   })

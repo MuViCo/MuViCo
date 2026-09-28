@@ -5,6 +5,7 @@ import {
   getCueRow,
   planVisualLayerRemoval,
 } from "../../components/utils/screenRowModel"
+import type { Cue } from "../../types"
 
 describe("screenRowModel", () => {
   test("keeps L1 first and appends added visual layers below it", () => {
@@ -39,7 +40,7 @@ describe("screenRowModel", () => {
       { _id: "cue-l3", cueType: "visual", screen: 1, layer: 2, index: 0 },
       { _id: "cue-s2", cueType: "visual", screen: 2, layer: 2, index: 0 },
       { _id: "cue-audio", cueType: "audio", screen: 3, layer: 1, index: 0 },
-    ]
+    ] as Cue[]
 
     expect(planVisualLayerRemoval(cues, 1, 1)).toEqual({
       removedCueIds: ["cue-l2"],
@@ -52,7 +53,9 @@ describe("screenRowModel", () => {
   test("marks non-base visual layers as removable even when occupied", () => {
     const rowModel = buildRowModel(
       1,
-      [{ _id: "cue-l2", cueType: "visual", screen: 1, layer: 1, index: 0 }],
+      [
+        { _id: "cue-l2", cueType: "visual", screen: 1, layer: 1, index: 0 },
+      ] as Cue[],
       {},
       { "screen-1": 2 }
     )
@@ -77,7 +80,7 @@ describe("screenRowModel", () => {
         index: 0,
         spanScreens: [1, 2],
       },
-    ])
+    ] as Cue[])
 
     const screenTwoLanes = rowModel.rows.filter((row) => row.screen === 2)
     expect(screenTwoLanes.map((row) => row.label)).toEqual(["L1", "L2"])
@@ -93,7 +96,7 @@ describe("screenRowModel", () => {
         index: 0,
         spanScreens: [1, 2],
       },
-    ])
+    ] as Cue[])
 
     expect(
       rowModel.rows.find((row) => row.screen === 1 && row.layer === 1)
@@ -113,7 +116,7 @@ describe("screenRowModel", () => {
         index: 0,
         spanScreens: [1, 2],
       },
-    ])
+    ] as Cue[])
 
     const ownRow = rowModel.rows.findIndex(
       (row) => row.screen === 1 && row.layer === 1
@@ -147,7 +150,7 @@ describe("screenRowModel", () => {
     const cues = [
       { _id: "a1", cueType: "audio", layer: 0, index: 0 },
       { _id: "a2", cueType: "audio", layer: 1, index: 0 },
-    ]
+    ] as Cue[]
     const rowModel = buildRowModel(1, cues, { audio: true })
 
     const audioRow = rowModel.rows.find((row) => row.kind === "audio")
@@ -158,8 +161,8 @@ describe("screenRowModel", () => {
       label: "Audio",
       groupStart: true,
     })
-    expect(rowModel.cueY["a1"]).toBe(audioRow.y)
-    expect(rowModel.cueY["a2"]).toBe(audioRow.y)
+    expect(rowModel.cueY["a1"]).toBe(audioRow?.y)
+    expect(rowModel.cueY["a2"]).toBe(audioRow?.y)
   })
 
   test("resolves a cue's row from the cueY map or falls back to its screen", () => {
@@ -167,13 +170,15 @@ describe("screenRowModel", () => {
 
     expect(getCueRow({ _id: "cue-1", screen: 2 }, cueY)).toBe(4)
     expect(getCueRow({ _id: "missing", screen: 3 }, cueY)).toBe(2)
-    expect(getCueRow({ _id: "missing" }, cueY)).toBe(0)
+    expect(
+      getCueRow({ _id: "missing" } as Pick<Cue, "_id" | "screen">, cueY)
+    ).toBe(0)
   })
 
   test("returns an empty plan when the target layer is not a positive integer", () => {
     const cues = [
       { _id: "cue-l1", cueType: "visual", screen: 1, layer: 0, index: 0 },
-    ]
+    ] as Cue[]
 
     expect(planVisualLayerRemoval(cues, 1, 0)).toEqual({
       removedCueIds: [],
