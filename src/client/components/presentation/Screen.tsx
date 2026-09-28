@@ -43,7 +43,7 @@ interface SpannedImageProps {
   imageSrc: string
   name?: string
   spanScreens: number[]
-  screenNumber: string
+  screenNumber: string | number
   screenWidths?: Record<number, number>
 }
 
@@ -103,7 +103,7 @@ const SpannedImage = ({
 
 const renderMedia = (
   cue: Cue,
-  screenNumber: string,
+  screenNumber: string | number,
   screenWidths?: Record<number, number>
 ) => {
   const { file, name, color, spanScreens } = cue
@@ -179,7 +179,7 @@ const cueStackKey = (cueStack: CueStack) =>
 
 const renderCueStack = (
   cueStack: CueStack,
-  screenNumber: string,
+  screenNumber: string | number,
   screenWidths?: Record<number, number>
 ) => {
   const normalizedStack = normalizeCueStack(cueStack)
@@ -206,11 +206,11 @@ const renderCueStack = (
 }
 
 interface ScreenContentProps {
-  screenNumber: string
+  screenNumber: string | number
   currentScreenData: CueStack
   previousScreenData: CueStack
   showText: boolean
-  transitionType: string
+  transitionType?: string
   screenWidths?: Record<number, number>
   isBlackout?: boolean
   outputAspectRatio?: string
@@ -226,7 +226,9 @@ const ScreenContent = ({
   isBlackout,
   outputAspectRatio,
 }: ScreenContentProps) => {
-  const { enter: enterAnim, exit: exitAnim } = getAnims(transitionType)
+  const { enter: enterAnim, exit: exitAnim } = getAnims(
+    transitionType ?? "fade"
+  )
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} 500ms ease-in-out forwards` : "none"
   const currentCueStack = normalizeCueStack(currentScreenData)
@@ -336,11 +338,11 @@ const ScreenContent = ({
 }
 
 interface ScreenProps {
-  screenNumber: string
+  screenNumber: string | number
   screenData: CueStack
   isVisible: boolean
-  onClose: (screenNumber: string) => void
-  transitionType: string
+  onClose: (screenNumber: string | number) => void
+  transitionType?: string
   screenWidths?: Record<number, number>
   onWidthChange?: (screenNumber: number, width: number) => void
   isBlackout?: boolean

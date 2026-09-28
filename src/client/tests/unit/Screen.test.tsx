@@ -7,16 +7,19 @@ import React from "react"
 import { render, waitFor, act, fireEvent, within } from "@testing-library/react"
 import "@testing-library/jest-dom"
 import Screen from "../../components/presentation/Screen"
+import type { Cue } from "../../types"
 
 describe("Screen", () => {
+  const originalWindowOpen = window.open
+
   beforeAll(() => {
     // Use a lightweight popup stub so tests can assert DOM written to external window.
     window.open = jest.fn(() => {
-      const listeners = {}
+      const listeners: Record<string, (...args: unknown[]) => void> = {}
       const fakeDoc = {
         title: "",
         documentElement: {
-          style: {},
+          style: {} as CSSStyleDeclaration,
         },
         body: document.createElement("body"),
         head: document.createElement("head"),
@@ -24,19 +27,21 @@ describe("Screen", () => {
       return {
         document: fakeDoc,
         close: jest.fn(),
-        addEventListener: jest.fn((eventName, handler) => {
-          listeners[eventName] = handler
-        }),
-        removeEventListener: jest.fn((eventName) => {
+        addEventListener: jest.fn(
+          (eventName: string, handler: (...args: unknown[]) => void) => {
+            listeners[eventName] = handler
+          }
+        ),
+        removeEventListener: jest.fn((eventName: string) => {
           delete listeners[eventName]
         }),
         listeners,
       }
-    })
+    }) as unknown as typeof window.open
   })
 
   afterAll(() => {
-    delete window.open
+    window.open = originalWindowOpen
   })
 
   beforeEach(() => {
@@ -56,7 +61,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-start",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -70,7 +75,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Starting Frame")
     })
   })
@@ -89,7 +94,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       const stage = popup.document.body.querySelector(
         '[data-testid="screen-stage"]'
       )
@@ -110,7 +115,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1")
     })
   })
@@ -127,7 +132,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-4",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -141,7 +146,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Frame 4")
     })
   })
@@ -158,7 +163,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-7",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -172,7 +177,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Frame 7")
     })
   })
@@ -186,7 +191,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "color-cue",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -200,7 +205,7 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     await waitFor(() => {
       expect(
         within(popup.document.body).getByTestId("screen-blackout")
@@ -220,7 +225,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-color",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -234,11 +239,11 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Frame 2")
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     const incomingLayer = popup.document.body.querySelector(
       '[data-testid="incoming-cue-layer"]'
     )
@@ -250,18 +255,20 @@ describe("Screen", () => {
     render(
       <Screen
         screenNumber={1}
-        screenData={{
-          file: {
-            url: "http://example.com/image.jpg",
-            type: "image/jpg",
-            name: "image.jpg",
-          },
-          index: 1,
-          name: "hidden-cue",
-          screen: 1,
-          _id: "hidden-cue",
-          loop: false,
-        }}
+        screenData={
+          {
+            file: {
+              url: "http://example.com/image.jpg",
+              type: "image/jpg",
+              name: "image.jpg",
+            },
+            index: 1,
+            name: "hidden-cue",
+            screen: 1,
+            _id: "hidden-cue",
+            loop: false,
+          } as Cue
+        }
         isVisible={false}
         onClose={() => {}}
       />
@@ -271,7 +278,7 @@ describe("Screen", () => {
   })
 
   test("reports when the browser blocks an output popup", async () => {
-    window.open.mockReturnValueOnce(null)
+    ;(window.open as jest.Mock).mockReturnValueOnce(null)
     const onClose = jest.fn()
 
     await act(async () => {
@@ -291,7 +298,7 @@ describe("Screen", () => {
   test("detects an output popup closed without beforeunload", async () => {
     jest.useFakeTimers()
     const onClose = jest.fn()
-    let view
+    let view: ReturnType<typeof render> | undefined
 
     await act(async () => {
       view = render(
@@ -304,12 +311,12 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     popup.closed = true
     act(() => jest.advanceTimersByTime(750))
 
     expect(onClose).toHaveBeenCalledWith(3)
-    view.unmount()
+    view?.unmount()
     jest.useRealTimers()
   })
 
@@ -325,7 +332,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-video",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -339,7 +346,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'video[src="http://example.com/video.mp4"]'
@@ -360,7 +367,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-audio",
       loop: true,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -374,7 +381,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.body.querySelector("audio")).toBeTruthy()
       expect(popup.document.body.textContent).toContain(
         "Your browser does not support the audio element"
@@ -390,7 +397,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-fallback",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -404,7 +411,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       const image = popup.document.body.querySelector('img[alt="fallback-cue"]')
       expect(image).toBeTruthy()
       expect(image.getAttribute("src")).toContain("/fallback.jpg")
@@ -423,7 +430,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-stable",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -435,7 +442,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.body.querySelectorAll("img")).toHaveLength(1)
     })
 
@@ -451,7 +458,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.body.querySelectorAll("img")).toHaveLength(1)
     })
   })
@@ -468,7 +475,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-first",
       loop: false,
-    }
+    } as Cue
 
     const nextScreenData = {
       file: {
@@ -481,7 +488,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-second",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -493,7 +500,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'img[src="http://example.com/first.jpg"]'
@@ -513,7 +520,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'img[src="http://example.com/first.jpg"]'
@@ -538,7 +545,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-color",
       loop: false,
-    }
+    } as Cue
 
     const imageCue = {
       file: {
@@ -551,7 +558,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-image",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -563,7 +570,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Frame 1")
     })
 
@@ -580,7 +587,7 @@ describe("Screen", () => {
 
     // Once the color cue becomes the outgoing (previous) layer, it should
     // still be rendered as a colored background.
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     const outgoingLayer = popup.document.body.querySelector(
       '[data-testid="outgoing-cue-layer"]'
     )
@@ -600,7 +607,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-outgoing",
       loop: false,
-    }
+    } as Cue
 
     const secondImageCue = {
       file: {
@@ -613,7 +620,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-incoming",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -625,7 +632,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(popup.document.title).toBe("Screen 1 • Frame 1")
     })
 
@@ -640,7 +647,7 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     const outgoingImg = popup.document.body.querySelector(
       '[data-testid="outgoing-cue-layer"] img'
     )
@@ -665,7 +672,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-shift",
       loop: false,
-    }
+    } as Cue
 
     render(
       <Screen
@@ -676,7 +683,7 @@ describe("Screen", () => {
       />
     )
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     const popupBody = popup.document.body
 
     await act(async () => {
@@ -715,7 +722,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-cleanup",
       loop: false,
-    }
+    } as Cue
 
     const { unmount } = render(
       <Screen
@@ -726,7 +733,7 @@ describe("Screen", () => {
       />
     )
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
 
     await act(async () => {
       unmount()
@@ -749,7 +756,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-beforeunload",
       loop: false,
-    }
+    } as Cue
 
     render(
       <Screen
@@ -760,7 +767,7 @@ describe("Screen", () => {
       />
     )
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
 
     await act(async () => {
       popup.listeners.beforeunload()
@@ -787,7 +794,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-style",
       loop: false,
-    }
+    } as Cue
 
     render(
       <Screen
@@ -798,7 +805,7 @@ describe("Screen", () => {
       />
     )
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
 
     await waitFor(() => {
       expect(
@@ -821,7 +828,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-hide",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -832,7 +839,7 @@ describe("Screen", () => {
       />
     )
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
 
     await act(async () => {
       rerender(
@@ -860,7 +867,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-clearing",
       loop: false,
-    }
+    } as Cue
 
     const { rerender } = render(
       <Screen
@@ -872,7 +879,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'img[src="http://example.com/clearing.jpg"]'
@@ -891,7 +898,7 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     expect(
       popup.document.body.querySelector('[data-testid="incoming-cue-layer"]')
         .textContent
@@ -916,7 +923,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-unsupported",
       loop: false,
-    }
+    } as Cue
 
     render(
       <Screen
@@ -928,7 +935,7 @@ describe("Screen", () => {
     )
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelectorAll("img,video,audio")
       ).toHaveLength(0)
@@ -942,7 +949,7 @@ describe("Screen", () => {
         type: "image/jpg",
         name: "minimal.jpg",
       },
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -956,7 +963,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'img[src="http://example.com/minimal.jpg"]'
@@ -973,7 +980,7 @@ describe("Screen", () => {
         name: "named-only.jpg",
       },
       name: "named-only-cue",
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -987,7 +994,7 @@ describe("Screen", () => {
     })
 
     await waitFor(() => {
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       expect(
         popup.document.body.querySelector(
           'img[src="http://example.com/named-only.jpg"]'
@@ -1009,7 +1016,7 @@ describe("Screen", () => {
       spanScreens: [1, 2],
       _id: "id-span",
       loop: false,
-    }
+    } as Cue
 
     test("renders the plain full-bleed image until the spanning image's size is known", async () => {
       await act(async () => {
@@ -1024,7 +1031,7 @@ describe("Screen", () => {
         )
       })
 
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       await waitFor(() => {
         expect(
           popup.document.body.querySelector(
@@ -1047,7 +1054,7 @@ describe("Screen", () => {
         )
       })
 
-      const popup = window.open.mock.results.at(-1).value
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
       const probe = await waitFor(() =>
         within(popup.document.body).getByTestId("span-image-probe")
       )
@@ -1081,10 +1088,10 @@ describe("Screen", () => {
 
     test("reports this screen's live width via onWidthChange", async () => {
       window.open = jest.fn(() => {
-        const listeners = {}
+        const listeners: Record<string, (...args: unknown[]) => void> = {}
         const fakeDoc = {
           title: "",
-          documentElement: { style: {} },
+          documentElement: { style: {} as CSSStyleDeclaration },
           body: document.createElement("body"),
           head: document.createElement("head"),
         }
@@ -1092,15 +1099,17 @@ describe("Screen", () => {
           document: fakeDoc,
           innerWidth: 654,
           close: jest.fn(),
-          addEventListener: jest.fn((eventName, handler) => {
-            listeners[eventName] = handler
-          }),
-          removeEventListener: jest.fn((eventName) => {
+          addEventListener: jest.fn(
+            (eventName: string, handler: (...args: unknown[]) => void) => {
+              listeners[eventName] = handler
+            }
+          ),
+          removeEventListener: jest.fn((eventName: string) => {
             delete listeners[eventName]
           }),
           listeners,
         }
-      })
+      }) as unknown as typeof window.open
 
       const onWidthChange = jest.fn()
       await act(async () => {
@@ -1134,7 +1143,7 @@ describe("Screen", () => {
       screen: 1,
       _id: "id-text",
       loop: false,
-    }
+    } as Cue
 
     await act(async () => {
       render(
@@ -1147,7 +1156,7 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     const text = await within(popup.document.body).findByText(
       "La nuit est tombée"
     )
@@ -1176,7 +1185,7 @@ describe("Screen", () => {
         layer: 0,
         _id: "id-text",
       },
-    ]
+    ] as Cue[]
 
     await act(async () => {
       render(
@@ -1189,7 +1198,7 @@ describe("Screen", () => {
       )
     })
 
-    const popup = window.open.mock.results.at(-1).value
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
     await waitFor(() => {
       expect(
         within(popup.document.body).getByText("Night has fallen")
