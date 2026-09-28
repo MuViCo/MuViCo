@@ -2169,6 +2169,96 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
     expect(third.index).toBe(3)
   })
 
+  test("Should shift score marker frameIndex right along with cues", async () => {
+    const presentation = new Presentation({
+      name: "Shift Indexes With Markers",
+      user: (await Presentation.findById(testPresentationId)).user,
+      screenCount: 3,
+      indexCount: 6,
+      cues: [],
+      scores: [
+        {
+          title: "Test Score",
+          markers: [
+            { page: 1, frameIndex: 1 },
+            { page: 1, frameIndex: 2 },
+          ],
+        },
+      ],
+    })
+    await presentation.save()
+
+    await api
+      .put(`/api/presentation/${presentation._id}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(200)
+
+    const updated = await Presentation.findById(presentation._id)
+    const frameIndexes = updated.scores[0].markers
+      .map((marker: any) => marker.frameIndex)
+      .sort((a: number, b: number) => a - b)
+    expect(frameIndexes).toEqual([1, 3])
+  })
+
+  test("Should shift score marker frameIndex left along with cues", async () => {
+    const presentation = new Presentation({
+      name: "Shift Indexes With Markers",
+      user: (await Presentation.findById(testPresentationId)).user,
+      screenCount: 3,
+      indexCount: 6,
+      cues: [],
+      scores: [
+        {
+          title: "Test Score",
+          markers: [
+            { page: 1, frameIndex: 1 },
+            { page: 1, frameIndex: 2 },
+          ],
+        },
+      ],
+    })
+    await presentation.save()
+
+    await api
+      .put(`/api/presentation/${presentation._id}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "left" })
+      .expect(200)
+
+    const updated = await Presentation.findById(presentation._id)
+    const frameIndexes = updated.scores[0].markers
+      .map((marker: any) => marker.frameIndex)
+      .sort((a: number, b: number) => a - b)
+    expect(frameIndexes).toEqual([1, 1])
+  })
+
+  test("Should not shift a marker at or before startIndex", async () => {
+    const presentation = new Presentation({
+      name: "Shift Indexes With Markers",
+      user: (await Presentation.findById(testPresentationId)).user,
+      screenCount: 3,
+      indexCount: 6,
+      cues: [],
+      scores: [
+        {
+          title: "Test Score",
+          markers: [{ page: 1, frameIndex: 1 }],
+        },
+      ],
+    })
+    await presentation.save()
+
+    await api
+      .put(`/api/presentation/${presentation._id}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(200)
+
+    const updated = await Presentation.findById(presentation._id)
+    expect(updated.scores[0].markers[0].frameIndex).toBe(1)
+  })
+
   test("Should fail with invalid direction", async () => {
     const response = await api
       .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
