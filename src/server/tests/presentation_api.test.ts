@@ -2178,6 +2178,7 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
       cues: [],
       scores: [
         {
+          title: "Test Score",
           markers: [
             { page: 1, frameIndex: 1 },
             { page: 1, frameIndex: 2 },
@@ -2209,6 +2210,7 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
       cues: [],
       scores: [
         {
+          title: "Test Score",
           markers: [
             { page: 1, frameIndex: 1 },
             { page: 1, frameIndex: 2 },
@@ -2240,6 +2242,7 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
       cues: [],
       scores: [
         {
+          title: "Test Score",
           markers: [{ page: 1, frameIndex: 1 }],
         },
       ],
