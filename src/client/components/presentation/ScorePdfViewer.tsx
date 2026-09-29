@@ -75,6 +75,7 @@ interface PdfCanvasProps {
   testId?: string
   markers?: ScoreMarker[]
   conflictedMarkerIds?: Set<string>
+  frameLabels?: Record<string, string>
   isPlacingMarker?: boolean
   onPlaceMarker?: (x: number, y: number) => void
   onSelectMarker?: (marker: ScoreMarker) => void
@@ -99,6 +100,7 @@ const PdfCanvas = ({
   testId,
   markers = [],
   conflictedMarkerIds,
+  frameLabels,
   isPlacingMarker = false,
   onPlaceMarker,
   onSelectMarker,
@@ -208,6 +210,7 @@ const PdfCanvas = ({
           onSelectMarker={onSelectMarker}
           onMoveMarker={onMoveMarker}
           conflictedMarkerIds={conflictedMarkerIds}
+          frameLabels={frameLabels}
           highlightedMarkerId={highlightedMarkerId}
         />
       )}
@@ -407,6 +410,7 @@ const ScorePdfViewer = ({
   onUpload,
 }: ScorePdfViewerProps) => {
   const dispatch = useAppDispatch()
+  const frameLabels = useAppSelector((state) => state.presentation.frameLabels)
   const showToast = useCustomToast()
   const readOnly = useReadOnly()
   const indexCount = useAppSelector((state) => state.presentation.indexCount)
@@ -1085,6 +1089,7 @@ const ScorePdfViewer = ({
               testId="score-pdf-viewer"
               markers={currentPageMarkers}
               conflictedMarkerIds={conflictedMarkerIds}
+              frameLabels={frameLabels}
               isPlacingMarker={isPlacingMarker}
               onPlaceMarker={readOnly ? undefined : handlePlaceMarker}
               onSelectMarker={readOnly ? undefined : handleSelectMarker}
@@ -1145,19 +1150,25 @@ const ScorePdfViewer = ({
           >
             Markers:
           </Text>
-          {allMarkers.map((marker, i) => (
-            <Button
-              key={marker._id}
-              size="xs"
-              variant={marker.page === pageNumber ? "solid" : "outline"}
-              colorScheme="purple"
-              flexShrink={0}
-              title={`Marker ${i + 1} — Page ${marker.page}, Frame ${marker.frameIndex}`}
-              onClick={() => handleGoToMarker(marker)}
-            >
-              {`${i + 1} · P${marker.page}`}
-            </Button>
-          ))}
+          {allMarkers.map((marker) => {
+            const frameLabel = frameLabels?.[String(marker.frameIndex)]
+            return (
+              <Button
+                key={marker._id}
+                size="xs"
+                variant={marker.page === pageNumber ? "solid" : "outline"}
+                colorScheme="purple"
+                flexShrink={0}
+                maxWidth="160px"
+                title={`${frameLabel ? `${frameLabel} — ` : ""}Frame ${marker.frameIndex}, page ${marker.page}`}
+                onClick={() => handleGoToMarker(marker)}
+              >
+                <Text as="span" noOfLines={1}>
+                  {`${frameLabel ?? marker.frameIndex} · P${marker.page}`}
+                </Text>
+              </Button>
+            )
+          })}
         </HStack>
       )}
     </Box>

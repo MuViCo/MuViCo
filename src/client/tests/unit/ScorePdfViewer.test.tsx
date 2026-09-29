@@ -400,7 +400,9 @@ describe("ScorePdfViewer", () => {
       await waitForPdfLoaded()
 
       expect(screen.getByText("Markers:")).toBeInTheDocument()
-      const chip2 = screen.getByTitle("Marker 2 — Page 2, Frame 1")
+      expect(screen.getByText("0 · P1")).toBeInTheDocument()
+      expect(screen.getByText("1 · P2")).toBeInTheDocument()
+      const chip2 = screen.getByTitle("Frame 1, page 2")
       fireEvent.click(chip2)
 
       await waitFor(() => {

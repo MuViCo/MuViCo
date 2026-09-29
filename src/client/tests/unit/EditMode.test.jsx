@@ -42,7 +42,11 @@ import {
   shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
-import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
+import {
+  saveFrameLabel,
+  saveIndexCount,
+  saveScreenCount,
+} from "../../redux/presentationThunks"
 
 const mockDispatch = jest.fn(() => Promise.resolve({}))
 const mockShowToast = jest.fn()
@@ -75,6 +79,7 @@ jest.mock("../../redux/presentationReducer", () => ({
 
 jest.mock("../../redux/presentationThunks", () => ({
   saveIndexCount: jest.fn(() => ({ type: "MOCK_SAVE_INDEX_COUNT" })),
+  saveFrameLabel: jest.fn(() => ({ type: "MOCK_SAVE_FRAME_LABEL" })),
   saveScreenCount: jest.fn(() => ({ type: "MOCK_SAVE_SCREEN_COUNT" })),
 }))
 
@@ -692,6 +697,33 @@ describe("EditMode drag swapping", () => {
         "visual-1"
       )
     })
+  })
+
+  it("saves a frame label when a header is renamed", async () => {
+    renderEditMode()
+
+    fireEvent.doubleClick(screen.getByText("Frame 2"))
+    const input = screen.getByTestId("frame-label-input-2")
+    fireEvent.change(input, { target: { value: "Chorus" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    await waitFor(() => {
+      expect(saveFrameLabel).toHaveBeenCalledWith({
+        id: "presentation-1",
+        index: 2,
+        label: "Chorus",
+      })
+    })
+  })
+
+  it("does not save when the label is unchanged", async () => {
+    renderEditMode()
+
+    fireEvent.doubleClick(screen.getByText("Frame 2"))
+    const input = screen.getByTestId("frame-label-input-2")
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    expect(saveFrameLabel).not.toHaveBeenCalled()
   })
 
   it("shows and repositions hover preview on empty slots", () => {

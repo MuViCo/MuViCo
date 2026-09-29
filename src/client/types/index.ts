@@ -143,6 +143,7 @@ export interface Presentation {
   indexCount: number
   outputAspectRatio?: string
   screenAspectRatios?: Record<string, string>
+  frameLabels?: Record<string, string>
   /** ISO date string. */
   lastUsed: string
   shareToken?: string
@@ -441,6 +442,10 @@ export interface SaveScreenCountResponse {
 export interface SaveOutputAspectRatioResponse {
   outputAspectRatio: string
   screenAspectRatios: Record<string, string>
+}
+
+export interface SaveFrameLabelResponse {
+  frameLabels: Record<string, string>
 }
 
 /** PUT /api/presentation/:id/name */

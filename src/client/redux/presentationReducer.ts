@@ -9,6 +9,7 @@ import { createSlice } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 import { createFormData } from "../components/utils/formDataUtils"
 import {
+  saveFrameLabel,
   saveIndexCount,
   saveOutputAspectRatio,
   saveScreenCount,
@@ -52,6 +53,7 @@ export interface PresentationState {
   indexCount: number
   outputAspectRatio: string
   screenAspectRatios: Record<string, string>
+  frameLabels: Record<string, string>
   shareToken: string | null
   pendingSaves: number
 }
@@ -77,6 +79,7 @@ const initialState: PresentationState = {
   indexCount: 5,
   outputAspectRatio: DEFAULT_OUTPUT_ASPECT_RATIO,
   screenAspectRatios: {},
+  frameLabels: {},
   shareToken: null,
   pendingSaves: 0,
 }
@@ -98,6 +101,7 @@ const presentationSlice = createSlice({
       state.outputAspectRatio =
         action.payload.outputAspectRatio ?? DEFAULT_OUTPUT_ASPECT_RATIO
       state.screenAspectRatios = action.payload.screenAspectRatios ?? {}
+      state.frameLabels = action.payload.frameLabels ?? {}
       state.shareToken = action.payload.shareToken ?? null
     },
     setShareToken(state, action: PayloadAction<string | null>) {
@@ -181,6 +185,7 @@ const presentationSlice = createSlice({
       state.indexCount = initialState.indexCount
       state.outputAspectRatio = initialState.outputAspectRatio
       state.screenAspectRatios = initialState.screenAspectRatios
+      state.frameLabels = initialState.frameLabels
       state.shareToken = initialState.shareToken
       state.pendingSaves = initialState.pendingSaves
     },
@@ -226,6 +231,16 @@ const presentationSlice = createSlice({
         state.cues = state.cues.filter((cue) => cue.index < newIndexCount)
       })
       .addCase(saveIndexCount.rejected, (state) => {
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
+      })
+      .addCase(saveFrameLabel.pending, (state) => {
+        state.pendingSaves += 1
+      })
+      .addCase(saveFrameLabel.fulfilled, (state, action) => {
+        state.pendingSaves = Math.max(0, state.pendingSaves - 1)
+        state.frameLabels = action.payload.frameLabels ?? {}
+      })
+      .addCase(saveFrameLabel.rejected, (state) => {
         state.pendingSaves = Math.max(0, state.pendingSaves - 1)
       })
       .addCase(saveOutputAspectRatio.pending, (state) => {

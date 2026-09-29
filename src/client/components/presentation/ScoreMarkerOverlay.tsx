@@ -27,6 +27,7 @@ export interface ScoreMarkerOverlayProps {
   onMoveMarker?: (marker: ScoreMarker, x: number, y: number) => void
   conflictedMarkerIds?: Set<string>
   highlightedMarkerId?: string | null
+  frameLabels?: Record<string, string>
 }
 
 interface ScoreMarkerPinProps {
@@ -36,6 +37,7 @@ interface ScoreMarkerPinProps {
   isDragging?: boolean
   isConflicted?: boolean
   draggable?: boolean
+  frameLabel?: string
   onSelect?: (marker: ScoreMarker) => void
   onDragStart?: (marker: ScoreMarker, event: ReactMouseEvent) => void
 }
@@ -47,6 +49,7 @@ export const ScoreMarkerPin = ({
   isDragging = false,
   isConflicted = false,
   draggable = false,
+  frameLabel,
   onSelect,
   onDragStart,
 }: ScoreMarkerPinProps) => (
@@ -66,7 +69,7 @@ export const ScoreMarkerPin = ({
           : "default"
     }
     zIndex={isHighlighted || isActive || isDragging ? 3 : 1}
-    title={`Frame ${marker.frameIndex}${isConflicted ? " — conflict: another marker uses this frame" : ""}${onSelect ? " — click to edit, drag to move" : ""}`}
+    title={`${frameLabel ? `${frameLabel} (Frame ${marker.frameIndex})` : `Frame ${marker.frameIndex}`}${isConflicted ? " — conflict: another marker uses this frame" : ""}${onSelect ? " — click to edit, drag to move" : ""}`}
     data-marker-id={marker._id}
     data-testid="score-marker-pin"
     data-active={isActive}
@@ -118,6 +121,7 @@ const ScoreMarkerOverlay = ({
   onSelectMarker,
   onMoveMarker,
   conflictedMarkerIds,
+  frameLabels,
   highlightedMarkerId = null,
 }: ScoreMarkerOverlayProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -213,6 +217,7 @@ const ScoreMarkerOverlay = ({
               isDragging={isDragging}
               isConflicted={conflictedMarkerIds?.has(marker._id) ?? false}
               draggable={Boolean(onMoveMarker)}
+              frameLabel={frameLabels?.[String(displayMarker.frameIndex)]}
               onSelect={onSelectMarker ? handleSelect : undefined}
               onDragStart={handleDragStart}
             />

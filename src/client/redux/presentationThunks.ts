@@ -7,6 +7,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit"
 import presentationService from "../services/presentation"
 
 import type {
+  SaveFrameLabelResponse,
   SaveIndexCountResponse,
   SaveOutputAspectRatioResponse,
   SaveScreenCountResponse,
@@ -37,4 +38,13 @@ export const saveOutputAspectRatio = createAsyncThunk<
       outputAspectRatio,
       screen
     )
+)
+
+export const saveFrameLabel = createAsyncThunk<
+  SaveFrameLabelResponse,
+  { id: string; index: number; label: string }
+>(
+  "presentation/saveFrameLabel",
+  async ({ id, index, label }) =>
+    await presentationService.saveFrameLabelApi(id, index, label)
 )

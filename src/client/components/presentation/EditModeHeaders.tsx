@@ -1,7 +1,7 @@
 /*
  * components for rendering the row and column headers in the presentation editor, including controls for adding/removing screens and frames, and toggling audio mute.
  */
-import React from "react"
+import React, { useState } from "react"
 import { TIMELINE_METRICS } from "./timelineMetrics"
 import { groupLanes } from "../utils/screenRowModel"
 import { GROUP_PAD, laneFocusLayout, laneKey } from "../utils/laneFocus"
@@ -44,10 +44,13 @@ interface ColumnHeadersProps {
   headerActionsRef: RefObject<HeaderActions>
   /** Omitted while copying, when a header click means "cancel" instead. */
   onSelectFrame?: (index: number) => void
+  frameLabels?: Record<string, string>
+  onRenameFrame?: (index: number, label: string) => void
 }
 import {
   Box,
   Text,
+  Input,
   IconButton,
   Button,
   Tooltip,
@@ -668,209 +671,255 @@ const ColumnHeadersBase = ({
   frameHeaderHeight,
   headerActionsRef,
   onSelectFrame,
+  frameLabels = {},
+  onRenameFrame,
 }: ColumnHeadersProps): ReactNode => {
   const palette = useTimelinePalette()
   const readOnly = useReadOnly()
+  const [renamingIndex, setRenamingIndex] = useState<number | null>(null)
 
-  return xLabels.map((label, index) => (
-    <Box
-      key={label}
-      position="relative"
-      display="inline-flex"
-      alignItems="center"
-      justifyContent="center"
-      role="group"
-      h={`${frameHeaderHeight}px`}
-    >
+  return xLabels.map((label, index) => {
+    const isRenaming = renamingIndex === index
+    return (
       <Box
-        className="x-index-label"
-        cursor={onSelectFrame ? "pointer" : undefined}
-        onClick={(event) => {
-          // The add/remove frame buttons overhang into this box.
-          if (
-            (event.target as HTMLElement).closest("button, [role='menuitem']")
-          ) {
-            return
-          }
-          onSelectFrame?.(index)
-        }}
-        display="flex"
+        key={label}
+        position="relative"
+        display="inline-flex"
         alignItems="center"
         justifyContent="center"
-        // The active chip is light with dark text; the rest are deep with muted
-        // text, so exactly one frame reads as current.
-        color={palette.chipText}
-        fontSize="12px"
-        fontWeight={index === cueIndex ? 700 : 600}
-        bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
-        // Thin: a heavy outline made the header band read as a row of framed
-        // boxes. The current frame is already marked by its light fill, bold
-        // text and ring, so its border only has to be a shade stronger.
-        border={`${index === cueIndex ? 2 : 1}px solid`}
-        borderColor={
-          index === cueIndex ? activeFrameBorderColor : inactiveFrameBorderColor
-        }
-        boxShadow={
-          index === cueIndex
-            ? "0 0 0 1px rgba(255, 255, 255, 0.36), 0 8px 16px rgba(60, 16, 96, 0.26)"
-            : "none"
-        }
-        transition="border-color 120ms ease, box-shadow 140ms ease"
+        role="group"
         h={`${frameHeaderHeight}px`}
-        width={`${columnWidth}px`}
       >
-        <Text fontWeight="bold" color="black">
-          {label}
-        </Text>
         <Box
-          position="absolute"
-          top="0"
-          right="-14px"
+          className="x-index-label"
+          cursor={onSelectFrame ? "pointer" : undefined}
+          onClick={(event) => {
+            // The add/remove frame buttons overhang into this box.
+            if (
+              (event.target as HTMLElement).closest("button, [role='menuitem']")
+            ) {
+              return
+            }
+            onSelectFrame?.(index)
+          }}
+          onDoubleClick={(event) => {
+            if (readOnly || !onRenameFrame) return
+            if (
+              (event.target as HTMLElement).closest("button, [role='menuitem']")
+            ) {
+              return
+            }
+            setRenamingIndex(index)
+          }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          // The active chip is light with dark text; the rest are deep with muted
+          // text, so exactly one frame reads as current.
+          color={palette.chipText}
+          fontSize="12px"
+          fontWeight={index === cueIndex ? 700 : 600}
+          bg={index === cueIndex ? bgCurrentFrame : bgColorIndex}
+          // Thin: a heavy outline made the header band read as a row of framed
+          // boxes. The current frame is already marked by its light fill, bold
+          // text and ring, so its border only has to be a shade stronger.
+          border={`${index === cueIndex ? 2 : 1}px solid`}
+          borderColor={
+            index === cueIndex
+              ? activeFrameBorderColor
+              : inactiveFrameBorderColor
+          }
+          boxShadow={
+            index === cueIndex
+              ? "0 0 0 1px rgba(255, 255, 255, 0.36), 0 8px 16px rgba(60, 16, 96, 0.26)"
+              : "none"
+          }
+          transition="border-color 120ms ease, box-shadow 140ms ease"
           h={`${frameHeaderHeight}px`}
-          w="28px"
-          aria-hidden="true"
-          zIndex="1"
-        />
-        {!readOnly && (
-          <>
-            <IconButton
-              icon={<AddIcon />}
-              variant="solid"
-              color="black"
-              position="absolute"
-              top="0"
-              right="0"
-              transform="translateX(65%)"
-              h={`${frameHeaderHeight}px`}
-              w="30px"
-              minW="20px"
-              borderRadius="0"
-              isDisabled={indexCount >= 100}
-              aria-label="Add Frame"
-              title="Add Frame"
-              onClick={() => {
-                headerActionsRef.current.addIndex(index)
+          width={`${columnWidth}px`}
+        >
+          {isRenaming ? (
+            <Input
+              autoFocus
+              size="xs"
+              variant="filled"
+              maxLength={60}
+              defaultValue={frameLabels[String(index)] ?? ""}
+              placeholder={label}
+              data-testid={`frame-label-input-${index}`}
+              onClick={(event) => event.stopPropagation()}
+              onBlur={(event) => {
+                onRenameFrame?.(index, event.target.value)
+                setRenamingIndex(null)
               }}
-              opacity={index === xLabels.length - 1 ? 0.45 : 0}
-              pointerEvents={index === xLabels.length - 1 ? "auto" : "none"}
-              bg={
-                index === xLabels.length - 1
-                  ? "rgba(255,255,255,0.12)"
-                  : "transparent"
-              }
-              backdropFilter={
-                index === xLabels.length - 1 ? "blur(2px)" : "none"
-              }
-              _groupHover={{
-                opacity: 1,
-                pointerEvents: "auto",
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  onRenameFrame?.(index, event.currentTarget.value)
+                  setRenamingIndex(null)
+                }
+                if (event.key === "Escape") setRenamingIndex(null)
               }}
-              _hover={{
-                bg: "rgba(125, 252, 135, 0.75)",
-                borderColor: "green.400",
-                color: "black",
-                borderRadius: "6px",
-                transform: "translateX(65%) scale(1.03)",
-              }}
-              _active={{ bg: "transparent" }}
-              boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-              zIndex="20"
             />
-            {index !== 0 && (
+          ) : (
+            <Text
+              fontWeight="bold"
+              color="black"
+              noOfLines={1}
+              title={frameLabels[String(index)] ? label : undefined}
+            >
+              {frameLabels[String(index)] || label}
+            </Text>
+          )}
+          <Box
+            position="absolute"
+            top="0"
+            right="-14px"
+            h={`${frameHeaderHeight}px`}
+            w="28px"
+            aria-hidden="true"
+            zIndex="1"
+          />
+          {!readOnly && (
+            <>
               <IconButton
                 icon={<AddIcon />}
                 variant="solid"
                 color="black"
                 position="absolute"
                 top="0"
-                left="0"
-                transform="translateX(-65%)"
+                right="0"
+                transform="translateX(65%)"
                 h={`${frameHeaderHeight}px`}
                 w="30px"
                 minW="20px"
                 borderRadius="0"
                 isDisabled={indexCount >= 100}
-                aria-label="Add Frame Before"
-                title="Add Frame Before"
+                aria-label="Add Frame"
+                title="Add Frame"
                 onClick={() => {
-                  headerActionsRef.current.addIndex(index - 1)
+                  headerActionsRef.current.addIndex(index)
                 }}
-                opacity="0"
-                pointerEvents="none"
-                _groupHover={
-                  indexCount >= 100
-                    ? {}
-                    : {
-                        opacity: 1,
-                        pointerEvents: "auto",
-                      }
+                opacity={index === xLabels.length - 1 ? 0.45 : 0}
+                pointerEvents={index === xLabels.length - 1 ? "auto" : "none"}
+                bg={
+                  index === xLabels.length - 1
+                    ? "rgba(255,255,255,0.12)"
+                    : "transparent"
                 }
+                backdropFilter={
+                  index === xLabels.length - 1 ? "blur(2px)" : "none"
+                }
+                _groupHover={{
+                  opacity: 1,
+                  pointerEvents: "auto",
+                }}
                 _hover={{
                   bg: "rgba(125, 252, 135, 0.75)",
                   borderColor: "green.400",
                   color: "black",
                   borderRadius: "6px",
-                  transform: "translateX(-65%) scale(1.03)",
+                  transform: "translateX(65%) scale(1.03)",
                 }}
                 _active={{ bg: "transparent" }}
                 boxShadow="0 2px 4px rgba(0,0,0,0.2)"
                 zIndex="20"
               />
-            )}
-            {index !== 0 && (
-              <IconButton
-                icon={
-                  <Box
-                    as="img"
-                    src={trashIcon}
-                    alt=""
-                    aria-hidden="true"
-                    w="24px"
-                    h="24px"
-                  />
-                }
-                size="xs"
-                variant="solid"
-                color="black"
-                position="absolute"
-                top="1%"
-                left="50%"
-                transform="translate(-50%, -50%)"
-                w="36px"
-                minW="36px"
-                isDisabled={indexCount <= 1}
-                aria-label="Remove Frame"
-                title="Remove Frame"
-                onClick={() => {
-                  headerActionsRef.current.removeIndex(index)
-                }}
-                opacity="0"
-                pointerEvents="none"
-                _groupHover={
-                  indexCount <= 1
-                    ? {}
-                    : {
-                        opacity: 1,
-                        pointerEvents: "auto",
-                      }
-                }
-                _hover={{
-                  bg: "rgba(253, 97, 97, 0.75)",
-                  borderColor: "red.400",
-                  color: "black",
-                  borderRadius: "6px",
-                  transform: "translate(-50%, -50%) scale(1.03)",
-                }}
-                _active={{ bg: "transparent" }}
-                boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-                zIndex="10"
-              />
-            )}
-          </>
-        )}
+              {index !== 0 && (
+                <IconButton
+                  icon={<AddIcon />}
+                  variant="solid"
+                  color="black"
+                  position="absolute"
+                  top="0"
+                  left="0"
+                  transform="translateX(-65%)"
+                  h={`${frameHeaderHeight}px`}
+                  w="30px"
+                  minW="20px"
+                  borderRadius="0"
+                  isDisabled={indexCount >= 100}
+                  aria-label="Add Frame Before"
+                  title="Add Frame Before"
+                  onClick={() => {
+                    headerActionsRef.current.addIndex(index - 1)
+                  }}
+                  opacity="0"
+                  pointerEvents="none"
+                  _groupHover={
+                    indexCount >= 100
+                      ? {}
+                      : {
+                          opacity: 1,
+                          pointerEvents: "auto",
+                        }
+                  }
+                  _hover={{
+                    bg: "rgba(125, 252, 135, 0.75)",
+                    borderColor: "green.400",
+                    color: "black",
+                    borderRadius: "6px",
+                    transform: "translateX(-65%) scale(1.03)",
+                  }}
+                  _active={{ bg: "transparent" }}
+                  boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  zIndex="20"
+                />
+              )}
+              {index !== 0 && (
+                <IconButton
+                  icon={
+                    <Box
+                      as="img"
+                      src={trashIcon}
+                      alt=""
+                      aria-hidden="true"
+                      w="24px"
+                      h="24px"
+                    />
+                  }
+                  size="xs"
+                  variant="solid"
+                  color="black"
+                  position="absolute"
+                  top="1%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="36px"
+                  minW="36px"
+                  isDisabled={indexCount <= 1}
+                  aria-label="Remove Frame"
+                  title="Remove Frame"
+                  onClick={() => {
+                    headerActionsRef.current.removeIndex(index)
+                  }}
+                  opacity="0"
+                  pointerEvents="none"
+                  _groupHover={
+                    indexCount <= 1
+                      ? {}
+                      : {
+                          opacity: 1,
+                          pointerEvents: "auto",
+                        }
+                  }
+                  _hover={{
+                    bg: "rgba(253, 97, 97, 0.75)",
+                    borderColor: "red.400",
+                    color: "black",
+                    borderRadius: "6px",
+                    transform: "translate(-50%, -50%) scale(1.03)",
+                  }}
+                  _active={{ bg: "transparent" }}
+                  boxShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  zIndex="10"
+                />
+              )}
+            </>
+          )}
+        </Box>
       </Box>
-    </Box>
-  ))
+    )
+  })
 }
 
 export const RowHeaders = React.memo(RowHeadersBase)

@@ -2093,6 +2093,116 @@ describe("test presentation", () => {
   })
 })
 
+describe("PUT /api/presentation/:id/frameLabel", () => {
+  let authHeader: any
+  let testPresentationId: any
+
+  beforeEach(async () => {
+    await User.deleteMany({})
+    await Presentation.deleteMany({})
+
+    const user = new User({
+      username: "framelabel-user",
+      passwordHash: "test-password-hash",
+    })
+    await user.save()
+    authHeader = `Bearer ${jwt.sign({ id: user._id }, config.SECRET)}`
+
+    const presentation = new Presentation({
+      name: "Frame Label Test Presentation",
+      user: user._id,
+      screenCount: 1,
+      indexCount: 5,
+    })
+    await presentation.save()
+    testPresentationId = presentation._id
+  })
+
+  test("Should store a trimmed label", async () => {
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 1, label: "  Intro  " })
+      .expect(200)
+
+    expect(response.body.frameLabels).toEqual({ "1": "Intro" })
+  })
+
+  test("Should clear a label when given an empty one", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 1, label: "Intro" })
+      .expect(200)
+
+    const response = await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 1, label: "   " })
+      .expect(200)
+
+    expect(response.body.frameLabels).toEqual({})
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels).toBeUndefined()
+  })
+
+  test("Should reject an out-of-range index or an oversized label", async () => {
+    for (const body of [
+      { index: -1, label: "x" },
+      { index: 5, label: "x" },
+      { index: 1.5, label: "x" },
+      { index: 1, label: "x".repeat(61) },
+      { index: 1, label: 42 },
+    ]) {
+      await api
+        .put(`/api/presentation/${testPresentationId}/frameLabel`)
+        .set("Authorization", authHeader)
+        .send(body)
+        .expect(400)
+    }
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels).toBeUndefined()
+  })
+
+  test("Should refuse to save a label outside the timeline", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.frameLabels = new Map([["99", "Ghost"]])
+
+    await expect(presentation.save()).rejects.toThrow()
+  })
+
+  test("Should refuse to save an empty label", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.frameLabels = new Map([["1", "   "]])
+
+    await expect(presentation.save()).rejects.toThrow()
+  })
+
+  test("Should drop labels past the end when the timeline shrinks", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 4, label: "Outro" })
+      .expect(200)
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 1, label: "Intro" })
+      .expect(200)
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/indexCount`)
+      .set("Authorization", authHeader)
+      .send({ indexCount: 3 })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels.get("1")).toBe("Intro")
+    expect(updated.frameLabels.get("4")).toBeUndefined()
+  })
+})
+
 describe("PUT /api/presentation/:id/shiftIndexes", () => {
   let authHeader: any
   let testPresentationId: any
@@ -2123,6 +2233,82 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
     await presentation.save()
 
     testPresentationId = presentation._id
+  })
+
+  test("Should leave score markers alone on a lane-scoped shift", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.scores.push({
+      title: "Score",
+      markers: [{ page: 1, frameIndex: 4, rect: { x: 0, y: 0 } }],
+    })
+    await presentation.save()
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right", screen: 1, layer: 0 })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.scores[0].markers[0].frameIndex).toBe(4)
+  })
+
+  test("Should move frame labels with the frames on a structural shift", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 2, label: "Chorus" })
+      .expect(200)
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right" })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels.get("3")).toBe("Chorus")
+    expect(updated.frameLabels.get("2")).toBeUndefined()
+  })
+
+  test("Should leave a label at or before the insertion point where it is", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 0, label: "Intro" })
+      .expect(200)
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 4, label: "Outro" })
+      .expect(200)
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels.get("0")).toBe("Intro")
+    expect(updated.frameLabels.get("5")).toBe("Outro")
+  })
+
+  test("Should leave frame labels alone on a lane-scoped shift", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 2, label: "Chorus" })
+      .expect(200)
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 0, direction: "right", screen: 1, layer: 0 })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels.get("2")).toBe("Chorus")
   })
 
   test("Should shift only the named lane when a scope is given", async () => {

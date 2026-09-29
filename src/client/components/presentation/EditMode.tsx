@@ -102,7 +102,11 @@ import {
   shiftPresentationIndexes,
   fetchPresentationInfo,
 } from "../../redux/presentationReducer"
-import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
+import {
+  saveFrameLabel,
+  saveIndexCount,
+  saveScreenCount,
+} from "../../redux/presentationThunks"
 import { createFormData } from "../utils/formDataUtils"
 import ToolBox from "./ToolBox"
 import MultiScreenModal from "./MultiScreenModal"
@@ -786,6 +790,17 @@ const EditMode = ({
   }
 
   // Add a new frame at specified index - shifts existing cues to the right
+  const frameLabels = presentation?.frameLabels ?? {}
+
+  const handleRenameFrame = useCallback(
+    (index: number, label: string) => {
+      if (readOnly) return
+      if ((frameLabels[String(index)] ?? "") === label.trim()) return
+      void dispatch(saveFrameLabel({ id, index, label }))
+    },
+    [dispatch, id, readOnly, frameLabels]
+  )
+
   const handleAddIndex = async (
     index: number,
     { silent = false }: { silent?: boolean } = {}
@@ -2473,6 +2488,8 @@ const EditMode = ({
                     columnWidth={columnWidth}
                     frameHeaderHeight={frameHeaderHeight}
                     indexCount={indexCount}
+                    frameLabels={frameLabels}
+                    onRenameFrame={handleRenameFrame}
                     headerActionsRef={headerActionsRef}
                     // Copy mode already treats a header click as "cancel", so
                     // selecting a frame must not fight it.
