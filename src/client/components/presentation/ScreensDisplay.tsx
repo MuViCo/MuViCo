@@ -252,7 +252,14 @@ export const ScreensDisplay = ({
   const renderCuePreview = (cue: Cue, screenNumber: number) => {
     if (isTextCue(cue)) {
       return (
-        <CueText text={cue.text!} color={cue.textColor} size={cue.textSize} />
+        <CueText
+          text={cue.text!}
+          color={cue.textColor}
+          size={cue.textSize}
+          effect={cue.textEffect}
+          effectSpeed={cue.textEffectSpeed}
+          effectLoop={cue.textEffectLoop}
+        />
       )
     }
 

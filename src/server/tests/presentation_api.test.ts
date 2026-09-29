@@ -1540,6 +1540,44 @@ describe("test presentation", () => {
       expect(cue.cueType).toBe("visual")
     })
 
+    test.each(["crawl", "scroll-up", "scroll-down"])(
+      "stores the %s animation",
+      async (textEffect) => {
+        const response = await createTextCue({ textEffect }).expect(200)
+
+        expect(cueAt(response.body, 0, 1).textEffect).toBe(textEffect)
+      }
+    )
+
+    test("stores the looping flag and leaves it unset by default", async () => {
+      const looping = await createTextCue({
+        textEffect: "crawl",
+        textEffectLoop: "true",
+      }).expect(200)
+      expect(cueAt(looping.body, 0, 1).textEffectLoop).toBe(true)
+
+      const plain = await createTextCue({
+        index: 1,
+        textEffect: "crawl",
+      }).expect(200)
+      expect(cueAt(plain.body, 1, 1).textEffectLoop).toBeUndefined()
+    })
+
+    test("stores an animation speed", async () => {
+      const response = await createTextCue({
+        textEffect: "scroll-up",
+        textEffectSpeed: 2,
+      }).expect(200)
+
+      expect(cueAt(response.body, 0, 1).textEffectSpeed).toBe(2)
+    })
+
+    test("leaves the animation unset when none is given", async () => {
+      const response = await createTextCue().expect(200)
+
+      expect(cueAt(response.body, 0, 1).textEffect).toBeUndefined()
+    })
+
     test("keeps line breaks and trims the ends of the text", async () => {
       const response = await createTextCue({ text: "  line 1\nline 2  " })
 
@@ -1619,6 +1657,18 @@ describe("test presentation", () => {
       ["a size of zero", { textSize: 0 }, /textSize/],
       ["a size above the maximum", { textSize: 101 }, /textSize/],
       ["a size that is not a number", { textSize: "big" }, /textSize/],
+      ["an unknown animation", { textEffect: "spin" }, /textEffect/],
+      [
+        "a speed below the minimum",
+        { textEffectSpeed: 0.1 },
+        /textEffectSpeed/,
+      ],
+      ["a speed above the maximum", { textEffectSpeed: 5 }, /textEffectSpeed/],
+      [
+        "a speed that is not a number",
+        { textEffectSpeed: "fast" },
+        /textEffectSpeed/,
+      ],
     ])("refuses %s", async (_label, fields, message) => {
       const response = await createTextCue(fields).expect(400)
 

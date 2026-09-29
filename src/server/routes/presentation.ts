@@ -407,6 +407,10 @@ const MIN_TEXT_SIZE = 1
 const MAX_TEXT_SIZE = 100
 const HEX_COLOR = /^#([0-9A-F]{3}){1,2}$/i
 
+const TEXT_EFFECTS = ["none", "crawl", "scroll-up", "scroll-down"]
+const MIN_TEXT_EFFECT_SPEED = 0.25
+const MAX_TEXT_EFFECT_SPEED = 4
+
 const parseCueText = (
   body: Record<string, unknown>
 ): {
@@ -414,6 +418,9 @@ const parseCueText = (
   text: string | undefined
   textColor: string | undefined
   textSize: number | undefined
+  textEffect: string | undefined
+  textEffectSpeed: number | undefined
+  textEffectLoop: boolean | undefined
   error: string | null
 } => {
   const fail = (error: string) => ({
@@ -421,6 +428,9 @@ const parseCueText = (
     text: undefined,
     textColor: undefined,
     textSize: undefined,
+    textEffect: undefined,
+    textEffectSpeed: undefined,
+    textEffectLoop: undefined,
     error,
   })
   const provided = body.text !== undefined
@@ -456,7 +466,50 @@ const parseCueText = (
     textSize = parsed
   }
 
-  return { provided, text: text || undefined, textColor, textSize, error: null }
+  let textEffect: string | undefined
+  if (body.textEffect !== undefined && body.textEffect !== "") {
+    if (!TEXT_EFFECTS.includes(body.textEffect as string)) {
+      return fail(`textEffect must be one of ${TEXT_EFFECTS.join(", ")}`)
+    }
+    textEffect = body.textEffect as string
+  }
+
+  let textEffectSpeed: number | undefined
+  if (body.textEffectSpeed !== undefined && body.textEffectSpeed !== "") {
+    const parsed = Number(body.textEffectSpeed)
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < MIN_TEXT_EFFECT_SPEED ||
+      parsed > MAX_TEXT_EFFECT_SPEED
+    ) {
+      return fail(
+        `textEffectSpeed must be a number between ${MIN_TEXT_EFFECT_SPEED} and ${MAX_TEXT_EFFECT_SPEED}`
+      )
+    }
+    textEffectSpeed = parsed
+  }
+
+  let textEffectLoop: boolean | undefined
+  if (body.textEffectLoop !== undefined && body.textEffectLoop !== "") {
+    if (
+      !["true", "false", true, false].includes(body.textEffectLoop as never)
+    ) {
+      return fail("textEffectLoop must be a boolean")
+    }
+    textEffectLoop =
+      body.textEffectLoop === true || body.textEffectLoop === "true"
+  }
+
+  return {
+    provided,
+    text: text || undefined,
+    textColor,
+    textSize,
+    textEffect,
+    textEffectSpeed,
+    textEffectLoop,
+    error: null,
+  }
 }
 
 // Full validity check once `screen`/`cueType`/`screenCount` are known: must
@@ -1835,6 +1888,15 @@ router.put(
                     text: cueText.text,
                     ...(cueText.textColor && { textColor: cueText.textColor }),
                     ...(cueText.textSize && { textSize: cueText.textSize }),
+                    ...(cueText.textEffect && {
+                      textEffect: cueText.textEffect,
+                    }),
+                    ...(cueText.textEffectSpeed && {
+                      textEffectSpeed: cueText.textEffectSpeed,
+                    }),
+                    ...(cueText.textEffectLoop !== undefined && {
+                      textEffectLoop: cueText.textEffectLoop,
+                    }),
                   }
                 : {}),
               ...(frame && cueType === "visual" ? { frame } : {}),
@@ -2394,6 +2456,15 @@ router.put(
         ? (cueText.textColor ?? cue.textColor)
         : undefined
       cue.textSize = nextText ? (cueText.textSize ?? cue.textSize) : undefined
+      cue.textEffect = nextText
+        ? (cueText.textEffect ?? cue.textEffect)
+        : undefined
+      cue.textEffectSpeed = nextText
+        ? (cueText.textEffectSpeed ?? cue.textEffectSpeed)
+        : undefined
+      cue.textEffectLoop = nextText
+        ? (cueText.textEffectLoop ?? cue.textEffectLoop)
+        : undefined
       cue.loop = loop
       cue.continuePlayback =
         cueType === "audio"
