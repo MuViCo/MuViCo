@@ -71,6 +71,9 @@ export interface Cue {
   text?: string
   textColor?: string
   textSize?: number
+  textEffect?: string
+  textEffectSpeed?: number
+  textEffectLoop?: boolean
   color?: string
   file: CueFileMeta | null
   loop: boolean
@@ -341,6 +344,9 @@ export interface CueUpdateInput {
   text?: string
   textColor?: string
   textSize?: number
+  textEffect?: string
+  textEffectSpeed?: number
+  textEffectLoop?: boolean
   frame?: { x: number; y: number; width: number; height: number } | null
 }
 

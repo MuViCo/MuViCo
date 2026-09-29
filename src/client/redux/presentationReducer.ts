@@ -635,6 +635,9 @@ export const updatePresentation =
           text: updatedCueData.text,
           textColor: updatedCueData.textColor,
           textSize: updatedCueData.textSize,
+          textEffect: updatedCueData.textEffect,
+          textEffectSpeed: updatedCueData.textEffectSpeed,
+          textEffectLoop: updatedCueData.textEffectLoop,
         },
         updatedCueData.frame
       )

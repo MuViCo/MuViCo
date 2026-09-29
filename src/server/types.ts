@@ -32,6 +32,9 @@ export interface Cue {
   text?: string
   textColor?: string
   textSize?: number
+  textEffect?: string
+  textEffectSpeed?: number
+  textEffectLoop?: boolean
   color?: string
   file?: CueFile | null
   loop?: boolean

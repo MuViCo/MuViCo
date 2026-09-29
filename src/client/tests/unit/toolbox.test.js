@@ -142,6 +142,84 @@ describe("ToolBox Component", () => {
       expect(screen.getByTestId("toolbox-text-color")).toHaveValue("#ffcc00")
     })
 
+    it("shows the current animation and defaults to none", () => {
+      renderTextToolbox({ textEffect: "scroll-up" })
+      expect(screen.getByTestId("toolbox-text-effect")).toHaveValue("scroll-up")
+    })
+
+    it("falls back to none when the element has no animation", () => {
+      renderTextToolbox()
+      expect(screen.getByTestId("toolbox-text-effect")).toHaveValue("none")
+    })
+
+    it("saves the chosen animation", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderTextToolbox()
+
+      fireEvent.change(screen.getByTestId("toolbox-text-effect"), {
+        target: { value: "scroll-down" },
+      })
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ textEffect: "scroll-down" })
+        )
+      })
+    })
+
+    it("hides the speed slider until an animation is chosen", () => {
+      renderTextToolbox()
+      expect(screen.queryByLabelText("Animation speed")).not.toBeInTheDocument()
+
+      fireEvent.change(screen.getByTestId("toolbox-text-effect"), {
+        target: { value: "scroll-up" },
+      })
+      expect(screen.getByLabelText("Animation speed")).toBeInTheDocument()
+    })
+
+    it("saves the chosen animation speed", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderTextToolbox({ textEffect: "scroll-up", textEffectSpeed: 2 })
+
+      expect(screen.getByText("2×")).toBeInTheDocument()
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ textEffectSpeed: 2 })
+        )
+      })
+    })
+
+    it("does not repeat the animation by default", () => {
+      renderTextToolbox({ textEffect: "crawl" })
+
+      expect(screen.getByTestId("toolbox-text-effect-loop")).not.toBeChecked()
+    })
+
+    it("saves the looping choice", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderTextToolbox({ textEffect: "crawl" })
+
+      fireEvent.click(screen.getByTestId("toolbox-text-effect-loop"))
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ textEffectLoop: true })
+        )
+      })
+    })
+
+    it("hides the looping checkbox without an animation", () => {
+      renderTextToolbox()
+
+      expect(
+        screen.queryByTestId("toolbox-text-effect-loop")
+      ).not.toBeInTheDocument()
+    })
+
     it("does not show the text fields for an ordinary element", () => {
       render(
         <Toolbox

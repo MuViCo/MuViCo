@@ -126,7 +126,14 @@ const CueMedia = ({
   if (!cue.file) {
     if (isTextCue(cue)) {
       return (
-        <CueText text={cue.text!} color={cue.textColor} size={cue.textSize} />
+        <CueText
+          text={cue.text!}
+          color={cue.textColor}
+          size={cue.textSize}
+          effect={cue.textEffect}
+          effectSpeed={cue.textEffectSpeed}
+          effectLoop={cue.textEffectLoop}
+        />
       )
     }
     return <Box position="absolute" inset={0} bg={cue.color ?? "#000"} />

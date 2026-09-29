@@ -39,7 +39,14 @@ export const createFormData = (
   // note on CueUpdateInput.file describes.
   mediaId?: string,
   duration?: number | null,
-  textFields?: { text?: string; textColor?: string; textSize?: number },
+  textFields?: {
+    text?: string
+    textColor?: string
+    textSize?: number
+    textEffect?: string
+    textEffectSpeed?: number
+    textEffectLoop?: boolean
+  },
   frame?: { x: number; y: number; width: number; height: number } | null
 ): FormData => {
   const formData = new FormData()
@@ -92,6 +99,15 @@ export const createFormData = (
   }
   if (textFields?.textSize !== undefined) {
     formData.append("textSize", String(textFields.textSize))
+  }
+  if (textFields?.textEffect !== undefined) {
+    formData.append("textEffect", textFields.textEffect)
+  }
+  if (textFields?.textEffectSpeed !== undefined) {
+    formData.append("textEffectSpeed", String(textFields.textEffectSpeed))
+  }
+  if (textFields?.textEffectLoop !== undefined) {
+    formData.append("textEffectLoop", String(textFields.textEffectLoop))
   }
 
   return formData

@@ -322,6 +322,18 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
           match: /^#([0-9A-F]{3}){1,2}$/i,
         },
         textSize: { type: Number, default: undefined, min: 1, max: 100 },
+        textEffect: {
+          type: String,
+          default: undefined,
+          enum: ["none", "crawl", "scroll-up", "scroll-down"],
+        },
+        textEffectSpeed: {
+          type: Number,
+          default: undefined,
+          min: 0.25,
+          max: 4,
+        },
+        textEffectLoop: { type: Boolean, default: undefined },
       },
     ],
     // Presentation-scoped media library (the editor's "media pool"). Entries

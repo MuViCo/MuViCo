@@ -6,6 +6,41 @@ export const TEXT_SIZE_SLIDER_MIN = 2
 export const TEXT_SIZE_SLIDER_MAX = 40
 export const MAX_TEXT_LENGTH = 500
 
+export const DEFAULT_TEXT_EFFECT = "none"
+
+export const TEXT_EFFECTS = [
+  { value: "none", label: "None" },
+  { value: "crawl", label: "Star Wars crawl" },
+  { value: "scroll-up", label: "Scroll up" },
+  { value: "scroll-down", label: "Scroll down" },
+] as const
+
+export type TextEffect = (typeof TEXT_EFFECTS)[number]["value"]
+
+export const isValidTextEffect = (value: unknown): value is TextEffect =>
+  TEXT_EFFECTS.some((effect) => effect.value === value)
+
+export const normalizeTextEffect = (value: unknown): TextEffect =>
+  isValidTextEffect(value) ? value : DEFAULT_TEXT_EFFECT
+
+export const DEFAULT_TEXT_EFFECT_SPEED = 1
+export const MIN_TEXT_EFFECT_SPEED = 0.25
+export const MAX_TEXT_EFFECT_SPEED = 4
+export const TEXT_EFFECT_BASE_SECONDS = 22
+
+export const normalizeTextEffectSpeed = (value: unknown): number => {
+  const speed = Number(value)
+
+  if (!Number.isFinite(speed) || value === null || value === "") {
+    return DEFAULT_TEXT_EFFECT_SPEED
+  }
+
+  return Math.min(MAX_TEXT_EFFECT_SPEED, Math.max(MIN_TEXT_EFFECT_SPEED, speed))
+}
+
+export const textEffectDurationSeconds = (value: unknown): number =>
+  TEXT_EFFECT_BASE_SECONDS / normalizeTextEffectSpeed(value)
+
 interface TextFields {
   text?: unknown
   textColor?: unknown

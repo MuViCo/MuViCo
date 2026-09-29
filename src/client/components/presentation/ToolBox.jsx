@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import {
   Button,
   Box,
+  Checkbox,
   FormControl,
   FormLabel,
   Input,
@@ -20,6 +21,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Select,
   Slider,
   SliderFilledTrack,
   SliderThumb,
@@ -29,12 +31,19 @@ import {
 } from "@chakra-ui/react"
 import {
   DEFAULT_TEXT_COLOR,
+  DEFAULT_TEXT_EFFECT,
+  DEFAULT_TEXT_EFFECT_SPEED,
   DEFAULT_TEXT_SIZE,
+  MAX_TEXT_EFFECT_SPEED,
   MAX_TEXT_LENGTH,
+  MIN_TEXT_EFFECT_SPEED,
+  TEXT_EFFECTS,
   TEXT_SIZE_SLIDER_MAX,
   TEXT_SIZE_SLIDER_MIN,
   isTextCue,
   normalizeTextColor,
+  normalizeTextEffect,
+  normalizeTextEffectSpeed,
   normalizeTextSize,
   textSnippet,
 } from "../utils/cueText"
@@ -53,6 +62,11 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
   const [textValue, setTextValue] = useState("")
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE)
   const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR)
+  const [textEffect, setTextEffect] = useState(DEFAULT_TEXT_EFFECT)
+  const [textEffectSpeed, setTextEffectSpeed] = useState(
+    DEFAULT_TEXT_EFFECT_SPEED
+  )
+  const [textEffectLoop, setTextEffectLoop] = useState(false)
   const isText = isTextCue(cue)
 
   useEffect(() => {
@@ -67,6 +81,9 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
       setTextValue(cue?.text || "")
       setTextSize(normalizeTextSize(cue?.textSize))
       setTextColor(normalizeTextColor(cue?.textColor))
+      setTextEffect(normalizeTextEffect(cue?.textEffect))
+      setTextEffectSpeed(normalizeTextEffectSpeed(cue?.textEffectSpeed))
+      setTextEffectLoop(Boolean(cue?.textEffectLoop))
     }
   }, [cue, isOpen])
 
@@ -98,6 +115,9 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
         text: trimmedText,
         textColor,
         textSize,
+        textEffect,
+        textEffectSpeed,
+        textEffectLoop,
       }),
       frame: isFullFrame(frame) ? null : frame,
     })
@@ -183,6 +203,63 @@ const Toolbox = ({ isOpen, onClose, cue, onSave, outputAspectRatio }) => {
                     w="80px"
                   />
                 </FormControl>
+                <FormControl mt={5}>
+                  <FormLabel>Animation</FormLabel>
+                  <Select
+                    data-testid="toolbox-text-effect"
+                    aria-label="Animation"
+                    value={textEffect}
+                    onChange={(event) => setTextEffect(event.target.value)}
+                  >
+                    {TEXT_EFFECTS.map((effect) => (
+                      <option key={effect.value} value={effect.value}>
+                        {effect.label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                {textEffect !== "none" && (
+                  <FormControl mt={5}>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      mb={2}
+                    >
+                      <FormLabel mb={0}>Animation speed</FormLabel>
+                      <Text fontSize="sm" fontWeight="bold">
+                        {textEffectSpeed}×
+                      </Text>
+                    </Box>
+                    <Slider
+                      aria-label="Animation speed"
+                      data-testid="toolbox-text-effect-speed"
+                      min={MIN_TEXT_EFFECT_SPEED}
+                      max={MAX_TEXT_EFFECT_SPEED}
+                      step={0.25}
+                      value={textEffectSpeed}
+                      onChange={setTextEffectSpeed}
+                    >
+                      <SliderTrack>
+                        <SliderFilledTrack />
+                      </SliderTrack>
+                      <SliderThumb />
+                    </Slider>
+                  </FormControl>
+                )}
+                {textEffect !== "none" && (
+                  <FormControl mt={3}>
+                    <Checkbox
+                      data-testid="toolbox-text-effect-loop"
+                      isChecked={textEffectLoop}
+                      onChange={(event) =>
+                        setTextEffectLoop(event.target.checked)
+                      }
+                    >
+                      Repeat the animation
+                    </Checkbox>
+                  </FormControl>
+                )}
               </>
             )}
             {cue.cueType !== "audio" && (
