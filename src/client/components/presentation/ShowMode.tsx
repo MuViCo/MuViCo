@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import type { Cue, ScoreDocument } from "../../types"
 import KeyboardHandler from "../utils/keyboardHandler"
+import type { AudioTrack } from "./CueAudioPlayers"
 import ShowMonitorWindow from "./ShowMonitorWindow"
 import ShowScoreViewer from "./ShowScoreViewer"
 import ShowScreenPreview from "./ShowScreenPreview"
@@ -30,13 +31,8 @@ type ShowView = "music" | "control"
 type MonitorView = "score" | "wall" | null
 type PageMode = "two" | "scroll"
 
-interface AudioTrack {
-  id: string
-  name: string
-  layer: number
-  loop: boolean
-  continuePlayback: boolean
-}
+type ShowAudioTrack = AudioTrack &
+  Required<Pick<AudioTrack, "id" | "name" | "layer" | "continuePlayback">>
 
 interface ShowModeProps {
   presentationName: string
@@ -47,7 +43,7 @@ interface ShowModeProps {
   cueIndex: number
   indexCount: number
   screens: Record<string, boolean>
-  audioTracks: AudioTrack[]
+  audioTracks: ShowAudioTrack[]
   autoplayInterval: number
   isAutoplaying: boolean
   isBlackout: boolean
@@ -132,7 +128,7 @@ const ShowAudioStrip = ({
   playingTrackIds,
   onToggleTrackPlay,
 }: {
-  tracks: AudioTrack[]
+  tracks: ShowAudioTrack[]
   isAudioArmed: boolean
   audioAdvanceMode: "auto" | "manual"
   playingTrackIds: Record<string, boolean>

@@ -13,7 +13,6 @@ import { laneAcceptsCueType } from "../utils/screenRowModel"
 import type { Cue, CueType, Lane } from "../../types"
 import type { SpanOverrideMap } from "./editModeDragHelpers"
 
-/** clientX/clientY is all this hook needs from a pointer-producing DOM event. */
 type PointerLikeEvent = { clientX: number; clientY: number }
 
 type PointerPosition = { x: number; y: number }

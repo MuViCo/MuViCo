@@ -23,8 +23,6 @@ interface PresentationPageProps {
 }
 
 const PresentationPage = ({ shared = false }: PresentationPageProps) => {
-  // useParams types every param as optional; this route only renders under
-  // /presentation/:id or /shared/:token, so the relevant one is always present.
   const { id: routeId, token } = useParams()
   const id = (shared ? token : routeId) as string
   const showToast = useCustomToast()
