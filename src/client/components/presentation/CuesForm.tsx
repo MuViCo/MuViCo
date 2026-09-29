@@ -74,6 +74,7 @@ import type {
   CueFileMeta,
   CueUpdateInput,
   MediaLibraryItem,
+  NewCueDragData,
 } from "../../types"
 
 // One input for every kind. Mirrors the server's isAllowedMimeType.
@@ -567,7 +568,7 @@ const CuesForm = ({
                   onDragStart={(e) => {
                     suppressNativeDragGhost(e.dataTransfer)
                     const normalizedCueName = cueName.trim()
-                    const dragData = {
+                    const dragData: NewCueDragData = {
                       type: "newCueFromForm",
                       cueName: normalizedCueName,
                       color: selectedColor || "#e014ee",
@@ -698,7 +699,7 @@ const CuesForm = ({
                       return
                     }
                     suppressNativeDragGhost(e.dataTransfer)
-                    const dragData = {
+                    const dragData: NewCueDragData = {
                       type: "newCueFromForm",
                       cueName: textSnippet(trimmedText),
                       text: trimmedText,

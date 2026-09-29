@@ -1,0 +1,1110 @@
+/*
+ * Grid layout component unit tests.
+ * Covers cue rendering states, drag indicators, media/audio behavior, and cue menu actions
+ * such as copy, delete, and loop toggle updates.
+ */
+import {
+  createEvent,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react"
+import "@testing-library/jest-dom"
+import GridLayoutComponent from "../../components/presentation/GridLayoutComponent"
+import { useDispatch } from "react-redux"
+import { removeCue, updatePresentation } from "../../redux/presentationReducer"
+import type { Cue } from "../../types"
+import type { Layout } from "react-grid-layout"
+import type { ReactNode } from "react"
+
+const mockedUseDispatch = jest.mocked(useDispatch)
+const mockDispatch = jest.fn(() => Promise.resolve({}))
+const mockShowToast = jest.fn()
+const mockGridLayout = jest.fn(
+  ({ children }: { children: ReactNode } & Record<string, unknown>) => (
+    <div data-testid="mock-grid-layout">{children}</div>
+  )
+)
+
+jest.mock("react-redux", () => ({
+  useDispatch: jest.fn(),
+}))
+
+jest.mock("../../redux/presentationReducer", () => ({
+  updatePresentation: jest.fn(() => ({ type: "MOCK_UPDATE_PRESENTATION" })),
+  removeCue: jest.fn(() => ({ type: "MOCK_REMOVE_CUE" })),
+}))
+
+jest.mock("../../components/utils/toastUtils", () => ({
+  useCustomToast: () => mockShowToast,
+}))
+
+jest.mock("react-grid-layout", () => {
+  return function MockGridLayout(
+    props: { children: ReactNode } & Record<string, unknown>
+  ) {
+    return mockGridLayout(props)
+  }
+})
+
+describe("GridLayoutComponent", () => {
+  const baseProps = {
+    id: "presentation-1",
+    setCopiedCue: jest.fn(),
+    setIsCopied: jest.fn(),
+    columnWidth: 150,
+    rowHeight: 100,
+    gap: 10,
+    rowGap: 10,
+    cueIndex: 0,
+    isAudioMuted: false,
+    setSelectedCue: jest.fn(),
+    setIsToolboxOpen: jest.fn(),
+    indexCount: 10,
+    setShowAlert: jest.fn(),
+    setAlertData: jest.fn(),
+    screenCount: 8,
+    setIsMultiScreenModalOpen: jest.fn(),
+  }
+
+  const renderGrid = (
+    cues: Record<string, unknown>[],
+    layout: Layout[],
+    extraProps: Record<string, unknown> = {}
+  ) => {
+    return render(
+      <GridLayoutComponent
+        {...baseProps}
+        {...extraProps}
+        cues={cues as unknown as Cue[]}
+        layout={layout}
+      />
+    )
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockedUseDispatch.mockReturnValue(
+      mockDispatch as unknown as ReturnType<typeof useDispatch>
+    )
+  })
+
+  it("renders background cells for empty rows", () => {
+    renderGrid([], [], { indexCount: 3, rowCount: 2 })
+
+    expect(screen.getByTestId("grid-empty-cells")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-0-0")).toBeInTheDocument()
+    expect(screen.getByTestId("grid-empty-cell-1-2")).toBeInTheDocument()
+
+    const firstCallProps = mockGridLayout.mock.calls[0][0]
+    expect(firstCallProps.width).toBe(470)
+    expect(firstCallProps.maxRows).toBe(2)
+    expect((firstCallProps.style as { minHeight: string }).minHeight).toBe(
+      "210px"
+    )
+  })
+
+  it("does not wire deprecated onDragStop behavior", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/image.png",
+          name: "image.png",
+        },
+      },
+    ]
+
+    renderGrid(cues, [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    const firstCallProps = mockGridLayout.mock.calls[0][0]
+    expect(firstCallProps.isDraggable).toBe(false)
+    expect(firstCallProps.onDragStop).toBeUndefined()
+  })
+
+  it("keeps the cue menu trigger visible in light mode", () => {
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }]
+    )
+
+    expect(screen.getByTestId("cue-menu-button-visual-1")).toHaveStyle({
+      color: "white",
+    })
+  })
+
+  it("opens cue actions at the right-click coordinates", () => {
+    const cue = {
+      _id: "visual-context",
+      index: 0,
+      screen: 1,
+      name: "Context cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    const cueContent = document.querySelector(
+      '[data-cue-content-id="visual-context"]'
+    ) as Element
+    const contextMenuEvent = createEvent.contextMenu(cueContent, {
+      clientX: 124,
+      clientY: 236,
+    })
+
+    fireEvent(cueContent, contextMenuEvent)
+
+    expect(contextMenuEvent.defaultPrevented).toBe(true)
+    expect(screen.getByTestId("cue-context-menu")).toBeInTheDocument()
+    expect(screen.getByTestId("cue-context-menu-anchor")).toHaveStyle({
+      left: "124px",
+      top: "236px",
+    })
+  })
+
+  it("opens cue actions with the keyboard context-menu shortcut", () => {
+    const cue = {
+      _id: "visual-keyboard",
+      index: 0,
+      screen: 1,
+      name: "Keyboard cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    fireEvent.keyDown(screen.getByTestId("cue-menu-button-visual-keyboard"), {
+      key: "F10",
+      shiftKey: true,
+    })
+
+    expect(screen.getByTestId("cue-context-menu")).toBeInTheDocument()
+  })
+
+  it("does not open cue actions while copy placement is active", () => {
+    const cue = {
+      _id: "visual-copying",
+      index: 0,
+      screen: 1,
+      name: "Copying cue",
+      color: "#ffffff",
+      cueType: "visual",
+    }
+
+    renderGrid([cue], [{ i: cue._id, x: 0, y: 0, w: 1, h: 1, static: false }], {
+      isCopied: true,
+    })
+
+    fireEvent.contextMenu(
+      document.querySelector(
+        '[data-cue-content-id="visual-copying"]'
+      ) as Element,
+      { clientX: 10, clientY: 20 }
+    )
+
+    expect(screen.queryByTestId("cue-context-menu")).not.toBeInTheDocument()
+  })
+
+  it("renders continuation overlay only for auto-expanded cue area", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    expect(
+      screen.queryByTestId("cue-continuation-overlay-visual-1")
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
+    expect(screen.getByTestId("cue-label-visual-1")).toBeInTheDocument()
+  })
+
+  it("renders drag-origin indicator only for the dragging cue", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    const layout = [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }]
+
+    const { rerender } = renderGrid(cues, layout, {
+      isDragging: false,
+      draggingCueId: null,
+    })
+
+    expect(
+      screen.queryByTestId("cue-drag-origin-indicator-visual-1")
+    ).not.toBeInTheDocument()
+
+    rerender(
+      <GridLayoutComponent
+        {...baseProps}
+        cues={cues as unknown as Cue[]}
+        layout={layout}
+        isDragging={true}
+        draggingCueId="visual-1"
+      />
+    )
+
+    expect(
+      screen.getByTestId("cue-drag-origin-indicator-visual-1")
+    ).toBeInTheDocument()
+  })
+
+  it("applies preview span overrides for continuation shrink rendering", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 3,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    const layout = [
+      { i: "visual-1", x: 0, y: 0, w: 3, h: 1, static: false },
+      { i: "visual-2", x: 3, y: 0, w: 1, h: 1, static: false },
+    ]
+
+    const { rerender } = renderGrid(cues, layout)
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-1")
+    ).toBeInTheDocument()
+
+    rerender(
+      <GridLayoutComponent
+        {...baseProps}
+        cues={cues as unknown as Cue[]}
+        layout={layout}
+        previewCueSpanOverrides={{ "visual-1": 1 }}
+      />
+    )
+
+    expect(screen.getByTestId("cue-continuation-overlay-visual-1")).toHaveStyle(
+      {
+        opacity: "0.76",
+      }
+    )
+  })
+
+  it("renders video media for visual video cues", () => {
+    const cues = [
+      {
+        _id: "video-1",
+        index: 0,
+        screen: 1,
+        name: "Video cue",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "video/mp4",
+          url: "https://example.com/video.mp4",
+          name: "video.mp4",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    const { container } = renderGrid(cues, [
+      { i: "video-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    expect(
+      container.querySelector('video[src="https://example.com/video.mp4"]')
+    ).toBeInTheDocument()
+  })
+
+  it("does not render audio media when cue index is before cue", () => {
+    const cues = [
+      {
+        _id: "audio-1",
+        index: 1,
+        screen: 3,
+        name: "Audio cue 1",
+        color: "#ffffff",
+        cueType: "audio",
+        file: {
+          type: "audio/mpeg",
+          url: "https://example.com/audio-1.mp3",
+          name: "audio-1.mp3",
+        },
+        loop: false,
+      },
+    ]
+
+    const { container } = renderGrid(
+      cues,
+      [{ i: "audio-1", x: 1, y: 2, w: 9, h: 1, static: false }],
+      {
+        cueIndex: 0,
+        screenCount: 2,
+      }
+    )
+
+    expect(container.querySelector("audio")).not.toBeInTheDocument()
+  })
+
+  it("handles copy action from cue menu", async () => {
+    const setCopiedCue = jest.fn()
+    const setIsCopied = jest.fn()
+    const setShowAlert = jest.fn()
+    const setAlertData = jest.fn()
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }],
+      {
+        setCopiedCue,
+        setIsCopied,
+        setShowAlert,
+        setAlertData,
+      }
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+    fireEvent.click(screen.getByLabelText("Copy Visual cue"))
+
+    await waitFor(() => {
+      expect(setIsCopied).toHaveBeenCalledWith(true)
+      expect(setCopiedCue).toHaveBeenCalledWith(cue)
+      expect(setShowAlert).toHaveBeenCalledWith(true)
+      expect(setAlertData).toHaveBeenCalled()
+    })
+  })
+
+  it("handles delete action from cue menu", async () => {
+    const cue = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      color: "#ffffff",
+      cueType: "visual",
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+    fireEvent.click(screen.getByLabelText("Delete Visual cue"))
+
+    fireEvent.click(await screen.findByRole("button", { name: "Yes" }))
+
+    await waitFor(() => {
+      expect(removeCue).toHaveBeenCalledWith("presentation-1", "visual-1")
+    })
+  })
+
+  it("handles loop toggle action for audio cue", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        loop: true,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.click(screen.getByLabelText("Loop audio Audio cue"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueId: "audio-1",
+          loop: true,
+        })
+      )
+    })
+  })
+
+  it("handles continuous playback toggle action for audio cue", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(updatePresentation).toHaveBeenCalledWith(
+        "presentation-1",
+        expect.objectContaining({
+          cueId: "audio-1",
+          loop: true,
+          continuePlayback: true,
+        })
+      )
+    })
+  })
+
+  it("shows the continuous playback control as enabled when the cue already has it on", () => {
+    const cue = {
+      _id: "audio-2",
+      index: 0,
+      screen: 3,
+      name: "Audio cue 2",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: false,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-2", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-2"))
+
+    expect(screen.getByLabelText("Continue audio Audio cue 2")).toHaveAttribute(
+      "title",
+      "Disable continuous playback"
+    )
+  })
+
+  it("handles continuous playback toggle action that disables it", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: false,
+        name: "Audio cue",
+      },
+    })
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: true,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "Continuous audio disabled",
+          description: "Audio cue will stop with the sequence",
+        })
+      )
+    })
+  })
+
+  it("logs an error if showing the continuous playback toast fails", async () => {
+    mockDispatch.mockResolvedValueOnce({
+      payload: {
+        continuePlayback: true,
+        name: "Audio cue",
+      },
+    })
+    mockShowToast.mockImplementationOnce(() => {
+      throw new Error("toast failed")
+    })
+    const consoleLogSpy = jest
+      .spyOn(console, "log")
+      .mockImplementation(() => {})
+
+    const cue = {
+      _id: "audio-1",
+      index: 0,
+      screen: 3,
+      name: "Audio cue",
+      color: "#ffffff",
+      cueType: "audio",
+      file: {
+        type: "audio/mpeg",
+        url: "https://example.com/audio.mp3",
+        name: "audio.mp3",
+      },
+      loop: true,
+      continuePlayback: false,
+    }
+
+    renderGrid(
+      [cue],
+      [{ i: "audio-1", x: 0, y: 2, w: 10, h: 1, static: false }]
+    )
+
+    fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+    fireEvent.click(screen.getByLabelText("Continue audio Audio cue"))
+
+    await waitFor(() => {
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        "Error printing toast about continuous audio toggle: ",
+        expect.any(Error)
+      )
+    })
+
+    consoleLogSpy.mockRestore()
+  })
+
+  it("shrinks the continuation divider when there is no gap between cells", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [
+        { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+        { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+      ],
+      { gap: 0 }
+    )
+
+    expect(
+      screen.getByTestId("cue-continuation-overlay-visual-2")
+    ).toBeInTheDocument()
+  })
+
+  it("renders a color background in the continuation preview for a color-only cue", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    const continuationOverlay = screen.getByTestId(
+      "cue-continuation-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector("img,video")).toBeNull()
+    expect(continuationOverlay.querySelector("img,video")).toBeNull()
+  })
+
+  it("falls back to a name-based media url for the continuation preview when the file has no url", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        cueType: "visual",
+        file: { name: "no-url.png" },
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "visual-2", x: 1, y: 0, w: 9, h: 1, static: false },
+    ])
+
+    const anchorOverlay = screen.getByTestId(
+      "cue-anchor-media-overlay-visual-2"
+    )
+    expect(anchorOverlay.querySelector('img[src="/no-url.png"]')).toBeTruthy()
+  })
+
+  it("uses the provided interaction cursor while copying", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true, interactionCursor: "not-allowed" }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "not-allowed" })
+  })
+
+  it("defaults to a copy cursor while copying with no interaction cursor override", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [{ i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false }],
+      { isCopied: true }
+    )
+
+    const contentBox = document.querySelector(
+      '[data-cue-content-id="visual-1"]'
+    )
+    expect(contentBox).toHaveStyle({ cursor: "copy" })
+  })
+
+  describe("Multi-screen menu button", () => {
+    const visualCueWithFile = {
+      _id: "visual-1",
+      index: 0,
+      screen: 1,
+      name: "Visual cue",
+      cueType: "visual",
+      file: {
+        type: "image/png",
+        url: "https://example.com/image.png",
+        name: "image.png",
+      },
+    }
+
+    it("opens the multi-screen modal for the clicked cue", () => {
+      const setSelectedCue = jest.fn()
+      const setIsMultiScreenModalOpen = jest.fn()
+
+      renderGrid(
+        [visualCueWithFile],
+        [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }],
+        { setSelectedCue, setIsMultiScreenModalOpen }
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+      fireEvent.click(screen.getByLabelText("Multi-screen Visual cue"))
+
+      expect(setSelectedCue).toHaveBeenCalledWith(visualCueWithFile)
+      expect(setIsMultiScreenModalOpen).toHaveBeenCalledWith(true)
+    })
+
+    it("does not show the button for a color-only visual cue", () => {
+      const colorOnlyCue = { ...visualCueWithFile, file: null }
+
+      renderGrid(
+        [colorOnlyCue],
+        [{ i: "visual-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-visual-1"))
+
+      expect(
+        screen.queryByLabelText("Multi-screen Visual cue")
+      ).not.toBeInTheDocument()
+    })
+
+    it("does not show the button for an audio cue", () => {
+      const audioCue = {
+        _id: "audio-1",
+        index: 0,
+        screen: 9,
+        name: "Audio cue",
+        cueType: "audio",
+        file: {
+          type: "audio/mpeg",
+          url: "https://example.com/track.mp3",
+          name: "track.mp3",
+        },
+      }
+
+      renderGrid(
+        [audioCue],
+        [{ i: "audio-1", x: 0, y: 0, w: 10, h: 1, static: false }]
+      )
+
+      fireEvent.click(screen.getByTestId("cue-menu-button-audio-1"))
+
+      expect(
+        screen.queryByLabelText("Multi-screen Audio cue")
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe("span indicators on non-primary screens", () => {
+    const spanCue = {
+      _id: "cue-span",
+      index: 0,
+      screen: 1,
+      layer: 0,
+      name: "Wide banner",
+      cueType: "visual",
+      spanScreens: [1, 2],
+      file: {
+        type: "image/png",
+        url: "https://example.com/wide.png",
+        name: "wide.png",
+      },
+    }
+
+    it("marks the other spanned screen's row when a row is known for it", () => {
+      renderGrid(
+        [spanCue],
+        [{ i: "cue-span", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: { "2:0": 1 } }
+      )
+
+      const indicator = screen.getByTestId("span-indicator-cue-span-span-2")
+      expect(indicator).toBeInTheDocument()
+      expect(indicator).toHaveAttribute(
+        "title",
+        'Covered by "Wide banner"\'s multi-screen span'
+      )
+    })
+
+    it("renders no indicator when the spanned screen's row isn't known", () => {
+      renderGrid(
+        [spanCue],
+        [{ i: "cue-span", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: {} }
+      )
+
+      expect(
+        screen.queryByTestId("span-indicator-cue-span-span-2")
+      ).not.toBeInTheDocument()
+    })
+
+    it("renders no indicator for a cue without a span", () => {
+      const plainCue = { ...spanCue, _id: "cue-plain", spanScreens: undefined }
+
+      renderGrid(
+        [plainCue],
+        [{ i: "cue-plain", x: 0, y: 0, w: 1, h: 1, static: false }],
+        { screenLayerRowIndex: { "2:0": 1 } }
+      )
+
+      expect(screen.getByTestId("grid-span-indicators").children).toHaveLength(
+        0
+      )
+    })
+  })
+
+  it("shows a text element in its cell as a snippet of its text", () => {
+    const cues = [
+      {
+        _id: "text-1",
+        index: 0,
+        screen: 1,
+        name: "Intro",
+        color: "#000000",
+        cueType: "visual",
+        file: null,
+        text: "La nuit est tombée sur le village de pêcheurs.",
+        textColor: "#ffffff",
+        textSize: 10,
+      },
+    ]
+
+    renderGrid(cues, [{ i: "text-1", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.getByTestId("cue-text-cell-text-1")).toBeInTheDocument()
+    expect(
+      screen.getByText("La nuit est tombée sur le village de pêcheurs.")
+    ).toBeInTheDocument()
+  })
+
+  it("shows only the first line of a long text in its cell", () => {
+    const cues = [
+      {
+        _id: "text-2",
+        index: 0,
+        screen: 1,
+        name: "Intro",
+        cueType: "visual",
+        file: null,
+        text: "first line\nsecond line",
+      },
+    ]
+
+    renderGrid(cues, [{ i: "text-2", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.getByText("first line")).toBeInTheDocument()
+    expect(screen.queryByText(/second line/)).toBeNull()
+  })
+
+  it("keeps drawing an ordinary color element as a plain colored cell", () => {
+    const cues = [
+      {
+        _id: "color-1",
+        index: 0,
+        screen: 1,
+        name: "Blue",
+        color: "#0000ff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [{ i: "color-1", x: 0, y: 0, w: 1, h: 1, static: false }])
+
+    expect(screen.queryByTestId("cue-text-cell-color-1")).toBeNull()
+  })
+
+  it("does not draw the name label over a text element, its text is the label", () => {
+    const cues = [
+      {
+        _id: "text-3",
+        index: 0,
+        screen: 1,
+        name: "La nuit est tombée",
+        cueType: "visual",
+        file: null,
+        text: "La nuit est tombée",
+      },
+      {
+        _id: "color-2",
+        index: 1,
+        screen: 1,
+        name: "Blue",
+        color: "#0000ff",
+        cueType: "visual",
+        file: null,
+      },
+    ]
+
+    renderGrid(cues, [
+      { i: "text-3", x: 0, y: 0, w: 1, h: 1, static: false },
+      { i: "color-2", x: 1, y: 0, w: 1, h: 1, static: false },
+    ])
+
+    expect(screen.queryByTestId("cue-label-text-3")).toBeNull()
+    expect(screen.getByTestId("cue-label-color-2")).toBeInTheDocument()
+  })
+})

@@ -35,6 +35,7 @@ import EditMode from "./EditMode"
 import EditorDock from "./EditorDock"
 import PresentationPlaybackControls from "./PresentationPlaybackControls"
 import CueAudioPlayers from "./CueAudioPlayers"
+import type { AudioTrack } from "./CueAudioPlayers"
 import PresentationTitle from "./PresentationTitle"
 import SharePresentationButton from "./SharePresentationButton"
 import { ReadOnlyProvider, useReadOnly } from "../utils/ReadOnlyContext"
@@ -89,15 +90,6 @@ interface EditModeContainerProps {
   onEnterShow?: () => void
   onExitShow?: () => void
   sharedToken?: string
-}
-
-interface AudioTrack {
-  id: string
-  src: string
-  loop: boolean
-  continuePlayback: boolean
-  layer: number
-  name: string
 }
 
 // setCueIndex stays in the container: EditorLayout navigates frames through
@@ -378,7 +370,7 @@ function EditorLayout(props: EditorLayoutProps) {
           toggleAutoplayInterval={toggleAutoplayInterval}
           audioSourceURL={audioSourceURL}
           audioLoop={audioLoop}
-          audioTracks={audioTracks as never[]}
+          audioTracks={audioTracks}
           allowContinuousAudio={allowContinuousAudio}
           renderAudioPlayers={false}
         />
@@ -687,7 +679,7 @@ const EditModeContainer = ({
   const isCurrentCueAudio = currentAudioTracks.length > 0
   const currentAudioLoop = Boolean(currentAudioCue.loop)
 
-  const handleScreenClose = useCallback((screenNumber: number) => {
+  const handleScreenClose = useCallback((screenNumber: string | number) => {
     setScreens((prev) => ({
       ...prev,
       [screenNumber]: false,

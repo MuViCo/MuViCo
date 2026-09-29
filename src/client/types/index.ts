@@ -323,6 +323,7 @@ export interface CueUpdateInput {
   cueId?: string
   /** Present on the create path, which builds the payload from a lane. */
   cueType?: CueType
+  name?: string
   fileName?: string | null
   color?: string
   loop?: boolean
