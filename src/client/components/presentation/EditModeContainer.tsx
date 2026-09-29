@@ -124,6 +124,7 @@ interface EditorLayoutProps
   onFocusLane: (laneKey: string | null) => void
   onSelectFrame: (index: number) => void
   onEnterShow: () => void
+  isPreparingShow?: boolean
 }
 
 // Base component for different subcomponents of the editor
@@ -174,6 +175,7 @@ function EditorLayout(props: EditorLayoutProps) {
     onFocusLane,
     onSelectFrame,
     onEnterShow,
+    isPreparingShow = false,
   } = props
 
   useEffect(() => {
@@ -309,6 +311,8 @@ function EditorLayout(props: EditorLayoutProps) {
             variant="muvico-primary"
             leftIcon={<Icon as={FiPlay} />}
             onClick={onEnterShow}
+            isLoading={isPreparingShow}
+            loadingText="Preparing media…"
           >
             Show mode
           </Button>
@@ -574,6 +578,9 @@ const EditModeContainer = ({
   >({})
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioPreloadedUrlsRef = useRef(new Set())
+  const visualPreloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map())
+  const visualLoadedUrlsRef = useRef<Set<string>>(new Set())
+  const [isPreparingShow, setIsPreparingShow] = useState(false)
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -784,6 +791,81 @@ const EditModeContainer = ({
     })
   }, [cues, screenCount])
 
+  // Preload images/videos across every screen so show mode's popup windows
+  // render from cache instead of fetching media for the first time.
+  const preloadVisualUrl = useCallback(
+    (url: string, kind: "image" | "video") => {
+      const cache = visualPreloadPromisesRef.current
+      const cached = cache.get(url)
+      if (cached) {
+        return cached
+      }
+
+      const promise = new Promise<void>((resolve) => {
+        const markLoaded = () => {
+          visualLoadedUrlsRef.current.add(url)
+          resolve()
+        }
+
+        if (kind === "image") {
+          const img = new Image()
+          img.onload = markLoaded
+          img.onerror = markLoaded
+          img.src = url
+        } else {
+          const video = document.createElement("video")
+          video.preload = "auto"
+          video.oncanplaythrough = markLoaded
+          video.onerror = markLoaded
+          video.src = url
+          video.load()
+        }
+      })
+
+      cache.set(url, promise)
+      return promise
+    },
+    []
+  )
+
+  useEffect(() => {
+    ;(cues || []).forEach((cue) => {
+      const file = cue.file
+      if (!file?.url) return
+
+      if (isType.image(file)) {
+        preloadVisualUrl(file.url, "image")
+      } else if (isType.video(file)) {
+        preloadVisualUrl(file.url, "video")
+      }
+    })
+  }, [cues, preloadVisualUrl])
+
+  const handleEnterShow = useCallback(async () => {
+    const visualUrls = (cues || [])
+      .map((cue) => cue.file)
+      .filter((file) => file?.url && (isType.image(file) || isType.video(file)))
+      .map((file) => file!.url as string)
+
+    const alreadyLoaded = visualUrls.every((url) =>
+      visualLoadedUrlsRef.current.has(url)
+    )
+
+    if (alreadyLoaded) {
+      onEnterShow()
+      return
+    }
+
+    const pending = visualUrls
+      .map((url) => visualPreloadPromisesRef.current.get(url))
+      .filter((promise): promise is Promise<void> => Boolean(promise))
+
+    setIsPreparingShow(true)
+    await Promise.allSettled(pending)
+    setIsPreparingShow(false)
+    onEnterShow()
+  }, [cues, onEnterShow])
+
   useEffect(() => {
     if (sharedToken) return
     dispatch(fetchPresentationInfo(id))
@@ -876,7 +958,8 @@ const EditModeContainer = ({
           focusedScreen={focusedScreen}
           onFocusLane={setFocusedLaneKey}
           onSelectFrame={setCueIndex}
-          onEnterShow={onEnterShow}
+          onEnterShow={handleEnterShow}
+          isPreparingShow={isPreparingShow}
           cues={cues}
           isToolboxOpen={isToolboxOpen}
           setIsToolboxOpen={setIsToolboxOpen}
