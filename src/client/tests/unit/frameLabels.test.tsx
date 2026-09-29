@@ -63,6 +63,38 @@ describe("frame labels in the timeline header", () => {
     expect(screen.getByText("Frame 2")).toBeInTheDocument()
   })
 
+  test("commits the label when the input loses focus", () => {
+    const onRenameFrame = jest.fn()
+    renderHeaders({ onRenameFrame })
+
+    fireEvent.doubleClick(screen.getByText("Frame 1"))
+    const input = screen.getByTestId("frame-label-input-1")
+    fireEvent.change(input, { target: { value: "Verse" } })
+    fireEvent.blur(input)
+
+    expect(onRenameFrame).toHaveBeenCalledWith(1, "Verse")
+    expect(screen.queryByTestId("frame-label-input-1")).not.toBeInTheDocument()
+  })
+
+  test("clicking inside the input does not select the frame", () => {
+    const onSelectFrame = jest.fn()
+    renderHeaders({ onRenameFrame: jest.fn(), onSelectFrame })
+
+    fireEvent.doubleClick(screen.getByText("Frame 1"))
+    onSelectFrame.mockClear()
+    fireEvent.click(screen.getByTestId("frame-label-input-1"))
+
+    expect(onSelectFrame).not.toHaveBeenCalled()
+  })
+
+  test("double-clicking the add-frame button does not start renaming", () => {
+    renderHeaders({ onRenameFrame: jest.fn() })
+
+    fireEvent.doubleClick(screen.getAllByLabelText("Add Frame Before")[0])
+
+    expect(screen.queryByTestId("frame-label-input-0")).not.toBeInTheDocument()
+  })
+
   test("offers no renaming without a handler", () => {
     renderHeaders()
 

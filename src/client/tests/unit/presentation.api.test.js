@@ -374,6 +374,25 @@ describe("presentation services api tests", () => {
     )
   })
 
+  test("saveFrameLabelApi in presentation api call behaves as expected", async () => {
+    const response = { frameLabels: { 1: "Chorus" } }
+
+    axios.put.mockResolvedValue({ data: response })
+
+    const result = await presentation.default.saveFrameLabelApi(id, 1, "Chorus")
+    expect(result).toEqual(response)
+    expect(axios.put).toHaveBeenCalledWith(
+      `${baseUrl}${id}/frameLabel`,
+      { index: 1, label: "Chorus" },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+      }
+    )
+  })
+
   test("saveScreenCountApi in presentation api call behaves as expected", async () => {
     const response = {
       screenCount: 3,

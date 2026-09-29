@@ -2165,6 +2165,20 @@ describe("PUT /api/presentation/:id/frameLabel", () => {
     expect(updated.frameLabels).toBeUndefined()
   })
 
+  test("Should refuse to save a label outside the timeline", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.frameLabels = new Map([["99", "Ghost"]])
+
+    await expect(presentation.save()).rejects.toThrow()
+  })
+
+  test("Should refuse to save an empty label", async () => {
+    const presentation = await Presentation.findById(testPresentationId)
+    presentation.frameLabels = new Map([["1", "   "]])
+
+    await expect(presentation.save()).rejects.toThrow()
+  })
+
   test("Should drop labels past the end when the timeline shrinks", async () => {
     await api
       .put(`/api/presentation/${testPresentationId}/frameLabel`)
@@ -2255,6 +2269,29 @@ describe("PUT /api/presentation/:id/shiftIndexes", () => {
     const updated = await Presentation.findById(testPresentationId)
     expect(updated.frameLabels.get("3")).toBe("Chorus")
     expect(updated.frameLabels.get("2")).toBeUndefined()
+  })
+
+  test("Should leave a label at or before the insertion point where it is", async () => {
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 0, label: "Intro" })
+      .expect(200)
+    await api
+      .put(`/api/presentation/${testPresentationId}/frameLabel`)
+      .set("Authorization", authHeader)
+      .send({ index: 4, label: "Outro" })
+      .expect(200)
+
+    await api
+      .put(`/api/presentation/${testPresentationId}/shiftIndexes`)
+      .set("Authorization", authHeader)
+      .send({ startIndex: 1, direction: "right" })
+      .expect(200)
+
+    const updated = await Presentation.findById(testPresentationId)
+    expect(updated.frameLabels.get("0")).toBe("Intro")
+    expect(updated.frameLabels.get("5")).toBe("Outro")
   })
 
   test("Should leave frame labels alone on a lane-scoped shift", async () => {

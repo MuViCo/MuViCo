@@ -37,7 +37,11 @@ import reducer, {
   uploadMedia,
   removeMedia,
 } from "../../redux/presentationReducer"
-import { saveIndexCount, saveScreenCount } from "../../redux/presentationThunks"
+import {
+  saveFrameLabel,
+  saveIndexCount,
+  saveScreenCount,
+} from "../../redux/presentationThunks"
 import presentationService from "../../services/presentation"
 import { configureStore } from "@reduxjs/toolkit"
 import { createFormData } from "../../components/utils/formDataUtils"
@@ -62,6 +66,7 @@ jest.mock("../../services/presentation", () => ({
   swapCues: jest.fn(),
   saveScreenCountApi: jest.fn(),
   saveIndexCountApi: jest.fn(),
+  saveFrameLabelApi: jest.fn(),
   shiftIndexes: jest.fn(),
   updatePresentationName: jest.fn(),
   getScores: jest.fn(),
@@ -1289,6 +1294,39 @@ describe("presentationReducer asynchronous actions", () => {
       {}
     )
     expect(store.getState().presentation.cues).toEqual(shiftedCues)
+  })
+
+  it("saves a frame label and stores the returned map", async () => {
+    const store = makeStore()
+    presentationService.saveFrameLabelApi.mockResolvedValue({
+      frameLabels: { 1: "Chorus" },
+    })
+
+    await store.dispatch(
+      saveFrameLabel({ id: "123", index: 1, label: "Chorus" })
+    )
+
+    expect(presentationService.saveFrameLabelApi).toHaveBeenCalledWith(
+      "123",
+      1,
+      "Chorus"
+    )
+    const state = store.getState().presentation
+    expect(state.frameLabels).toEqual({ 1: "Chorus" })
+    expect(state.pendingSaves).toBe(0)
+  })
+
+  it("keeps the previous labels when saving one fails", async () => {
+    const store = makeStore()
+    presentationService.saveFrameLabelApi.mockRejectedValue(
+      new Error("network")
+    )
+
+    await store.dispatch(saveFrameLabel({ id: "123", index: 1, label: "Nope" }))
+
+    const state = store.getState().presentation
+    expect(state.frameLabels).toEqual({})
+    expect(state.pendingSaves).toBe(0)
   })
 
   it("should shift presentation indices left", async () => {
