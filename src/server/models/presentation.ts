@@ -190,6 +190,11 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
       of: String,
       default: undefined,
     },
+    frameLabels: {
+      type: Map,
+      of: String,
+      default: undefined,
+    },
 
     // Number of index positions (1-101) for the cue timeline
     indexCount: {
@@ -450,6 +455,30 @@ presentationSchema.pre("save", function (next) {
       typeof mongoose.Error.ValidationError
     >[0]
   )
+
+  if (this.frameLabels) {
+    for (const [frameKey, label] of this.frameLabels.entries()) {
+      const frameIndex = Number(frameKey)
+      const isValidEntry =
+        Number.isInteger(frameIndex) &&
+        frameIndex >= 0 &&
+        frameIndex < this.indexCount &&
+        typeof label === "string" &&
+        label.trim().length > 0 &&
+        label.length <= 60
+
+      if (!isValidEntry) {
+        validationError.addError(
+          "frameLabels",
+          new mongoose.Error.ValidatorError({
+            message: `frameLabels entry ${frameKey}:${label} is invalid for indexCount ${this.indexCount}`,
+            path: "frameLabels",
+            value: label,
+          })
+        )
+      }
+    }
+  }
 
   if (this.screenAspectRatios) {
     for (const [screenKey, ratio] of this.screenAspectRatios.entries()) {

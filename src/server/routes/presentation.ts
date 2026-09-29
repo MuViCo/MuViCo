@@ -950,7 +950,7 @@ router.put(
       }
 
       const updateQuery: {
-        $set: { indexCount: number }
+        $set: { indexCount: number; frameLabels?: Record<string, string> }
         $pull?: Record<string, unknown>
       } = {
         $set: { indexCount: newIndexCount },
@@ -980,6 +980,17 @@ router.put(
           "scores.$[].markers": {
             frameIndex: { $gte: newIndexCount },
           },
+        }
+
+        if (presentation!.frameLabels) {
+          const kept = new Map<string, string>()
+          for (const [frameKey, label] of presentation!.frameLabels.entries()) {
+            if (Number(frameKey) < newIndexCount) {
+              kept.set(frameKey, label)
+            }
+          }
+          updateQuery.$set.frameLabels =
+            kept.size > 0 ? Object.fromEntries(kept) : undefined
         }
       }
 
@@ -1134,6 +1145,64 @@ router.put(
         outputAspectRatio: presentation!.outputAspectRatio,
         screenAspectRatios: presentation!.screenAspectRatios
           ? Object.fromEntries(presentation!.screenAspectRatios)
+          : {},
+      })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.put(
+  "/:id/frameLabel",
+  userExtractor,
+  requirePresentationAccess,
+  async (req, res, next) => {
+    try {
+      const { presentation } = req
+      const { index, label } = req.body
+      const frameIndex = Number(index)
+
+      if (
+        !Number.isInteger(frameIndex) ||
+        frameIndex < 0 ||
+        frameIndex >= presentation!.indexCount
+      ) {
+        return res.status(400).json({
+          error: `index must be an integer between 0 and ${presentation!.indexCount - 1}`,
+        })
+      }
+
+      if (label !== undefined && label !== null && typeof label !== "string") {
+        return res.status(400).json({ error: "label must be a string" })
+      }
+
+      const trimmed = typeof label === "string" ? label.trim() : ""
+      if (trimmed.length > 60) {
+        return res
+          .status(400)
+          .json({ error: "label must be 60 characters or fewer" })
+      }
+
+      if (!presentation!.frameLabels) {
+        presentation!.frameLabels = new Map<string, string>()
+      }
+
+      if (trimmed.length === 0) {
+        presentation!.frameLabels.delete(String(frameIndex))
+      } else {
+        presentation!.frameLabels.set(String(frameIndex), trimmed)
+      }
+
+      if (presentation!.frameLabels.size === 0) {
+        presentation!.frameLabels = undefined
+      }
+
+      await presentation!.save()
+
+      res.json({
+        frameLabels: presentation!.frameLabels
+          ? Object.fromEntries(presentation!.frameLabels)
           : {},
       })
     } catch (err) {
@@ -1888,7 +1957,10 @@ router.put(
         }
       }
 
-      for (const score of presentation!.scores || []) {
+      const isStructuralShift =
+        endIndex === undefined && screen === undefined && layer === undefined
+
+      for (const score of isStructuralShift ? presentation!.scores || [] : []) {
         for (const marker of score.markers || []) {
           if (Number(marker.frameIndex) > startIndex) {
             if (direction === "left") {
@@ -1900,6 +1972,24 @@ router.put(
             }
           }
         }
+      }
+
+      if (isStructuralShift && presentation!.frameLabels) {
+        const remapped = new Map<string, string>()
+        for (const [frameKey, label] of presentation!.frameLabels.entries()) {
+          const frameIndex = Number(frameKey)
+          if (frameIndex <= startIndex) {
+            remapped.set(frameKey, label)
+            continue
+          }
+          const nextIndex =
+            direction === "left" ? frameIndex - 1 : frameIndex + 1
+          if (nextIndex >= 0) {
+            remapped.set(String(nextIndex), label)
+          }
+          modified = true
+        }
+        presentation!.frameLabels = remapped.size > 0 ? remapped : undefined
       }
 
       if (modified) {

@@ -180,6 +180,7 @@ describe("presentationReducer reducer", () => {
     indexCount: 5,
     outputAspectRatio: "16:9",
     screenAspectRatios: {},
+    frameLabels: {},
     shareToken: null,
     pendingSaves: 0,
   }

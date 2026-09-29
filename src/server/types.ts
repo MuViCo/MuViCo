@@ -109,6 +109,7 @@ export interface PresentationAttrs {
   indexCount: number
   outputAspectRatio?: string
   screenAspectRatios?: Map<string, string>
+  frameLabels?: Map<string, string>
   lastUsed?: Date
   shareToken?: string
   cues: Cue[]

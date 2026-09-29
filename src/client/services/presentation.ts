@@ -19,6 +19,7 @@ import type {
   SaveIndexCountResponse,
   SaveScreenCountResponse,
   SaveOutputAspectRatioResponse,
+  SaveFrameLabelResponse,
   ShiftIndexesResponse,
   ScoreDocument,
   ScoreMarker,
@@ -339,6 +340,25 @@ const saveOutputAspectRatioApi = async (
   return response.data
 }
 
+const saveFrameLabelApi = async (
+  id: string,
+  index: number,
+  label: string
+): Promise<SaveFrameLabelResponse> => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `bearer ${getToken()}`,
+    },
+  }
+  const response = await axios.put<SaveFrameLabelResponse>(
+    `${baseUrl}${id}/frameLabel`,
+    { index, label },
+    config
+  )
+  return response.data
+}
+
 const shiftIndexes = async (
   id: string,
   startIndex: number,
@@ -411,6 +431,7 @@ export default {
   saveIndexCountApi,
   saveScreenCountApi,
   saveOutputAspectRatioApi,
+  saveFrameLabelApi,
   shiftIndexes,
   updatePresentationName,
   swapCues,
