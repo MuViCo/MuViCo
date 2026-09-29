@@ -74,7 +74,8 @@ const CueAudioPlayers = ({
       loop={Boolean(track.loop)}
       shouldPlay={
         Boolean(track.src) &&
-        (shouldAutoPlay || Boolean(manuallyPlayingTrackIds?.[track.id]))
+        (shouldAutoPlay ||
+          Boolean(track.id && manuallyPlayingTrackIds?.[track.id]))
       }
       continuePlayback={Boolean(track.continuePlayback)}
       allowContinuousAudio={allowContinuousAudio}

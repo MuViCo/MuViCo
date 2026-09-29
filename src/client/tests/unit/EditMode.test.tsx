@@ -55,6 +55,7 @@ import {
 import type { Cue } from "../../types"
 
 const mockedCreateCue = jest.mocked(createCue)
+const mockedShiftPresentationIndexes = jest.mocked(shiftPresentationIndexes)
 
 const mockDispatch = jest.fn((_action?: { type?: string }) =>
   Promise.resolve({})
@@ -2020,7 +2021,7 @@ describe("EditMode drag swapping", () => {
       fireEvent(gridContainer, dragOverEvent)
     }
 
-    const dragExistingCueTo = async (cueTestId, clientX) => {
+    const dragExistingCueTo = async (cueTestId: string, clientX: number) => {
       const gridContainer = setupGridGeometry()
 
       fireEvent.mouseDown(screen.getByTestId(cueTestId), {
@@ -2100,7 +2101,7 @@ describe("EditMode drag swapping", () => {
           layer: 0,
         },
       ]
-      useSelector.mockImplementation((selector) =>
+      mockedUseSelector.mockImplementation((selector) =>
         selector({
           presentation: {
             cues: laneCues,
@@ -2167,7 +2168,7 @@ describe("EditMode drag swapping", () => {
       })
 
       await waitFor(() => expect(shiftPresentationIndexes).toHaveBeenCalled())
-      shiftPresentationIndexes.mock.calls.forEach((call) => {
+      mockedShiftPresentationIndexes.mock.calls.forEach((call) => {
         expect(call[3]).toMatchObject({ screen: 1, layer: 0 })
       })
     })
@@ -2178,7 +2179,7 @@ describe("EditMode drag swapping", () => {
         { ...cues[0], _id: "x", index: 0, name: "X", screen: 2, layer: 0 },
         { ...cues[0], _id: "y", index: 1, name: "Y", screen: 2, layer: 0 },
       ]
-      useSelector.mockImplementation((selector) =>
+      mockedUseSelector.mockImplementation((selector) =>
         selector({
           presentation: {
             cues: crossLaneCues,
@@ -2228,7 +2229,7 @@ describe("EditMode drag swapping", () => {
         { ...cues[0], _id: "x", index: 0, name: "X", screen: 2, layer: 0 },
         { ...cues[0], _id: "z", index: 2, name: "Z", screen: 2, layer: 0 },
       ]
-      useSelector.mockImplementation((selector) =>
+      mockedUseSelector.mockImplementation((selector) =>
         selector({
           presentation: {
             cues: fullLaneCues,
