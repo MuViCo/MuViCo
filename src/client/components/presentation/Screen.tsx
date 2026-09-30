@@ -21,6 +21,7 @@ import type { EmotionCache } from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import type { Keyframes } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
+import { scheduleAt } from "../../utils/syncedTransition"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
@@ -315,6 +316,10 @@ interface ScreenContentProps {
   screenWidths?: Record<number, number>
   isBlackout?: boolean
   outputAspectRatio?: string
+  // While false, the incoming cue is mounted (so its media can decode) but
+  // kept hidden and the outgoing cue stays fully visible and static -- see
+  // the reveal scheduling in Screen() below for why.
+  isRevealed?: boolean
 }
 
 const ScreenContent = ({
@@ -326,6 +331,7 @@ const ScreenContent = ({
   screenWidths,
   isBlackout,
   outputAspectRatio,
+  isRevealed = true,
 }: ScreenContentProps) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(
     transitionType ?? "fade"
@@ -401,7 +407,7 @@ const ScreenContent = ({
             width="100%"
             height="100%"
             zIndex={1}
-            animation={animStyle(exitAnim)}
+            animation={isRevealed ? animStyle(exitAnim) : "none"}
           >
             {renderCueStack(
               previousScreenData,
@@ -426,7 +432,9 @@ const ScreenContent = ({
           height="100%"
           zIndex={1}
           color="white"
-          animation={animStyle(enterAnim)}
+          opacity={isRevealed ? undefined : 0}
+          pointerEvents={isRevealed ? undefined : "none"}
+          animation={isRevealed ? animStyle(enterAnim) : "none"}
         >
           {renderCueStack(
             currentScreenData,
@@ -459,6 +467,9 @@ interface ScreenProps {
   onWidthChange?: (screenNumber: number, width: number) => void
   isBlackout?: boolean
   outputAspectRatio?: string
+  // Shared wall-clock (Date.now()) instant, common to every open screen, at
+  // which this cue change should become visible -- see syncedTransition.ts.
+  transitionAt?: number
 }
 
 const Screen = ({
@@ -471,6 +482,7 @@ const Screen = ({
   onWidthChange,
   isBlackout = false,
   outputAspectRatio,
+  transitionAt,
 }: ScreenProps) => {
   const windowRef = useRef<Window | null>(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -478,6 +490,8 @@ const Screen = ({
   const [previousScreenData, setPreviousScreenData] = useState<Cue[] | null>(
     null
   )
+  const [isRevealed, setIsRevealed] = useState(true)
+  const cancelRevealRef = useRef<(() => void) | null>(null)
   const [showText, setShowText] = useState(false)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
@@ -623,22 +637,31 @@ const Screen = ({
       return
     }
 
-    if (nextScreenData.length > 0) {
+    if (cueStackKey(currentScreenData) !== cueStackKey(nextScreenData)) {
+      cancelRevealRef.current?.()
+
       if (!currentScreenData) {
+        // Nothing shown yet on this screen -- no previous frame to
+        // crossfade from, so reveal immediately.
         setPreviousScreenData(null)
         setCurrentScreenData(nextScreenData)
+        setIsRevealed(true)
       } else {
-        if (cueStackKey(currentScreenData) === cueStackKey(nextScreenData)) {
-          return
-        }
-
+        // Mount the incoming cue now (hidden, see ScreenContent) so its
+        // media can decode ahead of time, but hold the actual visual swap
+        // until every open screen's popup reaches the same wall-clock
+        // instant.
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(nextScreenData)
+        setIsRevealed(false)
+
+        const revealAt = transitionAt ?? Date.now()
+        cancelRevealRef.current = scheduleAt(revealAt, () => {
+          setIsRevealed(true)
+        })
       }
-    } else if (currentScreenData && cueStackKey(currentScreenData) !== "") {
-      setPreviousScreenData(currentScreenData)
-      setCurrentScreenData([])
     }
+
     const firstCue = nextScreenData[0]
     const frameLabel =
       firstCue?.index === undefined
@@ -651,7 +674,11 @@ const Screen = ({
         ? `Screen ${screenNumber} • ${frameLabel}`
         : `Screen ${screenNumber}`
     }
-  }, [screenData, currentScreenData, isWindowReady, screenNumber])
+
+    return () => {
+      cancelRevealRef.current?.()
+    }
+  }, [screenData, currentScreenData, transitionAt, isWindowReady, screenNumber])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
@@ -690,6 +717,7 @@ const Screen = ({
             screenWidths={screenWidths}
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
+            isRevealed={isRevealed}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
