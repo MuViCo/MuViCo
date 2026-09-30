@@ -277,6 +277,50 @@ describe("Screen", () => {
     expect(window.open).not.toHaveBeenCalled()
   })
 
+  test("closes the popup and notifies the caller when isVisible turns false", async () => {
+    const onClose = jest.fn()
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 0,
+      name: "closable-cue",
+      screen: 1,
+      _id: "id-closable",
+      loop: false,
+    } as Cue
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    const popup = await waitFor(() => {
+      const result = (window.open as jest.Mock).mock.results.at(-1)!.value
+      expect(result).toBeTruthy()
+      return result
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={false}
+          onClose={onClose}
+        />
+      )
+    })
+
+    expect(popup.close).toHaveBeenCalled()
+  })
+
   test("reports when the browser blocks an output popup", async () => {
     ;(window.open as jest.Mock).mockReturnValueOnce(null)
     const onClose = jest.fn()
@@ -1127,6 +1171,116 @@ describe("Screen", () => {
 
       await waitFor(() => {
         expect(onWidthChange).toHaveBeenCalledWith(1, 654)
+      })
+    })
+  })
+
+  describe("multi-screen video spanning", () => {
+    const spanVideoCue = {
+      file: {
+        url: "http://example.com/wide.mp4",
+        type: "video/mp4",
+        name: "wide.mp4",
+      },
+      index: 0,
+      name: "span-video-cue",
+      screen: 1,
+      spanScreens: [1, 2],
+      _id: "id-video-span",
+      loop: false,
+    } as Cue
+
+    test("renders the plain full-bleed video until its size is known", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={spanVideoCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800, 2: 800 }}
+          />
+        )
+      })
+
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      await waitFor(() => {
+        const video = popup.document.body.querySelector(
+          'video[src="http://example.com/wide.mp4"]'
+        )
+        expect(video).toBeTruthy()
+        expect(video.getAttribute("style")).not.toContain("position: absolute")
+      })
+    })
+
+    test("crops to this screen's slice of the combined canvas once metadata loads", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={2}
+            screenData={spanVideoCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800, 2: 500 }}
+          />
+        )
+      })
+
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      const video = await waitFor(() =>
+        popup.document.body.querySelector(
+          'video[src="http://example.com/wide.mp4"]'
+        )
+      )
+
+      Object.defineProperty(video, "videoWidth", {
+        value: 2000,
+        configurable: true,
+      })
+      Object.defineProperty(video, "videoHeight", {
+        value: 1000,
+        configurable: true,
+      })
+      await act(async () => {
+        fireEvent.loadedMetadata(video)
+      })
+
+      await waitFor(() => {
+        const croppedVideo = popup.document.body.querySelector(
+          'video[src="http://example.com/wide.mp4"]'
+        )
+        const style = croppedVideo!.getAttribute("style")
+        expect(style).toContain("left: -800px")
+        expect(style).toContain("width: 1300px")
+        expect(style).toContain("height: 650px")
+      })
+    })
+
+    test("does not span when only one screen is listed", async () => {
+      const singleScreenCue = {
+        ...spanVideoCue,
+        spanScreens: [1],
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={singleScreenCue}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800 }}
+          />
+        )
+      })
+
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      await waitFor(() => {
+        const video = popup.document.body.querySelector(
+          'video[src="http://example.com/wide.mp4"]'
+        )
+        expect(video).toBeTruthy()
+        expect(video.getAttribute("style")).not.toContain("position: absolute")
       })
     })
   })
