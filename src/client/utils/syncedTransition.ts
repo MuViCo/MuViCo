@@ -15,22 +15,17 @@ export const scheduleAt = (
   timestampMs: number,
   callback: () => void
 ): CancelSchedule => {
-  let frameId: number | null = null
-  let cancelled = false
-
-  const tick = () => {
-    if (cancelled) return
-    if (Date.now() >= timestampMs) {
-      callback()
-      return
-    }
-    frameId = requestAnimationFrame(tick)
-  }
-
-  frameId = requestAnimationFrame(tick)
+  // A rAF poll looked tempting (it runs on the visual refresh, which is
+  // what we're ultimately gating), but browsers throttle -- and can fully
+  // suspend -- requestAnimationFrame in a window/tab that isn't the
+  // foreground one. A screen popup left open in the background while
+  // editing would then never fire its reveal, leaving it stuck on the
+  // previous frame. setTimeout keeps firing (short delays aren't subject to
+  // the multi-second background clamp) regardless of focus/visibility.
+  const delayMs = Math.max(0, timestampMs - Date.now())
+  const timeoutId = setTimeout(callback, delayMs)
 
   return () => {
-    cancelled = true
-    if (frameId !== null) cancelAnimationFrame(frameId)
+    clearTimeout(timeoutId)
   }
 }
