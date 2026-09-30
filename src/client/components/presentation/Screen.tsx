@@ -23,6 +23,7 @@ import type { Keyframes } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
+import { useVideoSpanSync } from "../utils/videoSpanSync"
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { parseAspectRatio } from "../../../constants.js"
@@ -101,6 +102,74 @@ const SpannedImage = ({
   )
 }
 
+interface SpannedVideoProps {
+  videoSrc: string
+  cueId: string
+  spanScreens: number[]
+  screenNumber: string | number
+  screenWidths?: Record<number, number>
+}
+
+const SpannedVideo = ({
+  videoSrc,
+  cueId,
+  spanScreens,
+  screenNumber,
+  screenWidths,
+}: SpannedVideoProps) => {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  useVideoSpanSync(cueId, Number(screenNumber), videoRef, true)
+
+  const handleLoadedMetadata = (event: SyntheticEvent<HTMLVideoElement>) => {
+    const { videoWidth, videoHeight } = event.currentTarget
+    if (videoWidth > 0 && videoHeight > 0) {
+      setAspectRatio(videoWidth / videoHeight)
+    }
+  }
+
+  const videoStyle = aspectRatio
+    ? (() => {
+        const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+          spanScreens,
+          screenWidths || {},
+          aspectRatio
+        )
+        const offsetPx = offsets[Number(screenNumber)] ?? 0
+        return {
+          position: "absolute" as const,
+          left: `-${offsetPx}px`,
+          top: 0,
+          width: `${canvasWidth}px`,
+          height: `${canvasHeight}px`,
+          maxWidth: "none",
+          maxHeight: "none",
+        }
+      })()
+    : mediaFillProps
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <video
+        ref={videoRef}
+        src={videoSrc}
+        autoPlay
+        loop
+        muted
+        onLoadedMetadata={handleLoadedMetadata}
+        style={videoStyle}
+      />
+    </div>
+  )
+}
+
 const renderMedia = (
   cue: Cue,
   screenNumber: string | number,
@@ -143,6 +212,18 @@ const renderMedia = (
   }
   // check if media is video
   if (isType.video(file)) {
+    if ((spanScreens?.length ?? 0) > 1) {
+      return (
+        <SpannedVideo
+          videoSrc={file.url as string}
+          cueId={cue._id}
+          spanScreens={spanScreens as number[]}
+          screenNumber={screenNumber}
+          screenWidths={screenWidths}
+        />
+      )
+    }
+
     return <video src={file.url} style={mediaFillProps} autoPlay loop muted />
   }
   // check if media is audio
