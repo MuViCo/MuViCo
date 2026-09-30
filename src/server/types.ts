@@ -35,6 +35,9 @@ export interface Cue {
   textEffect?: string
   textEffectSpeed?: number
   textEffectLoop?: boolean
+  imageEffect?: string
+  imageEffectSpeed?: number
+  imageEffectLoop?: boolean
   color?: string
   file?: CueFile | null
   loop?: boolean

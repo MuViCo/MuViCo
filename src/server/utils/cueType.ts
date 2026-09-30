@@ -41,6 +41,8 @@ export const getCueTypeFromScreen = (
 
 export const isAudioMimeType = (mimeType = "") => mimeType.startsWith("audio/")
 
+export const isImageMimeType = (mimeType = "") => mimeType.startsWith("image/")
+
 const getFileTypeFromMime = (mimeType = "") => {
   if (mimeType.startsWith("image/")) {
     return "image"

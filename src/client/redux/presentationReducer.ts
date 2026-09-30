@@ -639,7 +639,12 @@ export const updatePresentation =
           textEffectSpeed: updatedCueData.textEffectSpeed,
           textEffectLoop: updatedCueData.textEffectLoop,
         },
-        updatedCueData.frame
+        updatedCueData.frame,
+        {
+          imageEffect: updatedCueData.imageEffect,
+          imageEffectSpeed: updatedCueData.imageEffectSpeed,
+          imageEffectLoop: updatedCueData.imageEffectLoop,
+        }
       )
       // TODO(ts): both cueId sources are optional, so this is undefined when
       // neither is supplied and the request URL ends in "/undefined". Every

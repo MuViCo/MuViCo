@@ -1826,3 +1826,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+@keyframes muvico-cue-image-fade {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

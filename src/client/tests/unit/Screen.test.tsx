@@ -1047,6 +1047,119 @@ describe("Screen", () => {
     })
   })
 
+  describe("image fade effect", () => {
+    test("applies the fade animation to a plain image cue", async () => {
+      const screenData = {
+        file: {
+          url: "http://example.com/overlay.png",
+          type: "image/png",
+          name: "overlay.png",
+        },
+        index: 0,
+        name: "fade-cue",
+        screen: 1,
+        _id: "id-fade",
+        loop: false,
+        imageEffect: "fade",
+        imageEffectSpeed: 2,
+        imageEffectLoop: true,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        const image = popup.document.body.querySelector(
+          'img[src="http://example.com/overlay.png"]'
+        )
+        expect(image).toBeTruthy()
+        expect(image.style.animation).toContain("2s ease-in-out infinite")
+      })
+    })
+
+    test("does not animate an image cue with no effect set", async () => {
+      const screenData = {
+        file: {
+          url: "http://example.com/plain.png",
+          type: "image/png",
+          name: "plain.png",
+        },
+        index: 0,
+        name: "plain-cue",
+        screen: 1,
+        _id: "id-plain",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        const image = popup.document.body.querySelector(
+          'img[src="http://example.com/plain.png"]'
+        )
+        expect(image).toBeTruthy()
+        expect(image.style.animation).toBe("")
+      })
+    })
+
+    test("still applies the fade animation to a cue that also spans multiple screens", async () => {
+      const screenData = {
+        file: {
+          url: "http://example.com/wide-fade.jpg",
+          type: "image/jpg",
+          name: "wide-fade.jpg",
+        },
+        index: 0,
+        name: "wide-fade-cue",
+        screen: 1,
+        spanScreens: [1, 2],
+        _id: "id-wide-fade",
+        loop: false,
+        imageEffect: "fade",
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            screenWidths={{ 1: 800, 2: 800 }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        const image = popup.document.body.querySelector(
+          'img[src="http://example.com/wide-fade.jpg"]'
+        )
+        expect(image).toBeTruthy()
+        expect(image.style.animation).toContain("4s ease-in-out forwards")
+      })
+    })
+  })
+
   describe("multi-screen image spanning", () => {
     const spanCue = {
       file: {

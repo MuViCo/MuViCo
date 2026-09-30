@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
-import { Box, Image, Text } from "@chakra-ui/react"
+import { Box, Image, Text, usePrefersReducedMotion } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import type { EmotionCache } from "@emotion/cache"
@@ -24,6 +24,7 @@ import { getAnims } from "../../utils/transitionUtils"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
+import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { parseAspectRatio } from "../../../constants.js"
@@ -46,6 +47,7 @@ interface SpannedImageProps {
   spanScreens: number[]
   screenNumber: string | number
   screenWidths?: Record<number, number>
+  animation?: string
 }
 
 const SpannedImage = ({
@@ -54,6 +56,7 @@ const SpannedImage = ({
   spanScreens,
   screenNumber,
   screenWidths,
+  animation,
 }: SpannedImageProps) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
 
@@ -67,7 +70,12 @@ const SpannedImage = ({
   if (!aspectRatio) {
     return (
       <>
-        <Image src={imageSrc} alt={name} {...mediaFillProps} />
+        <Image
+          src={imageSrc}
+          alt={name}
+          {...mediaFillProps}
+          style={{ animation }}
+        />
         <img
           data-testid="span-image-probe"
           src={imageSrc}
@@ -97,6 +105,7 @@ const SpannedImage = ({
         backgroundRepeat: "no-repeat",
         backgroundPosition: `-${offsetPx}px 50%`,
         backgroundSize: `${canvasWidth}px ${canvasHeight}px`,
+        animation,
       }}
     />
   )
@@ -173,7 +182,8 @@ const SpannedVideo = ({
 const renderMedia = (
   cue: Cue,
   screenNumber: string | number,
-  screenWidths?: Record<number, number>
+  screenWidths?: Record<number, number>,
+  prefersReducedMotion = false
 ) => {
   const { file, name, color, spanScreens } = cue
 
@@ -195,6 +205,7 @@ const renderMedia = (
 
   if (isType.image(file)) {
     const imageSrc = file.url || `/${file.name}`
+    const animation = imageEffectAnimation(cue, prefersReducedMotion)
 
     if ((spanScreens?.length ?? 0) > 1) {
       return (
@@ -204,11 +215,19 @@ const renderMedia = (
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
           screenWidths={screenWidths}
+          animation={animation}
         />
       )
     }
 
-    return <Image src={imageSrc} alt={name} {...mediaFillProps} />
+    return (
+      <Image
+        src={imageSrc}
+        alt={name}
+        {...mediaFillProps}
+        style={{ animation }}
+      />
+    )
   }
   // check if media is video
   if (isType.video(file)) {
@@ -261,7 +280,8 @@ const cueStackKey = (cueStack: CueStack) =>
 const renderCueStack = (
   cueStack: CueStack,
   screenNumber: string | number,
-  screenWidths?: Record<number, number>
+  screenWidths?: Record<number, number>,
+  prefersReducedMotion = false
 ) => {
   const normalizedStack = normalizeCueStack(cueStack)
 
@@ -281,7 +301,7 @@ const renderCueStack = (
       alignItems="center"
       overflow="hidden"
     >
-      {renderMedia(cue, screenNumber, screenWidths)}
+      {renderMedia(cue, screenNumber, screenWidths, prefersReducedMotion)}
     </Box>
   ))
 }
@@ -312,6 +332,7 @@ const ScreenContent = ({
   )
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} 500ms ease-in-out forwards` : "none"
+  const prefersReducedMotion = usePrefersReducedMotion()
   const currentCueStack = normalizeCueStack(currentScreenData)
   const currentCueNames = currentCueStack.map((cue) => cue.name).filter(Boolean)
 
@@ -382,7 +403,12 @@ const ScreenContent = ({
             zIndex={1}
             animation={animStyle(exitAnim)}
           >
-            {renderCueStack(previousScreenData, screenNumber, screenWidths)}
+            {renderCueStack(
+              previousScreenData,
+              screenNumber,
+              screenWidths,
+              prefersReducedMotion
+            )}
           </Box>
         )}
 
@@ -402,7 +428,12 @@ const ScreenContent = ({
           color="white"
           animation={animStyle(enterAnim)}
         >
-          {renderCueStack(currentScreenData, screenNumber, screenWidths)}
+          {renderCueStack(
+            currentScreenData,
+            screenNumber,
+            screenWidths,
+            prefersReducedMotion
+          )}
         </Box>
       </Box>
       {isBlackout && (
