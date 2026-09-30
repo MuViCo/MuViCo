@@ -11,7 +11,6 @@ import {
   FormLabel,
   HStack,
   Icon,
-  Progress,
   Select,
   Text,
   VStack,
@@ -1067,18 +1066,25 @@ const EditModeContainer = ({
             <Text fontSize="lg" fontWeight="semibold">
               Préparation du show…
             </Text>
-            <Progress
-              value={
-                preloadProgress.total > 0
-                  ? (preloadProgress.loaded / preloadProgress.total) * 100
-                  : 0
-              }
+            <Box
               width="100%"
-              borderRadius="md"
-              colorScheme="purple"
-              hasStripe
-              isAnimated
-            />
+              height="10px"
+              borderRadius="full"
+              bg="whiteAlpha.300"
+              overflow="hidden"
+            >
+              <Box
+                width={`${
+                  preloadProgress.total > 0
+                    ? (preloadProgress.loaded / preloadProgress.total) * 100
+                    : 0
+                }%`}
+                height="100%"
+                borderRadius="full"
+                bg="purple.300"
+                transition="width 0.2s ease-out"
+              />
+            </Box>
             <Text fontSize="sm" opacity={0.8}>
               {preloadProgress.loaded}/{preloadProgress.total} médias chargés
             </Text>
