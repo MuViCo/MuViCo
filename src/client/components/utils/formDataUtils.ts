@@ -47,7 +47,12 @@ export const createFormData = (
     textEffectSpeed?: number
     textEffectLoop?: boolean
   },
-  frame?: { x: number; y: number; width: number; height: number } | null
+  frame?: { x: number; y: number; width: number; height: number } | null,
+  imageFields?: {
+    imageEffect?: string
+    imageEffectSpeed?: number
+    imageEffectLoop?: boolean
+  }
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -108,6 +113,15 @@ export const createFormData = (
   }
   if (textFields?.textEffectLoop !== undefined) {
     formData.append("textEffectLoop", String(textFields.textEffectLoop))
+  }
+  if (imageFields?.imageEffect !== undefined) {
+    formData.append("imageEffect", imageFields.imageEffect)
+  }
+  if (imageFields?.imageEffectSpeed !== undefined) {
+    formData.append("imageEffectSpeed", String(imageFields.imageEffectSpeed))
+  }
+  if (imageFields?.imageEffectLoop !== undefined) {
+    formData.append("imageEffectLoop", String(imageFields.imageEffectLoop))
   }
 
   return formData

@@ -334,6 +334,18 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
           max: 4,
         },
         textEffectLoop: { type: Boolean, default: undefined },
+        imageEffect: {
+          type: String,
+          default: undefined,
+          enum: ["none", "fade"],
+        },
+        imageEffectSpeed: {
+          type: Number,
+          default: undefined,
+          min: 0.25,
+          max: 4,
+        },
+        imageEffectLoop: { type: Boolean, default: undefined },
       },
     ],
     // Presentation-scoped media library (the editor's "media pool"). Entries

@@ -49,6 +49,16 @@ import {
   textSnippet,
 } from "../utils/cueText"
 import {
+  DEFAULT_IMAGE_EFFECT,
+  DEFAULT_IMAGE_EFFECT_SPEED,
+  IMAGE_EFFECTS,
+  MAX_IMAGE_EFFECT_SPEED,
+  MIN_IMAGE_EFFECT_SPEED,
+  normalizeImageEffect,
+  normalizeImageEffectSpeed,
+} from "../utils/cueImageEffect"
+import { isImageFile } from "../utils/fileTypeUtils"
+import {
   opacityFromPercent,
   opacityPercentFromCue,
 } from "../utils/cueOpacityUtils"
@@ -84,7 +94,13 @@ const Toolbox = ({
     DEFAULT_TEXT_EFFECT_SPEED
   )
   const [textEffectLoop, setTextEffectLoop] = useState(false)
+  const [imageEffect, setImageEffect] = useState(DEFAULT_IMAGE_EFFECT)
+  const [imageEffectSpeed, setImageEffectSpeed] = useState(
+    DEFAULT_IMAGE_EFFECT_SPEED
+  )
+  const [imageEffectLoop, setImageEffectLoop] = useState(false)
   const isText = isTextCue(cue)
+  const isImage = isImageFile(cue?.file)
 
   useEffect(() => {
     if (isOpen) {
@@ -97,6 +113,9 @@ const Toolbox = ({
       setTextEffect(normalizeTextEffect(cue?.textEffect))
       setTextEffectSpeed(normalizeTextEffectSpeed(cue?.textEffectSpeed))
       setTextEffectLoop(Boolean(cue?.textEffectLoop))
+      setImageEffect(normalizeImageEffect(cue?.imageEffect))
+      setImageEffectSpeed(normalizeImageEffectSpeed(cue?.imageEffectSpeed))
+      setImageEffectLoop(Boolean(cue?.imageEffectLoop))
     }
   }, [cue, isOpen])
 
@@ -131,6 +150,11 @@ const Toolbox = ({
         textEffect,
         textEffectSpeed,
         textEffectLoop,
+      }),
+      ...(isImage && {
+        imageEffect,
+        imageEffectSpeed,
+        imageEffectLoop,
       }),
       frame: isFullFrame(frame) ? null : frame,
     })
@@ -267,6 +291,67 @@ const Toolbox = ({
                       isChecked={textEffectLoop}
                       onChange={(event) =>
                         setTextEffectLoop(event.target.checked)
+                      }
+                    >
+                      Repeat the animation
+                    </Checkbox>
+                  </FormControl>
+                )}
+              </>
+            )}
+            {isImage && (
+              <>
+                <FormControl mt={5}>
+                  <FormLabel>Animation</FormLabel>
+                  <Select
+                    data-testid="toolbox-image-effect"
+                    aria-label="Animation"
+                    value={imageEffect}
+                    onChange={(event) => setImageEffect(event.target.value)}
+                  >
+                    {IMAGE_EFFECTS.map((effect) => (
+                      <option key={effect.value} value={effect.value}>
+                        {effect.label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                {imageEffect !== "none" && (
+                  <FormControl mt={5}>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      mb={2}
+                    >
+                      <FormLabel mb={0}>Animation speed</FormLabel>
+                      <Text fontSize="sm" fontWeight="bold">
+                        {imageEffectSpeed}×
+                      </Text>
+                    </Box>
+                    <Slider
+                      aria-label="Animation speed"
+                      data-testid="toolbox-image-effect-speed"
+                      min={MIN_IMAGE_EFFECT_SPEED}
+                      max={MAX_IMAGE_EFFECT_SPEED}
+                      step={0.25}
+                      value={imageEffectSpeed}
+                      onChange={setImageEffectSpeed}
+                    >
+                      <SliderTrack>
+                        <SliderFilledTrack />
+                      </SliderTrack>
+                      <SliderThumb />
+                    </Slider>
+                  </FormControl>
+                )}
+                {imageEffect !== "none" && (
+                  <FormControl mt={3}>
+                    <Checkbox
+                      data-testid="toolbox-image-effect-loop"
+                      isChecked={imageEffectLoop}
+                      onChange={(event) =>
+                        setImageEffectLoop(event.target.checked)
                       }
                     >
                       Repeat the animation

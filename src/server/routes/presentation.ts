@@ -36,6 +36,7 @@ import {
   getCueTypeFromScreen,
   getMaxLayers,
   isAudioMimeType,
+  isImageMimeType,
   isAllowedMimeType,
 } from "../utils/cueType"
 import * as logger from "../utils/logger"
@@ -510,6 +511,62 @@ const parseCueText = (
     textEffectLoop,
     error: null,
   }
+}
+
+const IMAGE_EFFECTS = ["none", "fade"]
+const MIN_IMAGE_EFFECT_SPEED = 0.25
+const MAX_IMAGE_EFFECT_SPEED = 4
+
+const parseImageEffect = (
+  body: Record<string, unknown>
+): {
+  imageEffect: string | undefined
+  imageEffectSpeed: number | undefined
+  imageEffectLoop: boolean | undefined
+  error: string | null
+} => {
+  const fail = (error: string) => ({
+    imageEffect: undefined,
+    imageEffectSpeed: undefined,
+    imageEffectLoop: undefined,
+    error,
+  })
+
+  let imageEffect: string | undefined
+  if (body.imageEffect !== undefined && body.imageEffect !== "") {
+    if (!IMAGE_EFFECTS.includes(body.imageEffect as string)) {
+      return fail(`imageEffect must be one of ${IMAGE_EFFECTS.join(", ")}`)
+    }
+    imageEffect = body.imageEffect as string
+  }
+
+  let imageEffectSpeed: number | undefined
+  if (body.imageEffectSpeed !== undefined && body.imageEffectSpeed !== "") {
+    const parsed = Number(body.imageEffectSpeed)
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < MIN_IMAGE_EFFECT_SPEED ||
+      parsed > MAX_IMAGE_EFFECT_SPEED
+    ) {
+      return fail(
+        `imageEffectSpeed must be a number between ${MIN_IMAGE_EFFECT_SPEED} and ${MAX_IMAGE_EFFECT_SPEED}`
+      )
+    }
+    imageEffectSpeed = parsed
+  }
+
+  let imageEffectLoop: boolean | undefined
+  if (body.imageEffectLoop !== undefined && body.imageEffectLoop !== "") {
+    if (
+      !["true", "false", true, false].includes(body.imageEffectLoop as never)
+    ) {
+      return fail("imageEffectLoop must be a boolean")
+    }
+    imageEffectLoop =
+      body.imageEffectLoop === true || body.imageEffectLoop === "true"
+  }
+
+  return { imageEffect, imageEffectSpeed, imageEffectLoop, error: null }
 }
 
 // Full validity check once `screen`/`cueType`/`screenCount` are known: must
@@ -1705,6 +1762,7 @@ router.put(
         req.body.duration
       )
       const cueText = parseCueText(req.body)
+      const imageEffect = parseImageEffect(req.body)
       const { frame, error: frameError } = parseFrame(req.body.frame)
 
       if (durationError || frameError) {
@@ -1713,6 +1771,10 @@ router.put(
 
       if (cueText.error) {
         return res.status(400).json({ error: cueText.error })
+      }
+
+      if (imageEffect.error) {
+        return res.status(400).json({ error: imageEffect.error })
       }
 
       if (!id || isNaN(index) || isNaN(screen)) {
@@ -1896,6 +1958,19 @@ router.put(
                     }),
                     ...(cueText.textEffectLoop !== undefined && {
                       textEffectLoop: cueText.textEffectLoop,
+                    }),
+                  }
+                : {}),
+              ...(hasMedia && isImageMimeType(mediaMimeType)
+                ? {
+                    ...(imageEffect.imageEffect && {
+                      imageEffect: imageEffect.imageEffect,
+                    }),
+                    ...(imageEffect.imageEffectSpeed && {
+                      imageEffectSpeed: imageEffect.imageEffectSpeed,
+                    }),
+                    ...(imageEffect.imageEffectLoop !== undefined && {
+                      imageEffectLoop: imageEffect.imageEffectLoop,
                     }),
                   }
                 : {}),
@@ -2288,6 +2363,7 @@ router.put(
         req.body.duration
       )
       const cueText = parseCueText(req.body)
+      const imageEffect = parseImageEffect(req.body)
       const frameProvided = req.body.frame !== undefined
       const { frame, error: frameError } = parseFrame(req.body.frame)
 
@@ -2297,6 +2373,10 @@ router.put(
 
       if (cueText.error) {
         return res.status(400).json({ error: cueText.error })
+      }
+
+      if (imageEffect.error) {
+        return res.status(400).json({ error: imageEffect.error })
       }
 
       if (!id || isNaN(index) || isNaN(screen)) {
@@ -2367,6 +2447,11 @@ router.put(
 
       const willHaveFileAfterUpdate =
         Boolean(file) || (!shouldClearFile && Boolean(cue.file))
+      const willHaveImageAfterUpdate =
+        cueType === "visual" &&
+        isImageMimeType(
+          file ? file.mimetype : shouldClearFile ? undefined : cue.file?.type
+        )
       const isColorOnlyCue = cueType === "visual" && !willHaveFileAfterUpdate
       if (!isColorOnlyCue && trimmedCueName.length === 0) {
         return res
@@ -2464,6 +2549,15 @@ router.put(
         : undefined
       cue.textEffectLoop = nextText
         ? (cueText.textEffectLoop ?? cue.textEffectLoop)
+        : undefined
+      cue.imageEffect = willHaveImageAfterUpdate
+        ? (imageEffect.imageEffect ?? cue.imageEffect)
+        : undefined
+      cue.imageEffectSpeed = willHaveImageAfterUpdate
+        ? (imageEffect.imageEffectSpeed ?? cue.imageEffectSpeed)
+        : undefined
+      cue.imageEffectLoop = willHaveImageAfterUpdate
+        ? (imageEffect.imageEffectLoop ?? cue.imageEffectLoop)
         : undefined
       cue.loop = loop
       cue.continuePlayback =

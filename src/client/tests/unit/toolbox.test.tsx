@@ -337,4 +337,141 @@ describe("ToolBox Component", () => {
       expect(screen.getByTestId("toolbox-text-color")).toHaveValue("#ffffff")
     })
   })
+
+  describe("image element", () => {
+    const imageCue = {
+      _id: "cue-image",
+      name: "Overlay",
+      cueType: "visual",
+      file: { type: "image/png", url: "http://example.com/overlay.png" },
+      opacity: 1,
+    } as Cue
+
+    const renderImageToolbox = (cueOverrides: Partial<Cue> = {}) =>
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={{ ...imageCue, ...cueOverrides } as Cue}
+          onSave={mockOnSave}
+        />
+      )
+
+    it("shows the current animation and defaults to none", () => {
+      renderImageToolbox({ imageEffect: "fade" })
+      expect(screen.getByTestId("toolbox-image-effect")).toHaveValue("fade")
+    })
+
+    it("falls back to none when the element has no animation", () => {
+      renderImageToolbox()
+      expect(screen.getByTestId("toolbox-image-effect")).toHaveValue("none")
+    })
+
+    it("saves the chosen animation", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderImageToolbox()
+
+      fireEvent.change(screen.getByTestId("toolbox-image-effect"), {
+        target: { value: "fade" },
+      })
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ imageEffect: "fade" })
+        )
+      })
+    })
+
+    it("hides the speed slider until an animation is chosen", () => {
+      renderImageToolbox()
+      expect(screen.queryByLabelText("Animation speed")).not.toBeInTheDocument()
+
+      fireEvent.change(screen.getByTestId("toolbox-image-effect"), {
+        target: { value: "fade" },
+      })
+      expect(screen.getByLabelText("Animation speed")).toBeInTheDocument()
+    })
+
+    it("saves the chosen animation speed", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderImageToolbox({ imageEffect: "fade", imageEffectSpeed: 2 })
+
+      expect(screen.getByText("2×")).toBeInTheDocument()
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ imageEffectSpeed: 2 })
+        )
+      })
+    })
+
+    it("does not repeat the animation by default", () => {
+      renderImageToolbox({ imageEffect: "fade" })
+
+      expect(screen.getByTestId("toolbox-image-effect-loop")).not.toBeChecked()
+    })
+
+    it("saves the looping choice", async () => {
+      mockOnSave.mockResolvedValue(undefined)
+      renderImageToolbox({ imageEffect: "fade" })
+
+      fireEvent.click(screen.getByTestId("toolbox-image-effect-loop"))
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({ imageEffectLoop: true })
+        )
+      })
+    })
+
+    it("hides the looping checkbox without an animation", () => {
+      renderImageToolbox()
+
+      expect(
+        screen.queryByTestId("toolbox-image-effect-loop")
+      ).not.toBeInTheDocument()
+    })
+
+    it("does not show the image animation controls for a color-only element", () => {
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={{ _id: "c", name: "color", cueType: "visual" } as Cue}
+          onSave={mockOnSave}
+        />
+      )
+
+      expect(screen.queryByTestId("toolbox-image-effect")).toBeNull()
+    })
+
+    it("does not show the image animation controls for a video element", () => {
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={
+            {
+              _id: "c",
+              name: "clip",
+              cueType: "visual",
+              file: { type: "video/mp4", url: "http://example.com/clip.mp4" },
+            } as Cue
+          }
+          onSave={mockOnSave}
+        />
+      )
+
+      expect(screen.queryByTestId("toolbox-image-effect")).toBeNull()
+    })
+
+    it("does not show the text fields for an image element", () => {
+      renderImageToolbox()
+
+      expect(screen.queryByTestId("toolbox-text")).toBeNull()
+    })
+  })
 })

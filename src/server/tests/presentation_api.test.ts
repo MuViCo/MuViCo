@@ -1791,6 +1791,161 @@ describe("test presentation", () => {
     })
   })
 
+  describe("Image elements", () => {
+    const imageUrl = () => `/api/presentation/${testPresentationId}`
+
+    const createImageCue = (fields: Record<string, string | number> = {}) => {
+      let request = api
+        .put(imageUrl())
+        .set("Authorization", authHeader)
+        .attach("image", mockImageBuffer, "mock_image.png")
+      for (const [key, value] of Object.entries({
+        index: 0,
+        cueName: "overlay",
+        screen: 1,
+        ...fields,
+      })) {
+        request = request.field(key, value)
+      }
+      return request
+    }
+
+    const cueAt = (body: any, index: number, screen: number) =>
+      body.cues.find((cue: any) => cue.index === index && cue.screen === screen)
+
+    test("stores the fade animation", async () => {
+      const response = await createImageCue({ imageEffect: "fade" }).expect(200)
+
+      expect(cueAt(response.body, 0, 1).imageEffect).toBe("fade")
+    })
+
+    test("leaves the animation unset when none is given", async () => {
+      const response = await createImageCue().expect(200)
+
+      expect(cueAt(response.body, 0, 1).imageEffect).toBeUndefined()
+    })
+
+    test("stores the looping flag and leaves it unset by default", async () => {
+      const looping = await createImageCue({
+        imageEffect: "fade",
+        imageEffectLoop: "true",
+      }).expect(200)
+      expect(cueAt(looping.body, 0, 1).imageEffectLoop).toBe(true)
+
+      const plain = await createImageCue({
+        index: 1,
+        imageEffect: "fade",
+      }).expect(200)
+      expect(cueAt(plain.body, 1, 1).imageEffectLoop).toBeUndefined()
+    })
+
+    test("stores an animation speed", async () => {
+      const response = await createImageCue({
+        imageEffect: "fade",
+        imageEffectSpeed: 2,
+      }).expect(200)
+
+      expect(cueAt(response.body, 0, 1).imageEffectSpeed).toBe(2)
+    })
+
+    test.each([
+      ["an unknown animation", { imageEffect: "spin" }, /imageEffect/],
+      [
+        "a speed below the minimum",
+        { imageEffectSpeed: 0.1 },
+        /imageEffectSpeed/,
+      ],
+      [
+        "a speed above the maximum",
+        { imageEffectSpeed: 5 },
+        /imageEffectSpeed/,
+      ],
+      [
+        "a speed that is not a number",
+        { imageEffectSpeed: "fast" },
+        /imageEffectSpeed/,
+      ],
+    ])("refuses %s", async (_label, fields, message) => {
+      const response = await createImageCue(fields).expect(400)
+
+      expect(response.body.error).toMatch(message)
+    })
+
+    test("does not store the animation on a color-only element", async () => {
+      const response = await api
+        .put(imageUrl())
+        .set("Authorization", authHeader)
+        .field("index", 0)
+        .field("cueName", "color")
+        .field("screen", 1)
+        .field("imageEffect", "fade")
+        .expect(200)
+
+      expect(cueAt(response.body, 0, 1).imageEffect).toBeUndefined()
+    })
+
+    describe("editing an existing image element", () => {
+      let imageCueId: any
+
+      beforeEach(async () => {
+        const created = await createImageCue().expect(200)
+        imageCueId = cueAt(created.body, 0, 1)._id
+      })
+
+      const updateImageCue = (fields: Record<string, string | number> = {}) => {
+        let request = api
+          .put(`${imageUrl()}/${imageCueId}`)
+          .set("Authorization", authHeader)
+        for (const [key, value] of Object.entries({
+          index: 0,
+          cueName: "overlay",
+          screen: 1,
+          ...fields,
+        })) {
+          request = request.field(key, value)
+        }
+        return request
+      }
+
+      test("adds an animation to an element that had none", async () => {
+        const response = await updateImageCue({ imageEffect: "fade" }).expect(
+          200
+        )
+
+        expect(response.body.imageEffect).toBe("fade")
+      })
+
+      test("changes the animation speed", async () => {
+        const response = await updateImageCue({
+          imageEffect: "fade",
+          imageEffectSpeed: 2,
+        }).expect(200)
+
+        expect(response.body.imageEffectSpeed).toBe(2)
+      })
+
+      test("clears the animation when the file is removed", async () => {
+        await updateImageCue({ imageEffect: "fade" }).expect(200)
+
+        const response = await api
+          .put(`${imageUrl()}/${imageCueId}`)
+          .set("Authorization", authHeader)
+          .field("index", 0)
+          .field("cueName", "now a color")
+          .field("screen", 1)
+          .field("image", "null")
+          .expect(200)
+
+        expect(response.body.imageEffect).toBeUndefined()
+      })
+
+      test("refuses invalid animation fields on update", async () => {
+        await updateImageCue({ imageEffect: "spin" }).expect(400)
+        await updateImageCue({ imageEffectSpeed: 10 }).expect(400)
+      })
+    })
+  })
+
   describe("Read-only sharing", () => {
     let viewerAuthHeader: any
 

@@ -33,6 +33,7 @@ import {
 } from "../../../constants.js"
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
+import { imageEffectAnimation } from "../utils/cueImageAnimation"
 
 import type { Cue, CueFileMeta } from "../../types"
 
@@ -43,6 +44,7 @@ const SpannedTilePreview = ({
   screenNumber,
   screenAspectRatios,
   outputAspectRatio,
+  animation,
 }: {
   imageSrc: string
   name: string
@@ -50,6 +52,7 @@ const SpannedTilePreview = ({
   screenNumber: number
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
+  animation?: string
 }) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
 
@@ -66,7 +69,12 @@ const SpannedTilePreview = ({
         <img
           src={imageSrc}
           alt={name}
-          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            animation,
+          }}
         />
         <img
           src={imageSrc}
@@ -107,6 +115,7 @@ const SpannedTilePreview = ({
         backgroundRepeat: "no-repeat",
         backgroundPosition: `${backgroundPositionXPercent}% 50%`,
         backgroundSize: `${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`,
+        animation,
       }}
     />
   )
@@ -265,6 +274,8 @@ export const ScreensDisplay = ({
 
     if (cue?.file?.url) {
       if (isImageFile(cue.file)) {
+        const animation = imageEffectAnimation(cue, prefersReducedMotion)
+
         if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
           return (
             <SpannedTilePreview
@@ -274,6 +285,7 @@ export const ScreensDisplay = ({
               screenNumber={screenNumber}
               screenAspectRatios={screenAspectRatios}
               outputAspectRatio={outputAspectRatio}
+              animation={animation}
             />
           )
         }
@@ -282,7 +294,12 @@ export const ScreensDisplay = ({
           <img
             src={cue.file.url}
             alt={cue.name}
-            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              animation,
+            }}
           />
         )
       }

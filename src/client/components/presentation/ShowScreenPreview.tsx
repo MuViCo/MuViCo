@@ -1,4 +1,4 @@
-import { Box, Button, Text } from "@chakra-ui/react"
+import { Box, Button, Text, usePrefersReducedMotion } from "@chakra-ui/react"
 import { useState } from "react"
 import type { SyntheticEvent } from "react"
 import { isImageFile, isVideoFile } from "../utils/fileTypeUtils"
@@ -8,6 +8,7 @@ import {
   computeScreenSpanLayout,
   screenWidthMapFromRatios,
 } from "../utils/screenSpanLayout"
+import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import {
   parseAspectRatio,
   resolveScreenAspectRatio,
@@ -31,13 +32,15 @@ const renderSpannedImage = (
   cue: Cue,
   screenNumber: number,
   screenAspectRatios?: Record<string, string>,
-  outputAspectRatio?: string
+  outputAspectRatio?: string,
+  animation?: string
 ) => (
   <SpannedPreview
     cue={cue}
     screenNumber={screenNumber}
     screenAspectRatios={screenAspectRatios}
     outputAspectRatio={outputAspectRatio}
+    animation={animation}
   />
 )
 
@@ -46,11 +49,13 @@ const SpannedPreview = ({
   screenNumber,
   screenAspectRatios,
   outputAspectRatio,
+  animation,
 }: {
   cue: Cue
   screenNumber: number
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
+  animation?: string
 }) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
   const spanScreens = cue.spanScreens ?? [screenNumber]
@@ -70,6 +75,7 @@ const SpannedPreview = ({
           src={cue.file?.url}
           alt={cue.name}
           className="show-preview-media"
+          style={{ animation }}
         />
         <img
           src={cue.file?.url}
@@ -108,6 +114,7 @@ const SpannedPreview = ({
       bgRepeat="no-repeat"
       bgPosition={`${x}% 50%`}
       bgSize={`${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`}
+      style={{ animation }}
     />
   )
 }
@@ -123,6 +130,8 @@ const CueMedia = ({
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
 }) => {
+  const prefersReducedMotion = usePrefersReducedMotion()
+
   if (!cue.file) {
     if (isTextCue(cue)) {
       return (
@@ -139,16 +148,24 @@ const CueMedia = ({
     return <Box position="absolute" inset={0} bg={cue.color ?? "#000"} />
   }
   if (isImageFile(cue.file)) {
+    const animation = imageEffectAnimation(cue, prefersReducedMotion)
+
     if ((cue.spanScreens?.length ?? 0) > 1) {
       return renderSpannedImage(
         cue,
         screenNumber,
         screenAspectRatios,
-        outputAspectRatio
+        outputAspectRatio,
+        animation
       )
     }
     return (
-      <img src={cue.file.url} alt={cue.name} className="show-preview-media" />
+      <img
+        src={cue.file.url}
+        alt={cue.name}
+        className="show-preview-media"
+        style={{ animation }}
+      />
     )
   }
   if (isVideoFile(cue.file)) {
