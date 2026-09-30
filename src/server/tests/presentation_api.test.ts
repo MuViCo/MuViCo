@@ -1799,10 +1799,12 @@ describe("test presentation", () => {
         .put(imageUrl())
         .set("Authorization", authHeader)
         .attach("image", mockImageBuffer, "mock_image.png")
-        .field("index", 0)
-        .field("cueName", "overlay")
-        .field("screen", 1)
-      for (const [key, value] of Object.entries(fields)) {
+      for (const [key, value] of Object.entries({
+        index: 0,
+        cueName: "overlay",
+        screen: 1,
+        ...fields,
+      })) {
         request = request.field(key, value)
       }
       return request
@@ -1894,10 +1896,12 @@ describe("test presentation", () => {
         let request = api
           .put(`${imageUrl()}/${imageCueId}`)
           .set("Authorization", authHeader)
-          .field("index", 0)
-          .field("cueName", "overlay")
-          .field("screen", 1)
-        for (const [key, value] of Object.entries(fields)) {
+        for (const [key, value] of Object.entries({
+          index: 0,
+          cueName: "overlay",
+          screen: 1,
+          ...fields,
+        })) {
           request = request.field(key, value)
         }
         return request
