@@ -1,4 +1,9 @@
-import { correctDrift } from "../../components/utils/videoSpanSync"
+import { renderHook } from "@testing-library/react"
+import {
+  correctDrift,
+  useVideoSpanSync,
+  SYNC_INTERVAL_MS,
+} from "../../components/utils/videoSpanSync"
 import type { VideoLike } from "../../components/utils/videoSpanSync"
 
 const video = (overrides: Partial<VideoLike> = {}): VideoLike => ({
@@ -122,5 +127,68 @@ describe("correctDrift", () => {
 
     expect(() => correctDrift([[1, leader]], 0.15)).not.toThrow()
     expect(leader.currentTime).toBe(10)
+  })
+})
+
+describe("useVideoSpanSync", () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  test("periodically corrects a registered follower against the leader", () => {
+    const leaderVideo = video({ currentTime: 10 })
+    const followerVideo = video({ currentTime: 2 })
+    const leaderRef = { current: leaderVideo }
+    const followerRef = { current: followerVideo }
+
+    renderHook(() => useVideoSpanSync("cue-1", 1, leaderRef, true))
+    renderHook(() => useVideoSpanSync("cue-1", 2, followerRef, true))
+
+    jest.advanceTimersByTime(SYNC_INTERVAL_MS)
+
+    expect(followerVideo.currentTime).toBe(10)
+  })
+
+  test("does not register or correct anything when inactive", () => {
+    const leaderVideo = video({ currentTime: 10 })
+    const followerVideo = video({ currentTime: 2 })
+    const leaderRef = { current: leaderVideo }
+    const followerRef = { current: followerVideo }
+
+    renderHook(() => useVideoSpanSync("cue-2", 1, leaderRef, false))
+    renderHook(() => useVideoSpanSync("cue-2", 2, followerRef, false))
+
+    jest.advanceTimersByTime(SYNC_INTERVAL_MS)
+
+    expect(followerVideo.currentTime).toBe(2)
+  })
+
+  test("does not register or crash when the video ref is not yet attached", () => {
+    const nullRef = { current: null }
+
+    renderHook(() => useVideoSpanSync("cue-null", 1, nullRef, true))
+
+    expect(() => jest.advanceTimersByTime(SYNC_INTERVAL_MS)).not.toThrow()
+  })
+
+  test("stops correcting once unmounted", () => {
+    const leaderVideo = video({ currentTime: 10 })
+    const followerVideo = video({ currentTime: 2 })
+    const leaderRef = { current: leaderVideo }
+    const followerRef = { current: followerVideo }
+
+    const { unmount } = renderHook(() =>
+      useVideoSpanSync("cue-3", 2, followerRef, true)
+    )
+    renderHook(() => useVideoSpanSync("cue-3", 1, leaderRef, true))
+
+    unmount()
+    jest.advanceTimersByTime(SYNC_INTERVAL_MS)
+
+    expect(followerVideo.currentTime).toBe(2)
   })
 })

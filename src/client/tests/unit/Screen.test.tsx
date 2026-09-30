@@ -277,6 +277,50 @@ describe("Screen", () => {
     expect(window.open).not.toHaveBeenCalled()
   })
 
+  test("closes the popup and notifies the caller when isVisible turns false", async () => {
+    const onClose = jest.fn()
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 0,
+      name: "closable-cue",
+      screen: 1,
+      _id: "id-closable",
+      loop: false,
+    } as Cue
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    const popup = await waitFor(() => {
+      const result = (window.open as jest.Mock).mock.results.at(-1)!.value
+      expect(result).toBeTruthy()
+      return result
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={screenData}
+          isVisible={false}
+          onClose={onClose}
+        />
+      )
+    })
+
+    expect(popup.close).toHaveBeenCalled()
+  })
+
   test("reports when the browser blocks an output popup", async () => {
     ;(window.open as jest.Mock).mockReturnValueOnce(null)
     const onClose = jest.fn()
