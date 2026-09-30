@@ -596,9 +596,6 @@ const EditModeContainer = ({
     [cues, indexCount]
   )
 
-  // Computed once per cueIndex change and handed identically to every open
-  // screen, so their popups all schedule the visual swap for the same
-  // wall-clock instant instead of each reacting to the new cue independently.
   const transitionAt = useMemo(
     () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
     [cueIndex]
@@ -1106,8 +1103,6 @@ const EditModeContainer = ({
         </Box>
       )}
 
-      {/* Shared wall-clock target so every open screen popup reveals this
-          cue change at the same instant -- see syncedTransition.ts. */}
       {Object.keys(screens).map((screenNumber) => {
         const mirroredScreen = mirroring[screenNumber]
         const sourceScreen = mirroredScreen

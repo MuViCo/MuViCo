@@ -316,9 +316,6 @@ interface ScreenContentProps {
   screenWidths?: Record<number, number>
   isBlackout?: boolean
   outputAspectRatio?: string
-  // While false, the incoming cue is mounted (so its media can decode) but
-  // kept hidden and the outgoing cue stays fully visible and static -- see
-  // the reveal scheduling in Screen() below for why.
   isRevealed?: boolean
 }
 
@@ -467,8 +464,6 @@ interface ScreenProps {
   onWidthChange?: (screenNumber: number, width: number) => void
   isBlackout?: boolean
   outputAspectRatio?: string
-  // Shared wall-clock (Date.now()) instant, common to every open screen, at
-  // which this cue change should become visible -- see syncedTransition.ts.
   transitionAt?: number
 }
 
@@ -641,16 +636,10 @@ const Screen = ({
       cancelRevealRef.current?.()
 
       if (!currentScreenData) {
-        // Nothing shown yet on this screen -- no previous frame to
-        // crossfade from, so reveal immediately.
         setPreviousScreenData(null)
         setCurrentScreenData(nextScreenData)
         setIsRevealed(true)
       } else {
-        // Mount the incoming cue now (hidden, see ScreenContent) so its
-        // media can decode ahead of time, but hold the actual visual swap
-        // until every open screen's popup reaches the same wall-clock
-        // instant.
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(nextScreenData)
         setIsRevealed(false)
