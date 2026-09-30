@@ -11,8 +11,10 @@ import {
   FormLabel,
   HStack,
   Icon,
+  Progress,
   Select,
   Text,
+  VStack,
 } from "@chakra-ui/react"
 import { FiPlay } from "react-icons/fi"
 import "react-grid-layout/css/styles.css"
@@ -94,8 +96,10 @@ interface EditModeContainerProps {
 
 // setCueIndex stays in the container: EditorLayout navigates frames through
 // updateCue rather than setting the index itself.
-interface EditorLayoutProps
-  extends Omit<EditModeContainerProps, "setCueIndex"> {
+interface EditorLayoutProps extends Omit<
+  EditModeContainerProps,
+  "setCueIndex"
+> {
   presentationName: string
   screenCount: number
   outputAspectRatio: string
@@ -311,8 +315,7 @@ function EditorLayout(props: EditorLayoutProps) {
             variant="muvico-primary"
             leftIcon={<Icon as={FiPlay} />}
             onClick={onEnterShow}
-            isLoading={isPreparingShow}
-            loadingText="Preparing media…"
+            isDisabled={isPreparingShow}
           >
             Show mode
           </Button>
@@ -581,6 +584,11 @@ const EditModeContainer = ({
   const visualPreloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map())
   const visualLoadedUrlsRef = useRef<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
+  const [preloadProgress, setPreloadProgress] = useState<{
+    loaded: number
+    total: number
+    currentLabel: string | null
+  }>({ loaded: 0, total: 0, currentLabel: null })
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -828,43 +836,75 @@ const EditModeContainer = ({
     []
   )
 
-  useEffect(() => {
-    ;(cues || []).forEach((cue) => {
+  // De-dupes by file URL (same media reused across cues counts once) and
+  // keeps a human-readable label for the loading overlay.
+  const collectVisualMediaItems = useCallback((cueList: Cue[]) => {
+    const items = new Map<string, { kind: "image" | "video"; label: string }>()
+
+    cueList.forEach((cue) => {
       const file = cue.file
-      if (!file?.url) return
+      if (!file?.url || items.has(file.url)) return
 
       if (isType.image(file)) {
-        preloadVisualUrl(file.url, "image")
+        items.set(file.url, {
+          kind: "image",
+          label: cue.name || file.name || "image",
+        })
       } else if (isType.video(file)) {
-        preloadVisualUrl(file.url, "video")
+        items.set(file.url, {
+          kind: "video",
+          label: cue.name || file.name || "vidéo",
+        })
       }
     })
-  }, [cues, preloadVisualUrl])
+
+    return items
+  }, [])
+
+  useEffect(() => {
+    const mediaItems = collectVisualMediaItems(cues || [])
+    mediaItems.forEach(({ kind }, url) => {
+      preloadVisualUrl(url, kind)
+    })
+  }, [cues, collectVisualMediaItems, preloadVisualUrl])
 
   const handleEnterShow = useCallback(async () => {
-    const visualUrls = (cues || [])
-      .map((cue) => cue.file)
-      .filter((file) => file?.url && (isType.image(file) || isType.video(file)))
-      .map((file) => file!.url as string)
+    const mediaItems = collectVisualMediaItems(cues || [])
+    const entries = Array.from(mediaItems.entries())
+    const total = entries.length
 
-    const alreadyLoaded = visualUrls.every((url) =>
-      visualLoadedUrlsRef.current.has(url)
-    )
-
-    if (alreadyLoaded) {
+    if (total === 0) {
       onEnterShow()
       return
     }
 
-    const pending = visualUrls
-      .map((url) => visualPreloadPromisesRef.current.get(url))
-      .filter((promise): promise is Promise<void> => Boolean(promise))
+    const initialLoaded = entries.filter(([url]) =>
+      visualLoadedUrlsRef.current.has(url)
+    ).length
 
+    if (initialLoaded === total) {
+      onEnterShow()
+      return
+    }
+
+    setPreloadProgress({ loaded: initialLoaded, total, currentLabel: null })
     setIsPreparingShow(true)
-    await Promise.allSettled(pending)
+
+    let loaded = initialLoaded
+    await Promise.all(
+      entries.map(async ([url, { kind, label }]) => {
+        if (!visualLoadedUrlsRef.current.has(url)) {
+          setPreloadProgress((prev) => ({ ...prev, currentLabel: label }))
+        }
+        await preloadVisualUrl(url, kind)
+        loaded += 1
+        setPreloadProgress((prev) => ({ ...prev, loaded, currentLabel: label }))
+      })
+    )
+
     setIsPreparingShow(false)
     onEnterShow()
-  }, [cues, onEnterShow])
+  }, [cues, onEnterShow, collectVisualMediaItems, preloadVisualUrl])
 
   useEffect(() => {
     if (sharedToken) return
@@ -1012,6 +1052,44 @@ const EditModeContainer = ({
         onClose={() => setIsTutorialOpen(false)}
         storageKey={"hasSeenHelp_presentation"}
       />
+
+      {isPreparingShow && (
+        <Box
+          position="fixed"
+          inset={0}
+          zIndex={2000}
+          bg="blackAlpha.800"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <VStack spacing={4} color="white" width="320px">
+            <Text fontSize="lg" fontWeight="semibold">
+              Préparation du show…
+            </Text>
+            <Progress
+              value={
+                preloadProgress.total > 0
+                  ? (preloadProgress.loaded / preloadProgress.total) * 100
+                  : 0
+              }
+              width="100%"
+              borderRadius="md"
+              colorScheme="purple"
+              hasStripe
+              isAnimated
+            />
+            <Text fontSize="sm" opacity={0.8}>
+              {preloadProgress.loaded}/{preloadProgress.total} médias chargés
+            </Text>
+            {preloadProgress.currentLabel && (
+              <Text fontSize="sm" opacity={0.6} noOfLines={1}>
+                Chargement de « {preloadProgress.currentLabel} »…
+              </Text>
+            )}
+          </VStack>
+        </Box>
+      )}
 
       {Object.keys(screens).map((screenNumber) => {
         const mirroredScreen = mirroring[screenNumber]
