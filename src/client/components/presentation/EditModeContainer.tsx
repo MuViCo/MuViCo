@@ -1455,7 +1455,21 @@ const EditModeContainer = ({
               />
             </Box>
             <Text fontSize="sm" opacity={0.8}>
-              {preloadProgress.loaded}/{preloadProgress.total} médias chargés
+              {(() => {
+                // `preloadProgress.loaded` counts every settled attempt,
+                // success or failure (freezeMediaUrl resolves either way
+                // so a failed item doesn't hang the preload forever). Show
+                // failures separately here instead of silently lumping
+                // them into "chargés" -- a red dot below contradicted a
+                // summary line claiming everything loaded.
+                const failedCount = preloadProgress.items.filter((item) =>
+                  mediaFailedUrls.has(item.url)
+                ).length
+                if (failedCount === 0) {
+                  return `${preloadProgress.loaded}/${preloadProgress.total} médias chargés`
+                }
+                return `${preloadProgress.loaded - failedCount}/${preloadProgress.total} médias chargés (${failedCount} échec${failedCount > 1 ? "s" : ""})`
+              })()}
             </Text>
             {preloadProgress.items.length > 0 && (
               <Box
