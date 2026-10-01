@@ -390,57 +390,57 @@ const ScreenContent = ({
         overflow="hidden"
         sx={{ aspectRatio: String(parseAspectRatio(outputAspectRatio)) }}
       >
-        {/* Animates out previous cue media, if any */}
-        {previousScreenData && (
-          <Box
-            key={`previous-${cueStackKey(previousScreenData)}`}
-            data-testid="outgoing-cue-layer"
-            flex="1"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            position="absolute"
-            inset="0"
-            width="100%"
-            height="100%"
-            zIndex={1}
-            animation={isRevealed ? animStyle(exitAnim) : "none"}
-          >
-            {renderCueStack(
-              previousScreenData,
-              screenNumber,
-              screenWidths,
-              prefersReducedMotion
-            )}
-          </Box>
-        )}
-
-        {/* Animates in current cue media */}
-        <Box
-          key={`current-${cueStackKey(currentScreenData)}`}
-          data-testid="incoming-cue-layer"
-          data-revealed={isRevealed}
-          flex="1"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          position="absolute"
-          inset="0"
-          width="100%"
-          height="100%"
-          zIndex={1}
-          color="white"
-          opacity={isRevealed ? undefined : 0}
-          pointerEvents={isRevealed ? undefined : "none"}
-          animation={isRevealed ? animStyle(enterAnim) : "none"}
-        >
-          {renderCueStack(
-            currentScreenData,
-            screenNumber,
-            screenWidths,
-            prefersReducedMotion
-          )}
-        </Box>
+        {/*
+          A single keyed list for both layers, keyed by the cue stack's own
+          identity rather than by role -- a cue moving from "incoming" to
+          "outgoing" keeps the same key and so the same DOM node (and its
+          playing video/gif) across that move, instead of being unmounted
+          from one role's Box and remounted (restarting playback) in the
+          other's.
+        */}
+        {[
+          previousScreenData
+            ? { role: "outgoing" as const, data: previousScreenData }
+            : null,
+          { role: "incoming" as const, data: currentScreenData },
+        ]
+          .filter((layer) => layer !== null)
+          .map(({ role, data }) => {
+            const isIncoming = role === "incoming"
+            return (
+              <Box
+                key={cueStackKey(data)}
+                data-testid={
+                  isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"
+                }
+                data-revealed={isIncoming ? isRevealed : undefined}
+                flex="1"
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                position="absolute"
+                inset="0"
+                width="100%"
+                height="100%"
+                zIndex={1}
+                color={isIncoming ? "white" : undefined}
+                opacity={isIncoming && !isRevealed ? 0 : undefined}
+                pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
+                animation={
+                  isRevealed
+                    ? animStyle(isIncoming ? enterAnim : exitAnim)
+                    : "none"
+                }
+              >
+                {renderCueStack(
+                  data,
+                  screenNumber,
+                  screenWidths,
+                  prefersReducedMotion
+                )}
+              </Box>
+            )
+          })}
       </Box>
       {isBlackout && (
         <Box

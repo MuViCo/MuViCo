@@ -680,6 +680,69 @@ describe("Screen", () => {
     )
   })
 
+  // Regression: the outgoing layer used to remount a cue's media under a
+  // new key when it moved from the incoming to the outgoing role, which
+  // restarted a playing video/gif right as the transition began.
+  test("keeps the same video element playing when it becomes the outgoing cue", async () => {
+    const videoCue = {
+      file: {
+        url: "http://example.com/video.mp4",
+        type: "video/mp4",
+        name: "video.mp4",
+      },
+      index: 0,
+      name: "video-cue",
+      screen: 1,
+      _id: "id-video",
+      loop: false,
+    } as Cue
+    const nextCue = {
+      file: {
+        url: "http://example.com/next.jpg",
+        type: "image/jpg",
+        name: "next.jpg",
+      },
+      index: 1,
+      name: "next-cue",
+      screen: 1,
+      _id: "id-next",
+      loop: false,
+    } as Cue
+
+    const onClose = () => {}
+    const getVideoElement = () => {
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      return popup.document.body.querySelector("video")
+    }
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={videoCue}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getVideoElement()).toBeTruthy()
+    })
+    const videoBeforeTransition = getVideoElement()
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={nextCue}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+    })
+
+    expect(getVideoElement()).toBe(videoBeforeTransition)
+  })
+
   // Regression test that ensures that the outgoing cue is still rendered as a background when it is a color cue,
   // instead of being dropped and displaying a blank or black background during the transition to the next cue.
   test("keeps rendering the outgoing cue's color as a background instead of leaving it blank", async () => {
