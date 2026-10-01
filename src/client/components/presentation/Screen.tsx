@@ -278,33 +278,75 @@ const cueStackKey = (cueStack: CueStack) =>
     )
     .join("|")
 
-const renderCueStack = (
-  cueStack: CueStack,
+const cueIdentity = (cue: Cue) =>
+  `${cue?._id || cue?.name || "cue"}:${cue?.layer ?? 0}`
+
+const renderCueLayers = (
+  currentScreenData: CueStack,
+  previousScreenData: CueStack,
   screenNumber: string | number,
-  screenWidths?: Record<number, number>,
-  prefersReducedMotion = false
+  screenWidths: Record<number, number> | undefined,
+  prefersReducedMotion: boolean,
+  isRevealed: boolean,
+  enterAnimStyle: string,
+  exitAnimStyle: string
 ) => {
-  const normalizedStack = normalizeCueStack(cueStack)
+  const currentCueStack = normalizeCueStack(currentScreenData)
+  const previousCueStack = normalizeCueStack(previousScreenData)
+  const currentIdentities = new Set(currentCueStack.map(cueIdentity))
+  const previousIdentities = new Set(previousCueStack.map(cueIdentity))
 
-  if (normalizedStack.length === 0) {
-    return <Text>No media available for this cue.</Text>
-  }
+  const entries = [
+    ...currentCueStack.map((cue) => ({
+      cue,
+      isIncoming: true,
+      isNew: !previousIdentities.has(cueIdentity(cue)),
+    })),
+    ...previousCueStack
+      .filter((cue) => !currentIdentities.has(cueIdentity(cue)))
+      .map((cue) => ({ cue, isIncoming: false, isNew: false })),
+  ]
 
-  return normalizedStack.map((cue, index) => (
-    <Box
-      key={`${cue._id || cue.name || "cue"}-${cue.index ?? "idx"}-${cue.screen ?? "screen"}-${cue.layer ?? index}-${index}`}
-      position="absolute"
-      {...cueFrameStyle(cue)}
-      zIndex={100 - Number(cue.layer ?? 0)}
-      opacity={normalizeCueOpacity(cue.opacity)}
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      overflow="hidden"
-    >
-      {renderMedia(cue, screenNumber, screenWidths, prefersReducedMotion)}
-    </Box>
-  ))
+  return (
+    <>
+      {currentCueStack.length === 0 && (
+        <Text data-testid="incoming-cue-layer">
+          No media available for this cue.
+        </Text>
+      )}
+      {entries.map(({ cue, isIncoming, isNew }) => (
+        <Box
+          key={cueIdentity(cue)}
+          data-testid={isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"}
+          data-revealed={isIncoming ? isRevealed : undefined}
+          position="absolute"
+          {...cueFrameStyle(cue)}
+          zIndex={100 - Number(cue.layer ?? 0)}
+          opacity={
+            isIncoming && !isRevealed ? 0 : normalizeCueOpacity(cue.opacity)
+          }
+          pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          overflow="hidden"
+          animation={
+            !isIncoming
+              ? isRevealed
+                ? exitAnimStyle
+                : "none"
+              : isNew
+                ? isRevealed
+                  ? enterAnimStyle
+                  : "none"
+                : undefined
+          }
+        >
+          {renderMedia(cue, screenNumber, screenWidths, prefersReducedMotion)}
+        </Box>
+      ))}
+    </>
+  )
 }
 
 interface ScreenContentProps {
@@ -390,57 +432,16 @@ const ScreenContent = ({
         overflow="hidden"
         sx={{ aspectRatio: String(parseAspectRatio(outputAspectRatio)) }}
       >
-        {/*
-          A single keyed list for both layers, keyed by the cue stack's own
-          identity rather than by role -- a cue moving from "incoming" to
-          "outgoing" keeps the same key and so the same DOM node (and its
-          playing video/gif) across that move, instead of being unmounted
-          from one role's Box and remounted (restarting playback) in the
-          other's.
-        */}
-        {[
-          previousScreenData
-            ? { role: "outgoing" as const, data: previousScreenData }
-            : null,
-          { role: "incoming" as const, data: currentScreenData },
-        ]
-          .filter((layer) => layer !== null)
-          .map(({ role, data }) => {
-            const isIncoming = role === "incoming"
-            return (
-              <Box
-                key={cueStackKey(data)}
-                data-testid={
-                  isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"
-                }
-                data-revealed={isIncoming ? isRevealed : undefined}
-                flex="1"
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                position="absolute"
-                inset="0"
-                width="100%"
-                height="100%"
-                zIndex={1}
-                color={isIncoming ? "white" : undefined}
-                opacity={isIncoming && !isRevealed ? 0 : undefined}
-                pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
-                animation={
-                  isRevealed
-                    ? animStyle(isIncoming ? enterAnim : exitAnim)
-                    : "none"
-                }
-              >
-                {renderCueStack(
-                  data,
-                  screenNumber,
-                  screenWidths,
-                  prefersReducedMotion
-                )}
-              </Box>
-            )
-          })}
+        {renderCueLayers(
+          currentScreenData,
+          previousScreenData,
+          screenNumber,
+          screenWidths,
+          prefersReducedMotion,
+          isRevealed,
+          animStyle(enterAnim),
+          animStyle(exitAnim)
+        )}
       </Box>
       {isBlackout && (
         <Box
@@ -491,12 +492,13 @@ const Screen = ({
   const [showText, setShowText] = useState(false)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
-  // Function to copy the dynamic Chakra styles from the parent document to the new window
   const copyChakraStyles = () => {
-    const parentStyles = document.querySelectorAll("style[data-emotion]") // Chakra UI styles are inside <style data-emotion> tags
+    const parentStyles = document.querySelectorAll(
+      "style, link[rel='stylesheet']"
+    )
     parentStyles.forEach((style) => {
       if (windowRef.current) {
-        windowRef.current.document.head.appendChild(style.cloneNode(true)) // Clone the dynamic styles into the new window
+        windowRef.current.document.head.appendChild(style.cloneNode(true))
       }
     })
   }

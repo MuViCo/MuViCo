@@ -1025,6 +1025,55 @@ describe("Screen", () => {
     style.remove()
   })
 
+  test("copies the global stylesheet (plain style and link tags) into the popup document head", async () => {
+    const plainStyle = document.createElement("style")
+    plainStyle.textContent =
+      "@keyframes muvico-test-fade { 0% { opacity: 0; } }"
+    document.head.appendChild(plainStyle)
+
+    const link = document.createElement("link")
+    link.setAttribute("rel", "stylesheet")
+    link.setAttribute("href", "/assets/index.css")
+    document.head.appendChild(link)
+
+    const screenData = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 9,
+      name: "global-style-cue",
+      screen: 1,
+      _id: "id-global-style",
+      loop: false,
+    } as Cue
+
+    render(
+      <Screen
+        screenNumber={1}
+        screenData={screenData}
+        isVisible={true}
+        onClose={() => {}}
+      />
+    )
+
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+
+    await waitFor(() => {
+      expect(
+        popup.document.head.querySelector("style:not([data-emotion])")
+          ?.textContent
+      ).toContain("muvico-test-fade")
+      expect(
+        popup.document.head.querySelector('link[href="/assets/index.css"]')
+      ).toBeTruthy()
+    })
+
+    plainStyle.remove()
+    link.remove()
+  })
+
   test("closes the popup when the screen becomes hidden", async () => {
     const screenData = {
       file: {
@@ -1322,6 +1371,248 @@ describe("Screen", () => {
         expect(image).toBeTruthy()
         expect(image.style.animation).toContain("4s ease-in-out forwards")
       })
+    })
+  })
+
+  describe("cues that persist across a frame change", () => {
+    const videoCue = {
+      file: {
+        url: "http://example.com/background.mp4",
+        type: "video/mp4",
+        name: "background.mp4",
+      },
+      index: 5,
+      name: "background-video",
+      screen: 1,
+      layer: 0,
+      _id: "id-video",
+      loop: false,
+    } as Cue
+
+    const overlayCueA = {
+      file: {
+        url: "http://example.com/overlay-a.png",
+        type: "image/png",
+        name: "overlay-a.png",
+      },
+      index: 6,
+      name: "overlay-a",
+      screen: 1,
+      layer: 1,
+      _id: "id-overlay-a",
+      loop: false,
+    } as Cue
+
+    const overlayCueB = {
+      file: {
+        url: "http://example.com/overlay-b.png",
+        type: "image/png",
+        name: "overlay-b.png",
+      },
+      index: 7,
+      name: "overlay-b",
+      screen: 1,
+      layer: 1,
+      _id: "id-overlay-b",
+      loop: false,
+    } as Cue
+
+    test("keeps the same video element when a sibling layer's cue changes", async () => {
+      const onClose = jest.fn()
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={[videoCue]}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+
+      let popup: any
+      let firstVideoEl: Element | null = null
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        firstVideoEl = popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+        expect(firstVideoEl).toBeTruthy()
+      })
+      const classNameWhileEntering = (firstVideoEl as unknown as Element)
+        .parentElement?.className
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueA]}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const overlay = popup.document.body.querySelector(
+          'img[src="http://example.com/overlay-a.png"]'
+        )
+        expect(overlay).toBeTruthy()
+      })
+
+      const videoElAfterOverlay = popup.document.body.querySelector(
+        'video[src="http://example.com/background.mp4"]'
+      )
+      expect(videoElAfterOverlay).toBe(firstVideoEl)
+      expect(videoElAfterOverlay?.parentElement?.className).not.toBe(
+        classNameWhileEntering
+      )
+
+      const outgoingVideo = popup.document.body.querySelector(
+        '[data-testid="outgoing-cue-layer"] video'
+      )
+      expect(outgoingVideo).toBeNull()
+    })
+
+    test("keeps the same video element across two consecutive overlay changes", async () => {
+      const onClose = jest.fn()
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={[videoCue, overlayCueA]}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+
+      let popup: any
+      let videoEl: Element | null = null
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        videoEl = popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+        expect(videoEl).toBeTruthy()
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueB]}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(
+          popup.document.body.querySelector(
+            'img[src="http://example.com/overlay-b.png"]'
+          )
+        ).toBeTruthy()
+      })
+
+      expect(
+        popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+      ).toBe(videoEl)
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="incoming-cue-layer"] img[src="http://example.com/overlay-a.png"]'
+        )
+      ).toBeNull()
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="outgoing-cue-layer"] img[src="http://example.com/overlay-a.png"]'
+        )
+      ).toBeTruthy()
+    })
+
+    test("keeps the same video element through entering, persisting and exiting", async () => {
+      const onClose = jest.fn()
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={[videoCue]}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+
+      let popup: any
+      let videoEl: Element | null = null
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        videoEl = popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+        expect(videoEl).toBeTruthy()
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueA]}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(
+          popup.document.body.querySelector(
+            'img[src="http://example.com/overlay-a.png"]'
+          )
+        ).toBeTruthy()
+      })
+      expect(
+        popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+      ).toBe(videoEl)
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={
+              {
+                file: null,
+                color: "#000000",
+                index: 8,
+                name: "end-card",
+                screen: 1,
+                _id: "id-end-card",
+                loop: false,
+              } as Cue
+            }
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(
+          popup.document.body.querySelector(
+            '[data-testid="outgoing-cue-layer"] video[src="http://example.com/background.mp4"]'
+          )
+        ).toBeTruthy()
+      })
+
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="outgoing-cue-layer"] video[src="http://example.com/background.mp4"]'
+        )
+      ).toBe(videoEl)
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="incoming-cue-layer"] video'
+        )
+      ).toBeNull()
     })
   })
 
