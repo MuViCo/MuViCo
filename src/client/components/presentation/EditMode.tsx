@@ -274,6 +274,7 @@ const EditMode = ({
   const latestGridDragCellRef = useRef<GridCell | null>(null)
   const hoveredCueRef = useRef<Cue | null>(null)
   const hoveredCellRef = useRef<GridCell | null>(null)
+  const clipboardCueRef = useRef<Cue | null>(null)
   const headerActionsRef = useRef<HeaderActions>({
     addIndex: () => {},
     removeIndex: () => {},
@@ -1077,27 +1078,21 @@ const EditMode = ({
     })
   }
 
-  // Validates drop location against a copied cue and creates the new cue
-  const pasteAtCell = async (xIndex: number, yIndex: number) => {
-    if (!isCopied || !copiedCue) return
-
-    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
-    if (!isInsideGrid) {
-      cancelCopyMode()
-      return
-    }
-
+  // Validates drop location against a cue and creates the pasted copy
+  const createPastedCueAt = async (
+    cue: Cue,
+    xIndex: number,
+    yIndex: number
+  ) => {
     const hoveredCue = getCueAtPosition(xIndex, yIndex)
-    const isBlockedCell = Boolean(
-      hoveredCue && hoveredCue._id === copiedCue._id
-    )
+    const isBlockedCell = Boolean(hoveredCue && hoveredCue._id === cue._id)
     if (isBlockedCell) {
       return
     }
 
     const isValidDropCell = laneAcceptsCueType(
       laneAt(rowModel.rows, yIndex),
-      copiedCue.cueType
+      cue.cueType
     )
     if (!isValidDropCell) {
       showToast({
@@ -1108,8 +1103,20 @@ const EditMode = ({
       return
     }
 
-    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
+    const newCueData = await createNewCueData(xIndex, yIndex, cue)
     await addCue(newCueData)
+  }
+
+  const pasteAtCell = async (xIndex: number, yIndex: number) => {
+    if (!isCopied || !copiedCue) return
+
+    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
+    if (!isInsideGrid) {
+      cancelCopyMode()
+      return
+    }
+
+    await createPastedCueAt(copiedCue, xIndex, yIndex)
   }
 
   // Handle pasting copied cue - validates drop location and creates new cue
@@ -1137,9 +1144,10 @@ const EditMode = ({
     await pasteAtCell(xIndex, yIndex)
   }
 
-  // Ctrl/Cmd+C copies the hovered cue, Ctrl/Cmd+V pastes onto the hovered
-  // cell, and Escape cancels copy mode - mirrors the context menu's
-  // Copy action and the grid-click paste flow.
+  // Ctrl/Cmd+C stashes the hovered cue in clipboardCueRef, Ctrl/Cmd+V pastes
+  // it onto the hovered cell. Unlike the context menu's Copy action, this
+  // never locks the grid into a copy mode - dragging, editing, and other
+  // cues all stay interactive in between, like a video editor's clipboard.
   useEffect(() => {
     if (readOnly) return
 
@@ -1154,39 +1162,29 @@ const EditMode = ({
         return
       }
 
-      if (event.key === "Escape") {
-        if (isCopied) {
-          event.preventDefault()
-          cancelCopyMode()
-        }
-        return
-      }
-
       const isModifierPressed = event.ctrlKey || event.metaKey
       if (!isModifierPressed) return
 
       if (event.key.toLowerCase() === "c") {
         const cue = hoveredCueRef.current
-        if (!cue || isDragging || isCopied) return
+        if (!cue || isDragging) return
         event.preventDefault()
-        setIsCopied(true)
-        setCopiedCue(cue)
-        setShowAlert(true)
-        setAlertData({
-          title: `Copying in progress for element "${cue.name}".`,
-          description:
-            "Click on available places on the grid to paste. Click outside the grid to cancel.",
+        clipboardCueRef.current = cue
+        showToast({
+          title: `Copied "${cue.name}"`,
+          description: "Hover a cell and press Ctrl+V (or Cmd+V) to paste.",
           status: "info",
         })
         return
       }
 
       if (event.key.toLowerCase() === "v") {
-        if (!isCopied || !copiedCue) return
+        const cue = clipboardCueRef.current
+        if (!cue || isDragging) return
         const cell = hoveredCellRef.current
-        if (!cell) return
+        if (!cell || !isRowInsideGrid(cell.xIndex, cell.yIndex)) return
         event.preventDefault()
-        pasteAtCell(cell.xIndex, cell.yIndex)
+        createPastedCueAt(cue, cell.xIndex, cell.yIndex)
       }
     }
 
