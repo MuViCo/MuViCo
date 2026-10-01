@@ -335,4 +335,46 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(FakeImage.instances[0].src).toBe("https://example.com/back.png")
     expect(FakeImage.instances[1].src).toBe("https://example.com/front.png")
   })
+
+  test("does not duplicate preload work when show mode's lookahead effect runs", () => {
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue]}
+        isShowMode={false}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    expect(FakeImage.instances).toHaveLength(1)
+    expect(videoInstances).toHaveLength(1)
+
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+          scores: [],
+        },
+      })
+    )
+
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue]}
+        isShowMode={true}
+        cueIndex={0}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    // Entering show mode runs the lookahead effect on top of the background
+    // preload that already ran for these cues -- it must reuse the cache,
+    // not re-fetch. Show mode's own screen-wall preview also mounts a real
+    // <video>, so only count the detached preload element (preload="auto").
+    const preloadVideos = videoInstances.filter((v) => v.preload === "auto")
+    expect(FakeImage.instances).toHaveLength(1)
+    expect(preloadVideos).toHaveLength(1)
+  })
 })

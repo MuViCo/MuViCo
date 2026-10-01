@@ -58,7 +58,12 @@ import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
+import { getLookaheadFrameIndices } from "../utils/showLookaheadUtils"
 import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
+
+// How many frames ahead of the live cue to keep preloaded while show mode
+// is active.
+const SHOW_LOOKAHEAD_FRAMES = 2
 
 interface EditModeContainerProps {
   id: string
@@ -909,6 +914,49 @@ const EditModeContainer = ({
       preloadVisualUrl(url, kind)
     })
   }, [cues, collectVisualMediaItems, preloadVisualUrl])
+
+  // Cues active at a given frame index across every screen, independent of
+  // which screen displays them -- used to look ahead to upcoming frames'
+  // media rather than just the current one.
+  const getCuesActiveAtIndex = useCallback(
+    (index: number): Cue[] =>
+      (cues || []).filter((cue) => {
+        const cueStartIndex = Number(cue.index)
+        const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const cueEndIndex = cueStartIndex + cueSpan - 1
+        return index >= cueStartIndex && index <= cueEndIndex
+      }),
+    [cues, cueVisualSpanMap]
+  )
+
+  // The entry preload gate only covers media that's needed before show mode
+  // opens. During an active show, advancing frames can still hit media that
+  // was never touched (e.g. a cue added after entry, or a race with the
+  // initial preload) -- so keep the next couple of frames warmed up while
+  // the current one is on screen.
+  useEffect(() => {
+    if (!isShowMode) return
+
+    getLookaheadFrameIndices(
+      cueIndex,
+      indexCount,
+      SHOW_LOOKAHEAD_FRAMES
+    ).forEach((lookaheadIndex) => {
+      const mediaItems = collectVisualMediaItems(
+        getCuesActiveAtIndex(lookaheadIndex)
+      )
+      mediaItems.forEach(({ kind }, url) => {
+        preloadVisualUrl(url, kind)
+      })
+    })
+  }, [
+    isShowMode,
+    cueIndex,
+    indexCount,
+    getCuesActiveAtIndex,
+    collectVisualMediaItems,
+    preloadVisualUrl,
+  ])
 
   const handleEnterShow = useCallback(async () => {
     const mediaItems = collectVisualMediaItems(cues || [])
