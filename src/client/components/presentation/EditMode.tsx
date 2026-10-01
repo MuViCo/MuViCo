@@ -256,17 +256,7 @@ const EditMode = ({
     ref: containerRef,
     handler: () => {
       if (isCopied && !isConfirmOpen) {
-        clearExternalPlacementPreview()
-        showToast({
-          title: "Cancelled copying",
-          description: "Copying has been cancelled.",
-          status: "info",
-        })
-        setDragCursorMode("default")
-        setIsCopied(false)
-        setCopiedCue(null)
-        setShowAlert(false)
-        setAlertData({})
+        cancelCopyMode()
       }
     },
   })
@@ -282,6 +272,8 @@ const EditMode = ({
   const dragHasMovedRef = useRef(false)
   const latestGridDragDataRef = useRef<NewCueDragData | null>(null)
   const latestGridDragCellRef = useRef<GridCell | null>(null)
+  const hoveredCueRef = useRef<Cue | null>(null)
+  const hoveredCellRef = useRef<GridCell | null>(null)
   const headerActionsRef = useRef<HeaderActions>({
     addIndex: () => {},
     removeIndex: () => {},
@@ -1070,23 +1062,63 @@ const EditMode = ({
     }
   }
 
+  // Shared by the outside-click handler, mouse paste, and the Escape shortcut
+  const cancelCopyMode = () => {
+    clearExternalPlacementPreview()
+    setDragCursorMode("default")
+    setIsCopied(false)
+    setCopiedCue(null)
+    setShowAlert(false)
+    setAlertData({})
+    showToast({
+      title: "Cancelled copying",
+      description: "Copying has been cancelled.",
+      status: "info",
+    })
+  }
+
+  // Validates drop location against a copied cue and creates the new cue
+  const pasteAtCell = async (xIndex: number, yIndex: number) => {
+    if (!isCopied || !copiedCue) return
+
+    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
+    if (!isInsideGrid) {
+      cancelCopyMode()
+      return
+    }
+
+    const hoveredCue = getCueAtPosition(xIndex, yIndex)
+    const isBlockedCell = Boolean(
+      hoveredCue && hoveredCue._id === copiedCue._id
+    )
+    if (isBlockedCell) {
+      return
+    }
+
+    const isValidDropCell = laneAcceptsCueType(
+      laneAt(rowModel.rows, yIndex),
+      copiedCue.cueType
+    )
+    if (!isValidDropCell) {
+      showToast({
+        title: "Only audio files on the audio row.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
+
+    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
+    await addCue(newCueData)
+  }
+
   // Handle pasting copied cue - validates drop location and creates new cue
   const handlePaste = async (event: ReactMouseEvent) => {
     if (targetElement(event).closest("button")) return
     if (!isCopied || !copiedCue) return
 
     if (targetElement(event).closest(".x-index-label")) {
-      clearExternalPlacementPreview()
-      setDragCursorMode("default")
-      setIsCopied(false)
-      setCopiedCue(null)
-      setShowAlert(false)
-      setAlertData({})
-      showToast({
-        title: "Cancelled copying",
-        description: "Copying has been cancelled.",
-        status: "info",
-      })
+      cancelCopyMode()
       return
     }
 
@@ -1102,47 +1134,65 @@ const EditMode = ({
       rowHeight,
       gap
     )
-    // Validate drop position - must be within grid, compatible with cue type, and not the same cell as the original cue
-    const hoveredCue = getCueAtPosition(xIndex, yIndex)
-    const isBlockedCell = Boolean(
-      hoveredCue && hoveredCue._id === copiedCue._id
-    )
-    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
-    const isValidDropCell =
-      laneAcceptsCueType(laneAt(rowModel.rows, yIndex), copiedCue.cueType) &&
-      !isBlockedCell
-
-    if (!isInsideGrid) {
-      clearExternalPlacementPreview()
-      setDragCursorMode("default")
-      setIsCopied(false)
-      setCopiedCue(null)
-      setShowAlert(false)
-      setAlertData({})
-      showToast({
-        title: "Cancelled copying",
-        description: "Copying has been cancelled.",
-        status: "info",
-      })
-      return
-    }
-
-    if (isBlockedCell) {
-      return
-    }
-
-    if (!isValidDropCell) {
-      showToast({
-        title: "Only audio files on the audio row.",
-        description: "Click on an appropriate row to paste the element.",
-        status: "error",
-      })
-      return
-    }
-
-    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
-    await addCue(newCueData)
+    await pasteAtCell(xIndex, yIndex)
   }
+
+  // Ctrl/Cmd+C copies the hovered cue, Ctrl/Cmd+V pastes onto the hovered
+  // cell, and Escape cancels copy mode - mirrors the context menu's
+  // Copy action and the grid-click paste flow.
+  useEffect(() => {
+    if (readOnly) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (event.key === "Escape") {
+        if (isCopied) {
+          event.preventDefault()
+          cancelCopyMode()
+        }
+        return
+      }
+
+      const isModifierPressed = event.ctrlKey || event.metaKey
+      if (!isModifierPressed) return
+
+      if (event.key.toLowerCase() === "c") {
+        const cue = hoveredCueRef.current
+        if (!cue || isDragging || isCopied) return
+        event.preventDefault()
+        setIsCopied(true)
+        setCopiedCue(cue)
+        setShowAlert(true)
+        setAlertData({
+          title: `Copying in progress for element "${cue.name}".`,
+          description:
+            "Click on available places on the grid to paste. Click outside the grid to cancel.",
+          status: "info",
+        })
+        return
+      }
+
+      if (event.key.toLowerCase() === "v") {
+        if (!isCopied || !copiedCue) return
+        const cell = hoveredCellRef.current
+        if (!cell) return
+        event.preventDefault()
+        pasteAtCell(cell.xIndex, cell.yIndex)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  })
 
   const updateCopiedCuePreview = (event: ReactMouseEvent) => {
     scheduleExternalPreviewFromEvent(event, {
@@ -1261,6 +1311,7 @@ const EditMode = ({
         rowHeight,
         gap
       )
+      hoveredCellRef.current = hoveredCell
       setInsertBeforeIndex(
         isInternalDropInInsertZone(hoveredCell) ? hoveredCell.xIndex : null
       )
@@ -1271,6 +1322,13 @@ const EditMode = ({
 
     if (isCopied && copiedCue) {
       hideHoverPreview()
+      hoveredCellRef.current = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
       updateCopiedCuePreview(event)
       return
     }
@@ -1287,10 +1345,12 @@ const EditMode = ({
       gap
     )
 
-    const cueExists = Boolean(getCueAtPosition(xIndex, yIndex))
+    hoveredCellRef.current = { xIndex, yIndex, xWithinCell: 0 }
+    const hoveredCueAtPosition = getCueAtPosition(xIndex, yIndex) ?? null
+    hoveredCueRef.current = hoveredCueAtPosition
 
     if (
-      !cueExists &&
+      !hoveredCueAtPosition &&
       xIndex >= 0 &&
       xIndex < indexCount &&
       yIndex >= 0 &&
@@ -1316,11 +1376,11 @@ const EditMode = ({
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-        (dragStartPointer &&
-          Math.hypot(
-            event.clientX - dragStartPointer.clientX,
-            event.clientY - dragStartPointer.clientY
-          ) >= dragCommitDistancePx)
+      (dragStartPointer &&
+        Math.hypot(
+          event.clientX - dragStartPointer.clientX,
+          event.clientY - dragStartPointer.clientY
+        ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const dropCell = getPosition(
@@ -1988,11 +2048,9 @@ const EditMode = ({
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (
-        !(
-          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
-        )
-      ) {
+      if (!(
+        newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+      )) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -2443,6 +2501,8 @@ const EditMode = ({
                 }}
                 onMouseLeave={() => {
                   hideHoverPreview()
+                  hoveredCueRef.current = null
+                  hoveredCellRef.current = null
 
                   if (isDragging) {
                     resetDragInteraction()
