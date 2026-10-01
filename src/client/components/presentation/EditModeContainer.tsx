@@ -44,7 +44,12 @@ import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
-import { getAudioRow, isType } from "../utils/fileTypeUtils"
+import {
+  getAudioRow,
+  isImageFile,
+  isType,
+  isVideoFile,
+} from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
@@ -1107,13 +1112,18 @@ const EditModeContainer = ({
       // without the stable disk-cache key.
       const id = file.id || file.url
 
-      if (isType.image(file)) {
+      // isImageFile/isVideoFile fall back to a URL extension check when
+      // file.type is missing/stale -- the strict isType.image/video (MIME
+      // only) silently dropped those files from the preload queue instead
+      // of erroring, which looked like "images never prepare" while videos
+      // (whose type happened to be set correctly) preloaded fine.
+      if (isImageFile(file)) {
         items.set(file.url, {
           kind: "image",
           label: cue.name || file.name || "image",
           id,
         })
-      } else if (isType.video(file)) {
+      } else if (isVideoFile(file)) {
         items.set(file.url, {
           kind: "video",
           label: cue.name || file.name || "vidéo",
@@ -1211,6 +1221,16 @@ const EditModeContainer = ({
     freezeMediaUrl,
   ])
 
+  // Guards against overlapping handleEnterShow calls: exiting show mode
+  // doesn't cancel an in-flight preload (the underlying fetches have no
+  // AbortController), so re-entering show mode quickly starts a second
+  // Promise.all while the first is still resolving. Both would otherwise
+  // write to the same preloadProgress state, and the stale call's `loaded`
+  // (counted against ITS OWN total) could outlive and overwrite the new
+  // call's total -- e.g. "45/27 médias chargés". Each call stamps its own
+  // session id and only the latest one is allowed to touch state.
+  const preloadSessionRef = useRef(0)
+
   const handleEnterShow = useCallback(async () => {
     const mediaItems = collectMediaItems(cues || [])
     const entries = Array.from(mediaItems.entries())
@@ -1230,6 +1250,8 @@ const EditModeContainer = ({
       return
     }
 
+    const sessionId = (preloadSessionRef.current += 1)
+
     setPreloadProgress({
       loaded: initialLoaded,
       total,
@@ -1242,10 +1264,12 @@ const EditModeContainer = ({
       entries.map(async ([url, { kind, id }]) => {
         await freezeMediaUrl(url, kind, id)
         loaded += 1
+        if (preloadSessionRef.current !== sessionId) return
         setPreloadProgress((prev) => ({ ...prev, loaded }))
       })
     )
 
+    if (preloadSessionRef.current !== sessionId) return
     setIsPreparingShow(false)
     onEnterShow()
   }, [cues, onEnterShow, collectMediaItems, freezeMediaUrl])
