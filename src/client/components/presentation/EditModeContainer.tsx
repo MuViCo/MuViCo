@@ -81,6 +81,25 @@ type MediaItemStatus = "pending" | "loading" | "done" | "failed"
 // can be called again for the same URL on every cues/lookahead effect run.
 const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
 
+// Disk-backed cache for frozen media bytes, keyed by the file's stable
+// storage id (not the presigned URL, which rotates every time the
+// presentation is re-fetched). Survives reloads and is shared across every
+// same-origin window/tab -- unlike the in-memory Blob/ObjectURL map below,
+// which is per-document.
+const MEDIA_DISK_CACHE_NAME = "muvico-show-media-v1"
+const mediaDiskCacheKeyFor = (id: string) =>
+  `/__muvico_media_cache__/${encodeURIComponent(id)}`
+
+const getMediaDiskCache = async (): Promise<Cache | null> => {
+  if (typeof caches === "undefined") return null
+  try {
+    return await caches.open(MEDIA_DISK_CACHE_NAME)
+  } catch (error) {
+    console.warn("Show mode: media disk cache unavailable", error)
+    return null
+  }
+}
+
 const readMediaValidators = (response: Response): MediaValidators => {
   const headers = response.headers as Headers | undefined
   return {
@@ -108,22 +127,16 @@ const mediaValidatorsMatch = (
   )
 }
 
-// Lightweight check for whether a URL's content has changed: HEAD is the
-// standard tool, but S3 presigned URLs/CORS don't always allow it, so fall
-// back to a 1-byte ranged GET, and fail soft (null) if even that errors --
-// callers treat "can't validate" as "assume unchanged" rather than
-// breaking the freeze pipeline.
+// Lightweight check for whether a URL's content has changed: a 1-byte
+// ranged GET, not HEAD -- these are S3 presigned URLs signed for GET only,
+// so HEAD is rejected with a 403 every single time (not just "sometimes"),
+// which only spammed the console with CORS errors for no benefit. Fails
+// soft (null) on any error -- callers treat "can't validate" as "assume
+// unchanged" rather than breaking the freeze pipeline.
 const fetchMediaValidators = async (
   url: string
 ): Promise<MediaValidators | null> => {
   try {
-    try {
-      const headResponse = await fetch(url, { method: "HEAD" })
-      if (headResponse.ok) return readMediaValidators(headResponse)
-    } catch {
-      // HEAD unsupported/blocked by CORS -- fall through to the ranged GET.
-    }
-
     const rangeResponse = await fetch(url, {
       headers: { Range: "bytes=0-0" },
     })
@@ -914,8 +927,18 @@ const EditModeContainer = ({
   // already frozen, in which case it's revalidated first (ETag/Last-
   // Modified/Content-Length) so a file replaced in place under the same
   // URL doesn't keep serving stale content forever.
+  //
+  // `id` is the file's stable storage handle (cue.file.id), unlike `url`
+  // which is a presigned S3 URL regenerated on every presentation re-fetch.
+  // The disk cache (CacheStorage) is keyed by `id` so a freeze from an
+  // earlier session/reload or a sibling window can be reused without
+  // re-downloading, even though its presigned URL has since rotated.
   const freezeMediaUrl = useCallback(
-    (url: string, kind: "image" | "video" | "audio"): Promise<string> => {
+    (
+      url: string,
+      kind: "image" | "video" | "audio",
+      id: string
+    ): Promise<string> => {
       const promiseCache = mediaFreezePromisesRef.current
       const cached = promiseCache.get(url)
       const existingBlobUrl = mediaBlobUrlsRef.current.get(url)
@@ -946,7 +969,8 @@ const EditModeContainer = ({
             }
 
             // Content changed under the same URL -- drop the stale Blob so
-            // the recursive call below re-downloads it.
+            // the recursive call below re-downloads it, and evict it from
+            // the disk cache too so a reload doesn't resurrect stale bytes.
             URL.revokeObjectURL(existingBlobUrl)
             mediaBlobUrlsRef.current.delete(url)
             mediaValidatorsRef.current.delete(url)
@@ -958,13 +982,15 @@ const EditModeContainer = ({
               delete next[url]
               return next
             })
+            const diskCache = await getMediaDiskCache()
+            await diskCache?.delete(mediaDiskCacheKeyFor(id))
           })().finally(() => {
             mediaValidationPromisesRef.current.delete(url)
           })
           mediaValidationPromisesRef.current.set(url, validation)
         }
 
-        return validation.then(() => freezeMediaUrl(url, kind))
+        return validation.then(() => freezeMediaUrl(url, kind, id))
       }
 
       if (cached) {
@@ -972,7 +998,27 @@ const EditModeContainer = ({
       }
 
       const promise = (async () => {
+        const diskCacheKey = mediaDiskCacheKeyFor(id)
         try {
+          const diskCache = await getMediaDiskCache()
+          const cachedResponse = await diskCache?.match(diskCacheKey)
+          if (cachedResponse) {
+            const blob = await cachedResponse.blob()
+            const objectUrl = URL.createObjectURL(blob)
+            mediaBlobUrlsRef.current.set(url, objectUrl)
+            mediaLastValidatedAtRef.current.set(url, Date.now())
+            setFrozenMediaUrls((prev) =>
+              prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
+            )
+            setMediaFailedUrls((prev) => {
+              if (!prev.has(url)) return prev
+              const next = new Set(prev)
+              next.delete(url)
+              return next
+            })
+            return objectUrl
+          }
+
           const response = await fetch(url)
           if (response && response.ok === false) {
             throw new Error(
@@ -994,6 +1040,16 @@ const EditModeContainer = ({
             next.delete(url)
             return next
           })
+          if (diskCache) {
+            try {
+              await diskCache.put(diskCacheKey, new Response(blob))
+            } catch (error) {
+              console.warn(
+                "Show mode: failed to persist media to disk cache",
+                error
+              )
+            }
+          }
           return objectUrl
         } catch (error) {
           // Freeze failed (network error, CORS, rotated token, ...). Fall
@@ -1037,7 +1093,7 @@ const EditModeContainer = ({
   const collectMediaItems = useCallback((cueList: Cue[]) => {
     const items = new Map<
       string,
-      { kind: "image" | "video" | "audio"; label: string }
+      { kind: "image" | "video" | "audio"; label: string; id: string }
     >()
     const backToFront = [...cueList].sort(
       (a, b) => Number(b.layer ?? 0) - Number(a.layer ?? 0)
@@ -1046,21 +1102,28 @@ const EditModeContainer = ({
     backToFront.forEach((cue) => {
       const file = cue.file
       if (!file?.url || items.has(file.url)) return
+      // Falls back to the url itself when a file somehow has no id (should
+      // not happen for library/cue media) so freezing still works, just
+      // without the stable disk-cache key.
+      const id = file.id || file.url
 
       if (isType.image(file)) {
         items.set(file.url, {
           kind: "image",
           label: cue.name || file.name || "image",
+          id,
         })
       } else if (isType.video(file)) {
         items.set(file.url, {
           kind: "video",
           label: cue.name || file.name || "vidéo",
+          id,
         })
       } else if (isType.audio(file)) {
         items.set(file.url, {
           kind: "audio",
           label: cue.name || file.name || "audio",
+          id,
         })
       }
     })
@@ -1135,8 +1198,8 @@ const EditModeContainer = ({
       SHOW_LOOKAHEAD_FRAMES
     ).forEach((lookaheadIndex) => {
       const mediaItems = collectMediaItems(getCuesActiveAtIndex(lookaheadIndex))
-      mediaItems.forEach(({ kind }, url) => {
-        freezeMediaUrl(url, kind)
+      mediaItems.forEach(({ kind, id }, url) => {
+        freezeMediaUrl(url, kind, id)
       })
     })
   }, [
@@ -1176,8 +1239,8 @@ const EditModeContainer = ({
 
     let loaded = initialLoaded
     await Promise.all(
-      entries.map(async ([url, { kind }]) => {
-        await freezeMediaUrl(url, kind)
+      entries.map(async ([url, { kind, id }]) => {
+        await freezeMediaUrl(url, kind, id)
         loaded += 1
         setPreloadProgress((prev) => ({ ...prev, loaded }))
       })
