@@ -149,6 +149,8 @@ const fetchMediaValidators = async (
   try {
     const rangeResponse = await fetch(url, {
       headers: { Range: "bytes=0-0" },
+      // Same opaque-cache-entry trap as the full fetch in freezeMediaUrl.
+      cache: "reload",
     })
     if (rangeResponse.ok || rangeResponse.status === 206) {
       return readMediaValidators(rangeResponse)
@@ -1029,7 +1031,16 @@ const EditModeContainer = ({
             return objectUrl
           }
 
-          const response = await fetch(url)
+          // `cache: "reload"` is load-bearing, not an optimization. These
+          // same URLs are first loaded by plain <img>/<video> tags (the
+          // editor preview strip, the media library tiles), which fetch
+          // them in no-cors mode and leave an OPAQUE response in the HTTP
+          // cache. A later cors-mode fetch() for the same URL is served
+          // that cached opaque entry, which carries no CORS headers, so
+          // the browser rejects it with "MissingAllowOriginHeader" even
+          // though the server does send them. Forcing a revalidated
+          // network hit replaces the poisoned entry with a cors-valid one.
+          const response = await fetch(url, { cache: "reload" })
           if (response && response.ok === false) {
             throw new Error(
               `Failed to fetch ${kind} for show mode preload (status ${response.status})`
