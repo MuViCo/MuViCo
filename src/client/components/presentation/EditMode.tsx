@@ -1224,7 +1224,7 @@ const EditMode = ({
 
     return {
       index: xIndex,
-      cueName: `${copiedCue.name} copy`,
+      cueName: copiedCue.name,
       ...laneScreenLayer(yIndex),
       file: fileObj,
       fileName: copiedCue.file?.name || null,
