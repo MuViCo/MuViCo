@@ -6,7 +6,7 @@
  * - Opens a new browser window for each screen and renders media cues based on the current presentation state.
  * - Supports images, videos, and audio files, with conditional rendering based on file type.
  * - Implements transitions between cues using Emotion for CSS-in-JS styling.
- * - Displays screen number and cue name as an overlay when the Shift key is held down.
+ * - Falls back to a plain black screen when the current frame has no cue.
  * - Listens for changes in the assigned cue data and updates the displayed media accordingly.
  * - Cleans up resources and event listeners when the screen is closed or unmounted.
  */
@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
-import { Box, Image, Text, usePrefersReducedMotion } from "@chakra-ui/react"
+import { Box, Image, usePrefersReducedMotion } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import type { EmotionCache } from "@emotion/cache"
@@ -37,6 +37,14 @@ const mediaFillProps = {
   height: "100%",
   objectFit: "contain",
 } as const
+
+// Resolves a cue's media URL to its frozen Object URL (see
+// EditModeContainer's freezeMediaUrl) when one is available, falling back
+// to the live URL otherwise -- not yet frozen, or the freeze itself failed.
+const resolveMediaSrc = (
+  url: string | undefined,
+  overrides?: Record<string, string>
+): string | undefined => (url ? (overrides?.[url] ?? url) : url)
 
 // An image cue that spans several screens. Renders the normal full-bleed
 // "contain" image until the image's natural size is known (a hidden probe
@@ -184,7 +192,8 @@ const renderMedia = (
   cue: Cue,
   screenNumber: string | number,
   screenWidths?: Record<number, number>,
-  prefersReducedMotion = false
+  prefersReducedMotion = false,
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const { file, name, color, spanScreens } = cue
 
@@ -205,7 +214,8 @@ const renderMedia = (
   }
 
   if (isType.image(file)) {
-    const imageSrc = file.url || `/${file.name}`
+    const imageSrc =
+      resolveMediaSrc(file.url, mediaUrlOverrides) || `/${file.name}`
     const animation = imageEffectAnimation(cue, prefersReducedMotion)
 
     if ((spanScreens?.length ?? 0) > 1) {
@@ -232,10 +242,12 @@ const renderMedia = (
   }
   // check if media is video
   if (isType.video(file)) {
+    const videoSrc = resolveMediaSrc(file.url, mediaUrlOverrides)
+
     if ((spanScreens?.length ?? 0) > 1) {
       return (
         <SpannedVideo
-          videoSrc={file.url as string}
+          videoSrc={videoSrc as string}
           cueId={cue._id}
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
@@ -244,13 +256,14 @@ const renderMedia = (
       )
     }
 
-    return <video src={file.url} style={mediaFillProps} autoPlay loop muted />
+    return <video src={videoSrc} style={mediaFillProps} autoPlay loop muted />
   }
   // check if media is audio
   if (isType.audio(file)) {
+    const audioSrc = resolveMediaSrc(file.url, mediaUrlOverrides)
     return (
       <audio autoPlay loop controls style={{ width: "100%" }}>
-        <source src={file.url} type={file.mimeType || "audio/mpeg"} />
+        <source src={audioSrc} type={file.mimeType || "audio/mpeg"} />
         Your browser does not support the audio element.
       </audio>
     )
@@ -289,7 +302,8 @@ const renderCueLayers = (
   prefersReducedMotion: boolean,
   isRevealed: boolean,
   enterAnimStyle: string,
-  exitAnimStyle: string
+  exitAnimStyle: string,
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
@@ -309,23 +323,22 @@ const renderCueLayers = (
 
   return (
     <>
-      {currentCueStack.length === 0 && (
-        <Text data-testid="incoming-cue-layer">
-          No media available for this cue.
-        </Text>
-      )}
       {entries.map(({ cue, isIncoming, isNew }) => (
         <Box
           key={cueIdentity(cue)}
           data-testid={isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"}
-          data-revealed={isIncoming ? isRevealed : undefined}
+          data-revealed={isIncoming ? (isNew ? isRevealed : true) : undefined}
           position="absolute"
           {...cueFrameStyle(cue)}
           zIndex={100 - Number(cue.layer ?? 0)}
           opacity={
-            isIncoming && !isRevealed ? 0 : normalizeCueOpacity(cue.opacity)
+            isIncoming && isNew && !isRevealed
+              ? 0
+              : normalizeCueOpacity(cue.opacity)
           }
-          pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
+          pointerEvents={
+            isIncoming && isNew && !isRevealed ? "none" : undefined
+          }
           display="flex"
           justifyContent="center"
           alignItems="center"
@@ -342,7 +355,13 @@ const renderCueLayers = (
                 : undefined
           }
         >
-          {renderMedia(cue, screenNumber, screenWidths, prefersReducedMotion)}
+          {renderMedia(
+            cue,
+            screenNumber,
+            screenWidths,
+            prefersReducedMotion,
+            mediaUrlOverrides
+          )}
         </Box>
       ))}
     </>
@@ -353,24 +372,24 @@ interface ScreenContentProps {
   screenNumber: string | number
   currentScreenData: CueStack
   previousScreenData: CueStack
-  showText: boolean
   transitionType?: string
   screenWidths?: Record<number, number>
   isBlackout?: boolean
   outputAspectRatio?: string
   isRevealed?: boolean
+  mediaUrlOverrides?: Record<string, string>
 }
 
 const ScreenContent = ({
   screenNumber,
   currentScreenData,
   previousScreenData,
-  showText,
   transitionType,
   screenWidths,
   isBlackout,
   outputAspectRatio,
   isRevealed = true,
+  mediaUrlOverrides,
 }: ScreenContentProps) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(
     transitionType ?? "fade"
@@ -378,8 +397,6 @@ const ScreenContent = ({
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} 500ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
-  const currentCueStack = normalizeCueStack(currentScreenData)
-  const currentCueNames = currentCueStack.map((cue) => cue.name).filter(Boolean)
 
   return (
     <Box
@@ -392,34 +409,6 @@ const ScreenContent = ({
       position="relative"
       overflow="hidden"
     >
-      {/* Header with Screen Number on the left and Cue Name on the right */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        position="absolute"
-        width="90vw"
-        left="5vw"
-        zIndex={2}
-      >
-        <Text
-          fontSize="xl"
-          textShadow="1px 0 2px #000000"
-          style={{ visibility: showText ? "visible" : "hidden" }}
-        >
-          Screen {screenNumber}
-        </Text>
-        {currentCueNames.length > 0 && (
-          <Text
-            fontSize="xl"
-            textShadow="1px 0 2px #000000"
-            style={{ visibility: showText ? "visible" : "hidden" }}
-          >
-            Element Name: {currentCueNames.join(" / ")}
-          </Text>
-        )}
-      </Box>
-
       <Box
         data-testid="screen-stage"
         position="absolute"
@@ -440,7 +429,8 @@ const ScreenContent = ({
           prefersReducedMotion,
           isRevealed,
           animStyle(enterAnim),
-          animStyle(exitAnim)
+          animStyle(exitAnim),
+          mediaUrlOverrides
         )}
       </Box>
       {isBlackout && (
@@ -467,6 +457,13 @@ interface ScreenProps {
   isBlackout?: boolean
   outputAspectRatio?: string
   transitionAt?: number
+  /**
+   * originalUrl -> frozen Object URL, from EditModeContainer's
+   * freezeMediaUrl. When a cue's media URL has an entry here, it's used
+   * instead of the live (S3) URL so this popup never re-fetches over the
+   * network -- see the module doc for why.
+   */
+  mediaUrlOverrides?: Record<string, string>
 }
 
 const Screen = ({
@@ -480,6 +477,7 @@ const Screen = ({
   isBlackout = false,
   outputAspectRatio,
   transitionAt,
+  mediaUrlOverrides,
 }: ScreenProps) => {
   const windowRef = useRef<Window | null>(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -489,7 +487,6 @@ const Screen = ({
   )
   const [isRevealed, setIsRevealed] = useState(true)
   const cancelRevealRef = useRef<(() => void) | null>(null)
-  const [showText, setShowText] = useState(false)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
   const copyChakraStyles = () => {
@@ -684,29 +681,6 @@ const Screen = ({
     screenNumber,
   ])
 
-  // Listeners for shift-press to show screen data on screens
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setShowText(true)
-      }
-    }
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setShowText(false)
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    window.addEventListener("keyup", handleKeyUp)
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.removeEventListener("keyup", handleKeyUp)
-    }
-  }, [])
-
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && emotionCache
     ? ReactDOM.createPortal(
@@ -716,12 +690,12 @@ const Screen = ({
             screenNumber={screenNumber}
             currentScreenData={currentScreenData}
             previousScreenData={previousScreenData}
-            showText={showText}
             transitionType={transitionType}
             screenWidths={screenWidths}
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
             isRevealed={isRevealed}
+            mediaUrlOverrides={mediaUrlOverrides}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body

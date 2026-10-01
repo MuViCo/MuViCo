@@ -44,7 +44,7 @@ import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
-import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
+import { getAudioRow, isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
@@ -58,7 +58,84 @@ import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
+import { getLookaheadFrameIndices } from "../utils/showLookaheadUtils"
 import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
+
+// How many frames ahead of the live cue to keep preloaded while show mode
+// is active.
+const SHOW_LOOKAHEAD_FRAMES = 2
+
+// Standard HTTP validators used to detect whether a frozen media URL's
+// underlying content has changed since it was last downloaded (e.g. an
+// uploaded file was replaced in place, reusing the same URL/S3 key -- this
+// happens for media-library-owned files shared across cues).
+interface MediaValidators {
+  etag: string | null
+  lastModified: string | null
+  contentLength: string | null
+}
+
+type MediaItemStatus = "pending" | "loading" | "done" | "failed"
+
+// Don't revalidate an already-frozen URL more often than this -- freezeMediaUrl
+// can be called again for the same URL on every cues/lookahead effect run.
+const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
+
+const readMediaValidators = (response: Response): MediaValidators => {
+  const headers = response.headers as Headers | undefined
+  return {
+    etag: headers?.get?.("etag") ?? null,
+    lastModified: headers?.get?.("last-modified") ?? null,
+    contentLength: headers?.get?.("content-length") ?? null,
+  }
+}
+
+const mediaValidatorsMatch = (
+  previous: MediaValidators | null,
+  next: MediaValidators | null
+): boolean => {
+  if (!previous || !next) return false
+  const previousHasAny =
+    previous.etag || previous.lastModified || previous.contentLength
+  const nextHasAny = next.etag || next.lastModified || next.contentLength
+  // Neither request returned anything usable to compare -- can't prove
+  // staleness, so don't force a re-download on every revalidation.
+  if (!previousHasAny || !nextHasAny) return true
+  if (previous.etag && next.etag) return previous.etag === next.etag
+  return (
+    previous.lastModified === next.lastModified &&
+    previous.contentLength === next.contentLength
+  )
+}
+
+// Lightweight check for whether a URL's content has changed: HEAD is the
+// standard tool, but S3 presigned URLs/CORS don't always allow it, so fall
+// back to a 1-byte ranged GET, and fail soft (null) if even that errors --
+// callers treat "can't validate" as "assume unchanged" rather than
+// breaking the freeze pipeline.
+const fetchMediaValidators = async (
+  url: string
+): Promise<MediaValidators | null> => {
+  try {
+    try {
+      const headResponse = await fetch(url, { method: "HEAD" })
+      if (headResponse.ok) return readMediaValidators(headResponse)
+    } catch {
+      // HEAD unsupported/blocked by CORS -- fall through to the ranged GET.
+    }
+
+    const rangeResponse = await fetch(url, {
+      headers: { Range: "bytes=0-0" },
+    })
+    if (rangeResponse.ok || rangeResponse.status === 206) {
+      return readMediaValidators(rangeResponse)
+    }
+    return null
+  } catch (error) {
+    console.warn("Show mode: media validation request failed", url, error)
+    return null
+  }
+}
 
 interface EditModeContainerProps {
   id: string
@@ -580,16 +657,47 @@ const EditModeContainer = ({
     Record<string, boolean>
   >({})
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const audioPreloadedUrlsRef = useRef(new Set())
-  const visualPreloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map())
-  const visualLoadedUrlsRef = useRef<Set<string>>(new Set())
-  const visualPreloadVideoElsRef = useRef<Set<HTMLVideoElement>>(new Set())
+  // Media freezing: every image/video/audio URL gets fetched to a Blob and
+  // swapped for an Object URL so show mode's popups never touch the network
+  // (or a since-rotated S3 presigned URL) again once preloaded.
+  // originalUrl -> objectUrl, only set once a fetch actually resolves.
+  const mediaBlobUrlsRef = useRef<Map<string, string>>(new Map())
+  // originalUrl -> in-flight/settled freeze promise, resolving to the
+  // objectUrl on success or the original URL as a fallback on failure.
+  const mediaFreezePromisesRef = useRef<Map<string, Promise<string>>>(new Map())
+  // originalUrl set once its freeze attempt has settled either way, so the
+  // show-mode entry gate can tell "already attempted" from "still pending"
+  // without inspecting promise internals.
+  const mediaSettledUrlsRef = useRef<Set<string>>(new Set())
+  // Mirrors mediaBlobUrlsRef as render-visible state so Screen/CueAudioPlayers
+  // re-render with the frozen URL once it's ready.
+  const [frozenMediaUrls, setFrozenMediaUrls] = useState<
+    Record<string, string>
+  >({})
+  // Every media URL referenced by the current cues, tracked so a cue being
+  // edited/removed can have its frozen Blob revoked instead of leaked.
+  const liveMediaUrlsRef = useRef<Set<string>>(new Set())
+  // originalUrl -> validators (ETag/Last-Modified/Content-Length) captured
+  // when that URL was last frozen or revalidated.
+  const mediaValidatorsRef = useRef<Map<string, MediaValidators>>(new Map())
+  // originalUrl -> timestamp of the last revalidation attempt, so repeat
+  // freezeMediaUrl calls for an already-frozen URL don't hammer the network.
+  const mediaLastValidatedAtRef = useRef<Map<string, number>>(new Map())
+  // originalUrl -> in-flight revalidation, so concurrent freezeMediaUrl
+  // calls for the same URL share one validation request.
+  const mediaValidationPromisesRef = useRef<Map<string, Promise<void>>>(
+    new Map()
+  )
+  // URLs whose freeze attempt most recently failed, surfaced as a distinct
+  // status in the loading overlay. Cleared once a later attempt succeeds or
+  // the URL drops out of use.
+  const [mediaFailedUrls, setMediaFailedUrls] = useState<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
   const [preloadProgress, setPreloadProgress] = useState<{
     loaded: number
     total: number
-    currentLabel: string | null
-  }>({ loaded: 0, total: 0, currentLabel: null })
+    items: Array<{ url: string; label: string }>
+  }>({ loaded: 0, total: 0, items: [] })
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -597,13 +705,14 @@ const EditModeContainer = ({
     [cues, indexCount]
   )
 
-  // Clean up any preload <video> elements still attached mid-fetch if the
-  // component unmounts before they resolve.
+  // Revoke every frozen Object URL when the presentation editor itself
+  // unmounts (leaving the presentation entirely) -- nothing left to show
+  // media from past this point.
   useEffect(() => {
-    const videoEls = visualPreloadVideoElsRef.current
+    const blobUrls = mediaBlobUrlsRef.current
     return () => {
-      videoEls.forEach((video) => video.remove())
-      videoEls.clear()
+      blobUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl))
+      blobUrls.clear()
     }
   }, [])
 
@@ -693,7 +802,10 @@ const EditModeContainer = ({
     .filter((cue) => isType.audio(cue?.file))
     .map((cue) => {
       const file = cue.file
-      const src = file?.url || (file?.name ? `/${file.name}` : "")
+      const rawSrc = file?.url || (file?.name ? `/${file.name}` : "")
+      // Resolve to the frozen Object URL once its Blob has downloaded, so
+      // the audio element never re-hits a (possibly token-rotated) S3 URL.
+      const src = rawSrc ? (frozenMediaUrls[rawSrc] ?? rawSrc) : rawSrc
 
       return {
         id: cue._id || `${cue.screen}-${cue.layer ?? 0}-${cue.index}`,
@@ -792,93 +904,146 @@ const EditModeContainer = ({
     }
   }, [cueIndex, indexCount, isAutoplaying])
 
-  useEffect(() => {
-    const audioCues = (cues || []).filter(
-      (cue) =>
-        isAudioRow(cue.screen, screenCount) &&
-        cue.file?.url &&
-        isType.audio(cue.file)
-    )
+  // Freeze a media URL by fetching its full bytes into a Blob and swapping
+  // it for an Object URL -- this is what actually guarantees zero network
+  // access (and no exposure to a since-rotated S3 presigned URL) once show
+  // mode is running, unlike the old cache-warming approach of just setting
+  // img/video.src and waiting for a load event. Covers images, videos and
+  // audio alike. Dedupes by URL: a repeat call returns the same in-flight
+  // or settled promise rather than re-fetching -- unless the URL was
+  // already frozen, in which case it's revalidated first (ETag/Last-
+  // Modified/Content-Length) so a file replaced in place under the same
+  // URL doesn't keep serving stale content forever.
+  const freezeMediaUrl = useCallback(
+    (url: string, kind: "image" | "video" | "audio"): Promise<string> => {
+      const promiseCache = mediaFreezePromisesRef.current
+      const cached = promiseCache.get(url)
+      const existingBlobUrl = mediaBlobUrlsRef.current.get(url)
 
-    audioCues.forEach((cue) => {
-      const url = cue.file!.url as string
-      if (audioPreloadedUrlsRef.current.has(url)) {
-        return
+      if (cached && existingBlobUrl) {
+        const lastValidatedAt = mediaLastValidatedAtRef.current.get(url) ?? 0
+        if (Date.now() - lastValidatedAt < MEDIA_VALIDATION_MIN_INTERVAL_MS) {
+          return cached
+        }
+
+        let validation = mediaValidationPromisesRef.current.get(url)
+        if (!validation) {
+          validation = (async () => {
+            const nextValidators = await fetchMediaValidators(url)
+            mediaLastValidatedAtRef.current.set(url, Date.now())
+
+            if (!nextValidators) {
+              // Validation request itself failed -- keep serving the
+              // cached Blob rather than treating that as staleness.
+              return
+            }
+
+            const previousValidators =
+              mediaValidatorsRef.current.get(url) ?? null
+            if (mediaValidatorsMatch(previousValidators, nextValidators)) {
+              mediaValidatorsRef.current.set(url, nextValidators)
+              return
+            }
+
+            // Content changed under the same URL -- drop the stale Blob so
+            // the recursive call below re-downloads it.
+            URL.revokeObjectURL(existingBlobUrl)
+            mediaBlobUrlsRef.current.delete(url)
+            mediaValidatorsRef.current.delete(url)
+            promiseCache.delete(url)
+            mediaSettledUrlsRef.current.delete(url)
+            setFrozenMediaUrls((prev) => {
+              if (!(url in prev)) return prev
+              const next = { ...prev }
+              delete next[url]
+              return next
+            })
+          })().finally(() => {
+            mediaValidationPromisesRef.current.delete(url)
+          })
+          mediaValidationPromisesRef.current.set(url, validation)
+        }
+
+        return validation.then(() => freezeMediaUrl(url, kind))
       }
 
-      const audio = new Audio()
-      audio.src = url
-      audio.preload = "auto"
-      audio.load()
-
-      audioPreloadedUrlsRef.current.add(url)
-    })
-  }, [cues, screenCount])
-
-  // Preload images/videos across every screen so show mode's popup windows
-  // render from cache instead of fetching media for the first time.
-  const preloadVisualUrl = useCallback(
-    (url: string, kind: "image" | "video") => {
-      const cache = visualPreloadPromisesRef.current
-      const cached = cache.get(url)
       if (cached) {
         return cached
       }
 
-      const promise = new Promise<void>((resolve) => {
-        const markLoaded = () => {
-          visualLoadedUrlsRef.current.add(url)
-          resolve()
+      const promise = (async () => {
+        try {
+          const response = await fetch(url)
+          if (response && response.ok === false) {
+            throw new Error(
+              `Failed to fetch ${kind} for show mode preload (status ${response.status})`
+            )
+          }
+          const validators = readMediaValidators(response)
+          const blob = await response.blob()
+          const objectUrl = URL.createObjectURL(blob)
+          mediaBlobUrlsRef.current.set(url, objectUrl)
+          mediaValidatorsRef.current.set(url, validators)
+          mediaLastValidatedAtRef.current.set(url, Date.now())
+          setFrozenMediaUrls((prev) =>
+            prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
+          )
+          setMediaFailedUrls((prev) => {
+            if (!prev.has(url)) return prev
+            const next = new Set(prev)
+            next.delete(url)
+            return next
+          })
+          return objectUrl
+        } catch (error) {
+          // Freeze failed (network error, CORS, rotated token, ...). Fall
+          // back to the live URL rather than leaving the media stuck
+          // waiting forever -- Screen/CueAudioPlayers will fetch it live
+          // from S3 when they render, same as before this change.
+          console.error(
+            `Show mode: failed to preload ${kind}, falling back to live URL`,
+            url,
+            error
+          )
+          setMediaFailedUrls((prev) =>
+            prev.has(url) ? prev : new Set(prev).add(url)
+          )
+          return url
+        } finally {
+          mediaSettledUrlsRef.current.add(url)
         }
+      })()
 
-        if (kind === "image") {
-          const img = new Image()
-          img.onload = markLoaded
-          img.onerror = markLoaded
-          img.src = url
-        } else {
-          // Some browsers (Safari in particular) won't actually buffer a
-          // <video>'s src while it's detached from the document, so
-          // oncanplaythrough can hang forever. Attach it off-screen instead.
-          const video = document.createElement("video")
-          video.preload = "auto"
-          video.muted = true
-          video.style.position = "fixed"
-          video.style.width = "1px"
-          video.style.height = "1px"
-          video.style.opacity = "0"
-          video.style.pointerEvents = "none"
-          const detach = () => {
-            visualPreloadVideoElsRef.current.delete(video)
-            video.remove()
-          }
-          video.oncanplaythrough = () => {
-            detach()
-            markLoaded()
-          }
-          video.onerror = () => {
-            detach()
-            markLoaded()
-          }
-          visualPreloadVideoElsRef.current.add(video)
-          document.body.appendChild(video)
-          video.src = url
-          video.load()
-        }
-      })
-
-      cache.set(url, promise)
+      promiseCache.set(url, promise)
       return promise
     },
     []
   )
 
-  // De-dupes by file URL (same media reused across cues counts once) and
-  // keeps a human-readable label for the loading overlay.
-  const collectVisualMediaItems = useCallback((cueList: Cue[]) => {
-    const items = new Map<string, { kind: "image" | "video"; label: string }>()
+  // Derives a media item's status for the loading overlay from the same
+  // refs/state freezeMediaUrl itself maintains, rather than a parallel
+  // piece of state that could drift out of sync.
+  const getMediaItemStatus = (url: string): MediaItemStatus => {
+    if (frozenMediaUrls[url]) return "done"
+    if (mediaFailedUrls.has(url)) return "failed"
+    if (mediaFreezePromisesRef.current.has(url)) return "loading"
+    return "pending"
+  }
 
-    cueList.forEach((cue) => {
+  // De-dupes by file URL (same media reused across cues counts once) and
+  // keeps a human-readable label for the loading overlay. Back layers (the
+  // highest `layer` numbers -- see Screen.tsx's zIndex = 100 - layer) are
+  // queued first so they're never left waiting behind front-layer loads.
+  const collectMediaItems = useCallback((cueList: Cue[]) => {
+    const items = new Map<
+      string,
+      { kind: "image" | "video" | "audio"; label: string }
+    >()
+    const backToFront = [...cueList].sort(
+      (a, b) => Number(b.layer ?? 0) - Number(a.layer ?? 0)
+    )
+
+    backToFront.forEach((cue) => {
       const file = cue.file
       if (!file?.url || items.has(file.url)) return
 
@@ -892,21 +1057,99 @@ const EditModeContainer = ({
           kind: "video",
           label: cue.name || file.name || "vidéo",
         })
+      } else if (isType.audio(file)) {
+        items.set(file.url, {
+          kind: "audio",
+          label: cue.name || file.name || "audio",
+        })
       }
     })
 
     return items
   }, [])
 
+  // Revoke frozen Blobs for URLs no longer referenced by any cue (media
+  // swapped out or cue deleted) instead of leaking them until unmount.
   useEffect(() => {
-    const mediaItems = collectVisualMediaItems(cues || [])
-    mediaItems.forEach(({ kind }, url) => {
-      preloadVisualUrl(url, kind)
+    const currentUrls = new Set<string>()
+    collectMediaItems(cues || []).forEach((_value, url) => {
+      currentUrls.add(url)
     })
-  }, [cues, collectVisualMediaItems, preloadVisualUrl])
+
+    const previousUrls = liveMediaUrlsRef.current
+    previousUrls.forEach((url) => {
+      if (currentUrls.has(url)) return
+
+      const blobUrl = mediaBlobUrlsRef.current.get(url)
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+        mediaBlobUrlsRef.current.delete(url)
+        setFrozenMediaUrls((prev) => {
+          if (!(url in prev)) return prev
+          const next = { ...prev }
+          delete next[url]
+          return next
+        })
+      }
+      mediaFreezePromisesRef.current.delete(url)
+      mediaSettledUrlsRef.current.delete(url)
+      mediaValidatorsRef.current.delete(url)
+      mediaLastValidatedAtRef.current.delete(url)
+      mediaValidationPromisesRef.current.delete(url)
+      setMediaFailedUrls((prev) => {
+        if (!prev.has(url)) return prev
+        const next = new Set(prev)
+        next.delete(url)
+        return next
+      })
+    })
+
+    liveMediaUrlsRef.current = currentUrls
+  }, [cues, collectMediaItems])
+
+  // Cues active at a given frame index across every screen, independent of
+  // which screen displays them -- used to look ahead to upcoming frames'
+  // media rather than just the current one.
+  const getCuesActiveAtIndex = useCallback(
+    (index: number): Cue[] =>
+      (cues || []).filter((cue) => {
+        const cueStartIndex = Number(cue.index)
+        const cueSpan = getCueVisualSpanFromMap(cue, cueVisualSpanMap)
+        const cueEndIndex = cueStartIndex + cueSpan - 1
+        return index >= cueStartIndex && index <= cueEndIndex
+      }),
+    [cues, cueVisualSpanMap]
+  )
+
+  // The entry preload gate only covers media that's needed before show mode
+  // opens. During an active show, advancing frames can still hit media that
+  // was never touched (e.g. a cue added after entry, or a race with the
+  // initial preload) -- so keep the next couple of frames warmed up while
+  // the current one is on screen.
+  useEffect(() => {
+    if (!isShowMode) return
+
+    getLookaheadFrameIndices(
+      cueIndex,
+      indexCount,
+      SHOW_LOOKAHEAD_FRAMES
+    ).forEach((lookaheadIndex) => {
+      const mediaItems = collectMediaItems(getCuesActiveAtIndex(lookaheadIndex))
+      mediaItems.forEach(({ kind }, url) => {
+        freezeMediaUrl(url, kind)
+      })
+    })
+  }, [
+    isShowMode,
+    cueIndex,
+    indexCount,
+    getCuesActiveAtIndex,
+    collectMediaItems,
+    freezeMediaUrl,
+  ])
 
   const handleEnterShow = useCallback(async () => {
-    const mediaItems = collectVisualMediaItems(cues || [])
+    const mediaItems = collectMediaItems(cues || [])
     const entries = Array.from(mediaItems.entries())
     const total = entries.length
 
@@ -916,7 +1159,7 @@ const EditModeContainer = ({
     }
 
     const initialLoaded = entries.filter(([url]) =>
-      visualLoadedUrlsRef.current.has(url)
+      mediaSettledUrlsRef.current.has(url)
     ).length
 
     if (initialLoaded === total) {
@@ -924,24 +1167,25 @@ const EditModeContainer = ({
       return
     }
 
-    setPreloadProgress({ loaded: initialLoaded, total, currentLabel: null })
+    setPreloadProgress({
+      loaded: initialLoaded,
+      total,
+      items: entries.map(([url, { label }]) => ({ url, label })),
+    })
     setIsPreparingShow(true)
 
     let loaded = initialLoaded
     await Promise.all(
-      entries.map(async ([url, { kind, label }]) => {
-        if (!visualLoadedUrlsRef.current.has(url)) {
-          setPreloadProgress((prev) => ({ ...prev, currentLabel: label }))
-        }
-        await preloadVisualUrl(url, kind)
+      entries.map(async ([url, { kind }]) => {
+        await freezeMediaUrl(url, kind)
         loaded += 1
-        setPreloadProgress((prev) => ({ ...prev, loaded, currentLabel: label }))
+        setPreloadProgress((prev) => ({ ...prev, loaded }))
       })
     )
 
     setIsPreparingShow(false)
     onEnterShow()
-  }, [cues, onEnterShow, collectVisualMediaItems, preloadVisualUrl])
+  }, [cues, onEnterShow, collectMediaItems, freezeMediaUrl])
 
   useEffect(() => {
     if (sharedToken) return
@@ -1100,7 +1344,7 @@ const EditModeContainer = ({
           alignItems="center"
           justifyContent="center"
         >
-          <VStack spacing={4} color="white" width="320px">
+          <VStack spacing={4} color="white" width="360px">
             <Text fontSize="lg" fontWeight="semibold">
               Préparation du show…
             </Text>
@@ -1126,10 +1370,53 @@ const EditModeContainer = ({
             <Text fontSize="sm" opacity={0.8}>
               {preloadProgress.loaded}/{preloadProgress.total} médias chargés
             </Text>
-            {preloadProgress.currentLabel && (
-              <Text fontSize="sm" opacity={0.6} noOfLines={1}>
-                Chargement de « {preloadProgress.currentLabel} »…
-              </Text>
+            {preloadProgress.items.length > 0 && (
+              <Box
+                width="100%"
+                maxHeight="200px"
+                overflowY="auto"
+                bg="whiteAlpha.100"
+                borderRadius="md"
+                p={2}
+                textAlign="left"
+              >
+                {preloadProgress.items.map((item) => {
+                  const status = getMediaItemStatus(item.url)
+                  return (
+                    <HStack
+                      key={item.url}
+                      spacing={2}
+                      py="2px"
+                      data-testid="preload-item"
+                      data-status={status}
+                    >
+                      <Box
+                        boxSize="8px"
+                        borderRadius="full"
+                        flexShrink={0}
+                        bg={
+                          status === "done"
+                            ? "green.300"
+                            : status === "failed"
+                              ? "red.400"
+                              : status === "loading"
+                                ? "purple.300"
+                                : "whiteAlpha.400"
+                        }
+                      />
+                      <Text
+                        fontSize="xs"
+                        noOfLines={1}
+                        color={
+                          status === "failed" ? "red.300" : "whiteAlpha.900"
+                        }
+                      >
+                        {item.label}
+                      </Text>
+                    </HStack>
+                  )
+                })}
+              </Box>
             )}
           </VStack>
         </Box>
@@ -1154,6 +1441,7 @@ const EditModeContainer = ({
             screenWidths={screenWidths}
             onWidthChange={handleScreenWidthChange}
             isBlackout={isBlackout}
+            mediaUrlOverrides={frozenMediaUrls}
             outputAspectRatio={resolveScreenAspectRatio(
               screenAspectRatios,
               sourceScreen,

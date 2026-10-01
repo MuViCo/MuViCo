@@ -869,55 +869,6 @@ describe("Screen", () => {
     expect(outgoingImg.className).toBe(incomingImg.className)
   })
 
-  test("shows and hides cue metadata with the Shift key", async () => {
-    const screenData = {
-      file: {
-        url: "http://example.com/image.jpg",
-        type: "image/jpg",
-        name: "image.jpg",
-      },
-      index: 3,
-      name: "shift-cue",
-      screen: 1,
-      _id: "id-shift",
-      loop: false,
-    } as Cue
-
-    render(
-      <Screen
-        screenNumber={1}
-        screenData={screenData}
-        isVisible={true}
-        onClose={() => {}}
-      />
-    )
-
-    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
-    const popupBody = popup.document.body
-
-    await act(async () => {
-      fireEvent.keyDown(window, { key: "Shift" })
-    })
-
-    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
-      visibility: "visible",
-    })
-    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
-      visibility: "visible",
-    })
-
-    await act(async () => {
-      fireEvent.keyUp(window, { key: "Shift" })
-    })
-
-    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
-      visibility: "hidden",
-    })
-    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
-      visibility: "hidden",
-    })
-  })
-
   test("cleans up the popup window when unmounted", async () => {
     const onClose = jest.fn()
     const screenData = {
@@ -1113,7 +1064,7 @@ describe("Screen", () => {
     expect(popup.close).toHaveBeenCalled()
   })
 
-  test("shows the no-media fallback and keeps the previous cue while clearing to an empty cue", async () => {
+  test("renders nothing for the incoming layer (black screen) while clearing to an empty cue, keeping the outgoing cue visible", async () => {
     const screenData = {
       file: {
         url: "http://example.com/clearing.jpg",
@@ -1157,10 +1108,12 @@ describe("Screen", () => {
     })
 
     const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+    // No incoming cue -- nothing is rendered for it (the screen's own black
+    // background shows through) while the outgoing image still transitions
+    // out.
     expect(
       popup.document.body.querySelector('[data-testid="incoming-cue-layer"]')
-        .textContent
-    ).toContain("No media available for this cue.")
+    ).toBeNull()
     expect(
       popup.document.body.querySelector(
         'img[src="http://example.com/clearing.jpg"]'
@@ -1470,6 +1423,50 @@ describe("Screen", () => {
         '[data-testid="outgoing-cue-layer"] video'
       )
       expect(outgoingVideo).toBeNull()
+    })
+
+    // Regression: an unchanged layer used to be gated by isRevealed along
+    // with its transitioning sibling, briefly hiding it and exposing the
+    // black background beneath.
+    test("keeps an unchanged layer revealed while a sibling layer transitions", async () => {
+      const onClose = jest.fn()
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={[videoCue, overlayCueA]}
+          isVisible={true}
+          onClose={onClose}
+          transitionAt={Date.now() + 10000}
+        />
+      )
+
+      let popup: any
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector(
+            'video[src="http://example.com/background.mp4"]'
+          )
+        ).toBeTruthy()
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueB]}
+            isVisible={true}
+            onClose={onClose}
+            transitionAt={Date.now() + 10000}
+          />
+        )
+      })
+
+      const videoLayerBox = popup.document.body
+        .querySelector('video[src="http://example.com/background.mp4"]')
+        .closest('[data-testid="incoming-cue-layer"]')
+
+      expect(videoLayerBox.getAttribute("data-revealed")).toBe("true")
     })
 
     test("keeps the same video element across two consecutive overlay changes", async () => {
@@ -1850,6 +1847,159 @@ describe("Screen", () => {
         )
         expect(video).toBeTruthy()
         expect(video.getAttribute("style")).not.toContain("position: absolute")
+      })
+    })
+  })
+
+  describe("frozen media URL overrides", () => {
+    test("renders the frozen blob URL for an image cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/photo.png",
+          type: "image/png",
+          name: "photo.png",
+        },
+        index: 0,
+        name: "frozen-image-cue",
+        screen: 1,
+        _id: "id-frozen-image",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/photo.png": "blob:fake-image",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('img[src="blob:fake-image"]')
+        ).toBeTruthy()
+        expect(
+          popup.document.body.querySelector(
+            'img[src="https://example.com/photo.png"]'
+          )
+        ).toBeNull()
+      })
+    })
+
+    test("renders the frozen blob URL for a video cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/clip.mp4",
+          type: "video/mp4",
+          name: "clip.mp4",
+        },
+        index: 0,
+        name: "frozen-video-cue",
+        screen: 1,
+        _id: "id-frozen-video",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/clip.mp4": "blob:fake-video",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('video[src="blob:fake-video"]')
+        ).toBeTruthy()
+      })
+    })
+
+    test("renders the frozen blob URL for an audio cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/track.mp3",
+          type: "audio/mpeg",
+          name: "track.mp3",
+        },
+        index: 0,
+        name: "frozen-audio-cue",
+        screen: 1,
+        _id: "id-frozen-audio",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/track.mp3": "blob:fake-audio",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('source[src="blob:fake-audio"]')
+        ).toBeTruthy()
+      })
+    })
+
+    test("falls back to the live URL when no frozen entry exists for it", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/unfrozen.png",
+          type: "image/png",
+          name: "unfrozen.png",
+        },
+        index: 0,
+        name: "unfrozen-cue",
+        screen: 1,
+        _id: "id-unfrozen",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/other.png": "blob:fake-other",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector(
+            'img[src="https://example.com/unfrozen.png"]'
+          )
+        ).toBeTruthy()
       })
     })
   })
