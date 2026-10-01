@@ -2016,7 +2016,21 @@ const EditMode = ({
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + rowGap
 
-    const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
+    // Lanes in a multi-lane group are knitted closer together for display
+    // (laneFocusLayout), bleeding a lane's rendered band above its uniform
+    // track. The uniform division below is the fallback for bands with no
+    // knit adjustment; the loop picks the actual (possibly knitted) band the
+    // pointer is over, later rows winning ties since they paint on top.
+    let yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
+    for (let y = 0; y < rowModel.rowCount; y += 1) {
+      const rowTop =
+        rowsTopOffset + y * cellHeightWithGap + (focusLayout.offset[y] ?? 0)
+      const rowBandHeight = rowHeight + (focusLayout.delta[y] ?? 0)
+      if (dropY >= rowTop && dropY < rowTop + rowBandHeight) {
+        yIndex = y
+      }
+    }
+
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
     const xWithinCell = absoluteDropX - xIndex * cellWidthWithGap
 

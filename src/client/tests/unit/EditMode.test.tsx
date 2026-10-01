@@ -1404,6 +1404,100 @@ describe("EditMode drag swapping", () => {
     }
   })
 
+  it("pastes via Ctrl+V onto an empty frame in a layer row knitted against its neighbour", async () => {
+    // Two layers on the same screen knit their lanes together for display
+    // (laneFocusLayout), so layer 2's row renders shifted LANE_KNIT px above
+    // its uniform track - into layer 1's gap. Hovering that sliver, which is
+    // still visually inside layer 2's empty frame, must still resolve to
+    // layer 2, not layer 1.
+    const cuesOnTwoLayers = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        layer: 0,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/1.png",
+          name: "1.png",
+        },
+      },
+      {
+        _id: "visual-2",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        duration: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+        file: {
+          type: "image/png",
+          url: "https://example.com/2.png",
+          name: "2.png",
+        },
+      },
+    ] as Cue[]
+
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          cues: cuesOnTwoLayers,
+          name: "Test presentation",
+          screenCount: 1,
+          indexCount: 3,
+        },
+      })
+    )
+
+    renderEditMode(cuesOnTwoLayers, 3)
+    const gridContainer = setupGridGeometry()
+    const originalFetch = global.fetch
+    global.fetch = jest.fn(async () => ({
+      blob: async () => new Blob(["test"], { type: "image/png" }),
+    })) as unknown as typeof global.fetch
+
+    const LANE_KNIT = 16
+    const layerTwoRowTop =
+      timelineRowsTopOffset() +
+      1 * (TIMELINE_METRICS.rowHeight + TIMELINE_METRICS.rowGap) -
+      LANE_KNIT
+
+    try {
+      fireEvent.mouseMove(gridContainer, {
+        clientX: 10,
+        clientY: layerTwoRowTop + 5,
+      })
+
+      fireEvent.keyDown(window, { key: "c", ctrlKey: true })
+
+      // xIndex=1, still within layer 2's row, but beyond visual-2's
+      // duration-1 span - empty. clientY lands a few px into the knitted
+      // sliver at the top of layer 2's rendered band.
+      fireEvent.mouseMove(gridContainer, {
+        clientX: 250,
+        clientY: layerTwoRowTop + 5,
+      })
+
+      fireEvent.keyDown(window, { key: "v", ctrlKey: true })
+
+      await waitFor(() => {
+        expect(createCue).toHaveBeenCalledWith(
+          "presentation-1",
+          expect.any(FormData)
+        )
+      })
+
+      const formData = (createCue as jest.Mock).mock.calls[0][1] as FormData
+      expect(formData.get("layer")).toBe("1")
+    } finally {
+      global.fetch = originalFetch
+    }
+  })
+
   it("positions drag cursor preview near pointer on mouse down without move", async () => {
     renderEditMode()
     setupGridGeometry()
