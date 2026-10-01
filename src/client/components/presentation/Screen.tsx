@@ -6,7 +6,7 @@
  * - Opens a new browser window for each screen and renders media cues based on the current presentation state.
  * - Supports images, videos, and audio files, with conditional rendering based on file type.
  * - Implements transitions between cues using Emotion for CSS-in-JS styling.
- * - Displays screen number and cue name as an overlay when the Shift key is held down.
+ * - Falls back to a plain black screen when the current frame has no cue.
  * - Listens for changes in the assigned cue data and updates the displayed media accordingly.
  * - Cleans up resources and event listeners when the screen is closed or unmounted.
  */
@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
-import { Box, Image, Text, usePrefersReducedMotion } from "@chakra-ui/react"
+import { Box, Image, usePrefersReducedMotion } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
 import createCache from "@emotion/cache"
 import type { EmotionCache } from "@emotion/cache"
@@ -323,11 +323,6 @@ const renderCueLayers = (
 
   return (
     <>
-      {currentCueStack.length === 0 && (
-        <Text data-testid="incoming-cue-layer">
-          No media available for this cue.
-        </Text>
-      )}
       {entries.map(({ cue, isIncoming, isNew }) => (
         <Box
           key={cueIdentity(cue)}
@@ -377,7 +372,6 @@ interface ScreenContentProps {
   screenNumber: string | number
   currentScreenData: CueStack
   previousScreenData: CueStack
-  showText: boolean
   transitionType?: string
   screenWidths?: Record<number, number>
   isBlackout?: boolean
@@ -390,7 +384,6 @@ const ScreenContent = ({
   screenNumber,
   currentScreenData,
   previousScreenData,
-  showText,
   transitionType,
   screenWidths,
   isBlackout,
@@ -404,8 +397,6 @@ const ScreenContent = ({
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} 500ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
-  const currentCueStack = normalizeCueStack(currentScreenData)
-  const currentCueNames = currentCueStack.map((cue) => cue.name).filter(Boolean)
 
   return (
     <Box
@@ -418,34 +409,6 @@ const ScreenContent = ({
       position="relative"
       overflow="hidden"
     >
-      {/* Header with Screen Number on the left and Cue Name on the right */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        position="absolute"
-        width="90vw"
-        left="5vw"
-        zIndex={2}
-      >
-        <Text
-          fontSize="xl"
-          textShadow="1px 0 2px #000000"
-          style={{ visibility: showText ? "visible" : "hidden" }}
-        >
-          Screen {screenNumber}
-        </Text>
-        {currentCueNames.length > 0 && (
-          <Text
-            fontSize="xl"
-            textShadow="1px 0 2px #000000"
-            style={{ visibility: showText ? "visible" : "hidden" }}
-          >
-            Element Name: {currentCueNames.join(" / ")}
-          </Text>
-        )}
-      </Box>
-
       <Box
         data-testid="screen-stage"
         position="absolute"
@@ -524,7 +487,6 @@ const Screen = ({
   )
   const [isRevealed, setIsRevealed] = useState(true)
   const cancelRevealRef = useRef<(() => void) | null>(null)
-  const [showText, setShowText] = useState(false)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
   const copyChakraStyles = () => {
@@ -719,29 +681,6 @@ const Screen = ({
     screenNumber,
   ])
 
-  // Listeners for shift-press to show screen data on screens
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setShowText(true)
-      }
-    }
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Shift") {
-        setShowText(false)
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    window.addEventListener("keyup", handleKeyUp)
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-      window.removeEventListener("keyup", handleKeyUp)
-    }
-  }, [])
-
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && emotionCache
     ? ReactDOM.createPortal(
@@ -751,7 +690,6 @@ const Screen = ({
             screenNumber={screenNumber}
             currentScreenData={currentScreenData}
             previousScreenData={previousScreenData}
-            showText={showText}
             transitionType={transitionType}
             screenWidths={screenWidths}
             isBlackout={isBlackout}

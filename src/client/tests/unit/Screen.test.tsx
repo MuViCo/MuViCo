@@ -869,55 +869,6 @@ describe("Screen", () => {
     expect(outgoingImg.className).toBe(incomingImg.className)
   })
 
-  test("shows and hides cue metadata with the Shift key", async () => {
-    const screenData = {
-      file: {
-        url: "http://example.com/image.jpg",
-        type: "image/jpg",
-        name: "image.jpg",
-      },
-      index: 3,
-      name: "shift-cue",
-      screen: 1,
-      _id: "id-shift",
-      loop: false,
-    } as Cue
-
-    render(
-      <Screen
-        screenNumber={1}
-        screenData={screenData}
-        isVisible={true}
-        onClose={() => {}}
-      />
-    )
-
-    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
-    const popupBody = popup.document.body
-
-    await act(async () => {
-      fireEvent.keyDown(window, { key: "Shift" })
-    })
-
-    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
-      visibility: "visible",
-    })
-    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
-      visibility: "visible",
-    })
-
-    await act(async () => {
-      fireEvent.keyUp(window, { key: "Shift" })
-    })
-
-    expect(within(popupBody).getByText("Screen 1")).toHaveStyle({
-      visibility: "hidden",
-    })
-    expect(within(popupBody).getByText("Element Name: shift-cue")).toHaveStyle({
-      visibility: "hidden",
-    })
-  })
-
   test("cleans up the popup window when unmounted", async () => {
     const onClose = jest.fn()
     const screenData = {
@@ -1113,7 +1064,7 @@ describe("Screen", () => {
     expect(popup.close).toHaveBeenCalled()
   })
 
-  test("shows the no-media fallback and keeps the previous cue while clearing to an empty cue", async () => {
+  test("renders nothing for the incoming layer (black screen) while clearing to an empty cue, keeping the outgoing cue visible", async () => {
     const screenData = {
       file: {
         url: "http://example.com/clearing.jpg",
@@ -1157,10 +1108,12 @@ describe("Screen", () => {
     })
 
     const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+    // No incoming cue -- nothing is rendered for it (the screen's own black
+    // background shows through) while the outgoing image still transitions
+    // out.
     expect(
       popup.document.body.querySelector('[data-testid="incoming-cue-layer"]')
-        .textContent
-    ).toContain("No media available for this cue.")
+    ).toBeNull()
     expect(
       popup.document.body.querySelector(
         'img[src="http://example.com/clearing.jpg"]'
