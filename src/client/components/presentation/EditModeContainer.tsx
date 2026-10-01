@@ -583,6 +583,7 @@ const EditModeContainer = ({
   const audioPreloadedUrlsRef = useRef(new Set())
   const visualPreloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map())
   const visualLoadedUrlsRef = useRef<Set<string>>(new Set())
+  const visualPreloadVideoElsRef = useRef<Set<HTMLVideoElement>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
   const [preloadProgress, setPreloadProgress] = useState<{
     loaded: number
@@ -595,6 +596,16 @@ const EditModeContainer = ({
     () => buildCueVisualSpanMap(cues, indexCount),
     [cues, indexCount]
   )
+
+  // Clean up any preload <video> elements still attached mid-fetch if the
+  // component unmounts before they resolve.
+  useEffect(() => {
+    const videoEls = visualPreloadVideoElsRef.current
+    return () => {
+      videoEls.forEach((video) => video.remove())
+      videoEls.clear()
+    }
+  }, [])
 
   const transitionAt = useMemo(
     () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
@@ -826,10 +837,31 @@ const EditModeContainer = ({
           img.onerror = markLoaded
           img.src = url
         } else {
+          // Some browsers (Safari in particular) won't actually buffer a
+          // <video>'s src while it's detached from the document, so
+          // oncanplaythrough can hang forever. Attach it off-screen instead.
           const video = document.createElement("video")
           video.preload = "auto"
-          video.oncanplaythrough = markLoaded
-          video.onerror = markLoaded
+          video.muted = true
+          video.style.position = "fixed"
+          video.style.width = "1px"
+          video.style.height = "1px"
+          video.style.opacity = "0"
+          video.style.pointerEvents = "none"
+          const detach = () => {
+            visualPreloadVideoElsRef.current.delete(video)
+            video.remove()
+          }
+          video.oncanplaythrough = () => {
+            detach()
+            markLoaded()
+          }
+          video.onerror = () => {
+            detach()
+            markLoaded()
+          }
+          visualPreloadVideoElsRef.current.add(video)
+          document.body.appendChild(video)
           video.src = url
           video.load()
         }

@@ -94,20 +94,15 @@ class FakeImage {
   }
 }
 
-// Controllable stand-in for the detached <video> element preloadVisualUrl
-// creates: waits on `oncanplaythrough`/`onerror`, which jsdom never fires.
-type FakeVideo = {
-  preload: string
-  src: string
-  oncanplaythrough: (() => void) | null
-  onerror: (() => void) | null
-  load: jest.Mock
-}
-
 describe("EditModeContainer show mode media preload gate", () => {
   const dispatchMock = jest.fn()
   const originalCreateElement = document.createElement.bind(document)
-  let videoInstances: FakeVideo[]
+  // Real <video> elements (not fakes): preloadVisualUrl must attach them to
+  // the document for browsers to actually buffer their src, so the test
+  // needs a genuine Node it can check document.body for. jsdom doesn't fire
+  // `oncanplaythrough`/`onerror` on its own, so the test still triggers
+  // those handlers manually.
+  let videoInstances: HTMLVideoElement[]
   let createElementSpy: jest.SpyInstance
 
   const imageCue = {
@@ -165,18 +160,15 @@ describe("EditModeContainer show mode media preload gate", () => {
     createElementSpy = jest
       .spyOn(document, "createElement")
       .mockImplementation((tagName: string) => {
+        const el = originalCreateElement(tagName)
         if (tagName === "video") {
-          const fakeVideo: FakeVideo = {
-            preload: "",
-            src: "",
-            oncanplaythrough: null,
-            onerror: null,
-            load: jest.fn(),
-          }
-          videoInstances.push(fakeVideo)
-          return fakeVideo as unknown as HTMLElement
+          // jsdom doesn't implement media loading, so stub `load` to avoid
+          // its "Not implemented" console noise, then hand back the real
+          // element so DOM-attachment assertions are meaningful.
+          ;(el as HTMLVideoElement).load = jest.fn()
+          videoInstances.push(el as HTMLVideoElement)
         }
-        return originalCreateElement(tagName)
+        return el
       })
 
     mockedUseDispatch.mockReturnValue(dispatchMock)
@@ -228,6 +220,10 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     expect(FakeImage.instances).toHaveLength(1)
     expect(videoInstances).toHaveLength(1)
+    // Detached <video> elements aren't reliably buffered by every browser
+    // engine (Safari in particular), so the preload element must be
+    // attached to the document while it loads.
+    expect(document.body.contains(videoInstances[0])).toBe(true)
 
     await act(async () => {
       FakeImage.instances[0].onload?.()
@@ -237,11 +233,49 @@ describe("EditModeContainer show mode media preload gate", () => {
     )
 
     await act(async () => {
-      videoInstances[0].oncanplaythrough?.()
+      videoInstances[0].oncanplaythrough?.(new Event("canplaythrough"))
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
+    // Resolved preload elements are cleaned up, not leaked in the DOM.
+    expect(document.body.contains(videoInstances[0])).toBe(false)
+  })
+
+  test("removes the preload video element from the DOM on error too", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[videoCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    expect(videoInstances).toHaveLength(1)
+    expect(document.body.contains(videoInstances[0])).toBe(true)
+
+    await act(async () => {
+      videoInstances[0].onerror?.(new Event("error"))
+    })
+
+    expect(document.body.contains(videoInstances[0])).toBe(false)
+  })
+
+  test("removes any outstanding preload video elements on unmount", () => {
+    const { unmount } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[videoCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    expect(videoInstances).toHaveLength(1)
+    expect(document.body.contains(videoInstances[0])).toBe(true)
+
+    unmount()
+
+    expect(document.body.contains(videoInstances[0])).toBe(false)
   })
 
   test("skips the overlay once media has already been preloaded in the background", () => {
