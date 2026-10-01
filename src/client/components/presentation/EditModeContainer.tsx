@@ -70,6 +70,11 @@ import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 // is active.
 const SHOW_LOOKAHEAD_FRAMES = 2
 
+// Max concurrent media fetches when entering show mode. Firing all of them
+// at once can overwhelm the local dev S3 (Garage) under burst load -- see
+// handleEnterShow.
+const SHOW_PRELOAD_CONCURRENCY = 4
+
 // Standard HTTP validators used to detect whether a frozen media URL's
 // underlying content has changed since it was last downloaded (e.g. an
 // uploaded file was replaced in place, reusing the same URL/S3 key -- this
@@ -1259,14 +1264,29 @@ const EditModeContainer = ({
     })
     setIsPreparingShow(true)
 
+    // Firing every fetch() at once (seen with 27 cues in one show) can
+    // overwhelm the local dev S3 (Garage) under burst load -- some requests
+    // get dropped/reset, which Chrome then reports as a misleading CORS
+    // "MissingAllowOriginHeader" error even though the exact same URL
+    // succeeds immediately when retried alone. A small worker pool keeps
+    // only a few fetches in flight at a time instead of all of them.
     let loaded = initialLoaded
-    await Promise.all(
-      entries.map(async ([url, { kind, id }]) => {
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < entries.length) {
+        const [url, { kind, id }] = entries[cursor]
+        cursor += 1
         await freezeMediaUrl(url, kind, id)
         loaded += 1
         if (preloadSessionRef.current !== sessionId) return
         setPreloadProgress((prev) => ({ ...prev, loaded }))
-      })
+      }
+    }
+    await Promise.all(
+      Array.from(
+        { length: Math.min(SHOW_PRELOAD_CONCURRENCY, entries.length) },
+        worker
+      )
     )
 
     if (preloadSessionRef.current !== sessionId) return
