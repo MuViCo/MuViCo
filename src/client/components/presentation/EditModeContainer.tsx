@@ -70,9 +70,8 @@ import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 // is active.
 const SHOW_LOOKAHEAD_FRAMES = 2
 
-// Max concurrent media fetches when entering show mode. Firing all of them
-// at once can overwhelm the local dev S3 (Garage) under burst load -- see
-// handleEnterShow.
+// Max media downloads in flight at once while preloading a show, so a
+// presentation with dozens of cues doesn't open as many parallel requests.
 const SHOW_PRELOAD_CONCURRENCY = 4
 
 // Standard HTTP validators used to detect whether a frozen media URL's
@@ -91,11 +90,9 @@ type MediaItemStatus = "pending" | "loading" | "done" | "failed"
 // can be called again for the same URL on every cues/lookahead effect run.
 const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
 
-// Disk-backed cache for frozen media bytes, keyed by the file's stable
-// storage id (not the presigned URL, which rotates every time the
-// presentation is re-fetched). Survives reloads and is shared across every
-// same-origin window/tab -- unlike the in-memory Blob/ObjectURL map below,
-// which is per-document.
+// Frozen media bytes, kept on disk and shared across windows and reloads.
+// Keyed by storage id rather than URL: the presigned URL rotates on every
+// presentation read, the id doesn't.
 const MEDIA_DISK_CACHE_NAME = "muvico-show-media-v1"
 const mediaDiskCacheKeyFor = (id: string) =>
   `/__muvico_media_cache__/${encodeURIComponent(id)}`
@@ -137,19 +134,18 @@ const mediaValidatorsMatch = (
   )
 }
 
-// Lightweight check for whether a URL's content has changed: a 1-byte
-// ranged GET, not HEAD -- these are S3 presigned URLs signed for GET only,
-// so HEAD is rejected with a 403 every single time (not just "sometimes"),
-// which only spammed the console with CORS errors for no benefit. Fails
-// soft (null) on any error -- callers treat "can't validate" as "assume
-// unchanged" rather than breaking the freeze pipeline.
+// Lightweight check for whether a URL's content has changed. Uses a 1-byte
+// ranged GET rather than HEAD, which these presigned URLs always reject
+// with a 403 since they are signed for GET. Fails soft (null) on any error
+// -- callers treat "can't validate" as "assume unchanged" rather than
+// breaking the freeze pipeline.
 const fetchMediaValidators = async (
   url: string
 ): Promise<MediaValidators | null> => {
   try {
     const rangeResponse = await fetch(url, {
       headers: { Range: "bytes=0-0" },
-      // Same opaque-cache-entry trap as the full fetch in freezeMediaUrl.
+      // Same opaque-cache trap as the download in freezeMediaUrl.
       cache: "reload",
     })
     if (rangeResponse.ok || rangeResponse.status === 206) {
@@ -940,11 +936,8 @@ const EditModeContainer = ({
   // Modified/Content-Length) so a file replaced in place under the same
   // URL doesn't keep serving stale content forever.
   //
-  // `id` is the file's stable storage handle (cue.file.id), unlike `url`
-  // which is a presigned S3 URL regenerated on every presentation re-fetch.
-  // The disk cache (CacheStorage) is keyed by `id` so a freeze from an
-  // earlier session/reload or a sibling window can be reused without
-  // re-downloading, even though its presigned URL has since rotated.
+  // `id` is the file's storage handle, used as the disk cache key so an
+  // earlier download can be reused once its presigned `url` has rotated.
   const freezeMediaUrl = useCallback(
     (
       url: string,
@@ -981,8 +974,8 @@ const EditModeContainer = ({
             }
 
             // Content changed under the same URL -- drop the stale Blob so
-            // the recursive call below re-downloads it, and evict it from
-            // the disk cache too so a reload doesn't resurrect stale bytes.
+            // the recursive call below re-downloads it. Evict the disk copy
+            // too, or a reload would bring the stale bytes right back.
             URL.revokeObjectURL(existingBlobUrl)
             mediaBlobUrlsRef.current.delete(url)
             mediaValidatorsRef.current.delete(url)
@@ -1031,15 +1024,11 @@ const EditModeContainer = ({
             return objectUrl
           }
 
-          // `cache: "reload"` is load-bearing, not an optimization. These
-          // same URLs are first loaded by plain <img>/<video> tags (the
-          // editor preview strip, the media library tiles), which fetch
-          // them in no-cors mode and leave an OPAQUE response in the HTTP
-          // cache. A later cors-mode fetch() for the same URL is served
-          // that cached opaque entry, which carries no CORS headers, so
-          // the browser rejects it with "MissingAllowOriginHeader" even
-          // though the server does send them. Forcing a revalidated
-          // network hit replaces the poisoned entry with a cors-valid one.
+          // `cache: "reload"` is required, not an optimization. The editor
+          // already showed these URLs through plain <img>/<video> tags,
+          // whose no-cors requests leave an opaque response in the HTTP
+          // cache. Reusing that entry here would fail the CORS check even
+          // though the server sends the headers.
           const response = await fetch(url, { cache: "reload" })
           if (response && response.ok === false) {
             throw new Error(
@@ -1123,16 +1112,11 @@ const EditModeContainer = ({
     backToFront.forEach((cue) => {
       const file = cue.file
       if (!file?.url || items.has(file.url)) return
-      // Falls back to the url itself when a file somehow has no id (should
-      // not happen for library/cue media) so freezing still works, just
-      // without the stable disk-cache key.
+      // Without an id the file still freezes, it just misses the disk cache.
       const id = file.id || file.url
 
-      // isImageFile/isVideoFile fall back to a URL extension check when
-      // file.type is missing/stale -- the strict isType.image/video (MIME
-      // only) silently dropped those files from the preload queue instead
-      // of erroring, which looked like "images never prepare" while videos
-      // (whose type happened to be set correctly) preloaded fine.
+      // Extension-aware checks, because a stale or missing file.type would
+      // otherwise drop the file from the queue with no trace.
       if (isImageFile(file)) {
         items.set(file.url, {
           kind: "image",
@@ -1237,14 +1221,9 @@ const EditModeContainer = ({
     freezeMediaUrl,
   ])
 
-  // Guards against overlapping handleEnterShow calls: exiting show mode
-  // doesn't cancel an in-flight preload (the underlying fetches have no
-  // AbortController), so re-entering show mode quickly starts a second
-  // Promise.all while the first is still resolving. Both would otherwise
-  // write to the same preloadProgress state, and the stale call's `loaded`
-  // (counted against ITS OWN total) could outlive and overwrite the new
-  // call's total -- e.g. "45/27 médias chargés". Each call stamps its own
-  // session id and only the latest one is allowed to touch state.
+  // Leaving show mode doesn't cancel a running preload, so a quick exit and
+  // re-entry leaves two of them writing to the same progress state. Only the
+  // latest session id may update it; the older run finishes unnoticed.
   const preloadSessionRef = useRef(0)
 
   const handleEnterShow = useCallback(async () => {
@@ -1275,12 +1254,6 @@ const EditModeContainer = ({
     })
     setIsPreparingShow(true)
 
-    // Firing every fetch() at once (seen with 27 cues in one show) can
-    // overwhelm the local dev S3 (Garage) under burst load -- some requests
-    // get dropped/reset, which Chrome then reports as a misleading CORS
-    // "MissingAllowOriginHeader" error even though the exact same URL
-    // succeeds immediately when retried alone. A small worker pool keeps
-    // only a few fetches in flight at a time instead of all of them.
     let loaded = initialLoaded
     let cursor = 0
     const worker = async () => {
@@ -1487,12 +1460,9 @@ const EditModeContainer = ({
             </Box>
             <Text fontSize="sm" opacity={0.8}>
               {(() => {
-                // `preloadProgress.loaded` counts every settled attempt,
-                // success or failure (freezeMediaUrl resolves either way
-                // so a failed item doesn't hang the preload forever). Show
-                // failures separately here instead of silently lumping
-                // them into "chargés" -- a red dot below contradicted a
-                // summary line claiming everything loaded.
+                // `loaded` counts settled attempts, and freezeMediaUrl
+                // resolves even when it fails, so failures are pulled back
+                // out here rather than counted as loaded media.
                 const failedCount = preloadProgress.items.filter((item) =>
                   mediaFailedUrls.has(item.url)
                 ).length
