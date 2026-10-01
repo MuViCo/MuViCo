@@ -607,8 +607,11 @@ const EditModeContainer = ({
     }
   }, [])
 
+  // cueIndex itself is unused inside: it's the trigger to stamp a fresh
+  // transition time for each frame change, not a derived value.
   const transitionAt = useMemo(
     () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [cueIndex]
   )
 
