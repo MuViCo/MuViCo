@@ -44,7 +44,7 @@ import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
-import { getAudioRow, isType, isAudioRow } from "../utils/fileTypeUtils"
+import { getAudioRow, isType } from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
@@ -585,10 +585,26 @@ const EditModeContainer = ({
     Record<string, boolean>
   >({})
   const autoplayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const audioPreloadedUrlsRef = useRef(new Set())
-  const visualPreloadPromisesRef = useRef<Map<string, Promise<void>>>(new Map())
-  const visualLoadedUrlsRef = useRef<Set<string>>(new Set())
-  const visualPreloadVideoElsRef = useRef<Set<HTMLVideoElement>>(new Set())
+  // Media freezing: every image/video/audio URL gets fetched to a Blob and
+  // swapped for an Object URL so show mode's popups never touch the network
+  // (or a since-rotated S3 presigned URL) again once preloaded.
+  // originalUrl -> objectUrl, only set once a fetch actually resolves.
+  const mediaBlobUrlsRef = useRef<Map<string, string>>(new Map())
+  // originalUrl -> in-flight/settled freeze promise, resolving to the
+  // objectUrl on success or the original URL as a fallback on failure.
+  const mediaFreezePromisesRef = useRef<Map<string, Promise<string>>>(new Map())
+  // originalUrl set once its freeze attempt has settled either way, so the
+  // show-mode entry gate can tell "already attempted" from "still pending"
+  // without inspecting promise internals.
+  const mediaSettledUrlsRef = useRef<Set<string>>(new Set())
+  // Mirrors mediaBlobUrlsRef as render-visible state so Screen/CueAudioPlayers
+  // re-render with the frozen URL once it's ready.
+  const [frozenMediaUrls, setFrozenMediaUrls] = useState<
+    Record<string, string>
+  >({})
+  // Every media URL referenced by the current cues, tracked so a cue being
+  // edited/removed can have its frozen Blob revoked instead of leaked.
+  const liveMediaUrlsRef = useRef<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
   const [preloadProgress, setPreloadProgress] = useState<{
     loaded: number
@@ -602,13 +618,14 @@ const EditModeContainer = ({
     [cues, indexCount]
   )
 
-  // Clean up any preload <video> elements still attached mid-fetch if the
-  // component unmounts before they resolve.
+  // Revoke every frozen Object URL when the presentation editor itself
+  // unmounts (leaving the presentation entirely) -- nothing left to show
+  // media from past this point.
   useEffect(() => {
-    const videoEls = visualPreloadVideoElsRef.current
+    const blobUrls = mediaBlobUrlsRef.current
     return () => {
-      videoEls.forEach((video) => video.remove())
-      videoEls.clear()
+      blobUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl))
+      blobUrls.clear()
     }
   }, [])
 
@@ -698,7 +715,10 @@ const EditModeContainer = ({
     .filter((cue) => isType.audio(cue?.file))
     .map((cue) => {
       const file = cue.file
-      const src = file?.url || (file?.name ? `/${file.name}` : "")
+      const rawSrc = file?.url || (file?.name ? `/${file.name}` : "")
+      // Resolve to the frozen Object URL once its Blob has downloaded, so
+      // the audio element never re-hits a (possibly token-rotated) S3 URL.
+      const src = rawSrc ? (frozenMediaUrls[rawSrc] ?? rawSrc) : rawSrc
 
       return {
         id: cue._id || `${cue.screen}-${cue.layer ?? 0}-${cue.index}`,
@@ -797,82 +817,53 @@ const EditModeContainer = ({
     }
   }, [cueIndex, indexCount, isAutoplaying])
 
-  useEffect(() => {
-    const audioCues = (cues || []).filter(
-      (cue) =>
-        isAudioRow(cue.screen, screenCount) &&
-        cue.file?.url &&
-        isType.audio(cue.file)
-    )
-
-    audioCues.forEach((cue) => {
-      const url = cue.file!.url as string
-      if (audioPreloadedUrlsRef.current.has(url)) {
-        return
-      }
-
-      const audio = new Audio()
-      audio.src = url
-      audio.preload = "auto"
-      audio.load()
-
-      audioPreloadedUrlsRef.current.add(url)
-    })
-  }, [cues, screenCount])
-
-  // Preload images/videos across every screen so show mode's popup windows
-  // render from cache instead of fetching media for the first time.
-  const preloadVisualUrl = useCallback(
-    (url: string, kind: "image" | "video") => {
-      const cache = visualPreloadPromisesRef.current
-      const cached = cache.get(url)
+  // Freeze a media URL by fetching its full bytes into a Blob and swapping
+  // it for an Object URL -- this is what actually guarantees zero network
+  // access (and no exposure to a since-rotated S3 presigned URL) once show
+  // mode is running, unlike the old cache-warming approach of just setting
+  // img/video.src and waiting for a load event. Covers images, videos and
+  // audio alike. Dedupes by URL: a repeat call returns the same in-flight
+  // or settled promise rather than re-fetching.
+  const freezeMediaUrl = useCallback(
+    (url: string, kind: "image" | "video" | "audio"): Promise<string> => {
+      const promiseCache = mediaFreezePromisesRef.current
+      const cached = promiseCache.get(url)
       if (cached) {
         return cached
       }
 
-      const promise = new Promise<void>((resolve) => {
-        const markLoaded = () => {
-          visualLoadedUrlsRef.current.add(url)
-          resolve()
+      const promise = (async () => {
+        try {
+          const response = await fetch(url)
+          if (response && response.ok === false) {
+            throw new Error(
+              `Failed to fetch ${kind} for show mode preload (status ${response.status})`
+            )
+          }
+          const blob = await response.blob()
+          const objectUrl = URL.createObjectURL(blob)
+          mediaBlobUrlsRef.current.set(url, objectUrl)
+          setFrozenMediaUrls((prev) =>
+            prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
+          )
+          return objectUrl
+        } catch (error) {
+          // Freeze failed (network error, CORS, rotated token, ...). Fall
+          // back to the live URL rather than leaving the media stuck
+          // waiting forever -- Screen/CueAudioPlayers will fetch it live
+          // from S3 when they render, same as before this change.
+          console.error(
+            `Show mode: failed to preload ${kind}, falling back to live URL`,
+            url,
+            error
+          )
+          return url
+        } finally {
+          mediaSettledUrlsRef.current.add(url)
         }
+      })()
 
-        if (kind === "image") {
-          const img = new Image()
-          img.onload = markLoaded
-          img.onerror = markLoaded
-          img.src = url
-        } else {
-          // Some browsers (Safari in particular) won't actually buffer a
-          // <video>'s src while it's detached from the document, so
-          // oncanplaythrough can hang forever. Attach it off-screen instead.
-          const video = document.createElement("video")
-          video.preload = "auto"
-          video.muted = true
-          video.style.position = "fixed"
-          video.style.width = "1px"
-          video.style.height = "1px"
-          video.style.opacity = "0"
-          video.style.pointerEvents = "none"
-          const detach = () => {
-            visualPreloadVideoElsRef.current.delete(video)
-            video.remove()
-          }
-          video.oncanplaythrough = () => {
-            detach()
-            markLoaded()
-          }
-          video.onerror = () => {
-            detach()
-            markLoaded()
-          }
-          visualPreloadVideoElsRef.current.add(video)
-          document.body.appendChild(video)
-          video.src = url
-          video.load()
-        }
-      })
-
-      cache.set(url, promise)
+      promiseCache.set(url, promise)
       return promise
     },
     []
@@ -882,8 +873,11 @@ const EditModeContainer = ({
   // keeps a human-readable label for the loading overlay. Back layers (the
   // highest `layer` numbers -- see Screen.tsx's zIndex = 100 - layer) are
   // queued first so they're never left waiting behind front-layer loads.
-  const collectVisualMediaItems = useCallback((cueList: Cue[]) => {
-    const items = new Map<string, { kind: "image" | "video"; label: string }>()
+  const collectMediaItems = useCallback((cueList: Cue[]) => {
+    const items = new Map<
+      string,
+      { kind: "image" | "video" | "audio"; label: string }
+    >()
     const backToFront = [...cueList].sort(
       (a, b) => Number(b.layer ?? 0) - Number(a.layer ?? 0)
     )
@@ -902,18 +896,56 @@ const EditModeContainer = ({
           kind: "video",
           label: cue.name || file.name || "vidéo",
         })
+      } else if (isType.audio(file)) {
+        items.set(file.url, {
+          kind: "audio",
+          label: cue.name || file.name || "audio",
+        })
       }
     })
 
     return items
   }, [])
 
+  // Passively freeze every cue's media (image/video/audio) in the
+  // background as soon as it's known, so show mode's entry gate usually has
+  // nothing left to wait for.
   useEffect(() => {
-    const mediaItems = collectVisualMediaItems(cues || [])
+    const mediaItems = collectMediaItems(cues || [])
     mediaItems.forEach(({ kind }, url) => {
-      preloadVisualUrl(url, kind)
+      freezeMediaUrl(url, kind)
     })
-  }, [cues, collectVisualMediaItems, preloadVisualUrl])
+  }, [cues, collectMediaItems, freezeMediaUrl])
+
+  // Revoke frozen Blobs for URLs no longer referenced by any cue (media
+  // swapped out or cue deleted) instead of leaking them until unmount.
+  useEffect(() => {
+    const currentUrls = new Set<string>()
+    collectMediaItems(cues || []).forEach((_value, url) => {
+      currentUrls.add(url)
+    })
+
+    const previousUrls = liveMediaUrlsRef.current
+    previousUrls.forEach((url) => {
+      if (currentUrls.has(url)) return
+
+      const blobUrl = mediaBlobUrlsRef.current.get(url)
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl)
+        mediaBlobUrlsRef.current.delete(url)
+        setFrozenMediaUrls((prev) => {
+          if (!(url in prev)) return prev
+          const next = { ...prev }
+          delete next[url]
+          return next
+        })
+      }
+      mediaFreezePromisesRef.current.delete(url)
+      mediaSettledUrlsRef.current.delete(url)
+    })
+
+    liveMediaUrlsRef.current = currentUrls
+  }, [cues, collectMediaItems])
 
   // Cues active at a given frame index across every screen, independent of
   // which screen displays them -- used to look ahead to upcoming frames'
@@ -942,11 +974,9 @@ const EditModeContainer = ({
       indexCount,
       SHOW_LOOKAHEAD_FRAMES
     ).forEach((lookaheadIndex) => {
-      const mediaItems = collectVisualMediaItems(
-        getCuesActiveAtIndex(lookaheadIndex)
-      )
+      const mediaItems = collectMediaItems(getCuesActiveAtIndex(lookaheadIndex))
       mediaItems.forEach(({ kind }, url) => {
-        preloadVisualUrl(url, kind)
+        freezeMediaUrl(url, kind)
       })
     })
   }, [
@@ -954,12 +984,12 @@ const EditModeContainer = ({
     cueIndex,
     indexCount,
     getCuesActiveAtIndex,
-    collectVisualMediaItems,
-    preloadVisualUrl,
+    collectMediaItems,
+    freezeMediaUrl,
   ])
 
   const handleEnterShow = useCallback(async () => {
-    const mediaItems = collectVisualMediaItems(cues || [])
+    const mediaItems = collectMediaItems(cues || [])
     const entries = Array.from(mediaItems.entries())
     const total = entries.length
 
@@ -969,7 +999,7 @@ const EditModeContainer = ({
     }
 
     const initialLoaded = entries.filter(([url]) =>
-      visualLoadedUrlsRef.current.has(url)
+      mediaSettledUrlsRef.current.has(url)
     ).length
 
     if (initialLoaded === total) {
@@ -983,10 +1013,10 @@ const EditModeContainer = ({
     let loaded = initialLoaded
     await Promise.all(
       entries.map(async ([url, { kind, label }]) => {
-        if (!visualLoadedUrlsRef.current.has(url)) {
+        if (!mediaSettledUrlsRef.current.has(url)) {
           setPreloadProgress((prev) => ({ ...prev, currentLabel: label }))
         }
-        await preloadVisualUrl(url, kind)
+        await freezeMediaUrl(url, kind)
         loaded += 1
         setPreloadProgress((prev) => ({ ...prev, loaded, currentLabel: label }))
       })
@@ -994,7 +1024,7 @@ const EditModeContainer = ({
 
     setIsPreparingShow(false)
     onEnterShow()
-  }, [cues, onEnterShow, collectVisualMediaItems, preloadVisualUrl])
+  }, [cues, onEnterShow, collectMediaItems, freezeMediaUrl])
 
   useEffect(() => {
     if (sharedToken) return
@@ -1207,6 +1237,7 @@ const EditModeContainer = ({
             screenWidths={screenWidths}
             onWidthChange={handleScreenWidthChange}
             isBlackout={isBlackout}
+            mediaUrlOverrides={frozenMediaUrls}
             outputAspectRatio={resolveScreenAspectRatio(
               screenAspectRatios,
               sourceScreen,

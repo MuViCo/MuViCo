@@ -1898,6 +1898,159 @@ describe("Screen", () => {
     })
   })
 
+  describe("frozen media URL overrides", () => {
+    test("renders the frozen blob URL for an image cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/photo.png",
+          type: "image/png",
+          name: "photo.png",
+        },
+        index: 0,
+        name: "frozen-image-cue",
+        screen: 1,
+        _id: "id-frozen-image",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/photo.png": "blob:fake-image",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('img[src="blob:fake-image"]')
+        ).toBeTruthy()
+        expect(
+          popup.document.body.querySelector(
+            'img[src="https://example.com/photo.png"]'
+          )
+        ).toBeNull()
+      })
+    })
+
+    test("renders the frozen blob URL for a video cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/clip.mp4",
+          type: "video/mp4",
+          name: "clip.mp4",
+        },
+        index: 0,
+        name: "frozen-video-cue",
+        screen: 1,
+        _id: "id-frozen-video",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/clip.mp4": "blob:fake-video",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('video[src="blob:fake-video"]')
+        ).toBeTruthy()
+      })
+    })
+
+    test("renders the frozen blob URL for an audio cue instead of the live URL", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/track.mp3",
+          type: "audio/mpeg",
+          name: "track.mp3",
+        },
+        index: 0,
+        name: "frozen-audio-cue",
+        screen: 1,
+        _id: "id-frozen-audio",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/track.mp3": "blob:fake-audio",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector('source[src="blob:fake-audio"]')
+        ).toBeTruthy()
+      })
+    })
+
+    test("falls back to the live URL when no frozen entry exists for it", async () => {
+      const screenData = {
+        file: {
+          url: "https://example.com/unfrozen.png",
+          type: "image/png",
+          name: "unfrozen.png",
+        },
+        index: 0,
+        name: "unfrozen-cue",
+        screen: 1,
+        _id: "id-unfrozen",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={screenData}
+            isVisible={true}
+            onClose={() => {}}
+            mediaUrlOverrides={{
+              "https://example.com/other.png": "blob:fake-other",
+            }}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector(
+            'img[src="https://example.com/unfrozen.png"]'
+          )
+        ).toBeTruthy()
+      })
+    })
+  })
+
   test("renders the text of a text element in the popup, without a background", async () => {
     const screenData = {
       file: null,

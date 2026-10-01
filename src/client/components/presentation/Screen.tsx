@@ -38,6 +38,14 @@ const mediaFillProps = {
   objectFit: "contain",
 } as const
 
+// Resolves a cue's media URL to its frozen Object URL (see
+// EditModeContainer's freezeMediaUrl) when one is available, falling back
+// to the live URL otherwise -- not yet frozen, or the freeze itself failed.
+const resolveMediaSrc = (
+  url: string | undefined,
+  overrides?: Record<string, string>
+): string | undefined => (url ? (overrides?.[url] ?? url) : url)
+
 // An image cue that spans several screens. Renders the normal full-bleed
 // "contain" image until the image's natural size is known (a hidden probe
 // <img> reports it via onLoad), then switches to a cropped slice of the
@@ -184,7 +192,8 @@ const renderMedia = (
   cue: Cue,
   screenNumber: string | number,
   screenWidths?: Record<number, number>,
-  prefersReducedMotion = false
+  prefersReducedMotion = false,
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const { file, name, color, spanScreens } = cue
 
@@ -205,7 +214,8 @@ const renderMedia = (
   }
 
   if (isType.image(file)) {
-    const imageSrc = file.url || `/${file.name}`
+    const imageSrc =
+      resolveMediaSrc(file.url, mediaUrlOverrides) || `/${file.name}`
     const animation = imageEffectAnimation(cue, prefersReducedMotion)
 
     if ((spanScreens?.length ?? 0) > 1) {
@@ -232,10 +242,12 @@ const renderMedia = (
   }
   // check if media is video
   if (isType.video(file)) {
+    const videoSrc = resolveMediaSrc(file.url, mediaUrlOverrides)
+
     if ((spanScreens?.length ?? 0) > 1) {
       return (
         <SpannedVideo
-          videoSrc={file.url as string}
+          videoSrc={videoSrc as string}
           cueId={cue._id}
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
@@ -244,13 +256,14 @@ const renderMedia = (
       )
     }
 
-    return <video src={file.url} style={mediaFillProps} autoPlay loop muted />
+    return <video src={videoSrc} style={mediaFillProps} autoPlay loop muted />
   }
   // check if media is audio
   if (isType.audio(file)) {
+    const audioSrc = resolveMediaSrc(file.url, mediaUrlOverrides)
     return (
       <audio autoPlay loop controls style={{ width: "100%" }}>
-        <source src={file.url} type={file.mimeType || "audio/mpeg"} />
+        <source src={audioSrc} type={file.mimeType || "audio/mpeg"} />
         Your browser does not support the audio element.
       </audio>
     )
@@ -289,7 +302,8 @@ const renderCueLayers = (
   prefersReducedMotion: boolean,
   isRevealed: boolean,
   enterAnimStyle: string,
-  exitAnimStyle: string
+  exitAnimStyle: string,
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
@@ -346,7 +360,13 @@ const renderCueLayers = (
                 : undefined
           }
         >
-          {renderMedia(cue, screenNumber, screenWidths, prefersReducedMotion)}
+          {renderMedia(
+            cue,
+            screenNumber,
+            screenWidths,
+            prefersReducedMotion,
+            mediaUrlOverrides
+          )}
         </Box>
       ))}
     </>
@@ -363,6 +383,7 @@ interface ScreenContentProps {
   isBlackout?: boolean
   outputAspectRatio?: string
   isRevealed?: boolean
+  mediaUrlOverrides?: Record<string, string>
 }
 
 const ScreenContent = ({
@@ -375,6 +396,7 @@ const ScreenContent = ({
   isBlackout,
   outputAspectRatio,
   isRevealed = true,
+  mediaUrlOverrides,
 }: ScreenContentProps) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(
     transitionType ?? "fade"
@@ -444,7 +466,8 @@ const ScreenContent = ({
           prefersReducedMotion,
           isRevealed,
           animStyle(enterAnim),
-          animStyle(exitAnim)
+          animStyle(exitAnim),
+          mediaUrlOverrides
         )}
       </Box>
       {isBlackout && (
@@ -471,6 +494,13 @@ interface ScreenProps {
   isBlackout?: boolean
   outputAspectRatio?: string
   transitionAt?: number
+  /**
+   * originalUrl -> frozen Object URL, from EditModeContainer's
+   * freezeMediaUrl. When a cue's media URL has an entry here, it's used
+   * instead of the live (S3) URL so this popup never re-fetches over the
+   * network -- see the module doc for why.
+   */
+  mediaUrlOverrides?: Record<string, string>
 }
 
 const Screen = ({
@@ -484,6 +514,7 @@ const Screen = ({
   isBlackout = false,
   outputAspectRatio,
   transitionAt,
+  mediaUrlOverrides,
 }: ScreenProps) => {
   const windowRef = useRef<Window | null>(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -726,6 +757,7 @@ const Screen = ({
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
             isRevealed={isRevealed}
+            mediaUrlOverrides={mediaUrlOverrides}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
