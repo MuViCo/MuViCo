@@ -578,6 +578,108 @@ describe("Screen", () => {
     })
   })
 
+  // Regression: a scheduled reveal used to get cancelled by its own
+  // triggering effect re-run, leaving isRevealed stuck false after the
+  // first real transition.
+  test("reveals every transition in a row, not just the first", async () => {
+    const cueA = {
+      file: {
+        url: "http://example.com/a.jpg",
+        type: "image/jpg",
+        name: "a.jpg",
+      },
+      index: 0,
+      name: "cue-a",
+      screen: 1,
+      _id: "id-a",
+      loop: false,
+    } as Cue
+    const cueB = {
+      file: {
+        url: "http://example.com/b.jpg",
+        type: "image/jpg",
+        name: "b.jpg",
+      },
+      index: 1,
+      name: "cue-b",
+      screen: 1,
+      _id: "id-b",
+      loop: false,
+    } as Cue
+    const cueC = {
+      file: {
+        url: "http://example.com/c.jpg",
+        type: "image/jpg",
+        name: "c.jpg",
+      },
+      index: 2,
+      name: "cue-c",
+      screen: 1,
+      _id: "id-c",
+      loop: false,
+    } as Cue
+
+    const getIncomingLayer = () => {
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      return popup.document.body.querySelector(
+        '[data-testid="incoming-cue-layer"]'
+      )
+    }
+
+    // Stable reference, like EditModeContainer's useCallback -- a fresh
+    // literal per rerender would mask the bug behind a popup reopen cycle.
+    const onClose = () => {}
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={cueA}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    await waitFor(() => {
+      expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("true")
+    })
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={cueB}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+    })
+
+    await waitFor(
+      () => {
+        expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("true")
+      },
+      { timeout: 2000 }
+    )
+
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={cueC}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+    })
+
+    await waitFor(
+      () => {
+        expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("true")
+      },
+      { timeout: 2000 }
+    )
+  })
+
   // Regression test that ensures that the outgoing cue is still rendered as a background when it is a color cue,
   // instead of being dropped and displaying a blank or black background during the transition to the next cue.
   test("keeps rendering the outgoing cue's color as a background instead of leaving it blank", async () => {

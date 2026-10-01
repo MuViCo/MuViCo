@@ -419,6 +419,7 @@ const ScreenContent = ({
         <Box
           key={`current-${cueStackKey(currentScreenData)}`}
           data-testid="incoming-cue-layer"
+          data-revealed={isRevealed}
           flex="1"
           display="flex"
           justifyContent="center"
@@ -624,6 +625,11 @@ const Screen = ({
     }
   }, [isWindowReady, screenNumber, onWidthChange])
 
+  // Boolean, not the value itself, so this effect reacts to an external
+  // reset (null) without re-running (and cancelling its own reveal) on
+  // every content swap it makes itself.
+  const hasCurrentScreenData = currentScreenData !== null
+
   useEffect(() => {
     // Update media states when screenData changes
     const nextScreenData = normalizeCueStack(screenData)
@@ -667,7 +673,14 @@ const Screen = ({
     return () => {
       cancelRevealRef.current?.()
     }
-  }, [screenData, currentScreenData, transitionAt, isWindowReady, screenNumber])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    screenData,
+    hasCurrentScreenData,
+    transitionAt,
+    isWindowReady,
+    screenNumber,
+  ])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
