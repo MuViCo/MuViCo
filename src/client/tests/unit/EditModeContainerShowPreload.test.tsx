@@ -354,7 +354,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(createObjectURLMock).not.toHaveBeenCalled()
   })
 
-  test("skips the overlay once media has already been preloaded in the background", async () => {
+  test("skips the overlay on a second show-mode entry once media is already frozen", async () => {
     const onEnterShow = jest.fn()
     render(
       <EditModeContainer
@@ -364,15 +364,15 @@ describe("EditModeContainer show mode media preload gate", () => {
       />
     )
 
-    // The passive preload effect (running since cues were loaded) already
-    // started the fetch; resolve it before entering show mode.
+    fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
       resolveFetch("https://example.com/photo.png")
     })
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
 
     fireEvent.click(screen.getByText("Show mode"))
 
-    expect(onEnterShow).toHaveBeenCalledTimes(1)
+    expect(onEnterShow).toHaveBeenCalledTimes(2)
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
   })
 
@@ -407,6 +407,8 @@ describe("EditModeContainer show mode media preload gate", () => {
       />
     )
 
+    fireEvent.click(screen.getByText("Show mode"))
+
     const fetchMock = global.fetch as jest.Mock
     expect(fetchMock.mock.calls[0][0]).toBe("https://example.com/back.png")
     expect(fetchMock.mock.calls[1][0]).toBe("https://example.com/front.png")
@@ -432,10 +434,9 @@ describe("EditModeContainer show mode media preload gate", () => {
       />
     )
 
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/track.mp3")
-
     fireEvent.click(screen.getByText("Show mode"))
     expect(onEnterShow).not.toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalledWith("https://example.com/track.mp3")
 
     await act(async () => {
       resolveFetch("https://example.com/track.mp3")
@@ -444,7 +445,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
   })
 
-  test("does not duplicate preload work when show mode's lookahead effect runs", () => {
+  test("does not duplicate preload work when show mode's lookahead effect runs", async () => {
     const { rerender } = render(
       <EditModeContainer
         {...baseProps}
@@ -453,6 +454,12 @@ describe("EditModeContainer show mode media preload gate", () => {
         onEnterShow={jest.fn()}
       />
     )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await act(async () => {
+      resolveFetch("https://example.com/photo.png")
+      resolveFetch("https://example.com/clip.mp4")
+    })
 
     expect(global.fetch).toHaveBeenCalledTimes(2)
 
@@ -491,6 +498,7 @@ describe("EditModeContainer show mode media preload gate", () => {
       />
     )
 
+    fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
       resolveFetch("https://example.com/photo.png")
     })
@@ -516,6 +524,7 @@ describe("EditModeContainer show mode media preload gate", () => {
       />
     )
 
+    fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
       resolveFetch("https://example.com/photo.png")
     })
@@ -667,6 +676,7 @@ describe("EditModeContainer media URL staleness check", () => {
         presentation: {
           name: "Test presentation",
           screenCount: 2,
+          scores: [],
         },
       })
     )
@@ -691,18 +701,24 @@ describe("EditModeContainer media URL staleness check", () => {
       />
     )
 
+    fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
       resolveCall(isDownloadCall, { etag: "v1" })
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
     // Advance past the revalidation throttle, then force freezeMediaUrl to
-    // run again for the same URL via a cues re-render.
+    // run again for the same (already-frozen) URL via the show-mode
+    // lookahead effect -- entering show mode again would skip it outright
+    // since it's already settled, so this is the only remaining path that
+    // re-touches a cached URL.
     currentTime += 20000
     rerender(
       <EditModeContainer
         {...baseProps}
-        cues={[{ ...imageCue }]}
+        cues={[imageCue]}
+        isShowMode
+        cueIndex={0}
         onEnterShow={jest.fn()}
       />
     )
@@ -728,6 +744,7 @@ describe("EditModeContainer media URL staleness check", () => {
       />
     )
 
+    fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
       resolveCall(isDownloadCall, { etag: "v1" })
     })
@@ -737,7 +754,9 @@ describe("EditModeContainer media URL staleness check", () => {
     rerender(
       <EditModeContainer
         {...baseProps}
-        cues={[{ ...imageCue }]}
+        cues={[imageCue]}
+        isShowMode
+        cueIndex={0}
         onEnterShow={jest.fn()}
       />
     )

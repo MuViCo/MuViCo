@@ -1068,16 +1068,6 @@ const EditModeContainer = ({
     return items
   }, [])
 
-  // Passively freeze every cue's media (image/video/audio) in the
-  // background as soon as it's known, so show mode's entry gate usually has
-  // nothing left to wait for.
-  useEffect(() => {
-    const mediaItems = collectMediaItems(cues || [])
-    mediaItems.forEach(({ kind }, url) => {
-      freezeMediaUrl(url, kind)
-    })
-  }, [cues, collectMediaItems, freezeMediaUrl])
-
   // Revoke frozen Blobs for URLs no longer referenced by any cue (media
   // swapped out or cue deleted) instead of leaking them until unmount.
   useEffect(() => {
