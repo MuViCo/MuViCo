@@ -299,4 +299,40 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(onEnterShow).toHaveBeenCalledTimes(1)
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
   })
+
+  test("preloads back layers before front layers", () => {
+    const frontImageCue = {
+      _id: "cue-front",
+      index: 0,
+      screen: 1,
+      layer: 0,
+      name: "Front",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/front.png" },
+    } as unknown as Cue
+
+    const backImageCue = {
+      _id: "cue-back",
+      index: 0,
+      screen: 1,
+      layer: 3,
+      name: "Back",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/back.png" },
+    } as unknown as Cue
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        // Listed front-first so a pass would only happen by sorting, not by
+        // array order coincidence.
+        cues={[frontImageCue, backImageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    expect(FakeImage.instances).toHaveLength(2)
+    expect(FakeImage.instances[0].src).toBe("https://example.com/back.png")
+    expect(FakeImage.instances[1].src).toBe("https://example.com/front.png")
+  })
 })

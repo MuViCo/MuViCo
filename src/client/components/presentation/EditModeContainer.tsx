@@ -874,11 +874,16 @@ const EditModeContainer = ({
   )
 
   // De-dupes by file URL (same media reused across cues counts once) and
-  // keeps a human-readable label for the loading overlay.
+  // keeps a human-readable label for the loading overlay. Back layers (the
+  // highest `layer` numbers -- see Screen.tsx's zIndex = 100 - layer) are
+  // queued first so they're never left waiting behind front-layer loads.
   const collectVisualMediaItems = useCallback((cueList: Cue[]) => {
     const items = new Map<string, { kind: "image" | "video"; label: string }>()
+    const backToFront = [...cueList].sort(
+      (a, b) => Number(b.layer ?? 0) - Number(a.layer ?? 0)
+    )
 
-    cueList.forEach((cue) => {
+    backToFront.forEach((cue) => {
       const file = cue.file
       if (!file?.url || items.has(file.url)) return
 
