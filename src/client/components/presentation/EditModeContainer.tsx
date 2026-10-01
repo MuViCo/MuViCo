@@ -58,6 +58,7 @@ import {
   buildCueVisualSpanMap,
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
+import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 
 interface EditModeContainerProps {
   id: string
@@ -595,6 +596,11 @@ const EditModeContainer = ({
     [cues, indexCount]
   )
 
+  const transitionAt = useMemo(
+    () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
+    [cueIndex]
+  )
+
   // Initialize screen visibility state for every screen number (1..screenCount)
   // - creates a visibility object with keys for each screen number and
   // values set to false (hidden) by default, then updates the state whenever cues or screen count changes
@@ -1112,6 +1118,7 @@ const EditModeContainer = ({
             isVisible={screens[screenNumber]}
             onClose={handleScreenClose}
             transitionType={transitionType}
+            transitionAt={transitionAt}
             screenWidths={screenWidths}
             onWidthChange={handleScreenWidthChange}
             isBlackout={isBlackout}

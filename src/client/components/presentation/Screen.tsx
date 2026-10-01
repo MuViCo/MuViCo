@@ -21,6 +21,7 @@ import type { EmotionCache } from "@emotion/cache"
 import { CacheProvider } from "@emotion/react"
 import type { Keyframes } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
+import { scheduleAt } from "../../utils/syncedTransition"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
@@ -315,6 +316,7 @@ interface ScreenContentProps {
   screenWidths?: Record<number, number>
   isBlackout?: boolean
   outputAspectRatio?: string
+  isRevealed?: boolean
 }
 
 const ScreenContent = ({
@@ -326,6 +328,7 @@ const ScreenContent = ({
   screenWidths,
   isBlackout,
   outputAspectRatio,
+  isRevealed = true,
 }: ScreenContentProps) => {
   const { enter: enterAnim, exit: exitAnim } = getAnims(
     transitionType ?? "fade"
@@ -387,54 +390,57 @@ const ScreenContent = ({
         overflow="hidden"
         sx={{ aspectRatio: String(parseAspectRatio(outputAspectRatio)) }}
       >
-        {/* Animates out previous cue media, if any */}
-        {previousScreenData && (
-          <Box
-            key={`previous-${cueStackKey(previousScreenData)}`}
-            data-testid="outgoing-cue-layer"
-            flex="1"
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            position="absolute"
-            inset="0"
-            width="100%"
-            height="100%"
-            zIndex={1}
-            animation={animStyle(exitAnim)}
-          >
-            {renderCueStack(
-              previousScreenData,
-              screenNumber,
-              screenWidths,
-              prefersReducedMotion
-            )}
-          </Box>
-        )}
-
-        {/* Animates in current cue media */}
-        <Box
-          key={`current-${cueStackKey(currentScreenData)}`}
-          data-testid="incoming-cue-layer"
-          flex="1"
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          position="absolute"
-          inset="0"
-          width="100%"
-          height="100%"
-          zIndex={1}
-          color="white"
-          animation={animStyle(enterAnim)}
-        >
-          {renderCueStack(
-            currentScreenData,
-            screenNumber,
-            screenWidths,
-            prefersReducedMotion
-          )}
-        </Box>
+        {/*
+          A single keyed list for both layers, keyed by the cue stack's own
+          identity rather than by role -- a cue moving from "incoming" to
+          "outgoing" keeps the same key and so the same DOM node (and its
+          playing video/gif) across that move, instead of being unmounted
+          from one role's Box and remounted (restarting playback) in the
+          other's.
+        */}
+        {[
+          previousScreenData
+            ? { role: "outgoing" as const, data: previousScreenData }
+            : null,
+          { role: "incoming" as const, data: currentScreenData },
+        ]
+          .filter((layer) => layer !== null)
+          .map(({ role, data }) => {
+            const isIncoming = role === "incoming"
+            return (
+              <Box
+                key={cueStackKey(data)}
+                data-testid={
+                  isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"
+                }
+                data-revealed={isIncoming ? isRevealed : undefined}
+                flex="1"
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                position="absolute"
+                inset="0"
+                width="100%"
+                height="100%"
+                zIndex={1}
+                color={isIncoming ? "white" : undefined}
+                opacity={isIncoming && !isRevealed ? 0 : undefined}
+                pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
+                animation={
+                  isRevealed
+                    ? animStyle(isIncoming ? enterAnim : exitAnim)
+                    : "none"
+                }
+              >
+                {renderCueStack(
+                  data,
+                  screenNumber,
+                  screenWidths,
+                  prefersReducedMotion
+                )}
+              </Box>
+            )
+          })}
       </Box>
       {isBlackout && (
         <Box
@@ -459,6 +465,7 @@ interface ScreenProps {
   onWidthChange?: (screenNumber: number, width: number) => void
   isBlackout?: boolean
   outputAspectRatio?: string
+  transitionAt?: number
 }
 
 const Screen = ({
@@ -471,6 +478,7 @@ const Screen = ({
   onWidthChange,
   isBlackout = false,
   outputAspectRatio,
+  transitionAt,
 }: ScreenProps) => {
   const windowRef = useRef<Window | null>(null)
   const [isWindowReady, setIsWindowReady] = useState(false)
@@ -478,6 +486,8 @@ const Screen = ({
   const [previousScreenData, setPreviousScreenData] = useState<Cue[] | null>(
     null
   )
+  const [isRevealed, setIsRevealed] = useState(true)
+  const cancelRevealRef = useRef<(() => void) | null>(null)
   const [showText, setShowText] = useState(false)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
@@ -615,6 +625,11 @@ const Screen = ({
     }
   }, [isWindowReady, screenNumber, onWidthChange])
 
+  // Boolean, not the value itself, so this effect reacts to an external
+  // reset (null) without re-running (and cancelling its own reveal) on
+  // every content swap it makes itself.
+  const hasCurrentScreenData = currentScreenData !== null
+
   useEffect(() => {
     // Update media states when screenData changes
     const nextScreenData = normalizeCueStack(screenData)
@@ -623,22 +638,25 @@ const Screen = ({
       return
     }
 
-    if (nextScreenData.length > 0) {
+    if (cueStackKey(currentScreenData) !== cueStackKey(nextScreenData)) {
+      cancelRevealRef.current?.()
+
       if (!currentScreenData) {
         setPreviousScreenData(null)
         setCurrentScreenData(nextScreenData)
+        setIsRevealed(true)
       } else {
-        if (cueStackKey(currentScreenData) === cueStackKey(nextScreenData)) {
-          return
-        }
-
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(nextScreenData)
+        setIsRevealed(false)
+
+        const revealAt = transitionAt ?? Date.now()
+        cancelRevealRef.current = scheduleAt(revealAt, () => {
+          setIsRevealed(true)
+        })
       }
-    } else if (currentScreenData && cueStackKey(currentScreenData) !== "") {
-      setPreviousScreenData(currentScreenData)
-      setCurrentScreenData([])
     }
+
     const firstCue = nextScreenData[0]
     const frameLabel =
       firstCue?.index === undefined
@@ -651,7 +669,18 @@ const Screen = ({
         ? `Screen ${screenNumber} • ${frameLabel}`
         : `Screen ${screenNumber}`
     }
-  }, [screenData, currentScreenData, isWindowReady, screenNumber])
+
+    return () => {
+      cancelRevealRef.current?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    screenData,
+    hasCurrentScreenData,
+    transitionAt,
+    isWindowReady,
+    screenNumber,
+  ])
 
   // Listeners for shift-press to show screen data on screens
   useEffect(() => {
@@ -690,6 +719,7 @@ const Screen = ({
             screenWidths={screenWidths}
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
+            isRevealed={isRevealed}
           />
         </CacheProvider>,
         windowRef.current.document.body // render to new window's document.body
