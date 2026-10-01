@@ -271,6 +271,65 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(createObjectURLMock).toHaveBeenCalledTimes(2)
   })
 
+  test("shows a per-item status list in the loading overlay, including a failed item", async () => {
+    const audioCue = {
+      _id: "cue-audio",
+      index: 0,
+      screen: 3,
+      name: "Track",
+      cueType: "audio",
+      file: { type: "audio/mpeg", url: "https://example.com/track.mp3" },
+    } as unknown as Cue
+
+    const onEnterShow = jest.fn()
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue, audioCue]}
+        onEnterShow={onEnterShow}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    const items = screen.getAllByTestId("preload-item")
+    expect(items).toHaveLength(3)
+    expect(screen.getByText("Photo")).toBeInTheDocument()
+    expect(screen.getByText("Clip")).toBeInTheDocument()
+    expect(screen.getByText("Track")).toBeInTheDocument()
+    // Nothing has settled yet -- every row starts out loading (the
+    // background preload effect already kicked off every fetch).
+    items.forEach((item) =>
+      expect(item).toHaveAttribute("data-status", "loading")
+    )
+
+    await act(async () => {
+      resolveFetch("https://example.com/photo.png")
+    })
+    await waitFor(() =>
+      expect(
+        screen.getByText("Photo").closest('[data-testid="preload-item"]')
+      ).toHaveAttribute("data-status", "done")
+    )
+
+    // The audio cue is left unresolved so the overlay stays open long
+    // enough to observe the failed video's status.
+    await act(async () => {
+      rejectFetch("https://example.com/clip.mp4")
+    })
+    await waitFor(() =>
+      expect(
+        screen.getByText("Clip").closest('[data-testid="preload-item"]')
+      ).toHaveAttribute("data-status", "failed")
+    )
+    expect(onEnterShow).not.toHaveBeenCalled()
+
+    await act(async () => {
+      resolveFetch("https://example.com/track.mp3")
+    })
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
+  })
+
   test("falls back to the live URL and still resolves when a freeze fetch fails", async () => {
     const onEnterShow = jest.fn()
     render(
@@ -466,5 +525,240 @@ describe("EditModeContainer show mode media preload gate", () => {
     unmount()
 
     expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:fake-0")
+  })
+})
+
+/**
+ * Regression tests for the media-integrity check: an already-frozen URL is
+ * revalidated (HEAD, with a Range-GET fallback) against the ETag/Last-
+ * Modified/Content-Length captured at freeze time before its cached Blob is
+ * reused, so a file replaced in place under the same URL (e.g. a shared
+ * media-library entry) doesn't serve stale content forever.
+ */
+describe("EditModeContainer media URL staleness check", () => {
+  const dispatchMock = jest.fn()
+  const originalFetch = global.fetch
+  const originalDateNow = Date.now
+
+  type FetchCall = {
+    url: string
+    method: string
+    resolve: (opts: {
+      etag?: string | null
+      lastModified?: string | null
+      contentLength?: string | null
+      ok?: boolean
+      status?: number
+    }) => void
+    reject: (error: Error) => void
+  }
+
+  let calls: FetchCall[]
+  let createObjectURLMock: jest.Mock
+  let revokeObjectURLMock: jest.Mock
+  let objectUrlCounter: number
+  let currentTime: number
+
+  const imageCue = {
+    _id: "cue-image",
+    index: 0,
+    screen: 1,
+    name: "Photo",
+    cueType: "visual",
+    file: { type: "image/png", url: "https://example.com/photo.png" },
+  } as unknown as Cue
+
+  const baseProps = {
+    id: "presentation-1",
+    isToolboxOpen: false,
+    setIsToolboxOpen: jest.fn(),
+    transitionType: "none",
+    onTransitionChange: jest.fn(),
+    cueIndex: 0,
+    setCueIndex: jest.fn(),
+    isAudioMuted: false,
+    toggleAudioMute: jest.fn(),
+    indexCount: 10,
+    addCue: jest.fn(),
+    onClose: jest.fn(),
+    position: null,
+    cueData: null,
+    updateCue: jest.fn(),
+    isAudioMode: false,
+  }
+
+  const makeHeaders = (opts: {
+    etag?: string | null
+    lastModified?: string | null
+    contentLength?: string | null
+  }) => ({
+    get: (name: string) => {
+      if (name === "etag") return opts.etag ?? null
+      if (name === "last-modified") return opts.lastModified ?? null
+      if (name === "content-length") return opts.contentLength ?? null
+      return null
+    },
+  })
+
+  const resolveCall = (
+    predicate: (call: FetchCall) => boolean,
+    opts: {
+      etag?: string | null
+      lastModified?: string | null
+      contentLength?: string | null
+    } = {}
+  ) => {
+    const index = calls.findIndex(predicate)
+    if (index === -1) {
+      throw new Error("No matching fetch call")
+    }
+    const [entry] = calls.splice(index, 1)
+    entry.resolve(opts)
+  }
+
+  const isDownloadCall = (call: FetchCall) => call.method === "GET"
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    calls = []
+    objectUrlCounter = 0
+    currentTime = 0
+
+    jest.spyOn(Date, "now").mockImplementation(() => currentTime)
+
+    global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const headers = init?.headers as Record<string, string> | undefined
+      const method = init?.method
+        ? init.method
+        : headers?.Range
+          ? "RANGE-GET"
+          : "GET"
+
+      return new Promise((resolve, reject) => {
+        calls.push({
+          url,
+          method,
+          resolve: (opts) =>
+            resolve({
+              ok: opts.ok ?? true,
+              status: opts.status ?? (method === "RANGE-GET" ? 206 : 200),
+              headers: makeHeaders(opts),
+              blob: async () => new Blob(["data"]),
+            } as unknown as Response),
+          reject,
+        })
+      })
+    }) as unknown as typeof global.fetch
+
+    createObjectURLMock = jest.fn(() => `blob:fake-${objectUrlCounter++}`)
+    revokeObjectURLMock = jest.fn()
+    global.URL.createObjectURL =
+      createObjectURLMock as unknown as typeof URL.createObjectURL
+    global.URL.revokeObjectURL =
+      revokeObjectURLMock as unknown as typeof URL.revokeObjectURL
+
+    jest.spyOn(console, "error").mockImplementation(() => {})
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+        },
+      })
+    )
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    global.URL.createObjectURL = (() =>
+      "") as unknown as typeof URL.createObjectURL
+    global.URL.revokeObjectURL =
+      (() => {}) as unknown as typeof URL.revokeObjectURL
+    Date.now = originalDateNow
+    jest.restoreAllMocks()
+  })
+
+  test("skips re-downloading when revalidation finds matching validators", async () => {
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await act(async () => {
+      resolveCall(isDownloadCall, { etag: "v1" })
+    })
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+
+    // Advance past the revalidation throttle, then force freezeMediaUrl to
+    // run again for the same URL via a cues re-render.
+    currentTime += 20000
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[{ ...imageCue }]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() =>
+      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+    )
+    await act(async () => {
+      resolveCall((call) => call.method === "HEAD", { etag: "v1" })
+    })
+
+    // Validators matched -- the cached Blob is reused, no second download.
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  test("re-downloads when revalidation finds the content changed under the same URL", async () => {
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await act(async () => {
+      resolveCall(isDownloadCall, { etag: "v1" })
+    })
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+
+    currentTime += 20000
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[{ ...imageCue }]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() =>
+      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+    )
+    await act(async () => {
+      resolveCall((call) => call.method === "HEAD", { etag: "v2" })
+    })
+
+    // Stale Blob revoked and a fresh download kicked off automatically.
+    await waitFor(() =>
+      expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:fake-0")
+    )
+    await waitFor(() => expect(calls.some(isDownloadCall)).toBe(true))
+
+    await act(async () => {
+      resolveCall(isDownloadCall, { etag: "v2" })
+    })
+
+    expect(createObjectURLMock).toHaveBeenCalledTimes(2)
   })
 })

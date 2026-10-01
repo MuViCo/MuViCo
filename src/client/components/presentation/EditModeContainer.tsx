@@ -65,6 +65,78 @@ import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 // is active.
 const SHOW_LOOKAHEAD_FRAMES = 2
 
+// Standard HTTP validators used to detect whether a frozen media URL's
+// underlying content has changed since it was last downloaded (e.g. an
+// uploaded file was replaced in place, reusing the same URL/S3 key -- this
+// happens for media-library-owned files shared across cues).
+interface MediaValidators {
+  etag: string | null
+  lastModified: string | null
+  contentLength: string | null
+}
+
+type MediaItemStatus = "pending" | "loading" | "done" | "failed"
+
+// Don't revalidate an already-frozen URL more often than this -- freezeMediaUrl
+// can be called again for the same URL on every cues/lookahead effect run.
+const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
+
+const readMediaValidators = (response: Response): MediaValidators => {
+  const headers = response.headers as Headers | undefined
+  return {
+    etag: headers?.get?.("etag") ?? null,
+    lastModified: headers?.get?.("last-modified") ?? null,
+    contentLength: headers?.get?.("content-length") ?? null,
+  }
+}
+
+const mediaValidatorsMatch = (
+  previous: MediaValidators | null,
+  next: MediaValidators | null
+): boolean => {
+  if (!previous || !next) return false
+  const previousHasAny =
+    previous.etag || previous.lastModified || previous.contentLength
+  const nextHasAny = next.etag || next.lastModified || next.contentLength
+  // Neither request returned anything usable to compare -- can't prove
+  // staleness, so don't force a re-download on every revalidation.
+  if (!previousHasAny || !nextHasAny) return true
+  if (previous.etag && next.etag) return previous.etag === next.etag
+  return (
+    previous.lastModified === next.lastModified &&
+    previous.contentLength === next.contentLength
+  )
+}
+
+// Lightweight check for whether a URL's content has changed: HEAD is the
+// standard tool, but S3 presigned URLs/CORS don't always allow it, so fall
+// back to a 1-byte ranged GET, and fail soft (null) if even that errors --
+// callers treat "can't validate" as "assume unchanged" rather than
+// breaking the freeze pipeline.
+const fetchMediaValidators = async (
+  url: string
+): Promise<MediaValidators | null> => {
+  try {
+    try {
+      const headResponse = await fetch(url, { method: "HEAD" })
+      if (headResponse.ok) return readMediaValidators(headResponse)
+    } catch {
+      // HEAD unsupported/blocked by CORS -- fall through to the ranged GET.
+    }
+
+    const rangeResponse = await fetch(url, {
+      headers: { Range: "bytes=0-0" },
+    })
+    if (rangeResponse.ok || rangeResponse.status === 206) {
+      return readMediaValidators(rangeResponse)
+    }
+    return null
+  } catch (error) {
+    console.warn("Show mode: media validation request failed", url, error)
+    return null
+  }
+}
+
 interface EditModeContainerProps {
   id: string
   cues: Cue[]
@@ -605,12 +677,27 @@ const EditModeContainer = ({
   // Every media URL referenced by the current cues, tracked so a cue being
   // edited/removed can have its frozen Blob revoked instead of leaked.
   const liveMediaUrlsRef = useRef<Set<string>>(new Set())
+  // originalUrl -> validators (ETag/Last-Modified/Content-Length) captured
+  // when that URL was last frozen or revalidated.
+  const mediaValidatorsRef = useRef<Map<string, MediaValidators>>(new Map())
+  // originalUrl -> timestamp of the last revalidation attempt, so repeat
+  // freezeMediaUrl calls for an already-frozen URL don't hammer the network.
+  const mediaLastValidatedAtRef = useRef<Map<string, number>>(new Map())
+  // originalUrl -> in-flight revalidation, so concurrent freezeMediaUrl
+  // calls for the same URL share one validation request.
+  const mediaValidationPromisesRef = useRef<Map<string, Promise<void>>>(
+    new Map()
+  )
+  // URLs whose freeze attempt most recently failed, surfaced as a distinct
+  // status in the loading overlay. Cleared once a later attempt succeeds or
+  // the URL drops out of use.
+  const [mediaFailedUrls, setMediaFailedUrls] = useState<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
   const [preloadProgress, setPreloadProgress] = useState<{
     loaded: number
     total: number
-    currentLabel: string | null
-  }>({ loaded: 0, total: 0, currentLabel: null })
+    items: Array<{ url: string; label: string }>
+  }>({ loaded: 0, total: 0, items: [] })
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -823,11 +910,63 @@ const EditModeContainer = ({
   // mode is running, unlike the old cache-warming approach of just setting
   // img/video.src and waiting for a load event. Covers images, videos and
   // audio alike. Dedupes by URL: a repeat call returns the same in-flight
-  // or settled promise rather than re-fetching.
+  // or settled promise rather than re-fetching -- unless the URL was
+  // already frozen, in which case it's revalidated first (ETag/Last-
+  // Modified/Content-Length) so a file replaced in place under the same
+  // URL doesn't keep serving stale content forever.
   const freezeMediaUrl = useCallback(
     (url: string, kind: "image" | "video" | "audio"): Promise<string> => {
       const promiseCache = mediaFreezePromisesRef.current
       const cached = promiseCache.get(url)
+      const existingBlobUrl = mediaBlobUrlsRef.current.get(url)
+
+      if (cached && existingBlobUrl) {
+        const lastValidatedAt = mediaLastValidatedAtRef.current.get(url) ?? 0
+        if (Date.now() - lastValidatedAt < MEDIA_VALIDATION_MIN_INTERVAL_MS) {
+          return cached
+        }
+
+        let validation = mediaValidationPromisesRef.current.get(url)
+        if (!validation) {
+          validation = (async () => {
+            const nextValidators = await fetchMediaValidators(url)
+            mediaLastValidatedAtRef.current.set(url, Date.now())
+
+            if (!nextValidators) {
+              // Validation request itself failed -- keep serving the
+              // cached Blob rather than treating that as staleness.
+              return
+            }
+
+            const previousValidators =
+              mediaValidatorsRef.current.get(url) ?? null
+            if (mediaValidatorsMatch(previousValidators, nextValidators)) {
+              mediaValidatorsRef.current.set(url, nextValidators)
+              return
+            }
+
+            // Content changed under the same URL -- drop the stale Blob so
+            // the recursive call below re-downloads it.
+            URL.revokeObjectURL(existingBlobUrl)
+            mediaBlobUrlsRef.current.delete(url)
+            mediaValidatorsRef.current.delete(url)
+            promiseCache.delete(url)
+            mediaSettledUrlsRef.current.delete(url)
+            setFrozenMediaUrls((prev) => {
+              if (!(url in prev)) return prev
+              const next = { ...prev }
+              delete next[url]
+              return next
+            })
+          })().finally(() => {
+            mediaValidationPromisesRef.current.delete(url)
+          })
+          mediaValidationPromisesRef.current.set(url, validation)
+        }
+
+        return validation.then(() => freezeMediaUrl(url, kind))
+      }
+
       if (cached) {
         return cached
       }
@@ -840,12 +979,21 @@ const EditModeContainer = ({
               `Failed to fetch ${kind} for show mode preload (status ${response.status})`
             )
           }
+          const validators = readMediaValidators(response)
           const blob = await response.blob()
           const objectUrl = URL.createObjectURL(blob)
           mediaBlobUrlsRef.current.set(url, objectUrl)
+          mediaValidatorsRef.current.set(url, validators)
+          mediaLastValidatedAtRef.current.set(url, Date.now())
           setFrozenMediaUrls((prev) =>
             prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
           )
+          setMediaFailedUrls((prev) => {
+            if (!prev.has(url)) return prev
+            const next = new Set(prev)
+            next.delete(url)
+            return next
+          })
           return objectUrl
         } catch (error) {
           // Freeze failed (network error, CORS, rotated token, ...). Fall
@@ -856,6 +1004,9 @@ const EditModeContainer = ({
             `Show mode: failed to preload ${kind}, falling back to live URL`,
             url,
             error
+          )
+          setMediaFailedUrls((prev) =>
+            prev.has(url) ? prev : new Set(prev).add(url)
           )
           return url
         } finally {
@@ -868,6 +1019,16 @@ const EditModeContainer = ({
     },
     []
   )
+
+  // Derives a media item's status for the loading overlay from the same
+  // refs/state freezeMediaUrl itself maintains, rather than a parallel
+  // piece of state that could drift out of sync.
+  const getMediaItemStatus = (url: string): MediaItemStatus => {
+    if (frozenMediaUrls[url]) return "done"
+    if (mediaFailedUrls.has(url)) return "failed"
+    if (mediaFreezePromisesRef.current.has(url)) return "loading"
+    return "pending"
+  }
 
   // De-dupes by file URL (same media reused across cues counts once) and
   // keeps a human-readable label for the loading overlay. Back layers (the
@@ -942,6 +1103,15 @@ const EditModeContainer = ({
       }
       mediaFreezePromisesRef.current.delete(url)
       mediaSettledUrlsRef.current.delete(url)
+      mediaValidatorsRef.current.delete(url)
+      mediaLastValidatedAtRef.current.delete(url)
+      mediaValidationPromisesRef.current.delete(url)
+      setMediaFailedUrls((prev) => {
+        if (!prev.has(url)) return prev
+        const next = new Set(prev)
+        next.delete(url)
+        return next
+      })
     })
 
     liveMediaUrlsRef.current = currentUrls
@@ -1007,18 +1177,19 @@ const EditModeContainer = ({
       return
     }
 
-    setPreloadProgress({ loaded: initialLoaded, total, currentLabel: null })
+    setPreloadProgress({
+      loaded: initialLoaded,
+      total,
+      items: entries.map(([url, { label }]) => ({ url, label })),
+    })
     setIsPreparingShow(true)
 
     let loaded = initialLoaded
     await Promise.all(
-      entries.map(async ([url, { kind, label }]) => {
-        if (!mediaSettledUrlsRef.current.has(url)) {
-          setPreloadProgress((prev) => ({ ...prev, currentLabel: label }))
-        }
+      entries.map(async ([url, { kind }]) => {
         await freezeMediaUrl(url, kind)
         loaded += 1
-        setPreloadProgress((prev) => ({ ...prev, loaded, currentLabel: label }))
+        setPreloadProgress((prev) => ({ ...prev, loaded }))
       })
     )
 
@@ -1183,7 +1354,7 @@ const EditModeContainer = ({
           alignItems="center"
           justifyContent="center"
         >
-          <VStack spacing={4} color="white" width="320px">
+          <VStack spacing={4} color="white" width="360px">
             <Text fontSize="lg" fontWeight="semibold">
               Préparation du show…
             </Text>
@@ -1209,10 +1380,53 @@ const EditModeContainer = ({
             <Text fontSize="sm" opacity={0.8}>
               {preloadProgress.loaded}/{preloadProgress.total} médias chargés
             </Text>
-            {preloadProgress.currentLabel && (
-              <Text fontSize="sm" opacity={0.6} noOfLines={1}>
-                Chargement de « {preloadProgress.currentLabel} »…
-              </Text>
+            {preloadProgress.items.length > 0 && (
+              <Box
+                width="100%"
+                maxHeight="200px"
+                overflowY="auto"
+                bg="whiteAlpha.100"
+                borderRadius="md"
+                p={2}
+                textAlign="left"
+              >
+                {preloadProgress.items.map((item) => {
+                  const status = getMediaItemStatus(item.url)
+                  return (
+                    <HStack
+                      key={item.url}
+                      spacing={2}
+                      py="2px"
+                      data-testid="preload-item"
+                      data-status={status}
+                    >
+                      <Box
+                        boxSize="8px"
+                        borderRadius="full"
+                        flexShrink={0}
+                        bg={
+                          status === "done"
+                            ? "green.300"
+                            : status === "failed"
+                              ? "red.400"
+                              : status === "loading"
+                                ? "purple.300"
+                                : "whiteAlpha.400"
+                        }
+                      />
+                      <Text
+                        fontSize="xs"
+                        noOfLines={1}
+                        color={
+                          status === "failed" ? "red.300" : "whiteAlpha.900"
+                        }
+                      >
+                        {item.label}
+                      </Text>
+                    </HStack>
+                  )
+                })}
+              </Box>
             )}
           </VStack>
         </Box>
