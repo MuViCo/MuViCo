@@ -1472,6 +1472,50 @@ describe("Screen", () => {
       expect(outgoingVideo).toBeNull()
     })
 
+    // Regression: an unchanged layer used to be gated by isRevealed along
+    // with its transitioning sibling, briefly hiding it and exposing the
+    // black background beneath.
+    test("keeps an unchanged layer revealed while a sibling layer transitions", async () => {
+      const onClose = jest.fn()
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={[videoCue, overlayCueA]}
+          isVisible={true}
+          onClose={onClose}
+          transitionAt={Date.now() + 10000}
+        />
+      )
+
+      let popup: any
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector(
+            'video[src="http://example.com/background.mp4"]'
+          )
+        ).toBeTruthy()
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueB]}
+            isVisible={true}
+            onClose={onClose}
+            transitionAt={Date.now() + 10000}
+          />
+        )
+      })
+
+      const videoLayerBox = popup.document.body
+        .querySelector('video[src="http://example.com/background.mp4"]')
+        .closest('[data-testid="incoming-cue-layer"]')
+
+      expect(videoLayerBox.getAttribute("data-revealed")).toBe("true")
+    })
+
     test("keeps the same video element across two consecutive overlay changes", async () => {
       const onClose = jest.fn()
       const { rerender } = render(

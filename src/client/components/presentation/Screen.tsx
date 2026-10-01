@@ -318,14 +318,18 @@ const renderCueLayers = (
         <Box
           key={cueIdentity(cue)}
           data-testid={isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"}
-          data-revealed={isIncoming ? isRevealed : undefined}
+          data-revealed={isIncoming ? (isNew ? isRevealed : true) : undefined}
           position="absolute"
           {...cueFrameStyle(cue)}
           zIndex={100 - Number(cue.layer ?? 0)}
           opacity={
-            isIncoming && !isRevealed ? 0 : normalizeCueOpacity(cue.opacity)
+            isIncoming && isNew && !isRevealed
+              ? 0
+              : normalizeCueOpacity(cue.opacity)
           }
-          pointerEvents={isIncoming && !isRevealed ? "none" : undefined}
+          pointerEvents={
+            isIncoming && isNew && !isRevealed ? "none" : undefined
+          }
           display="flex"
           justifyContent="center"
           alignItems="center"
