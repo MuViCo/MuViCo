@@ -91,19 +91,44 @@ type MediaItemStatus = "pending" | "loading" | "done" | "failed"
 const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
 
 // Frozen media bytes, kept on disk and shared across windows and reloads.
-// Keyed by storage id rather than URL: the presigned URL rotates on every
-// presentation read, the id doesn't.
-const MEDIA_DISK_CACHE_NAME = "muvico-show-media-v1"
-const mediaDiskCacheKeyFor = (id: string) =>
-  `/__muvico_media_cache__/${encodeURIComponent(id)}`
+// One cache per presentation, so leaving one behind is a single delete
+// instead of hunting its entries down. Entries are keyed by storage id
+// rather than URL: the presigned URL rotates on every presentation read,
+// the id doesn't.
+const MEDIA_DISK_CACHE_PREFIX = "muvico-show-media-v1-"
+const mediaDiskCacheNameFor = (presentationId: string) =>
+  `${MEDIA_DISK_CACHE_PREFIX}${presentationId}`
+const mediaDiskCacheKeyFor = (mediaId: string) =>
+  `/__muvico_media_cache__/${encodeURIComponent(mediaId)}`
 
-const getMediaDiskCache = async (): Promise<Cache | null> => {
+const getMediaDiskCache = async (
+  presentationId: string
+): Promise<Cache | null> => {
   if (typeof caches === "undefined") return null
   try {
-    return await caches.open(MEDIA_DISK_CACHE_NAME)
+    return await caches.open(mediaDiskCacheNameFor(presentationId))
   } catch (error) {
     console.warn("Show mode: media disk cache unavailable", error)
     return null
+  }
+}
+
+// Media is only worth keeping on disk for the presentation being worked on,
+// so every other presentation's cache is dropped on the way in. Without this
+// the browser accumulates one cache per presentation ever opened.
+const dropOtherMediaDiskCaches = async (presentationId: string) => {
+  if (typeof caches === "undefined") return
+  try {
+    const keep = mediaDiskCacheNameFor(presentationId)
+    const names = await caches.keys()
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(MEDIA_DISK_CACHE_PREFIX))
+        .filter((name) => name !== keep)
+        .map((name) => caches.delete(name))
+    )
+  } catch (error) {
+    console.warn("Show mode: could not prune old media disk caches", error)
   }
 }
 
@@ -737,6 +762,10 @@ const EditModeContainer = ({
     }
   }, [])
 
+  useEffect(() => {
+    dropOtherMediaDiskCaches(id)
+  }, [id])
+
   const transitionAt = useMemo(
     () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
     [cueIndex]
@@ -936,13 +965,13 @@ const EditModeContainer = ({
   // Modified/Content-Length) so a file replaced in place under the same
   // URL doesn't keep serving stale content forever.
   //
-  // `id` is the file's storage handle, used as the disk cache key so an
+  // `mediaId` is the file's storage handle, used as the disk cache key so an
   // earlier download can be reused once its presigned `url` has rotated.
   const freezeMediaUrl = useCallback(
     (
       url: string,
       kind: "image" | "video" | "audio",
-      id: string
+      mediaId: string
     ): Promise<string> => {
       const promiseCache = mediaFreezePromisesRef.current
       const cached = promiseCache.get(url)
@@ -987,15 +1016,15 @@ const EditModeContainer = ({
               delete next[url]
               return next
             })
-            const diskCache = await getMediaDiskCache()
-            await diskCache?.delete(mediaDiskCacheKeyFor(id))
+            const diskCache = await getMediaDiskCache(id)
+            await diskCache?.delete(mediaDiskCacheKeyFor(mediaId))
           })().finally(() => {
             mediaValidationPromisesRef.current.delete(url)
           })
           mediaValidationPromisesRef.current.set(url, validation)
         }
 
-        return validation.then(() => freezeMediaUrl(url, kind, id))
+        return validation.then(() => freezeMediaUrl(url, kind, mediaId))
       }
 
       if (cached) {
@@ -1003,9 +1032,9 @@ const EditModeContainer = ({
       }
 
       const promise = (async () => {
-        const diskCacheKey = mediaDiskCacheKeyFor(id)
+        const diskCacheKey = mediaDiskCacheKeyFor(mediaId)
         try {
-          const diskCache = await getMediaDiskCache()
+          const diskCache = await getMediaDiskCache(id)
           const cachedResponse = await diskCache?.match(diskCacheKey)
           if (cachedResponse) {
             const blob = await cachedResponse.blob()
@@ -1083,7 +1112,7 @@ const EditModeContainer = ({
       promiseCache.set(url, promise)
       return promise
     },
-    []
+    [id]
   )
 
   // Derives a media item's status for the loading overlay from the same

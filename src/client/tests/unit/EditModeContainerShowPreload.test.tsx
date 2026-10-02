@@ -559,8 +559,8 @@ describe("EditModeContainer show mode media preload gate", () => {
 
 /**
  * Regression tests for the media-integrity check: an already-frozen URL is
- * revalidated (HEAD, with a Range-GET fallback) against the ETag/Last-
- * Modified/Content-Length captured at freeze time before its cached Blob is
+ * revalidated (a 1-byte ranged GET) against the ETag/Last-Modified/
+ * Content-Length captured at freeze time before its cached Blob is
  * reused, so a file replaced in place under the same URL (e.g. a shared
  * media-library entry) doesn't serve stale content forever.
  */
@@ -806,5 +806,145 @@ describe("EditModeContainer media URL staleness check", () => {
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+/**
+ * Frozen media is persisted to a CacheStorage bucket scoped to the
+ * presentation, so it survives reloads and can be dropped wholesale when the
+ * user moves on to another presentation.
+ */
+describe("EditModeContainer media disk cache", () => {
+  const dispatchMock = jest.fn()
+  const originalFetch = global.fetch
+
+  const imageCue = {
+    _id: "cue-image",
+    index: 0,
+    screen: 1,
+    name: "Photo",
+    cueType: "visual",
+    file: {
+      id: "media-1",
+      type: "image/png",
+      url: "https://example.com/photo.png",
+    },
+  } as unknown as Cue
+
+  const baseProps = {
+    id: "presentation-1",
+    isToolboxOpen: false,
+    setIsToolboxOpen: jest.fn(),
+    transitionType: "none",
+    onTransitionChange: jest.fn(),
+    cueIndex: 0,
+    setCueIndex: jest.fn(),
+    isAudioMuted: false,
+    toggleAudioMute: jest.fn(),
+    indexCount: 10,
+    addCue: jest.fn(),
+    onClose: jest.fn(),
+    position: null,
+    cueData: null,
+    updateCue: jest.fn(),
+    isAudioMode: false,
+  }
+
+  let cacheNames: string[]
+  let openMock: jest.Mock
+  let deleteCacheMock: jest.Mock
+  let putMock: jest.Mock
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    cacheNames = []
+    putMock = jest.fn(async () => undefined)
+    openMock = jest.fn(async () => ({
+      match: async () => undefined,
+      put: putMock,
+      delete: async () => true,
+    }))
+    deleteCacheMock = jest.fn(async () => true)
+    ;(global as unknown as { caches: unknown }).caches = {
+      open: openMock,
+      keys: async () => cacheNames,
+      delete: deleteCacheMock,
+    }
+
+    // jsdom ships neither CacheStorage nor Response; the production code
+    // wraps the Blob in one before storing it.
+    ;(global as unknown as { Response: unknown }).Response = class {
+      constructor(public body: unknown) {}
+    }
+
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      blob: async () => new Blob(["data"]),
+    })) as unknown as typeof global.fetch
+
+    global.URL.createObjectURL = (() =>
+      "blob:fake") as unknown as typeof URL.createObjectURL
+    global.URL.revokeObjectURL =
+      (() => {}) as unknown as typeof URL.revokeObjectURL
+
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: { name: "Test presentation", screenCount: 2 },
+      })
+    )
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    delete (global as unknown as { caches?: unknown }).caches
+    delete (global as unknown as { Response?: unknown }).Response
+    jest.restoreAllMocks()
+  })
+
+  test("stores frozen media in a cache scoped to the presentation", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1))
+    expect(openMock).toHaveBeenCalledWith("muvico-show-media-v1-presentation-1")
+    expect(putMock.mock.calls[0][0]).toBe("/__muvico_media_cache__/media-1")
+  })
+
+  test("drops other presentations' caches but keeps its own and unrelated ones", async () => {
+    cacheNames = [
+      "muvico-show-media-v1-presentation-1",
+      "muvico-show-media-v1-presentation-2",
+      "muvico-show-media-v1-presentation-3",
+      "some-unrelated-cache",
+    ]
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() => expect(deleteCacheMock).toHaveBeenCalledTimes(2))
+    const deleted = deleteCacheMock.mock.calls.map(([name]) => name)
+    expect(deleted).toEqual(
+      expect.arrayContaining([
+        "muvico-show-media-v1-presentation-2",
+        "muvico-show-media-v1-presentation-3",
+      ])
+    )
+    expect(deleted).not.toContain("muvico-show-media-v1-presentation-1")
+    expect(deleted).not.toContain("some-unrelated-cache")
   })
 })
