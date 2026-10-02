@@ -54,6 +54,25 @@ describe("cueFrameStyle", () => {
       height: "100%",
     })
   })
+
+  test("ignores the frame once the cue spans several screens", () => {
+    // Its framing is the span's own; a ninth of one screen means nothing.
+    expect(
+      cueFrameStyle({
+        frame: { x: 0.666, y: 0, width: 0.333, height: 0.333 },
+        spanScreens: [1, 2],
+      })
+    ).toEqual({ left: "0%", top: "0%", width: "100%", height: "100%" })
+  })
+
+  test("still honours the frame when the span is down to one screen", () => {
+    expect(
+      cueFrameStyle({
+        frame: { x: 0.5, y: 0, width: 0.5, height: 1 },
+        spanScreens: [1],
+      })
+    ).toEqual({ left: "50%", top: "0%", width: "50%", height: "100%" })
+  })
 })
 
 describe("CUE_FRAME_PRESETS", () => {

@@ -13,7 +13,6 @@
 import { useEffect, useState } from "react"
 import type { FormEvent } from "react"
 import {
-  Box,
   Button,
   Checkbox,
   CheckboxGroup,
@@ -27,28 +26,15 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  Tooltip,
 } from "@chakra-ui/react"
 
 import { occupiedScreens } from "../utils/cueScreenSpanUtils"
 import {
   DEFAULT_SPAN_FILL,
   DEFAULT_SPAN_POSITION,
-  SPAN_POSITIONS,
 } from "../utils/screenSpanLayout"
+import SpanFramingPicker from "./SpanFramingPicker"
 import type { Cue, CueUpdateInput, SpanFill, SpanPosition } from "../../types"
-
-const POSITION_LABELS: Record<SpanPosition, string> = {
-  "top-left": "Top left",
-  top: "Top",
-  "top-right": "Top right",
-  left: "Left",
-  center: "Center",
-  right: "Right",
-  "bottom-left": "Bottom left",
-  bottom: "Bottom",
-  "bottom-right": "Bottom right",
-}
 
 interface MultiScreenModalProps {
   isOpen: boolean
@@ -198,60 +184,13 @@ const MultiScreenModal = ({
                 : "Applies once this element spans more than one screen."}
             </Text>
 
-            <Stack direction="row" spacing={2} mb={4}>
-              <Button
-                size="sm"
-                flex={1}
-                aria-pressed={fill === "cover"}
-                variant={fill === "cover" ? "solid" : "outline"}
-                colorScheme={fill === "cover" ? "purple" : "gray"}
-                isDisabled={!isSpanning}
-                onClick={() => setFill("cover")}
-              >
-                Fill
-              </Button>
-              <Button
-                size="sm"
-                flex={1}
-                aria-pressed={fill === "contain"}
-                variant={fill === "contain" ? "solid" : "outline"}
-                colorScheme={fill === "contain" ? "purple" : "gray"}
-                isDisabled={!isSpanning}
-                onClick={() => setFill("contain")}
-              >
-                Fit
-              </Button>
-            </Stack>
-            <Text mb={3} fontSize="xs" color="gray.500">
-              {fill === "cover"
-                ? "Fill zooms the media until it covers every screen, cropping what overflows."
-                : "Fit keeps the whole media visible, leaving bands where it falls short."}
-            </Text>
-
-            <Box
-              display="grid"
-              gridTemplateColumns="repeat(3, 1fr)"
-              gap={1}
-              maxWidth="150px"
-              aria-label="Position"
-              role="group"
-            >
-              {SPAN_POSITIONS.map((candidate) => (
-                <Tooltip key={candidate} label={POSITION_LABELS[candidate]}>
-                  <Button
-                    size="sm"
-                    height="38px"
-                    minWidth={0}
-                    aria-label={POSITION_LABELS[candidate]}
-                    aria-pressed={position === candidate}
-                    variant={position === candidate ? "solid" : "outline"}
-                    colorScheme={position === candidate ? "purple" : "gray"}
-                    isDisabled={!isSpanning}
-                    onClick={() => setPosition(candidate)}
-                  />
-                </Tooltip>
-              ))}
-            </Box>
+            <SpanFramingPicker
+              fill={fill}
+              position={position}
+              onFillChange={setFill}
+              onPositionChange={setPosition}
+              isDisabled={!isSpanning}
+            />
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>

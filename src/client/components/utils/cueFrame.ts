@@ -40,14 +40,19 @@ export const normalizeCueFrame = (
 }
 
 export const cueFrameStyle = (
-  cue: Pick<Cue, "frame"> | null | undefined
+  cue: Pick<Cue, "frame" | "spanScreens"> | null | undefined
 ): {
   left: string
   top: string
   width: string
   height: string
 } => {
-  const { x, y, width, height } = normalizeCueFrame(cue?.frame)
+  // A frame places a cue within one screen, which says nothing once the cue
+  // runs across several -- its framing is the span's own (screenSpanLayout).
+  // The value is kept rather than cleared, so dropping the span restores the
+  // placement it had before.
+  const spans = (cue?.spanScreens?.length ?? 0) > 1
+  const { x, y, width, height } = normalizeCueFrame(spans ? null : cue?.frame)
   return {
     left: `${x * 100}%`,
     top: `${y * 100}%`,
