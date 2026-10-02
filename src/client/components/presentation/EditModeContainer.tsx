@@ -98,8 +98,11 @@ const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
 const MEDIA_DISK_CACHE_PREFIX = "muvico-show-media-v1-"
 const mediaDiskCacheNameFor = (presentationId: string) =>
   `${MEDIA_DISK_CACHE_PREFIX}${presentationId}`
+const MEDIA_DISK_CACHE_KEY_PREFIX = "/__muvico_media_cache__/"
 const mediaDiskCacheKeyFor = (mediaId: string) =>
-  `/__muvico_media_cache__/${encodeURIComponent(mediaId)}`
+  `${MEDIA_DISK_CACHE_KEY_PREFIX}${encodeURIComponent(mediaId)}`
+const mediaIdFromDiskCacheKey = (path: string) =>
+  decodeURIComponent(path.slice(MEDIA_DISK_CACHE_KEY_PREFIX.length))
 
 const getMediaDiskCache = async (
   presentationId: string
@@ -141,6 +144,29 @@ const readMediaDiskCacheStamp = async (name: string): Promise<number> => {
     return Number(await stamp.text()) || 0
   } catch {
     return 0
+  }
+}
+
+// Media no cue references any more is dead weight, and editing a
+// presentation is the only thing that can orphan it. Reconciling against the
+// current cues also catches media removed from another tab or while the app
+// was closed, which watching for changes would miss.
+const reconcileMediaDiskCache = async (
+  presentationId: string,
+  liveMediaIds: Set<string>
+) => {
+  const cache = await getMediaDiskCache(presentationId)
+  if (!cache) return
+  try {
+    const requests = await cache.keys()
+    const orphaned = requests.filter((request) => {
+      const path = new URL(request.url).pathname
+      if (!path.startsWith(MEDIA_DISK_CACHE_KEY_PREFIX)) return false
+      return !liveMediaIds.has(mediaIdFromDiskCacheKey(path))
+    })
+    await Promise.all(orphaned.map((request) => cache.delete(request)))
+  } catch (error) {
+    console.warn("Show mode: could not reconcile media disk cache", error)
   }
 }
 
@@ -1220,9 +1246,18 @@ const EditModeContainer = ({
   // swapped out or cue deleted) instead of leaking them until unmount.
   useEffect(() => {
     const currentUrls = new Set<string>()
-    collectMediaItems(cues || []).forEach((_value, url) => {
+    const currentMediaIds = new Set<string>()
+    collectMediaItems(cues || []).forEach(({ id: mediaId }, url) => {
       currentUrls.add(url)
+      currentMediaIds.add(mediaId)
     })
+
+    // An empty set here means the cues haven't loaded yet just as often as it
+    // means every cue lost its media, and wiping a presentation's cache on a
+    // transient empty render is far worse than keeping a few stale entries.
+    if (currentMediaIds.size > 0) {
+      reconcileMediaDiskCache(id, currentMediaIds)
+    }
 
     const previousUrls = liveMediaUrlsRef.current
     previousUrls.forEach((url) => {
@@ -1253,7 +1288,7 @@ const EditModeContainer = ({
     })
 
     liveMediaUrlsRef.current = currentUrls
-  }, [cues, collectMediaItems])
+  }, [cues, collectMediaItems, id])
 
   // Cues active at a given frame index across every screen, independent of
   // which screen displays them -- used to look ahead to upcoming frames'

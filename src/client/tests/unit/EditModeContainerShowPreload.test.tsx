@@ -854,13 +854,17 @@ describe("EditModeContainer media disk cache", () => {
   let openMock: jest.Mock
   let deleteCacheMock: jest.Mock
   let putMock: jest.Mock
+  let deleteEntryMock: jest.Mock
   let lastUsedStamps: Record<string, number>
+  let cacheKeys: string[]
 
   beforeEach(() => {
     jest.clearAllMocks()
     cacheNames = []
     lastUsedStamps = {}
+    cacheKeys = []
     putMock = jest.fn(async () => undefined)
+    deleteEntryMock = jest.fn(async () => true)
     openMock = jest.fn(async (name: string) => ({
       match: async (key: string) => {
         if (key !== "/__muvico_last_used__") return undefined
@@ -869,8 +873,10 @@ describe("EditModeContainer media disk cache", () => {
           ? undefined
           : { text: async () => String(stamp) }
       },
+      keys: async () =>
+        cacheKeys.map((path) => ({ url: `http://localhost${path}` })),
       put: putMock,
-      delete: async () => true,
+      delete: deleteEntryMock,
     }))
     deleteCacheMock = jest.fn(async () => true)
     ;(global as unknown as { caches: unknown }).caches = {
@@ -963,6 +969,36 @@ describe("EditModeContainer media disk cache", () => {
     await waitFor(() => expect(deleteCacheMock).toHaveBeenCalledTimes(1))
     const deleted = deleteCacheMock.mock.calls.map(([name]) => name)
     expect(deleted).toEqual(["muvico-show-media-v1-oldest"])
+  })
+
+  test("drops cached media that no cue references any more", async () => {
+    cacheKeys = [
+      "/__muvico_media_cache__/media-1",
+      "/__muvico_media_cache__/removed-media",
+      "/__muvico_last_used__",
+    ]
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() => expect(deleteEntryMock).toHaveBeenCalledTimes(1))
+    expect(deleteEntryMock.mock.calls[0][0].url).toContain("removed-media")
+  })
+
+  test("keeps cached media when the cue list is momentarily empty", async () => {
+    cacheKeys = ["/__muvico_media_cache__/media-1"]
+
+    render(
+      <EditModeContainer {...baseProps} cues={[]} onEnterShow={jest.fn()} />
+    )
+
+    await waitFor(() => expect(openMock).toHaveBeenCalled())
+    expect(deleteEntryMock).not.toHaveBeenCalled()
   })
 
   test("marks the presentation as recently used on entry", async () => {
