@@ -56,30 +56,3 @@ if (typeof window !== "undefined") {
   window.Element.prototype.scrollIntoView =
     window.Element.prototype.scrollIntoView || jest.fn()
 }
-
-// jsdom stubs HTMLMediaElement.play/pause with a "not implemented" throw and
-// no return value, so production code that awaits the Promise play() is
-// specified to return crashes under test. Track paused state so a test can
-// assert what a cue layer did.
-if (typeof window !== "undefined") {
-  Object.defineProperty(window.HTMLMediaElement.prototype, "play", {
-    configurable: true,
-    writable: true,
-    value: jest.fn(function play() {
-      this.paused = false
-      return Promise.resolve()
-    }),
-  })
-  Object.defineProperty(window.HTMLMediaElement.prototype, "pause", {
-    configurable: true,
-    writable: true,
-    value: jest.fn(function pause() {
-      this.paused = true
-    }),
-  })
-  Object.defineProperty(window.HTMLMediaElement.prototype, "paused", {
-    configurable: true,
-    writable: true,
-    value: true,
-  })
-}
