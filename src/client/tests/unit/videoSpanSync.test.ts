@@ -3,6 +3,7 @@ import {
   correctDrift,
   useVideoSpanSync,
   SYNC_INTERVAL_MS,
+  NUDGE_RATE,
 } from "../../components/utils/videoSpanSync"
 import type { VideoLike } from "../../components/utils/videoSpanSync"
 
@@ -10,6 +11,8 @@ const video = (overrides: Partial<VideoLike> = {}): VideoLike => ({
   currentTime: 0,
   paused: false,
   seeking: false,
+  readyState: 4,
+  playbackRate: 1,
   ...overrides,
 })
 
@@ -29,7 +32,7 @@ describe("correctDrift", () => {
     expect(follower.currentTime).toBe(10)
   })
 
-  test("leaves a follower alone when drift is under the threshold", () => {
+  test("never seeks a follower whose drift is under the threshold", () => {
     const leader = video({ currentTime: 10 })
     const follower = video({ currentTime: 9.92 })
 
@@ -42,6 +45,118 @@ describe("correctDrift", () => {
     )
 
     expect(follower.currentTime).toBe(9.92)
+  })
+
+  test("nudges a follower that is behind instead of seeking it", () => {
+    const leader = video({ currentTime: 10 })
+    const follower = video({ currentTime: 9.9 })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, follower],
+      ],
+      0.5
+    )
+
+    expect(follower.currentTime).toBe(9.9)
+    expect(follower.playbackRate).toBe(NUDGE_RATE)
+  })
+
+  test("nudges a follower that is ahead instead of seeking it", () => {
+    const leader = video({ currentTime: 10 })
+    const follower = video({ currentTime: 10.1 })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, follower],
+      ],
+      0.5
+    )
+
+    expect(follower.currentTime).toBe(10.1)
+    expect(follower.playbackRate).toBe(1 / NUDGE_RATE)
+  })
+
+  test("restores nominal speed once a nudged follower is back in sync", () => {
+    const leader = video({ currentTime: 10 })
+    const follower = video({ currentTime: 10.01, playbackRate: NUDGE_RATE })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, follower],
+      ],
+      0.5
+    )
+
+    expect(follower.playbackRate).toBe(1)
+  })
+
+  test("resets the nudge when a gross desync forces a seek", () => {
+    const leader = video({ currentTime: 10 })
+    const follower = video({ currentTime: 2, playbackRate: NUDGE_RATE })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, follower],
+      ],
+      0.5
+    )
+
+    expect(follower.currentTime).toBe(10)
+    expect(follower.playbackRate).toBe(1)
+  })
+
+  test("skips a follower that cannot play its next frame", () => {
+    const leader = video({ currentTime: 10 })
+    const starved = video({ currentTime: 2, readyState: 2 })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, starved],
+      ],
+      0.5
+    )
+
+    expect(starved.currentTime).toBe(2)
+    expect(starved.playbackRate).toBe(1)
+  })
+
+  test("leaves a starved follower alone on every tick of a seek loop", () => {
+    const leader = video({ currentTime: 10 })
+    const starved = video({ currentTime: 2, readyState: 1 })
+
+    for (let tick = 0; tick < 5; tick += 1) {
+      leader.currentTime += 1
+      correctDrift(
+        [
+          [1, leader],
+          [2, starved],
+        ],
+        0.5
+      )
+    }
+
+    expect(starved.currentTime).toBe(2)
+  })
+
+  test("still corrects a follower when readyState is unavailable", () => {
+    const leader = video({ currentTime: 10 })
+    const follower = video({ currentTime: 2, readyState: undefined })
+
+    correctDrift(
+      [
+        [1, leader],
+        [2, follower],
+      ],
+      0.5
+    )
+
+    expect(follower.currentTime).toBe(10)
   })
 
   test("treats the lowest screen number as the leader regardless of entry order", () => {
@@ -173,6 +288,25 @@ describe("useVideoSpanSync", () => {
     renderHook(() => useVideoSpanSync("cue-null", 1, nullRef, true))
 
     expect(() => jest.advanceTimersByTime(SYNC_INTERVAL_MS)).not.toThrow()
+  })
+
+  test("hands a nudged element back at nominal speed on unmount", () => {
+    const leaderVideo = video({ currentTime: 10 })
+    const followerVideo = video({ currentTime: 9.9 })
+    const leaderRef = { current: leaderVideo }
+    const followerRef = { current: followerVideo }
+
+    renderHook(() => useVideoSpanSync("cue-rate", 1, leaderRef, true))
+    const { unmount } = renderHook(() =>
+      useVideoSpanSync("cue-rate", 2, followerRef, true)
+    )
+
+    jest.advanceTimersByTime(SYNC_INTERVAL_MS)
+    expect(followerVideo.playbackRate).toBe(NUDGE_RATE)
+
+    unmount()
+
+    expect(followerVideo.playbackRate).toBe(1)
   })
 
   test("stops correcting once unmounted", () => {
