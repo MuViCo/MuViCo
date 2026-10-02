@@ -149,22 +149,29 @@ describe("EditModeContainer show mode media preload gate", () => {
     isAudioMode: false,
   }
 
-  // Resolves the oldest pending fetch() for a given URL with a fake Blob.
-  const resolveFetch = (url: string) => {
-    const index = pendingFetches.findIndex((entry) => entry.url === url)
-    if (index === -1) {
-      throw new Error(`No pending fetch for ${url}`)
+  // freezeMediaUrl looks the media up in the disk cache before falling back to
+  // the network, so its fetch() is a few microtasks behind the click that
+  // triggered it. Give it those ticks rather than assuming it already fired.
+  const takePendingFetch = async (url: string) => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const index = pendingFetches.findIndex((entry) => entry.url === url)
+      if (index !== -1) {
+        const [entry] = pendingFetches.splice(index, 1)
+        return entry
+      }
+      await Promise.resolve()
     }
-    const [entry] = pendingFetches.splice(index, 1)
+    throw new Error(`No pending fetch for ${url}`)
+  }
+
+  // Resolves the oldest pending fetch() for a given URL with a fake Blob.
+  const resolveFetch = async (url: string) => {
+    const entry = await takePendingFetch(url)
     entry.resolve(new Blob(["data"], { type: "application/octet-stream" }))
   }
 
-  const rejectFetch = (url: string) => {
-    const index = pendingFetches.findIndex((entry) => entry.url === url)
-    if (index === -1) {
-      throw new Error(`No pending fetch for ${url}`)
-    }
-    const [entry] = pendingFetches.splice(index, 1)
+  const rejectFetch = async (url: string) => {
+    const entry = await takePendingFetch(url)
     entry.reject(new Error("network error"))
   }
 
@@ -251,18 +258,25 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.getByText(/Préparation du show/)).toBeInTheDocument()
     expect(screen.getByText("0/2 médias chargés")).toBeInTheDocument()
 
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/photo.png")
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/clip.mp4")
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://example.com/photo.png",
+        { cache: "reload" }
+      )
+    )
+    expect(global.fetch).toHaveBeenCalledWith("https://example.com/clip.mp4", {
+      cache: "reload",
+    })
 
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() =>
       expect(screen.getByText("1/2 médias chargés")).toBeInTheDocument()
     )
 
     await act(async () => {
-      resolveFetch("https://example.com/clip.mp4")
+      await resolveFetch("https://example.com/clip.mp4")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
@@ -304,7 +318,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     )
 
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() =>
       expect(
@@ -315,7 +329,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     // The audio cue is left unresolved so the overlay stays open long
     // enough to observe the failed video's status.
     await act(async () => {
-      rejectFetch("https://example.com/clip.mp4")
+      await rejectFetch("https://example.com/clip.mp4")
     })
     await waitFor(() =>
       expect(
@@ -325,7 +339,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(onEnterShow).not.toHaveBeenCalled()
 
     await act(async () => {
-      resolveFetch("https://example.com/track.mp3")
+      await resolveFetch("https://example.com/track.mp3")
     })
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
   })
@@ -345,7 +359,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.getByText(/Préparation du show/)).toBeInTheDocument()
 
     await act(async () => {
-      rejectFetch("https://example.com/clip.mp4")
+      await rejectFetch("https://example.com/clip.mp4")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
@@ -366,7 +380,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
 
@@ -376,7 +390,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
   })
 
-  test("preloads back layers before front layers", () => {
+  test("preloads back layers before front layers", async () => {
     const frontImageCue = {
       _id: "cue-front",
       index: 0,
@@ -410,6 +424,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     fireEvent.click(screen.getByText("Show mode"))
 
     const fetchMock = global.fetch as jest.Mock
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBe(2))
     expect(fetchMock.mock.calls[0][0]).toBe("https://example.com/back.png")
     expect(fetchMock.mock.calls[1][0]).toBe("https://example.com/front.png")
   })
@@ -436,10 +451,15 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     expect(onEnterShow).not.toHaveBeenCalled()
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/track.mp3")
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://example.com/track.mp3",
+        { cache: "reload" }
+      )
+    )
 
     await act(async () => {
-      resolveFetch("https://example.com/track.mp3")
+      await resolveFetch("https://example.com/track.mp3")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
@@ -457,8 +477,8 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
-      resolveFetch("https://example.com/clip.mp4")
+      await resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/clip.mp4")
     })
 
     expect(global.fetch).toHaveBeenCalledTimes(2)
@@ -500,7 +520,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
@@ -526,7 +546,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
@@ -609,7 +629,10 @@ describe("EditModeContainer media URL staleness check", () => {
     },
   })
 
-  const resolveCall = (
+  // The disk cache lookup in freezeMediaUrl runs before the network call, so
+  // give the fetch a few microtasks to show up instead of assuming it already
+  // did.
+  const resolveCall = async (
     predicate: (call: FetchCall) => boolean,
     opts: {
       etag?: string | null
@@ -617,12 +640,16 @@ describe("EditModeContainer media URL staleness check", () => {
       contentLength?: string | null
     } = {}
   ) => {
-    const index = calls.findIndex(predicate)
-    if (index === -1) {
-      throw new Error("No matching fetch call")
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const index = calls.findIndex(predicate)
+      if (index !== -1) {
+        const [entry] = calls.splice(index, 1)
+        entry.resolve(opts)
+        return
+      }
+      await Promise.resolve()
     }
-    const [entry] = calls.splice(index, 1)
-    entry.resolve(opts)
+    throw new Error("No matching fetch call")
   }
 
   const isDownloadCall = (call: FetchCall) => call.method === "GET"
@@ -703,7 +730,7 @@ describe("EditModeContainer media URL staleness check", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v1" })
+      await resolveCall(isDownloadCall, { etag: "v1" })
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
@@ -724,10 +751,10 @@ describe("EditModeContainer media URL staleness check", () => {
     )
 
     await waitFor(() =>
-      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+      expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
     )
     await act(async () => {
-      resolveCall((call) => call.method === "HEAD", { etag: "v1" })
+      await resolveCall((call) => call.method === "RANGE-GET", { etag: "v1" })
     })
 
     // Validators matched -- the cached Blob is reused, no second download.
@@ -746,7 +773,7 @@ describe("EditModeContainer media URL staleness check", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v1" })
+      await resolveCall(isDownloadCall, { etag: "v1" })
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
@@ -762,10 +789,10 @@ describe("EditModeContainer media URL staleness check", () => {
     )
 
     await waitFor(() =>
-      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+      expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
     )
     await act(async () => {
-      resolveCall((call) => call.method === "HEAD", { etag: "v2" })
+      await resolveCall((call) => call.method === "RANGE-GET", { etag: "v2" })
     })
 
     // Stale Blob revoked and a fresh download kicked off automatically.
@@ -775,7 +802,7 @@ describe("EditModeContainer media URL staleness check", () => {
     await waitFor(() => expect(calls.some(isDownloadCall)).toBe(true))
 
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v2" })
+      await resolveCall(isDownloadCall, { etag: "v2" })
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(2)
