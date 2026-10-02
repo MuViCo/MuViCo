@@ -6,6 +6,8 @@
  * - Screens are shown in order 1..screenCount; that's also the left-to-right
  *   slice order used when rendering (see screenSpanLayout.ts).
  * - Saving with fewer than 2 screens checked clears the span entirely.
+ * - Fill and position decide how the media is scaled into the combined
+ *   canvas and what the crop keeps; they only matter once it spans.
  */
 
 import { useEffect, useState } from "react"
@@ -14,6 +16,7 @@ import {
   Button,
   Checkbox,
   CheckboxGroup,
+  Divider,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -26,7 +29,12 @@ import {
 } from "@chakra-ui/react"
 
 import { occupiedScreens } from "../utils/cueScreenSpanUtils"
-import type { Cue, CueUpdateInput } from "../../types"
+import {
+  DEFAULT_SPAN_FILL,
+  DEFAULT_SPAN_POSITION,
+} from "../utils/screenSpanLayout"
+import SpanFramingPicker from "./SpanFramingPicker"
+import type { Cue, CueUpdateInput, SpanFill, SpanPosition } from "../../types"
 
 interface MultiScreenModalProps {
   isOpen: boolean
@@ -48,6 +56,8 @@ const MultiScreenModal = ({
   onSave,
 }: MultiScreenModalProps) => {
   const [selectedScreens, setSelectedScreens] = useState<number[]>([])
+  const [fill, setFill] = useState<SpanFill>(DEFAULT_SPAN_FILL)
+  const [position, setPosition] = useState<SpanPosition>(DEFAULT_SPAN_POSITION)
 
   useEffect(() => {
     if (isOpen && cue) {
@@ -56,6 +66,8 @@ const MultiScreenModal = ({
           ? (cue.spanScreens as number[])
           : [cue.screen]
       setSelectedScreens(initial)
+      setFill(cue.spanFill ?? DEFAULT_SPAN_FILL)
+      setPosition(cue.spanPosition ?? DEFAULT_SPAN_POSITION)
     }
   }, [isOpen, cue])
 
@@ -65,6 +77,7 @@ const MultiScreenModal = ({
 
   const layer = Number(cue.layer ?? 0)
   const layerLabel = `L${layer + 1}`
+  const isSpanning = selectedScreens.length > 1
 
   const conflictOnScreen = (screenNumber: number) =>
     (cues || []).find(
@@ -95,7 +108,13 @@ const MultiScreenModal = ({
     const spanScreens = selectedScreens.length > 1 ? selectedScreens : []
     // cueName (not just name) is what the update pipeline actually reads
     // (see ToolBox.jsx's onSave payload for the same convention).
-    await onSave({ ...cue, cueName: cue.name, spanScreens })
+    await onSave({
+      ...cue,
+      cueName: cue.name,
+      spanScreens,
+      spanFill: fill,
+      spanPosition: position,
+    })
     onClose()
   }
 
@@ -153,6 +172,25 @@ const MultiScreenModal = ({
                 })}
               </Stack>
             </CheckboxGroup>
+
+            <Divider my={4} />
+
+            <Text mb={2} fontSize="sm" fontWeight="medium">
+              Framing
+            </Text>
+            <Text mb={3} fontSize="xs" color="gray.500">
+              {isSpanning
+                ? "How the media is scaled across the screens, and which part survives the crop."
+                : "Applies once this element spans more than one screen."}
+            </Text>
+
+            <SpanFramingPicker
+              fill={fill}
+              position={position}
+              onFillChange={setFill}
+              onPositionChange={setPosition}
+              isDisabled={!isSpanning}
+            />
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>

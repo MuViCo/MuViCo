@@ -95,10 +95,45 @@ describe("ShowScreenPreview", () => {
     Object.defineProperty(probe, "naturalHeight", { value: 900 })
     fireEvent.load(probe)
 
+    // A 32:9 media exactly fills a canvas of two 16:9 screens, so it is
+    // twice a screen wide and screen 2 shows its right half.
     const crop = screen.getByRole("img", { name: "panorama.png" })
     expect(crop).toHaveStyle({
-      backgroundPosition: "100% 50%",
-      backgroundSize: "200% 100%",
+      left: "-100%",
+      top: "0%",
+      width: "200%",
+      height: "100%",
+    })
+  })
+
+  test("crops a spanning video the same way it crops a spanning image", () => {
+    render(
+      <ShowScreenPreview
+        screenNumber={2}
+        cues={[
+          makeCue({
+            name: "panorama.mp4",
+            screen: 1,
+            spanScreens: [2, 1],
+            file: {
+              url: "https://example.com/panorama.mp4",
+              type: "video/mp4",
+            },
+          }),
+        ]}
+      />
+    )
+
+    const video = document.querySelector("video")!
+    Object.defineProperty(video, "videoWidth", { value: 3200 })
+    Object.defineProperty(video, "videoHeight", { value: 900 })
+    fireEvent.loadedMetadata(video)
+
+    // A 32:9 media exactly fills a canvas of two 16:9 screens, so screen 2
+    // shows its right half -- not the whole video, as it used to.
+    expect(document.querySelector("video")).toHaveStyle({
+      left: "-100%",
+      width: "200%",
     })
   })
 

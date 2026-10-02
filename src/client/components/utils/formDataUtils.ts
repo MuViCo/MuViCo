@@ -3,7 +3,12 @@
  * Utility functions for creating and handling FormData objects for cues.
  */
 
-import type { CueFileMeta, CueUploadFile } from "../../types"
+import type {
+  CueFileMeta,
+  CueUploadFile,
+  SpanFill,
+  SpanPosition,
+} from "../../types"
 
 /**
  * Creates and populates a FormData object for a cue.
@@ -52,7 +57,10 @@ export const createFormData = (
     imageEffect?: string
     imageEffectSpeed?: number
     imageEffectLoop?: boolean
-  }
+  },
+  // Trailing, so adding it doesn't shift any existing positional argument.
+  // Each field omitted means "leave the cue's own alone", like spanScreens.
+  spanFraming?: { spanFill?: SpanFill; spanPosition?: SpanPosition }
 ): FormData => {
   const formData = new FormData()
   formData.append("index", String(index))
@@ -86,6 +94,12 @@ export const createFormData = (
   formData.append("continuePlayback", String(Boolean(continuePlayback)))
   if (spanScreens !== undefined) {
     formData.append("spanScreens", JSON.stringify(spanScreens))
+  }
+  if (spanFraming?.spanFill !== undefined) {
+    formData.append("spanFill", spanFraming.spanFill)
+  }
+  if (spanFraming?.spanPosition !== undefined) {
+    formData.append("spanPosition", spanFraming.spanPosition)
   }
   if (duration !== undefined) {
     formData.append("duration", duration === null ? "" : String(duration))

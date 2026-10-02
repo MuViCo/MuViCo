@@ -356,6 +356,92 @@ describe("ScreensDisplay", () => {
     expect(colorDivs.length).toBeGreaterThan(0)
   })
 
+  test("gives a spanning cue no drag handle", () => {
+    const cues = [
+      {
+        _id: "cue-span-drag",
+        name: "Wide banner",
+        index: 0,
+        screen: 1,
+        spanScreens: [1, 2],
+        file: { url: "https://example.com/wide.png", type: "image/png" },
+      },
+      {
+        _id: "cue-plain",
+        name: "Plain",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        file: { url: "https://example.com/plain.png", type: "image/png" },
+      },
+    ] as Cue[]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false, 2: false }}
+        onSetCueFrame={jest.fn()}
+      />
+    )
+
+    // Its framing is the span's own, so dragging would move a frame that no
+    // longer applies -- only the cue that lives on one screen gets a handle.
+    expect(screen.queryByTestId("layer-frame-Wide banner")).toBeNull()
+    expect(screen.getByTestId("layer-frame-Plain")).toBeInTheDocument()
+  })
+
+  test("crops a spanning video on each screen too, not just an image", () => {
+    const cues = [
+      {
+        _id: "cue-span-video",
+        name: "Wide clip",
+        index: 0,
+        screen: 1,
+        spanScreens: [1, 2],
+        file: { url: "https://example.com/wide.mp4", type: "video/mp4" },
+      },
+    ] as Cue[]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false, 2: false }}
+      />
+    )
+
+    const videos = Array.from(document.querySelectorAll("video"))
+    expect(videos).toHaveLength(2)
+    videos.forEach((video) => {
+      Object.defineProperty(video, "videoWidth", {
+        value: 1600,
+        configurable: true,
+      })
+      Object.defineProperty(video, "videoHeight", {
+        value: 900,
+        configurable: true,
+      })
+      fireEvent.loadedMetadata(video)
+    })
+
+    const leftOf = (element: Element) =>
+      Number(
+        element.getAttribute("style")?.match(/left: (-?[\d.]+)%/)?.[1] ?? "NaN"
+      )
+    const cropped = Array.from(
+      document.querySelectorAll('video[data-testid="span-media"]')
+    )
+    expect(cropped).toHaveLength(2)
+    // Screen 2 sees the clip shifted one screen further left, so the two
+    // tiles show different halves instead of the same whole video.
+    expect(leftOf(cropped[0]) - leftOf(cropped[1])).toBeCloseTo(100)
+  })
+
   test("crops a spanning cue's image differently on each screen it covers", () => {
     const cues = [
       {
@@ -398,14 +484,15 @@ describe("ScreensDisplay", () => {
 
     const croppedTiles = screen.getAllByRole("img", { name: "Wide banner" })
     expect(croppedTiles).toHaveLength(2)
-    const positions = croppedTiles.map(
-      (tile) =>
-        tile.getAttribute("style")?.match(/background-position: ([^;]+)/)?.[1]
-    )
+    const leftOf = (tile: Element) =>
+      Number(
+        tile.getAttribute("style")?.match(/left: (-?[\d.]+)%/)?.[1] ?? "NaN"
+      )
     // Screen 1 is the first (leftmost) slice, screen 2 the last -- their
-    // crops must differ, not show the same full image twice.
-    expect(positions[0]).toBe("0% 50%")
-    expect(positions[1]).toBe("100% 50%")
+    // crops must differ, not show the same full image twice. The second
+    // tile sees the media shifted one screen further left.
+    expect(leftOf(croppedTiles[1])).toBeLessThan(leftOf(croppedTiles[0]))
+    expect(leftOf(croppedTiles[0]) - leftOf(croppedTiles[1])).toBeCloseTo(100)
   })
 
   test("renders a text element on its screen preview", () => {

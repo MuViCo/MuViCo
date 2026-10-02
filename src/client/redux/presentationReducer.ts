@@ -644,6 +644,10 @@ export const updatePresentation =
           imageEffect: updatedCueData.imageEffect,
           imageEffectSpeed: updatedCueData.imageEffectSpeed,
           imageEffectLoop: updatedCueData.imageEffectLoop,
+        },
+        {
+          spanFill: updatedCueData.spanFill,
+          spanPosition: updatedCueData.spanPosition,
         }
       )
       // TODO(ts): both cueId sources are optional, so this is undefined when

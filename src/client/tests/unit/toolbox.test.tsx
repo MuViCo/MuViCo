@@ -474,4 +474,82 @@ describe("ToolBox Component", () => {
       expect(screen.queryByTestId("toolbox-text")).toBeNull()
     })
   })
+
+  describe("framing a cue that spans screens", () => {
+    const spanning = {
+      ...cue,
+      spanScreens: [1, 2],
+      frame: { x: 0.666, y: 0, width: 0.333, height: 0.333 },
+    } as Cue
+
+    it("offers the span's framing instead of a position on one screen", () => {
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={spanning}
+          onSave={mockOnSave}
+        />
+      )
+
+      expect(screen.getByText("Framing across screens")).toBeInTheDocument()
+      expect(screen.queryByText("Position on screen")).toBeNull()
+      expect(screen.queryByTestId("cue-frame-picker")).toBeNull()
+      expect(screen.getByRole("button", { name: "Fill" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Fit" })).toBeInTheDocument()
+    })
+
+    it("keeps the per-screen picker while the cue stays on one screen", () => {
+      render(
+        <Toolbox isOpen onClose={mockOnClose} cue={cue} onSave={mockOnSave} />
+      )
+
+      expect(screen.getByText("Position on screen")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Fill" })).toBeNull()
+    })
+
+    it("saves the framing it was given", async () => {
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={spanning}
+          onSave={mockOnSave}
+        />
+      )
+
+      fireEvent.click(screen.getByRole("button", { name: "Fit" }))
+      fireEvent.click(screen.getByRole("button", { name: "Bottom right" }))
+      fireEvent.click(screen.getByText("Save"))
+
+      await waitFor(() => {
+        expect(mockOnSave).toHaveBeenCalledWith(
+          expect.objectContaining({
+            spanFill: "contain",
+            spanPosition: "bottom-right",
+          })
+        )
+      })
+    })
+
+    it("shows the cue's own framing when it has one", () => {
+      render(
+        <Toolbox
+          isOpen
+          onClose={mockOnClose}
+          cue={{ ...spanning, spanFill: "contain", spanPosition: "top" } as Cue}
+          onSave={mockOnSave}
+        />
+      )
+
+      expect(screen.getByRole("button", { name: "Fit" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+      expect(screen.getByRole("button", { name: "Top" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+    })
+  })
 })

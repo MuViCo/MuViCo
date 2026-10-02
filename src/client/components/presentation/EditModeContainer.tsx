@@ -64,6 +64,7 @@ import {
   getCueVisualSpanFromMap,
 } from "../utils/cueVisualSpanUtils"
 import { getLookaheadFrameIndices } from "../utils/showLookaheadUtils"
+import type { ScreenBox } from "../utils/screenSpanLayout"
 import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 
 // How many frames ahead of the live cue to keep preloaded while show mode
@@ -744,29 +745,23 @@ const EditModeContainer = ({
    */
   const [focusedLaneKey, setFocusedLaneKey] = useState<string | null>(null)
   const [screens, setScreens] = useState<Record<string, boolean>>({})
-  const [mirroring, setMirroring] = useState<Record<string, number>>({})
-  // Live pixel width of each open screen popup, reported by <Screen> on
-  // mount and on resize. Only screens actually referenced by some cue's
-  // spanScreens need to be tracked -- see handleScreenWidthChange below.
-  // Same-JS-context portal architecture (see Screen.jsx), so this is plain
-  // React state, no cross-window messaging involved.
-  const [screenWidths, setScreenWidths] = useState<Record<number, number>>({})
-  const spannedScreenNumbers = useMemo(() => {
-    const spanned = new Set<number>()
-    for (const cue of cues || []) {
-      cue.spanScreens?.forEach((screenNumber) => spanned.add(screenNumber))
-    }
-    return spanned
-  }, [cues])
-  const handleScreenWidthChange = useCallback(
-    (screenNumber: number, width: number) => {
-      if (!spannedScreenNumbers.has(screenNumber)) return
-      setScreenWidths((prev) =>
-        prev[screenNumber] === width ? prev : { ...prev, [screenNumber]: width }
-      )
+  // Each open output's live stage size. A spanning cue lays its canvas out
+  // against all of them, so a 4:3 output next to a 16:9 one, or two windows
+  // sized differently, still meet at the seam.
+  const [screenBoxes, setScreenBoxes] = useState<Record<number, ScreenBox>>({})
+  const handleScreenBoxChange = useCallback(
+    (screenNumber: number, box: ScreenBox) => {
+      setScreenBoxes((prev) => {
+        const current = prev[screenNumber]
+        if (current?.width === box.width && current?.height === box.height) {
+          return prev
+        }
+        return { ...prev, [screenNumber]: box }
+      })
     },
-    [spannedScreenNumbers]
+    []
   )
+  const [mirroring, setMirroring] = useState<Record<string, number>>({})
   const [isAutoplaying, setIsAutoplaying] = useState(false)
   const [autoplayEnded, setAutoplayEnded] = useState(false)
   const [autoplayInterval, setAutoplayInterval] = useState(5)
@@ -1702,8 +1697,8 @@ const EditModeContainer = ({
             onClose={handleScreenClose}
             transitionType={transitionType}
             transitionAt={transitionAt}
-            screenWidths={screenWidths}
-            onWidthChange={handleScreenWidthChange}
+            screenBoxes={screenBoxes}
+            onBoxChange={handleScreenBoxChange}
             isBlackout={isBlackout}
             mediaUrlOverrides={frozenMediaUrls}
             outputAspectRatio={resolveScreenAspectRatio(

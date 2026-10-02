@@ -24,7 +24,8 @@ import ScreenLayerFrame from "./ScreenLayerFrame"
 import type { CueFrame } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
-  screenWidthMapFromRatios,
+  screenBoxesFromRatios,
+  spanMediaStyle,
 } from "../utils/screenSpanLayout"
 import {
   OUTPUT_ASPECT_RATIO_OPTIONS,
@@ -34,90 +35,120 @@ import {
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
+import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
 
-import type { Cue, CueFileMeta } from "../../types"
+import type { Cue, CueFileMeta, SpanFill, SpanPosition } from "../../types"
 
 const SpannedTilePreview = ({
-  imageSrc,
+  mediaSrc,
+  isVideo,
   name,
   spanScreens,
+  spanFill,
+  spanPosition,
   screenNumber,
   screenAspectRatios,
   outputAspectRatio,
   animation,
 }: {
-  imageSrc: string
+  mediaSrc: string
+  isVideo?: boolean
   name: string
   spanScreens: number[]
+  spanFill?: SpanFill
+  spanPosition?: SpanPosition
   screenNumber: number
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
   animation?: string
 }) => {
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
+  const { aspectRatio, probeRef, onLoad } = useMediaAspectRatio()
 
-  const handleProbeLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = event.currentTarget
-    if (naturalWidth > 0 && naturalHeight > 0) {
-      setAspectRatio(naturalWidth / naturalHeight)
-    }
-  }
-
+  // Until the media reports its own shape there is no slice to compute, so
+  // show it whole rather than guess.
   if (!aspectRatio) {
-    return (
+    const fill = {
+      width: "100%",
+      height: "100%",
+      objectFit: "contain" as const,
+      animation,
+    }
+    return isVideo ? (
+      <video
+        src={mediaSrc}
+        ref={probeRef}
+        onLoadedMetadata={onLoad}
+        style={fill}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+    ) : (
       <>
+        <img src={mediaSrc} alt={name} style={fill} />
         <img
-          src={imageSrc}
-          alt={name}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            animation,
-          }}
-        />
-        <img
-          src={imageSrc}
+          src={mediaSrc}
           alt=""
-          onLoad={handleProbeLoad}
+          ref={probeRef}
+          onLoad={onLoad}
           style={{ display: "none" }}
         />
       </>
     )
   }
 
-  const widthMap = screenWidthMapFromRatios(
+  const boxMap = screenBoxesFromRatios(
     spanScreens,
     screenAspectRatios,
     outputAspectRatio
   )
-  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
-    spanScreens,
-    widthMap,
-    aspectRatio
-  )
-  const tileWidth = widthMap[screenNumber]
-  const tileHeight = 1
-
-  const backgroundPositionXPercent =
-    canvasWidth > tileWidth
-      ? (offsets[screenNumber] / (canvasWidth - tileWidth)) * 100
-      : 0
+  const layout = computeScreenSpanLayout(spanScreens, boxMap, aspectRatio, {
+    fill: spanFill,
+    position: spanPosition,
+  })
 
   return (
     <div
-      role="img"
-      aria-label={name}
       style={{
         width: "100%",
         height: "100%",
-        backgroundImage: `url(${imageSrc})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: `${backgroundPositionXPercent}% 50%`,
-        backgroundSize: `${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`,
-        animation,
+        overflow: "hidden",
+        position: "relative",
       }}
-    />
+    >
+      {isVideo ? (
+        <video
+          src={mediaSrc}
+          aria-label={name}
+          data-testid="span-media"
+          style={{
+            position: "absolute",
+            maxWidth: "none",
+            maxHeight: "none",
+            ...spanMediaStyle(layout, screenNumber),
+          }}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : (
+        <div
+          role="img"
+          aria-label={name}
+          data-testid="span-media"
+          style={{
+            position: "absolute",
+            backgroundImage: `url(${mediaSrc})`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "100% 100%",
+            animation,
+            ...spanMediaStyle(layout, screenNumber),
+          }}
+        />
+      )}
+    </div>
   )
 }
 
@@ -279,9 +310,11 @@ export const ScreensDisplay = ({
         if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
           return (
             <SpannedTilePreview
-              imageSrc={cue.file.url}
+              mediaSrc={cue.file.url}
               name={cue.name}
               spanScreens={cue.spanScreens}
+              spanFill={cue.spanFill}
+              spanPosition={cue.spanPosition}
               screenNumber={screenNumber}
               screenAspectRatios={screenAspectRatios}
               outputAspectRatio={outputAspectRatio}
@@ -305,6 +338,22 @@ export const ScreensDisplay = ({
       }
 
       if (isVideoFile(cue.file)) {
+        if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
+          return (
+            <SpannedTilePreview
+              mediaSrc={cue.file.url}
+              isVideo
+              name={cue.name}
+              spanScreens={cue.spanScreens}
+              spanFill={cue.spanFill}
+              spanPosition={cue.spanPosition}
+              screenNumber={screenNumber}
+              screenAspectRatios={screenAspectRatios}
+              outputAspectRatio={outputAspectRatio}
+            />
+          )
+        }
+
         return (
           <video
             src={cue.file.url}
@@ -487,7 +536,10 @@ export const ScreensDisplay = ({
             )}
             {screenStack.length > 0 ? (
               screenStack.map((cue) =>
-                onSetCueFrame ? (
+                // A spanning cue is framed against the whole canvas, not
+                // placed in one screen, so it gets no drag handle here --
+                // dragging it would move a frame that no longer applies.
+                onSetCueFrame && (cue.spanScreens?.length ?? 0) <= 1 ? (
                   <ScreenLayerFrame
                     key={cue._id}
                     frame={cue.frame}

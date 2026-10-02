@@ -66,7 +66,12 @@ import { FULL_FRAME, isFullFrame, normalizeCueFrame } from "../utils/cueFrame"
 import type { CueFrame } from "../utils/cueFrame"
 import { parseAspectRatio } from "../../../constants.js"
 import CueFramePicker from "./CueFramePicker"
-import type { Cue, CueUpdateInput } from "../../types"
+import SpanFramingPicker from "./SpanFramingPicker"
+import {
+  DEFAULT_SPAN_FILL,
+  DEFAULT_SPAN_POSITION,
+} from "../utils/screenSpanLayout"
+import type { Cue, CueUpdateInput, SpanFill, SpanPosition } from "../../types"
 
 interface ToolboxProps {
   isOpen: boolean
@@ -99,8 +104,15 @@ const Toolbox = ({
     DEFAULT_IMAGE_EFFECT_SPEED
   )
   const [imageEffectLoop, setImageEffectLoop] = useState(false)
+  const [spanFill, setSpanFill] = useState<SpanFill>(DEFAULT_SPAN_FILL)
+  const [spanPosition, setSpanPosition] = useState<SpanPosition>(
+    DEFAULT_SPAN_POSITION
+  )
   const isText = isTextCue(cue)
   const isImage = isImageFile(cue?.file)
+  // Placing a cue in one screen's ninth says nothing once it covers several,
+  // so a spanning cue is framed against the whole canvas instead.
+  const isSpanning = (cue?.spanScreens?.length ?? 0) > 1
 
   useEffect(() => {
     if (isOpen) {
@@ -116,6 +128,8 @@ const Toolbox = ({
       setImageEffect(normalizeImageEffect(cue?.imageEffect))
       setImageEffectSpeed(normalizeImageEffectSpeed(cue?.imageEffectSpeed))
       setImageEffectLoop(Boolean(cue?.imageEffectLoop))
+      setSpanFill(cue?.spanFill ?? DEFAULT_SPAN_FILL)
+      setSpanPosition(cue?.spanPosition ?? DEFAULT_SPAN_POSITION)
     }
   }, [cue, isOpen])
 
@@ -157,6 +171,7 @@ const Toolbox = ({
         imageEffectLoop,
       }),
       frame: isFullFrame(frame) ? null : frame,
+      ...(isSpanning && { spanFill, spanPosition }),
     })
     onClose()
   }
@@ -362,12 +377,23 @@ const Toolbox = ({
             )}
             {cue.cueType !== "audio" && (
               <FormControl mt={5}>
-                <FormLabel mb={2}>Position on screen</FormLabel>
-                <CueFramePicker
-                  value={frame}
-                  aspectRatio={parseAspectRatio(outputAspectRatio)}
-                  onChange={setFrame}
-                />
+                <FormLabel mb={2}>
+                  {isSpanning ? "Framing across screens" : "Position on screen"}
+                </FormLabel>
+                {isSpanning ? (
+                  <SpanFramingPicker
+                    fill={spanFill}
+                    position={spanPosition}
+                    onFillChange={setSpanFill}
+                    onPositionChange={setSpanPosition}
+                  />
+                ) : (
+                  <CueFramePicker
+                    value={frame}
+                    aspectRatio={parseAspectRatio(outputAspectRatio)}
+                    onChange={setFrame}
+                  />
+                )}
               </FormControl>
             )}
             {cue.cueType !== "audio" && (

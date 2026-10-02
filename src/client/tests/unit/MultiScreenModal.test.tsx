@@ -214,4 +214,120 @@ describe("MultiScreenModal", () => {
       )
     })
   })
+
+  describe("framing", () => {
+    const spanningCue = { ...cue, spanScreens: [2, 3] } as Cue
+
+    test("defaults to filling the screens, centered", () => {
+      render(
+        <MultiScreenModal
+          isOpen={true}
+          cue={spanningCue}
+          screenCount={4}
+          onSave={jest.fn()}
+          onClose={jest.fn()}
+        />
+      )
+
+      expect(screen.getByRole("button", { name: "Fill" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+      expect(screen.getByRole("button", { name: "Center" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+    })
+
+    test("shows the cue's own framing when it has one", () => {
+      render(
+        <MultiScreenModal
+          isOpen={true}
+          cue={
+            {
+              ...spanningCue,
+              spanFill: "contain",
+              spanPosition: "bottom-right",
+            } as Cue
+          }
+          screenCount={4}
+          onSave={jest.fn()}
+          onClose={jest.fn()}
+        />
+      )
+
+      expect(screen.getByRole("button", { name: "Fit" })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      )
+      expect(
+        screen.getByRole("button", { name: "Bottom right" })
+      ).toHaveAttribute("aria-pressed", "true")
+    })
+
+    test("saves the chosen fill and position", async () => {
+      const onSave = jest.fn().mockResolvedValue(undefined)
+
+      render(
+        <MultiScreenModal
+          isOpen={true}
+          cue={spanningCue}
+          screenCount={4}
+          onSave={onSave}
+          onClose={jest.fn()}
+        />
+      )
+
+      fireEvent.click(screen.getByRole("button", { name: "Fit" }))
+      fireEvent.click(screen.getByRole("button", { name: "Top" }))
+      fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+      await waitFor(() => {
+        expect(onSave).toHaveBeenCalledWith(
+          expect.objectContaining({
+            spanFill: "contain",
+            spanPosition: "top",
+          })
+        )
+      })
+    })
+
+    test("offers all nine anchors", () => {
+      render(
+        <MultiScreenModal
+          isOpen={true}
+          cue={spanningCue}
+          screenCount={4}
+          onSave={jest.fn()}
+          onClose={jest.fn()}
+        />
+      )
+
+      expect(
+        screen
+          .getByRole("group", { name: "Position" })
+          .querySelectorAll("button")
+      ).toHaveLength(9)
+    })
+
+    test("disables the framing controls until the cue actually spans", () => {
+      render(
+        <MultiScreenModal
+          isOpen={true}
+          cue={cue}
+          screenCount={4}
+          onSave={jest.fn()}
+          onClose={jest.fn()}
+        />
+      )
+
+      expect(screen.getByRole("button", { name: "Fill" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "Center" })).toBeDisabled()
+
+      fireEvent.click(screen.getByRole("checkbox", { name: /^Screen 3/ }))
+
+      expect(screen.getByRole("button", { name: "Fill" })).toBeEnabled()
+      expect(screen.getByRole("button", { name: "Center" })).toBeEnabled()
+    })
+  })
 })
