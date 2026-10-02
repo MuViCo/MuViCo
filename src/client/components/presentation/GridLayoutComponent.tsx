@@ -83,6 +83,13 @@ import { useReadOnly } from "../utils/ReadOnlyContext"
 
 import type { CueContextMenuState } from "./CueContextMenu"
 
+/** Ring marking the clip the focus sits on. */
+const CUE_FOCUS_SHADOW =
+  "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
+
+/** Lift shadow a clip gets while hovered. */
+const CUE_HOVER_SHADOW = "0 8px 18px rgba(0, 0, 0, 0.24)"
+
 const renderElementBasedOnIndex = (
   currentIndex: number,
   cues: Cue[],
@@ -674,18 +681,20 @@ const GridLayoutComponent = ({
                   data-focused-lane={isLaneFocused ? "true" : undefined}
                   data-focused-cue={isFocusedCue ? "true" : undefined}
                   transform={`translateY(${laneShift}px)`}
-                  boxShadow={
-                    isFocusedCue
-                      ? "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
-                      : undefined
-                  }
+                  boxShadow={isFocusedCue ? CUE_FOCUS_SHADOW : undefined}
                   transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease, height 140ms ease"
                   _hover={
                     suppressCueHoverEffects
                       ? {}
                       : {
                           transform: `translateY(${laneShift - 1}px)`,
-                          boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
+                          // The lift shadow replaces box-shadow outright, so the
+                          // focus ring is carried along: hovering the focused
+                          // clip would otherwise un-mark it, leaving every other
+                          // clip looking like the selected one.
+                          boxShadow: isFocusedCue
+                            ? `${CUE_FOCUS_SHADOW}, ${CUE_HOVER_SHADOW}`
+                            : CUE_HOVER_SHADOW,
                         }
                   }
                   sx={{
