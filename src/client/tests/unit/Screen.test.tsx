@@ -1419,7 +1419,7 @@ describe("Screen", () => {
             screenData={screenData}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800, 2: 800 }}
+            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
           />
         )
       })
@@ -1744,7 +1744,7 @@ describe("Screen", () => {
             screenData={spanCue}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800, 2: 800 }}
+            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
           />
         )
       })
@@ -1767,7 +1767,7 @@ describe("Screen", () => {
             screenData={spanCue}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800, 2: 500 }}
+            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
           />
         )
       })
@@ -1789,68 +1789,75 @@ describe("Screen", () => {
         fireEvent.load(probe)
       })
 
-      // The canvas is 1300px wide (800 + 500) and 281.25px tall (screen 2's
-      // 500px at 16:9). Covering it with a 2:1 image means filling the width
-      // at 1300x650, which overflows the height and is centered on it.
-      // Screen 2's own box is 500 x 281.25, so those become:
-      //   left   (0 - 800) / 500            = -160%
-      //   top    ((281.25 - 650) / 2) / 281.25 = -65.6%
-      //   width  1300 / 500                 =  260%
-      //   height 650 / 281.25               =  231.1%
+      // Two 16:9 screens make a canvas twice as wide as one of them.
+      // Covering it with a 2:1 image fills the width and overflows the
+      // height, centered. In percentages of screen 2's own box that is
+      // left -100%, width 200%, height 177.8%, top -38.9%.
       await waitFor(() => {
         const cropBox = popup.document.body.querySelector(
           '[data-testid="span-media"]'
         )
         expect(cropBox).toBeTruthy()
-        expect(cropBox).toHaveStyle({ left: "-160%", width: "260%" })
+        expect(cropBox).toHaveStyle({ left: "-100%", width: "200%" })
         const style = cropBox!.getAttribute("style")!
-        expect(style).toMatch(/top: -65\.5\d+%/)
-        expect(style).toMatch(/height: 231\.1\d+%/)
+        expect(style).toMatch(/top: -38\.8\d+%/)
+        expect(style).toMatch(/height: 177\.7\d+%/)
       })
     })
 
-    test("reports this screen's live width via onWidthChange", async () => {
-      window.open = jest.fn(() => {
-        const listeners: Record<string, (...args: unknown[]) => void> = {}
-        const fakeDoc = {
-          title: "",
-          documentElement: { style: {} as CSSStyleDeclaration },
-          body: document.createElement("body"),
-          head: document.createElement("head"),
-        }
-        return {
-          document: fakeDoc,
-          innerWidth: 654,
+    test("lays out the same canvas whatever size the popup happens to be", async () => {
+      // Each output computes the canvas on its own. Deriving its height from
+      // its own window size gave two popups of different sizes two different
+      // canvases, and the slices stopped meeting at the seam.
+      const cropFor = async (innerWidth: number) => {
+        window.open = jest.fn(() => ({
+          innerWidth,
+          innerHeight: Math.round(innerWidth / 1.78),
+          document: {
+            title: "",
+            documentElement: { style: {} as CSSStyleDeclaration },
+            body: document.createElement("body"),
+            head: document.createElement("head"),
+          },
           close: jest.fn(),
-          addEventListener: jest.fn(
-            (eventName: string, handler: (...args: unknown[]) => void) => {
-              listeners[eventName] = handler
-            }
-          ),
-          removeEventListener: jest.fn((eventName: string) => {
-            delete listeners[eventName]
-          }),
-          listeners,
-        }
-      }) as unknown as typeof window.open
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+        })) as unknown as typeof window.open
 
-      const onWidthChange = jest.fn()
-      await act(async () => {
-        render(
-          <Screen
-            screenNumber={1}
-            screenData={spanCue}
-            isVisible={true}
-            onClose={() => {}}
-            screenWidths={{}}
-            onWidthChange={onWidthChange}
-          />
+        await act(async () => {
+          render(
+            <Screen
+              screenNumber={2}
+              screenData={spanCue}
+              isVisible={true}
+              onClose={() => {}}
+              screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            />
+          )
+        })
+
+        const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        const probe = await waitFor(() =>
+          within(popup.document.body).getByTestId("span-image-probe")
         )
-      })
+        Object.defineProperty(probe, "naturalWidth", {
+          value: 2000,
+          configurable: true,
+        })
+        Object.defineProperty(probe, "naturalHeight", {
+          value: 1000,
+          configurable: true,
+        })
+        await act(async () => {
+          fireEvent.load(probe)
+        })
 
-      await waitFor(() => {
-        expect(onWidthChange).toHaveBeenCalledWith(1, 654)
-      })
+        return popup.document.body
+          .querySelector('[data-testid="span-media"]')!
+          .getAttribute("style")
+      }
+
+      expect(await cropFor(1920)).toBe(await cropFor(1024))
     })
   })
 
@@ -1877,7 +1884,7 @@ describe("Screen", () => {
             screenData={spanVideoCue}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800, 2: 800 }}
+            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
           />
         )
       })
@@ -1900,7 +1907,7 @@ describe("Screen", () => {
             screenData={spanVideoCue}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800, 2: 500 }}
+            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
           />
         )
       })
@@ -1929,10 +1936,10 @@ describe("Screen", () => {
         const croppedVideo = popup.document.body.querySelector(
           'video[src="http://example.com/wide.mp4"]'
         )
-        expect(croppedVideo).toHaveStyle({ left: "-160%", width: "260%" })
+        expect(croppedVideo).toHaveStyle({ left: "-100%", width: "200%" })
         const style = croppedVideo!.getAttribute("style")!
-        expect(style).toMatch(/top: -65\.5\d+%/)
-        expect(style).toMatch(/height: 231\.1\d+%/)
+        expect(style).toMatch(/top: -38\.8\d+%/)
+        expect(style).toMatch(/height: 177\.7\d+%/)
       })
     })
 
@@ -1949,7 +1956,7 @@ describe("Screen", () => {
             screenData={singleScreenCue}
             isVisible={true}
             onClose={() => {}}
-            screenWidths={{ 1: 800 }}
+            screenAspectRatios={{ "1": "16:9" }}
           />
         )
       })
