@@ -212,7 +212,9 @@ const mediaValidatorsMatch = (
   previous: MediaValidators | null,
   next: MediaValidators | null
 ): boolean => {
-  if (!previous || !next) return false
+  // Nothing to compare is not evidence of a change. Treating it as one
+  // throws away a usable Blob and leaves media pointing at a revoked URL.
+  if (!previous || !next) return true
   const previousHasAny =
     previous.etag || previous.lastModified || previous.contentLength
   const nextHasAny = next.etag || next.lastModified || next.contentLength
@@ -1110,9 +1112,15 @@ const EditModeContainer = ({
           const diskCache = await getMediaDiskCache(id)
           const cachedResponse = await diskCache?.match(diskCacheKey)
           if (cachedResponse) {
+            // Carry the stored validators over. Without them the next
+            // revalidation has nothing to compare against, reads that as the
+            // content having changed, and revokes a perfectly good Blob --
+            // leaving the media element pointing at a dead blob: URL.
+            const validators = readMediaValidators(cachedResponse)
             const blob = await cachedResponse.blob()
             const objectUrl = URL.createObjectURL(blob)
             mediaBlobUrlsRef.current.set(url, objectUrl)
+            mediaValidatorsRef.current.set(url, validators)
             mediaLastValidatedAtRef.current.set(url, Date.now())
             setFrozenMediaUrls((prev) =>
               prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
@@ -1138,6 +1146,9 @@ const EditModeContainer = ({
             )
           }
           const validators = readMediaValidators(response)
+          // Cloned before the body is read, so the stored copy keeps the
+          // validator headers the next revalidation compares against.
+          const responseForDisk = response.clone?.() ?? null
           const blob = await response.blob()
           const objectUrl = URL.createObjectURL(blob)
           mediaBlobUrlsRef.current.set(url, objectUrl)
@@ -1154,7 +1165,10 @@ const EditModeContainer = ({
           })
           if (diskCache) {
             try {
-              await diskCache.put(diskCacheKey, new Response(blob))
+              await diskCache.put(
+                diskCacheKey,
+                responseForDisk ?? new Response(blob)
+              )
             } catch (error) {
               console.warn(
                 "Show mode: failed to persist media to disk cache",

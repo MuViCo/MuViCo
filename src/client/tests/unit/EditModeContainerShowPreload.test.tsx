@@ -905,6 +905,8 @@ describe("EditModeContainer media disk cache", () => {
   let lastUsedStamps: Record<string, number>
   let cacheKeys: string[]
   let cachedMedia: Set<string>
+  let cachedHeaders: Record<string, string>
+  let revokeMock: jest.Mock
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -912,6 +914,7 @@ describe("EditModeContainer media disk cache", () => {
     lastUsedStamps = {}
     cacheKeys = []
     cachedMedia = new Set()
+    cachedHeaders = {}
     putMock = jest.fn(async () => undefined)
     deleteEntryMock = jest.fn(async () => true)
     openMock = jest.fn(async (name: string) => ({
@@ -923,7 +926,12 @@ describe("EditModeContainer media disk cache", () => {
             : { text: async () => String(stamp) }
         }
         return cachedMedia.has(key)
-          ? { blob: async () => new Blob(["cached"]) }
+          ? {
+              headers: {
+                get: (header: string) => cachedHeaders[header] ?? null,
+              },
+              blob: async () => new Blob(["cached"]),
+            }
           : undefined
       },
       keys: async () =>
@@ -954,10 +962,11 @@ describe("EditModeContainer media disk cache", () => {
       blob: async () => new Blob(["data"]),
     })) as unknown as typeof global.fetch
 
+    revokeMock = jest.fn()
     global.URL.createObjectURL = (() =>
       "blob:fake") as unknown as typeof URL.createObjectURL
     global.URL.revokeObjectURL =
-      (() => {}) as unknown as typeof URL.revokeObjectURL
+      revokeMock as unknown as typeof URL.revokeObjectURL
 
     mockedUseDispatch.mockReturnValue(dispatchMock)
     mockedUseSelector.mockImplementation((selector) =>
@@ -1090,6 +1099,54 @@ describe("EditModeContainer media disk cache", () => {
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
     expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  test("keeps media served from the disk cache alive through revalidation", async () => {
+    // The stored response carries its validators, so revalidating it finds
+    // the content unchanged. Losing them made the Blob look stale, and
+    // revoking it left the popups pointing at a dead blob: URL.
+    cachedMedia.add("/__muvico_media_cache__/media-1")
+    cachedHeaders = { etag: "v1" }
+    let now = 0
+    jest.spyOn(Date, "now").mockImplementation(() => now)
+
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await waitFor(() => expect(openMock).toHaveBeenCalled())
+
+    // Past the revalidation throttle, then re-touch the media through the
+    // show-mode lookahead.
+    now += 20000
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+          scores: [],
+        },
+      })
+    )
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        isShowMode
+        cueIndex={0}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(revokeMock).not.toHaveBeenCalled()
   })
 
   test("marks the presentation as recently used on entry", async () => {
