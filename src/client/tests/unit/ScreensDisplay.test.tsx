@@ -356,6 +356,55 @@ describe("ScreensDisplay", () => {
     expect(colorDivs.length).toBeGreaterThan(0)
   })
 
+  test("crops a spanning video on each screen too, not just an image", () => {
+    const cues = [
+      {
+        _id: "cue-span-video",
+        name: "Wide clip",
+        index: 0,
+        screen: 1,
+        spanScreens: [1, 2],
+        file: { url: "https://example.com/wide.mp4", type: "video/mp4" },
+      },
+    ] as Cue[]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false, 2: false }}
+      />
+    )
+
+    const videos = Array.from(document.querySelectorAll("video"))
+    expect(videos).toHaveLength(2)
+    videos.forEach((video) => {
+      Object.defineProperty(video, "videoWidth", {
+        value: 1600,
+        configurable: true,
+      })
+      Object.defineProperty(video, "videoHeight", {
+        value: 900,
+        configurable: true,
+      })
+      fireEvent.loadedMetadata(video)
+    })
+
+    const leftOf = (element: Element) =>
+      Number(
+        element.getAttribute("style")?.match(/left: (-?[\d.]+)%/)?.[1] ?? "NaN"
+      )
+    const cropped = Array.from(
+      document.querySelectorAll('video[data-testid="span-media"]')
+    )
+    expect(cropped).toHaveLength(2)
+    // Screen 2 sees the clip shifted one screen further left, so the two
+    // tiles show different halves instead of the same whole video.
+    expect(leftOf(cropped[0]) - leftOf(cropped[1])).toBeCloseTo(100)
+  })
+
   test("crops a spanning cue's image differently on each screen it covers", () => {
     const cues = [
       {

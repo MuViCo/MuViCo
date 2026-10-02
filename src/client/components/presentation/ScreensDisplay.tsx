@@ -40,7 +40,8 @@ import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
 import type { Cue, CueFileMeta, SpanFill, SpanPosition } from "../../types"
 
 const SpannedTilePreview = ({
-  imageSrc,
+  mediaSrc,
+  isVideo,
   name,
   spanScreens,
   spanFill,
@@ -50,7 +51,8 @@ const SpannedTilePreview = ({
   outputAspectRatio,
   animation,
 }: {
-  imageSrc: string
+  mediaSrc: string
+  isVideo?: boolean
   name: string
   spanScreens: number[]
   spanFill?: SpanFill
@@ -62,21 +64,31 @@ const SpannedTilePreview = ({
 }) => {
   const { aspectRatio, probeRef, onLoad } = useMediaAspectRatio()
 
+  // Until the media reports its own shape there is no slice to compute, so
+  // show it whole rather than guess.
   if (!aspectRatio) {
-    return (
+    const fill = {
+      width: "100%",
+      height: "100%",
+      objectFit: "contain" as const,
+      animation,
+    }
+    return isVideo ? (
+      <video
+        src={mediaSrc}
+        ref={probeRef}
+        onLoadedMetadata={onLoad}
+        style={fill}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+    ) : (
       <>
+        <img src={mediaSrc} alt={name} style={fill} />
         <img
-          src={imageSrc}
-          alt={name}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            animation,
-          }}
-        />
-        <img
-          src={imageSrc}
+          src={mediaSrc}
           alt=""
           ref={probeRef}
           onLoad={onLoad}
@@ -108,19 +120,37 @@ const SpannedTilePreview = ({
         position: "relative",
       }}
     >
-      <div
-        role="img"
-        aria-label={name}
-        data-testid="span-media"
-        style={{
-          position: "absolute",
-          backgroundImage: `url(${imageSrc})`,
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "100% 100%",
-          animation,
-          ...spanMediaStyle(layout, screenNumber),
-        }}
-      />
+      {isVideo ? (
+        <video
+          src={mediaSrc}
+          aria-label={name}
+          data-testid="span-media"
+          style={{
+            position: "absolute",
+            maxWidth: "none",
+            maxHeight: "none",
+            ...spanMediaStyle(layout, screenNumber),
+          }}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : (
+        <div
+          role="img"
+          aria-label={name}
+          data-testid="span-media"
+          style={{
+            position: "absolute",
+            backgroundImage: `url(${mediaSrc})`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "100% 100%",
+            animation,
+            ...spanMediaStyle(layout, screenNumber),
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -283,7 +313,7 @@ export const ScreensDisplay = ({
         if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
           return (
             <SpannedTilePreview
-              imageSrc={cue.file.url}
+              mediaSrc={cue.file.url}
               name={cue.name}
               spanScreens={cue.spanScreens}
               spanFill={cue.spanFill}
@@ -311,6 +341,22 @@ export const ScreensDisplay = ({
       }
 
       if (isVideoFile(cue.file)) {
+        if (cue.spanScreens?.length && cue.spanScreens.length > 1) {
+          return (
+            <SpannedTilePreview
+              mediaSrc={cue.file.url}
+              isVideo
+              name={cue.name}
+              spanScreens={cue.spanScreens}
+              spanFill={cue.spanFill}
+              spanPosition={cue.spanPosition}
+              screenNumber={screenNumber}
+              screenAspectRatios={screenAspectRatios}
+              outputAspectRatio={outputAspectRatio}
+            />
+          )
+        }
+
         return (
           <video
             src={cue.file.url}
