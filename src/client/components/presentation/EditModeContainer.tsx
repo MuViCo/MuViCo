@@ -199,11 +199,8 @@ const pruneMediaDiskCaches = async (presentationId: string) => {
   }
 }
 
-// On a 206 the resource's size is the total in Content-Range; its
-// Content-Length is only the slice that was asked for. Reading the latter
-// made a 1-byte validation probe report a length of "1" against a stored
-// "8873575", so every revalidation of a file whose response carries no
-// etag concluded the content had changed and threw away a good Blob.
+// On a 206, Content-Length is the slice; only Content-Range carries the
+// resource's size. Comparing the slice reads as a change on every probe.
 const readResourceLength = (headers: Headers | undefined): string | null => {
   const contentRange = headers?.get?.("content-range")
   const total = contentRange?.match(/\/(\d+)\s*$/)?.[1]
@@ -1053,8 +1050,7 @@ const EditModeContainer = ({
   //
   // `mediaId` is the file's storage handle, used as the disk cache key so an
   // earlier download can be reused once its presigned `url` has rotated.
-  // Read inside freezeMediaUrl without making it a dependency, so entering
-  // a show doesn't rebuild the callback every preload effect depends on.
+  // A ref, so entering a show doesn't rebuild freezeMediaUrl.
   const isShowModeRef = useRef(isShowMode)
   useEffect(() => {
     isShowModeRef.current = isShowMode
@@ -1071,12 +1067,8 @@ const EditModeContainer = ({
       const existingBlobUrl = mediaBlobUrlsRef.current.get(url)
 
       if (cached && existingBlobUrl) {
-        // A running show serves what it froze, full stop. Revalidating costs
-        // a request per media, and when it decides the content moved it
-        // revokes the Blob mid-performance -- every element pointing at it
-        // then falls back to the live URL and streams over the network,
-        // which is the load show mode exists to avoid. Media swapped during
-        // a show is not a case worth a black frame on stage.
+        // A running show serves what it froze. Revoking a Blob mid
+        // performance drops every output back to streaming over the network.
         if (isShowModeRef.current) {
           return cached
         }
@@ -1404,13 +1396,8 @@ const EditModeContainer = ({
 
     const sessionId = (preloadSessionRef.current += 1)
 
-    // Entry is the one place a revalidation belongs: the overlay is up and
-    // nothing is on stage, so a check per media costs the operator nothing.
-    // A show in progress never revalidates (see freezeMediaUrl), so media
-    // replaced under the same URL is caught here or not at all. Already
-    // frozen media still runs the pass -- it is a cache read plus at most
-    // one ranged probe -- but it does so without the overlay, which would
-    // otherwise flash on every entry.
+    // The only place a revalidation belongs: nothing is on stage yet. Media
+    // already frozen still runs the pass, just without the overlay.
     if (initialLoaded < total) {
       setPreloadProgress({
         total,

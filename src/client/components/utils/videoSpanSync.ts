@@ -2,17 +2,14 @@ import { useEffect } from "react"
 import type { RefObject } from "react"
 
 export const SYNC_INTERVAL_MS = 1000
-// Writing currentTime flushes the decoder, so a seek costs more than the
-// drift it corrects -- on software-decoded streams the recovery outlasts
-// this interval and every tick then seeks again. Only gross desync is
-// worth a seek; anything smaller is absorbed by playbackRate.
+// A seek flushes the decoder, so it costs more than the drift it corrects.
+// Only gross desync is worth one; the rest is absorbed by playbackRate.
 export const DRIFT_THRESHOLD_SECONDS = 0.5
-// Below this the offset is imperceptible on adjacent screens.
+// Below this the offset is invisible on adjacent screens.
 export const NUDGE_THRESHOLD_SECONDS = 0.05
-// 2% off nominal speed is inaudible and invisible, and closes a 150ms gap
-// in a few seconds without touching the decoder.
+// 2% off nominal is imperceptible and never touches the decoder.
 export const NUDGE_RATE = 1.02
-// A video needs at least HAVE_FUTURE_DATA to play the next frame.
+// Below this a video cannot play its next frame.
 const HAVE_FUTURE_DATA = 3
 
 export interface VideoLike {
@@ -32,9 +29,8 @@ const setRate = (video: VideoLike, rate: number): void => {
   video.playbackRate = rate
 }
 
-// A follower that cannot play its next frame is already behind by
-// construction; seeking it flushes what little it has buffered and widens
-// the gap, which is what turns a single late frame into a seek loop.
+// Seeking a follower that is already starved widens the gap it is meant to
+// close -- that is what turns one late frame into a seek loop.
 const isStarved = (video: VideoLike): boolean =>
   typeof video.readyState === "number" && video.readyState < HAVE_FUTURE_DATA
 
@@ -88,8 +84,7 @@ export const useVideoSpanSync = (
     group.set(screenNumber, video)
 
     return () => {
-      // The element outlives the group when a cue is swapped, so hand it
-      // back at nominal speed rather than whatever the last nudge left.
+      // The element outlives the group, so hand it back at nominal speed.
       setRate(video, 1)
       const currentGroup = groups.get(cueId)
       currentGroup?.delete(screenNumber)
