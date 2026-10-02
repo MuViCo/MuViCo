@@ -41,6 +41,11 @@ const mediaFillProps = {
 // How long an entering or leaving cue layer animates for.
 const TRANSITION_ANIMATION_MS = 500
 
+// Literal, not Chakra tokens: those resolve to CSS variables the popup
+// document never gets, so colours silently drop out of an output.
+const SCREEN_BACKGROUND = "#000000"
+const SCREEN_FOREGROUND = "#ffffff"
+
 // Resolves a cue's media URL to its frozen Object URL (see
 // EditModeContainer's freezeMediaUrl) when one is available, falling back
 // to the live URL otherwise -- not yet frozen, or the freeze itself failed.
@@ -403,8 +408,10 @@ const ScreenContent = ({
 
   return (
     <Box
-      bg="black"
-      color="white"
+      style={{
+        backgroundColor: SCREEN_BACKGROUND,
+        color: SCREEN_FOREGROUND,
+      }}
       width="100vw"
       height="100vh"
       display="flex"
@@ -442,7 +449,7 @@ const ScreenContent = ({
           position="absolute"
           inset="0"
           zIndex={1000}
-          bg="black"
+          style={{ backgroundColor: SCREEN_BACKGROUND }}
         />
       )}
     </Box>
@@ -526,12 +533,15 @@ const Screen = ({
           doc.documentElement.style.width = "100%"
           doc.documentElement.style.height = "100%"
           doc.documentElement.style.overflow = "hidden"
+          // Letterboxing leaves the document's own background showing.
+          doc.documentElement.style.background = SCREEN_BACKGROUND
           if (doc.body?.style) {
             doc.body.style.margin = "0"
             doc.body.style.padding = "0"
             doc.body.style.width = "100%"
             doc.body.style.height = "100%"
             doc.body.style.overflow = "hidden"
+            doc.body.style.background = SCREEN_BACKGROUND
           }
         }
 

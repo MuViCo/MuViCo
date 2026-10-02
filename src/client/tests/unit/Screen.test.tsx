@@ -80,6 +80,30 @@ describe("Screen", () => {
     })
   })
 
+  test("paints the popup document black, not just the React tree", async () => {
+    await act(async () => {
+      render(
+        <Screen
+          screenNumber={1}
+          screenData={[]}
+          isVisible={true}
+          onClose={() => {}}
+        />
+      )
+    })
+
+    const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+    const isBlack = (value: string) =>
+      ["#000000", "rgb(0, 0, 0)"].includes(value)
+    // Letterboxing leaves the document's own background showing, and the
+    // browser default is white.
+    expect(isBlack(popup.document.documentElement.style.background)).toBe(true)
+    expect(isBlack(popup.document.body.style.background)).toBe(true)
+    expect(
+      within(popup.document.body).getByTestId("screen-stage").parentElement
+    ).toHaveStyle({ backgroundColor: "#000000" })
+  })
+
   test("letterboxes the content to the screen's declared ratio", async () => {
     await act(async () => {
       render(
@@ -214,6 +238,10 @@ describe("Screen", () => {
         within(popup.document.body).getByTestId("incoming-cue-layer")
       ).toBeTruthy()
     })
+
+    // Inline, so it holds even where the popup never got the stylesheet.
+    const blackout = within(popup.document.body).getByTestId("screen-blackout")
+    expect(blackout).toHaveStyle({ backgroundColor: "#000000" })
   })
 
   test("renders a color background when cue has no file but has color", async () => {
