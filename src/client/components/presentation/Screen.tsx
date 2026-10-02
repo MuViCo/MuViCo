@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useState } from "react"
-import type { SyntheticEvent } from "react"
+import type { CSSProperties, RefObject, SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, usePrefersReducedMotion } from "@chakra-ui/react"
 import { isType } from "../utils/fileTypeUtils"
@@ -123,9 +123,74 @@ const SpannedImage = ({
   )
 }
 
+/**
+ * A cue's <video>, played on command instead of by the autoplay attribute.
+ *
+ * The next frame's layers are mounted ahead of time so advancing is a
+ * visibility swap on an element that is already loaded and decoded -- a
+ * freshly created element pays a loadstart/loadedmetadata/loadeddata cycle
+ * first, which is the black frame a manual advance used to show. A warm
+ * element stays paused, so it buffers without costing any decode.
+ *
+ * The autoplay attribute cannot do this: it only applies while an element
+ * has never played, so it would start every warm element immediately and
+ * would not restart one that has already run.
+ */
+interface CueVideoProps {
+  videoSrc?: string
+  isLive: boolean
+  style: CSSProperties
+  videoRef?: RefObject<HTMLVideoElement | null>
+  onLoadedMetadata?: (event: SyntheticEvent<HTMLVideoElement>) => void
+}
+
+const CueVideo = ({
+  videoSrc,
+  isLive,
+  style,
+  videoRef,
+  onLoadedMetadata,
+}: CueVideoProps) => {
+  const ownRef = useRef<HTMLVideoElement>(null)
+  const ref = videoRef ?? ownRef
+
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+
+    if (!isLive) {
+      video.pause()
+      return
+    }
+
+    // play() rejects when the element is torn down mid-call, and when a
+    // policy blocks it -- neither is actionable here, and an unhandled
+    // rejection would surface as a console error on every advance.
+    void video.play().catch(() => {})
+  }, [isLive, videoSrc, ref])
+
+  return (
+    <video
+      ref={ref}
+      src={videoSrc}
+      // Kept for a layer that mounts already live, so it starts on the
+      // element's own load rather than waiting for the effect below. The
+      // attribute cannot cover the warm case: it only applies to an element
+      // that has never played.
+      autoPlay={isLive}
+      preload="auto"
+      loop
+      muted
+      onLoadedMetadata={onLoadedMetadata}
+      style={style}
+    />
+  )
+}
+
 interface SpannedVideoProps {
   videoSrc: string
   cueId: string
+  isLive: boolean
   spanScreens: number[]
   screenNumber: string | number
   screenWidths?: Record<number, number>
@@ -134,13 +199,15 @@ interface SpannedVideoProps {
 const SpannedVideo = ({
   videoSrc,
   cueId,
+  isLive,
   spanScreens,
   screenNumber,
   screenWidths,
 }: SpannedVideoProps) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  useVideoSpanSync(cueId, Number(screenNumber), videoRef, true)
+  // A warm element is paused at 0 and would drag the group's leader back.
+  useVideoSpanSync(cueId, Number(screenNumber), videoRef, isLive)
 
   const handleLoadedMetadata = (event: SyntheticEvent<HTMLVideoElement>) => {
     const { videoWidth, videoHeight } = event.currentTarget
@@ -178,12 +245,10 @@ const SpannedVideo = ({
         position: "relative",
       }}
     >
-      <video
-        ref={videoRef}
-        src={videoSrc}
-        autoPlay
-        loop
-        muted
+      <CueVideo
+        videoRef={videoRef}
+        videoSrc={videoSrc}
+        isLive={isLive}
         onLoadedMetadata={handleLoadedMetadata}
         style={videoStyle}
       />
@@ -196,7 +261,8 @@ const renderMedia = (
   screenNumber: string | number,
   screenWidths?: Record<number, number>,
   prefersReducedMotion = false,
-  mediaUrlOverrides?: Record<string, string>
+  mediaUrlOverrides?: Record<string, string>,
+  isLive = true
 ) => {
   const { file, name, color, spanScreens } = cue
 
@@ -252,6 +318,7 @@ const renderMedia = (
         <SpannedVideo
           videoSrc={videoSrc as string}
           cueId={cue._id}
+          isLive={isLive}
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
           screenWidths={screenWidths}
@@ -259,11 +326,15 @@ const renderMedia = (
       )
     }
 
-    return <video src={videoSrc} style={mediaFillProps} autoPlay loop muted />
+    return (
+      <CueVideo videoSrc={videoSrc} isLive={isLive} style={mediaFillProps} />
+    )
   }
   // check if media is audio
   if (isType.audio(file)) {
     const audioSrc = resolveMediaSrc(file.url, mediaUrlOverrides)
+    // A warm layer must stay silent, so audio only mounts once it is live.
+    if (!isLive) return null
     return (
       <audio autoPlay loop controls style={{ width: "100%" }}>
         <source src={audioSrc} type={file.mimeType || "audio/mpeg"} />
@@ -300,6 +371,7 @@ const cueIdentity = (cue: Cue) =>
 const renderCueLayers = (
   currentScreenData: CueStack,
   previousScreenData: CueStack,
+  nextScreenData: CueStack,
   screenNumber: string | number,
   screenWidths: Record<number, number> | undefined,
   prefersReducedMotion: boolean,
@@ -310,6 +382,7 @@ const renderCueLayers = (
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
+  const nextCueStack = normalizeCueStack(nextScreenData)
   const currentIdentities = new Set(currentCueStack.map(cueIdentity))
   const previousIdentities = new Set(previousCueStack.map(cueIdentity))
 
@@ -318,44 +391,83 @@ const renderCueLayers = (
       cue,
       isIncoming: true,
       isNew: !previousIdentities.has(cueIdentity(cue)),
+      isWarm: false,
     })),
     ...previousCueStack
       .filter((cue) => !currentIdentities.has(cueIdentity(cue)))
-      .map((cue) => ({ cue, isIncoming: false, isNew: false })),
+      .map((cue) => ({
+        cue,
+        isIncoming: false,
+        isNew: false,
+        isWarm: false,
+      })),
+    // Mounted ahead of the advance so the element React hands to the next
+    // frame is the one already loaded here -- same key, so it survives the
+    // swap instead of being created from scratch. A cue already on screen
+    // is skipped: a second element for it would decode the same stream twice.
+    ...nextCueStack
+      .filter(
+        (cue) =>
+          !currentIdentities.has(cueIdentity(cue)) &&
+          !previousIdentities.has(cueIdentity(cue))
+      )
+      .map((cue) => ({
+        cue,
+        isIncoming: false,
+        isNew: false,
+        isWarm: true,
+      })),
   ]
 
   return (
     <>
-      {entries.map(({ cue, isIncoming, isNew }) => (
+      {entries.map(({ cue, isIncoming, isNew, isWarm }) => (
         <Box
           key={cueIdentity(cue)}
-          data-testid={isIncoming ? "incoming-cue-layer" : "outgoing-cue-layer"}
-          data-revealed={isIncoming ? (isNew ? isRevealed : true) : undefined}
+          data-testid={
+            isWarm
+              ? "warm-cue-layer"
+              : isIncoming
+                ? "incoming-cue-layer"
+                : "outgoing-cue-layer"
+          }
+          data-revealed={
+            isWarm
+              ? undefined
+              : isIncoming
+                ? isNew
+                  ? isRevealed
+                  : true
+                : undefined
+          }
           position="absolute"
           {...cueFrameStyle(cue)}
-          zIndex={100 - Number(cue.layer ?? 0)}
+          zIndex={isWarm ? -1 : 100 - Number(cue.layer ?? 0)}
           opacity={
-            isIncoming && isNew && !isRevealed
+            isWarm || (isIncoming && isNew && !isRevealed)
               ? 0
               : normalizeCueOpacity(cue.opacity)
           }
           pointerEvents={
-            isIncoming && isNew && !isRevealed ? "none" : undefined
+            isWarm || (isIncoming && isNew && !isRevealed) ? "none" : undefined
           }
+          aria-hidden={isWarm ? true : undefined}
           display="flex"
           justifyContent="center"
           alignItems="center"
           overflow="hidden"
           animation={
-            !isIncoming
-              ? isRevealed
-                ? exitAnimStyle
-                : "none"
-              : isNew
+            isWarm
+              ? "none"
+              : !isIncoming
                 ? isRevealed
-                  ? enterAnimStyle
+                  ? exitAnimStyle
                   : "none"
-                : undefined
+                : isNew
+                  ? isRevealed
+                    ? enterAnimStyle
+                    : "none"
+                  : undefined
           }
         >
           {renderMedia(
@@ -363,7 +475,8 @@ const renderCueLayers = (
             screenNumber,
             screenWidths,
             prefersReducedMotion,
-            mediaUrlOverrides
+            mediaUrlOverrides,
+            !isWarm
           )}
         </Box>
       ))}
@@ -375,6 +488,7 @@ interface ScreenContentProps {
   screenNumber: string | number
   currentScreenData: CueStack
   previousScreenData: CueStack
+  nextScreenData?: CueStack
   transitionType?: string
   screenWidths?: Record<number, number>
   isBlackout?: boolean
@@ -387,6 +501,7 @@ const ScreenContent = ({
   screenNumber,
   currentScreenData,
   previousScreenData,
+  nextScreenData,
   transitionType,
   screenWidths,
   isBlackout,
@@ -427,6 +542,7 @@ const ScreenContent = ({
         {renderCueLayers(
           currentScreenData,
           previousScreenData,
+          nextScreenData,
           screenNumber,
           screenWidths,
           prefersReducedMotion,
@@ -452,6 +568,12 @@ const ScreenContent = ({
 interface ScreenProps {
   screenNumber: string | number
   screenData: CueStack
+  /**
+   * The cues this screen will show on the frame after the current one.
+   * Their layers mount now, hidden and paused, so advancing reuses an
+   * element that is already loaded rather than creating one -- see CueVideo.
+   */
+  upcomingScreenData?: CueStack
   isVisible: boolean
   onClose: (screenNumber: string | number) => void
   transitionType?: string
@@ -472,6 +594,7 @@ interface ScreenProps {
 const Screen = ({
   screenNumber,
   screenData,
+  upcomingScreenData,
   isVisible,
   onClose,
   transitionType,
@@ -488,6 +611,11 @@ const Screen = ({
   const [previousScreenData, setPreviousScreenData] = useState<Cue[] | null>(
     null
   )
+  // Committed together with currentScreenData. Dropping the warm layer in an
+  // earlier render than the one that promotes it would unmount the element
+  // just before the live layer asks for it, and the advance would pay the
+  // load cycle the warm layer exists to avoid.
+  const [warmScreenData, setWarmScreenData] = useState<Cue[] | null>(null)
   const [isRevealed, setIsRevealed] = useState(true)
   const cancelRevealRef = useRef<(() => void) | null>(null)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
@@ -646,10 +774,12 @@ const Screen = ({
       if (!currentScreenData) {
         setPreviousScreenData(null)
         setCurrentScreenData(nextScreenData)
+        setWarmScreenData(normalizeCueStack(upcomingScreenData))
         setIsRevealed(true)
       } else {
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(nextScreenData)
+        setWarmScreenData(normalizeCueStack(upcomingScreenData))
         setIsRevealed(false)
 
         const revealAt = transitionAt ?? Date.now()
@@ -720,6 +850,7 @@ const Screen = ({
             screenNumber={screenNumber}
             currentScreenData={currentScreenData}
             previousScreenData={previousScreenData}
+            nextScreenData={warmScreenData}
             transitionType={transitionType}
             screenWidths={screenWidths}
             isBlackout={isBlackout}

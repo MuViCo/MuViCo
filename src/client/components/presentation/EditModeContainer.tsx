@@ -66,8 +66,8 @@ import {
 import { getLookaheadFrameIndices } from "../utils/showLookaheadUtils"
 import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 
-// How many frames ahead of the live cue to keep preloaded while show mode
-// is active.
+// How many frames on either side of the live cue to keep preloaded while
+// show mode is active.
 const SHOW_LOOKAHEAD_FRAMES = 2
 
 // Max media downloads in flight at once while preloading a show, so a
@@ -1329,10 +1329,11 @@ const EditModeContainer = ({
   )
 
   // The entry preload gate only covers media that's needed before show mode
-  // opens. During an active show, advancing frames can still hit media that
-  // was never touched (e.g. a cue added after entry, or a race with the
-  // initial preload) -- so keep the next couple of frames warmed up while
-  // the current one is on screen.
+  // opens. During an active show, moving between frames can still hit media
+  // that was never touched (e.g. a cue added after entry, or a race with the
+  // initial preload) -- so keep the frames on both sides of the live one
+  // warmed up. Autoplay only steps forward, but a manual show also goes
+  // back, and a cold frame costs a full load cycle before it paints.
   useEffect(() => {
     if (!isShowMode) return
 
@@ -1673,11 +1674,18 @@ const EditModeContainer = ({
           ? mirroredScreen
           : Number(screenNumber)
         const screenData = getActiveCuesForScreen(sourceScreen, cueIndex)
+        // Mounted hidden by <Screen> so the next frame's media is loaded
+        // before the operator asks for it.
+        const nextScreenData =
+          cueIndex + 1 < indexCount
+            ? getActiveCuesForScreen(sourceScreen, cueIndex + 1)
+            : null
 
         return (
           <Screen
             key={screenNumber}
             screenData={screenData}
+            upcomingScreenData={nextScreenData}
             screenNumber={screenNumber}
             isVisible={screens[screenNumber]}
             onClose={handleScreenClose}

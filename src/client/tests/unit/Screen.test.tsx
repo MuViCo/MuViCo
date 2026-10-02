@@ -823,6 +823,180 @@ describe("Screen", () => {
     expect(getVideoElement()).toBe(videoBeforeTransition)
   })
 
+  // The black frame a manual advance used to show came from creating the
+  // incoming <video> at advance time, which pays a full load cycle before it
+  // can paint. These cover the warm layer that removes it.
+  describe("next-frame warm-up", () => {
+    const videoCue = (id: string, index: number) =>
+      ({
+        file: {
+          url: `http://example.com/${id}.mp4`,
+          type: "video/mp4",
+          name: `${id}.mp4`,
+        },
+        index,
+        name: id,
+        screen: 1,
+        _id: `id-${id}`,
+        loop: false,
+      }) as Cue
+
+    const popupBody = () =>
+      (window.open as jest.Mock).mock.results.at(-1)!.value.document.body
+
+    test("mounts the next frame's video paused and hidden", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={videoCue("current", 0)}
+            upcomingScreenData={videoCue("upcoming", 1)}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      const warm = await waitFor(() => {
+        const layer = popupBody().querySelector(
+          '[data-testid="warm-cue-layer"]'
+        )
+        expect(layer).toBeTruthy()
+        return layer as HTMLElement
+      })
+
+      const video = warm.querySelector("video") as HTMLVideoElement
+      expect(video.src).toContain("upcoming.mp4")
+      expect(video.getAttribute("preload")).toBe("auto")
+      expect(video.paused).toBe(true)
+      expect(video).not.toHaveAttribute("autoplay")
+      expect(warm).toHaveAttribute("aria-hidden", "true")
+      expect(warm).not.toHaveAttribute("data-revealed")
+    })
+
+    test("plays the warmed element in place instead of creating a new one", async () => {
+      const current = videoCue("current", 0)
+      const upcoming = videoCue("upcoming", 1)
+      // Stable identity: a fresh callback re-runs the popup effect, which
+      // closes and reopens the window and remounts everything in it.
+      const onClose = () => {}
+
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={current}
+          upcomingScreenData={upcoming}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+
+      const warmedVideo = await waitFor(() => {
+        const video = popupBody().querySelector(
+          '[data-testid="warm-cue-layer"] video'
+        )
+        expect(video).toBeTruthy()
+        return video as HTMLVideoElement
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={upcoming}
+            upcomingScreenData={null}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      const liveVideo = popupBody().querySelector(
+        '[data-testid="incoming-cue-layer"] video'
+      )
+      expect(liveVideo).toBe(warmedVideo)
+      expect(warmedVideo.paused).toBe(false)
+      expect(
+        popupBody().querySelector('[data-testid="warm-cue-layer"]')
+      ).toBeNull()
+    })
+
+    test("does not warm a cue that is already on screen", async () => {
+      const current = videoCue("current", 0)
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={current}
+            upcomingScreenData={current}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(popupBody().querySelectorAll("video")).toHaveLength(1)
+      })
+      expect(
+        popupBody().querySelector('[data-testid="warm-cue-layer"]')
+      ).toBeNull()
+    })
+
+    test("renders nothing extra when there is no next frame", async () => {
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={videoCue("current", 0)}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(popupBody().querySelector("video")).toBeTruthy()
+      })
+      expect(
+        popupBody().querySelector('[data-testid="warm-cue-layer"]')
+      ).toBeNull()
+    })
+
+    test("keeps a warmed audio cue silent until it is live", async () => {
+      const audioCue = {
+        file: {
+          url: "http://example.com/track.mp3",
+          type: "audio/mpeg",
+          name: "track.mp3",
+        },
+        index: 1,
+        name: "audio-cue",
+        screen: 1,
+        _id: "id-audio",
+        loop: false,
+      } as Cue
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={1}
+            screenData={videoCue("current", 0)}
+            upcomingScreenData={audioCue}
+            isVisible={true}
+            onClose={() => {}}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(popupBody().querySelector("video")).toBeTruthy()
+      })
+      expect(popupBody().querySelector("audio")).toBeNull()
+    })
+  })
+
   // Regression test that ensures that the outgoing cue is still rendered as a background when it is a color cue,
   // instead of being dropped and displaying a blank or black background during the transition to the next cue.
   test("keeps rendering the outgoing cue's color as a background instead of leaving it blank", async () => {
