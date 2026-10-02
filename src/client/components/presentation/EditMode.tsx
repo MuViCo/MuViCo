@@ -208,6 +208,19 @@ const EditMode = ({
   const presentation = useAppSelector((state) => state.presentation)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
+  /**
+   * Frame the focus sits on, with the lane it was set from.
+   *
+   * The lane highlight is a whole-row effect, but the clip highlight marks the
+   * single element being worked on, so it needs a column too. Storing the lane
+   * alongside it makes a focus move that came from somewhere else -- a lane
+   * header, the screen strip -- drop the clip highlight instead of leaving it on
+   * whichever clip happens to sit at that column on the new lane.
+   */
+  const [focusedCell, setFocusedCell] = useState<{
+    lane: string
+    index: number
+  } | null>(null)
   const [isMultiScreenModalOpen, setIsMultiScreenModalOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
@@ -323,6 +336,10 @@ const EditMode = ({
     return rowModel.rows.findIndex((row) => row.group === group)
   }, [rowModel.rows, focusedLaneKey])
 
+  /** Frame index the clip highlight sits on, or -1. */
+  const focusedFrameIndex =
+    focusedCell && focusedCell.lane === focusedLaneKey ? focusedCell.index : -1
+
   /**
    * Height change and offset per lane while one lane holds focus. Computed here
    * so the gutter and the clips are laid out from one result.
@@ -352,7 +369,12 @@ const EditMode = ({
    * collapsed group focuses its merged lane instead of a layer that is not
    * currently rendered.
    */
-  const focusLaneForCue = (screen: number, layer: number, cueType?: string) => {
+  const focusLaneForCue = (
+    screen: number,
+    layer: number,
+    cueType?: string,
+    index?: number
+  ) => {
     // Group naming mirrors buildRowModel; matching on row.screen alone misses
     // audio, whose lanes carry the pseudo-screen the cue records use.
     const group =
@@ -366,7 +388,17 @@ const EditMode = ({
     )
     // A key with no matching lane resolves to -1 and is inert, so falling back
     // is safe when the row model has not caught up with the new cue yet.
-    onFocusLane(lane ? laneKey(lane) : `${group}:${layer}`)
+    const key = lane ? laneKey(lane) : `${group}:${layer}`
+    onFocusLane(key)
+    setFocusedCell(
+      index === undefined ? null : { lane: key, index: Number(index) }
+    )
+  }
+
+  /** Focus a lane from its header. No frame is implied, so no clip is marked. */
+  const focusLaneFromHeader = (key: string | null) => {
+    onFocusLane(key)
+    setFocusedCell(null)
   }
 
   /** Focus the lane under the pointer. Never dispatches, never opens anything. */
@@ -381,7 +413,9 @@ const EditMode = ({
     if (!isRowInsideGrid(xIndex, yIndex)) return
     const lane = laneAt(rowModel.rows, yIndex)
     if (!lane) return
-    onFocusLane(laneKey(lane))
+    const key = laneKey(lane)
+    onFocusLane(key)
+    setFocusedCell({ lane: key, index: xIndex })
   }
 
   const gridCues = useMemo(
@@ -1758,7 +1792,7 @@ const EditMode = ({
 
     // Focus follows the placement intent, not the request: the lane the user
     // aimed at is the one they want to work on whether or not the save lands.
-    focusLaneForCue(screen, layer, cueData.cueType)
+    focusLaneForCue(screen, layer, cueData.cueType, index)
 
     try {
       await dispatch(createCue(id, formData))
@@ -1932,7 +1966,11 @@ const EditMode = ({
 
     if (cue) {
       const lane = laneAt(rowModel.rows, yIndex)
-      if (lane) onFocusLane(laneKey(lane))
+      if (lane) {
+        const key = laneKey(lane)
+        onFocusLane(key)
+        setFocusedCell({ lane: key, index: xIndex })
+      }
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     }
@@ -2423,7 +2461,7 @@ const EditMode = ({
             <RowHeaders
               rows={rowModel.rows}
               focusedRowIndex={focusedRowIndex}
-              onFocusLane={onFocusLane}
+              onFocusLane={focusLaneFromHeader}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapsed={toggleGroupCollapsed}
               onAddVisualLayer={addVisualLayer}
@@ -2630,6 +2668,7 @@ const EditMode = ({
                     cues={gridCues}
                     cueRowIndex={rowModel.cueY}
                     focusedRowIndex={focusedRowIndex}
+                    focusedFrameIndex={focusedFrameIndex}
                     focusLayout={focusLayout}
                     rowCount={rowModel.rowCount}
                     containerRef={containerRef}
