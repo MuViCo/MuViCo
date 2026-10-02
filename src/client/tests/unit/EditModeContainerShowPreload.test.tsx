@@ -433,7 +433,11 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
 
-    expect(onEnterShow).toHaveBeenCalledTimes(2)
+    // The second entry still runs the freeze pass -- that is where a show
+    // revalidates -- so it resolves a tick later rather than synchronously.
+    // What must not happen is the overlay coming back.
+    expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(2))
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
   })
 
@@ -623,6 +627,7 @@ describe("EditModeContainer media URL staleness check", () => {
       etag?: string | null
       lastModified?: string | null
       contentLength?: string | null
+      contentRange?: string | null
       ok?: boolean
       status?: number
     }) => void
@@ -667,11 +672,13 @@ describe("EditModeContainer media URL staleness check", () => {
     etag?: string | null
     lastModified?: string | null
     contentLength?: string | null
+    contentRange?: string | null
   }) => ({
     get: (name: string) => {
       if (name === "etag") return opts.etag ?? null
       if (name === "last-modified") return opts.lastModified ?? null
       if (name === "content-length") return opts.contentLength ?? null
+      if (name === "content-range") return opts.contentRange ?? null
       return null
     },
   })
@@ -685,6 +692,7 @@ describe("EditModeContainer media URL staleness check", () => {
       etag?: string | null
       lastModified?: string | null
       contentLength?: string | null
+      contentRange?: string | null
     } = {}
   ) => {
     for (let attempt = 0; attempt < 20; attempt += 1) {
@@ -781,21 +789,11 @@ describe("EditModeContainer media URL staleness check", () => {
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
-    // Advance past the revalidation throttle, then force freezeMediaUrl to
-    // run again for the same (already-frozen) URL via the show-mode
-    // lookahead effect -- entering show mode again would skip it outright
-    // since it's already settled, so this is the only remaining path that
-    // re-touches a cached URL.
+    // Advance past the revalidation throttle and enter the show again. A
+    // running show never revalidates, so entry is the only point that
+    // re-checks an already-frozen URL.
     currentTime += 20000
-    rerender(
-      <EditModeContainer
-        {...baseProps}
-        cues={[imageCue]}
-        isShowMode
-        cueIndex={0}
-        onEnterShow={jest.fn()}
-      />
-    )
+    fireEvent.click(screen.getByText("Show mode"))
 
     await waitFor(() =>
       expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
@@ -805,6 +803,84 @@ describe("EditModeContainer media URL staleness check", () => {
     })
 
     // Validators matched -- the cached Blob is reused, no second download.
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  test("keeps serving the cached Blob while a show is running", async () => {
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await act(async () => {
+      await resolveCall(isDownloadCall, { etag: "v1" })
+    })
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+
+    // Well past the revalidation throttle, with the show on screen and the
+    // lookahead re-touching the frozen URL every frame.
+    currentTime += 60000
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        isShowMode
+        cueIndex={0}
+        onEnterShow={jest.fn()}
+      />
+    )
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    // No probe, no download, and the Blob the outputs point at stays alive.
+    expect(calls.some((call) => call.method === "RANGE-GET")).toBe(false)
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+    expect(revokeObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  test("reads a partial response's size from Content-Range, not Content-Length", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    // No etag, so the comparison falls through to size and last-modified.
+    fireEvent.click(screen.getByText("Show mode"))
+    await act(async () => {
+      await resolveCall(isDownloadCall, {
+        etag: null,
+        lastModified: "Fri, 02 Oct 2026 01:06:06 GMT",
+        contentLength: "8873575",
+      })
+    })
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1)
+
+    currentTime += 20000
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() =>
+      expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
+    )
+    await act(async () => {
+      // A 1-byte probe: Content-Length is the slice, Content-Range carries
+      // the resource size. Comparing the slice would read as a change.
+      await resolveCall((call) => call.method === "RANGE-GET", {
+        etag: null,
+        lastModified: "Fri, 02 Oct 2026 01:06:06 GMT",
+        contentLength: "1",
+        contentRange: "bytes 0-0/8873575",
+      })
+    })
+
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
     expect(revokeObjectURLMock).not.toHaveBeenCalled()
   })
@@ -825,15 +901,7 @@ describe("EditModeContainer media URL staleness check", () => {
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
     currentTime += 20000
-    rerender(
-      <EditModeContainer
-        {...baseProps}
-        cues={[imageCue]}
-        isShowMode
-        cueIndex={0}
-        onEnterShow={jest.fn()}
-      />
-    )
+    fireEvent.click(screen.getByText("Show mode"))
 
     await waitFor(() =>
       expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
