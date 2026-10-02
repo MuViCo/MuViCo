@@ -337,6 +337,55 @@ const parseSpanScreens = (
   return { spanScreens: normalized, error: null }
 }
 
+const SPAN_FILLS = ["cover", "contain"]
+const SPAN_POSITIONS = [
+  "top-left",
+  "top",
+  "top-right",
+  "left",
+  "center",
+  "right",
+  "bottom-left",
+  "bottom",
+  "bottom-right",
+]
+
+// How a spanned cue is framed. Absent leaves the cue's own value alone; an
+// empty string clears it back to the client's default.
+const parseSpanFraming = (
+  body: Record<string, unknown>
+): {
+  // undefined = not in this request, null = clear it, string = set it.
+  spanFill: string | null | undefined
+  spanPosition: string | null | undefined
+  error: string | null
+} => {
+  const read = (
+    field: string,
+    allowed: string[]
+  ): { value: string | null | undefined; error: string | null } => {
+    const raw = body[field]
+    if (raw === undefined) return { value: undefined, error: null }
+    if (raw === "") return { value: null, error: null }
+    if (typeof raw !== "string" || !allowed.includes(raw)) {
+      return {
+        value: undefined,
+        error: `${field} must be one of ${allowed.join(", ")}`,
+      }
+    }
+    return { value: raw, error: null }
+  }
+
+  const fill = read("spanFill", SPAN_FILLS)
+  const position = read("spanPosition", SPAN_POSITIONS)
+
+  return {
+    spanFill: fill.value,
+    spanPosition: position.value,
+    error: fill.error || position.error,
+  }
+}
+
 const parseFrame = (
   raw: unknown
 ): { frame: CueFrame | null; error: string | null } => {
@@ -1758,6 +1807,11 @@ router.put(
       const { spanScreens, error: spanScreensError } = parseSpanScreens(
         req.body.spanScreens
       )
+      const {
+        spanFill: newSpanFill,
+        spanPosition: newSpanPosition,
+        error: newSpanFramingError,
+      } = parseSpanFraming(req.body)
       const { duration, error: durationError } = parseDuration(
         req.body.duration
       )
@@ -1779,6 +1833,10 @@ router.put(
 
       if (!id || isNaN(index) || isNaN(screen)) {
         return res.status(400).json({ error: "Missing required fields" })
+      }
+
+      if (newSpanFramingError) {
+        return res.status(400).json({ error: newSpanFramingError })
       }
 
       if (spanScreensError) {
@@ -1944,6 +2002,11 @@ router.put(
               name: trimmedCueName,
               screen: screen,
               ...(spanScreens ? { spanScreens } : {}),
+              // Framing rides along only with an actual span.
+              ...(spanScreens && newSpanFill ? { spanFill: newSpanFill } : {}),
+              ...(spanScreens && newSpanPosition
+                ? { spanPosition: newSpanPosition }
+                : {}),
               ...(duration && cueType === "visual" ? { duration } : {}),
               ...(cueText.text
                 ? {
@@ -2366,9 +2429,18 @@ router.put(
       const imageEffect = parseImageEffect(req.body)
       const frameProvided = req.body.frame !== undefined
       const { frame, error: frameError } = parseFrame(req.body.frame)
+      const {
+        spanFill,
+        spanPosition,
+        error: spanFramingError,
+      } = parseSpanFraming(req.body)
 
       if (durationError || frameError) {
         return res.status(400).json({ error: durationError || frameError })
+      }
+
+      if (spanFramingError) {
+        return res.status(400).json({ error: spanFramingError })
       }
 
       if (cueText.error) {
@@ -2528,6 +2600,18 @@ router.put(
         // invalidates any previous span rather than silently carrying it,
         // possibly stale, to the new screen.
         cue.spanScreens = undefined
+      }
+      if (spanFill !== undefined) {
+        cue.spanFill = spanFill ?? undefined
+      }
+      if (spanPosition !== undefined) {
+        cue.spanPosition = spanPosition ?? undefined
+      }
+      // Framing only means anything alongside a span; carrying it on a cue
+      // that no longer spans would resurface it if the span came back.
+      if (!cue.spanScreens) {
+        cue.spanFill = undefined
+        cue.spanPosition = undefined
       }
       if (frameProvided) {
         cue.frame = frame && cueType === "visual" ? frame : undefined

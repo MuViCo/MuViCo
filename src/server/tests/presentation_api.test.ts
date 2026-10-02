@@ -3095,6 +3095,61 @@ describe("Multi-screen image spanning (spanScreens)", () => {
     expect(cue.spanScreens).toEqual([1, 2, 3])
   })
 
+  // createSpanCue awaits, so framing tests build their own request.
+  const spanCueRequest = (screen: any, spanScreens: any, index = 0) =>
+    api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .attach("image", mockImageBuffer, "mock_image.png")
+      .field("index", index)
+      .field("cueName", "Span cue")
+      .field("screen", screen)
+      .field("spanScreens", JSON.stringify(spanScreens))
+
+  test("stores the framing sent with a span", async () => {
+    const response = await spanCueRequest(1, [1, 2])
+      .field("spanFill", "contain")
+      .field("spanPosition", "bottom-right")
+    expect(response.status).toBe(200)
+
+    const cue = response.body.cues.find((c: any) => c.name === "Span cue")
+    expect(cue.spanFill).toBe("contain")
+    expect(cue.spanPosition).toBe("bottom-right")
+  })
+
+  test("leaves the framing unset when the cue doesn't span", async () => {
+    const response = await api
+      .put(`/api/presentation/${spanPresentationId}`)
+      .set("Authorization", spanAuthHeader)
+      .attach("image", mockImageBuffer, "mock_image.png")
+      .field("index", 0)
+      .field("cueName", "Span cue")
+      .field("screen", 1)
+      .field("spanFill", "contain")
+      .field("spanPosition", "top")
+    expect(response.status).toBe(200)
+
+    const cue = response.body.cues.find((c: any) => c.name === "Span cue")
+    expect(cue.spanFill).toBeUndefined()
+    expect(cue.spanPosition).toBeUndefined()
+  })
+
+  test("rejects a framing value outside the allowed set", async () => {
+    const response = await spanCueRequest(1, [1, 2]).field(
+      "spanFill",
+      "stretch"
+    )
+    expect(response.status).toBe(400)
+  })
+
+  test("rejects a position outside the allowed set", async () => {
+    const response = await spanCueRequest(1, [1, 2]).field(
+      "spanPosition",
+      "middle"
+    )
+    expect(response.status).toBe(400)
+  })
+
   test("rejects spanScreens that don't include the cue's own screen", async () => {
     const response = await createSpanCue(1, [2, 3])
     expect(response.status).toBe(400)

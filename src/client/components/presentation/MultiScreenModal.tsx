@@ -6,14 +6,18 @@
  * - Screens are shown in order 1..screenCount; that's also the left-to-right
  *   slice order used when rendering (see screenSpanLayout.ts).
  * - Saving with fewer than 2 screens checked clears the span entirely.
+ * - Fill and position decide how the media is scaled into the combined
+ *   canvas and what the crop keeps; they only matter once it spans.
  */
 
 import { useEffect, useState } from "react"
 import type { FormEvent } from "react"
 import {
+  Box,
   Button,
   Checkbox,
   CheckboxGroup,
+  Divider,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -23,10 +27,28 @@ import {
   ModalOverlay,
   Stack,
   Text,
+  Tooltip,
 } from "@chakra-ui/react"
 
 import { occupiedScreens } from "../utils/cueScreenSpanUtils"
-import type { Cue, CueUpdateInput } from "../../types"
+import {
+  DEFAULT_SPAN_FILL,
+  DEFAULT_SPAN_POSITION,
+  SPAN_POSITIONS,
+} from "../utils/screenSpanLayout"
+import type { Cue, CueUpdateInput, SpanFill, SpanPosition } from "../../types"
+
+const POSITION_LABELS: Record<SpanPosition, string> = {
+  "top-left": "Top left",
+  top: "Top",
+  "top-right": "Top right",
+  left: "Left",
+  center: "Center",
+  right: "Right",
+  "bottom-left": "Bottom left",
+  bottom: "Bottom",
+  "bottom-right": "Bottom right",
+}
 
 interface MultiScreenModalProps {
   isOpen: boolean
@@ -48,6 +70,8 @@ const MultiScreenModal = ({
   onSave,
 }: MultiScreenModalProps) => {
   const [selectedScreens, setSelectedScreens] = useState<number[]>([])
+  const [fill, setFill] = useState<SpanFill>(DEFAULT_SPAN_FILL)
+  const [position, setPosition] = useState<SpanPosition>(DEFAULT_SPAN_POSITION)
 
   useEffect(() => {
     if (isOpen && cue) {
@@ -56,6 +80,8 @@ const MultiScreenModal = ({
           ? (cue.spanScreens as number[])
           : [cue.screen]
       setSelectedScreens(initial)
+      setFill(cue.spanFill ?? DEFAULT_SPAN_FILL)
+      setPosition(cue.spanPosition ?? DEFAULT_SPAN_POSITION)
     }
   }, [isOpen, cue])
 
@@ -65,6 +91,7 @@ const MultiScreenModal = ({
 
   const layer = Number(cue.layer ?? 0)
   const layerLabel = `L${layer + 1}`
+  const isSpanning = selectedScreens.length > 1
 
   const conflictOnScreen = (screenNumber: number) =>
     (cues || []).find(
@@ -95,7 +122,13 @@ const MultiScreenModal = ({
     const spanScreens = selectedScreens.length > 1 ? selectedScreens : []
     // cueName (not just name) is what the update pipeline actually reads
     // (see ToolBox.jsx's onSave payload for the same convention).
-    await onSave({ ...cue, cueName: cue.name, spanScreens })
+    await onSave({
+      ...cue,
+      cueName: cue.name,
+      spanScreens,
+      spanFill: fill,
+      spanPosition: position,
+    })
     onClose()
   }
 
@@ -153,6 +186,72 @@ const MultiScreenModal = ({
                 })}
               </Stack>
             </CheckboxGroup>
+
+            <Divider my={4} />
+
+            <Text mb={2} fontSize="sm" fontWeight="medium">
+              Framing
+            </Text>
+            <Text mb={3} fontSize="xs" color="gray.500">
+              {isSpanning
+                ? "How the media is scaled across the screens, and which part survives the crop."
+                : "Applies once this element spans more than one screen."}
+            </Text>
+
+            <Stack direction="row" spacing={2} mb={4}>
+              <Button
+                size="sm"
+                flex={1}
+                aria-pressed={fill === "cover"}
+                variant={fill === "cover" ? "solid" : "outline"}
+                colorScheme={fill === "cover" ? "purple" : "gray"}
+                isDisabled={!isSpanning}
+                onClick={() => setFill("cover")}
+              >
+                Fill
+              </Button>
+              <Button
+                size="sm"
+                flex={1}
+                aria-pressed={fill === "contain"}
+                variant={fill === "contain" ? "solid" : "outline"}
+                colorScheme={fill === "contain" ? "purple" : "gray"}
+                isDisabled={!isSpanning}
+                onClick={() => setFill("contain")}
+              >
+                Fit
+              </Button>
+            </Stack>
+            <Text mb={3} fontSize="xs" color="gray.500">
+              {fill === "cover"
+                ? "Fill zooms the media until it covers every screen, cropping what overflows."
+                : "Fit keeps the whole media visible, leaving bands where it falls short."}
+            </Text>
+
+            <Box
+              display="grid"
+              gridTemplateColumns="repeat(3, 1fr)"
+              gap={1}
+              maxWidth="150px"
+              aria-label="Position"
+              role="group"
+            >
+              {SPAN_POSITIONS.map((candidate) => (
+                <Tooltip key={candidate} label={POSITION_LABELS[candidate]}>
+                  <Button
+                    size="sm"
+                    height="38px"
+                    minWidth={0}
+                    aria-label={POSITION_LABELS[candidate]}
+                    aria-pressed={position === candidate}
+                    variant={position === candidate ? "solid" : "outline"}
+                    colorScheme={position === candidate ? "purple" : "gray"}
+                    isDisabled={!isSpanning}
+                    onClick={() => setPosition(candidate)}
+                  />
+                </Tooltip>
+              ))}
+            </Box>
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" onClick={onClose}>
