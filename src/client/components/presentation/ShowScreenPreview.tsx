@@ -9,6 +9,7 @@ import {
   screenWidthMapFromRatios,
   spanMediaStyle,
 } from "../utils/screenSpanLayout"
+import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import {
   parseAspectRatio,
@@ -58,16 +59,10 @@ const SpannedPreview = ({
   outputAspectRatio?: string
   animation?: string
 }) => {
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
+  const { aspectRatio, probeRef, onLoad } = useMediaAspectRatio()
   const spanScreens = cue.spanScreens ?? [screenNumber]
   const orderedScreens = [...spanScreens].sort((a, b) => a - b)
   const position = Math.max(0, orderedScreens.indexOf(screenNumber))
-
-  const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = event.currentTarget
-    if (naturalWidth && naturalHeight)
-      setAspectRatio(naturalWidth / naturalHeight)
-  }
 
   if (!aspectRatio) {
     return (
@@ -81,7 +76,8 @@ const SpannedPreview = ({
         <img
           src={cue.file?.url}
           alt=""
-          onLoad={handleLoad}
+          ref={probeRef}
+          onLoad={onLoad}
           style={{ display: "none" }}
         />
       </>

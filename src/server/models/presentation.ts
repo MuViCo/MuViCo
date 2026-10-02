@@ -260,6 +260,29 @@ const presentationSchema = new mongoose.Schema<PresentationAttrs>(
           set: (v: unknown) =>
             Array.isArray(v) ? v.map((n) => Math.round(Number(n))) : v,
         },
+        // How a spanned cue's media fills the combined canvas, and which
+        // part survives the crop. Only meaningful alongside spanScreens;
+        // absent means the client's defaults (cover, centered).
+        spanFill: {
+          type: String,
+          enum: ["cover", "contain"],
+          default: undefined,
+        },
+        spanPosition: {
+          type: String,
+          enum: [
+            "top-left",
+            "top",
+            "top-right",
+            "left",
+            "center",
+            "right",
+            "bottom-left",
+            "bottom",
+            "bottom-right",
+          ],
+          default: undefined,
+        },
         // Hex color code for visual cues
         color: {
           type: String,

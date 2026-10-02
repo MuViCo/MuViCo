@@ -35,6 +35,7 @@ import {
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
+import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
 
 import type { Cue, CueFileMeta, SpanFill, SpanPosition } from "../../types"
 
@@ -59,14 +60,7 @@ const SpannedTilePreview = ({
   outputAspectRatio?: string
   animation?: string
 }) => {
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
-
-  const handleProbeLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = event.currentTarget
-    if (naturalWidth > 0 && naturalHeight > 0) {
-      setAspectRatio(naturalWidth / naturalHeight)
-    }
-  }
+  const { aspectRatio, probeRef, onLoad } = useMediaAspectRatio()
 
   if (!aspectRatio) {
     return (
@@ -84,7 +78,8 @@ const SpannedTilePreview = ({
         <img
           src={imageSrc}
           alt=""
-          onLoad={handleProbeLoad}
+          ref={probeRef}
+          onLoad={onLoad}
           style={{ display: "none" }}
         />
       </>

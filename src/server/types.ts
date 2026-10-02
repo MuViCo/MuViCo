@@ -27,6 +27,17 @@ export interface Cue {
   name: string
   screen: number
   spanScreens?: number[]
+  spanFill?: "cover" | "contain"
+  spanPosition?:
+    | "top-left"
+    | "top"
+    | "top-right"
+    | "left"
+    | "center"
+    | "right"
+    | "bottom-left"
+    | "bottom"
+    | "bottom-right"
   frame?: CueFrame
   duration?: number
   text?: string

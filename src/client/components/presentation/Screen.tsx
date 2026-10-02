@@ -31,6 +31,7 @@ import {
 import type { ScreenSpanOptions } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
+import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
 import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { parseAspectRatio } from "../../../constants.js"
@@ -98,14 +99,7 @@ const SpannedImage = ({
   spanOptions,
   animation,
 }: SpannedImageProps) => {
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null)
-
-  const handleProbeLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight } = event.currentTarget
-    if (naturalWidth > 0 && naturalHeight > 0) {
-      setAspectRatio(naturalWidth / naturalHeight)
-    }
-  }
+  const { aspectRatio, probeRef, onLoad } = useMediaAspectRatio()
 
   if (!aspectRatio) {
     return (
@@ -120,7 +114,8 @@ const SpannedImage = ({
           data-testid="span-image-probe"
           src={imageSrc}
           alt=""
-          onLoad={handleProbeLoad}
+          ref={probeRef}
+          onLoad={onLoad}
           style={{ display: "none" }}
         />
       </>
