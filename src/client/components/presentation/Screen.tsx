@@ -38,6 +38,9 @@ const mediaFillProps = {
   objectFit: "contain",
 } as const
 
+// How long an entering or leaving cue layer animates for.
+const TRANSITION_ANIMATION_MS = 500
+
 // Resolves a cue's media URL to its frozen Object URL (see
 // EditModeContainer's freezeMediaUrl) when one is available, falling back
 // to the live URL otherwise -- not yet frozen, or the freeze itself failed.
@@ -395,7 +398,7 @@ const ScreenContent = ({
     transitionType ?? "fade"
   )
   const animStyle = (kf: Keyframes | null) =>
-    kf ? `${kf} 500ms ease-in-out forwards` : "none"
+    kf ? `${kf} ${TRANSITION_ANIMATION_MS}ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
 
   return (
@@ -669,9 +672,13 @@ const Screen = ({
         : `Screen ${screenNumber}`
     }
 
-    return () => {
-      cancelRevealRef.current?.()
-    }
+    // No cleanup cancelling the reveal here. This effect re-runs on every
+    // parent render, since `screenData` is rebuilt each time, and cancelling
+    // then would drop a reveal that has already been scheduled: the branch
+    // above only re-arms it when the cue content changed, so the incoming
+    // layer would stay at opacity 0 and the outgoing one on screen -- the
+    // screen keeps showing the previous frame. Re-arming before scheduling
+    // (above) already prevents overlapping timers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     screenData,
@@ -680,6 +687,29 @@ const Screen = ({
     isWindowReady,
     screenNumber,
   ])
+
+  useEffect(
+    () => () => {
+      cancelRevealRef.current?.()
+    },
+    []
+  )
+
+  // Drop the outgoing layer once it has finished leaving. It keeps its own
+  // opacity, so a transition with no exit animation ("none") would otherwise
+  // leave it on screen for good -- and above the incoming layer, since equal
+  // zIndex falls back to DOM order. Even with an animation, leaving it
+  // mounted keeps a hidden video decoding for the rest of the frame.
+  useEffect(() => {
+    if (!isRevealed || !previousScreenData) return undefined
+
+    const { exit } = getAnims(transitionType ?? "fade")
+    const timeoutId = window.setTimeout(
+      () => setPreviousScreenData(null),
+      exit ? TRANSITION_ANIMATION_MS : 0
+    )
+    return () => window.clearTimeout(timeoutId)
+  }, [isRevealed, previousScreenData, transitionType])
 
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && emotionCache

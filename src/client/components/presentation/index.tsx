@@ -84,6 +84,13 @@ const PresentationPage = ({ shared = false }: PresentationPageProps) => {
   const indexCount = useAppSelector((state) => state.presentation.indexCount)
   const isShowMode = location.pathname.endsWith("/show")
 
+  // A show opens on its first frame, wherever the editor playhead happened
+  // to be. Rewinding here rather than on the way in keeps it clear of the
+  // preload and the navigation, which both run before this point.
+  useEffect(() => {
+    if (isShowMode) setCueIndex(0)
+  }, [isShowMode])
+
   const toggleAudioMute = () => {
     setIsAudioMuted((prevMuted) => !prevMuted)
   }

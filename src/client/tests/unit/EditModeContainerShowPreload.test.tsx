@@ -149,22 +149,29 @@ describe("EditModeContainer show mode media preload gate", () => {
     isAudioMode: false,
   }
 
-  // Resolves the oldest pending fetch() for a given URL with a fake Blob.
-  const resolveFetch = (url: string) => {
-    const index = pendingFetches.findIndex((entry) => entry.url === url)
-    if (index === -1) {
-      throw new Error(`No pending fetch for ${url}`)
+  // freezeMediaUrl looks the media up in the disk cache before falling back to
+  // the network, so its fetch() is a few microtasks behind the click that
+  // triggered it. Give it those ticks rather than assuming it already fired.
+  const takePendingFetch = async (url: string) => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const index = pendingFetches.findIndex((entry) => entry.url === url)
+      if (index !== -1) {
+        const [entry] = pendingFetches.splice(index, 1)
+        return entry
+      }
+      await Promise.resolve()
     }
-    const [entry] = pendingFetches.splice(index, 1)
+    throw new Error(`No pending fetch for ${url}`)
+  }
+
+  // Resolves the oldest pending fetch() for a given URL with a fake Blob.
+  const resolveFetch = async (url: string) => {
+    const entry = await takePendingFetch(url)
     entry.resolve(new Blob(["data"], { type: "application/octet-stream" }))
   }
 
-  const rejectFetch = (url: string) => {
-    const index = pendingFetches.findIndex((entry) => entry.url === url)
-    if (index === -1) {
-      throw new Error(`No pending fetch for ${url}`)
-    }
-    const [entry] = pendingFetches.splice(index, 1)
+  const rejectFetch = async (url: string) => {
+    const entry = await takePendingFetch(url)
     entry.reject(new Error("network error"))
   }
 
@@ -251,18 +258,25 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.getByText(/Préparation du show/)).toBeInTheDocument()
     expect(screen.getByText("0/2 médias chargés")).toBeInTheDocument()
 
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/photo.png")
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/clip.mp4")
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://example.com/photo.png",
+        { cache: "reload" }
+      )
+    )
+    expect(global.fetch).toHaveBeenCalledWith("https://example.com/clip.mp4", {
+      cache: "reload",
+    })
 
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() =>
       expect(screen.getByText("1/2 médias chargés")).toBeInTheDocument()
     )
 
     await act(async () => {
-      resolveFetch("https://example.com/clip.mp4")
+      await resolveFetch("https://example.com/clip.mp4")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
@@ -304,7 +318,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     )
 
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() =>
       expect(
@@ -315,7 +329,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     // The audio cue is left unresolved so the overlay stays open long
     // enough to observe the failed video's status.
     await act(async () => {
-      rejectFetch("https://example.com/clip.mp4")
+      await rejectFetch("https://example.com/clip.mp4")
     })
     await waitFor(() =>
       expect(
@@ -325,7 +339,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(onEnterShow).not.toHaveBeenCalled()
 
     await act(async () => {
-      resolveFetch("https://example.com/track.mp3")
+      await resolveFetch("https://example.com/track.mp3")
     })
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
   })
@@ -345,13 +359,60 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.getByText(/Préparation du show/)).toBeInTheDocument()
 
     await act(async () => {
-      rejectFetch("https://example.com/clip.mp4")
+      await rejectFetch("https://example.com/clip.mp4")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
     expect(console.error).toHaveBeenCalled()
     // A failed freeze never produces an Object URL.
     expect(createObjectURLMock).not.toHaveBeenCalled()
+  })
+
+  test("counts only media that finished downloading, never more than the total", async () => {
+    const extraCue = {
+      _id: "cue-extra",
+      index: 0,
+      screen: 3,
+      name: "Extra",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/extra.png" },
+    } as unknown as Cue
+
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await act(async () => {
+      await resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/clip.mp4")
+    })
+
+    // Re-entering with one more cue re-counts the two already-frozen media.
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue, extraCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() =>
+      expect(screen.getByText("2/3 médias chargés")).toBeInTheDocument()
+    )
+
+    await act(async () => {
+      await resolveFetch("https://example.com/extra.png")
+    })
+
+    await waitFor(() =>
+      expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
+    )
   })
 
   test("skips the overlay on a second show-mode entry once media is already frozen", async () => {
@@ -366,7 +427,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
 
@@ -376,7 +437,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
   })
 
-  test("preloads back layers before front layers", () => {
+  test("preloads back layers before front layers", async () => {
     const frontImageCue = {
       _id: "cue-front",
       index: 0,
@@ -410,6 +471,7 @@ describe("EditModeContainer show mode media preload gate", () => {
     fireEvent.click(screen.getByText("Show mode"))
 
     const fetchMock = global.fetch as jest.Mock
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBe(2))
     expect(fetchMock.mock.calls[0][0]).toBe("https://example.com/back.png")
     expect(fetchMock.mock.calls[1][0]).toBe("https://example.com/front.png")
   })
@@ -436,10 +498,15 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     expect(onEnterShow).not.toHaveBeenCalled()
-    expect(global.fetch).toHaveBeenCalledWith("https://example.com/track.mp3")
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://example.com/track.mp3",
+        { cache: "reload" }
+      )
+    )
 
     await act(async () => {
-      resolveFetch("https://example.com/track.mp3")
+      await resolveFetch("https://example.com/track.mp3")
     })
 
     await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
@@ -457,8 +524,8 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
-      resolveFetch("https://example.com/clip.mp4")
+      await resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/clip.mp4")
     })
 
     expect(global.fetch).toHaveBeenCalledTimes(2)
@@ -500,7 +567,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
@@ -526,7 +593,7 @@ describe("EditModeContainer show mode media preload gate", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/photo.png")
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
@@ -539,8 +606,8 @@ describe("EditModeContainer show mode media preload gate", () => {
 
 /**
  * Regression tests for the media-integrity check: an already-frozen URL is
- * revalidated (HEAD, with a Range-GET fallback) against the ETag/Last-
- * Modified/Content-Length captured at freeze time before its cached Blob is
+ * revalidated (a 1-byte ranged GET) against the ETag/Last-Modified/
+ * Content-Length captured at freeze time before its cached Blob is
  * reused, so a file replaced in place under the same URL (e.g. a shared
  * media-library entry) doesn't serve stale content forever.
  */
@@ -609,7 +676,10 @@ describe("EditModeContainer media URL staleness check", () => {
     },
   })
 
-  const resolveCall = (
+  // The disk cache lookup in freezeMediaUrl runs before the network call, so
+  // give the fetch a few microtasks to show up instead of assuming it already
+  // did.
+  const resolveCall = async (
     predicate: (call: FetchCall) => boolean,
     opts: {
       etag?: string | null
@@ -617,12 +687,16 @@ describe("EditModeContainer media URL staleness check", () => {
       contentLength?: string | null
     } = {}
   ) => {
-    const index = calls.findIndex(predicate)
-    if (index === -1) {
-      throw new Error("No matching fetch call")
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const index = calls.findIndex(predicate)
+      if (index !== -1) {
+        const [entry] = calls.splice(index, 1)
+        entry.resolve(opts)
+        return
+      }
+      await Promise.resolve()
     }
-    const [entry] = calls.splice(index, 1)
-    entry.resolve(opts)
+    throw new Error("No matching fetch call")
   }
 
   const isDownloadCall = (call: FetchCall) => call.method === "GET"
@@ -703,7 +777,7 @@ describe("EditModeContainer media URL staleness check", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v1" })
+      await resolveCall(isDownloadCall, { etag: "v1" })
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
@@ -724,10 +798,10 @@ describe("EditModeContainer media URL staleness check", () => {
     )
 
     await waitFor(() =>
-      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+      expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
     )
     await act(async () => {
-      resolveCall((call) => call.method === "HEAD", { etag: "v1" })
+      await resolveCall((call) => call.method === "RANGE-GET", { etag: "v1" })
     })
 
     // Validators matched -- the cached Blob is reused, no second download.
@@ -746,7 +820,7 @@ describe("EditModeContainer media URL staleness check", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v1" })
+      await resolveCall(isDownloadCall, { etag: "v1" })
     })
     expect(createObjectURLMock).toHaveBeenCalledTimes(1)
 
@@ -762,10 +836,10 @@ describe("EditModeContainer media URL staleness check", () => {
     )
 
     await waitFor(() =>
-      expect(calls.some((call) => call.method === "HEAD")).toBe(true)
+      expect(calls.some((call) => call.method === "RANGE-GET")).toBe(true)
     )
     await act(async () => {
-      resolveCall((call) => call.method === "HEAD", { etag: "v2" })
+      await resolveCall((call) => call.method === "RANGE-GET", { etag: "v2" })
     })
 
     // Stale Blob revoked and a fresh download kicked off automatically.
@@ -775,9 +849,319 @@ describe("EditModeContainer media URL staleness check", () => {
     await waitFor(() => expect(calls.some(isDownloadCall)).toBe(true))
 
     await act(async () => {
-      resolveCall(isDownloadCall, { etag: "v2" })
+      await resolveCall(isDownloadCall, { etag: "v2" })
     })
 
     expect(createObjectURLMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+/**
+ * Frozen media is persisted to a CacheStorage bucket scoped to the
+ * presentation, so it survives reloads and can be dropped wholesale when the
+ * user moves on to another presentation.
+ */
+describe("EditModeContainer media disk cache", () => {
+  const dispatchMock = jest.fn()
+  const originalFetch = global.fetch
+
+  const imageCue = {
+    _id: "cue-image",
+    index: 0,
+    screen: 1,
+    name: "Photo",
+    cueType: "visual",
+    file: {
+      id: "media-1",
+      type: "image/png",
+      url: "https://example.com/photo.png",
+    },
+  } as unknown as Cue
+
+  const baseProps = {
+    id: "presentation-1",
+    isToolboxOpen: false,
+    setIsToolboxOpen: jest.fn(),
+    transitionType: "none",
+    onTransitionChange: jest.fn(),
+    cueIndex: 0,
+    setCueIndex: jest.fn(),
+    isAudioMuted: false,
+    toggleAudioMute: jest.fn(),
+    indexCount: 10,
+    addCue: jest.fn(),
+    onClose: jest.fn(),
+    position: null,
+    cueData: null,
+    updateCue: jest.fn(),
+    isAudioMode: false,
+  }
+
+  let cacheNames: string[]
+  let openMock: jest.Mock
+  let deleteCacheMock: jest.Mock
+  let putMock: jest.Mock
+  let deleteEntryMock: jest.Mock
+  let lastUsedStamps: Record<string, number>
+  let cacheKeys: string[]
+  let cachedMedia: Set<string>
+  let cachedHeaders: Record<string, string>
+  let revokeMock: jest.Mock
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    cacheNames = []
+    lastUsedStamps = {}
+    cacheKeys = []
+    cachedMedia = new Set()
+    cachedHeaders = {}
+    putMock = jest.fn(async () => undefined)
+    deleteEntryMock = jest.fn(async () => true)
+    openMock = jest.fn(async (name: string) => ({
+      match: async (key: string) => {
+        if (key === "/__muvico_last_used__") {
+          const stamp = lastUsedStamps[name]
+          return stamp === undefined
+            ? undefined
+            : { text: async () => String(stamp) }
+        }
+        return cachedMedia.has(key)
+          ? {
+              headers: {
+                get: (header: string) => cachedHeaders[header] ?? null,
+              },
+              blob: async () => new Blob(["cached"]),
+            }
+          : undefined
+      },
+      keys: async () =>
+        cacheKeys.map((path) => ({ url: `http://localhost${path}` })),
+      put: putMock,
+      delete: deleteEntryMock,
+    }))
+    deleteCacheMock = jest.fn(async () => true)
+    ;(global as unknown as { caches: unknown }).caches = {
+      open: openMock,
+      keys: async () => cacheNames,
+      delete: deleteCacheMock,
+    }
+
+    // jsdom ships neither CacheStorage nor Response; the production code
+    // wraps the Blob in one before storing it.
+    ;(global as unknown as { Response: unknown }).Response = class {
+      constructor(public body: unknown) {}
+      async text() {
+        return String(this.body)
+      }
+    }
+
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      blob: async () => new Blob(["data"]),
+    })) as unknown as typeof global.fetch
+
+    revokeMock = jest.fn()
+    global.URL.createObjectURL = (() =>
+      "blob:fake") as unknown as typeof URL.createObjectURL
+    global.URL.revokeObjectURL =
+      revokeMock as unknown as typeof URL.revokeObjectURL
+
+    mockedUseDispatch.mockReturnValue(dispatchMock)
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: { name: "Test presentation", screenCount: 2 },
+      })
+    )
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    delete (global as unknown as { caches?: unknown }).caches
+    delete (global as unknown as { Response?: unknown }).Response
+    jest.restoreAllMocks()
+  })
+
+  test("stores frozen media in a cache scoped to the presentation", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() =>
+      expect(
+        putMock.mock.calls.some(
+          ([key]) => key === "/__muvico_media_cache__/media-1"
+        )
+      ).toBe(true)
+    )
+    expect(openMock).toHaveBeenCalledWith("muvico-show-media-v1-presentation-1")
+  })
+
+  test("keeps the most recently used presentations and drops the rest", async () => {
+    cacheNames = [
+      "muvico-show-media-v1-presentation-1",
+      "muvico-show-media-v1-recent",
+      "muvico-show-media-v1-older",
+      "muvico-show-media-v1-oldest",
+      "some-unrelated-cache",
+    ]
+    lastUsedStamps = {
+      "muvico-show-media-v1-recent": 3000,
+      "muvico-show-media-v1-older": 2000,
+      "muvico-show-media-v1-oldest": 1000,
+    }
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    // Three presentations keep their media: the current one, plus the two
+    // most recently used.
+    await waitFor(() => expect(deleteCacheMock).toHaveBeenCalledTimes(1))
+    const deleted = deleteCacheMock.mock.calls.map(([name]) => name)
+    expect(deleted).toEqual(["muvico-show-media-v1-oldest"])
+  })
+
+  test("drops cached media that no cue references any more", async () => {
+    cacheKeys = [
+      "/__muvico_media_cache__/media-1",
+      "/__muvico_media_cache__/removed-media",
+      "/__muvico_last_used__",
+    ]
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() => expect(deleteEntryMock).toHaveBeenCalledTimes(1))
+    expect(deleteEntryMock.mock.calls[0][0].url).toContain("removed-media")
+  })
+
+  test("keeps cached media when the cue list is momentarily empty", async () => {
+    cacheKeys = ["/__muvico_media_cache__/media-1"]
+
+    render(
+      <EditModeContainer {...baseProps} cues={[]} onEnterShow={jest.fn()} />
+    )
+
+    await waitFor(() => expect(openMock).toHaveBeenCalled())
+    expect(deleteEntryMock).not.toHaveBeenCalled()
+  })
+
+  test("serves media from the disk cache without touching the network", async () => {
+    cachedMedia.add("/__muvico_media_cache__/media-1")
+    const onEnterShow = jest.fn()
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={onEnterShow}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  test("still preloads over the network when the disk cache is unavailable", async () => {
+    // Private windows and a full storage quota both make caches.open throw.
+    openMock.mockRejectedValue(new Error("quota exceeded"))
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    const onEnterShow = jest.fn()
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={onEnterShow}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  test("keeps media served from the disk cache alive through revalidation", async () => {
+    // The stored response carries its validators, so revalidating it finds
+    // the content unchanged. Losing them made the Blob look stale, and
+    // revoking it left the popups pointing at a dead blob: URL.
+    cachedMedia.add("/__muvico_media_cache__/media-1")
+    cachedHeaders = { etag: "v1" }
+    let now = 0
+    jest.spyOn(Date, "now").mockImplementation(() => now)
+
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await waitFor(() => expect(openMock).toHaveBeenCalled())
+
+    // Past the revalidation throttle, then re-touch the media through the
+    // show-mode lookahead.
+    now += 20000
+    mockedUseSelector.mockImplementation((selector) =>
+      selector({
+        presentation: {
+          name: "Test presentation",
+          screenCount: 2,
+          scores: [],
+        },
+      })
+    )
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        isShowMode
+        cueIndex={0}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(revokeMock).not.toHaveBeenCalled()
+  })
+
+  test("marks the presentation as recently used on entry", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    await waitFor(() =>
+      expect(
+        putMock.mock.calls.some(([key]) => key === "/__muvico_last_used__")
+      ).toBe(true)
+    )
   })
 })

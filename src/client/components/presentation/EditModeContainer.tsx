@@ -44,7 +44,12 @@ import StatusTooltip from "./StatusToolTip"
 import Screen from "./Screen"
 import TutorialGuide from "../tutorial/TutorialGuide"
 import { presentationTutorialSteps } from "../data/tutorialSteps"
-import { getAudioRow, isType } from "../utils/fileTypeUtils"
+import {
+  getAudioRow,
+  isImageFile,
+  isType,
+  isVideoFile,
+} from "../utils/fileTypeUtils"
 import KeyboardHandler from "../utils/keyboardHandler"
 import makeResizable from "../utils/ResizeElement"
 import { ScreensDisplay } from "./ScreensDisplay"
@@ -65,6 +70,10 @@ import { TRANSITION_SYNC_BUFFER_MS } from "../../utils/syncedTransition"
 // is active.
 const SHOW_LOOKAHEAD_FRAMES = 2
 
+// Max media downloads in flight at once while preloading a show, so a
+// presentation with dozens of cues doesn't open as many parallel requests.
+const SHOW_PRELOAD_CONCURRENCY = 4
+
 // Standard HTTP validators used to detect whether a frozen media URL's
 // underlying content has changed since it was last downloaded (e.g. an
 // uploaded file was replaced in place, reusing the same URL/S3 key -- this
@@ -81,6 +90,115 @@ type MediaItemStatus = "pending" | "loading" | "done" | "failed"
 // can be called again for the same URL on every cues/lookahead effect run.
 const MEDIA_VALIDATION_MIN_INTERVAL_MS = 15000
 
+// Frozen media bytes, kept on disk and shared across windows and reloads.
+// One cache per presentation, so leaving one behind is a single delete
+// instead of hunting its entries down. Entries are keyed by storage id
+// rather than URL: the presigned URL rotates on every presentation read,
+// the id doesn't.
+const MEDIA_DISK_CACHE_PREFIX = "muvico-show-media-v1-"
+const mediaDiskCacheNameFor = (presentationId: string) =>
+  `${MEDIA_DISK_CACHE_PREFIX}${presentationId}`
+const MEDIA_DISK_CACHE_KEY_PREFIX = "/__muvico_media_cache__/"
+const mediaDiskCacheKeyFor = (mediaId: string) =>
+  `${MEDIA_DISK_CACHE_KEY_PREFIX}${encodeURIComponent(mediaId)}`
+const mediaIdFromDiskCacheKey = (path: string) =>
+  decodeURIComponent(path.slice(MEDIA_DISK_CACHE_KEY_PREFIX.length))
+
+const getMediaDiskCache = async (
+  presentationId: string
+): Promise<Cache | null> => {
+  if (typeof caches === "undefined") return null
+  try {
+    return await caches.open(mediaDiskCacheNameFor(presentationId))
+  } catch (error) {
+    console.warn("Show mode: media disk cache unavailable", error)
+    return null
+  }
+}
+
+// How many presentations keep their media on disk. Dropping every other
+// presentation on the way in would make switching back and forth re-download
+// everything, so keep the few most recent ones instead.
+const MEDIA_DISK_CACHE_KEEP = 3
+
+// Last-used timestamp, stored inside the cache it describes so it can't drift
+// away from it and disappears with it.
+const MEDIA_DISK_CACHE_STAMP_KEY = "/__muvico_last_used__"
+
+const stampMediaDiskCache = async (cache: Cache) => {
+  try {
+    await cache.put(
+      MEDIA_DISK_CACHE_STAMP_KEY,
+      new Response(String(Date.now()))
+    )
+  } catch (error) {
+    console.warn("Show mode: could not stamp media disk cache", error)
+  }
+}
+
+const readMediaDiskCacheStamp = async (name: string): Promise<number> => {
+  try {
+    const cache = await caches.open(name)
+    const stamp = await cache.match(MEDIA_DISK_CACHE_STAMP_KEY)
+    if (!stamp) return 0
+    return Number(await stamp.text()) || 0
+  } catch {
+    return 0
+  }
+}
+
+// Media no cue references any more is dead weight, and editing a
+// presentation is the only thing that can orphan it. Reconciling against the
+// current cues also catches media removed from another tab or while the app
+// was closed, which watching for changes would miss.
+const reconcileMediaDiskCache = async (
+  presentationId: string,
+  liveMediaIds: Set<string>
+) => {
+  const cache = await getMediaDiskCache(presentationId)
+  if (!cache) return
+  try {
+    const requests = await cache.keys()
+    const orphaned = requests.filter((request) => {
+      const path = new URL(request.url).pathname
+      if (!path.startsWith(MEDIA_DISK_CACHE_KEY_PREFIX)) return false
+      return !liveMediaIds.has(mediaIdFromDiskCacheKey(path))
+    })
+    await Promise.all(orphaned.map((request) => cache.delete(request)))
+  } catch (error) {
+    console.warn("Show mode: could not reconcile media disk cache", error)
+  }
+}
+
+// Keeps the current presentation plus the most recently used ones, and drops
+// the rest. Without this the browser accumulates one cache per presentation
+// ever opened.
+const pruneMediaDiskCaches = async (presentationId: string) => {
+  if (typeof caches === "undefined") return
+  try {
+    const keep = mediaDiskCacheNameFor(presentationId)
+    const names = (await caches.keys()).filter(
+      (name) => name.startsWith(MEDIA_DISK_CACHE_PREFIX) && name !== keep
+    )
+
+    const stamped = await Promise.all(
+      names.map(async (name) => ({
+        name,
+        lastUsed: await readMediaDiskCacheStamp(name),
+      }))
+    )
+
+    // The current presentation holds one of the slots.
+    const doomed = stamped
+      .sort((a, b) => b.lastUsed - a.lastUsed)
+      .slice(MEDIA_DISK_CACHE_KEEP - 1)
+
+    await Promise.all(doomed.map(({ name }) => caches.delete(name)))
+  } catch (error) {
+    console.warn("Show mode: could not prune old media disk caches", error)
+  }
+}
+
 const readMediaValidators = (response: Response): MediaValidators => {
   const headers = response.headers as Headers | undefined
   return {
@@ -94,7 +212,9 @@ const mediaValidatorsMatch = (
   previous: MediaValidators | null,
   next: MediaValidators | null
 ): boolean => {
-  if (!previous || !next) return false
+  // Nothing to compare is not evidence of a change. Treating it as one
+  // throws away a usable Blob and leaves media pointing at a revoked URL.
+  if (!previous || !next) return true
   const previousHasAny =
     previous.etag || previous.lastModified || previous.contentLength
   const nextHasAny = next.etag || next.lastModified || next.contentLength
@@ -108,24 +228,19 @@ const mediaValidatorsMatch = (
   )
 }
 
-// Lightweight check for whether a URL's content has changed: HEAD is the
-// standard tool, but S3 presigned URLs/CORS don't always allow it, so fall
-// back to a 1-byte ranged GET, and fail soft (null) if even that errors --
-// callers treat "can't validate" as "assume unchanged" rather than
+// Lightweight check for whether a URL's content has changed. Uses a 1-byte
+// ranged GET rather than HEAD, which these presigned URLs always reject
+// with a 403 since they are signed for GET. Fails soft (null) on any error
+// -- callers treat "can't validate" as "assume unchanged" rather than
 // breaking the freeze pipeline.
 const fetchMediaValidators = async (
   url: string
 ): Promise<MediaValidators | null> => {
   try {
-    try {
-      const headResponse = await fetch(url, { method: "HEAD" })
-      if (headResponse.ok) return readMediaValidators(headResponse)
-    } catch {
-      // HEAD unsupported/blocked by CORS -- fall through to the ranged GET.
-    }
-
     const rangeResponse = await fetch(url, {
       headers: { Range: "bytes=0-0" },
+      // Same opaque-cache trap as the download in freezeMediaUrl.
+      cache: "reload",
     })
     if (rangeResponse.ok || rangeResponse.status === 206) {
       return readMediaValidators(rangeResponse)
@@ -693,11 +808,12 @@ const EditModeContainer = ({
   // the URL drops out of use.
   const [mediaFailedUrls, setMediaFailedUrls] = useState<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
+  // Only what the preload is working on. How far along it is gets derived
+  // from the media's own state, so the two can't disagree.
   const [preloadProgress, setPreloadProgress] = useState<{
-    loaded: number
     total: number
     items: Array<{ url: string; label: string }>
-  }>({ loaded: 0, total: 0, items: [] })
+  }>({ total: 0, items: [] })
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -715,6 +831,15 @@ const EditModeContainer = ({
       blobUrls.clear()
     }
   }, [])
+
+  useEffect(() => {
+    const markUsedAndPrune = async () => {
+      const cache = await getMediaDiskCache(id)
+      if (cache) await stampMediaDiskCache(cache)
+      await pruneMediaDiskCaches(id)
+    }
+    markUsedAndPrune()
+  }, [id])
 
   const transitionAt = useMemo(
     () => Date.now() + TRANSITION_SYNC_BUFFER_MS,
@@ -914,8 +1039,15 @@ const EditModeContainer = ({
   // already frozen, in which case it's revalidated first (ETag/Last-
   // Modified/Content-Length) so a file replaced in place under the same
   // URL doesn't keep serving stale content forever.
+  //
+  // `mediaId` is the file's storage handle, used as the disk cache key so an
+  // earlier download can be reused once its presigned `url` has rotated.
   const freezeMediaUrl = useCallback(
-    (url: string, kind: "image" | "video" | "audio"): Promise<string> => {
+    (
+      url: string,
+      kind: "image" | "video" | "audio",
+      mediaId: string
+    ): Promise<string> => {
       const promiseCache = mediaFreezePromisesRef.current
       const cached = promiseCache.get(url)
       const existingBlobUrl = mediaBlobUrlsRef.current.get(url)
@@ -946,7 +1078,8 @@ const EditModeContainer = ({
             }
 
             // Content changed under the same URL -- drop the stale Blob so
-            // the recursive call below re-downloads it.
+            // the recursive call below re-downloads it. Evict the disk copy
+            // too, or a reload would bring the stale bytes right back.
             URL.revokeObjectURL(existingBlobUrl)
             mediaBlobUrlsRef.current.delete(url)
             mediaValidatorsRef.current.delete(url)
@@ -958,13 +1091,15 @@ const EditModeContainer = ({
               delete next[url]
               return next
             })
+            const diskCache = await getMediaDiskCache(id)
+            await diskCache?.delete(mediaDiskCacheKeyFor(mediaId))
           })().finally(() => {
             mediaValidationPromisesRef.current.delete(url)
           })
           mediaValidationPromisesRef.current.set(url, validation)
         }
 
-        return validation.then(() => freezeMediaUrl(url, kind))
+        return validation.then(() => freezeMediaUrl(url, kind, mediaId))
       }
 
       if (cached) {
@@ -972,14 +1107,48 @@ const EditModeContainer = ({
       }
 
       const promise = (async () => {
+        const diskCacheKey = mediaDiskCacheKeyFor(mediaId)
         try {
-          const response = await fetch(url)
+          const diskCache = await getMediaDiskCache(id)
+          const cachedResponse = await diskCache?.match(diskCacheKey)
+          if (cachedResponse) {
+            // Carry the stored validators over. Without them the next
+            // revalidation has nothing to compare against, reads that as the
+            // content having changed, and revokes a perfectly good Blob --
+            // leaving the media element pointing at a dead blob: URL.
+            const validators = readMediaValidators(cachedResponse)
+            const blob = await cachedResponse.blob()
+            const objectUrl = URL.createObjectURL(blob)
+            mediaBlobUrlsRef.current.set(url, objectUrl)
+            mediaValidatorsRef.current.set(url, validators)
+            mediaLastValidatedAtRef.current.set(url, Date.now())
+            setFrozenMediaUrls((prev) =>
+              prev[url] === objectUrl ? prev : { ...prev, [url]: objectUrl }
+            )
+            setMediaFailedUrls((prev) => {
+              if (!prev.has(url)) return prev
+              const next = new Set(prev)
+              next.delete(url)
+              return next
+            })
+            return objectUrl
+          }
+
+          // `cache: "reload"` is required, not an optimization. The editor
+          // already showed these URLs through plain <img>/<video> tags,
+          // whose no-cors requests leave an opaque response in the HTTP
+          // cache. Reusing that entry here would fail the CORS check even
+          // though the server sends the headers.
+          const response = await fetch(url, { cache: "reload" })
           if (response && response.ok === false) {
             throw new Error(
               `Failed to fetch ${kind} for show mode preload (status ${response.status})`
             )
           }
           const validators = readMediaValidators(response)
+          // Cloned before the body is read, so the stored copy keeps the
+          // validator headers the next revalidation compares against.
+          const responseForDisk = response.clone?.() ?? null
           const blob = await response.blob()
           const objectUrl = URL.createObjectURL(blob)
           mediaBlobUrlsRef.current.set(url, objectUrl)
@@ -994,6 +1163,19 @@ const EditModeContainer = ({
             next.delete(url)
             return next
           })
+          if (diskCache) {
+            try {
+              await diskCache.put(
+                diskCacheKey,
+                responseForDisk ?? new Response(blob)
+              )
+            } catch (error) {
+              console.warn(
+                "Show mode: failed to persist media to disk cache",
+                error
+              )
+            }
+          }
           return objectUrl
         } catch (error) {
           // Freeze failed (network error, CORS, rotated token, ...). Fall
@@ -1017,7 +1199,7 @@ const EditModeContainer = ({
       promiseCache.set(url, promise)
       return promise
     },
-    []
+    [id]
   )
 
   // Derives a media item's status for the loading overlay from the same
@@ -1030,6 +1212,15 @@ const EditModeContainer = ({
     return "pending"
   }
 
+  // Counted from the media's own state rather than tracked alongside it, so
+  // the overlay can't claim more media than it is preloading.
+  const preloadDoneCount = preloadProgress.items.filter(
+    (item) => getMediaItemStatus(item.url) === "done"
+  ).length
+  const preloadFailedCount = preloadProgress.items.filter(
+    (item) => getMediaItemStatus(item.url) === "failed"
+  ).length
+
   // De-dupes by file URL (same media reused across cues counts once) and
   // keeps a human-readable label for the loading overlay. Back layers (the
   // highest `layer` numbers -- see Screen.tsx's zIndex = 100 - layer) are
@@ -1037,7 +1228,7 @@ const EditModeContainer = ({
   const collectMediaItems = useCallback((cueList: Cue[]) => {
     const items = new Map<
       string,
-      { kind: "image" | "video" | "audio"; label: string }
+      { kind: "image" | "video" | "audio"; label: string; id: string }
     >()
     const backToFront = [...cueList].sort(
       (a, b) => Number(b.layer ?? 0) - Number(a.layer ?? 0)
@@ -1046,21 +1237,28 @@ const EditModeContainer = ({
     backToFront.forEach((cue) => {
       const file = cue.file
       if (!file?.url || items.has(file.url)) return
+      // Without an id the file still freezes, it just misses the disk cache.
+      const id = file.id || file.url
 
-      if (isType.image(file)) {
+      // Extension-aware checks, because a stale or missing file.type would
+      // otherwise drop the file from the queue with no trace.
+      if (isImageFile(file)) {
         items.set(file.url, {
           kind: "image",
           label: cue.name || file.name || "image",
+          id,
         })
-      } else if (isType.video(file)) {
+      } else if (isVideoFile(file)) {
         items.set(file.url, {
           kind: "video",
           label: cue.name || file.name || "vidéo",
+          id,
         })
       } else if (isType.audio(file)) {
         items.set(file.url, {
           kind: "audio",
           label: cue.name || file.name || "audio",
+          id,
         })
       }
     })
@@ -1072,9 +1270,18 @@ const EditModeContainer = ({
   // swapped out or cue deleted) instead of leaking them until unmount.
   useEffect(() => {
     const currentUrls = new Set<string>()
-    collectMediaItems(cues || []).forEach((_value, url) => {
+    const currentMediaIds = new Set<string>()
+    collectMediaItems(cues || []).forEach(({ id: mediaId }, url) => {
       currentUrls.add(url)
+      currentMediaIds.add(mediaId)
     })
+
+    // An empty set here means the cues haven't loaded yet just as often as it
+    // means every cue lost its media, and wiping a presentation's cache on a
+    // transient empty render is far worse than keeping a few stale entries.
+    if (currentMediaIds.size > 0) {
+      reconcileMediaDiskCache(id, currentMediaIds)
+    }
 
     const previousUrls = liveMediaUrlsRef.current
     previousUrls.forEach((url) => {
@@ -1105,7 +1312,7 @@ const EditModeContainer = ({
     })
 
     liveMediaUrlsRef.current = currentUrls
-  }, [cues, collectMediaItems])
+  }, [cues, collectMediaItems, id])
 
   // Cues active at a given frame index across every screen, independent of
   // which screen displays them -- used to look ahead to upcoming frames'
@@ -1135,8 +1342,8 @@ const EditModeContainer = ({
       SHOW_LOOKAHEAD_FRAMES
     ).forEach((lookaheadIndex) => {
       const mediaItems = collectMediaItems(getCuesActiveAtIndex(lookaheadIndex))
-      mediaItems.forEach(({ kind }, url) => {
-        freezeMediaUrl(url, kind)
+      mediaItems.forEach(({ kind, id }, url) => {
+        freezeMediaUrl(url, kind, id)
       })
     })
   }, [
@@ -1147,6 +1354,11 @@ const EditModeContainer = ({
     collectMediaItems,
     freezeMediaUrl,
   ])
+
+  // Leaving show mode doesn't cancel a running preload, so a quick exit and
+  // re-entry leaves two of them writing to the same progress state. Only the
+  // latest session id may update it; the older run finishes unnoticed.
+  const preloadSessionRef = useRef(0)
 
   const handleEnterShow = useCallback(async () => {
     const mediaItems = collectMediaItems(cues || [])
@@ -1167,22 +1379,30 @@ const EditModeContainer = ({
       return
     }
 
+    const sessionId = (preloadSessionRef.current += 1)
+
     setPreloadProgress({
-      loaded: initialLoaded,
       total,
       items: entries.map(([url, { label }]) => ({ url, label })),
     })
     setIsPreparingShow(true)
 
-    let loaded = initialLoaded
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < entries.length) {
+        const [url, { kind, id }] = entries[cursor]
+        cursor += 1
+        await freezeMediaUrl(url, kind, id)
+      }
+    }
     await Promise.all(
-      entries.map(async ([url, { kind }]) => {
-        await freezeMediaUrl(url, kind)
-        loaded += 1
-        setPreloadProgress((prev) => ({ ...prev, loaded }))
-      })
+      Array.from(
+        { length: Math.min(SHOW_PRELOAD_CONCURRENCY, entries.length) },
+        worker
+      )
     )
 
+    if (preloadSessionRef.current !== sessionId) return
     setIsPreparingShow(false)
     onEnterShow()
   }, [cues, onEnterShow, collectMediaItems, freezeMediaUrl])
@@ -1358,7 +1578,9 @@ const EditModeContainer = ({
               <Box
                 width={`${
                   preloadProgress.total > 0
-                    ? (preloadProgress.loaded / preloadProgress.total) * 100
+                    ? ((preloadDoneCount + preloadFailedCount) /
+                        preloadProgress.total) *
+                      100
                     : 0
                 }%`}
                 height="100%"
@@ -1368,7 +1590,9 @@ const EditModeContainer = ({
               />
             </Box>
             <Text fontSize="sm" opacity={0.8}>
-              {preloadProgress.loaded}/{preloadProgress.total} médias chargés
+              {preloadDoneCount}/{preloadProgress.total} médias chargés
+              {preloadFailedCount > 0 &&
+                ` (${preloadFailedCount} échec${preloadFailedCount > 1 ? "s" : ""})`}
             </Text>
             {preloadProgress.items.length > 0 && (
               <Box
@@ -1379,6 +1603,27 @@ const EditModeContainer = ({
                 borderRadius="md"
                 p={2}
                 textAlign="left"
+                sx={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "rgba(255, 255, 255, 0.25) transparent",
+                  "&::-webkit-scrollbar": { width: "6px" },
+                  "&::-webkit-scrollbar-track": { background: "transparent" },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "rgba(255, 255, 255, 0.25)",
+                    borderRadius: "9999px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: "rgba(255, 255, 255, 0.4)",
+                  },
+                  // Chrome draws stepper arrows at both ends unless they are
+                  // explicitly removed.
+                  "&::-webkit-scrollbar-button": {
+                    display: "none",
+                    width: 0,
+                    height: 0,
+                  },
+                  "&::-webkit-scrollbar-corner": { background: "transparent" },
+                }}
               >
                 {preloadProgress.items.map((item) => {
                   const status = getMediaItemStatus(item.url)
