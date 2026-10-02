@@ -358,14 +358,17 @@ describe("GridLayout", () => {
 
     // Read from the DOM: the slot centre moves with the row height, the column
     // width and the gaps, so hardcoded pixels drift out of the target cell.
-    const { clientX, clientY } = await gridCellPoint(page, 2, 1)
+    // Row 1 is screen 2's only layer; the last row is the audio track, which
+    // rejects a visual cue.
+    const { clientX, clientY } = await gridCellPoint(page, 1, 1)
     await page.mouse.click(clientX, clientY)
 
     // A paste keeps the source name -- it places the same library media on
     // another track rather than duplicating the element -- so the copy shows up
-    // as a second clip under that same name.
+    // as a second clip under that same name. The toast names the target lane,
+    // which keeps this from matching the toast of the source cue's own add.
     await expect(
-      page.getByText(/Element copysource added/).first()
+      page.getByText(/Element copysource added to screen 2, layer 1/).first()
     ).toBeVisible()
     await expect(page.getByTestId("cue-copysource")).toHaveCount(2)
   })
