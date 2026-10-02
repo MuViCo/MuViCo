@@ -113,20 +113,61 @@ const getMediaDiskCache = async (
   }
 }
 
-// Media is only worth keeping on disk for the presentation being worked on,
-// so every other presentation's cache is dropped on the way in. Without this
-// the browser accumulates one cache per presentation ever opened.
-const dropOtherMediaDiskCaches = async (presentationId: string) => {
+// How many presentations keep their media on disk. Dropping every other
+// presentation on the way in would make switching back and forth re-download
+// everything, so keep the few most recent ones instead.
+const MEDIA_DISK_CACHE_KEEP = 3
+
+// Last-used timestamp, stored inside the cache it describes so it can't drift
+// away from it and disappears with it.
+const MEDIA_DISK_CACHE_STAMP_KEY = "/__muvico_last_used__"
+
+const stampMediaDiskCache = async (cache: Cache) => {
+  try {
+    await cache.put(
+      MEDIA_DISK_CACHE_STAMP_KEY,
+      new Response(String(Date.now()))
+    )
+  } catch (error) {
+    console.warn("Show mode: could not stamp media disk cache", error)
+  }
+}
+
+const readMediaDiskCacheStamp = async (name: string): Promise<number> => {
+  try {
+    const cache = await caches.open(name)
+    const stamp = await cache.match(MEDIA_DISK_CACHE_STAMP_KEY)
+    if (!stamp) return 0
+    return Number(await stamp.text()) || 0
+  } catch {
+    return 0
+  }
+}
+
+// Keeps the current presentation plus the most recently used ones, and drops
+// the rest. Without this the browser accumulates one cache per presentation
+// ever opened.
+const pruneMediaDiskCaches = async (presentationId: string) => {
   if (typeof caches === "undefined") return
   try {
     const keep = mediaDiskCacheNameFor(presentationId)
-    const names = await caches.keys()
-    await Promise.all(
-      names
-        .filter((name) => name.startsWith(MEDIA_DISK_CACHE_PREFIX))
-        .filter((name) => name !== keep)
-        .map((name) => caches.delete(name))
+    const names = (await caches.keys()).filter(
+      (name) => name.startsWith(MEDIA_DISK_CACHE_PREFIX) && name !== keep
     )
+
+    const stamped = await Promise.all(
+      names.map(async (name) => ({
+        name,
+        lastUsed: await readMediaDiskCacheStamp(name),
+      }))
+    )
+
+    // The current presentation holds one of the slots.
+    const doomed = stamped
+      .sort((a, b) => b.lastUsed - a.lastUsed)
+      .slice(MEDIA_DISK_CACHE_KEEP - 1)
+
+    await Promise.all(doomed.map(({ name }) => caches.delete(name)))
   } catch (error) {
     console.warn("Show mode: could not prune old media disk caches", error)
   }
@@ -763,7 +804,12 @@ const EditModeContainer = ({
   }, [])
 
   useEffect(() => {
-    dropOtherMediaDiskCaches(id)
+    const markUsedAndPrune = async () => {
+      const cache = await getMediaDiskCache(id)
+      if (cache) await stampMediaDiskCache(cache)
+      await pruneMediaDiskCaches(id)
+    }
+    markUsedAndPrune()
   }, [id])
 
   const transitionAt = useMemo(
@@ -1510,6 +1556,27 @@ const EditModeContainer = ({
                 borderRadius="md"
                 p={2}
                 textAlign="left"
+                sx={{
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "rgba(255, 255, 255, 0.25) transparent",
+                  "&::-webkit-scrollbar": { width: "6px" },
+                  "&::-webkit-scrollbar-track": { background: "transparent" },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: "rgba(255, 255, 255, 0.25)",
+                    borderRadius: "9999px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: "rgba(255, 255, 255, 0.4)",
+                  },
+                  // Chrome draws stepper arrows at both ends unless they are
+                  // explicitly removed.
+                  "&::-webkit-scrollbar-button": {
+                    display: "none",
+                    width: 0,
+                    height: 0,
+                  },
+                  "&::-webkit-scrollbar-corner": { background: "transparent" },
+                }}
               >
                 {preloadProgress.items.map((item) => {
                   const status = getMediaItemStatus(item.url)

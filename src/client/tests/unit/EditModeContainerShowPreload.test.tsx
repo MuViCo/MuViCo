@@ -854,13 +854,21 @@ describe("EditModeContainer media disk cache", () => {
   let openMock: jest.Mock
   let deleteCacheMock: jest.Mock
   let putMock: jest.Mock
+  let lastUsedStamps: Record<string, number>
 
   beforeEach(() => {
     jest.clearAllMocks()
     cacheNames = []
+    lastUsedStamps = {}
     putMock = jest.fn(async () => undefined)
-    openMock = jest.fn(async () => ({
-      match: async () => undefined,
+    openMock = jest.fn(async (name: string) => ({
+      match: async (key: string) => {
+        if (key !== "/__muvico_last_used__") return undefined
+        const stamp = lastUsedStamps[name]
+        return stamp === undefined
+          ? undefined
+          : { text: async () => String(stamp) }
+      },
       put: putMock,
       delete: async () => true,
     }))
@@ -875,6 +883,9 @@ describe("EditModeContainer media disk cache", () => {
     // wraps the Blob in one before storing it.
     ;(global as unknown as { Response: unknown }).Response = class {
       constructor(public body: unknown) {}
+      async text() {
+        return String(this.body)
+      }
     }
 
     global.fetch = jest.fn(async () => ({
@@ -915,18 +926,29 @@ describe("EditModeContainer media disk cache", () => {
 
     fireEvent.click(screen.getByText("Show mode"))
 
-    await waitFor(() => expect(putMock).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(
+        putMock.mock.calls.some(
+          ([key]) => key === "/__muvico_media_cache__/media-1"
+        )
+      ).toBe(true)
+    )
     expect(openMock).toHaveBeenCalledWith("muvico-show-media-v1-presentation-1")
-    expect(putMock.mock.calls[0][0]).toBe("/__muvico_media_cache__/media-1")
   })
 
-  test("drops other presentations' caches but keeps its own and unrelated ones", async () => {
+  test("keeps the most recently used presentations and drops the rest", async () => {
     cacheNames = [
       "muvico-show-media-v1-presentation-1",
-      "muvico-show-media-v1-presentation-2",
-      "muvico-show-media-v1-presentation-3",
+      "muvico-show-media-v1-recent",
+      "muvico-show-media-v1-older",
+      "muvico-show-media-v1-oldest",
       "some-unrelated-cache",
     ]
+    lastUsedStamps = {
+      "muvico-show-media-v1-recent": 3000,
+      "muvico-show-media-v1-older": 2000,
+      "muvico-show-media-v1-oldest": 1000,
+    }
 
     render(
       <EditModeContainer
@@ -936,15 +958,26 @@ describe("EditModeContainer media disk cache", () => {
       />
     )
 
-    await waitFor(() => expect(deleteCacheMock).toHaveBeenCalledTimes(2))
+    // Three presentations keep their media: the current one, plus the two
+    // most recently used.
+    await waitFor(() => expect(deleteCacheMock).toHaveBeenCalledTimes(1))
     const deleted = deleteCacheMock.mock.calls.map(([name]) => name)
-    expect(deleted).toEqual(
-      expect.arrayContaining([
-        "muvico-show-media-v1-presentation-2",
-        "muvico-show-media-v1-presentation-3",
-      ])
+    expect(deleted).toEqual(["muvico-show-media-v1-oldest"])
+  })
+
+  test("marks the presentation as recently used on entry", async () => {
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={jest.fn()}
+      />
     )
-    expect(deleted).not.toContain("muvico-show-media-v1-presentation-1")
-    expect(deleted).not.toContain("some-unrelated-cache")
+
+    await waitFor(() =>
+      expect(
+        putMock.mock.calls.some(([key]) => key === "/__muvico_last_used__")
+      ).toBe(true)
+    )
   })
 })
