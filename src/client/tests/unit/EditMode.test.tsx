@@ -12,6 +12,7 @@ import {
   waitFor,
 } from "@testing-library/react"
 import "@testing-library/jest-dom"
+import { useState } from "react"
 import type { ReactNode, ComponentProps } from "react"
 import EditMode from "../../components/presentation/EditMode"
 
@@ -1131,6 +1132,72 @@ describe("EditMode drag swapping", () => {
       expect(createCue).not.toHaveBeenCalled()
       expect(mockDispatch).not.toHaveBeenCalled()
     })
+  })
+
+  /**
+   * EditMode takes the focused lane from its parent, so the clip highlight can
+   * only be observed with that round trip wired up.
+   */
+  const renderEditModeWithLaneFocus = (customCues: Cue[] = cues) => {
+    const Harness = () => {
+      const [focusedLaneKey, setFocusedLaneKey] = useState<string | null>(null)
+      return (
+        <EditMode
+          id="presentation-1"
+          cues={customCues}
+          isToolboxOpen={false}
+          setIsToolboxOpen={jest.fn()}
+          cueIndex={0}
+          isAudioMuted={false}
+          toggleAudioMute={jest.fn()}
+          indexCount={3}
+          focusedLaneKey={focusedLaneKey}
+          onFocusLane={setFocusedLaneKey}
+        />
+      )
+    }
+
+    return render(<Harness />)
+  }
+
+  const clickGridAt = async (
+    gridContainer: HTMLElement,
+    clientX: number,
+    rowIndex: number
+  ) => {
+    const clientY = rowCenterY(rowIndex)
+    await act(async () => {
+      fireEvent.mouseDown(gridContainer, { clientX, clientY, button: 0 })
+      fireEvent.mouseUp(gridContainer, { clientX, clientY, button: 0 })
+    })
+  }
+
+  const focusedCueNames = () =>
+    Array.from(document.querySelectorAll("[data-focused-cue]")).map((node) =>
+      node.getAttribute("data-cue-content-id")
+    )
+
+  it("marks only the clip the click landed on", async () => {
+    renderEditModeWithLaneFocus()
+    const gridContainer = setupGridGeometry()
+
+    await clickGridAt(gridContainer, 330, 0)
+
+    // Both clips share the focused lane, so a lane-wide highlight would mark
+    // the one that was not clicked too.
+    expect(focusedCueNames()).toEqual(["visual-2"])
+  })
+
+  it("drops the clip highlight when the focus moves to an empty lane", async () => {
+    renderEditModeWithLaneFocus()
+    const gridContainer = setupGridGeometry()
+
+    await clickGridAt(gridContainer, 330, 0)
+    expect(focusedCueNames()).toEqual(["visual-2"])
+
+    await clickGridAt(gridContainer, 330, 1)
+
+    expect(focusedCueNames()).toEqual([])
   })
 
   it("focuses the lane an element was dropped onto", async () => {
