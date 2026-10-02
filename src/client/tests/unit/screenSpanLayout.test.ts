@@ -1,58 +1,70 @@
 import {
   computeScreenSpanLayout,
-  screenWidthMapFromRatios,
+  screenBoxesFromRatios,
+  spanMediaStyle,
   DEFAULT_SCREEN_WIDTH,
   SPAN_POSITIONS,
 } from "../../components/utils/screenSpanLayout"
 
 // Two 800x600 screens side by side: a 1600x600 canvas, ratio 8/3.
-const twoScreens = { spanScreens: [1, 2], widths: { 1: 800, 2: 800 } }
+const boxes = (height = 600) => ({
+  1: { width: 800, height },
+  2: { width: 800, height },
+})
 
 const layoutOf = (
   mediaAspectRatio: number,
-  options: Parameters<typeof computeScreenSpanLayout>[3]
-) =>
-  computeScreenSpanLayout(
-    twoScreens.spanScreens,
-    twoScreens.widths,
+  options: Parameters<typeof computeScreenSpanLayout>[3] & {
+    canvasHeight?: number
+  } = {}
+) => {
+  const { canvasHeight = 600, ...rest } = options
+  return computeScreenSpanLayout(
+    [1, 2],
+    boxes(canvasHeight),
     mediaAspectRatio,
-    options
+    rest
   )
+}
 
 describe("computeScreenSpanLayout", () => {
   describe("canvas", () => {
     test("splits the canvas by each screen's known width, in screen-number order", () => {
       const layout = computeScreenSpanLayout(
         [2, 1, 3],
-        { 1: 1000, 2: 500, 3: 1500 },
-        2,
-        { canvasHeight: 600 }
+        {
+          1: { width: 1000, height: 600 },
+          2: { width: 500, height: 600 },
+          3: { width: 1500, height: 600 },
+        },
+        2
       )
 
       expect(layout.canvasWidth).toBe(3000)
       expect(layout.canvasHeight).toBe(600)
-      expect(layout.offsets).toEqual({ 1: 0, 2: 1000, 3: 1500 })
+      expect(layout.boxes[1].left).toBe(0)
+      expect(layout.boxes[2].left).toBe(1000)
+      expect(layout.boxes[3].left).toBe(1500)
     })
 
     test("falls back to the average of known widths for a screen not yet open", () => {
       const layout = computeScreenSpanLayout(
         [1, 2, 3],
-        { 1: 1000, 3: 3000 }, // screen 2 unknown -> average of 1000/3000 = 2000
-        1,
-        { canvasHeight: 600 }
+        // screen 2 unknown -> average of 1000/3000 = 2000
+        { 1: { width: 1000, height: 600 }, 3: { width: 3000, height: 600 } },
+        1
       )
 
       expect(layout.canvasWidth).toBe(1000 + 2000 + 3000)
-      expect(layout.offsets).toEqual({ 1: 0, 2: 1000, 3: 3000 })
+      expect(layout.boxes[2].left).toBe(1000)
+      expect(layout.boxes[3].left).toBe(3000)
     })
 
     test("falls back to DEFAULT_SCREEN_WIDTH when no screen's width is known yet", () => {
-      const layout = computeScreenSpanLayout([1, 2], {}, 1, {
-        canvasHeight: 600,
-      })
+      const layout = computeScreenSpanLayout([1, 2], {}, 1)
 
       expect(layout.canvasWidth).toBe(DEFAULT_SCREEN_WIDTH * 2)
-      expect(layout.offsets).toEqual({ 1: 0, 2: DEFAULT_SCREEN_WIDTH })
+      expect(layout.boxes[2].left).toBe(DEFAULT_SCREEN_WIDTH)
     })
   })
 
@@ -196,6 +208,78 @@ describe("computeScreenSpanLayout", () => {
     })
   })
 
+  describe("screens of different shapes", () => {
+    // A 4:3 output beside a 16:9 one, both 600 tall.
+    const mixed = {
+      1: { width: 800, height: 600 },
+      2: { width: 1067, height: 600 },
+    }
+
+    test("gives each screen its own width in the canvas", () => {
+      const layout = computeScreenSpanLayout([1, 2], mixed, 16 / 9)
+
+      expect(layout.canvasWidth).toBe(1867)
+      expect(layout.boxes[1].left).toBe(0)
+      expect(layout.boxes[2].left).toBe(800)
+    })
+
+    test("takes the canvas height from the tallest screen", () => {
+      const layout = computeScreenSpanLayout(
+        [1, 2],
+        { 1: { width: 800, height: 600 }, 2: { width: 800, height: 400 } },
+        16 / 9
+      )
+
+      expect(layout.canvasHeight).toBe(600)
+      // The shorter screen covers a centered band of it, so it loses as
+      // much above as below instead of hanging off one edge.
+      expect(layout.boxes[2].top).toBe(100)
+      expect(layout.boxes[1].top).toBe(0)
+    })
+
+    test("keeps the media continuous across the seam", () => {
+      const layout = computeScreenSpanLayout([1, 2], mixed, 16 / 9)
+      const left = spanMediaStyle(layout, 1)
+      const right = spanMediaStyle(layout, 2)
+
+      const px = (value: string, basis: number) =>
+        (parseFloat(value) / 100) * basis
+
+      // Where screen 1's slice ends, screen 2's must begin -- the media's
+      // left edge sits one screen-1 width further left for screen 2.
+      const leftEdge1 = px(left.left, mixed[1].width)
+      const leftEdge2 = px(right.left, mixed[2].width)
+      expect(leftEdge1 - leftEdge2).toBeCloseTo(mixed[1].width, 6)
+
+      // And it is drawn at the same scale on both.
+      expect(px(left.width, mixed[1].width)).toBeCloseTo(
+        px(right.width, mixed[2].width),
+        6
+      )
+      expect(px(left.height, mixed[1].height)).toBeCloseTo(
+        px(right.height, mixed[2].height),
+        6
+      )
+    })
+
+    test("lines a shorter screen up with its taller neighbour", () => {
+      const layout = computeScreenSpanLayout(
+        [1, 2],
+        { 1: { width: 800, height: 600 }, 2: { width: 800, height: 400 } },
+        16 / 9
+      )
+      const tall = spanMediaStyle(layout, 1)
+      const short = spanMediaStyle(layout, 2)
+
+      const topPx = (value: string, basis: number) =>
+        (parseFloat(value) / 100) * basis
+
+      // The shorter screen starts 100px lower in the canvas, so the media
+      // sits 100px higher relative to its own box.
+      expect(topPx(tall.top, 600) - topPx(short.top, 400)).toBeCloseTo(100, 6)
+    })
+  })
+
   describe("degenerate input", () => {
     test("falls back to the canvas itself when the aspect ratio isn't known", () => {
       const { media, canvasWidth, canvasHeight } = layoutOf(0, {
@@ -210,38 +294,43 @@ describe("computeScreenSpanLayout", () => {
       })
     })
 
-    test("falls back the same way when the canvas has no height yet", () => {
-      const { media } = layoutOf(16 / 9, { canvasHeight: 0 })
+    test("treats a zero-sized screen as not measured yet", () => {
+      const measured = computeScreenSpanLayout(
+        [1, 2],
+        { 1: { width: 800, height: 600 }, 2: { width: 0, height: 0 } },
+        16 / 9
+      )
 
-      expect(media.left).toBe(0)
-      expect(media.top).toBe(0)
+      // Screen 2 borrows screen 1's size rather than collapsing the canvas.
+      expect(measured.boxes[2]).toMatchObject({ width: 800, height: 600 })
+      expect(measured.canvasWidth).toBe(1600)
     })
   })
 })
 
 describe("screenWidthMapFromRatios", () => {
   test("widens a screen in proportion to its own ratio", () => {
-    const widths = screenWidthMapFromRatios([1, 2], { "2": "4:3" }, "16:9")
+    const boxMap = screenBoxesFromRatios([1, 2], { "2": "4:3" }, "16:9")
 
-    expect(widths[1]).toBeCloseTo(16 / 9)
-    expect(widths[2]).toBeCloseTo(4 / 3)
-    expect(widths[1]).toBeGreaterThan(widths[2])
+    expect(boxMap[1].width).toBeCloseTo(16 / 9)
+    expect(boxMap[2].width).toBeCloseTo(4 / 3)
+    expect(boxMap[1].height).toBe(1)
+    expect(boxMap[1].width).toBeGreaterThan(boxMap[2].width)
   })
 
   test("gives equal widths when every screen shares a ratio", () => {
-    const widths = screenWidthMapFromRatios([1, 2, 3], {}, "16:9")
+    const boxMap = screenBoxesFromRatios([1, 2, 3], {}, "16:9")
 
-    expect(widths[1]).toBeCloseTo(widths[2])
-    expect(widths[2]).toBeCloseTo(widths[3])
+    expect(boxMap[1].width).toBeCloseTo(boxMap[2].width)
+    expect(boxMap[2].width).toBeCloseTo(boxMap[3].width)
   })
 
-  test("pairs with a canvas height of 1, the unit its widths are in", () => {
-    const widths = screenWidthMapFromRatios([1, 2], {}, "16:9")
+  test("pairs with a canvas height of 1, the unit its sizes are in", () => {
+    const boxMap = screenBoxesFromRatios([1, 2], {}, "16:9")
     const { canvasWidth, media } = computeScreenSpanLayout(
       [1, 2],
-      widths,
-      16 / 9,
-      { canvasHeight: 1 }
+      boxMap,
+      16 / 9
     )
 
     expect(canvasWidth).toBeCloseTo((16 / 9) * 2)

@@ -1419,7 +1419,10 @@ describe("Screen", () => {
             screenData={screenData}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
           />
         )
       })
@@ -1744,7 +1747,10 @@ describe("Screen", () => {
             screenData={spanCue}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
           />
         )
       })
@@ -1767,7 +1773,10 @@ describe("Screen", () => {
             screenData={spanCue}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
           />
         )
       })
@@ -1831,7 +1840,10 @@ describe("Screen", () => {
               screenData={spanCue}
               isVisible={true}
               onClose={() => {}}
-              screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+              screenBoxes={{
+                1: { width: 1600, height: 900 },
+                2: { width: 1600, height: 900 },
+              }}
             />
           )
         })
@@ -1884,7 +1896,10 @@ describe("Screen", () => {
             screenData={spanVideoCue}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
           />
         )
       })
@@ -1907,7 +1922,10 @@ describe("Screen", () => {
             screenData={spanVideoCue}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9", "2": "16:9" }}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
           />
         )
       })
@@ -1956,7 +1974,7 @@ describe("Screen", () => {
             screenData={singleScreenCue}
             isVisible={true}
             onClose={() => {}}
-            screenAspectRatios={{ "1": "16:9" }}
+            screenBoxes={{ 1: { width: 1600, height: 900 } }}
           />
         )
       })

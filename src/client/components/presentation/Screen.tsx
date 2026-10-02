@@ -11,7 +11,7 @@
  * - Cleans up resources and event listeners when the screen is closed or unmounted.
  */
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { SyntheticEvent } from "react"
 import ReactDOM from "react-dom"
 import { Box, Image, usePrefersReducedMotion } from "@chakra-ui/react"
@@ -25,10 +25,9 @@ import { scheduleAt } from "../../utils/syncedTransition"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import {
   computeScreenSpanLayout,
-  screenWidthMapFromRatios,
   spanMediaStyle,
 } from "../utils/screenSpanLayout"
-import type { ScreenSpanOptions } from "../utils/screenSpanLayout"
+import type { ScreenBox } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
@@ -54,25 +53,7 @@ const SCREEN_FOREGROUND = "#ffffff"
 
 // The stage keeps its screen's declared ratio, so its height follows from
 // its width -- no need to measure the popup to lay the canvas out.
-// The spanned screens' widths as ratios against a shared height of 1.
-//
-// Live pixel widths can't serve here: every output computes the canvas on
-// its own, and two popups of different sizes would each derive a different
-// canvas height from their own width, scale the media differently and leave
-// the slices misaligned at the seam. Ratios are scale-invariant, so each
-// output reaches the same canvas whatever size its window happens to be --
-// and it is what the editor previews already use, so they agree.
-const spanWidthsFor = (
-  spanScreens: number[],
-  screenAspectRatios: Record<string, string> | undefined,
-  outputAspectRatio: string | undefined
-) =>
-  screenWidthMapFromRatios(spanScreens, screenAspectRatios, outputAspectRatio)
-
-const spanOptionsFor = (
-  cue: Pick<Cue, "spanFill" | "spanPosition">
-): ScreenSpanOptions => ({
-  canvasHeight: 1,
+const spanOptionsFor = (cue: Pick<Cue, "spanFill" | "spanPosition">) => ({
   fill: cue.spanFill,
   position: cue.spanPosition,
 })
@@ -94,8 +75,8 @@ interface SpannedImageProps {
   name?: string
   spanScreens: number[]
   screenNumber: string | number
-  screenWidths?: Record<number, number>
-  spanOptions: ScreenSpanOptions
+  screenBoxes?: Record<number, ScreenBox>
+  spanOptions: { fill?: Cue["spanFill"]; position?: Cue["spanPosition"] }
   animation?: string
 }
 
@@ -104,7 +85,7 @@ const SpannedImage = ({
   name,
   spanScreens,
   screenNumber,
-  screenWidths,
+  screenBoxes,
   spanOptions,
   animation,
 }: SpannedImageProps) => {
@@ -133,7 +114,7 @@ const SpannedImage = ({
 
   const layout = computeScreenSpanLayout(
     spanScreens,
-    screenWidths || {},
+    screenBoxes || {},
     aspectRatio,
     spanOptions
   )
@@ -169,8 +150,8 @@ interface SpannedVideoProps {
   cueId: string
   spanScreens: number[]
   screenNumber: string | number
-  screenWidths?: Record<number, number>
-  spanOptions: ScreenSpanOptions
+  screenBoxes?: Record<number, ScreenBox>
+  spanOptions: { fill?: Cue["spanFill"]; position?: Cue["spanPosition"] }
 }
 
 const SpannedVideo = ({
@@ -178,7 +159,7 @@ const SpannedVideo = ({
   cueId,
   spanScreens,
   screenNumber,
-  screenWidths,
+  screenBoxes,
   spanOptions,
 }: SpannedVideoProps) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
@@ -200,7 +181,7 @@ const SpannedVideo = ({
         ...spanMediaStyle(
           computeScreenSpanLayout(
             spanScreens,
-            screenWidths || {},
+            screenBoxes || {},
             aspectRatio,
             spanOptions
           ),
@@ -234,10 +215,9 @@ const SpannedVideo = ({
 const renderMedia = (
   cue: Cue,
   screenNumber: string | number,
-  screenAspectRatios?: Record<string, string>,
+  screenBoxes?: Record<number, ScreenBox>,
   prefersReducedMotion = false,
-  mediaUrlOverrides?: Record<string, string>,
-  outputAspectRatio?: string
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const { file, name, color, spanScreens } = cue
   const spanOptions = spanOptionsFor(cue)
@@ -270,11 +250,7 @@ const renderMedia = (
           name={name}
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
-          screenWidths={spanWidthsFor(
-            spanScreens as number[],
-            screenAspectRatios,
-            outputAspectRatio
-          )}
+          screenBoxes={screenBoxes}
           spanOptions={spanOptions}
           animation={animation}
         />
@@ -301,11 +277,7 @@ const renderMedia = (
           cueId={cue._id}
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
-          screenWidths={spanWidthsFor(
-            spanScreens as number[],
-            screenAspectRatios,
-            outputAspectRatio
-          )}
+          screenBoxes={screenBoxes}
           spanOptions={spanOptions}
         />
       )
@@ -353,13 +325,12 @@ const renderCueLayers = (
   currentScreenData: CueStack,
   previousScreenData: CueStack,
   screenNumber: string | number,
-  screenAspectRatios: Record<string, string> | undefined,
+  screenBoxes: Record<number, ScreenBox> | undefined,
   prefersReducedMotion: boolean,
   isRevealed: boolean,
   enterAnimStyle: string,
   exitAnimStyle: string,
-  mediaUrlOverrides?: Record<string, string>,
-  outputAspectRatio?: string
+  mediaUrlOverrides?: Record<string, string>
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
@@ -414,10 +385,9 @@ const renderCueLayers = (
           {renderMedia(
             cue,
             screenNumber,
-            screenAspectRatios,
+            screenBoxes,
             prefersReducedMotion,
-            mediaUrlOverrides,
-            outputAspectRatio
+            mediaUrlOverrides
           )}
         </Box>
       ))}
@@ -430,7 +400,8 @@ interface ScreenContentProps {
   currentScreenData: CueStack
   previousScreenData: CueStack
   transitionType?: string
-  screenAspectRatios?: Record<string, string>
+  screenBoxes?: Record<number, ScreenBox>
+  onStageResize?: (box: ScreenBox) => void
   isBlackout?: boolean
   outputAspectRatio?: string
   isRevealed?: boolean
@@ -442,7 +413,8 @@ const ScreenContent = ({
   currentScreenData,
   previousScreenData,
   transitionType,
-  screenAspectRatios,
+  screenBoxes,
+  onStageResize,
   isBlackout,
   outputAspectRatio,
   isRevealed = true,
@@ -454,6 +426,30 @@ const ScreenContent = ({
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} ${TRANSITION_ANIMATION_MS}ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
+  const stageRef = useRef<HTMLDivElement>(null)
+
+  // A spanning cue lays its canvas out against every screen's real box, so
+  // each output has to say how big its stage actually is. Observing the
+  // element rather than the window catches the letterboxing too, and only
+  // fires when the size really changes.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || !onStageResize) return undefined
+
+    const report = () =>
+      onStageResize({
+        width: stage.clientWidth,
+        height: stage.clientHeight,
+      })
+
+    report()
+    const view = stage.ownerDocument.defaultView
+    if (!view?.ResizeObserver) return undefined
+
+    const observer = new view.ResizeObserver(report)
+    observer.observe(stage)
+    return () => observer.disconnect()
+  }, [onStageResize])
 
   return (
     <Box
@@ -469,6 +465,7 @@ const ScreenContent = ({
       overflow="hidden"
     >
       <Box
+        ref={stageRef}
         data-testid="screen-stage"
         position="absolute"
         inset="0"
@@ -484,13 +481,12 @@ const ScreenContent = ({
           currentScreenData,
           previousScreenData,
           screenNumber,
-          screenAspectRatios,
+          screenBoxes,
           prefersReducedMotion,
           isRevealed,
           animStyle(enterAnim),
           animStyle(exitAnim),
-          mediaUrlOverrides,
-          outputAspectRatio
+          mediaUrlOverrides
         )}
       </Box>
       {isBlackout && (
@@ -512,7 +508,7 @@ interface ScreenProps {
   isVisible: boolean
   onClose: (screenNumber: string | number) => void
   transitionType?: string
-  screenAspectRatios?: Record<string, string>
+  screenBoxes?: Record<number, ScreenBox>
   isBlackout?: boolean
   outputAspectRatio?: string
   transitionAt?: number
@@ -523,6 +519,8 @@ interface ScreenProps {
    * network -- see the module doc for why.
    */
   mediaUrlOverrides?: Record<string, string>
+  /** This output's live stage size, for a spanning cue's canvas. */
+  onBoxChange?: (screenNumber: number, box: ScreenBox) => void
 }
 
 const Screen = ({
@@ -531,7 +529,8 @@ const Screen = ({
   isVisible,
   onClose,
   transitionType,
-  screenAspectRatios,
+  screenBoxes,
+  onBoxChange,
   isBlackout = false,
   outputAspectRatio,
   transitionAt,
@@ -544,6 +543,10 @@ const Screen = ({
     null
   )
   const [isRevealed, setIsRevealed] = useState(true)
+  const handleStageResize = useCallback(
+    (box: ScreenBox) => onBoxChange?.(Number(screenNumber), box),
+    [onBoxChange, screenNumber]
+  )
   const cancelRevealRef = useRef<(() => void) | null>(null)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
 
@@ -755,7 +758,8 @@ const Screen = ({
             currentScreenData={currentScreenData}
             previousScreenData={previousScreenData}
             transitionType={transitionType}
-            screenAspectRatios={screenAspectRatios}
+            screenBoxes={screenBoxes}
+            onStageResize={handleStageResize}
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
             isRevealed={isRevealed}

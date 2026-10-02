@@ -24,7 +24,7 @@ import ScreenLayerFrame from "./ScreenLayerFrame"
 import type { CueFrame } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
-  screenWidthMapFromRatios,
+  screenBoxesFromRatios,
   spanMediaStyle,
 } from "../utils/screenSpanLayout"
 import {
@@ -98,15 +98,12 @@ const SpannedTilePreview = ({
     )
   }
 
-  const widthMap = screenWidthMapFromRatios(
+  const boxMap = screenBoxesFromRatios(
     spanScreens,
     screenAspectRatios,
     outputAspectRatio
   )
-  // The widths are ratios against a screen height of 1, so that is the unit
-  // the canvas height is in too.
-  const layout = computeScreenSpanLayout(spanScreens, widthMap, aspectRatio, {
-    canvasHeight: 1,
+  const layout = computeScreenSpanLayout(spanScreens, boxMap, aspectRatio, {
     fill: spanFill,
     position: spanPosition,
   })

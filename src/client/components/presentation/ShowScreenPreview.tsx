@@ -6,7 +6,7 @@ import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
 import { cueFrameStyle } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
-  screenWidthMapFromRatios,
+  screenBoxesFromRatios,
   spanMediaStyle,
 } from "../utils/screenSpanLayout"
 import { useMediaAspectRatio } from "../utils/useMediaAspectRatio"
@@ -100,23 +100,15 @@ const SpannedPreview = ({
     )
   }
 
-  const widthMap = screenWidthMapFromRatios(
+  const boxMap = screenBoxesFromRatios(
     orderedScreens,
     screenAspectRatios,
     outputAspectRatio
   )
-  // The widths are ratios against a screen height of 1, so that is the unit
-  // the canvas height is in too.
-  const layout = computeScreenSpanLayout(
-    orderedScreens,
-    widthMap,
-    aspectRatio,
-    {
-      canvasHeight: 1,
-      fill: cue.spanFill,
-      position: cue.spanPosition,
-    }
-  )
+  const layout = computeScreenSpanLayout(orderedScreens, boxMap, aspectRatio, {
+    fill: cue.spanFill,
+    position: cue.spanPosition,
+  })
 
   return (
     <Box position="absolute" inset={0} overflow="hidden">
