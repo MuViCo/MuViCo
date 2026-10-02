@@ -997,6 +997,87 @@ describe("Screen", () => {
     })
   })
 
+  describe("readiness reporting", () => {
+    const imageCue = {
+      file: {
+        url: "http://example.com/image.jpg",
+        type: "image/jpg",
+        name: "image.jpg",
+      },
+      index: 0,
+      name: "ready-cue",
+      screen: 2,
+      _id: "id-ready",
+      loop: false,
+    } as Cue
+
+    test("reports ready once the first frame is in the popup", async () => {
+      const onReadyChange = jest.fn()
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={2}
+            screenData={imageCue}
+            isVisible={true}
+            onClose={() => {}}
+            onReadyChange={onReadyChange}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(onReadyChange).toHaveBeenCalledWith(2, true)
+      })
+      // Not ready before the portal carried a frame.
+      expect(onReadyChange.mock.calls[0]).toEqual([2, false])
+    })
+
+    test("never reports ready while the screen is hidden", async () => {
+      const onReadyChange = jest.fn()
+
+      await act(async () => {
+        render(
+          <Screen
+            screenNumber={2}
+            screenData={imageCue}
+            isVisible={false}
+            onClose={() => {}}
+            onReadyChange={onReadyChange}
+          />
+        )
+      })
+
+      expect(onReadyChange).not.toHaveBeenCalledWith(2, true)
+    })
+
+    test("withdraws readiness when the screen unmounts", async () => {
+      const onReadyChange = jest.fn()
+      const onClose = () => {}
+
+      const { unmount } = render(
+        <Screen
+          screenNumber={2}
+          screenData={imageCue}
+          isVisible={true}
+          onClose={onClose}
+          onReadyChange={onReadyChange}
+        />
+      )
+
+      await waitFor(() => {
+        expect(onReadyChange).toHaveBeenCalledWith(2, true)
+      })
+
+      onReadyChange.mockClear()
+      await act(async () => {
+        unmount()
+      })
+
+      expect(onReadyChange).toHaveBeenLastCalledWith(2, false)
+    })
+  })
+
   // Regression test that ensures that the outgoing cue is still rendered as a background when it is a color cue,
   // instead of being dropped and displaying a blank or black background during the transition to the next cue.
   test("keeps rendering the outgoing cue's color as a background instead of leaving it blank", async () => {

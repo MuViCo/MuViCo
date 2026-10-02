@@ -589,6 +589,12 @@ interface ScreenProps {
    * network -- see the module doc for why.
    */
   mediaUrlOverrides?: Record<string, string>
+  /**
+   * Fires when this output goes from "popup requested" to "showing its
+   * frame", so the show can wait for every screen before it starts instead
+   * of opening onto black windows while they mount.
+   */
+  onReadyChange?: (screenNumber: string | number, isReady: boolean) => void
 }
 
 const Screen = ({
@@ -597,6 +603,7 @@ const Screen = ({
   upcomingScreenData,
   isVisible,
   onClose,
+  onReadyChange,
   transitionType,
   screenWidths,
   onWidthChange,
@@ -619,6 +626,26 @@ const Screen = ({
   const [isRevealed, setIsRevealed] = useState(true)
   const cancelRevealRef = useRef<(() => void) | null>(null)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
+
+  // Ready means the portal is live and the first frame has been committed
+  // into it. Reporting on the window alone would clear the gate while the
+  // popup is still an empty document.
+  const isReady = Boolean(
+    isVisible && isWindowReady && emotionCache && currentScreenData !== null
+  )
+
+  useEffect(() => {
+    onReadyChange?.(screenNumber, isReady)
+  }, [isReady, screenNumber, onReadyChange])
+
+  // An output that goes away stops counting as ready, otherwise a screen
+  // closed and reopened would clear the gate on its stale report.
+  useEffect(
+    () => () => {
+      onReadyChange?.(screenNumber, false)
+    },
+    [screenNumber, onReadyChange]
+  )
 
   const copyChakraStyles = () => {
     const parentStyles = document.querySelectorAll(

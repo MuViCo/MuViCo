@@ -808,6 +808,9 @@ const EditModeContainer = ({
   // the URL drops out of use.
   const [mediaFailedUrls, setMediaFailedUrls] = useState<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
+  // Set once the media is in hand, cleared once every open output reports
+  // ready -- the show then starts on screens that already show their frame.
+  const [isAwaitingScreens, setIsAwaitingScreens] = useState(false)
   // Only what the preload is working on. How far along it is gets derived
   // from the media's own state, so the two can't disagree.
   const [preloadProgress, setPreloadProgress] = useState<{
@@ -953,6 +956,31 @@ const EditModeContainer = ({
       [screenNumber]: false,
     }))
   }, [])
+
+  // Which output popups have their portal up and their first frame drawn.
+  // Opening a show before they do puts black windows on the stage for as
+  // long as they take to mount, which on a multi-screen rig is seconds.
+  const [screenReadiness, setScreenReadiness] = useState<
+    Record<string, boolean>
+  >({})
+  const handleScreenReadyChange = useCallback(
+    (screenNumber: string | number, isReady: boolean) => {
+      setScreenReadiness((prev) =>
+        prev[String(screenNumber)] === isReady
+          ? prev
+          : { ...prev, [String(screenNumber)]: isReady }
+      )
+    },
+    []
+  )
+  const pendingScreenNumbers = useMemo(
+    () =>
+      Object.keys(screens).filter(
+        (screenNumber) =>
+          screens[screenNumber] && !screenReadiness[screenNumber]
+      ),
+    [screens, screenReadiness]
+  )
 
   useEffect(() => {
     cueIndexRef.current = cueIndex
@@ -1367,7 +1395,7 @@ const EditModeContainer = ({
     const total = entries.length
 
     if (total === 0) {
-      onEnterShow()
+      setIsAwaitingScreens(true)
       return
     }
 
@@ -1376,7 +1404,7 @@ const EditModeContainer = ({
     ).length
 
     if (initialLoaded === total) {
-      onEnterShow()
+      setIsAwaitingScreens(true)
       return
     }
 
@@ -1405,8 +1433,14 @@ const EditModeContainer = ({
 
     if (preloadSessionRef.current !== sessionId) return
     setIsPreparingShow(false)
+    setIsAwaitingScreens(true)
+  }, [cues, collectMediaItems, freezeMediaUrl])
+
+  useEffect(() => {
+    if (!isAwaitingScreens || pendingScreenNumbers.length > 0) return
+    setIsAwaitingScreens(false)
     onEnterShow()
-  }, [cues, onEnterShow, collectMediaItems, freezeMediaUrl])
+  }, [isAwaitingScreens, pendingScreenNumbers, onEnterShow])
 
   useEffect(() => {
     if (sharedToken) return
@@ -1555,7 +1589,7 @@ const EditModeContainer = ({
         storageKey={"hasSeenHelp_presentation"}
       />
 
-      {isPreparingShow && (
+      {(isPreparingShow || isAwaitingScreens) && (
         <Box
           position="fixed"
           inset={0}
@@ -1569,6 +1603,20 @@ const EditModeContainer = ({
             <Text fontSize="lg" fontWeight="semibold">
               Préparation du show…
             </Text>
+            {pendingScreenNumbers.length > 0 && (
+              <VStack
+                data-testid="pending-screens"
+                spacing={1}
+                width="100%"
+                fontSize="sm"
+              >
+                {pendingScreenNumbers.map((screenNumber) => (
+                  <Text key={screenNumber} opacity={0.8}>
+                    Chargement de l&apos;écran {screenNumber}…
+                  </Text>
+                ))}
+              </VStack>
+            )}
             <Box
               width="100%"
               height="10px"
@@ -1689,6 +1737,7 @@ const EditModeContainer = ({
             screenNumber={screenNumber}
             isVisible={screens[screenNumber]}
             onClose={handleScreenClose}
+            onReadyChange={handleScreenReadyChange}
             transitionType={transitionType}
             transitionAt={transitionAt}
             screenWidths={screenWidths}
