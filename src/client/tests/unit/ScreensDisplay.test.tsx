@@ -398,14 +398,15 @@ describe("ScreensDisplay", () => {
 
     const croppedTiles = screen.getAllByRole("img", { name: "Wide banner" })
     expect(croppedTiles).toHaveLength(2)
-    const positions = croppedTiles.map(
-      (tile) =>
-        tile.getAttribute("style")?.match(/background-position: ([^;]+)/)?.[1]
-    )
+    const leftOf = (tile: Element) =>
+      Number(
+        tile.getAttribute("style")?.match(/left: (-?[\d.]+)%/)?.[1] ?? "NaN"
+      )
     // Screen 1 is the first (leftmost) slice, screen 2 the last -- their
-    // crops must differ, not show the same full image twice.
-    expect(positions[0]).toBe("0% 50%")
-    expect(positions[1]).toBe("100% 50%")
+    // crops must differ, not show the same full image twice. The second
+    // tile sees the media shifted one screen further left.
+    expect(leftOf(croppedTiles[1])).toBeLessThan(leftOf(croppedTiles[0]))
+    expect(leftOf(croppedTiles[0]) - leftOf(croppedTiles[1])).toBeCloseTo(100)
   })
 
   test("renders a text element on its screen preview", () => {

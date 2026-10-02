@@ -7,6 +7,7 @@ import { cueFrameStyle } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
   screenWidthMapFromRatios,
+  spanMediaStyle,
 } from "../utils/screenSpanLayout"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import {
@@ -92,30 +93,32 @@ const SpannedPreview = ({
     screenAspectRatios,
     outputAspectRatio
   )
-  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+  // The widths are ratios against a screen height of 1, so that is the unit
+  // the canvas height is in too.
+  const layout = computeScreenSpanLayout(
     orderedScreens,
     widthMap,
-    aspectRatio
+    aspectRatio,
+    {
+      canvasHeight: 1,
+      fill: cue.spanFill,
+      position: cue.spanPosition,
+    }
   )
-  const tileWidth = widthMap[screenNumber]
-  const tileHeight = 1
-  const x =
-    canvasWidth > tileWidth
-      ? (offsets[screenNumber] / (canvasWidth - tileWidth)) * 100
-      : 0
 
   return (
-    <Box
-      role="img"
-      aria-label={cue.name}
-      position="absolute"
-      inset={0}
-      bgImage={`url(${cue.file?.url})`}
-      bgRepeat="no-repeat"
-      bgPosition={`${x}% 50%`}
-      bgSize={`${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`}
-      style={{ animation }}
-    />
+    <Box position="absolute" inset={0} overflow="hidden">
+      <Box
+        role="img"
+        aria-label={cue.name}
+        data-testid="span-media"
+        position="absolute"
+        bgImage={`url(${cue.file?.url})`}
+        bgRepeat="no-repeat"
+        bgSize="100% 100%"
+        style={{ animation, ...spanMediaStyle(layout, screenNumber) }}
+      />
+    </Box>
   )
 }
 

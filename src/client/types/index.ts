@@ -1,4 +1,8 @@
 import type { AlertStatus } from "@chakra-ui/react"
+import type {
+  SpanFill,
+  SpanPosition,
+} from "../components/utils/screenSpanLayout"
 
 /**
  * Domain types for the MuViCo client.
@@ -13,6 +17,11 @@ import type { AlertStatus } from "@chakra-ui/react"
 
 /** presentationSchema.cues[].cueType enum. See src/server/utils/cueType.js. */
 export type CueType = "visual" | "audio"
+
+export type {
+  SpanFill,
+  SpanPosition,
+} from "../components/utils/screenSpanLayout"
 
 /**
  * Media file metadata, i.e. the `cues[].file` subdocument.
@@ -66,6 +75,13 @@ export interface Cue {
    * spans more than one screen -- absent, not an empty array, means "no span".
    */
   spanScreens?: number[]
+  /**
+   * How a spanned cue's media is scaled into the combined canvas, and which
+   * part survives the crop. See screenSpanLayout.ts. Absent means the
+   * defaults: cover, centered.
+   */
+  spanFill?: SpanFill
+  spanPosition?: SpanPosition
   frame?: { x: number; y: number; width: number; height: number }
   duration?: number
   text?: string
@@ -344,6 +360,9 @@ export interface CueUpdateInput {
    * existing span"; an explicit empty array means "clear it".
    */
   spanScreens?: number[]
+  /** See `Cue.spanFill` / `Cue.spanPosition`. Omitted leaves them alone. */
+  spanFill?: SpanFill
+  spanPosition?: SpanPosition
   duration?: number | null
   text?: string
   textColor?: string
@@ -583,11 +602,7 @@ export interface ToastOptions {
  * stale stored values. This type is for the transition menu's props only.
  */
 export type TransitionType =
-  | "fade"
-  | "zoom"
-  | "slide-left"
-  | "slide-right"
-  | "none"
+  "fade" | "zoom" | "slide-left" | "slide-right" | "none"
 
 /* ------------------------------------------------------------ static data -- */
 

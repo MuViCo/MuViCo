@@ -25,6 +25,7 @@ import type { CueFrame } from "../utils/cueFrame"
 import {
   computeScreenSpanLayout,
   screenWidthMapFromRatios,
+  spanMediaStyle,
 } from "../utils/screenSpanLayout"
 import {
   OUTPUT_ASPECT_RATIO_OPTIONS,
@@ -35,12 +36,14 @@ import CueText from "../utils/CueText"
 import { isTextCue } from "../utils/cueText"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
 
-import type { Cue, CueFileMeta } from "../../types"
+import type { Cue, CueFileMeta, SpanFill, SpanPosition } from "../../types"
 
 const SpannedTilePreview = ({
   imageSrc,
   name,
   spanScreens,
+  spanFill,
+  spanPosition,
   screenNumber,
   screenAspectRatios,
   outputAspectRatio,
@@ -49,6 +52,8 @@ const SpannedTilePreview = ({
   imageSrc: string
   name: string
   spanScreens: number[]
+  spanFill?: SpanFill
+  spanPosition?: SpanPosition
   screenNumber: number
   screenAspectRatios?: Record<string, string>
   outputAspectRatio?: string
@@ -91,33 +96,37 @@ const SpannedTilePreview = ({
     screenAspectRatios,
     outputAspectRatio
   )
-  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
-    spanScreens,
-    widthMap,
-    aspectRatio
-  )
-  const tileWidth = widthMap[screenNumber]
-  const tileHeight = 1
-
-  const backgroundPositionXPercent =
-    canvasWidth > tileWidth
-      ? (offsets[screenNumber] / (canvasWidth - tileWidth)) * 100
-      : 0
+  // The widths are ratios against a screen height of 1, so that is the unit
+  // the canvas height is in too.
+  const layout = computeScreenSpanLayout(spanScreens, widthMap, aspectRatio, {
+    canvasHeight: 1,
+    fill: spanFill,
+    position: spanPosition,
+  })
 
   return (
     <div
-      role="img"
-      aria-label={name}
       style={{
         width: "100%",
         height: "100%",
-        backgroundImage: `url(${imageSrc})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: `${backgroundPositionXPercent}% 50%`,
-        backgroundSize: `${(canvasWidth / tileWidth) * 100}% ${(canvasHeight / tileHeight) * 100}%`,
-        animation,
+        overflow: "hidden",
+        position: "relative",
       }}
-    />
+    >
+      <div
+        role="img"
+        aria-label={name}
+        data-testid="span-media"
+        style={{
+          position: "absolute",
+          backgroundImage: `url(${imageSrc})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+          animation,
+          ...spanMediaStyle(layout, screenNumber),
+        }}
+      />
+    </div>
   )
 }
 
@@ -282,6 +291,8 @@ export const ScreensDisplay = ({
               imageSrc={cue.file.url}
               name={cue.name}
               spanScreens={cue.spanScreens}
+              spanFill={cue.spanFill}
+              spanPosition={cue.spanPosition}
               screenNumber={screenNumber}
               screenAspectRatios={screenAspectRatios}
               outputAspectRatio={outputAspectRatio}

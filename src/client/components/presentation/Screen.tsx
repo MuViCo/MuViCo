@@ -23,7 +23,12 @@ import type { Keyframes } from "@emotion/react"
 import { getAnims } from "../../utils/transitionUtils"
 import { scheduleAt } from "../../utils/syncedTransition"
 import { normalizeCueOpacity } from "../utils/cueOpacityUtils"
-import { computeScreenSpanLayout } from "../utils/screenSpanLayout"
+import {
+  computeScreenSpanLayout,
+  spanMediaStyle,
+  DEFAULT_SCREEN_WIDTH,
+} from "../utils/screenSpanLayout"
+import type { ScreenSpanOptions } from "../utils/screenSpanLayout"
 import { useVideoSpanSync } from "../utils/videoSpanSync"
 import { imageEffectAnimation } from "../utils/cueImageAnimation"
 import CueText from "../utils/CueText"
@@ -46,6 +51,22 @@ const TRANSITION_ANIMATION_MS = 500
 const SCREEN_BACKGROUND = "#000000"
 const SCREEN_FOREGROUND = "#ffffff"
 
+// The stage keeps its screen's declared ratio, so its height follows from
+// its width -- no need to measure the popup to lay the canvas out.
+const spanOptionsFor = (
+  cue: Pick<Cue, "spanFill" | "spanPosition">,
+  screenNumber: string | number,
+  screenWidths: Record<number, number> | undefined,
+  outputAspectRatio: string | undefined
+): ScreenSpanOptions => {
+  const width = screenWidths?.[Number(screenNumber)] ?? DEFAULT_SCREEN_WIDTH
+  return {
+    canvasHeight: width / parseAspectRatio(outputAspectRatio),
+    fill: cue.spanFill,
+    position: cue.spanPosition,
+  }
+}
+
 // Resolves a cue's media URL to its frozen Object URL (see
 // EditModeContainer's freezeMediaUrl) when one is available, falling back
 // to the live URL otherwise -- not yet frozen, or the freeze itself failed.
@@ -64,6 +85,7 @@ interface SpannedImageProps {
   spanScreens: number[]
   screenNumber: string | number
   screenWidths?: Record<number, number>
+  spanOptions: ScreenSpanOptions
   animation?: string
 }
 
@@ -73,6 +95,7 @@ const SpannedImage = ({
   spanScreens,
   screenNumber,
   screenWidths,
+  spanOptions,
   animation,
 }: SpannedImageProps) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
@@ -104,27 +127,36 @@ const SpannedImage = ({
     )
   }
 
-  const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
+  const layout = computeScreenSpanLayout(
     spanScreens,
     screenWidths || {},
-    aspectRatio
+    aspectRatio,
+    spanOptions
   )
-  const offsetPx = offsets[Number(screenNumber)] ?? 0
 
   return (
     <div
-      role="img"
-      aria-label={name}
       style={{
         width: "100%",
         height: "100%",
-        backgroundImage: `url(${imageSrc})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: `-${offsetPx}px 50%`,
-        backgroundSize: `${canvasWidth}px ${canvasHeight}px`,
-        animation,
+        overflow: "hidden",
+        position: "relative",
       }}
-    />
+    >
+      <div
+        role="img"
+        aria-label={name}
+        data-testid="span-media"
+        style={{
+          position: "absolute",
+          backgroundImage: `url(${imageSrc})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "100% 100%",
+          animation,
+          ...spanMediaStyle(layout, Number(screenNumber)),
+        }}
+      />
+    </div>
   )
 }
 
@@ -134,6 +166,7 @@ interface SpannedVideoProps {
   spanScreens: number[]
   screenNumber: string | number
   screenWidths?: Record<number, number>
+  spanOptions: ScreenSpanOptions
 }
 
 const SpannedVideo = ({
@@ -142,6 +175,7 @@ const SpannedVideo = ({
   spanScreens,
   screenNumber,
   screenWidths,
+  spanOptions,
 }: SpannedVideoProps) => {
   const [aspectRatio, setAspectRatio] = useState<number | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -155,23 +189,20 @@ const SpannedVideo = ({
   }
 
   const videoStyle = aspectRatio
-    ? (() => {
-        const { canvasWidth, canvasHeight, offsets } = computeScreenSpanLayout(
-          spanScreens,
-          screenWidths || {},
-          aspectRatio
-        )
-        const offsetPx = offsets[Number(screenNumber)] ?? 0
-        return {
-          position: "absolute" as const,
-          left: `-${offsetPx}px`,
-          top: 0,
-          width: `${canvasWidth}px`,
-          height: `${canvasHeight}px`,
-          maxWidth: "none",
-          maxHeight: "none",
-        }
-      })()
+    ? {
+        position: "absolute" as const,
+        maxWidth: "none",
+        maxHeight: "none",
+        ...spanMediaStyle(
+          computeScreenSpanLayout(
+            spanScreens,
+            screenWidths || {},
+            aspectRatio,
+            spanOptions
+          ),
+          Number(screenNumber)
+        ),
+      }
     : mediaFillProps
 
   return (
@@ -201,9 +232,16 @@ const renderMedia = (
   screenNumber: string | number,
   screenWidths?: Record<number, number>,
   prefersReducedMotion = false,
-  mediaUrlOverrides?: Record<string, string>
+  mediaUrlOverrides?: Record<string, string>,
+  outputAspectRatio?: string
 ) => {
   const { file, name, color, spanScreens } = cue
+  const spanOptions = spanOptionsFor(
+    cue,
+    screenNumber,
+    screenWidths,
+    outputAspectRatio
+  )
 
   if (!file) {
     if (isTextCue(cue)) {
@@ -234,6 +272,7 @@ const renderMedia = (
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
           screenWidths={screenWidths}
+          spanOptions={spanOptions}
           animation={animation}
         />
       )
@@ -260,6 +299,7 @@ const renderMedia = (
           spanScreens={spanScreens as number[]}
           screenNumber={screenNumber}
           screenWidths={screenWidths}
+          spanOptions={spanOptions}
         />
       )
     }
@@ -311,7 +351,8 @@ const renderCueLayers = (
   isRevealed: boolean,
   enterAnimStyle: string,
   exitAnimStyle: string,
-  mediaUrlOverrides?: Record<string, string>
+  mediaUrlOverrides?: Record<string, string>,
+  outputAspectRatio?: string
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
@@ -368,7 +409,8 @@ const renderCueLayers = (
             screenNumber,
             screenWidths,
             prefersReducedMotion,
-            mediaUrlOverrides
+            mediaUrlOverrides,
+            outputAspectRatio
           )}
         </Box>
       ))}
@@ -440,7 +482,8 @@ const ScreenContent = ({
           isRevealed,
           animStyle(enterAnim),
           animStyle(exitAnim),
-          mediaUrlOverrides
+          mediaUrlOverrides,
+          outputAspectRatio
         )}
       </Box>
       {isBlackout && (

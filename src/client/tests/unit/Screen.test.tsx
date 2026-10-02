@@ -1789,18 +1789,23 @@ describe("Screen", () => {
         fireEvent.load(probe)
       })
 
-      // Screen 2 sits after screen 1's 800px, and the canvas (1300px total)
-      // scales the 2000x1000 image to a 1300x650 canvas -- so screen 2's
-      // background-position offset is -800px and its background-size is
-      // 1300px x 650px.
+      // The canvas is 1300px wide (800 + 500) and 281.25px tall (screen 2's
+      // 500px at 16:9). Covering it with a 2:1 image means filling the width
+      // at 1300x650, which overflows the height and is centered on it.
+      // Screen 2's own box is 500 x 281.25, so those become:
+      //   left   (0 - 800) / 500            = -160%
+      //   top    ((281.25 - 650) / 2) / 281.25 = -65.6%
+      //   width  1300 / 500                 =  260%
+      //   height 650 / 281.25               =  231.1%
       await waitFor(() => {
         const cropBox = popup.document.body.querySelector(
-          '[style*="background-image"]'
+          '[data-testid="span-media"]'
         )
         expect(cropBox).toBeTruthy()
-        const style = cropBox.getAttribute("style")
-        expect(style).toContain("background-position: -800px 50%")
-        expect(style).toContain("background-size: 1300px 650px")
+        expect(cropBox).toHaveStyle({ left: "-160%", width: "260%" })
+        const style = cropBox!.getAttribute("style")!
+        expect(style).toMatch(/top: -65\.5\d+%/)
+        expect(style).toMatch(/height: 231\.1\d+%/)
       })
     })
 
@@ -1919,14 +1924,15 @@ describe("Screen", () => {
         fireEvent.loadedMetadata(video)
       })
 
+      // Same geometry as the image case, in percentages of screen 2's box.
       await waitFor(() => {
         const croppedVideo = popup.document.body.querySelector(
           'video[src="http://example.com/wide.mp4"]'
         )
-        const style = croppedVideo!.getAttribute("style")
-        expect(style).toContain("left: -800px")
-        expect(style).toContain("width: 1300px")
-        expect(style).toContain("height: 650px")
+        expect(croppedVideo).toHaveStyle({ left: "-160%", width: "260%" })
+        const style = croppedVideo!.getAttribute("style")!
+        expect(style).toMatch(/top: -65\.5\d+%/)
+        expect(style).toMatch(/height: 231\.1\d+%/)
       })
     })
 

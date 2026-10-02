@@ -95,10 +95,14 @@ describe("ShowScreenPreview", () => {
     Object.defineProperty(probe, "naturalHeight", { value: 900 })
     fireEvent.load(probe)
 
+    // A 32:9 media exactly fills a canvas of two 16:9 screens, so it is
+    // twice a screen wide and screen 2 shows its right half.
     const crop = screen.getByRole("img", { name: "panorama.png" })
     expect(crop).toHaveStyle({
-      backgroundPosition: "100% 50%",
-      backgroundSize: "200% 100%",
+      left: "-100%",
+      top: "0%",
+      width: "200%",
+      height: "100%",
     })
   })
 
