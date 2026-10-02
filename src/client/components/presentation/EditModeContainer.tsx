@@ -806,11 +806,12 @@ const EditModeContainer = ({
   // the URL drops out of use.
   const [mediaFailedUrls, setMediaFailedUrls] = useState<Set<string>>(new Set())
   const [isPreparingShow, setIsPreparingShow] = useState(false)
+  // Only what the preload is working on. How far along it is gets derived
+  // from the media's own state, so the two can't disagree.
   const [preloadProgress, setPreloadProgress] = useState<{
-    loaded: number
     total: number
     items: Array<{ url: string; label: string }>
-  }>({ loaded: 0, total: 0, items: [] })
+  }>({ total: 0, items: [] })
   const cueIndexRef = useRef(cueIndex)
 
   const cueVisualSpanMap = useMemo(
@@ -1197,6 +1198,15 @@ const EditModeContainer = ({
     return "pending"
   }
 
+  // Counted from the media's own state rather than tracked alongside it, so
+  // the overlay can't claim more media than it is preloading.
+  const preloadDoneCount = preloadProgress.items.filter(
+    (item) => getMediaItemStatus(item.url) === "done"
+  ).length
+  const preloadFailedCount = preloadProgress.items.filter(
+    (item) => getMediaItemStatus(item.url) === "failed"
+  ).length
+
   // De-dupes by file URL (same media reused across cues counts once) and
   // keeps a human-readable label for the loading overlay. Back layers (the
   // highest `layer` numbers -- see Screen.tsx's zIndex = 100 - layer) are
@@ -1358,22 +1368,17 @@ const EditModeContainer = ({
     const sessionId = (preloadSessionRef.current += 1)
 
     setPreloadProgress({
-      loaded: initialLoaded,
       total,
       items: entries.map(([url, { label }]) => ({ url, label })),
     })
     setIsPreparingShow(true)
 
-    let loaded = initialLoaded
     let cursor = 0
     const worker = async () => {
       while (cursor < entries.length) {
         const [url, { kind, id }] = entries[cursor]
         cursor += 1
         await freezeMediaUrl(url, kind, id)
-        loaded += 1
-        if (preloadSessionRef.current !== sessionId) return
-        setPreloadProgress((prev) => ({ ...prev, loaded }))
       }
     }
     await Promise.all(
@@ -1559,7 +1564,9 @@ const EditModeContainer = ({
               <Box
                 width={`${
                   preloadProgress.total > 0
-                    ? (preloadProgress.loaded / preloadProgress.total) * 100
+                    ? ((preloadDoneCount + preloadFailedCount) /
+                        preloadProgress.total) *
+                      100
                     : 0
                 }%`}
                 height="100%"
@@ -1569,18 +1576,9 @@ const EditModeContainer = ({
               />
             </Box>
             <Text fontSize="sm" opacity={0.8}>
-              {(() => {
-                // `loaded` counts settled attempts, and freezeMediaUrl
-                // resolves even when it fails, so failures are pulled back
-                // out here rather than counted as loaded media.
-                const failedCount = preloadProgress.items.filter((item) =>
-                  mediaFailedUrls.has(item.url)
-                ).length
-                if (failedCount === 0) {
-                  return `${preloadProgress.loaded}/${preloadProgress.total} médias chargés`
-                }
-                return `${preloadProgress.loaded - failedCount}/${preloadProgress.total} médias chargés (${failedCount} échec${failedCount > 1 ? "s" : ""})`
-              })()}
+              {preloadDoneCount}/{preloadProgress.total} médias chargés
+              {preloadFailedCount > 0 &&
+                ` (${preloadFailedCount} échec${preloadFailedCount > 1 ? "s" : ""})`}
             </Text>
             {preloadProgress.items.length > 0 && (
               <Box

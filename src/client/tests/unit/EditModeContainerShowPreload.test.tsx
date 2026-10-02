@@ -368,6 +368,53 @@ describe("EditModeContainer show mode media preload gate", () => {
     expect(createObjectURLMock).not.toHaveBeenCalled()
   })
 
+  test("counts only media that finished downloading, never more than the total", async () => {
+    const extraCue = {
+      _id: "cue-extra",
+      index: 0,
+      screen: 3,
+      name: "Extra",
+      cueType: "visual",
+      file: { type: "image/png", url: "https://example.com/extra.png" },
+    } as unknown as Cue
+
+    const { rerender } = render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+    await act(async () => {
+      await resolveFetch("https://example.com/photo.png")
+      await resolveFetch("https://example.com/clip.mp4")
+    })
+
+    // Re-entering with one more cue re-counts the two already-frozen media.
+    rerender(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue, videoCue, extraCue]}
+        onEnterShow={jest.fn()}
+      />
+    )
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() =>
+      expect(screen.getByText("2/3 médias chargés")).toBeInTheDocument()
+    )
+
+    await act(async () => {
+      await resolveFetch("https://example.com/extra.png")
+    })
+
+    await waitFor(() =>
+      expect(screen.queryByText(/Préparation du show/)).not.toBeInTheDocument()
+    )
+  })
+
   test("skips the overlay on a second show-mode entry once media is already frozen", async () => {
     const onEnterShow = jest.fn()
     render(
@@ -857,21 +904,27 @@ describe("EditModeContainer media disk cache", () => {
   let deleteEntryMock: jest.Mock
   let lastUsedStamps: Record<string, number>
   let cacheKeys: string[]
+  let cachedMedia: Set<string>
 
   beforeEach(() => {
     jest.clearAllMocks()
     cacheNames = []
     lastUsedStamps = {}
     cacheKeys = []
+    cachedMedia = new Set()
     putMock = jest.fn(async () => undefined)
     deleteEntryMock = jest.fn(async () => true)
     openMock = jest.fn(async (name: string) => ({
       match: async (key: string) => {
-        if (key !== "/__muvico_last_used__") return undefined
-        const stamp = lastUsedStamps[name]
-        return stamp === undefined
-          ? undefined
-          : { text: async () => String(stamp) }
+        if (key === "/__muvico_last_used__") {
+          const stamp = lastUsedStamps[name]
+          return stamp === undefined
+            ? undefined
+            : { text: async () => String(stamp) }
+        }
+        return cachedMedia.has(key)
+          ? { blob: async () => new Blob(["cached"]) }
+          : undefined
       },
       keys: async () =>
         cacheKeys.map((path) => ({ url: `http://localhost${path}` })),
@@ -999,6 +1052,44 @@ describe("EditModeContainer media disk cache", () => {
 
     await waitFor(() => expect(openMock).toHaveBeenCalled())
     expect(deleteEntryMock).not.toHaveBeenCalled()
+  })
+
+  test("serves media from the disk cache without touching the network", async () => {
+    cachedMedia.add("/__muvico_media_cache__/media-1")
+    const onEnterShow = jest.fn()
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={onEnterShow}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  test("still preloads over the network when the disk cache is unavailable", async () => {
+    // Private windows and a full storage quota both make caches.open throw.
+    openMock.mockRejectedValue(new Error("quota exceeded"))
+    jest.spyOn(console, "warn").mockImplementation(() => {})
+    const onEnterShow = jest.fn()
+
+    render(
+      <EditModeContainer
+        {...baseProps}
+        cues={[imageCue]}
+        onEnterShow={onEnterShow}
+      />
+    )
+
+    fireEvent.click(screen.getByText("Show mode"))
+
+    await waitFor(() => expect(onEnterShow).toHaveBeenCalledTimes(1))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
   test("marks the presentation as recently used on entry", async () => {
