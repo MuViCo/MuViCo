@@ -55,6 +55,8 @@ interface GridLayoutComponentProps {
   interactionCursor?: string | null
   /** Row index of the focused lane, or -1. */
   focusedRowIndex?: number
+  /** Frame index the focus sits on inside that lane, or -1. */
+  focusedFrameIndex?: number
   /**
    * Per-lane height change and offset, computed once by EditMode from the row
    * model so a clip and its track label move as one.
@@ -247,6 +249,7 @@ const GridLayoutComponent = ({
   isCopied = false,
   interactionCursor = null,
   focusedRowIndex = -1,
+  focusedFrameIndex = -1,
   focusLayout = { delta: [], offset: [] },
 }: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
@@ -621,6 +624,12 @@ const GridLayoutComponent = ({
             const cueGridRow = cueRowIndex[cue._id] ?? 0
             const isLaneFocused =
               focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
+            // The highlight marks the one clip being worked on, so it tests the
+            // focused frame against the clip's whole span, not just its anchor.
+            const isFocusedCue =
+              isLaneFocused &&
+              focusedFrameIndex >= Number(cue.index) &&
+              focusedFrameIndex < Number(cue.index) + cueVisualSpan
             // Same delta and offset the lane header uses, so a clip and its
             // track label move as one.
             const laneDelta = focusLayout.delta[cueGridRow] ?? 0
@@ -663,9 +672,10 @@ const GridLayoutComponent = ({
                   onContextMenu={(event) => handleCueContextMenu(event, cue)}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
                   data-focused-lane={isLaneFocused ? "true" : undefined}
+                  data-focused-cue={isFocusedCue ? "true" : undefined}
                   transform={`translateY(${laneShift}px)`}
                   boxShadow={
-                    isLaneFocused
+                    isFocusedCue
                       ? "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
                       : undefined
                   }

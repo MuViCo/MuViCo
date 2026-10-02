@@ -267,6 +267,50 @@ describe("GridLayoutComponent", () => {
     expect(screen.getByTestId("cue-label-visual-1")).toBeInTheDocument()
   })
 
+  it("highlights only the cue the focus sits on", () => {
+    const cues = [
+      {
+        _id: "visual-1",
+        index: 0,
+        screen: 1,
+        name: "Visual cue 1",
+        color: "#ffffff",
+        cueType: "visual",
+      },
+      {
+        _id: "visual-2",
+        index: 1,
+        screen: 1,
+        name: "Visual cue 2",
+        color: "#000000",
+        cueType: "visual",
+      },
+    ]
+
+    renderGrid(
+      cues,
+      [
+        { i: "visual-1", x: 0, y: 0, w: 1, h: 1, static: false },
+        { i: "visual-2", x: 1, y: 0, w: 1, h: 1, static: false },
+      ],
+      {
+        cueRowIndex: { "visual-1": 0, "visual-2": 0 },
+        focusedRowIndex: 0,
+        focusedFrameIndex: 1,
+      }
+    )
+
+    const focused = screen
+      .getByTestId("cue-Visual cue 2")
+      .querySelector("[data-focused-cue]")
+    const unfocused = screen
+      .getByTestId("cue-Visual cue 1")
+      .querySelector("[data-focused-cue]")
+
+    expect(focused).not.toBeNull()
+    expect(unfocused).toBeNull()
+  })
+
   it("renders drag-origin indicator only for the dragging cue", () => {
     const cues = [
       {
