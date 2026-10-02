@@ -51,8 +51,6 @@ const TRANSITION_ANIMATION_MS = 500
 const SCREEN_BACKGROUND = "#000000"
 const SCREEN_FOREGROUND = "#ffffff"
 
-// The stage keeps its screen's declared ratio, so its height follows from
-// its width -- no need to measure the popup to lay the canvas out.
 const spanOptionsFor = (cue: Pick<Cue, "spanFill" | "spanPosition">) => ({
   fill: cue.spanFill,
   position: cue.spanPosition,
@@ -310,11 +308,14 @@ const normalizeCueStack = (screenData: CueStack): Cue[] => {
   return screenData ? [screenData] : []
 }
 
+// What an output compares to decide a frame actually changed. Anything
+// that alters what it draws belongs here -- a field left out is a change
+// the popups never pick up, however often the editor re-renders.
 const cueStackKey = (cueStack: CueStack) =>
   normalizeCueStack(cueStack)
     .map(
       (cue) =>
-        `${cue?._id || ""}:${cue?.index ?? ""}:${cue?.screen ?? ""}:${cue?.layer ?? 0}:${cue?.file?.url || ""}:${cue?.name || ""}:${cue?.color || ""}:${cue?.text || ""}:${cue?.textColor || ""}:${cue?.textSize ?? ""}:${normalizeCueOpacity(cue?.opacity)}`
+        `${cue?._id || ""}:${cue?.index ?? ""}:${cue?.screen ?? ""}:${cue?.layer ?? 0}:${cue?.file?.url || ""}:${cue?.name || ""}:${cue?.color || ""}:${cue?.text || ""}:${cue?.textColor || ""}:${cue?.textSize ?? ""}:${normalizeCueOpacity(cue?.opacity)}:${(cue?.spanScreens ?? []).join(",")}:${cue?.spanFill ?? ""}:${cue?.spanPosition ?? ""}`
     )
     .join("|")
 

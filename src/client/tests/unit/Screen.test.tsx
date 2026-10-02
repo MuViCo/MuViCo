@@ -1871,6 +1871,67 @@ describe("Screen", () => {
 
       expect(await cropFor(1920)).toBe(await cropFor(1024))
     })
+    test("picks up a framing change without reopening the popup", async () => {
+      const onClose = () => {}
+      const framed = (spanPosition: Cue["spanPosition"]) =>
+        ({ ...spanCue, spanPosition }) as Cue
+
+      const { rerender } = render(
+        <Screen
+          screenNumber={2}
+          screenData={framed("top")}
+          isVisible={true}
+          onClose={onClose}
+          screenBoxes={{
+            1: { width: 1600, height: 900 },
+            2: { width: 1600, height: 900 },
+          }}
+        />
+      )
+
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      const probe = await waitFor(() =>
+        within(popup.document.body).getByTestId("span-image-probe")
+      )
+      Object.defineProperty(probe, "naturalWidth", {
+        value: 2000,
+        configurable: true,
+      })
+      Object.defineProperty(probe, "naturalHeight", {
+        value: 1000,
+        configurable: true,
+      })
+      await act(async () => {
+        fireEvent.load(probe)
+      })
+
+      const topOf = () =>
+        popup.document.body
+          .querySelector('[data-testid="span-media"]')!
+          .getAttribute("style")!
+          .match(/top: (-?[\d.]+)%/)![1]
+      const anchoredTop = topOf()
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={2}
+            screenData={framed("bottom")}
+            isVisible={true}
+            onClose={onClose}
+            screenBoxes={{
+              1: { width: 1600, height: 900 },
+              2: { width: 1600, height: 900 },
+            }}
+          />
+        )
+      })
+
+      // The outputs mirror screenData into their own state and only take a
+      // new one when the frame's key changes, so a framing field missing
+      // from that key never reached an open popup.
+      expect(topOf()).not.toBe(anchoredTop)
+    })
   })
 
   describe("multi-screen video spanning", () => {
