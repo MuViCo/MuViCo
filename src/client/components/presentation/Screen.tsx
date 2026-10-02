@@ -38,6 +38,9 @@ const mediaFillProps = {
   objectFit: "contain",
 } as const
 
+// How long an entering or leaving cue layer animates for.
+const TRANSITION_ANIMATION_MS = 500
+
 // Resolves a cue's media URL to its frozen Object URL (see
 // EditModeContainer's freezeMediaUrl) when one is available, falling back
 // to the live URL otherwise -- not yet frozen, or the freeze itself failed.
@@ -395,7 +398,7 @@ const ScreenContent = ({
     transitionType ?? "fade"
   )
   const animStyle = (kf: Keyframes | null) =>
-    kf ? `${kf} 500ms ease-in-out forwards` : "none"
+    kf ? `${kf} ${TRANSITION_ANIMATION_MS}ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
 
   return (
@@ -691,6 +694,22 @@ const Screen = ({
     },
     []
   )
+
+  // Drop the outgoing layer once it has finished leaving. It keeps its own
+  // opacity, so a transition with no exit animation ("none") would otherwise
+  // leave it on screen for good -- and above the incoming layer, since equal
+  // zIndex falls back to DOM order. Even with an animation, leaving it
+  // mounted keeps a hidden video decoding for the rest of the frame.
+  useEffect(() => {
+    if (!isRevealed || !previousScreenData) return undefined
+
+    const { exit } = getAnims(transitionType ?? "fade")
+    const timeoutId = window.setTimeout(
+      () => setPreviousScreenData(null),
+      exit ? TRANSITION_ANIMATION_MS : 0
+    )
+    return () => window.clearTimeout(timeoutId)
+  }, [isRevealed, previousScreenData, transitionType])
 
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && emotionCache
