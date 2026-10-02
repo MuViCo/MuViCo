@@ -49,6 +49,8 @@ import type {
   PresentationDocument,
   Score,
   ScoreMarker,
+  SpanFill,
+  SpanPosition,
   UserDocument,
 } from "../types"
 
@@ -337,8 +339,8 @@ const parseSpanScreens = (
   return { spanScreens: normalized, error: null }
 }
 
-const SPAN_FILLS = ["cover", "contain"]
-const SPAN_POSITIONS = [
+const SPAN_FILLS: SpanFill[] = ["cover", "contain"]
+const SPAN_POSITIONS: SpanPosition[] = [
   "top-left",
   "top",
   "top-right",
@@ -355,25 +357,25 @@ const SPAN_POSITIONS = [
 const parseSpanFraming = (
   body: Record<string, unknown>
 ): {
-  // undefined = not in this request, null = clear it, string = set it.
-  spanFill: string | null | undefined
-  spanPosition: string | null | undefined
+  // undefined = not in this request, null = clear it, a value = set it.
+  spanFill: SpanFill | null | undefined
+  spanPosition: SpanPosition | null | undefined
   error: string | null
 } => {
-  const read = (
+  const read = <T extends string>(
     field: string,
-    allowed: string[]
-  ): { value: string | null | undefined; error: string | null } => {
+    allowed: T[]
+  ): { value: T | null | undefined; error: string | null } => {
     const raw = body[field]
     if (raw === undefined) return { value: undefined, error: null }
     if (raw === "") return { value: null, error: null }
-    if (typeof raw !== "string" || !allowed.includes(raw)) {
+    if (typeof raw !== "string" || !allowed.includes(raw as T)) {
       return {
         value: undefined,
         error: `${field} must be one of ${allowed.join(", ")}`,
       }
     }
-    return { value: raw, error: null }
+    return { value: raw as T, error: null }
   }
 
   const fill = read("spanFill", SPAN_FILLS)

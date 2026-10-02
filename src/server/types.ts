@@ -7,6 +7,19 @@
  */
 import type { HydratedDocument, Types } from "mongoose"
 
+export type SpanFill = "cover" | "contain"
+
+export type SpanPosition =
+  | "top-left"
+  | "top"
+  | "top-right"
+  | "left"
+  | "center"
+  | "right"
+  | "bottom-left"
+  | "bottom"
+  | "bottom-right"
+
 export interface CueFile {
   id?: string
   name?: string
@@ -27,17 +40,8 @@ export interface Cue {
   name: string
   screen: number
   spanScreens?: number[]
-  spanFill?: "cover" | "contain"
-  spanPosition?:
-    | "top-left"
-    | "top"
-    | "top-right"
-    | "left"
-    | "center"
-    | "right"
-    | "bottom-left"
-    | "bottom"
-    | "bottom-right"
+  spanFill?: SpanFill
+  spanPosition?: SpanPosition
   frame?: CueFrame
   duration?: number
   text?: string
