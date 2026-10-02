@@ -536,7 +536,10 @@ export const ScreensDisplay = ({
             )}
             {screenStack.length > 0 ? (
               screenStack.map((cue) =>
-                onSetCueFrame ? (
+                // A spanning cue is framed against the whole canvas, not
+                // placed in one screen, so it gets no drag handle here --
+                // dragging it would move a frame that no longer applies.
+                onSetCueFrame && (cue.spanScreens?.length ?? 0) <= 1 ? (
                   <ScreenLayerFrame
                     key={cue._id}
                     frame={cue.frame}

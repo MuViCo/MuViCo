@@ -356,6 +356,43 @@ describe("ScreensDisplay", () => {
     expect(colorDivs.length).toBeGreaterThan(0)
   })
 
+  test("gives a spanning cue no drag handle", () => {
+    const cues = [
+      {
+        _id: "cue-span-drag",
+        name: "Wide banner",
+        index: 0,
+        screen: 1,
+        spanScreens: [1, 2],
+        file: { url: "https://example.com/wide.png", type: "image/png" },
+      },
+      {
+        _id: "cue-plain",
+        name: "Plain",
+        index: 0,
+        screen: 1,
+        layer: 1,
+        file: { url: "https://example.com/plain.png", type: "image/png" },
+      },
+    ] as Cue[]
+
+    render(
+      <ScreensDisplay
+        screenCount={2}
+        cues={cues}
+        cueIndex={0}
+        indexCount={10}
+        screens={{ 1: false, 2: false }}
+        onSetCueFrame={jest.fn()}
+      />
+    )
+
+    // Its framing is the span's own, so dragging would move a frame that no
+    // longer applies -- only the cue that lives on one screen gets a handle.
+    expect(screen.queryByTestId("layer-frame-Wide banner")).toBeNull()
+    expect(screen.getByTestId("layer-frame-Plain")).toBeInTheDocument()
+  })
+
   test("crops a spanning video on each screen too, not just an image", () => {
     const cues = [
       {
