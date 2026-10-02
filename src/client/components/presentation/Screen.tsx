@@ -669,9 +669,13 @@ const Screen = ({
         : `Screen ${screenNumber}`
     }
 
-    return () => {
-      cancelRevealRef.current?.()
-    }
+    // No cleanup cancelling the reveal here. This effect re-runs on every
+    // parent render, since `screenData` is rebuilt each time, and cancelling
+    // then would drop a reveal that has already been scheduled: the branch
+    // above only re-arms it when the cue content changed, so the incoming
+    // layer would stay at opacity 0 and the outgoing one on screen -- the
+    // screen keeps showing the previous frame. Re-arming before scheduling
+    // (above) already prevents overlapping timers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     screenData,
@@ -680,6 +684,13 @@ const Screen = ({
     isWindowReady,
     screenNumber,
   ])
+
+  useEffect(
+    () => () => {
+      cancelRevealRef.current?.()
+    },
+    []
+  )
 
   // Only render the portal when the window is ready
   return windowRef.current && isWindowReady && emotionCache

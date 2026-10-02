@@ -680,6 +680,86 @@ describe("Screen", () => {
     )
   })
 
+  // Regression: a parent re-render landing between a cue change and its
+  // scheduled reveal used to cancel that reveal without re-arming it. The
+  // incoming layer stayed at opacity 0 with the outgoing one still on
+  // screen, so the output kept showing the previous frame.
+  test("still reveals when the parent re-renders mid-transition", async () => {
+    const cueA = {
+      file: { url: "http://example.com/a.jpg", type: "image/jpg" },
+      index: 0,
+      name: "cue-a",
+      screen: 1,
+      _id: "id-a",
+      loop: false,
+    } as Cue
+    const cueB = {
+      file: { url: "http://example.com/b.jpg", type: "image/jpg" },
+      index: 1,
+      name: "cue-b",
+      screen: 1,
+      _id: "id-b",
+      loop: false,
+    } as Cue
+
+    const getIncomingLayer = () => {
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      return popup.document.body.querySelector(
+        '[data-testid="incoming-cue-layer"]'
+      )
+    }
+
+    const onClose = () => {}
+    const transitionAt = Date.now() + 200
+
+    const { rerender } = render(
+      <Screen
+        screenNumber={1}
+        screenData={[cueA]}
+        isVisible={true}
+        onClose={onClose}
+      />
+    )
+
+    await waitFor(() =>
+      expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("true")
+    )
+
+    // Move to the next frame; its reveal is scheduled, not yet due.
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={[cueB]}
+          isVisible={true}
+          onClose={onClose}
+          transitionAt={transitionAt}
+        />
+      )
+    })
+    expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("false")
+
+    // Same cues, fresh array identity: exactly what any unrelated parent
+    // state update produces, and what used to kill the pending reveal.
+    await act(async () => {
+      rerender(
+        <Screen
+          screenNumber={1}
+          screenData={[cueB]}
+          isVisible={true}
+          onClose={onClose}
+          transitionAt={transitionAt}
+        />
+      )
+    })
+
+    await waitFor(
+      () =>
+        expect(getIncomingLayer()?.getAttribute("data-revealed")).toBe("true"),
+      { timeout: 2000 }
+    )
+  })
+
   // Regression: the outgoing layer used to remount a cue's media under a
   // new key when it moved from the incoming to the outgoing role, which
   // restarted a playing video/gif right as the transition began.
