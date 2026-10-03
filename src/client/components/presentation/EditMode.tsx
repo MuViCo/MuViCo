@@ -208,6 +208,19 @@ const EditMode = ({
   const presentation = useAppSelector((state) => state.presentation)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selectedCue, setSelectedCue] = useState<Cue | null>(null)
+  /**
+   * Frame the focus sits on, with the lane it was set from.
+   *
+   * The lane highlight is a whole-row effect, but the clip highlight marks the
+   * single element being worked on, so it needs a column too. Storing the lane
+   * alongside it makes a focus move that came from somewhere else -- a lane
+   * header, the screen strip -- drop the clip highlight instead of leaving it on
+   * whichever clip happens to sit at that column on the new lane.
+   */
+  const [focusedCell, setFocusedCell] = useState<{
+    lane: string
+    index: number
+  } | null>(null)
   const [isMultiScreenModalOpen, setIsMultiScreenModalOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState("")
@@ -256,17 +269,7 @@ const EditMode = ({
     ref: containerRef,
     handler: () => {
       if (isCopied && !isConfirmOpen) {
-        clearExternalPlacementPreview()
-        showToast({
-          title: "Cancelled copying",
-          description: "Copying has been cancelled.",
-          status: "info",
-        })
-        setDragCursorMode("default")
-        setIsCopied(false)
-        setCopiedCue(null)
-        setShowAlert(false)
-        setAlertData({})
+        cancelCopyMode()
       }
     },
   })
@@ -282,6 +285,9 @@ const EditMode = ({
   const dragHasMovedRef = useRef(false)
   const latestGridDragDataRef = useRef<NewCueDragData | null>(null)
   const latestGridDragCellRef = useRef<GridCell | null>(null)
+  const hoveredCueRef = useRef<Cue | null>(null)
+  const hoveredCellRef = useRef<GridCell | null>(null)
+  const clipboardCueRef = useRef<Cue | null>(null)
   const headerActionsRef = useRef<HeaderActions>({
     addIndex: () => {},
     removeIndex: () => {},
@@ -330,6 +336,10 @@ const EditMode = ({
     return rowModel.rows.findIndex((row) => row.group === group)
   }, [rowModel.rows, focusedLaneKey])
 
+  /** Frame index the clip highlight sits on, or -1. */
+  const focusedFrameIndex =
+    focusedCell && focusedCell.lane === focusedLaneKey ? focusedCell.index : -1
+
   /**
    * Height change and offset per lane while one lane holds focus. Computed here
    * so the gutter and the clips are laid out from one result.
@@ -359,7 +369,12 @@ const EditMode = ({
    * collapsed group focuses its merged lane instead of a layer that is not
    * currently rendered.
    */
-  const focusLaneForCue = (screen: number, layer: number, cueType?: string) => {
+  const focusLaneForCue = (
+    screen: number,
+    layer: number,
+    cueType?: string,
+    index?: number
+  ) => {
     // Group naming mirrors buildRowModel; matching on row.screen alone misses
     // audio, whose lanes carry the pseudo-screen the cue records use.
     const group =
@@ -373,7 +388,17 @@ const EditMode = ({
     )
     // A key with no matching lane resolves to -1 and is inert, so falling back
     // is safe when the row model has not caught up with the new cue yet.
-    onFocusLane(lane ? laneKey(lane) : `${group}:${layer}`)
+    const key = lane ? laneKey(lane) : `${group}:${layer}`
+    onFocusLane(key)
+    setFocusedCell(
+      index === undefined ? null : { lane: key, index: Number(index) }
+    )
+  }
+
+  /** Focus a lane from its header. No frame is implied, so no clip is marked. */
+  const focusLaneFromHeader = (key: string | null) => {
+    onFocusLane(key)
+    setFocusedCell(null)
   }
 
   /** Focus the lane under the pointer. Never dispatches, never opens anything. */
@@ -388,7 +413,9 @@ const EditMode = ({
     if (!isRowInsideGrid(xIndex, yIndex)) return
     const lane = laneAt(rowModel.rows, yIndex)
     if (!lane) return
-    onFocusLane(laneKey(lane))
+    const key = laneKey(lane)
+    onFocusLane(key)
+    setFocusedCell({ lane: key, index: xIndex })
   }
 
   const gridCues = useMemo(
@@ -1070,23 +1097,69 @@ const EditMode = ({
     }
   }
 
+  // Shared by the outside-click handler, mouse paste, and the Escape shortcut
+  const cancelCopyMode = () => {
+    clearExternalPlacementPreview()
+    setDragCursorMode("default")
+    setIsCopied(false)
+    setCopiedCue(null)
+    setShowAlert(false)
+    setAlertData({})
+    showToast({
+      title: "Cancelled copying",
+      description: "Copying has been cancelled.",
+      status: "info",
+    })
+  }
+
+  // Validates drop location against a cue and creates the pasted copy
+  const createPastedCueAt = async (
+    cue: Cue,
+    xIndex: number,
+    yIndex: number
+  ) => {
+    const hoveredCue = getCueAtPosition(xIndex, yIndex)
+    const isBlockedCell = Boolean(hoveredCue && hoveredCue._id === cue._id)
+    if (isBlockedCell) {
+      return
+    }
+
+    const isValidDropCell = laneAcceptsCueType(
+      laneAt(rowModel.rows, yIndex),
+      cue.cueType
+    )
+    if (!isValidDropCell) {
+      showToast({
+        title: "Only audio files on the audio row.",
+        description: "Click on an appropriate row to paste the element.",
+        status: "error",
+      })
+      return
+    }
+
+    const newCueData = await createNewCueData(xIndex, yIndex, cue)
+    await addCue(newCueData)
+  }
+
+  const pasteAtCell = async (xIndex: number, yIndex: number) => {
+    if (!isCopied || !copiedCue) return
+
+    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
+    if (!isInsideGrid) {
+      cancelCopyMode()
+      return
+    }
+
+    await createPastedCueAt(copiedCue, xIndex, yIndex)
+  }
+
   // Handle pasting copied cue - validates drop location and creates new cue
   const handlePaste = async (event: ReactMouseEvent) => {
     if (targetElement(event).closest("button")) return
     if (!isCopied || !copiedCue) return
 
     if (targetElement(event).closest(".x-index-label")) {
-      clearExternalPlacementPreview()
-      setDragCursorMode("default")
-      setIsCopied(false)
-      setCopiedCue(null)
-      setShowAlert(false)
-      setAlertData({})
-      showToast({
-        title: "Cancelled copying",
-        description: "Copying has been cancelled.",
-        status: "info",
-      })
+      cancelCopyMode()
       return
     }
 
@@ -1102,47 +1175,56 @@ const EditMode = ({
       rowHeight,
       gap
     )
-    // Validate drop position - must be within grid, compatible with cue type, and not the same cell as the original cue
-    const hoveredCue = getCueAtPosition(xIndex, yIndex)
-    const isBlockedCell = Boolean(
-      hoveredCue && hoveredCue._id === copiedCue._id
-    )
-    const isInsideGrid = isRowInsideGrid(xIndex, yIndex)
-    const isValidDropCell =
-      laneAcceptsCueType(laneAt(rowModel.rows, yIndex), copiedCue.cueType) &&
-      !isBlockedCell
-
-    if (!isInsideGrid) {
-      clearExternalPlacementPreview()
-      setDragCursorMode("default")
-      setIsCopied(false)
-      setCopiedCue(null)
-      setShowAlert(false)
-      setAlertData({})
-      showToast({
-        title: "Cancelled copying",
-        description: "Copying has been cancelled.",
-        status: "info",
-      })
-      return
-    }
-
-    if (isBlockedCell) {
-      return
-    }
-
-    if (!isValidDropCell) {
-      showToast({
-        title: "Only audio files on the audio row.",
-        description: "Click on an appropriate row to paste the element.",
-        status: "error",
-      })
-      return
-    }
-
-    const newCueData = await createNewCueData(xIndex, yIndex, copiedCue)
-    await addCue(newCueData)
+    await pasteAtCell(xIndex, yIndex)
   }
+
+  // Ctrl/Cmd+C stashes the hovered cue in clipboardCueRef, Ctrl/Cmd+V pastes
+  // it onto the hovered cell. Unlike the context menu's Copy action, this
+  // never locks the grid into a copy mode - dragging, editing, and other
+  // cues all stay interactive in between, like a video editor's clipboard.
+  useEffect(() => {
+    if (readOnly) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+
+      const isModifierPressed = event.ctrlKey || event.metaKey
+      if (!isModifierPressed) return
+
+      if (event.key.toLowerCase() === "c") {
+        const cue = hoveredCueRef.current
+        if (!cue || isDragging) return
+        event.preventDefault()
+        clipboardCueRef.current = cue
+        showToast({
+          title: `Copied "${cue.name}"`,
+          description: "Hover a cell and press Ctrl+V (or Cmd+V) to paste.",
+          status: "info",
+        })
+        return
+      }
+
+      if (event.key.toLowerCase() === "v") {
+        const cue = clipboardCueRef.current
+        if (!cue || isDragging) return
+        const cell = hoveredCellRef.current
+        if (!cell || !isRowInsideGrid(cell.xIndex, cell.yIndex)) return
+        event.preventDefault()
+        createPastedCueAt(cue, cell.xIndex, cell.yIndex)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  })
 
   const updateCopiedCuePreview = (event: ReactMouseEvent) => {
     scheduleExternalPreviewFromEvent(event, {
@@ -1176,7 +1258,7 @@ const EditMode = ({
 
     return {
       index: xIndex,
-      cueName: `${copiedCue.name} copy`,
+      cueName: copiedCue.name,
       ...laneScreenLayer(yIndex),
       file: fileObj,
       fileName: copiedCue.file?.name || null,
@@ -1261,6 +1343,7 @@ const EditMode = ({
         rowHeight,
         gap
       )
+      hoveredCellRef.current = hoveredCell
       setInsertBeforeIndex(
         isInternalDropInInsertZone(hoveredCell) ? hoveredCell.xIndex : null
       )
@@ -1271,6 +1354,13 @@ const EditMode = ({
 
     if (isCopied && copiedCue) {
       hideHoverPreview()
+      hoveredCellRef.current = getPosition(
+        event,
+        containerRef,
+        columnWidth,
+        rowHeight,
+        gap
+      )
       updateCopiedCuePreview(event)
       return
     }
@@ -1287,10 +1377,12 @@ const EditMode = ({
       gap
     )
 
-    const cueExists = Boolean(getCueAtPosition(xIndex, yIndex))
+    hoveredCellRef.current = { xIndex, yIndex, xWithinCell: 0 }
+    const hoveredCueAtPosition = getCueAtPosition(xIndex, yIndex) ?? null
+    hoveredCueRef.current = hoveredCueAtPosition
 
     if (
-      !cueExists &&
+      !hoveredCueAtPosition &&
       xIndex >= 0 &&
       xIndex < indexCount &&
       yIndex >= 0 &&
@@ -1316,11 +1408,11 @@ const EditMode = ({
     const dragStartPointer = dragStartPointerRef.current
     const didDragMove = Boolean(
       dragHasMovedRef.current ||
-        (dragStartPointer &&
-          Math.hypot(
-            event.clientX - dragStartPointer.clientX,
-            event.clientY - dragStartPointer.clientY
-          ) >= dragCommitDistancePx)
+      (dragStartPointer &&
+        Math.hypot(
+          event.clientX - dragStartPointer.clientX,
+          event.clientY - dragStartPointer.clientY
+        ) >= dragCommitDistancePx)
     )
     resetDragInteraction({ clearSpanPreview: !wasDragging })
     const dropCell = getPosition(
@@ -1700,7 +1792,7 @@ const EditMode = ({
 
     // Focus follows the placement intent, not the request: the lane the user
     // aimed at is the one they want to work on whether or not the save lands.
-    focusLaneForCue(screen, layer, cueData.cueType)
+    focusLaneForCue(screen, layer, cueData.cueType, index)
 
     try {
       await dispatch(createCue(id, formData))
@@ -1874,7 +1966,11 @@ const EditMode = ({
 
     if (cue) {
       const lane = laneAt(rowModel.rows, yIndex)
-      if (lane) onFocusLane(laneKey(lane))
+      if (lane) {
+        const key = laneKey(lane)
+        onFocusLane(key)
+        setFocusedCell({ lane: key, index: xIndex })
+      }
       setSelectedCue(cue)
       setIsToolboxOpen(true)
     }
@@ -1958,7 +2054,21 @@ const EditMode = ({
     const cellWidthWithGap = columnWidth + gap
     const cellHeightWithGap = rowHeight + rowGap
 
-    const yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
+    // Lanes in a multi-lane group are knitted closer together for display
+    // (laneFocusLayout), bleeding a lane's rendered band above its uniform
+    // track. The uniform division below is the fallback for bands with no
+    // knit adjustment; the loop picks the actual (possibly knitted) band the
+    // pointer is over, later rows winning ties since they paint on top.
+    let yIndex = Math.floor((dropY - rowsTopOffset) / cellHeightWithGap)
+    for (let y = 0; y < rowModel.rowCount; y += 1) {
+      const rowTop =
+        rowsTopOffset + y * cellHeightWithGap + (focusLayout.offset[y] ?? 0)
+      const rowBandHeight = rowHeight + (focusLayout.delta[y] ?? 0)
+      if (dropY >= rowTop && dropY < rowTop + rowBandHeight) {
+        yIndex = y
+      }
+    }
+
     const xIndex = Math.floor(absoluteDropX / cellWidthWithGap)
     const xWithinCell = absoluteDropX - xIndex * cellWidthWithGap
 
@@ -1988,11 +2098,9 @@ const EditMode = ({
       newTargetCue.cueType === "audio" || newSelectedCue.cueType === "audio"
 
     if (hasAudioCue) {
-      if (
-        !(
-          newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
-        )
-      ) {
+      if (!(
+        newTargetCue.cueType === "audio" && newSelectedCue.cueType === "audio"
+      )) {
         showToast({
           title: "Error",
           description: "You cannot swap elements with audio files",
@@ -2353,7 +2461,7 @@ const EditMode = ({
             <RowHeaders
               rows={rowModel.rows}
               focusedRowIndex={focusedRowIndex}
-              onFocusLane={onFocusLane}
+              onFocusLane={focusLaneFromHeader}
               collapsedGroups={collapsedGroups}
               onToggleGroupCollapsed={toggleGroupCollapsed}
               onAddVisualLayer={addVisualLayer}
@@ -2443,6 +2551,8 @@ const EditMode = ({
                 }}
                 onMouseLeave={() => {
                   hideHoverPreview()
+                  hoveredCueRef.current = null
+                  hoveredCellRef.current = null
 
                   if (isDragging) {
                     resetDragInteraction()
@@ -2558,6 +2668,7 @@ const EditMode = ({
                     cues={gridCues}
                     cueRowIndex={rowModel.cueY}
                     focusedRowIndex={focusedRowIndex}
+                    focusedFrameIndex={focusedFrameIndex}
                     focusLayout={focusLayout}
                     rowCount={rowModel.rowCount}
                     containerRef={containerRef}

@@ -55,6 +55,8 @@ interface GridLayoutComponentProps {
   interactionCursor?: string | null
   /** Row index of the focused lane, or -1. */
   focusedRowIndex?: number
+  /** Frame index the focus sits on inside that lane, or -1. */
+  focusedFrameIndex?: number
   /**
    * Per-lane height change and offset, computed once by EditMode from the row
    * model so a clip and its track label move as one.
@@ -80,6 +82,13 @@ import CueContextMenu from "./CueContextMenu"
 import { useReadOnly } from "../utils/ReadOnlyContext"
 
 import type { CueContextMenuState } from "./CueContextMenu"
+
+/** Ring marking the clip the focus sits on. */
+const CUE_FOCUS_SHADOW =
+  "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
+
+/** Lift shadow a clip gets while hovered. */
+const CUE_HOVER_SHADOW = "0 8px 18px rgba(0, 0, 0, 0.24)"
 
 const renderElementBasedOnIndex = (
   currentIndex: number,
@@ -247,6 +256,7 @@ const GridLayoutComponent = ({
   isCopied = false,
   interactionCursor = null,
   focusedRowIndex = -1,
+  focusedFrameIndex = -1,
   focusLayout = { delta: [], offset: [] },
 }: GridLayoutComponentProps) => {
   const showToast = useCustomToast()
@@ -621,6 +631,12 @@ const GridLayoutComponent = ({
             const cueGridRow = cueRowIndex[cue._id] ?? 0
             const isLaneFocused =
               focusedRowIndex >= 0 && cueGridRow === focusedRowIndex
+            // The highlight marks the one clip being worked on, so it tests the
+            // focused frame against the clip's whole span, not just its anchor.
+            const isFocusedCue =
+              isLaneFocused &&
+              focusedFrameIndex >= Number(cue.index) &&
+              focusedFrameIndex < Number(cue.index) + cueVisualSpan
             // Same delta and offset the lane header uses, so a clip and its
             // track label move as one.
             const laneDelta = focusLayout.delta[cueGridRow] ?? 0
@@ -663,19 +679,22 @@ const GridLayoutComponent = ({
                   onContextMenu={(event) => handleCueContextMenu(event, cue)}
                   opacity={isDraggingOriginCue ? 0.58 : 1}
                   data-focused-lane={isLaneFocused ? "true" : undefined}
+                  data-focused-cue={isFocusedCue ? "true" : undefined}
                   transform={`translateY(${laneShift}px)`}
-                  boxShadow={
-                    isLaneFocused
-                      ? "inset 0 0 0 2px #c084fc, 0 0 14px rgba(192, 132, 252, 0.5)"
-                      : undefined
-                  }
+                  boxShadow={isFocusedCue ? CUE_FOCUS_SHADOW : undefined}
                   transition="opacity 90ms linear, transform 140ms ease, box-shadow 140ms ease, height 140ms ease"
                   _hover={
                     suppressCueHoverEffects
                       ? {}
                       : {
                           transform: `translateY(${laneShift - 1}px)`,
-                          boxShadow: "0 8px 18px rgba(0, 0, 0, 0.24)",
+                          // The lift shadow replaces box-shadow outright, so the
+                          // focus ring is carried along: hovering the focused
+                          // clip would otherwise un-mark it, leaving every other
+                          // clip looking like the selected one.
+                          boxShadow: isFocusedCue
+                            ? `${CUE_FOCUS_SHADOW}, ${CUE_HOVER_SHADOW}`
+                            : CUE_HOVER_SHADOW,
                         }
                   }
                   sx={{
