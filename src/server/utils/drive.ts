@@ -122,3 +122,17 @@ export const getDriveFileStream = async (
     throw error
   }
 }
+
+export const getDriveFileBuffer = async (
+  fileId: string,
+  accessToken: string
+): Promise<Buffer> => {
+  const stream = await getDriveFileStream(fileId, accessToken)
+  const chunks: Buffer[] = []
+
+  for await (const chunk of stream as AsyncIterable<Uint8Array>) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  }
+
+  return Buffer.concat(chunks)
+}

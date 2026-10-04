@@ -142,6 +142,22 @@ describe("Helper utility functions", () => {
       expect(result.file.url).toBe("https://s3.signed.url")
     })
 
+    test("leaves a Drive-backed file alone even though it has an id", async () => {
+      const cue = {
+        file: {
+          id: "file-123",
+          driveId: "drive-abc",
+          name: "test.jpg",
+          url: "https://drive.example/test.jpg",
+        },
+      }
+
+      const result = await generateSignedUrlForS3(cue, "pres-123")
+
+      expect(getObjectSignedUrl).not.toHaveBeenCalled()
+      expect(result.file.url).toBe("https://drive.example/test.jpg")
+    })
+
     test("does nothing when file id is missing", async () => {
       const cue = {
         file: {
