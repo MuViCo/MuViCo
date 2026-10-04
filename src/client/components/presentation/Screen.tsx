@@ -330,19 +330,18 @@ const renderCueLayers = (
   prefersReducedMotion: boolean,
   isRevealed: boolean,
   enterAnimStyle: string,
-  exitAnimStyle: string,
+  enteringIdentities: Set<string>,
   mediaUrlOverrides?: Record<string, string>
 ) => {
   const currentCueStack = normalizeCueStack(currentScreenData)
   const previousCueStack = normalizeCueStack(previousScreenData)
   const currentIdentities = new Set(currentCueStack.map(cueIdentity))
-  const previousIdentities = new Set(previousCueStack.map(cueIdentity))
 
   const entries = [
     ...currentCueStack.map((cue) => ({
       cue,
       isIncoming: true,
-      isNew: !previousIdentities.has(cueIdentity(cue)),
+      isNew: enteringIdentities.has(cueIdentity(cue)),
     })),
     ...previousCueStack
       .filter((cue) => !currentIdentities.has(cueIdentity(cue)))
@@ -358,7 +357,7 @@ const renderCueLayers = (
           data-revealed={isIncoming ? (isNew ? isRevealed : true) : undefined}
           position="absolute"
           {...cueFrameStyle(cue)}
-          zIndex={100 - Number(cue.layer ?? 0)}
+          zIndex={(isIncoming ? 1000 : 0) + (100 - Number(cue.layer ?? 0))}
           opacity={
             isIncoming && isNew && !isRevealed
               ? 0
@@ -372,15 +371,11 @@ const renderCueLayers = (
           alignItems="center"
           overflow="hidden"
           animation={
-            !isIncoming
+            isIncoming && isNew
               ? isRevealed
-                ? exitAnimStyle
+                ? enterAnimStyle
                 : "none"
-              : isNew
-                ? isRevealed
-                  ? enterAnimStyle
-                  : "none"
-                : undefined
+              : undefined
           }
         >
           {renderMedia(
@@ -406,6 +401,7 @@ interface ScreenContentProps {
   isBlackout?: boolean
   outputAspectRatio?: string
   isRevealed?: boolean
+  enteringIdentities: Set<string>
   mediaUrlOverrides?: Record<string, string>
 }
 
@@ -419,11 +415,10 @@ const ScreenContent = ({
   isBlackout,
   outputAspectRatio,
   isRevealed = true,
+  enteringIdentities,
   mediaUrlOverrides,
 }: ScreenContentProps) => {
-  const { enter: enterAnim, exit: exitAnim } = getAnims(
-    transitionType ?? "fade"
-  )
+  const { enter: enterAnim } = getAnims(transitionType ?? "fade")
   const animStyle = (kf: Keyframes | null) =>
     kf ? `${kf} ${TRANSITION_ANIMATION_MS}ms ease-in-out forwards` : "none"
   const prefersReducedMotion = usePrefersReducedMotion()
@@ -486,7 +481,7 @@ const ScreenContent = ({
           prefersReducedMotion,
           isRevealed,
           animStyle(enterAnim),
-          animStyle(exitAnim),
+          enteringIdentities,
           mediaUrlOverrides
         )}
       </Box>
@@ -547,6 +542,9 @@ const Screen = ({
   const handleStageResize = useCallback(
     (box: ScreenBox) => onBoxChange?.(Number(screenNumber), box),
     [onBoxChange, screenNumber]
+  )
+  const [enteringIdentities, setEnteringIdentities] = useState<Set<string>>(
+    new Set()
   )
   const cancelRevealRef = useRef<(() => void) | null>(null)
   const [emotionCache, setEmotionCache] = useState<EmotionCache | null>(null)
@@ -684,10 +682,19 @@ const Screen = ({
       if (!currentScreenData) {
         setPreviousScreenData(null)
         setCurrentScreenData(nextScreenData)
+        setEnteringIdentities(new Set(nextScreenData.map(cueIdentity)))
         setIsRevealed(true)
       } else {
+        const oldIdentities = new Set(currentScreenData.map(cueIdentity))
         setPreviousScreenData(currentScreenData)
         setCurrentScreenData(nextScreenData)
+        setEnteringIdentities(
+          new Set(
+            nextScreenData
+              .filter((cue) => !oldIdentities.has(cueIdentity(cue)))
+              .map(cueIdentity)
+          )
+        )
         setIsRevealed(false)
 
         const revealAt = transitionAt ?? Date.now()
@@ -764,6 +771,7 @@ const Screen = ({
             isBlackout={isBlackout}
             outputAspectRatio={outputAspectRatio}
             isRevealed={isRevealed}
+            enteringIdentities={enteringIdentities}
             mediaUrlOverrides={mediaUrlOverrides}
           />
         </CacheProvider>,

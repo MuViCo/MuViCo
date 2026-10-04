@@ -1438,6 +1438,97 @@ describe("Screen", () => {
     })
   })
 
+  describe("crossfade between two different frames", () => {
+    const onClose = jest.fn()
+
+    const firstCue = {
+      file: {
+        url: "http://example.com/first.jpg",
+        type: "image/jpg",
+        name: "first.jpg",
+      },
+      index: 0,
+      name: "first-cue",
+      screen: 1,
+      layer: 0,
+      _id: "id-first",
+      loop: false,
+    } as Cue
+
+    const secondCue = {
+      file: {
+        url: "http://example.com/second.jpg",
+        type: "image/jpg",
+        name: "second.jpg",
+      },
+      index: 1,
+      name: "second-cue",
+      screen: 1,
+      layer: 0,
+      _id: "id-second",
+      loop: false,
+    } as Cue
+
+    test("does not animate the outgoing cue, so it stays fully opaque under the incoming one", async () => {
+      const { rerender } = render(
+        <Screen
+          screenNumber={1}
+          screenData={firstCue}
+          isVisible={true}
+          onClose={onClose}
+        />
+      )
+
+      let popup: any
+      await waitFor(() => {
+        popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+        expect(
+          popup.document.body.querySelector(
+            'img[src="http://example.com/first.jpg"]'
+          )
+        ).toBeTruthy()
+      })
+
+      await act(async () => {
+        rerender(
+          <Screen
+            screenNumber={1}
+            screenData={secondCue}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      await waitFor(() => {
+        expect(
+          popup.document.body.querySelector(
+            'img[src="http://example.com/second.jpg"]'
+          )
+        ).toBeTruthy()
+      })
+      await waitFor(() => {
+        expect(
+          popup.document.body
+            .querySelector('img[src="http://example.com/second.jpg"]')
+            ?.closest("[data-revealed]")
+            ?.getAttribute("data-revealed")
+        ).toBe("true")
+      })
+
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="outgoing-cue-layer"] img[src="http://example.com/first.jpg"]'
+        )
+      ).toBeTruthy()
+      expect(
+        popup.document.body.querySelector(
+          '[data-testid="incoming-cue-layer"] img[src="http://example.com/second.jpg"]'
+        )
+      ).toBeTruthy()
+    })
+  })
+
   describe("cues that persist across a frame change", () => {
     const videoCue = {
       file: {
@@ -1721,6 +1812,67 @@ describe("Screen", () => {
           '[data-testid="incoming-cue-layer"] video'
         )
       ).toBeNull()
+    })
+
+    test("does not replay the enter animation on a persisting cue once the outgoing layer is cleared", async () => {
+      jest.useFakeTimers()
+      const onClose = jest.fn()
+      let view: ReturnType<typeof render> | undefined
+
+      await act(async () => {
+        view = render(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue]}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+
+      const popup = (window.open as jest.Mock).mock.results.at(-1)!.value
+      const videoEl = popup.document.body.querySelector(
+        'video[src="http://example.com/background.mp4"]'
+      )
+      expect(videoEl).toBeTruthy()
+
+      act(() => {
+        view!.rerender(
+          <Screen
+            screenNumber={1}
+            screenData={[videoCue, overlayCueA]}
+            isVisible={true}
+            onClose={onClose}
+          />
+        )
+      })
+      act(() => {
+        jest.advanceTimersByTime(0)
+      })
+
+      expect(
+        popup.document.body.querySelector(
+          'img[src="http://example.com/overlay-a.png"]'
+        )
+      ).toBeTruthy()
+      const classNameDuringTransition = videoEl.parentElement?.className
+
+      act(() => {
+        jest.advanceTimersByTime(600)
+      })
+
+      expect(
+        popup.document.body.querySelector('[data-testid="outgoing-cue-layer"]')
+      ).toBeNull()
+      expect(
+        popup.document.body.querySelector(
+          'video[src="http://example.com/background.mp4"]'
+        )
+      ).toBe(videoEl)
+      expect(videoEl.parentElement?.className).toBe(classNameDuringTransition)
+
+      view!.unmount()
+      jest.useRealTimers()
     })
   })
 
