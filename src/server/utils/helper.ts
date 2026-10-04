@@ -91,9 +91,10 @@ const generateDriveFileUrl = async <T extends DriveFileLike>(
 
 export const generateSignedUrlForS3 = async <T extends FileHolder>(
   cue: T,
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
-  if (!cue.file?.id) {
+  if (!cue.file?.id || (cue.file.driveId && !includeDriveBacked)) {
     return cue
   }
 
@@ -105,9 +106,10 @@ export const generateSignedUrlForS3 = async <T extends FileHolder>(
 
 const generateSignedScoreUrlForS3 = async (
   score: Score,
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
-  if (!score.file?.id) {
+  if (!score.file?.id || (score.file.driveId && !includeDriveBacked)) {
     return score
   }
 
@@ -124,7 +126,8 @@ interface ToObjectable {
 
 export const processS3Files = async <T extends FileHolder & ToObjectable>(
   cues: T[],
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
   const processedCues = await Promise.all(
     cues.map(async (cue) => {
@@ -136,7 +139,7 @@ export const processS3Files = async <T extends FileHolder & ToObjectable>(
         return cue
       }
 
-      await generateSignedUrlForS3(cue, presentationId)
+      await generateSignedUrlForS3(cue, presentationId, { includeDriveBacked })
       if (cue.file?.url) {
         await getFileType(cue, presentationId)
         await getFileSize(cue, presentationId)
@@ -157,9 +160,11 @@ export const generateSignedMediaUrlForS3 = async <
   T extends { id?: string; url?: string },
 >(
   item: T | null | undefined,
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
-  if (!item?.id) {
+  const driveId = (item as { driveId?: string } | null | undefined)?.driveId
+  if (!item?.id || (driveId && !includeDriveBacked)) {
     return item
   }
 
@@ -171,11 +176,12 @@ export const generateSignedMediaUrlForS3 = async <
 
 export const processS3MediaFiles = async (
   media: MediaEntry[] | null | undefined,
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
   return Promise.all(
     (media || []).map((item) =>
-      generateSignedMediaUrlForS3(item, presentationId)
+      generateSignedMediaUrlForS3(item, presentationId, { includeDriveBacked })
     )
   )
 }
@@ -194,7 +200,8 @@ export const processDriveMediaFiles = async (
 
 export const processS3ScoreFiles = async (
   scores: Score[],
-  presentationId: unknown
+  presentationId: unknown,
+  { includeDriveBacked = false } = {}
 ) => {
   return Promise.all(
     scores.map(async (score) => {
@@ -202,7 +209,9 @@ export const processS3ScoreFiles = async (
         return score
       }
 
-      await generateSignedScoreUrlForS3(score, presentationId)
+      await generateSignedScoreUrlForS3(score, presentationId, {
+        includeDriveBacked,
+      })
       return score
     })
   )

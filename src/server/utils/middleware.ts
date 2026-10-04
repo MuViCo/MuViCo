@@ -107,7 +107,7 @@ export const requireSharedPresentationAccess = async (
 
     const presentation = await Presentation.findOne({ shareToken: token })
 
-    if (!presentation || presentation.storage !== "aws") {
+    if (!presentation) {
       return response
         .status(404)
         .json({ error: "shared presentation not found" })

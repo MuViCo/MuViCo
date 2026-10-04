@@ -130,6 +130,78 @@ describe("createFormData", () => {
     expect(formData.get("textSize")).toBe("12")
   })
 
+  test("appends the animation fields of a text element", () => {
+    const formData = createFormData(
+      0,
+      "Intro",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      1,
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      {
+        text: "A long time ago",
+        textEffect: "crawl",
+        textEffectSpeed: 2,
+        textEffectLoop: true,
+      }
+    )
+
+    expect(formData.get("textEffect")).toBe("crawl")
+    expect(formData.get("textEffectSpeed")).toBe("2")
+    expect(formData.get("textEffectLoop")).toBe("true")
+  })
+
+  test("sends a disabled loop rather than omitting it", () => {
+    const formData = createFormData(
+      0,
+      "Intro",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      1,
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      { text: "A long time ago", textEffectLoop: false }
+    )
+
+    expect(formData.get("textEffectLoop")).toBe("false")
+  })
+
+  test("sends no animation field when the cue says nothing about it", () => {
+    const formData = createFormData(
+      0,
+      "Intro",
+      1,
+      null,
+      undefined,
+      undefined,
+      false,
+      1,
+      1,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      { text: "Plain" }
+    )
+
+    expect(formData.has("textEffect")).toBe(false)
+    expect(formData.has("textEffectSpeed")).toBe(false)
+    expect(formData.has("textEffectLoop")).toBe(false)
+  })
+
   test("an empty text is sent, so the server clears the text", () => {
     const formData = createFormData(
       0,

@@ -3,6 +3,12 @@
  * Covers presentation CRUD, cue create/update/swap flows, index/screen count updates,
  * authorization/admin access rules, shiftIndexes behavior, and MRU sorting updates.
  */
+jest.mock("../utils/drive", () => ({
+  ...jest.requireActual("../utils/drive"),
+  getDriveFileMetadata: jest.fn(async () => ({ mimeType: "image/png" })),
+  getDriveFileBuffer: jest.fn(async () => Buffer.from("drive-bytes")),
+}))
+
 const supertest = require("supertest")
 const mongoose = require("mongoose")
 const { Readable } = require("stream")
@@ -1669,6 +1675,11 @@ describe("test presentation", () => {
         { textEffectSpeed: "fast" },
         /textEffectSpeed/,
       ],
+      [
+        "a loop flag that is not a boolean",
+        { textEffectLoop: "yes" },
+        /textEffectLoop/,
+      ],
     ])("refuses %s", async (_label, fields, message) => {
       const response = await createTextCue(fields).expect(400)
 
@@ -1946,6 +1957,56 @@ describe("test presentation", () => {
     })
   })
 
+  describe("Storage routing", () => {
+    test("an aws presentation keeps uploading to S3 even when Drive is linked", async () => {
+      const owner = await User.findOne({ username: "testuser" })
+      owner.driveToken = "owner-drive-token"
+      await owner.save()
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 0)
+        .field("cueName", "Photo")
+        .field("screen", 1)
+        .attach("image", Buffer.from("bytes"), "photo.png")
+        .expect(200)
+
+      const stored = await Presentation.findById(testPresentationId)
+      const cue = stored.cues.find((item: any) => item.name === "Photo")
+      expect(cue.file.driveId).toBeUndefined()
+
+      owner.driveToken = undefined
+      await owner.save()
+    })
+
+    test("reading a presentation signs its S3 media even when Drive is linked", async () => {
+      const owner = await User.findOne({ username: "testuser" })
+      owner.driveToken = "owner-drive-token"
+      await owner.save()
+
+      await api
+        .put(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .field("index", 1)
+        .field("cueName", "Photo2")
+        .field("screen", 1)
+        .attach("image", Buffer.from("bytes"), "photo2.png")
+        .expect(200)
+
+      const response = await api
+        .get(`/api/presentation/${testPresentationId}`)
+        .set("Authorization", authHeader)
+        .expect(200)
+
+      const cue = response.body.cues.find((item: any) => item.name === "Photo2")
+      expect(cue.file.url).toContain("X-Amz-Signature")
+
+      owner.driveToken = undefined
+      await owner.save()
+    })
+  })
+
   describe("Read-only sharing", () => {
     let viewerAuthHeader: any
 
@@ -1968,6 +2029,53 @@ describe("test presentation", () => {
         .expect(200)
       return response.body.shareToken as string
     }
+
+    const addDriveCue = async () => {
+      const owner = await User.findOne({ username: "testuser" })
+      owner.driveToken = "owner-drive-token"
+      await owner.save()
+
+      const presentation = await Presentation.findById(testPresentationId)
+      presentation.cues.push({
+        cueType: "visual",
+        index: 0,
+        screen: 1,
+        name: "Drive photo",
+        file: { id: "local-id", name: "photo.png", driveId: "drive-abc" },
+      })
+      await presentation.save()
+    }
+
+    test("a Drive-backed media keeps a usable url instead of a dead S3 one", async () => {
+      await addDriveCue()
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      const cue = response.body.cues.find(
+        (item: any) => item.file?.driveId === "drive-abc"
+      )
+      expect(cue.file.url).toContain("X-Amz-Signature")
+    })
+
+    test("sharing refuses to copy Drive media without a linked account", async () => {
+      await addDriveCue()
+      const owner = await User.findOne({ username: "testuser" })
+      owner.driveToken = undefined
+      await owner.save()
+
+      const response = await api
+        .post(`/api/presentation/${testPresentationId}/share`)
+        .set("Authorization", authHeader)
+        .expect(400)
+
+      expect(response.body.error).toMatch(/Reconnect Google Drive/)
+      const stored = await Presentation.findById(testPresentationId)
+      expect(stored.shareToken).toBeUndefined()
+    })
 
     test("the owner can turn sharing on and gets a token", async () => {
       const token = await enableSharing()
@@ -2005,7 +2113,7 @@ describe("test presentation", () => {
         .expect(401)
     })
 
-    test("a Google Drive presentation cannot be shared", async () => {
+    test("a Google Drive presentation can be shared too", async () => {
       await Presentation.findByIdAndUpdate(testPresentationId, {
         storage: "googleDrive",
       })
@@ -2013,11 +2121,29 @@ describe("test presentation", () => {
       const response = await api
         .post(`/api/presentation/${testPresentationId}/share`)
         .set("Authorization", authHeader)
-        .expect(400)
+        .expect(200)
 
-      expect(response.body.error).toMatch(/Google Drive/)
+      expect(typeof response.body.shareToken).toBe("string")
       const stored = await Presentation.findById(testPresentationId)
-      expect(stored.shareToken).toBeUndefined()
+      expect(stored.shareToken).toBe(response.body.shareToken)
+    })
+
+    test("a viewer can open a Google Drive presentation through the link", async () => {
+      await addDriveCue()
+      await Presentation.findByIdAndUpdate(testPresentationId, {
+        storage: "googleDrive",
+      })
+      const token = await enableSharing()
+
+      const response = await api
+        .get(`/api/presentation/shared/${token}`)
+        .set("Authorization", viewerAuthHeader)
+        .expect(200)
+
+      const cue = response.body.cues.find(
+        (item: any) => item.file?.driveId === "drive-abc"
+      )
+      expect(cue.file.url).toContain("X-Amz-Signature")
     })
 
     test("a logged-in user can read the presentation through the link", async () => {

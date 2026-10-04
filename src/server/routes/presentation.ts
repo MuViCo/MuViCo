@@ -14,8 +14,11 @@ import {
   uploadDriveFile,
   deleteDriveFile,
   getDriveFileStream,
+  getDriveFileMetadata,
+  getDriveFileBuffer,
 } from "../utils/drive"
 import Presentation from "../models/presentation"
+import User from "../models/user"
 import {
   userExtractor,
   requirePresentationAccess,
@@ -295,6 +298,43 @@ const parseCueOpacity = (rawOpacity: unknown, fallback: number | undefined) => {
 
 // A cue's occupied screens: spanScreens when it's a valid multi-screen span,
 // otherwise just its own primary screen.
+const snapshotDriveFilesToS3 = async (
+  presentation: PresentationDocument,
+  driveToken: string
+) => {
+  const files: Array<{ id?: string; driveId?: string; type?: string }> = []
+
+  for (const cue of presentation.cues) {
+    if (cue.file?.driveId) files.push(cue.file)
+  }
+  for (const item of presentation.media || []) {
+    if (item.driveId) files.push(item)
+  }
+  for (const score of presentation.scores || []) {
+    if (score.file?.driveId) files.push(score.file)
+  }
+
+  for (const file of files) {
+    if (!file.id || !file.driveId) continue
+
+    const metadata = await getDriveFileMetadata(file.driveId, driveToken)
+    const buffer = await getDriveFileBuffer(file.driveId, driveToken)
+
+    await uploadFileS3(
+      buffer,
+      `${presentation._id}/${file.id}`,
+      (metadata.mimeType as string) || file.type || "application/octet-stream"
+    )
+  }
+
+  return files.length
+}
+
+const storesOnDrive = (
+  presentation: PresentationDocument,
+  user: UserDocument
+): boolean => presentation.storage === "googleDrive" && Boolean(user.driveToken)
+
 const occupiedScreens = (
   screen: unknown,
   spanScreens: number[] | null | undefined
@@ -779,18 +819,22 @@ router.get(
     try {
       const { presentation } = req
 
+      const shared = { includeDriveBacked: true }
+
       presentation!.cues = await processS3Files(
         presentation!.cues,
-        presentation!._id
+        presentation!._id,
+        shared
       )
-      await processS3MediaFiles(presentation!.media, presentation!._id)
+      await processS3MediaFiles(presentation!.media, presentation!._id, shared)
       presentation!.scores = await processS3ScoreFiles(
         presentation!.scores || [],
-        presentation!._id
+        presentation!._id,
+        shared
       )
 
       for (const score of presentation!.scores) {
-        if (score.file?.proxyUrl) {
+        if (score.file?.id || score.file?.driveId) {
           score.file.proxyUrl = `/api/presentation/shared/${req.params.token}/scores/${score._id}/file`
         }
       }
@@ -828,13 +872,22 @@ router.post(
   requirePresentationAccess,
   async (req, res, next) => {
     try {
-      const { presentation } = req
+      const { presentation, user } = req
 
-      if (presentation!.storage !== "aws") {
-        return res.status(400).json({
-          error:
-            "Sharing is not available for presentations stored on Google Drive",
-        })
+      const hasDriveFiles =
+        presentation!.cues.some((cue) => cue.file?.driveId) ||
+        (presentation!.media || []).some((item) => item.driveId) ||
+        (presentation!.scores || []).some((score) => score.file?.driveId)
+
+      if (hasDriveFiles) {
+        if (!user!.driveToken) {
+          return res.status(400).json({
+            error:
+              "Reconnect Google Drive to share this presentation: its media have to be copied first.",
+          })
+        }
+
+        await snapshotDriveFilesToS3(presentation!, user!.driveToken)
       }
 
       if (!presentation!.shareToken) {
@@ -890,15 +943,14 @@ router.get(
           driveToken
         )
         await processDriveMediaFiles(presentation!.media, driveToken)
-      } else {
-        presentation!.cues = await processS3Files(
-          presentation!.cues,
-          presentation!._id
-        )
-        // Signed in place, so the media pool repopulates from the response the
-        // editor already fetches on mount -- no extra client request.
-        await processS3MediaFiles(presentation!.media, presentation!._id)
       }
+      presentation!.cues = await processS3Files(
+        presentation!.cues,
+        presentation!._id
+      )
+      // Signed in place, so the media pool repopulates from the response the
+      // editor already fetches on mount -- no extra client request.
+      await processS3MediaFiles(presentation!.media, presentation!._id)
       await processPresentationScoreFiles(presentation!, user!)
 
       res.json(presentation)
@@ -998,12 +1050,12 @@ router.post(
         type: file.mimetype,
       }
 
-      if (user!.driveToken) {
+      if (storesOnDrive(presentation!, user!)) {
         const driveResponse = await uploadDriveFile(
           file.buffer,
           key,
           file.mimetype,
-          user!.driveToken
+          user!.driveToken as string
         )
         entry.driveId = driveResponse.id as string
       } else {
@@ -1015,8 +1067,8 @@ router.post(
 
       const saved = presentation!.media[presentation!.media.length - 1]
 
-      if (user!.driveToken) {
-        await processDriveMediaFiles([saved], user!.driveToken)
+      if (saved.driveId) {
+        await processDriveMediaFiles([saved], user!.driveToken as string)
       } else {
         await processS3MediaFiles([saved], id)
       }
@@ -2052,7 +2104,7 @@ router.put(
         { new: true }
       ))!
 
-      if (user!.driveToken) {
+      if (storesOnDrive(presentation!, user!)) {
         if (file) {
           if (driveId) {
             updatedPresentation.cues = updatedPresentation.cues.map((cue) => {
@@ -2063,7 +2115,7 @@ router.put(
             })
           } else {
             const fileName = `${id}/${fileId}`
-            const driveToken = user!.driveToken
+            const driveToken = user!.driveToken as string
             const driveResponse = await uploadDriveFile(
               file.buffer,
               fileName,
@@ -2080,7 +2132,7 @@ router.put(
           }
         }
 
-        const driveToken = user!.driveToken
+        const driveToken = user!.driveToken as string
         updatedPresentation.cues = await processDriveCueFiles(
           updatedPresentation.cues,
           driveToken
