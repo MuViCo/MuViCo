@@ -58,6 +58,16 @@ describe("CueText animation", () => {
     )
   })
 
+  test("fades against the screen, not against the moving text", () => {
+    render(<CueText text="A long time ago" effect="crawl" />)
+
+    const screenBox = screen.getByTestId("cue-text")
+    const textBox = screen.getByText("A long time ago")
+
+    expect(screenBox.style.maskImage).toContain("linear-gradient")
+    expect(textBox.style.maskImage).toBe("")
+  })
+
   test("tilts the text in perspective for the Star Wars crawl", () => {
     render(<CueText text="A long time ago" effect="crawl" />)
 

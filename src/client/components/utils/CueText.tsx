@@ -57,7 +57,7 @@ const CueText = ({
       : resolvedEffect === "scroll-up"
         ? scrollUp
         : scrollDown
-  const maskImage = "linear-gradient(to top, #000 42%, transparent 96%)"
+  const maskImage = "linear-gradient(to top, #000 70%, transparent 100%)"
 
   return (
     <div
@@ -73,7 +73,12 @@ const CueText = ({
         alignItems: isAnimated ? "flex-start" : "center",
         justifyContent: "center",
         pointerEvents: "none",
-        ...(isCrawl && { perspective: "320px", perspectiveOrigin: "50% 0%" }),
+        ...(isCrawl && {
+          perspective: "320px",
+          perspectiveOrigin: "50% 0%",
+          maskImage,
+          WebkitMaskImage: maskImage,
+        }),
       }}
     >
       <Box
@@ -98,8 +103,6 @@ const CueText = ({
                 left: "50%",
                 width: "84%",
                 transformOrigin: "50% 100%",
-                maskImage,
-                WebkitMaskImage: maskImage,
               }
             : { maxWidth: "92%" }),
           ...(isAnimated && !isCrawl && { position: "absolute", top: "100%" }),
