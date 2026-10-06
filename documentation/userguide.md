@@ -69,6 +69,13 @@ At the top, you can see the name of the presentation. Below it is a preview of t
   - Rename the presentation title.
   - Save or cancel the changes.
 
+- **Presentation Settings** (gear icon):
+
+  - **Transition Type**: Choose how the display changes from one frame to the next during the show — Fade, Slide From Left, Slide From Right, Zoom, or None. This applies to the whole presentation.
+  - **Output shape, all screens**: Choose the aspect ratio every screen uses — 16:9 (widescreen), 16:10, 4:3, 21:9 (ultrawide), or 1:1 (square). Each screen's preview also has its own small shape selector in its bottom-right corner, letting you override this global shape for just that one screen.
+
+- **Share**: Open the "Share this presentation" dialog to create a read-only link. Anyone with the link can view the presentation while logged in to MuViCo, but cannot edit it. Click "Stop sharing" to revoke the link; a new link can be created afterwards. If the presentation uses media from your Google Drive, creating the link copies that media into MuViCo's own storage so viewers can see it without needing access to your Drive — if your Google account isn't connected, you'll be asked to reconnect it first.
+
 - **Tutorial**: Open the help page.
 
 - **Open one screen**:
@@ -100,6 +107,9 @@ At the top, you can see the name of the presentation. Below it is a preview of t
   - Add a frame: Click the '+' button to add a new frame.
   - Insert a frame before another: Hover over a frame's header — a '+' appears on its left edge — and click it to insert a new frame right before that one.
   - Remove a frame: Click the 'x' button above the frame to remove it.
+  - Rename a frame: Double-click a frame's header to type a custom name (up to 60 characters). Press Enter or click away to save, Escape to cancel. Clear the name to go back to the default "Frame N" label.
+
+- **Extend an element's duration**: Hover a visual element (image, video, or text) in the grid and drag the thin handle on its right edge to make it span several frames in a row, instead of just one. Drag it back to shorten it again. It stops at whatever element already occupies the next frame in that layer.
 
 - **Edit screen count**:
 
@@ -109,6 +119,7 @@ At the top, you can see the name of the presentation. Below it is a preview of t
 - **Keyboard shortcuts**:
   - Next index: → ArrowRight, ↑ ArrowUp, PageDown
   - Previous index: ← ArrowLeft, ↓ ArrowDown, PageUp
+  - Toggle Autoplay: Space
 
 ## Add a new element
 
@@ -131,6 +142,7 @@ At the top, you can see the name of the presentation. Below it is a preview of t
 **Place the element in the editor**:
 
 - Drag and drop the element into the frame where you want to place it.
+- To insert it between two frames that already hold elements in the same layer, drop it near the left edge of the second one. A green line shows where the new frame will appear; everything from that point on shifts one frame to the right to make room.
 
 ## Edit existing element
 
@@ -145,6 +157,14 @@ or
   - Alternatively, hover or focus the element and click the three-dot button in
     its top-right corner. On a keyboard, use `Shift+F10` while that button is
     focused.
+- **Position and resize on screen**:
+  - Click an element in a screen preview to select it (it gets a purple outline), then drag it to move it freely within that screen.
+  - Drag one of the four corner handles to resize it from that corner.
+  - This free-form dragging is only available for elements on a single screen. An element spanning multiple screens uses the fill/position controls described below instead.
+- **Animate an element** (text and image elements):
+  - Text elements: choose "Star Wars crawl", "Scroll up", or "Scroll down" from the Animation dropdown.
+  - Image elements: choose "Fade in/out" from the Animation dropdown.
+  - Once an animation is chosen, use the Animation speed slider (0.25× to 4×) to make it play slower or faster, and check "Repeat the animation" to have it loop continuously instead of playing once.
 - **Delete**:
   - Remove the element from the presentation.
 - **Edit**:
@@ -158,6 +178,8 @@ or
   - Click "Span across multiple screens" in the element's menu.
   - Pick the additional screens the image should spread across, left to right. The screen the image was originally placed on stays included.
   - The image keeps one consistent scale and vertical framing across every screen it spans, so it reads as a single continuous picture rather than a re-scaled copy per screen.
+  - Choose **Fill** to zoom the image up until it completely covers every screen it spans, cropping whatever overflows, or **Fit** to shrink it so the whole image stays visible (which can leave empty bands if its proportions don't match the screens).
+  - Use the 3x3 grid to choose which part of the image stays anchored — for example, "Top left" keeps that corner in view when the image is cropped or doesn't fill every screen.
 
 ![Element dropdown](./images/element_dropdown.png "Element dropdown")
 
@@ -181,6 +203,7 @@ Click **Show mode** from the editor to run the presentation in a dedicated full-
 - **Control room**: Monitor every display, distinguish open and closed output windows, open a display directly, preview which screens will change on the next frame, and view the score in a compact panel.
 - **GO and Previous**: Advance or return one frame while keeping visual and audio cues synchronized.
 - **Auto**: Run frames automatically using the interval configured in the editor.
+- **Audio controls**: Turn audio on/off for the whole show with "Audio on/off", and switch between "Auto" (tracks start and stop automatically as you change frames) and "Manual" (once audio is on, each active track gets its own Play/Pause button, so you start and stop them independently of frame changes). The audio strip lists every active track by name and lane.
 - **Blackout**: Mask every output window without changing the current frame or stopping audio. The operator previews remain visible.
 - **Monitor**: Open either the score or the complete screen wall in a separate operator window.
 - **Exit**: Return to the same presentation in the editor.
