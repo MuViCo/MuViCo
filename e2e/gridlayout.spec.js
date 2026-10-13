@@ -356,15 +356,21 @@ describe("GridLayout", () => {
       page.getByText('Copying in progress for element "copysource".')
     ).toBeVisible()
 
-    const gridContainer = page.locator(
-      '[data-testid="edit-mode-grid-container"]'
-    )
+    // Read from the DOM: the slot centre moves with the row height, the column
+    // width and the gaps, so hardcoded pixels drift out of the target cell.
+    // Row 1 is screen 2's only layer; the last row is the audio track, which
+    // rejects a visual cue.
+    const { clientX, clientY } = await gridCellPoint(page, 1, 1)
+    await page.mouse.click(clientX, clientY)
 
-    await gridContainer.click({
-      position: { x: 1 * 160 + 80, y: 2 * 110 + 10 },
-    })
-
-    await expect(page.getByTestId("cue-copysource copy")).toBeVisible()
+    // A paste keeps the source name -- it places the same library media on
+    // another track rather than duplicating the element -- so the copy shows up
+    // as a second clip under that same name. The toast names the target lane,
+    // which keeps this from matching the toast of the source cue's own add.
+    await expect(
+      page.getByText(/Element copysource added to screen 2, layer 1/).first()
+    ).toBeVisible()
+    await expect(page.getByTestId("cue-copysource")).toHaveCount(2)
   })
 
   test("clicking outside the grid while copying cancels the copy", async ({
@@ -387,6 +393,7 @@ describe("GridLayout", () => {
     await expect(
       page.getByText("Copying has been cancelled.").first()
     ).toBeVisible()
-    await expect(page.getByTestId("cue-copysource2 copy")).not.toBeVisible()
+    // The source clip is still the only one: nothing was pasted.
+    await expect(page.getByTestId("cue-copysource2")).toHaveCount(1)
   })
 })

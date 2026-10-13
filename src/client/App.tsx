@@ -45,6 +45,17 @@ const App = () => {
     setIsInitialized(true)
   }, [])
 
+  // The browser's native right-click menu never belongs anywhere in the
+  // app - cues open their own custom menu, and everywhere else there is
+  // nothing it could usefully act on.
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault()
+    }
+    document.addEventListener("contextmenu", handleContextMenu)
+    return () => document.removeEventListener("contextmenu", handleContextMenu)
+  }, [])
+
   if (!isInitialized) {
     return <div>Loading...</div>
   }
